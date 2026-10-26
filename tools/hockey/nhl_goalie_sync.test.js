@@ -271,6 +271,47 @@ globalThis.fetch = async (u, init) => {
   body = await res.json();
   chk('POST with the secret runs (forced, dry)', res.status === 200 && body.dry === true && body.run.due_kinds[0] === 'forced');
 
+  /* ============================================================ the job summary (NHL goalie sync, Deploy NHL goalie layer) */
+  // tools/hockey/nhl_goalie_run_summary.js renders the function's real answers, and its verdict is what the job exits on
+  const S = require(path.join(__dirname, 'nhl_goalie_run_summary.js'));
+  const NOW = ms('2026-10-25T18:03:00Z');
+  resetDb();
+  W.df = 'morning';
+  await run('2026-10-25T12:00:30Z');
+  W.df = 'afternoon';
+  r = await run('2026-10-25T18:00:20Z');
+  const CRON = { exists: true, schedule: '*/5 * * * *', active: true, last_start: '2026-10-25T18:00:00.04+00:00', last_status: 'succeeded', last_message: '1 row', failed_1h: 0 };
+  const READY = { state: 'ok', state_reason: null, last_check_status: 'ok', last_check_at: '2026-10-25T18:00:22+00:00', last_success_at: '2026-10-25T18:00:22+00:00', minutes_since_success: 3, daily_faceoff_ok: true, nhl_api_ok: true,
+    cards_upcoming: 1, cards_gated: 1, sides_next_3h: 0, sides_unconfirmed_next_3h: 0, games_7d: 0, pct_confirmed_by_t30_7d: null, confirmed_by_t30_target_pct: 90, conflicts_open: 0, conflicts_24h: 0, conflicts_7d: 0, sync_failures_24h: 0, runs_24h: 2, next_due_at: '2026-10-25T20:00:00+00:00' };
+  let sm = S.render({ title: 'NHL goalie sync — run by hand', run: r, http: '200', cron: CRON, readiness: READY }, NOW);
+  chk('summary: the card version the run wrote, with its starters, statuses, gate, home win % and change note', sm.markdown.includes('| MIN@VAN | 2 | starter_changed | L. Meriläinen / C. Pickard | likely / likely | GATED | 42.4% | Updated: starter changed from K. Lankinen to L. Meriläinen |'), sm.markdown);
+  chk('summary: what the run wrote, pg_cron\'s last call (3 min ago) and the readiness KPIs', /Cards written \/ unchanged \| 1 \/ 0/.test(sm.markdown) && /Last call \| 2026-10-25T18:00:00\.04\+00:00 \(3 min ago\), succeeded/.test(sm.markdown) && /Both starters Confirmed by T-30, last 7 days \| — \(no game yet\) \(target 90%\)/.test(sm.markdown), sm.markdown);
+  chk('summary: a clean run, a calling pg_cron and ok readiness pass', sm.verdict.errors.length === 0 && sm.verdict.warnings.length === 0 && /\*\*Passed\.\*\*/.test(sm.markdown), sm.verdict);
+  let vd = S.verdict({ cron: CRON }, NOW);
+  chk('verdict: the watchdog alone (no call) passes while pg_cron called within 15 minutes', vd.errors.length === 0);
+  vd = S.verdict({ cron: Object.assign({}, CRON, { last_start: '2026-10-25T17:40:00+00:00' }) }, NOW);
+  chk('verdict: pg_cron silent for 23 minutes fails the job (the backstop call is made, and the miss is seen)', vd.errors.length === 1 && /23 minutes ago/.test(vd.errors[0]), vd);
+  vd = S.verdict({ cron: { exists: false } }, NOW);
+  chk('verdict: no pg_cron job fails, and says how to schedule it', /apply_sql/.test(vd.errors[0] || ''), vd);
+  vd = S.verdict({ cron: null, readiness: S.readJson(path.join(__dirname, 'no-such-file.json')) }, NOW);
+  chk('verdict: a check that could not be made (empty pg_cron answer, unreadable readiness) fails, never passes', vd.errors.length === 2, vd);
+  vd = S.verdict({ run: { ok: false, error: 'unauthorized' }, http: '401' }, NOW);
+  chk('verdict: a refused cron secret fails, and names the fix', vd.errors.length === 1 && /set_cron_secret/.test(vd.errors[0]), vd);
+  resetDb();
+  r = await run('2026-10-25T18:00:20Z', { force: true, simulate_outage: ['daily_faceoff'] });
+  // more than three hours out the NHL API is not read, so Daily Faceoff refusing leaves no source: the function records an error and answers 500
+  vd = S.verdict({ run: r, http: '500', readiness: Object.assign({}, READY, { state: 'error', last_check_status: 'error', state_reason: 'the last check failed: ' + r.alerts.map((a) => a.message).join('; '), last_check_alerts: r.alerts.map((a) => a.severity + ':' + a.code) }) }, NOW);
+  chk('verdict: Daily Faceoff refused and nothing else to read is a warning, not a failure (an outside source: the cards keep the starters on file and stay gated)', !r.ok && r.alerts.map((a) => a.code).join() === 'daily_faceoff_unavailable,sources_down'
+    && vd.errors.length === 0 && vd.warnings.some((w) => /DEGRADED daily_faceoff_unavailable/.test(w)) && vd.warnings.some((w) => /FAILURE sources_down \(an outside source/.test(w)) && vd.warnings.some((w) => /^readiness: the last check failed.*\(an outside source/.test(w)), vd);
+  vd = S.verdict({ run: { ok: false, status: 'error', run: { status: 'error' }, alerts: [{ severity: 'FAILURE', code: 'sources_down', message: 'x' }, { severity: 'FAILURE', code: 'sync_error', message: 'sync error: boom' }] }, http: '500' }, NOW);
+  chk('verdict: a source outage does not excuse EdgeDesk\'s own error in the same run', vd.errors.length === 1 && /HTTP 500: sources_down: x; sync_error: sync error: boom/.test(vd.errors[0]), vd);
+  vd = S.verdict({ run: { ok: true, status: 'warn', run: { status: 'warn' }, alerts: [{ severity: 'DRIFT', code: 'daily_faceoff_drift', message: 'no __NEXT_DATA__' }] }, http: '200' }, NOW);
+  chk('verdict: a page that no longer parses is EdgeDesk\'s to fix (the job fails and names the parser)', vd.errors.length === 1 && /hockey\/goalies\/core\.js/.test(vd.errors[0]), vd);
+  r = await run('2026-10-25T18:20:20Z', { force: true, simulate_outage: ['inputs'] });
+  vd = S.verdict({ run: r, http: '500', readiness: Object.assign({}, READY, { state: 'error', state_reason: 'the last check failed: the slate\'s goalie inputs could not be read' }) }, NOW);
+  chk('verdict: the inputs unreadable is a failure (HTTP 500 and readiness in error)', !r.ok && vd.errors.length === 2 && /HTTP 500/.test(vd.errors[0]) && /inputs could not be read/.test(vd.errors[1]), vd);
+  W.df = 'evening';
+
   failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 700) : '')));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'NHL goalie sync — ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail === 0 ? 0 : 1);

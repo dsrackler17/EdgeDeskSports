@@ -32,6 +32,14 @@ Tests: `game_research.test.js` passes 252 of 252. The section 14 gate cases (5.0
 
 Tests: `game_research.test.js` passes 252 of 252 (it had 2 failures). `football_lines`, `game_context`, `build_game_research --check` and `nfl_prior_decay` (85) all pass.
 
+## 2026-10-26 — NHL starting goalies: deployed, and a GitHub job beside the other syncs
+
+- **Deployed.** Deploy NHL goalie layer now makes the cron secret exist and agree in Vault and on the function, schedules the five-minute poke, and runs the sync once. It ran from this branch. The first run wrote version 1 of the four cards inside the horizon (MIN @ VAN, LAK @ NYR, TOR @ CGY, DET @ EDM), all Projected and GATED.
+- **Daily Faceoff refuses the function (HTTP 403).** The NHL API read. Until a starter source answers, starters stay Projected until the NHL boxscore names them near puck drop, and runs more than three hours out record `sources_down` (`docs/engine/NHL_GOALIES.md` §10).
+- **NHL goalie sync** (`.github/workflows/nhl-goalie-sync.yml`). **Run workflow** calls the sync now: forced, dry, or with a simulated outage. On a schedule, every half hour from 8 AM ET, it is pg_cron's watchdog: it calls the sync only when pg_cron has stopped, and then fails. The job summary has the card versions written, pg_cron's last call and the readiness KPIs.
+- **The verdict** (`tools/hockey/nhl_goalie_run_summary.js`, shared with the deploy's first run). The job fails for anything EdgeDesk runs: the secret, the function, pg_cron, the inputs, a drifted parser. An outside source not answering is a warning. The two queries it reads are in `tools/hockey/sql/`, tested on real PostgreSQL.
+- **Tests.** Sync 49 → 61, SQL 66 → 71.
+
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 
 - **The problem.** The MIN @ VAN card of 2026-10-25 named Lankinen all day, from the usage projection; Merilainen started. The projection reads completed games only, and confirming a starter needed a hand entry.
