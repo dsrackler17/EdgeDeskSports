@@ -22,9 +22,10 @@
 # has none, masked, sent only to Supabase, never printed or stored in GitHub.
 # When Vault has one, the function is given that value (it is what pg_cron
 # sends). The step then proves the function accepts it with a dry run.
-# By hand instead:
-#   supabase secrets set NHL_GOALIE_CRON_SECRET=<a long random value>
-#   select vault.create_secret('<the same value>', 'nhl_goalie_cron_secret');
+# NEVER SET ONE SIDE BY HAND: a function secret that is not Vault's refuses
+# every pg_cron poke (2026-10-26, 85 minutes of 401s). To change the secret,
+# delete the Vault secret (delete from vault.secrets where name =
+# 'nhl_goalie_cron_secret') and run this with set_cron_secret.
 # FIRST RUN (first_run, on by default): once the site serves
 # hockey/goalie_inputs.json (the NHL engine build writes it), the sync runs
 # once, forced, and the run's cards and the readiness KPIs go to the job

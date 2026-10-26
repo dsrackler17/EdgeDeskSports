@@ -6,18 +6,22 @@
 # hours before each puck drop, a final pass at T-30. docs/engine/NHL_GOALIES.md.
 #
 # ON A SCHEDULE this job is the watchdog. Every half hour from 8 AM ET to about
-# midnight ET it checks that pg_cron still calls the sync, and when it does not,
-# calls the sync itself (unforced, so the function still decides what is due)
-# and fails, so the miss is seen. It never calls the sync while pg_cron does:
-# two callers in the same minute would race each other's writes.
+# midnight ET it checks that pg_cron still calls the sync, and what the
+# function answered its last pokes (pg_cron records only that its SQL ran: on
+# 2026-10-26 every poke was refused for 85 minutes behind "succeeded"). When
+# pg_cron does not call, the job calls the sync itself (unforced, so the
+# function still decides what is due) and fails, so the miss is seen. It never
+# calls the sync while pg_cron does: two callers in the same minute would race
+# each other's writes.
 #
 # BY HAND (Run workflow) it calls the sync now: forced by default, dry or with a
 # simulated outage when asked. Either way the job summary shows what the run
 # wrote (cards, starters, gates), pg_cron's last call and the readiness KPIs
 # (public.nhl_goalie_readiness: Confirmed by T-30, conflicts, sync failures).
 #
-# It FAILS when the sync refuses or errors, when pg_cron has stopped calling it,
-# or when readiness is in error (the last check failed, or no run in 90 minutes).
+# It FAILS when the sync refuses or errors, when pg_cron has stopped calling it
+# or its pokes are refused, or when readiness is in error (the last check
+# failed, or no run in 90 minutes).
 # A source that is down (Daily Faceoff, the NHL API) is a warning, not a failure:
 # the cards say so themselves and stay gated.
 #

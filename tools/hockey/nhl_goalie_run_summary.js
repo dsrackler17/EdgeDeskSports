@@ -33,6 +33,10 @@ function readJson(file) {
 // Everything else that fails (the scheduler, the function, the cron secret,
 // the slate's inputs, a parser that no longer reads a source's page) fails it.
 const OUTSIDE = 'sources_down';
+// What a refused or failed answer says, verbatim: the function's own
+// {error, reason}, or the Supabase gateway's {msg} / {message} (a gateway 401
+// means the function is checking JWTs: it was deployed without --no-verify-jwt).
+const said = (r) => (r ? [r.error, r.reason, r.msg, r.message].filter((x) => typeof x === 'string' && x).join(': ') : '');
 const outsideOnly = (codes) => codes.length > 0 && codes.every((c) => c === OUTSIDE);
 
 /** what the job says: errors fail it, warnings annotate it */
@@ -44,7 +48,8 @@ function verdict(o, nowMs) {
     const failures = r && !r._unreadable ? (r.alerts || []).filter((a) => a.severity === 'FAILURE') : [];
     const outside = outsideOnly(failures.map((a) => a.code));
     if (!r || r._unreadable) errors.push('the sync gave no readable answer (HTTP ' + (code || '000') + ')' + (r && r._unreadable ? ': ' + r._unreadable : ''));
-    else if (code === '401') errors.push('the sync refused the cron secret (HTTP 401): run Deploy NHL goalie layer with set_cron_secret');
+    else if (code === '401' && r.error === 'unauthorized') errors.push('the sync refused the cron secret (HTTP 401' + (r.reason ? ': ' + r.reason : '') + '): run Deploy NHL goalie layer with set_cron_secret');
+    else if (code === '401') errors.push('the Supabase gateway refused the call (HTTP 401' + (said(r) ? ': ' + said(r) : '') + '): nhl_goalie_sync is checking JWTs; redeploy it with Deploy NHL goalie layer (deploy_function, which passes --no-verify-jwt)');
     else if (code !== '200' && !(code === '500' && outside)) errors.push('the sync answered HTTP ' + code + (failures.length ? ': ' + failures.map((a) => a.code + ': ' + a.message).join('; ') : ''));
     if (r && !r._unreadable) for (const a of r.alerts || []) {
       if (a.severity === 'FAILURE') {
@@ -64,6 +69,16 @@ function verdict(o, nowMs) {
       const age = ageMin(c.last_start, nowMs);
       if (age > staleMin) errors.push('pg_cron last called nhl_goalie_sync ' + age + ' minutes ago (' + c.last_start + '): it is meant to every five minutes');
       else if (c.last_status === 'failed') errors.push('pg_cron\'s last call of nhl_goalie_sync failed: ' + (c.last_message || 'no message'));
+    }
+    // what the function answered pg_cron (pg_net's record of each poke): the SQL running is not the sync answering
+    const last = c && !c._unreadable && Array.isArray(c.answers) ? c.answers.find((x) => x.status != null || x.timed_out || x.error) : null;
+    if (last && c.exists) {
+      const body = last.content ? ': ' + String(last.content).slice(0, 160) : '';
+      if (last.status === 401) errors.push('pg_cron\'s calls are refused (HTTP 401' + body + '). The function\'s NHL_GOALIE_CRON_SECRET and Vault nhl_goalie_cron_secret disagree (or the function checks JWTs): run Deploy NHL goalie layer with set_cron_secret, and deploy_function for a JWT refusal');
+      else if (last.timed_out) warnings.push('pg_cron\'s last call of nhl_goalie_sync timed out (pg_net waits 120 s)');
+      else if (last.status == null && last.error) errors.push('pg_cron\'s last call of nhl_goalie_sync did not connect: ' + last.error);
+      else if (last.status !== 200 && last.status !== 500) errors.push('pg_cron\'s last call of nhl_goalie_sync answered HTTP ' + last.status + body);
+      // a 500 is a run the function recorded as an error: readiness says why
     }
   }
   if (o.readiness !== undefined) {
@@ -88,7 +103,8 @@ function render(o, nowMs) {
       const R = r.run || {}, C = (r.cards && r.cards.versions) || [];
       L.push('| | |', '|---|---|', '| Status | ' + cell(r.status) + (r.dry ? ' (dry: nothing written)' : '') + ' |', '| HTTP | ' + cell(o.http) + ' |');
       if (r.skipped) L.push('| Not run | ' + cell(r.skipped) + ' |');
-      if (r.reason) L.push('| Reason | ' + cell(r.reason) + ' |');
+      if ((r.ok === false || String(o.http) !== '200') && said(r)) L.push('| Answer | ' + cell(said(r)) + ' |');
+      else if (r.reason) L.push('| Reason | ' + cell(r.reason) + ' |');
       L.push('| Due | ' + cell((R.due_kinds || []).join(', ')) + ' |',
         '| Observations / consensus written | ' + cell(R.observations_written) + ' / ' + cell(R.consensus_written) + ' |',
         '| Cards written / unchanged | ' + cell(R.cards_written) + ' / ' + cell(R.cards_unchanged) + ' |',
@@ -108,7 +124,8 @@ function render(o, nowMs) {
     if (!c || c._unreadable) L.push('Could not be read.', '');
     else L.push('| | |', '|---|---|', '| Job | ' + (c.exists ? 'nhl_goalie_sync, ' + cell(c.schedule) + (c.active === false ? ', inactive' : '') : 'missing') + ' |',
       '| Last call | ' + (c.last_start ? cell(c.last_start) + ' (' + ageMin(c.last_start, nowMs) + ' min ago), ' + cell(c.last_status) : 'never') + ' |',
-      '| Failed calls, last hour | ' + cell(c.failed_1h) + ' |', '');
+      '| Failed calls, last hour | ' + cell(c.failed_1h) + ' |',
+      '| The sync\'s answers (latest first) | ' + ((Array.isArray(c.answers) ? c.answers : []).map((x) => x.status != null ? 'HTTP ' + x.status : x.timed_out ? 'timed out' : x.error ? 'no connection' : 'no answer yet').join(', ') || '—') + ' |', '');
   }
   const R = o.readiness;
   if (R !== undefined) {

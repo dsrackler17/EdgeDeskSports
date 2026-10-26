@@ -295,8 +295,25 @@ globalThis.fetch = async (u, init) => {
   chk('verdict: no pg_cron job fails, and says how to schedule it', /apply_sql/.test(vd.errors[0] || ''), vd);
   vd = S.verdict({ cron: null, readiness: S.readJson(path.join(__dirname, 'no-such-file.json')) }, NOW);
   chk('verdict: a check that could not be made (empty pg_cron answer, unreadable readiness) fails, never passes', vd.errors.length === 2, vd);
-  vd = S.verdict({ run: { ok: false, error: 'unauthorized' }, http: '401' }, NOW);
-  chk('verdict: a refused cron secret fails, and names the fix', vd.errors.length === 1 && /set_cron_secret/.test(vd.errors[0]), vd);
+  res = await F.handle(new Request('https://fn.test/', { method: 'POST', headers: { 'x-cron-secret': 'not-the-secret' }, body: '{}' }));
+  const refused = await res.json();
+  vd = S.verdict({ run: refused, http: String(res.status) }, NOW);
+  chk('verdict: the function refusing the cron secret (its own 401) fails, and names the fix', res.status === 401 && vd.errors.length === 1 && /the sync refused the cron secret/.test(vd.errors[0]) && /set_cron_secret/.test(vd.errors[0]), vd);
+  sm = S.render({ run: refused, http: '401' }, NOW);
+  chk('summary: a refused call shows what the answer said', /\| Answer \| unauthorized \|/.test(sm.markdown), sm.markdown);
+  vd = S.verdict({ run: { msg: 'Missing authorization header' }, http: '401' }, NOW);
+  chk('verdict: the Supabase gateway\'s 401 (the function checks JWTs) is told apart, and names the redeploy', vd.errors.length === 1 && /gateway refused the call \(HTTP 401: Missing authorization header\)/.test(vd.errors[0]) && /--no-verify-jwt/.test(vd.errors[0]), vd);
+  const ANS = (x) => Object.assign({}, CRON, { answers: x });
+  vd = S.verdict({ cron: ANS([{ status: 401, content: '{"ok":false,"error":"unauthorized"}' }, { status: 200 }]) }, NOW);
+  chk('verdict: pg_cron\'s pokes refused (401) fail the job though its SQL succeeded (2026-10-26)', vd.errors.length === 1 && /pg_cron's calls are refused \(HTTP 401/.test(vd.errors[0]), vd);
+  vd = S.verdict({ cron: ANS([{ status: null }, { status: 200 }]) }, NOW);
+  chk('verdict: the latest answered poke decides; one still in flight is skipped', vd.errors.length === 0, vd);
+  vd = S.verdict({ cron: ANS([{ status: 500 }]) }, NOW);
+  chk('verdict: a 500 is a run the function recorded as an error (readiness says why), not a scheduler fault', vd.errors.length === 0, vd);
+  vd = S.verdict({ cron: ANS([{ status: null, timed_out: true }]) }, NOW);
+  chk('verdict: a timed-out poke warns', vd.errors.length === 0 && /timed out/.test(vd.warnings[0] || ''), vd);
+  sm = S.render({ cron: ANS([{ status: 200 }, { status: 401 }, { status: null }]) }, NOW);
+  chk('summary: the sync\'s answers to pg_cron, latest first', /The sync's answers \(latest first\) \| HTTP 200, HTTP 401, no answer yet \|/.test(sm.markdown), sm.markdown);
   resetDb();
   r = await run('2026-10-25T18:00:20Z', { force: true, simulate_outage: ['daily_faceoff'] });
   // more than three hours out the NHL API is not read, so Daily Faceoff refusing leaves no source: the function records an error and answers 500
