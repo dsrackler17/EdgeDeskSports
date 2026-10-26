@@ -2,6 +2,12 @@
 
 
 
+## 2026-10-26 — CFB validation: the slate audit knows the implausible-EV guard
+
+- **The failure (11:08 UTC).** `football/cfb_validation/tests.js`: "the audit finds no status that contradicts its checks — got 3, want 0". Main went red, and so did every PR touching `app.html`, which is on the CFB validation workflow's path filter (#797, an NHL change, was one).
+- **The cause.** A second book arrived for Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas, so each passed all nine integrity requirements. Each still reads INVESTIGATE because a main-line quote prices past the implausible-EV bound, a rule `researchStatus` applies after the gate on purpose. The audit only knew the gate and called that a contradiction.
+- **The fix.** The audit now treats an all-PASS game held by the implausible-EV guard or a regime-change block as consistent, and its verdict names the rule and its reason. Any other INVESTIGATE on an all-PASS gate is still a contradiction. `slate_audit.json` is rebuilt at its own timestamp; nothing else moved. Five synthetic checks; 86 of 86 pass.
+
 ## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
 
 No feed this repository reads lists a college basketball exhibition, so the forecasts priced none. Every school lists its own, and the collegiate collector now reads every Division I school's men's and women's basketball schedule each week, beside baseball.

@@ -78,8 +78,8 @@
      "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.7"
     }
    ],
-   "consistent": false,
-   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+   "consistent": true,
+   "verdict": "Every required check passed; INVESTIGATE is held by the implausible-EV guard, which the status logic applies after the gate: implausible EV, check data: Iowa State +10 (-112) at draftkings prices at +37.0% raw EV on a main-line spread, past the 25% fallback bound (no distribution width to scale by). At that size a data error is the likelier explanation than an edge."
   },
   {
    "game_id": "401858503",
@@ -144,8 +144,8 @@
      "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.1"
     }
    ],
-   "consistent": false,
-   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+   "consistent": true,
+   "verdict": "Every required check passed; INVESTIGATE is held by the implausible-EV guard, which the status logic applies after the gate: implausible EV, check data: Illinois -2.5 (-115) at draftkings prices at +27.8% raw EV on a main-line spread, past the 25% fallback bound (no distribution width to scale by). At that size a data error is the likelier explanation than an edge."
   },
   {
    "game_id": "401856737",
@@ -210,8 +210,8 @@
      "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.2"
     }
    ],
-   "consistent": false,
-   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+   "consistent": true,
+   "verdict": "Every required check passed; INVESTIGATE is held by the implausible-EV guard, which the status logic applies after the gate: implausible EV, check data: Mississippi State +21 (-112) at draftkings prices at +29.6% raw EV on a main-line spread, past the 25% fallback bound (no distribution width to scale by). At that size a data error is the likelier explanation than an edge."
   },
   {
    "game_id": "401862814",
@@ -498,10 +498,6 @@
    "verdict": "INVESTIGATE is correct: submodel support fail."
   }
  ],
- "inconsistent": [
-  "Oklahoma State @ Iowa State",
-  "Illinois @ Maryland",
-  "Mississippi State @ Texas"
- ],
+ "inconsistent": [],
  "app_path_finding": "The app board used to count the books behind its gate consensus from the cfb.lines provider rows, which carry no capture time, while judging freshness on a different (dated) quote: \"fresh multi-book consensus\" was not actually verified on that path. The app now counts only dated, fresh quotes for the gate and shows the canonical research status from football/cfb_terminal/board.json (docs/cfb-validation/DELIVERABLE.md §32)."
 }
