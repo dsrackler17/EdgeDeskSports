@@ -138,6 +138,10 @@ function auditRequirement(req, checks) {
   const res = st.indexOf('FAIL') >= 0 ? 'FAIL' : (st.indexOf('INCOMPLETE') >= 0 ? 'INCOMPLETE' : 'PASS');
   return { requirement: req.label, result: res, detail: mine.filter((c) => res === 'PASS' || c.status === res).map((c) => c.status + ': ' + c.detail).join(' · ') };
 }
+/* the research-status rules that hold a gap below VERIFIED MAJOR after it has
+   passed the integrity gate (lib/edgedesk_canon.js researchStatus): an
+   all-PASS game under one of these is the status logic working, not a contradiction */
+const POST_GATE = { implausible_ev: 'the implausible-EV guard', regime_change: 'the regime-change block' };
 function slateAudit(board, games, named, now) {
   const rows = (board && board.rows) || [];
   const pick = rows.filter((x) => x.gap_class === 'MAJOR' || ['VERIFIED_MAJOR', 'INVESTIGATE', 'MARKET_FAULT'].indexOf(x.research_status) >= 0
@@ -148,15 +152,17 @@ function slateAudit(board, games, named, now) {
     const checks = I && I.checks ? I.checks : [];
     const reqs = x.gap_class === 'MAJOR' ? REQUIRED.map((q) => auditRequirement(q, checks)) : null;
     const allPass = reqs ? reqs.every((q) => q.result === 'PASS') : null;
+    const rs = o && o.research_status, held = x.research_status !== 'VERIFIED_MAJOR' && rs && POST_GATE[rs.rule] ? POST_GATE[rs.rule] : null;
     return { game_id: x.game_id, game: x.away + ' @ ' + x.home, kickoff: x.kickoff, named: named.some((n) => x.away === n[0] && x.home === n[1]),
       edgedesk: x.fair, market: x.market, books: x.books, gap: x.gap, gap_class: x.gap_class, favorite_flip: !!x.favorite_flip,
       research_status: x.research_status, research_label: x.research_label, decision_status: x.decision_status,
       gate_status: I ? I.status : (x.gap_class === 'MAJOR' ? 'NOT RUN' : 'NOT REQUIRED (under 7 pts)'), root_cause: I ? I.root_cause : null,
       requirements: reqs,
-      consistent: x.gap_class === 'MAJOR' ? ((x.research_status === 'VERIFIED_MAJOR') === !!allPass) : true,
+      consistent: x.gap_class === 'MAJOR' ? ((x.research_status === 'VERIFIED_MAJOR') === !!allPass || (!!allPass && !!held)) : true,
       verdict: x.gap_class !== 'MAJOR' ? 'Under 7 pts: no integrity gate required; research status ' + x.research_label + '.'
         : (x.research_status === 'VERIFIED_MAJOR' ? (allPass ? 'VERIFIED holds: every required check passed.' : 'DOWNGRADE REQUIRED: a required check did not pass.')
-          : (allPass ? 'Every required check passed but the status is ' + x.research_label + ' — investigate the status logic.' : x.research_label + ' is correct: ' + reqs.filter((q) => q.result !== 'PASS').map((q) => q.requirement + ' ' + q.result.toLowerCase()).join('; ') + '.')) };
+          : (allPass ? (held ? 'Every required check passed; ' + x.research_label + ' is held by ' + held + ', which the status logic applies after the gate: ' + rs.reason
+            : 'Every required check passed but the status is ' + x.research_label + ' — investigate the status logic.') : x.research_label + ' is correct: ' + reqs.filter((q) => q.result !== 'PASS').map((q) => q.requirement + ' ' + q.result.toLowerCase()).join('; ') + '.')) };
   });
   return { schema: 'edgedesk_cfb_slate_audit_v1', generated_at: now, board_generated_at: board ? board.generated_at : null,
     source: 'football/cfb_terminal/{board,games}.json — the canonical research objects every page reads',

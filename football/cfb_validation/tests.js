@@ -171,6 +171,17 @@ eq('before the patch the release is in force', V.versionAt(fake.concat(d), '2026
 const n = V.next100({ plan_id: 'x', metrics: [{ id: 'margin_mae', better_if: 'lower' }], baselines: { margin_mae: { value: 12.9 } } }, VW);
 chk('no comparison is printed before 100 games', n.ready === false && n.comparison === null && /Building/.test(n.note));
 
+/* 10. the slate audit: a status held after the gate is not a contradiction */
+const B = require(path.join(HERE, 'build.js'));
+const allChecks = B.REQUIRED.map((q) => { const k = (q.prefix || q.checks[0]).replace(/\.$/, '.bounds').split('.'); return { group: k[0], id: k[1], status: 'PASS', detail: 'ok' }; });
+const sa = (status, rule) => B.slateAudit({ rows: [{ game_id: 'g1', away: 'A', home: 'H', gap: 8, gap_class: 'MAJOR', research_status: status, research_label: status }] },
+  { games: { g1: { research_status: { key: status, rule: rule, reason: 'why' }, disagreement: { integrity: { status: 'VERIFIED_MAJOR_DISAGREEMENT', checks: allChecks } } } } }, [], 'now');
+eq('every required check passes on the synthetic game', sa('VERIFIED_MAJOR', 'verified').games[0].requirements.every((q) => q.result === 'PASS'), true);
+eq('all checks pass and VERIFIED MAJOR: consistent', sa('VERIFIED_MAJOR', 'verified').inconsistent.length, 0);
+eq('all checks pass, held by the implausible-EV guard: consistent', sa('INVESTIGATE', 'implausible_ev').inconsistent.length, 0);
+eq('all checks pass, held by a regime change: consistent', sa('INVESTIGATE', 'regime_change').inconsistent.length, 0);
+eq('all checks pass, INVESTIGATE for no post-gate reason: a contradiction', sa('INVESTIGATE', 'unverified').inconsistent.length, 1);
+
 /* ------------------------------------------------ the committed artifacts */
 const S = F.load();
 chk('the champion freeze exists', !!S.champion && !!S.champion.effective_at && !!S.champion.fingerprints.PRICING);
