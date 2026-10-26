@@ -117,11 +117,12 @@ const PROVIDERS = [
     use: 'the market test (hockey/model/market_test.js) — the only proof of betting value; until it exists no NHL price is called value',
   },
   {
-    id: 'confirmed_starters', name: 'Confirmed starting goalies (e.g. team announcements, Daily Faceoff)', url: 'hockey/data/confirmed_starters.json',
-    access: 'manual entry with source and time (schema in docs/engine/DATA.md)', datasets: ['the announced starter and when'], coverage: 'manual only',
-    terms: { summary: 'team announcements are public; aggregator sites have their own terms — no automated feed is wired', verified: false, url: null, owner_action: 'choose a licensed starter feed, or keep manual entries' },
-    authorised_for: ['manual entry'], cost: 'free (manual)', wired: true,
-    use: 'replaces the projected starter; diagnostics show projections are right ~66% of the time',
+    id: 'confirmed_starters', name: 'Starting goalies: Daily Faceoff, the NHL game boxscore, and manual entries', url: 'supabase/functions/nhl_goalie_sync (public.nhl_goalie_starters); hockey/data/confirmed_starters.json',
+    access: 'the nhl_goalie_sync edge function reads Daily Faceoff\'s starting-goalies page (Confirmed / Likely / Unconfirmed) and the NHL\'s gamecenter boxscore (the starter flag once lineups post) every two hours from 8 AM ET, every 15 minutes in the last three hours and at T-30; manual entries with source and time (schema in docs/engine/DATA.md) ride in hockey/goalie_inputs.json',
+    datasets: ['who starts, the source\'s status and its update time, per game and team, append-only'], coverage: 'every game in the 30 hours ahead, from the day the layer is deployed (docs/engine/NHL_GOALIES.md)',
+    terms: { summary: 'team announcements and the NHL\'s boxscore are public; Daily Faceoff is a third-party aggregator with its own terms of use, which the owner must review before NHL output is sold', verified: false, url: null, owner_action: 'review Daily Faceoff\'s terms (or license a starter feed) before paid use' },
+    authorised_for: ['research display', 'manual entry'], cost: 'free', wired: true,
+    use: 'the card\'s starter, its status badge and the goalie pairing range; replaces the usage projection (right ~66% of the time) when a source names a starter; never moves the production price (xg_core carries no goalie term)',
   },
   {
     id: 'sportradar', name: 'Sportradar (the NHL\'s official data distributor)', url: 'https://sportradar.com',

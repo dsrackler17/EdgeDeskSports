@@ -16,6 +16,7 @@
 |---|---|---|---|
 | Play-by-play | sportsdataverse `fastRhockey-nhl-data` (compiled from the NHL's api-web game feeds) | 2010-11 → 2026-27 in progress, regular season + playoffs, 20,676 games | `.cache/nhl_src` (not committed) |
 | Starters | the same, goalie box score `starter` flag | as above | — |
+| Tonight's starters (since 2026-10-25) | Daily Faceoff and the NHL game boxscore, read by `supabase/functions/nhl_goalie_sync` close to puck drop (`docs/engine/NHL_GOALIES.md`) | the games of the next 30 hours, from deployment | `public.nhl_goalie_starters`, `public.nhl_game_cards`; inputs `hockey/goalie_inputs.json` |
 | Schedule | sportsdataverse `fastRhockey-nhl-raw` season schedule; the NHL API `/v1/schedule/{date}` in CI | every scheduled game with UTC start | `hockey/sources/nhl_api.js` |
 | Team-game table | built here (schema `edgedesk_nhl_team_games_v2`) | 41,352 rows, 2 per game | `hockey/data/team_games/<season>/<YYYY-MM>.csv`, `hockey/data/manifest.json` |
 | Lineups | sportsdataverse skater box scores: who dressed, time on ice | every scored game since 2013-14 (17,236 of 17,236) | `.cache/nhl_work/lineups_<season>.json.gz` (`hockey/ingest/lineups.js`) |
@@ -370,7 +371,12 @@ Tests: `node tools/hockey/nhl_graphic.test.js`, `tools/engine/engine_ui.e2e.js`.
   nothing out of sample.
 - Retrospective data: `known_at` is unknown for every historical row; the
   walk-forward assumes a game is known four hours after its start.
-- Starters are projected unless confirmed by hand with a source.
+- Starters on the slate are projected unless confirmed by hand with a source.
+  Since 2026-10-25 the starter sync records each starter as Observed (Daily
+  Faceoff, the NHL boxscore) with its status. It versions the game card when a
+  starter changes, and gates any edge until both are Confirmed or it holds
+  under every pairing (`NHL_GOALIES.md`). The production price carries no
+  goalie term, so a starter moves only the goalie-aware pairing numbers.
 - Neutral-site games (the Global Series: four in 2024-25, flagged by ESPN) are
   priced with home ice: my feed carries no neutral flag.
 - Referees are not modelled: one season of assignments, no assignment times,

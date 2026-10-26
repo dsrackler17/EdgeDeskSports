@@ -1,0 +1,65 @@
+{
+  "schema": "edgedesk_research_registration_v1",
+  "model_key": "NHL-GOALIE-V2",
+  "name": "NHL goalie rating v2: shrunk current-season GSAx blended with prior seasons",
+  "version": "0.1",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3",
+  "provenance_label": "EdgeDesk research",
+  "sport": "NHL",
+  "registered_at": "2026-10-25",
+  "hypothesis": "A goalie rating that shrinks his current-season goals saved above expected toward his own prior-seasons rating (itself shrunk toward replacement level) predicts the goalie-aware variant's moneyline and goals better than the v1 rating, which is one exponentially decayed career accumulation (200-day half-life) shrunk toward replacement level by 250 xG faced, so that early in a season the current season barely moves it.",
+  "objective": "Lower the out-of-sample moneyline log loss of the goalie-aware variant (xg_goalie_confirmed, confirmed starters) by replacing the v1 goalie rating with the v2 rating, without worse calibration or worse totals, before it may drive any goalie pairing on a live card.",
+  "primary_metric": "Paired difference in moneyline log loss (v2 minus v1) of the goalie-aware variant with the actual starters, held-out games.",
+  "unit": "One NHL game. Historical windows: every scored game of the walk-forward (hockey/model/walkforward.js protocol: predicted 30 minutes before the start from games on earlier dates only). Live holdout: a 2026-27 regular-season game whose two starters were Confirmed by T-30 in public.nhl_goalie_starters (source consensus), priced by both ratings from the same inputs.",
+  "baseline": "The v1 goalie rating as served (hockey/model/ratings.js goalieRating; hockey/model/params/live.json ratings: goalie_half_life_days 200, goalie_prior_xg 250, goalie_prior_rate -0.03) inside the same goalie-aware variant. Unchanged; the production price (xg_core) carries no goalie term and is not part of this test.",
+  "training_window": "The goalie-aware GLM is refitted per season on the five seasons before it, exactly as the walk-forward fits v1 (hockey/model/walkforward.js rule 2), with the v2 rating in the goalie_conf feature. The v2 constants below are fixed in advance and are not fitted.",
+  "validation_window": "The walk-forward CONFIRMATION window, 2020-21 through 2025-26 (seasons 2021-2026), scored once. The SELECTION window (2013-14 through 2019-20) is reported but decides nothing.",
+  "holdout_window": "2026-27 regular-season games starting from 2026-10-26 (Eastern) through the end of the regular season, evaluated once after the last regular-season game. Games through 2026-10-25 are excluded: the Minnesota at Vancouver game of 2026-10-25 (Lankinen projected, Merilainen started) was examined at registration.",
+  "machine": {
+    "window_dates": { "training": null, "validation": ["2020-10-01", "2026-07-01"], "holdout": ["2026-10-26", "2027-04-17"] },
+    "window_note": "[from, to): Eastern dates of the games inside each window",
+    "minimum_sample": 500,
+    "version": "0.1",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+  },
+  "minimum_sample": {
+    "validation_games": 6000,
+    "holdout_games_confirmed_by_t30": 500,
+    "note": "Below either sample the window is reported descriptively and no result row is written. The holdout counts only games with both starters Confirmed by T-30 in the starter sync (the readiness view's KPI); games the sync did not confirm are listed, not imputed."
+  },
+  "promotion_criteria": {
+    "decision_rule": "passed = true only if every criterion below holds. A criterion that cannot be evaluated (too few games, a missing window) is not met. Validation is scored once, the holdout once, after the regular season; no interim look decides anything. Passing makes v2 eligible; a person promotes it through a validation report, and until then nhl_goalie_config.live_goalie_variant stays xg_goalie_confirmed with the v1 rating and the card trigger refuses any other.",
+    "criteria": [
+      { "id": "C1_VALIDATION_LOG_LOSS", "rule": "Confirmation window: mean paired moneyline log loss difference (v2 - v1) <= -0.0005, and the 95% upper bound of the date-blocked bootstrap (2000 resamples, seed 20261025) is below 0." },
+      { "id": "C2_HOLDOUT_LOG_LOSS", "rule": "Live holdout (games Confirmed by T-30): mean paired difference (v2 - v1) <= 0. Reported with its interval; no significance is required of the live season alone." },
+      { "id": "C3_CALIBRATION", "rule": "On both windows the v2 variant's moneyline calibration slope is in [0.85, 1.15] and |mean p - mean y| <= 0.02 (the walk-forward's OUTCOME_VALIDATED rules)." },
+      { "id": "C4_TOTALS_GUARD", "rule": "Confirmation window: the Poisson deviance of regulation goals (both teams) is not worse than v1's by more than 0.1% of v1's deviance." },
+      { "id": "C5_LEAKAGE", "rule": "Zero leakage violations in the walk-forward audit (engine/validation.js): every current-season and prior-season quantity comes from games before the predicted game's date." }
+    ],
+    "family_correction": "C1 and C2 are both required (an intersection test); no criterion is reported as a pass on its own."
+  },
+  "forking_paths": {
+    "candidates_tried": [
+      { "version": "0.1", "current_season_shrink_xg": 100, "prior_season_weights": [1.0, 0.6, 0.3], "prior_shrink_xg": 150, "replacement_rate": -0.03, "evaluated_against_outcomes": false }
+    ],
+    "alternatives_considered_not_tried": [
+      "Current-season GSAx alone, shrunk toward replacement level (discards everything known about the goalie before October).",
+      "Other prior-season weights (1/0.5/0.25, or equal weights) and other shrinkage weights (50 or 200 xG).",
+      "A hierarchical model with goalie random effects by season.",
+      "Save percentage or high-danger save percentage instead of goals saved above expected (ignores shot quality).",
+      "Re-tuning v1's half-life or prior on recent seasons (that is a v1 change, out of scope)."
+    ],
+    "choice_and_reason": "One candidate, written before any evaluation: the current season is shrunk toward the goalie's own track record rather than toward replacement level, which is the gap the 2026-10-25 case exposed (a goalie with a poor start keeps most of his v1 rating); the weights and shrinkage are round values of the same order as v1's own (250 xG), not fitted.",
+    "data_already_seen": "At registration the only outcome examined was the 2026-10-25 Minnesota at Vancouver game: EdgeDesk's usage projection named Kevin Lankinen (v1 rating -0.0765 goals per xG faced; reported this season .786 save percentage and -10.7 GSAx in 6 games) and Leevi Merilainen started. No backtest of v2 has been run."
+  },
+  "spec": {
+    "rating": "v2(i, D) = ((xGA_cs - GA_cs) + prior(i, D) * K_cs) / (xGA_cs + K_cs), where xGA_cs and GA_cs are the goalie's expected goals and goals against faced in the current season before date D (all situations, the same xG and attribution the v1 rating reads: team_games g1/g2 xga and ga), and K_cs = 100 xG.",
+    "prior": "prior(i, D) = (sum_s w_s (xGA_s - GA_s) + r0 * K0) / (sum_s w_s xGA_s + K0) over the three seasons before the current one (s = S-1, S-2, S-3), w = (1.0, 0.6, 0.3), K0 = 150 xG, r0 = -0.03 (replacement level, the v1 prior rate). A goalie with no NHL history has prior = r0.",
+    "feature": "goalie_conf in hockey/model/glm.js, unchanged: the opposing starter's rating, v2 in place of v1. The production candidate xg_core, the GLM features, the pair calibration rule and the distribution are untouched.",
+    "where_it_may_run": "Research only: a walk-forward variant beside v1 (to be written as hockey/research/goalie_v2/evaluate.js, which writes the validation report and no registry result). It may not price a live card: supabase/nhl_goalie_layer.sql refuses a card whose goalie_variant is not nhl_goalie_config.live_goalie_variant.",
+    "inputs": "hockey/data/team_games/<season>/*.csv (goalie xGA and GA per game), the same files v1 reads."
+  },
+  "result": null
+}
