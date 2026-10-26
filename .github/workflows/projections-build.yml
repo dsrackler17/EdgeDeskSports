@@ -30,12 +30,14 @@ jobs:
         with:
           node-version: '22'
       - name: The rules must pass before anything is written
-        run: node tools/intelligence/multisport.test.js
+        run: node tools/intelligence/multisport.test.js && node tools/model_integrity/model_integrity.test.js
       - name: Freeze every operational engine's projections (no price is read)
         run: node engine/build_projections.js
+      - name: Audit every projection against its inputs and the market captured before it (engine/model_integrity.json)
+        run: node tools/model_integrity/build.js
       - name: Commit (tools/ci/push_generated.sh)
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "projections: independent projections frozen before any price" -- \
-            engine/projections.json engine/projections_ledger
+            engine/projections.json engine/projections_ledger engine/model_integrity.json

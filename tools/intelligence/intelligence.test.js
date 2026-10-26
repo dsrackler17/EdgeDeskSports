@@ -1446,6 +1446,39 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   }
 
   /* =====================================================================
+     23b. A TWO-WAY FAIR PROBABILITY IS A NO-PUSH NUMBER.
+     A de-vig makes the two sides sum to 1, so fair_probability is
+     P(win | no push). decide() once used it as the unconditional P(win)
+     beside a separate push mass, so every whole-number line read richer
+     than it was: 0.5 at 1.909 with a 6% push read +1.45% instead of -4.27%.
+     ===================================================================== */
+  {
+    I.registerDistribution('pushtest|margin_resid', { pmf: { '-1': 0.47, '0': 0.06, '1': 0.47 }, window: 'fixture', basis: 'a fixture pmf with a 6% mass on the number' });
+    const whole = I.decide({
+      market: 'spreads', selection: 'North Texas', game_status: 'scheduled',
+      evidence: [{ field: 'quote' }, { field: 'fair' }],
+      quote: { market: 'spreads', dec: 1.909, handicap: -3, captured_at: new Date().toISOString(), book: 'DraftKings' },
+      fair: { fair_probability: 0.5, method: 'SHARP_REFERENCE_DEVIG', sharp: true, label: 'Pinnacle de-vig fair' },
+      model: { market: 'spreads', line: 3 }, push_distribution_key: 'pushtest|margin_resid',
+      confirmation: { independent_families: 3, sharp_confirmed: true },
+    });
+    near('the push mass is read at the whole number', whole.price.push_probability, 0.06, 1e-9);
+    near('expected return: win 0.5 x 0.94, lose 0.5 x 0.94, push refunded', whole.price.market_ev, 0.47 * 0.909 - 0.47, 1e-4);
+    near('the unconditional win probability is stated beside the no-push fair one', whole.price.win_probability, 0.47, 1e-4);
+    near('the probability edge compares like with like: 0.47 against the push-aware break-even 0.94 / 1.909', whole.price.probability_edge_pp, 0.47 - 0.94 / 1.909, 1e-4);
+    chk('so a coin flip at -110 on a whole number is never a candidate', whole.decision !== 'BET CANDIDATE' && whole.price.market_ev < 0, [whole.decision, whole.price.market_ev]);
+    const half = I.decide({
+      market: 'spreads', selection: 'North Texas', game_status: 'scheduled',
+      evidence: [{ field: 'quote' }, { field: 'fair' }],
+      quote: { market: 'spreads', dec: 1.95, handicap: -3.5, captured_at: new Date().toISOString(), book: 'DraftKings' },
+      fair: { fair_probability: 0.532, method: 'SHARP_REFERENCE_DEVIG', sharp: true, label: 'Pinnacle de-vig fair' },
+      model: { market: 'spreads', line: 3.5 }, push_distribution_key: 'pushtest|margin_resid',
+      confirmation: { independent_families: 3, sharp_confirmed: true },
+    });
+    near('a half-point line is unchanged: no push, the fair probability is the win probability', half.price.market_ev, 0.532 * 0.95 - 0.468, 1e-4);
+  }
+
+  /* =====================================================================
      24. A RETROSPECTIVE RATING IS NOT HISTORICAL EVIDENCE.
      ===================================================================== */
   {

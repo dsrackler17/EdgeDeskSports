@@ -1,0 +1,1702 @@
+{
+ "schema": "edgedesk_model_calibration_audit_v1",
+ "generated_from": "tools/model_integrity/calibration_report.js",
+ "note": "Read-only over the committed records; see the file header for every axis. Nothing is fitted on a season it is scored on.",
+ "cfb": {
+  "oos_2022_2025": {
+   "source": "football/cfb_ev/data/cfb_ev_calibration_rows_v1 (OOS, FBS vs FBS; edgedesk_cfb_p4_v1.0.0 cold Tuesday freeze, market never an input)",
+   "spread": {
+    "n": 3120,
+    "mae": 12.722,
+    "rmse": 16.04,
+    "signed_bias_actual_minus_projected": -1.198,
+    "bias_se": 0.286,
+    "close": {
+     "n": 3120,
+     "mae": 11.998,
+     "rmse": 15.202,
+     "signed_bias_actual_minus_projected": 0.221,
+     "bias_se": 0.272
+    },
+    "open": {
+     "n": 3112,
+     "mae": 12.118,
+     "rmse": 15.318,
+     "signed_bias_actual_minus_projected": 0.176,
+     "bias_se": 0.275
+    }
+   },
+   "by_favourite_size": [
+    {
+     "bucket": "0-3",
+     "n": 548,
+     "projected_mean": 1.58,
+     "actual_mean": 1.79,
+     "realized_over_projected": 1.136,
+     "bias_actual_minus_projected": 0.21,
+     "bias_se": 0.67,
+     "model_mae": 12.36,
+     "close_mae": 11.74,
+     "market_close_mean": 1.62,
+     "favourite_won": 0.5456,
+     "favourite_won_wilson95": [
+      0.5038,
+      0.5868
+     ],
+     "mean_predicted_win": 0.5422,
+     "favourite_covered_close": {
+      "k": 276,
+      "n": 536,
+      "rate": 0.5149,
+      "wilson95": [
+       0.4727,
+       0.557
+      ]
+     }
+    },
+    {
+     "bucket": ">3-7",
+     "n": 685,
+     "projected_mean": 4.97,
+     "actual_mean": 4.52,
+     "realized_over_projected": 0.909,
+     "bias_actual_minus_projected": -0.45,
+     "bias_se": 0.62,
+     "model_mae": 12.65,
+     "close_mae": 12.19,
+     "market_close_mean": 4.18,
+     "favourite_won": 0.6029,
+     "favourite_won_wilson95": [
+      0.5658,
+      0.6389
+     ],
+     "mean_predicted_win": 0.6311,
+     "favourite_covered_close": {
+      "k": 335,
+      "n": 667,
+      "rate": 0.5022,
+      "wilson95": [
+       0.4644,
+       0.5401
+      ]
+     }
+    },
+    {
+     "bucket": ">7-10",
+     "n": 471,
+     "projected_mean": 8.43,
+     "actual_mean": 6.81,
+     "realized_over_projected": 0.808,
+     "bias_actual_minus_projected": -1.62,
+     "bias_se": 0.76,
+     "model_mae": 12.93,
+     "close_mae": 11.98,
+     "market_close_mean": 7.04,
+     "favourite_won": 0.6794,
+     "favourite_won_wilson95": [
+      0.636,
+      0.72
+     ],
+     "mean_predicted_win": 0.7149,
+     "favourite_covered_close": {
+      "k": 217,
+      "n": 465,
+      "rate": 0.4667,
+      "wilson95": [
+       0.4218,
+       0.5121
+      ]
+     }
+    },
+    {
+     "bucket": ">10-14",
+     "n": 455,
+     "projected_mean": 11.89,
+     "actual_mean": 10.38,
+     "realized_over_projected": 0.873,
+     "bias_actual_minus_projected": -1.51,
+     "bias_se": 0.72,
+     "model_mae": 12.52,
+     "close_mae": 11.87,
+     "market_close_mean": 10.1,
+     "favourite_won": 0.7626,
+     "favourite_won_wilson95": [
+      0.7214,
+      0.7994
+     ],
+     "mean_predicted_win": 0.7881,
+     "favourite_covered_close": {
+      "k": 226,
+      "n": 448,
+      "rate": 0.5045,
+      "wilson95": [
+       0.4583,
+       0.5505
+      ]
+     }
+    },
+    {
+     "bucket": ">14-21",
+     "n": 526,
+     "projected_mean": 17.14,
+     "actual_mean": 14.79,
+     "realized_over_projected": 0.863,
+     "bias_actual_minus_projected": -2.35,
+     "bias_se": 0.68,
+     "model_mae": 12.83,
+     "close_mae": 12.07,
+     "market_close_mean": 15.61,
+     "favourite_won": 0.8308,
+     "favourite_won_wilson95": [
+      0.7964,
+      0.8604
+     ],
+     "mean_predicted_win": 0.8731,
+     "favourite_covered_close": {
+      "k": 247,
+      "n": 517,
+      "rate": 0.4778,
+      "wilson95": [
+       0.435,
+       0.5208
+      ]
+     }
+    },
+    {
+     "bucket": "21+",
+     "n": 435,
+     "projected_mean": 28.07,
+     "actual_mean": 26.14,
+     "realized_over_projected": 0.931,
+     "bias_actual_minus_projected": -1.93,
+     "bias_se": 0.79,
+     "model_mae": 13.15,
+     "close_mae": 12.08,
+     "market_close_mean": 26,
+     "favourite_won": 0.9356,
+     "favourite_won_wilson95": [
+      0.9085,
+      0.9551
+     ],
+     "mean_predicted_win": 0.9615,
+     "favourite_covered_close": {
+      "k": 204,
+      "n": 425,
+      "rate": 0.48,
+      "wilson95": [
+       0.4329,
+       0.5275
+      ]
+     }
+    }
+   ],
+   "by_season": [
+    {
+     "season": 2022,
+     "n": 732,
+     "mae": 12.72,
+     "rmse": 16.157,
+     "signed_bias_actual_minus_projected": -2.165,
+     "bias_se": 0.592,
+     "margin_regression": {
+      "a": -1.5989,
+      "b": 0.9075,
+      "se_b": 0.0444,
+      "n": 732
+     }
+    },
+    {
+     "season": 2023,
+     "n": 786,
+     "mae": 13.054,
+     "rmse": 16.328,
+     "signed_bias_actual_minus_projected": -1.516,
+     "bias_se": 0.58,
+     "margin_regression": {
+      "a": -1.0376,
+      "b": 0.9112,
+      "se_b": 0.044,
+      "n": 786
+     }
+    },
+    {
+     "season": 2024,
+     "n": 795,
+     "mae": 12.895,
+     "rmse": 16.138,
+     "signed_bias_actual_minus_projected": -0.809,
+     "bias_se": 0.572,
+     "margin_regression": {
+      "a": -0.4575,
+      "b": 0.9367,
+      "se_b": 0.0446,
+      "n": 795
+     }
+    },
+    {
+     "season": 2025,
+     "n": 807,
+     "mae": 12.231,
+     "rmse": 15.547,
+     "signed_bias_actual_minus_projected": -0.394,
+     "bias_se": 0.547,
+     "margin_regression": {
+      "a": -0.2724,
+      "b": 0.9776,
+      "se_b": 0.042,
+      "n": 807
+     }
+    }
+   ],
+   "home_away": {
+    "favourite_at_home": {
+     "n": 1930,
+     "mae": 12.669,
+     "rmse": 15.95,
+     "signed_bias_actual_minus_projected": -1.891,
+     "bias_se": 0.361
+    },
+    "favourite_away": {
+     "n": 973,
+     "mae": 12.793,
+     "rmse": 16.145,
+     "signed_bias_actual_minus_projected": -0.221,
+     "bias_se": 0.518
+    },
+    "neutral": {
+     "n": 217,
+     "mae": 12.879,
+     "rmse": 16.367,
+     "signed_bias_actual_minus_projected": 0.58,
+     "bias_se": 1.113
+    }
+   },
+   "margin_regression": {
+    "a": -0.821,
+    "b": 0.9328,
+    "se_b": 0.0219,
+    "n": 3120,
+    "axes": "y = actual home margin, x = projected home margin; slope < 1 means projections too far from zero"
+   },
+   "win_probability": {
+    "n": 3120,
+    "brier": 0.1878,
+    "log_loss": 0.5534,
+    "mean_p": 0.6075,
+    "mean_y": 0.5846,
+    "recalibration": {
+     "n": 3120,
+     "intercept": -0.079,
+     "slope": 0.854,
+     "axes": "y = outcome (0/1), x = logit(model probability); slope > 1 means compressed toward 0.5",
+     "slope_ci95": [
+      0.782,
+      0.922
+     ],
+     "bootstrap": "400 resamples, seed 20261026"
+    },
+    "reliability": {
+     "bins": [
+      {
+       "bin": "50-55%",
+       "n": 307,
+       "predicted": 0.5249,
+       "observed": 0.5375,
+       "wilson95": [
+        0.4816,
+        0.5924
+       ],
+       "inside": true
+      },
+      {
+       "bin": "55-60%",
+       "n": 374,
+       "predicted": 0.5735,
+       "observed": 0.5668,
+       "wilson95": [
+        0.5162,
+        0.6161
+       ],
+       "inside": true
+      },
+      {
+       "bin": "60-65%",
+       "n": 324,
+       "predicted": 0.6239,
+       "observed": 0.5864,
+       "wilson95": [
+        0.5321,
+        0.6387
+       ],
+       "inside": true
+      },
+      {
+       "bin": "65-70%",
+       "n": 370,
+       "predicted": 0.6749,
+       "observed": 0.6108,
+       "wilson95": [
+        0.5602,
+        0.6591
+       ],
+       "inside": false
+      },
+      {
+       "bin": "70-75%",
+       "n": 327,
+       "predicted": 0.7251,
+       "observed": 0.7217,
+       "wilson95": [
+        0.6708,
+        0.7675
+       ],
+       "inside": true
+      },
+      {
+       "bin": "75-80%",
+       "n": 294,
+       "predicted": 0.7744,
+       "observed": 0.7585,
+       "wilson95": [
+        0.7064,
+        0.8039
+       ],
+       "inside": true
+      },
+      {
+       "bin": "80-85%",
+       "n": 299,
+       "predicted": 0.8241,
+       "observed": 0.786,
+       "wilson95": [
+        0.736,
+        0.8287
+       ],
+       "inside": true
+      },
+      {
+       "bin": "85-90%",
+       "n": 271,
+       "predicted": 0.8743,
+       "observed": 0.8155,
+       "wilson95": [
+        0.765,
+        0.8572
+       ],
+       "inside": false
+      },
+      {
+       "bin": "90-95%",
+       "n": 270,
+       "predicted": 0.9247,
+       "observed": 0.9037,
+       "wilson95": [
+        0.8626,
+        0.9334
+       ],
+       "inside": true
+      },
+      {
+       "bin": "95-100%",
+       "n": 284,
+       "predicted": 0.9752,
+       "observed": 0.9507,
+       "wilson95": [
+        0.919,
+        0.9704
+       ],
+       "inside": false
+      }
+     ],
+     "ece": 0.0282,
+     "ece_basis": "10 equal-width bins of the favourite's probability (50-100%), |predicted - observed| weighted by count"
+    },
+    "favourites": {
+     "n": 3120,
+     "brier": 0.1878,
+     "log_loss": 0.5534,
+     "mean_p": 0.7379,
+     "mean_y": 0.7122
+    },
+    "underdogs": {
+     "n": 3120,
+     "brier": 0.1878,
+     "log_loss": 0.5534,
+     "mean_p": 0.2621,
+     "mean_y": 0.2878
+    }
+   },
+   "market": {
+    "n": 3112,
+    "close_moved_toward_model": {
+     "k": 1436,
+     "n": 2649,
+     "rate": 0.5421,
+     "wilson95": [
+      0.5231,
+      0.561
+     ],
+     "basis": "games where the model differed from the opener and the line moved"
+    },
+    "movement_on_disagreement": {
+     "a": -0.1832,
+     "b": 0.0765,
+     "se_b": 0.0078,
+     "n": 3112,
+     "axes": "y = close - open (home margin), x = model - open"
+    },
+    "result_on_disagreement": {
+     "a": 0.103,
+     "b": 0.0548,
+     "se_b": 0.0568,
+     "n": 3112,
+     "axes": "y = actual - open, x = model - open; slope near 0 means the disagreement carried no information past the opener"
+    },
+    "clv_model_side_points": 0.249
+   },
+   "rolling_origin": [
+    {
+     "test_season": 2023,
+     "train_seasons": [
+      2022
+     ],
+     "n_test": 786,
+     "margin": {
+      "fitted": {
+       "a": -1.5989,
+       "b": 0.9075
+      },
+      "mae_published": 13.054,
+      "mae_shrunk": 12.98,
+      "delta": -0.074
+     },
+     "win_probability": {
+      "fitted": {
+       "a": -0.108,
+       "b": 0.764
+      },
+      "published": {
+       "n": 786,
+       "brier": 0.1851,
+       "log_loss": 0.5526,
+       "mean_p": 0.6047,
+       "mean_y": 0.5789
+      },
+      "recalibrated": {
+       "n": 786,
+       "brier": 0.1849,
+       "log_loss": 0.5493,
+       "mean_p": 0.5699,
+       "mean_y": 0.5789
+      }
+     }
+    },
+    {
+     "test_season": 2024,
+     "train_seasons": [
+      2022,
+      2023
+     ],
+     "n_test": 795,
+     "margin": {
+      "fitted": {
+       "a": -1.3053,
+       "b": 0.9088
+      },
+      "mae_published": 12.895,
+      "mae_shrunk": 12.855,
+      "delta": -0.04
+     },
+     "win_probability": {
+      "fitted": {
+       "a": -0.102,
+       "b": 0.807
+      },
+      "published": {
+       "n": 795,
+       "brier": 0.192,
+       "log_loss": 0.5601,
+       "mean_p": 0.6052,
+       "mean_y": 0.5824
+      },
+      "recalibrated": {
+       "n": 795,
+       "brier": 0.1903,
+       "log_loss": 0.5566,
+       "mean_p": 0.5749,
+       "mean_y": 0.5824
+      }
+     }
+    },
+    {
+     "test_season": 2025,
+     "train_seasons": [
+      2022,
+      2023,
+      2024
+     ],
+     "n_test": 807,
+     "margin": {
+      "fitted": {
+       "a": -1.0114,
+       "b": 0.9177
+      },
+      "mae_published": 12.231,
+      "mae_shrunk": 12.227,
+      "delta": -0.004
+     },
+     "win_probability": {
+      "fitted": {
+       "a": -0.093,
+       "b": 0.82
+      },
+      "published": {
+       "n": 807,
+       "brier": 0.1793,
+       "log_loss": 0.5288,
+       "mean_p": 0.6029,
+       "mean_y": 0.5948
+      },
+      "recalibrated": {
+       "n": 807,
+       "brier": 0.1799,
+       "log_loss": 0.5318,
+       "mean_p": 0.5752,
+       "mean_y": 0.5948
+      }
+     }
+    }
+   ]
+  },
+  "live_2026": {
+   "source": "record/football/cfb_2026.json (the published pick, frozen before kickoff)",
+   "all": {
+    "n": 466,
+    "mae": 12.467,
+    "rmse": 15.694,
+    "signed_bias_actual_minus_projected": 0.861,
+    "bias_se": 0.727
+   },
+   "fbs_vs_fbs": {
+    "n": 393,
+    "mae": 11.896,
+    "rmse": 14.972,
+    "signed_bias_actual_minus_projected": -0.456,
+    "bias_se": 0.756,
+    "by_favourite_size": [
+     {
+      "bucket": "0-3",
+      "n": 69,
+      "projected_mean": 1.44,
+      "actual_mean": 1.51,
+      "realized_over_projected": 1.047,
+      "bias_actual_minus_projected": 0.07,
+      "bias_se": 1.73,
+      "model_mae": 10.62,
+      "close_mae": 9.91,
+      "market_close_mean": 1.04,
+      "favourite_won": 0.5797,
+      "favourite_won_wilson95": [
+       0.4621,
+       0.6889
+      ],
+      "mean_predicted_win": 0.5373,
+      "favourite_covered_close": {
+       "k": 37,
+       "n": 69,
+       "rate": 0.5362,
+       "wilson95": [
+        0.4198,
+        0.6489
+       ]
+      }
+     },
+     {
+      "bucket": ">3-7",
+      "n": 90,
+      "projected_mean": 5.13,
+      "actual_mean": 3.44,
+      "realized_over_projected": 0.671,
+      "bias_actual_minus_projected": -1.69,
+      "bias_se": 1.67,
+      "model_mae": 12.41,
+      "close_mae": 11.32,
+      "market_close_mean": 3.96,
+      "favourite_won": 0.5889,
+      "favourite_won_wilson95": [
+       0.4856,
+       0.6849
+      ],
+      "mean_predicted_win": 0.6338,
+      "favourite_covered_close": {
+       "k": 39,
+       "n": 87,
+       "rate": 0.4483,
+       "wilson95": [
+        0.3482,
+        0.5528
+       ]
+      }
+     },
+     {
+      "bucket": ">7-10",
+      "n": 65,
+      "projected_mean": 8.42,
+      "actual_mean": 5.69,
+      "realized_over_projected": 0.676,
+      "bias_actual_minus_projected": -2.73,
+      "bias_se": 1.75,
+      "model_mae": 11.85,
+      "close_mae": 10.97,
+      "market_close_mean": 6.88,
+      "favourite_won": 0.6462,
+      "favourite_won_wilson95": [
+       0.5247,
+       0.7512
+      ],
+      "mean_predicted_win": 0.7143,
+      "favourite_covered_close": {
+       "k": 26,
+       "n": 63,
+       "rate": 0.4127,
+       "wilson95": [
+        0.2996,
+        0.5358
+       ]
+      }
+     },
+     {
+      "bucket": ">10-14",
+      "n": 56,
+      "projected_mean": 12.1,
+      "actual_mean": 11.91,
+      "realized_over_projected": 0.984,
+      "bias_actual_minus_projected": -0.19,
+      "bias_se": 1.8,
+      "model_mae": 10.75,
+      "close_mae": 10.14,
+      "market_close_mean": 10.75,
+      "favourite_won": 0.7857,
+      "favourite_won_wilson95": [
+       0.6618,
+       0.8729
+      ],
+      "mean_predicted_win": 0.7923,
+      "favourite_covered_close": {
+       "k": 27,
+       "n": 56,
+       "rate": 0.4821,
+       "wilson95": [
+        0.3567,
+        0.6099
+       ]
+      }
+     },
+     {
+      "bucket": ">14-21",
+      "n": 69,
+      "projected_mean": 17.25,
+      "actual_mean": 18.75,
+      "realized_over_projected": 1.087,
+      "bias_actual_minus_projected": 1.51,
+      "bias_se": 1.86,
+      "model_mae": 12.51,
+      "close_mae": 11.53,
+      "market_close_mean": 15.54,
+      "favourite_won": 0.8696,
+      "favourite_won_wilson95": [
+       0.7703,
+       0.9298
+      ],
+      "mean_predicted_win": 0.8765,
+      "favourite_covered_close": {
+       "k": 37,
+       "n": 69,
+       "rate": 0.5362,
+       "wilson95": [
+        0.4198,
+        0.6489
+       ]
+      }
+     },
+     {
+      "bucket": "21+",
+      "n": 44,
+      "projected_mean": 30.39,
+      "actual_mean": 25.86,
+      "realized_over_projected": 0.851,
+      "bias_actual_minus_projected": -4.53,
+      "bias_se": 2.41,
+      "model_mae": 13.42,
+      "close_mae": 12.25,
+      "market_close_mean": 28.61,
+      "favourite_won": 0.9091,
+      "favourite_won_wilson95": [
+       0.7884,
+       0.9641
+      ],
+      "mean_predicted_win": 0.9675,
+      "favourite_covered_close": {
+       "k": 20,
+       "n": 44,
+       "rate": 0.4545,
+       "wilson95": [
+        0.3171,
+        0.5993
+       ]
+      }
+     }
+    ]
+   },
+   "fbs_vs_fcs": {
+    "n": 73,
+    "mae": 15.543,
+    "rmse": 19.116,
+    "signed_bias_actual_minus_projected": 7.952,
+    "bias_se": 2.049,
+    "by_favourite_size": [
+     {
+      "bucket": "0-3",
+      "n": 0
+     },
+     {
+      "bucket": ">3-7",
+      "n": 0
+     },
+     {
+      "bucket": ">7-10",
+      "n": 0
+     },
+     {
+      "bucket": ">10-14",
+      "n": 2,
+      "projected_mean": 12.89,
+      "actual_mean": 26.5,
+      "realized_over_projected": 2.056,
+      "bias_actual_minus_projected": 13.61,
+      "bias_se": 0.96,
+      "model_mae": 13.61,
+      "close_mae": 2.5,
+      "market_close_mean": 24,
+      "favourite_won": 1,
+      "favourite_won_wilson95": [
+       0.3424,
+       1
+      ],
+      "mean_predicted_win": 0.8157,
+      "favourite_covered_close": {
+       "k": 2,
+       "n": 2,
+       "rate": 1,
+       "wilson95": [
+        0.3424,
+        1
+       ]
+      }
+     },
+     {
+      "bucket": ">14-21",
+      "n": 13,
+      "projected_mean": 17.79,
+      "actual_mean": 22.08,
+      "realized_over_projected": 1.241,
+      "bias_actual_minus_projected": 4.29,
+      "bias_se": 5.36,
+      "model_mae": 16.15,
+      "close_mae": 13.35,
+      "market_close_mean": 21.12,
+      "favourite_won": 0.8462,
+      "favourite_won_wilson95": [
+       0.5776,
+       0.9567
+      ],
+      "mean_predicted_win": 0.8611,
+      "favourite_covered_close": {
+       "k": 6,
+       "n": 13,
+       "rate": 0.4615,
+       "wilson95": [
+        0.2321,
+        0.7086
+       ]
+      }
+     },
+     {
+      "bucket": "21+",
+      "n": 58,
+      "projected_mean": 31.04,
+      "actual_mean": 39.62,
+      "realized_over_projected": 1.276,
+      "bias_actual_minus_projected": 8.58,
+      "bias_se": 2.29,
+      "model_mae": 15.47,
+      "close_mae": 11.67,
+      "market_close_mean": 37.84,
+      "favourite_won": 0.9828,
+      "favourite_won_wilson95": [
+       0.9086,
+       0.997
+      ],
+      "mean_predicted_win": 0.9718,
+      "favourite_covered_close": {
+       "k": 32,
+       "n": 58,
+       "rate": 0.5517,
+       "wilson95": [
+        0.4245,
+        0.6725
+       ]
+      }
+     }
+    ]
+   },
+   "win_probability_fbs": {
+    "n": 344,
+    "brier": 0.1944,
+    "log_loss": 0.5716,
+    "mean_p": 0.6004,
+    "mean_y": 0.593,
+    "reliability": {
+     "bins": [
+      {
+       "bin": "50-55%",
+       "n": 36,
+       "predicted": 0.5217,
+       "observed": 0.5556,
+       "wilson95": [
+        0.3958,
+        0.7046
+       ],
+       "inside": true
+      },
+      {
+       "bin": "55-60%",
+       "n": 41,
+       "predicted": 0.5723,
+       "observed": 0.5854,
+       "wilson95": [
+        0.4337,
+        0.7224
+       ],
+       "inside": true
+      },
+      {
+       "bin": "60-65%",
+       "n": 33,
+       "predicted": 0.6252,
+       "observed": 0.6364,
+       "wilson95": [
+        0.4662,
+        0.7781
+       ],
+       "inside": true
+      },
+      {
+       "bin": "65-70%",
+       "n": 47,
+       "predicted": 0.6729,
+       "observed": 0.4894,
+       "wilson95": [
+        0.3528,
+        0.6276
+       ],
+       "inside": false
+      },
+      {
+       "bin": "70-75%",
+       "n": 44,
+       "predicted": 0.7219,
+       "observed": 0.7273,
+       "wilson95": [
+        0.5815,
+        0.8365
+       ],
+       "inside": true
+      },
+      {
+       "bin": "75-80%",
+       "n": 32,
+       "predicted": 0.7798,
+       "observed": 0.75,
+       "wilson95": [
+        0.5789,
+        0.8675
+       ],
+       "inside": true
+      },
+      {
+       "bin": "80-85%",
+       "n": 31,
+       "predicted": 0.8247,
+       "observed": 0.8387,
+       "wilson95": [
+        0.6737,
+        0.9291
+       ],
+       "inside": true
+      },
+      {
+       "bin": "85-90%",
+       "n": 33,
+       "predicted": 0.8764,
+       "observed": 0.9394,
+       "wilson95": [
+        0.8039,
+        0.9832
+       ],
+       "inside": true
+      },
+      {
+       "bin": "90-95%",
+       "n": 23,
+       "predicted": 0.916,
+       "observed": 0.7391,
+       "wilson95": [
+        0.5353,
+        0.8745
+       ],
+       "inside": false
+      },
+      {
+       "bin": "95-100%",
+       "n": 24,
+       "predicted": 0.9768,
+       "observed": 0.9583,
+       "wilson95": [
+        0.7976,
+        0.9926
+       ],
+       "inside": true
+      }
+     ],
+     "ece": 0.0551,
+     "ece_basis": "10 equal-width bins of the favourite's probability (50-100%), |predicted - observed| weighted by count"
+    },
+    "recalibration": {
+     "n": 344,
+     "intercept": 0.016,
+     "slope": 0.814,
+     "axes": "y = outcome (0/1), x = logit(model probability); slope > 1 means compressed toward 0.5",
+     "slope_ci95": [
+      0.617,
+      1.044
+     ],
+     "bootstrap": "400 resamples, seed 20261026"
+    }
+   },
+   "by_version": [
+    {
+     "version": "edgedesk_cfb_p4_v1.0.0",
+     "n": 410,
+     "mae": 12.599,
+     "rmse": 15.902,
+     "signed_bias_actual_minus_projected": 0.62,
+     "bias_se": 0.786
+    },
+    {
+     "version": "edgedesk_cfb_p4_v1.0.1",
+     "n": 56,
+     "mae": 11.5,
+     "rmse": 14.078,
+     "signed_bias_actual_minus_projected": 2.62,
+     "bias_se": 1.865
+    }
+   ]
+  }
+ },
+ "nba": {
+  "source": "performance/ledger (last forecast before the start)",
+  "graded": 43,
+  "moneyline": {
+   "n": 43,
+   "brier": 0.2191,
+   "log_loss": 0.6265,
+   "mean_p": 0.5392,
+   "mean_y": 0.4651,
+   "recalibration": {
+    "n": 43,
+    "intercept": -0.386,
+    "slope": 1.251,
+    "axes": "y = outcome (0/1), x = logit(model probability); slope > 1 means compressed toward 0.5",
+    "slope_ci95": [
+     0.421,
+     2.829
+    ],
+    "bootstrap": "400 resamples, seed 20261026"
+   },
+   "reliability": {
+    "bins": [
+     {
+      "bin": "50-55%",
+      "n": 13,
+      "predicted": 0.5312,
+      "observed": 0.6923,
+      "wilson95": [
+       0.4237,
+       0.8732
+      ],
+      "inside": true
+     },
+     {
+      "bin": "55-60%",
+      "n": 8,
+      "predicted": 0.5681,
+      "observed": 0.375,
+      "wilson95": [
+       0.1368,
+       0.6943
+      ],
+      "inside": true
+     },
+     {
+      "bin": "60-65%",
+      "n": 5,
+      "predicted": 0.6252,
+      "observed": 0.6,
+      "wilson95": [
+       0.2307,
+       0.8824
+      ],
+      "inside": true
+     },
+     {
+      "bin": "65-70%",
+      "n": 4,
+      "predicted": 0.6802,
+      "observed": 0.5,
+      "wilson95": [
+       0.15,
+       0.85
+      ],
+      "inside": true
+     },
+     {
+      "bin": "70-75%",
+      "n": 4,
+      "predicted": 0.7193,
+      "observed": 1,
+      "wilson95": [
+       0.5101,
+       1
+      ],
+      "inside": true
+     },
+     {
+      "bin": "75-80%",
+      "n": 7,
+      "predicted": 0.7752,
+      "observed": 0.7143,
+      "wilson95": [
+       0.3589,
+       0.9178
+      ],
+      "inside": true
+     },
+     {
+      "bin": "80-85%",
+      "n": 2,
+      "predicted": 0.8194,
+      "observed": 1,
+      "wilson95": [
+       0.3424,
+       1
+      ],
+      "inside": true
+     }
+    ],
+    "ece": 0.1488,
+    "ece_basis": "10 equal-width bins of the favourite's probability (50-100%), |predicted - observed| weighted by count"
+   }
+  },
+  "spread": {
+   "n": 43,
+   "mae": 12.221,
+   "rmse": 16.575,
+   "signed_bias_actual_minus_projected": -1.43,
+   "bias_se": 2.548,
+   "by_favourite_size": [
+    {
+     "bucket": "0-3",
+     "n": 18,
+     "projected_mean": 1.94,
+     "actual_mean": -4.56,
+     "realized_over_projected": -2.343,
+     "bias_actual_minus_projected": -6.5,
+     "bias_se": 4.79,
+     "model_mae": 15.61,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 0.6111,
+     "favourite_won_wilson95": [
+      0.3862,
+      0.797
+     ],
+     "mean_predicted_win": 0.5391,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">3-7",
+     "n": 12,
+     "projected_mean": 5.08,
+     "actual_mean": 0.5,
+     "realized_over_projected": 0.098,
+     "bias_actual_minus_projected": -4.58,
+     "bias_se": 3.41,
+     "model_mae": 10.08,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 0.5,
+     "favourite_won_wilson95": [
+      0.2538,
+      0.7462
+     ],
+     "mean_predicted_win": 0.6328,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">7-10",
+     "n": 8,
+     "projected_mean": 8.5,
+     "actual_mean": 12.88,
+     "realized_over_projected": 1.515,
+     "bias_actual_minus_projected": 4.38,
+     "bias_se": 5.97,
+     "model_mae": 13,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 0.75,
+     "favourite_won_wilson95": [
+      0.4093,
+      0.9285
+     ],
+     "mean_predicted_win": 0.7423,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">10-14",
+     "n": 5,
+     "projected_mean": 10.9,
+     "actual_mean": 9.2,
+     "realized_over_projected": 0.844,
+     "bias_actual_minus_projected": -1.7,
+     "bias_se": 1.98,
+     "model_mae": 3.9,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 1,
+     "favourite_won_wilson95": [
+      0.5655,
+      1
+     ],
+     "mean_predicted_win": 0.8008,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">14-21",
+     "n": 0
+    },
+    {
+     "bucket": "21+",
+     "n": 0
+    }
+   ]
+  },
+  "total": {
+   "n": 43,
+   "mae": 14.244,
+   "signed_bias_actual_minus_projected": 2.407
+  },
+  "against_the_market": {
+   "n_matched": 43,
+   "n": 43,
+   "regression": {
+    "a": -0.0485,
+    "b": 0.7536,
+    "se_b": 0.0959,
+    "n": 43
+   },
+   "axes": "y = logit(model p), x = logit(no-vig market p captured at or before the forecast). The slope is diluted by any disagreement between the two (it is b = r x sd_model / sd_market), so it is NOT a compression measure on its own: sd_ratio is",
+   "model_spread_sd_logit": 0.726,
+   "market_spread_sd_logit": 0.747,
+   "sd_ratio": 0.972,
+   "sd_ratio_basis": "sd of logit(model p) / sd of logit(no-vig p) over the same games: below 1, the model's probabilities sit closer to 0.5 than the market's",
+   "spread": {
+    "model_mae": 12.221,
+    "market_mae": 11.36
+   }
+  },
+  "walk_forward": {
+   "source": "nba/validation/nba_walkforward.json (selection window)",
+   "chosen": "E_ridge_P",
+   "n": 12897,
+   "moneyline": {
+    "calibration_slope": 1.057,
+    "log_loss": 0.58987,
+    "brier": 0.20261
+   }
+  }
+ },
+ "nfl": {
+  "source": "performance/ledger (last forecast before the start)",
+  "graded": 90,
+  "moneyline": {
+   "n": 90,
+   "brier": 0.2393,
+   "log_loss": 0.67,
+   "mean_p": 0.5759,
+   "mean_y": 0.4667,
+   "recalibration": {
+    "n": 90,
+    "intercept": -0.451,
+    "slope": 0.872,
+    "axes": "y = outcome (0/1), x = logit(model probability); slope > 1 means compressed toward 0.5",
+    "slope_ci95": [
+     0.366,
+     1.551
+    ],
+    "bootstrap": "400 resamples, seed 20261026"
+   },
+   "reliability": {
+    "bins": [
+     {
+      "bin": "50-55%",
+      "n": 21,
+      "predicted": 0.5257,
+      "observed": 0.7143,
+      "wilson95": [
+       0.5004,
+       0.8619
+      ],
+      "inside": true
+     },
+     {
+      "bin": "55-60%",
+      "n": 15,
+      "predicted": 0.573,
+      "observed": 0.5333,
+      "wilson95": [
+       0.3012,
+       0.7519
+      ],
+      "inside": true
+     },
+     {
+      "bin": "60-65%",
+      "n": 12,
+      "predicted": 0.6275,
+      "observed": 0.5,
+      "wilson95": [
+       0.2538,
+       0.7462
+      ],
+      "inside": true
+     },
+     {
+      "bin": "65-70%",
+      "n": 14,
+      "predicted": 0.6737,
+      "observed": 0.5714,
+      "wilson95": [
+       0.3259,
+       0.7862
+      ],
+      "inside": true
+     },
+     {
+      "bin": "70-75%",
+      "n": 13,
+      "predicted": 0.7234,
+      "observed": 0.6154,
+      "wilson95": [
+       0.3552,
+       0.8229
+      ],
+      "inside": true
+     },
+     {
+      "bin": "75-80%",
+      "n": 6,
+      "predicted": 0.7773,
+      "observed": 0.6667,
+      "wilson95": [
+       0.3,
+       0.9032
+      ],
+      "inside": true
+     },
+     {
+      "bin": "80-85%",
+      "n": 4,
+      "predicted": 0.8155,
+      "observed": 0.5,
+      "wilson95": [
+       0.15,
+       0.85
+      ],
+      "inside": true
+     },
+     {
+      "bin": "85-90%",
+      "n": 3,
+      "predicted": 0.8627,
+      "observed": 1,
+      "wilson95": [
+       0.4385,
+       1
+      ],
+      "inside": true
+     },
+     {
+      "bin": "90-95%",
+      "n": 2,
+      "predicted": 0.9198,
+      "observed": 1,
+      "wilson95": [
+       0.3424,
+       1
+      ],
+      "inside": true
+     }
+    ],
+    "ece": 0.1269,
+    "ece_basis": "10 equal-width bins of the favourite's probability (50-100%), |predicted - observed| weighted by count"
+   }
+  },
+  "spread": {
+   "n": 90,
+   "mae": 9.345,
+   "rmse": 11.904,
+   "signed_bias_actual_minus_projected": -2.856,
+   "bias_se": 1.225,
+   "by_favourite_size": [
+    {
+     "bucket": "0-3",
+     "n": 38,
+     "projected_mean": 1.41,
+     "actual_mean": 1.58,
+     "realized_over_projected": 1.117,
+     "bias_actual_minus_projected": 0.17,
+     "bias_se": 1.72,
+     "model_mae": 7.93,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 0.6486,
+     "favourite_won_wilson95": [
+      0.4876,
+      0.7817
+     ],
+     "mean_predicted_win": 0.5488,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">3-7",
+     "n": 36,
+     "projected_mean": 4.99,
+     "actual_mean": 3.42,
+     "realized_over_projected": 0.685,
+     "bias_actual_minus_projected": -1.57,
+     "bias_se": 2.33,
+     "model_mae": 11.28,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 0.5833,
+     "favourite_won_wilson95": [
+      0.422,
+      0.7286
+     ],
+     "mean_predicted_win": 0.6777,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">7-10",
+     "n": 10,
+     "projected_mean": 8.43,
+     "actual_mean": 4.8,
+     "realized_over_projected": 0.569,
+     "bias_actual_minus_projected": -3.63,
+     "bias_se": 3.36,
+     "model_mae": 9,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 0.6,
+     "favourite_won_wilson95": [
+      0.3127,
+      0.8318
+     ],
+     "mean_predicted_win": 0.7833,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">10-14",
+     "n": 4,
+     "projected_mean": 11.62,
+     "actual_mean": 4.75,
+     "realized_over_projected": 0.409,
+     "bias_actual_minus_projected": -6.87,
+     "bias_se": 3.64,
+     "model_mae": 6.87,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 0.75,
+     "favourite_won_wilson95": [
+      0.3006,
+      0.9544
+     ],
+     "mean_predicted_win": 0.8574,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": ">14-21",
+     "n": 2,
+     "projected_mean": 15.02,
+     "actual_mean": 7,
+     "realized_over_projected": 0.466,
+     "bias_actual_minus_projected": -8.02,
+     "bias_se": 0.2,
+     "model_mae": 8.02,
+     "close_mae": null,
+     "market_close_mean": null,
+     "favourite_won": 1,
+     "favourite_won_wilson95": [
+      0.3424,
+      1
+     ],
+     "mean_predicted_win": 0.9198,
+     "favourite_covered_close": null
+    },
+    {
+     "bucket": "21+",
+     "n": 0
+    }
+   ]
+  },
+  "total": {
+   "n": 90,
+   "mae": 10.712,
+   "signed_bias_actual_minus_projected": 0.379
+  },
+  "against_the_market": {
+   "n_matched": 88,
+   "n": 26,
+   "regression": {
+    "a": 0.0995,
+    "b": 0.9873,
+    "se_b": 0.1237,
+    "n": 26
+   },
+   "axes": "y = logit(model p), x = logit(no-vig market p captured at or before the forecast). The slope is diluted by any disagreement between the two (it is b = r x sd_model / sd_market), so it is NOT a compression measure on its own: sd_ratio is",
+   "model_spread_sd_logit": 0.827,
+   "market_spread_sd_logit": 0.714,
+   "sd_ratio": 1.158,
+   "sd_ratio_basis": "sd of logit(model p) / sd of logit(no-vig p) over the same games: below 1, the model's probabilities sit closer to 0.5 than the market's",
+   "spread": {
+    "model_mae": 9.323,
+    "market_mae": 9.08
+   }
+  }
+ },
+ "nhl": {
+  "source": "performance/ledger (last forecast before the start)",
+  "graded": 95,
+  "moneyline": {
+   "n": 95,
+   "brier": 0.2371,
+   "log_loss": 0.667,
+   "mean_p": 0.5245,
+   "mean_y": 0.6211,
+   "recalibration": {
+    "n": 95,
+    "intercept": 0.388,
+    "slope": 1.217,
+    "axes": "y = outcome (0/1), x = logit(model probability); slope > 1 means compressed toward 0.5",
+    "slope_ci95": [
+     -0.074,
+     3.004
+    ],
+    "bootstrap": "400 resamples, seed 20261026"
+   },
+   "reliability": {
+    "bins": [
+     {
+      "bin": "50-55%",
+      "n": 40,
+      "predicted": 0.5292,
+      "observed": 0.475,
+      "wilson95": [
+       0.3294,
+       0.625
+      ],
+      "inside": true
+     },
+     {
+      "bin": "55-60%",
+      "n": 35,
+      "predicted": 0.5735,
+      "observed": 0.6571,
+      "wilson95": [
+       0.4915,
+       0.7917
+      ],
+      "inside": true
+     },
+     {
+      "bin": "60-65%",
+      "n": 15,
+      "predicted": 0.6175,
+      "observed": 0.7333,
+      "wilson95": [
+       0.4805,
+       0.891
+      ],
+      "inside": true
+     },
+     {
+      "bin": "65-70%",
+      "n": 5,
+      "predicted": 0.6757,
+      "observed": 0.6,
+      "wilson95": [
+       0.2307,
+       0.8824
+      ],
+      "inside": true
+     }
+    ],
+    "ece": 0.0759,
+    "ece_basis": "10 equal-width bins of the favourite's probability (50-100%), |predicted - observed| weighted by count"
+   }
+  },
+  "spread": null,
+  "total": {
+   "n": 95,
+   "mae": 1.729,
+   "signed_bias_actual_minus_projected": 0.292
+  },
+  "against_the_market": {
+   "n_matched": 26,
+   "n": 26,
+   "regression": {
+    "a": 0.0021,
+    "b": 0.8115,
+    "se_b": 0.0486,
+    "n": 26
+   },
+   "axes": "y = logit(model p), x = logit(no-vig market p captured at or before the forecast). The slope is diluted by any disagreement between the two (it is b = r x sd_model / sd_market), so it is NOT a compression measure on its own: sd_ratio is",
+   "model_spread_sd_logit": 0.41,
+   "market_spread_sd_logit": 0.485,
+   "sd_ratio": 0.846,
+   "sd_ratio_basis": "sd of logit(model p) / sd of logit(no-vig p) over the same games: below 1, the model's probabilities sit closer to 0.5 than the market's"
+  },
+  "walk_forward": {
+   "source": "hockey/validation/nhl_walkforward.json",
+   "generated_at": "2026-10-20T15:19:46.910Z",
+   "moneyline": {
+    "n": 7945,
+    "calibration_slope": 1.064,
+    "calibration_in_the_large": 0.0088,
+    "log_loss": 0.66286
+   },
+   "chosen": "xg_core",
+   "by_season_slope": [
+    {
+     "season": 2014,
+     "n": 1323,
+     "slope": 1.11,
+     "mean_p": 0.5456,
+     "mean_y": 0.5412
+    },
+    {
+     "season": 2015,
+     "n": 1319,
+     "slope": 1.349,
+     "mean_p": 0.5471,
+     "mean_y": 0.5436
+    },
+    {
+     "season": 2016,
+     "n": 1321,
+     "slope": 1.087,
+     "mean_p": 0.5472,
+     "mean_y": 0.5276
+    },
+    {
+     "season": 2017,
+     "n": 1317,
+     "slope": 1.271,
+     "mean_p": 0.5471,
+     "mean_y": 0.5581
+    },
+    {
+     "season": 2018,
+     "n": 1355,
+     "slope": 1.363,
+     "mean_p": 0.5517,
+     "mean_y": 0.5579
+    },
+    {
+     "season": 2019,
+     "n": 1358,
+     "slope": 1.386,
+     "mean_p": 0.55,
+     "mean_y": 0.5353
+    },
+    {
+     "season": 2020,
+     "n": 1212,
+     "slope": 1.117,
+     "mean_p": 0.5527,
+     "mean_y": 0.5248
+    },
+    {
+     "season": 2021,
+     "n": 952,
+     "slope": 1.662,
+     "mean_p": 0.5449,
+     "mean_y": 0.5347
+    },
+    {
+     "season": 2022,
+     "n": 1401,
+     "slope": 1.318,
+     "mean_p": 0.5528,
+     "mean_y": 0.541
+    },
+    {
+     "season": 2023,
+     "n": 1400,
+     "slope": 1.022,
+     "mean_p": 0.5504,
+     "mean_y": 0.52
+    },
+    {
+     "season": 2024,
+     "n": 1400,
+     "slope": 0.955,
+     "mean_p": 0.5438,
+     "mean_y": 0.5371
+    },
+    {
+     "season": 2025,
+     "n": 1398,
+     "slope": 0.989,
+     "mean_p": 0.5393,
+     "mean_y": 0.5651
+    },
+    {
+     "season": 2026,
+     "n": 1394,
+     "slope": 0.783,
+     "mean_p": 0.5394,
+     "mean_y": 0.5194
+    },
+    {
+     "season": 2027,
+     "n": 140,
+     "slope": 1.823,
+     "mean_p": 0.532,
+     "mean_y": 0.5786
+    }
+   ]
+  }
+ }
+}

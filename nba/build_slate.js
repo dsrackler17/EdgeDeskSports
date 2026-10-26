@@ -101,6 +101,23 @@ async function currentRosters(season, offline) {
   return { ok: true, by, named, source: { url: src.url, sha256: src.sha256, fetched_at: src.fetched_at } };
 }
 
+/* ------------------------------------------------------------ absent regulars, checked against the current roster
+   A team's regulars are everyone in its last ten games, which early in a season
+   reach back into last season. A regular missing from the last game who is no
+   longer on the team's current roster has LEFT (traded, released): he is not
+   absent and cannot return, so he is listed apart and never priced as a
+   "returns" scenario. With no roster source the list is kept as it was and
+   says it was not checked. The published price does not read this list. */
+function splitAbsent(x) {
+  const all = x.regs.filter((p) => !x.proj.includes(p)).map(x.describe).filter((r) => r.usual_minutes >= 8).sort((a, b) => b.usual_minutes - a.usual_minutes);
+  if (!x.inRoster) return { absent: all, left: [], roster_checked: false };
+  return {
+    absent: all.filter((r) => x.inRoster.has(r.id)),
+    left: all.filter((r) => !x.inRoster.has(r.id)).map((r) => Object.assign({}, r, { now_with: (x.teamOf && x.teamOf[r.id]) || null })),
+    roster_checked: true,
+  };
+}
+
 /* ------------------------------------------------------------ the market beside the model (never inside it) */
 function marketBlock(ev, pc, quotes, now) {
   const base = { value_claims: 'DISABLED', value_reason: 'model probabilities are not validated against a closing market; EV here is arithmetic, not an edge' };
@@ -176,6 +193,7 @@ async function build(o) {
   }
   upcoming.sort((a, b) => a.start - b.start);
   const rosters = await currentRosters(season, o.offline);
+  const rosterTeamOf = {}; if (rosters.ok) for (const [t, ids] of rosters.by) for (const id of ids) rosterTeamOf[id] = t;
   const chosen = live.chosen.P; const cands = WF.candsFor('P').filter((c) => live.calibration[c.id]);
   const valid = record && record.windows && record.windows.selection ? record.windows.selection : {};
   const unsealed = record && record.windows && record.windows.test && record.windows.test.status !== 'SEALED';
@@ -215,10 +233,12 @@ async function build(o) {
       const inRoster = rosters.ok && rosters.by.has(t) ? new Set(rosters.by.get(t)) : null;
       const list = S.minutes.map((x) => ({ id: x.pid, name: (players[x.pid] || {}).name || x.pid, pos: (players[x.pid] || {}).pos || null, minutes: r2(x.min), off: r2(x.o), def: r2(x.d), known: x.known,
         impact_pts: r2((x.min / 48) * (x.o + x.d) * (f.pace || 98) / 100), start_rate: r2(pm.startRate(x.pid)), on_current_roster: inRoster ? inRoster.has(x.pid) : null })).sort((a, b) => b.minutes - a.minutes);
-      const absent = regs.filter((p) => !proj.includes(p)).map((pid) => { const v = pm.value(pid); return { id: pid, name: (players[pid] || {}).name || pid, usual_minutes: r2(pm.expMinutes(pid)), off: r2(v.o), def: r2(v.d) }; }).filter((x) => x.usual_minutes >= 8).sort((a, b) => b.usual_minutes - a.usual_minutes);
+      const ab = splitAbsent({ regs, proj, inRoster, teamOf: rosterTeamOf, describe: (pid) => { const v = pm.value(pid); return { id: pid, name: (players[pid] || {}).name || pid, usual_minutes: r2(pm.expMinutes(pid)), off: r2(v.o), def: r2(v.d) }; } });
+      const absent = ab.absent;
+      const leftTeam = ab.left.map((x) => Object.assign({}, x, { now_with: x.now_with ? abbr[x.now_with] || x.now_with : null }));
       const arrivals = inRoster ? [...inRoster].filter((pid) => !proj.includes(pid) && pm.expMinutes(pid) >= 12 && pm.pl.has(pid)).map((pid) => { const v = pm.value(pid); return { id: pid, name: (players[pid] || {}).name || pid, usual_minutes: r2(pm.expMinutes(pid)), off: r2(v.o), def: r2(v.d) }; }) : [];
       const departures = inRoster ? list.filter((x) => x.on_current_roster === false).map((x) => ({ id: x.id, name: x.name, minutes: x.minutes })) : [];
-      return { projected: list.slice(0, 13), likely_starters: list.slice().sort((a, b) => (b.start_rate || 0) - (a.start_rate || 0)).slice(0, 5).map((x) => x.name), absent_regulars: absent, net_per100: r2(S.net), rotation_source: stale ? 'last season\'s closing game (no game this season yet)' : 'the team\'s previous game', arrivals, departures, proj, regs };
+      return { projected: list.slice(0, 13), likely_starters: list.slice().sort((a, b) => (b.start_rate || 0) - (a.start_rate || 0)).slice(0, 5).map((x) => x.name), absent_regulars: absent, regulars_left_team: leftTeam, absent_roster_checked: ab.roster_checked, net_per100: r2(S.net), rotation_source: stale ? 'last season\'s closing game (no game this season yet)' : 'the team\'s previous game', arrivals, departures, proj, regs };
     };
     const H = side(row.home, 1), A = side(row.away, -1);
     /* scenarios: each team's three highest-impact projected players sitting; absent regulars returning */
@@ -447,7 +467,7 @@ function check() {
   console.log('[nba slate --check] ok: ' + s.games.length + ' games, ' + s.horizon);
 }
 
-module.exports = { build, check, carryRecent };
+module.exports = { build, check, carryRecent, splitAbsent };
 if (require.main === module) {
   if (flag('check')) check();
   else {
