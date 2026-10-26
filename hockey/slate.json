@@ -2,7 +2,7 @@
  "schema": "edgedesk_nhl_slate_v1",
  "sport": "NHL",
  "sport_key": "icehockey_nhl",
- "generated_at": "2026-10-26T00:27:30.975Z",
+ "generated_at": "2026-10-26T05:15:23.646Z",
  "horizon_hours": 120,
  "model": {
   "id": "edgedesk_nhl_v1:xg_core",
@@ -25,18 +25,37 @@
   "data": {
    "state": "FRESH",
    "latest_completed_game": "2026-10-24",
-   "hours_since_latest_result": 18.46,
-   "results_lagging": [],
+   "hours_since_latest_result": 23.26,
+   "results_lagging": [
+    {
+     "game_id": 2026020180,
+     "date": "2026-10-25",
+     "home": "CHI",
+     "away": "FLA"
+    },
+    {
+     "game_id": 2026020181,
+     "date": "2026-10-25",
+     "home": "DAL",
+     "away": "NYI"
+    },
+    {
+     "game_id": 2026020182,
+     "date": "2026-10-25",
+     "home": "WPG",
+     "away": "MTL"
+    }
+   ],
    "schedule": {
     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2027.parquet",
-    "fetched_at": "2026-10-26T00:27:05.798Z",
+    "fetched_at": "2026-10-26T05:14:57.439Z",
     "ok": true,
     "sha256": "66c23b81b9ee914905a2d8337d929596e5f37e20515387315a70e88a01181c0f"
    },
    "nhl_api": {
     "used": true,
     "fetched": 2,
-    "updated": 4,
+    "updated": 5,
     "error": null
    }
   },
@@ -952,1129 +971,6 @@
  "attribution": "NHL game data: sportsdataverse fastRhockey (compiled from the NHL's public game feeds). sportsdataverse/fastRhockey-nhl-data and -raw are MIT-licensed repositories; the game data inside them is compiled from the NHL's public game feeds and remains the NHL's. NHL.com terms restrict commercial use of its content: the owner must review this before NHL output is sold in a paid tier. Attribution is printed on every NHL artifact.",
  "games": [
   {
-   "game_id": 2026020184,
-   "event_key": "NHL|2026020184",
-   "date": "2026-10-25",
-   "start_utc": "2026-10-26T02:00:00Z",
-   "type": "R",
-   "home": "VAN",
-   "away": "MIN",
-   "venue": "Rogers Arena",
-   "state": "FUT",
-   "schedule_source": "nhl_api",
-   "lambda": {
-    "home": 2.7871,
-    "away": 3.315
-   },
-   "explanation": {
-    "method": "exact Shapley values over the model's 9 factor groups through the full pricing chain (GLM → pair recalibration → score distribution with overtime and the shootout); contributions sum exactly to the published probability",
-    "baseline": {
-     "p_home": 0.5011,
-     "expected_total": 6.17,
-     "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
-     "neutral": {
-      "ev_off": 1.0006095456296238,
-      "ev_def_opp": 0.9979564750579885,
-      "g_off": 1.0008519799084659,
-      "g_def_opp": 0.9973328572668195,
-      "pp_off": 0.9987551520090905,
-      "pk_def_opp": 1.002000266153323,
-      "pp_draw": 0.9991211355567046,
-      "pk_take_opp": 0.9995727068706847,
-      "fin": 0.9659527106145798
-     }
-    },
-    "published": {
-     "p_home": 0.4174,
-     "expected_total": 6.31,
-     "lambda_home": 2.7871,
-     "lambda_away": 3.315
-    },
-    "factors": [
-     {
-      "key": "home_results",
-      "team": "VAN",
-      "side": "home",
-      "label": "results beyond chances (goals for and against, finishing)",
-      "pp": -7.5065,
-      "goals": 0.11,
-      "evidence": {
-       "metric": "its goals for per game / its goals against per game / its finishing (goals ÷ xG)",
-       "vs_league": [
-        0.9317,
-        1.1536,
-        1.0272
-       ],
-       "better": false
-      }
-     },
-     {
-      "key": "away_rest",
-      "team": "MIN",
-      "side": "away",
-      "label": "rest (second night of a back-to-back)",
-      "pp": 5.6749,
-      "goals": -0.02,
-      "evidence": {
-       "metric": "second night of a back-to-back",
-       "vs_league": 1,
-       "better": false,
-       "note": "the production model carries no goalie term, so this effect includes how often a club starts its backup on the second night; the goalie scenarios show the move once a starter is named"
-      }
-     },
-     {
-      "key": "away_results",
-      "team": "MIN",
-      "side": "away",
-      "label": "results beyond chances (goals for and against, finishing)",
-      "pp": -3.0413,
-      "goals": -0.02,
-      "evidence": {
-       "metric": "its goals for per game / its goals against per game / its finishing (goals ÷ xG)",
-       "vs_league": [
-        1.0352,
-        0.9502,
-        1.0083
-       ],
-       "better": true
-      }
-     },
-     {
-      "key": "home_ev_def",
-      "team": "VAN",
-      "side": "home",
-      "label": "5v5 chance suppression",
-      "pp": -2.5859,
-      "goals": 0.09,
-      "evidence": {
-       "metric": "5v5 expected goals allowed per 60",
-       "vs_league": 1.0912,
-       "better": false
-      }
-     },
-     {
-      "key": "home_ice",
-      "team": null,
-      "side": null,
-      "label": "home ice",
-      "pp": 2.4794,
-      "goals": 0.08,
-      "evidence": {
-       "metric": "home ice",
-       "vs_league": null,
-       "better": true
-      }
-     },
-     {
-      "key": "home_ev_off",
-      "team": "VAN",
-      "side": "home",
-      "label": "5v5 chance creation",
-      "pp": -1.9284,
-      "goals": -0.07,
-      "evidence": {
-       "metric": "5v5 expected goals created per 60",
-       "vs_league": 0.9078,
-       "better": false
-      }
-     },
-     {
-      "key": "away_ev_def",
-      "team": "MIN",
-      "side": "away",
-      "label": "5v5 chance suppression",
-      "pp": -1.3568,
-      "goals": -0.05,
-      "evidence": {
-       "metric": "5v5 expected goals allowed per 60",
-       "vs_league": 0.9541,
-       "better": true
-      }
-     },
-     {
-      "key": "away_ev_off",
-      "team": "MIN",
-      "side": "away",
-      "label": "5v5 chance creation",
-      "pp": -0.1022,
-      "goals": 0,
-      "evidence": {
-       "metric": "5v5 expected goals created per 60",
-       "vs_league": 1.005,
-       "better": true
-      }
-     },
-     {
-      "key": "home_rest",
-      "team": "VAN",
-      "side": "home",
-      "label": "rest (second night of a back-to-back)",
-      "pp": 0,
-      "goals": 0,
-      "evidence": {
-       "metric": "second night of a back-to-back",
-       "vs_league": 0,
-       "better": true,
-       "note": "the production model carries no goalie term, so this effect includes how often a club starts its backup on the second night; the goalie scenarios show the move once a starter is named"
-      }
-     }
-    ],
-    "check": {
-     "sum_of_contributions_pp": -8.3669,
-     "published_minus_baseline_pp": -8.3669,
-     "exact": true
-    },
-    "generated_by": "deterministic decomposition of the production model (hockey/model/explain.js) — no language model",
-    "narrative": [
-     "MIN 58.3% to win (overtime and shootout included). Two league-average clubs at a neutral rink would be 50.1% for the home side; the factors below move VAN from there to 41.7%.",
-     "VAN's results beyond chances (goals for 0.93×, goals against 1.15×, finishing 1.03× the league-average club): −7.5 pp for VAN.",
-     "MIN's rest (its backup goalie is likelier to start; the model has no goalie term): +5.7 pp for VAN.",
-     "MIN's results beyond chances (goals for 1.04×, goals against 0.95×, finishing 1.01× the league-average club): −3.0 pp for VAN.",
-     "VAN's 5v5 chance suppression (allows 1.09× the league-average club): −2.6 pp for VAN.",
-     "home ice: +2.5 pp for VAN.",
-     "VAN's 5v5 chance creation (0.91× the league-average club, opponent- and score-adjusted): −1.9 pp for VAN.",
-     "2 smaller factors move it less than 0.3 points each.",
-     "Expected goals: VAN 2.79, MIN 3.31 in regulation; total 6.31 including overtime."
-    ]
-   },
-   "markets": {
-    "settles": {
-     "moneyline": "two-way: includes overtime and the shootout",
-     "regulation": "60 minutes only; a tie is its own outcome",
-     "puck_line": "includes overtime and the shootout; an OT or shootout win is a one-goal win; a whole-number line can push",
-     "total": "includes overtime; the shootout winner is credited one goal (the official final); a whole-number line can push",
-     "regulation_total": "60 minutes only (no overtime, no shootout); a whole-number line can push",
-     "team_total": "includes overtime; the shootout winner is credited one goal; a whole-number line can push",
-     "first_period": "first period only (20 minutes); a tie is its own outcome on the 3-way; a whole-number total can push"
-    },
-    "puck_line": [
-     {
-      "home_line": -3.5,
-      "p": 0.0519,
-      "push": 0,
-      "p_other": 0.9481,
-      "fair": 1826,
-      "fair_other": -1826,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "home_line": -2.5,
-      "p": 0.137,
-      "push": 0,
-      "p_other": 0.863,
-      "fair": 630,
-      "fair_other": -630,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": -1.5,
-      "p": 0.2266,
-      "push": 0,
-      "p_other": 0.7734,
-      "fair": 341,
-      "fair_other": -341,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": -1,
-      "p": 0.2266,
-      "push": 0.1908,
-      "p_other": 0.5826,
-      "fair": 257,
-      "fair_other": -257,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "home_line": 1,
-      "p": 0.4174,
-      "push": 0.2127,
-      "p_other": 0.3698,
-      "fair": -113,
-      "fair_other": 113,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "home_line": 1.5,
-      "p": 0.6302,
-      "push": 0,
-      "p_other": 0.3698,
-      "fair": -170,
-      "fair_other": 170,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": 2.5,
-      "p": 0.7493,
-      "push": 0,
-      "p_other": 0.2507,
-      "fair": -299,
-      "fair_other": 299,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": 3.5,
-      "p": 0.8878,
-      "push": 0,
-      "p_other": 0.1122,
-      "fair": -791,
-      "fair_other": 791,
-      "validation": "OUTCOME_VALIDATED"
-     }
-    ],
-    "total": [
-     {
-      "line": 4.5,
-      "p": 0.7973,
-      "push": 0,
-      "p_other": 0.2027,
-      "fair": -393,
-      "fair_other": 393,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 5,
-      "p": 0.5818,
-      "push": 0.2155,
-      "p_other": 0.2027,
-      "fair": -287,
-      "fair_other": 287,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 5.5,
-      "p": 0.5818,
-      "push": 0,
-      "p_other": 0.4182,
-      "fair": -139,
-      "fair_other": 139,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 6,
-      "p": 0.4715,
-      "push": 0.1102,
-      "p_other": 0.4182,
-      "fair": -113,
-      "fair_other": 113,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 6.5,
-      "p": 0.4715,
-      "push": 0,
-      "p_other": 0.5285,
-      "fair": 112,
-      "fair_other": -112,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 7,
-      "p": 0.2682,
-      "push": 0.2033,
-      "p_other": 0.5285,
-      "fair": 197,
-      "fair_other": -197,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 7.5,
-      "p": 0.2682,
-      "push": 0,
-      "p_other": 0.7318,
-      "fair": 273,
-      "fair_other": -273,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 8,
-      "p": 0.19,
-      "push": 0.0782,
-      "p_other": 0.7318,
-      "fair": 385,
-      "fair_other": -385,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "line": 8.5,
-      "p": 0.19,
-      "push": 0,
-      "p_other": 0.81,
-      "fair": 426,
-      "fair_other": -426,
-      "validation": "PROVISIONAL"
-     }
-    ],
-    "regulation_total": [
-     {
-      "line": 4.5,
-      "p": 0.7326,
-      "push": 0,
-      "p_other": 0.2674,
-      "fair": -274,
-      "fair_other": 274,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 5,
-      "p": 0.5818,
-      "push": 0.1508,
-      "p_other": 0.2674,
-      "fair": -218,
-      "fair_other": 218,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "line": 5.5,
-      "p": 0.5818,
-      "push": 0,
-      "p_other": 0.4182,
-      "fair": -139,
-      "fair_other": 139,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 6,
-      "p": 0.407,
-      "push": 0.1747,
-      "p_other": 0.4182,
-      "fair": 103,
-      "fair_other": -103,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "line": 6.5,
-      "p": 0.407,
-      "push": 0,
-      "p_other": 0.593,
-      "fair": 146,
-      "fair_other": -146,
-      "validation": "PROVISIONAL"
-     }
-    ],
-    "team_total": {
-     "home": [
-      {
-       "line": 1.5,
-       "p": 0.7742,
-       "push": 0,
-       "p_other": 0.2258,
-       "fair": -343,
-       "fair_other": 343,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 2,
-       "p": 0.5542,
-       "push": 0.22,
-       "p_other": 0.2258,
-       "fair": -245,
-       "fair_other": 245,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 2.5,
-       "p": 0.5542,
-       "push": 0,
-       "p_other": 0.4458,
-       "fair": -124,
-       "fair_other": 124,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 3,
-       "p": 0.34,
-       "push": 0.2142,
-       "p_other": 0.4458,
-       "fair": 131,
-       "fair_other": -131,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 3.5,
-       "p": 0.34,
-       "push": 0,
-       "p_other": 0.66,
-       "fair": 194,
-       "fair_other": -194,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 4.5,
-       "p": 0.1733,
-       "push": 0,
-       "p_other": 0.8267,
-       "fair": 477,
-       "fair_other": -477,
-       "validation": "NOT_SCORED"
-      }
-     ],
-     "away": [
-      {
-       "line": 1.5,
-       "p": 0.8519,
-       "push": 0,
-       "p_other": 0.1481,
-       "fair": -575,
-       "fair_other": 575,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 2,
-       "p": 0.6742,
-       "push": 0.1777,
-       "p_other": 0.1481,
-       "fair": -455,
-       "fair_other": 455,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 2.5,
-       "p": 0.6742,
-       "push": 0,
-       "p_other": 0.3258,
-       "fair": -207,
-       "fair_other": 207,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 3,
-       "p": 0.4642,
-       "push": 0.21,
-       "p_other": 0.3258,
-       "fair": -142,
-       "fair_other": 142,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 3.5,
-       "p": 0.4642,
-       "push": 0,
-       "p_other": 0.5358,
-       "fair": 115,
-       "fair_other": -115,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 4.5,
-       "p": 0.2672,
-       "push": 0,
-       "p_other": 0.7328,
-       "fair": 274,
-       "fair_other": -274,
-       "validation": "NOT_SCORED"
-      }
-     ]
-    },
-    "first_period": {
-     "home": 0.2929,
-     "draw": 0.3322,
-     "away": 0.3749,
-     "fair_home": 241,
-     "fair_draw": 201,
-     "fair_away": 167,
-     "expected": 1.82,
-     "validation_3way": "PROVISIONAL",
-     "total": [
-      {
-       "line": 0.5,
-       "p": 0.8388,
-       "push": 0,
-       "p_other": 0.1612,
-       "fair": -521,
-       "fair_other": 521,
-       "validation": "PROVISIONAL"
-      },
-      {
-       "line": 1,
-       "p": 0.5499,
-       "push": 0.2889,
-       "p_other": 0.1612,
-       "fair": -341,
-       "fair_other": 341,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 1.5,
-       "p": 0.5499,
-       "push": 0,
-       "p_other": 0.4501,
-       "fair": -122,
-       "fair_other": 122,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 2,
-       "p": 0.2738,
-       "push": 0.2761,
-       "p_other": 0.4501,
-       "fair": 164,
-       "fair_other": -164,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 2.5,
-       "p": 0.2738,
-       "push": 0,
-       "p_other": 0.7262,
-       "fair": 265,
-       "fair_other": -265,
-       "validation": "PROVISIONAL"
-      }
-     ]
-    },
-    "regulation_3way_validation": "PROVISIONAL"
-   },
-   "repricing": {
-    "base": {
-     "home": 2.7871,
-     "away": 3.315
-    },
-    "lineup_variant": {
-     "home": 2.7673,
-     "away": 3.3617
-    },
-    "ot": "regular",
-    "basis": "the expected regulation goals of each variant; the page re-prices every market from them with hockey/model/distribution.js and the slate's distribution block"
-   },
-   "challengers": {
-    "models": [
-     {
-      "model": "B_incumbent",
-      "p_home": 0.4174
-     },
-     {
-      "model": "A_goals_only",
-      "p_home": 0.4307
-     },
-     {
-      "model": "A_elo",
-      "p_home": 0.3637
-     },
-     {
-      "model": "C_goalie_projected",
-      "p_home": 0.4159
-     },
-     {
-      "model": "D_lineup_projected",
-      "p_home": 0.4101
-     },
-     {
-      "model": "E_logistic",
-      "p_home": 0.3971
-     },
-     {
-      "model": "E_gbdt",
-      "p_home": 0.4101
-     },
-     {
-      "model": "G_stack",
-      "p_home": 0.443
-     }
-    ],
-    "spread_pp": 7.93,
-    "sd_pp": 2.21
-   },
-   "context": {
-    "home": {
-     "travel_km": 0,
-     "tz_shift": 0,
-     "games_in_prior_3_days": 1,
-     "road_trip_game": 0,
-     "recent_5v5_xg_for_vs_last_40": 0.9623,
-     "recent_5v5_xg_against_vs_last_40": 1.065,
-     "goals_vs_xg_last_20": 1.1858,
-     "goals_against_vs_xg_last_20": 1.1611
-    },
-    "away": {
-     "travel_km": 192,
-     "tz_shift": 0,
-     "games_in_prior_3_days": 2,
-     "road_trip_game": 4,
-     "recent_5v5_xg_for_vs_last_40": 1.0593,
-     "recent_5v5_xg_against_vs_last_40": 0.9962,
-     "goals_vs_xg_last_20": 0.9419,
-     "goals_against_vs_xg_last_20": 0.8877
-    },
-    "note": "Measured, not in the price: travel, time zones, congestion, road trips, recent form and finishing luck were each tested out of sample (hockey/validation/nhl_lab.json) and none cleared the bar."
-   },
-   "prices": {
-    "moneyline": {
-     "home": 0.4174,
-     "away": 0.5826,
-     "fair_home": 140,
-     "fair_away": -140,
-     "settles": "includes overtime and shootout"
-    },
-    "regulation": {
-     "home": 0.3176,
-     "draw": 0.2101,
-     "away": 0.4723,
-     "fair_home": 215,
-     "fair_draw": 376,
-     "fair_away": 112,
-     "settles": "60 minutes only"
-    },
-    "puck_line": {
-     "home_minus_1_5": 0.2266,
-     "away_plus_1_5": 0.7734,
-     "away_minus_1_5": 0.3698,
-     "home_plus_1_5": 0.6302,
-     "fair_home_minus_1_5": 341,
-     "fair_away_plus_1_5": -341,
-     "fair_away_minus_1_5": 170,
-     "fair_home_plus_1_5": -170,
-     "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-    },
-    "total": {
-     "expected": 6.31,
-     "fair_line": 6,
-     "lines": {
-      "5": {
-       "over": 0.5818,
-       "under": 0.2027,
-       "push": 0.2155,
-       "fair_over": -287,
-       "fair_under": 287
-      },
-      "6": {
-       "over": 0.4715,
-       "under": 0.4182,
-       "push": 0.1102,
-       "fair_over": -113,
-       "fair_under": 113
-      },
-      "7": {
-       "over": 0.2682,
-       "under": 0.5285,
-       "push": 0.2033,
-       "fair_over": 197,
-       "fair_under": -197
-      },
-      "5.5": {
-       "over": 0.5818,
-       "under": 0.4182,
-       "push": 0,
-       "fair_over": -139,
-       "fair_under": 139
-      },
-      "6.5": {
-       "over": 0.4715,
-       "under": 0.5285,
-       "push": 0,
-       "fair_over": 112,
-       "fair_under": -112
-      }
-     },
-     "settles": "includes overtime; the shootout winner is credited one goal"
-    },
-    "team_total": {
-     "home": {
-      "3": {
-       "over": 0.34,
-       "under": 0.4458,
-       "push": 0.2142,
-       "fair_over": 131,
-       "fair_under": -131
-      },
-      "2.5": {
-       "over": 0.5542,
-       "under": 0.4458,
-       "push": 0,
-       "fair_over": -124,
-       "fair_under": 124
-      },
-      "3.5": {
-       "over": 0.34,
-       "under": 0.66,
-       "push": 0,
-       "fair_over": 194,
-       "fair_under": -194
-      }
-     },
-     "away": {
-      "3": {
-       "over": 0.4642,
-       "under": 0.3258,
-       "push": 0.21,
-       "fair_over": -142,
-       "fair_under": 142
-      },
-      "2.5": {
-       "over": 0.6742,
-       "under": 0.3258,
-       "push": 0,
-       "fair_over": -207,
-       "fair_under": 207
-      },
-      "3.5": {
-       "over": 0.4642,
-       "under": 0.5358,
-       "push": 0,
-       "fair_over": 115,
-       "fair_under": -115
-      }
-     }
-    },
-    "p_overtime": 0.1446,
-    "p_shootout": 0.0655
-   },
-   "uncertainty": {
-    "moneyline_sd_pp": 1.15,
-    "total_sd_goals": 0.04,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
-    "calibration_bin": {
-     "range": [
-      0.4,
-      0.5
-     ],
-     "n": 1965,
-     "model_mean": 0.4574,
-     "observed": 0.4438,
-     "wilson95": [
-      0.4219,
-      0.4658
-     ],
-     "window": "confirmation 2020-21 to 2025-26"
-    }
-   },
-   "goalies": {
-    "certainty": "PROJECTED_UNCERTAIN",
-    "home": [
-     {
-      "goalie": 8480947,
-      "name": "K. Lankinen",
-      "p_start": 0.5154,
-      "confirmed": false,
-      "gsax_rate": -0.0765
-     },
-     {
-      "goalie": 8482447,
-      "name": "L. Meriläinen",
-      "p_start": 0.4846,
-      "confirmed": false,
-      "gsax_rate": -0.0364
-     }
-    ],
-    "away": [
-     {
-      "goalie": 8475717,
-      "name": "C. Pickard",
-      "p_start": 0.7683,
-      "confirmed": false,
-      "gsax_rate": -0.0406
-     },
-     {
-      "goalie": 8482661,
-      "name": "J. Wallstedt",
-      "p_start": 0.2317,
-      "confirmed": false,
-      "gsax_rate": 0.0215
-     }
-    ],
-    "scenarios": [
-     {
-      "home_goalie": 8480947,
-      "home_goalie_name": "K. Lankinen",
-      "away_goalie": 8475717,
-      "away_goalie_name": "C. Pickard",
-      "p_scenario": 0.396,
-      "p_home": 0.4117,
-      "exp_total": 6.41,
-      "lambda": {
-       "home": 2.8156,
-       "away": 3.3842
-      },
-      "fair_home": 143,
-      "fair_away": -143,
-      "fair_total_line": 6.5,
-      "puck_line": {
-       "-2.5": [
-        0.1358,
-        0
-       ],
-       "-1.5": [
-        0.224,
-        0
-       ],
-       "1.5": [
-        0.6226,
-        0
-       ],
-       "2.5": [
-        0.7418,
-        0
-       ]
-      },
-      "total": {
-       "5": [
-        0.5975,
-        0.2105
-       ],
-       "6": [
-        0.4877,
-        0.1099
-       ],
-       "7": [
-        0.2824,
-        0.2053
-       ],
-       "5.5": [
-        0.5975,
-        0
-       ],
-       "6.5": [
-        0.4877,
-        0
-       ]
-      }
-     },
-     {
-      "home_goalie": 8480947,
-      "home_goalie_name": "K. Lankinen",
-      "away_goalie": 8482661,
-      "away_goalie_name": "J. Wallstedt",
-      "p_scenario": 0.1194,
-      "p_home": 0.3935,
-      "exp_total": 6.34,
-      "lambda": {
-       "home": 2.7266,
-       "away": 3.4098
-      },
-      "fair_home": 154,
-      "fair_away": -154,
-      "fair_total_line": 6.5,
-      "puck_line": {
-       "-2.5": [
-        0.1244,
-        0
-       ],
-       "-1.5": [
-        0.2091,
-        0
-       ],
-       "1.5": [
-        0.6064,
-        0
-       ],
-       "2.5": [
-        0.7286,
-        0
-       ]
-      },
-      "total": {
-       "5": [
-        0.5872,
-        0.2136
-       ],
-       "6": [
-        0.4765,
-        0.1107
-       ],
-       "7": [
-        0.273,
-        0.2035
-       ],
-       "5.5": [
-        0.5872,
-        0
-       ],
-       "6.5": [
-        0.4765,
-        0
-       ]
-      }
-     },
-     {
-      "home_goalie": 8482447,
-      "home_goalie_name": "L. Meriläinen",
-      "away_goalie": 8475717,
-      "away_goalie_name": "C. Pickard",
-      "p_scenario": 0.3724,
-      "p_home": 0.4243,
-      "exp_total": 6.36,
-      "lambda": {
-       "home": 2.8317,
-       "away": 3.3175
-      },
-      "fair_home": 136,
-      "fair_away": -136,
-      "fair_total_line": 6.5,
-      "puck_line": {
-       "-2.5": [
-        0.142,
-        0
-       ],
-       "-1.5": [
-        0.2328,
-        0
-       ],
-       "1.5": [
-        0.6356,
-        0
-       ],
-       "2.5": [
-        0.7534,
-        0
-       ]
-      },
-      "total": {
-       "5": [
-        0.5895,
-        0.2132
-       ],
-       "6": [
-        0.4796,
-        0.1099
-       ],
-       "7": [
-        0.2751,
-        0.2045
-       ],
-       "5.5": [
-        0.5895,
-        0
-       ],
-       "6.5": [
-        0.4796,
-        0
-       ]
-      }
-     },
-     {
-      "home_goalie": 8482447,
-      "home_goalie_name": "L. Meriläinen",
-      "away_goalie": 8482661,
-      "away_goalie_name": "J. Wallstedt",
-      "p_scenario": 0.1123,
-      "p_home": 0.406,
-      "exp_total": 6.29,
-      "lambda": {
-       "home": 2.7425,
-       "away": 3.343
-      },
-      "fair_home": 146,
-      "fair_away": -146,
-      "fair_total_line": 6,
-      "puck_line": {
-       "-2.5": [
-        0.1302,
-        0
-       ],
-       "-1.5": [
-        0.2175,
-        0
-       ],
-       "1.5": [
-        0.6196,
-        0
-       ],
-       "2.5": [
-        0.7405,
-        0
-       ]
-      },
-      "total": {
-       "5": [
-        0.579,
-        0.2163
-       ],
-       "6": [
-        0.4684,
-        0.1106
-       ],
-       "7": [
-        0.2657,
-        0.2027
-       ],
-       "5.5": [
-        0.579,
-        0
-       ],
-       "6.5": [
-        0.4684,
-        0
-       ]
-      }
-     }
-    ],
-    "confirmed_source": null
-   },
-   "lineups": {
-    "state": "PROJECTED_FROM_LAST_GAME",
-    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
-    "home": {
-     "projected_delta": 0.0053,
-     "regulars_absent": [
-      {
-       "player_id": 8483499,
-       "name": "L. Ohgren",
-       "toi_per_game": "15:05",
-       "dressed_in_last_10": "9/10",
-       "absent_last_games": 1,
-       "reading": "absent from the most recent game(s)"
-      }
-     ]
-    },
-    "away": {
-     "projected_delta": 0.0213,
-     "regulars_absent": []
-    },
-    "p_home_lineup_variant": 0.4072,
-    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001696 to -0.000051)."
-   },
-   "evidence": {
-    "home": {
-     "ev_xg_for_vs_league": 0.9084,
-     "ev_xg_against_vs_league": 1.089,
-     "goals_for_vs_league": 0.9325,
-     "goals_against_vs_league": 1.1505,
-     "pp_vs_league": 0.9475,
-     "pk_xga_vs_league": 1.0716,
-     "pp_minutes_vs_league": 0.9749,
-     "rest_days": 3,
-     "back_to_back": false,
-     "history_weight_games": 48.37
-    },
-    "away": {
-     "ev_xg_for_vs_league": 1.0056,
-     "ev_xg_against_vs_league": 0.9521,
-     "goals_for_vs_league": 1.0361,
-     "goals_against_vs_league": 0.9476,
-     "pp_vs_league": 1.0531,
-     "pk_xga_vs_league": 1.0486,
-     "pp_minutes_vs_league": 1.0261,
-     "rest_days": 1,
-     "back_to_back": true,
-     "history_weight_games": 54.14
-    },
-    "league": {
-     "ev_xg_per60": 2.61,
-     "goals_per_team_game": 3.12
-    },
-    "notes": [
-     "Ratios are to the league's running average (1.00 = average); xG ratings are score-adjusted and opponent-adjusted.",
-     "Ratings decay with a 180-day half-life and are shrunk toward average by a 32-game prior; early-season ratings lean on last season."
-    ]
-   },
-   "data_quality": {
-    "history_weight_games": 48.37,
-    "early_season": false,
-    "goalie_certainty": "PROJECTED_UNCERTAIN",
-    "missing": []
-   },
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
-    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
-   ],
-   "market_check": {
-    "state": "NOT_CAPTURED",
-    "checks": [],
-    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
-   }
-  },
-  {
    "game_id": 2026020185,
    "event_key": "NHL|2026020185",
    "date": "2026-10-26",
@@ -2097,13 +993,13 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006106780743451,
-      "ev_def_opp": 0.9979577724758583,
+      "ev_def_opp": 0.997957772475858,
       "g_off": 1.00085358463528,
-      "g_def_opp": 0.9973352218850638,
+      "g_def_opp": 0.9973352218850637,
       "pp_off": 0.9987588418129467,
-      "pk_def_opp": 1.0019944401122687,
-      "pp_draw": 0.9991237540258312,
-      "pk_take_opp": 0.9995740421181489,
+      "pk_def_opp": 1.0019944401122685,
+      "pp_draw": 0.9991237540258311,
+      "pk_take_opp": 0.9995740421181488,
       "fin": 0.9659809041430755
      }
     },
@@ -3227,13 +2123,13 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006106780743451,
-      "ev_def_opp": 0.9979577724758583,
+      "ev_def_opp": 0.997957772475858,
       "g_off": 1.00085358463528,
-      "g_def_opp": 0.9973352218850638,
+      "g_def_opp": 0.9973352218850637,
       "pp_off": 0.9987588418129467,
-      "pk_def_opp": 1.0019944401122687,
-      "pp_draw": 0.9991237540258312,
-      "pk_take_opp": 0.9995740421181489,
+      "pk_def_opp": 1.0019944401122685,
+      "pp_draw": 0.9991237540258311,
+      "pk_take_opp": 0.9995740421181488,
       "fin": 0.9659809041430755
      }
     },
@@ -4349,13 +3245,13 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006106780743451,
-      "ev_def_opp": 0.9979577724758583,
+      "ev_def_opp": 0.997957772475858,
       "g_off": 1.00085358463528,
-      "g_def_opp": 0.9973352218850638,
+      "g_def_opp": 0.9973352218850637,
       "pp_off": 0.9987588418129467,
-      "pk_def_opp": 1.0019944401122687,
-      "pp_draw": 0.9991237540258312,
-      "pk_take_opp": 0.9995740421181489,
+      "pk_def_opp": 1.0019944401122685,
+      "pp_draw": 0.9991237540258311,
+      "pk_take_opp": 0.9995740421181488,
       "fin": 0.9659809041430755
      }
     },
@@ -5469,14 +4365,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -6598,14 +5494,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -7711,14 +6607,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -8851,14 +7747,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -9973,14 +8869,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -11086,14 +9982,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -12217,14 +11113,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -13329,14 +12225,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -14451,14 +13347,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -15582,14 +14478,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -16713,14 +15609,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.0006118061996865,
+      "ev_off": 1.0006118061996863,
       "ev_def_opp": 0.9979590755492881,
       "g_off": 1.0008551823259757,
-      "g_def_opp": 0.9973375931076925,
-      "pp_off": 0.9987625293102074,
+      "g_def_opp": 0.9973375931076924,
+      "pp_off": 0.9987625293102077,
       "pk_def_opp": 1.001988617276285,
       "pp_draw": 0.9991263708295544,
-      "pk_take_opp": 0.9995753762588768,
+      "pk_take_opp": 0.9995753762588767,
       "fin": 0.9660091589643671
      }
     },
@@ -17844,7 +16740,7 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006129299817559,
-      "ev_def_opp": 0.9979603842843714,
+      "ev_def_opp": 0.9979603842843715,
       "g_off": 1.0008567729481967,
       "g_def_opp": 0.9973399709325051,
       "pp_off": 0.9987662144637769,
@@ -18984,7 +17880,7 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006129299817559,
-      "ev_def_opp": 0.9979603842843714,
+      "ev_def_opp": 0.9979603842843715,
       "g_off": 1.0008567729481967,
       "g_def_opp": 0.9973399709325051,
       "pp_off": 0.9987662144637769,
@@ -20115,7 +19011,7 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006129299817559,
-      "ev_def_opp": 0.9979603842843714,
+      "ev_def_opp": 0.9979603842843715,
       "g_off": 1.0008567729481967,
       "g_def_opp": 0.9973399709325051,
       "pp_off": 0.9987662144637769,
@@ -21238,7 +20134,7 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006129299817559,
-      "ev_def_opp": 0.9979603842843714,
+      "ev_def_opp": 0.9979603842843715,
       "g_off": 1.0008567729481967,
       "g_def_opp": 0.9973399709325051,
       "pp_off": 0.9987662144637769,
@@ -22360,12 +21256,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -23482,12 +22378,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -24629,12 +23525,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -25741,12 +24637,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -26863,12 +25759,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -27975,12 +26871,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -29098,12 +27994,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -30229,12 +29125,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -31341,12 +30237,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -32463,12 +31359,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -33602,12 +32498,12 @@
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
       "ev_off": 1.0006140493967397,
-      "ev_def_opp": 0.9979616986870827,
+      "ev_def_opp": 0.9979616986870826,
       "g_off": 1.0008583564697406,
-      "g_def_opp": 0.9973423553571465,
-      "pp_off": 0.9987698972365987,
+      "g_def_opp": 0.9973423553571464,
+      "pp_off": 0.9987698972365986,
       "pk_def_opp": 1.0019769814539707,
-      "pp_draw": 0.9991315993348362,
+      "pp_draw": 0.9991315993348361,
       "pk_take_opp": 0.9995780411660827,
       "fin": 0.9660658524491316
      }
@@ -34740,14 +33636,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.000615164420903,
-      "ev_def_opp": 0.9979630187632746,
+      "ev_off": 1.0006151644209025,
+      "ev_def_opp": 0.9979630187632743,
       "g_off": 1.0008599328585577,
-      "g_def_opp": 0.9973447463791064,
+      "g_def_opp": 0.9973447463791063,
       "pp_off": 0.9987735775916584,
       "pk_def_opp": 1.0019711685847403,
-      "pp_draw": 0.9991342109834921,
-      "pk_take_opp": 0.9995793719056034,
+      "pp_draw": 0.9991342109834919,
+      "pk_take_opp": 0.9995793719056033,
       "fin": 0.9660942910921548
      }
     },
@@ -35871,14 +34767,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.000615164420903,
-      "ev_def_opp": 0.9979630187632746,
+      "ev_off": 1.0006151644209025,
+      "ev_def_opp": 0.9979630187632743,
       "g_off": 1.0008599328585577,
-      "g_def_opp": 0.9973447463791064,
+      "g_def_opp": 0.9973447463791063,
       "pp_off": 0.9987735775916584,
       "pk_def_opp": 1.0019711685847403,
-      "pp_draw": 0.9991342109834921,
-      "pk_take_opp": 0.9995793719056034,
+      "pp_draw": 0.9991342109834919,
+      "pk_take_opp": 0.9995793719056033,
       "fin": 0.9660942910921548
      }
     },
@@ -36985,14 +35881,14 @@
      "expected_total": 6.17,
      "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
      "neutral": {
-      "ev_off": 1.000615164420903,
-      "ev_def_opp": 0.9979630187632746,
+      "ev_off": 1.0006151644209025,
+      "ev_def_opp": 0.9979630187632743,
       "g_off": 1.0008599328585577,
-      "g_def_opp": 0.9973447463791064,
+      "g_def_opp": 0.9973447463791063,
       "pp_off": 0.9987735775916584,
       "pk_def_opp": 1.0019711685847403,
-      "pp_draw": 0.9991342109834921,
-      "pk_take_opp": 0.9995793719056034,
+      "pp_draw": 0.9991342109834919,
+      "pk_take_opp": 0.9995793719056033,
       "fin": 0.9660942910921548
      }
     },
