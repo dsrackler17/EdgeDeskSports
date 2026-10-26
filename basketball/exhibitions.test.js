@@ -28,6 +28,8 @@ T.chk('a location with no state is US Eastern and flagged approximate', EX.start
 T.eq('clock: "Noon", "7:30 PM", "19:00", "TBA"', [EX.clockOf('Noon'), EX.clockOf('7:30 PM'), EX.clockOf('19:00'), EX.clockOf('TBA')], [[12, 0], [19, 30], [19, 0], null]);
 T.eq('a school\'s own labels come off a name', [EX.bareName('#12/13 Arkansas (Exh.)'), EX.bareName('Louisville (Exhibition)'), EX.bareName('Mount St. Mary\'s (Md.) - Exhibition'), EX.bareName('Westmont College (Calif.) (E')],
   ['Arkansas', 'Louisville', 'Mount St. Mary\'s (Md.)', 'Westmont College (Calif.)']);
+T.eq('...as the schools write them (real listings)', ['Upper Iowa (Ex.)', 'Rochester Christian (ex)', 'Cal State Monterey Bay (exhib.)', 'Exhibition Cal State Monterey Bay', 'Mercyhurst (EXH)', 'Navy - Exh.', 'Spring Hill College (Ala.)'].map(EX.bareName),
+  ['Upper Iowa', 'Rochester Christian', 'Cal State Monterey Bay', 'Cal State Monterey Bay', 'Mercyhurst', 'Navy', 'Spring Hill College (Ala.)']);
 T.chk('"St." and "State" are one name', EX.normName('Pittsburg St.') === EX.normName('Pittsburg State'));
 
 /* ------------------------------------------------------------------ a synthetic league */
@@ -57,15 +59,23 @@ write(2027, 'home-u', 'homeu.edu', [
   ex('2026-10-20', '7 p.m.', 'H', 'Earlier Opponent', 'd2.edu', { status: 'final', us: 90, them: 50 }),
   ex('2026-11-05', '7 p.m.', 'H', 'Road State', 'roadst.edu'),                       /* the day of a counted game */
   ex('2026-12-20', '7 p.m.', 'H', 'Outside the window', 'd2.edu'),
+  ex('2026-11-02', 'TBA', 'H', 'Road St. (Exh.)', 'roadstathletics.com'),             /* a website the registry does not know, a registry name; no time */
+  ex('2026-11-03', '7 p.m.', 'H', 'Moved Up (EXH)', 'movedup.edu'),                   /* a Division II school in the registry, Division I on ESPN */
   { date: '2026-11-10', time: '7 p.m.', site: 'H', opponent: 'Third Tech', status: 'scheduled' },  /* a counted game, not an exhibition */
 ]);
-write(2027, 'road-st', 'roadst.edu', [ex('2026-10-27', '7 p.m.', 'A', 'Home U', 'homeu.edu', { location: 'Home City, Ohio' })]);
+write(2027, 'road-st', 'roadst.edu', [ex('2026-10-27', '7 p.m.', 'A', 'Home U', 'homeu.edu', { location: 'Home City, Ohio' }), ex('2026-11-02', '6 p.m.', 'A', 'Home U', 'homeu.edu'),
+  ex('2026-11-04', '7 p.m.', 'H', 'Third Tech (Ex.)', 'thirdtech.edu'),                /* a Division I school the collector does not read */
+  ex('2026-10-30', '7 p.m.', 'H', 'Lost U', 'lostu.edu')]);                             /* ...and one ESPN has no team named for */
 write(2027, 'few-games', 'few.edu', [ex('2026-10-28', '7 p.m.', 'H', 'Home U', 'homeu.edu')]);
 const schools = [
   { id: 'home-u', name: 'Home U', host: 'homeu.edu', division: 1 }, { id: 'road-st', name: 'Road St.', host: 'roadst.edu', division: 1 },
-  { id: 'few-games', name: 'Few Games', host: 'few.edu', division: 1 }, { id: 'd2', name: 'Division Two', full_name: 'Division Two College', host: 'd2.edu', division: 2 },
+  { id: 'few-games', name: 'Few Games', host: 'few.edu', division: 1 }, { id: 'd2', name: 'Division Two', full_name: 'Division Two College', nickname: 'Owls', host: 'd2.edu', division: 2 },
+  { id: 'third-tech', name: 'Third Tech', nickname: 'Engineers', host: 'thirdtech.edu', division: 1 }, { id: 'lost-u', name: 'Lost U', nickname: 'Ghosts', host: 'lostu.edu', division: 1 },
+  { id: 'moved-up', name: 'Moved Up', nickname: 'Lakers', host: 'movedup.edu', division: 2 },
 ];
-const o = { season: 2027, fromMs: Date.parse('2026-10-26T00:00:00Z'), toMs: Date.parse('2026-11-09T05:00:00Z'), d1: new Set(['1', '2', '3', '4']), dataDir: TMP, schools };
+/* the dataset's teams.json: ESPN names each team for its school and its nickname */
+const teams = { 1: { name: 'Home U Bears' }, 2: { name: 'Road State Rams' }, 3: { name: 'Third Tech Engineers' }, 4: { name: 'Moved Up Lakers' }, 9: { name: 'Division Two Owls' } };
+const o = { season: 2027, fromMs: Date.parse('2026-10-26T00:00:00Z'), toMs: Date.parse('2026-11-09T05:00:00Z'), d1: new Set(['1', '2', '3', '4']), teams, dataDir: TMP, schools };
 
 /* ------------------------------------------------------------------ who is who */
 const L = EX.learnTeams([{ school: 'home-u', games: JSON.parse(fs.readFileSync(path.join(TMP, 'schedules', SPORT, '2026', 'home-u.json'))).games },
@@ -107,6 +117,17 @@ T.chk('every priced game is flagged, has a numeric id and the dataset\'s shape',
 T.chk('game ids are stable across runs', JSON.stringify(EX.exhibitions('ncaam', rows, o).games.map((g) => g.game_id)) === JSON.stringify(R.games.map((g) => g.game_id)));
 T.chk('a game whose school\'s ESPN team is not Division I this season is not priced', !EX.exhibitions('ncaam', rows, Object.assign({}, o, { d1: new Set(['2', '3', '4']) })).games.some((g) => g.home_id === '1' || g.away_id === '1'));
 T.eq('no schedules held: nothing, and no error', EX.exhibitions('ncaaw', rows, o).games, []);
+const moved = by('2026-11-02');
+T.chk('a website the registry does not know but a registry name (a school that moved its site): that school, priced once', moved.length === 1 && moved[0].home_id === '1' && moved[0].away_id === '2' && moved[0].away_d1 === 1);
+T.chk('...from the listing whose start reads whole (the other school\'s "6 p.m.", not "TBA")', moved[0].source.school === 'road-st' && !moved[0].start_approx && moved[0].start_utc === '2026-11-02T23:00:00Z');
+const tt = by('2026-11-04')[0];
+T.chk('a Division I school the collector does not read: the ESPN team named for it and its nickname', tt && tt.away_id === '3' && tt.away_d1 === 1 && tt.away_name === null);
+T.chk('a Division I school ESPN has no team named for: not priced, with the reason', !by('2026-10-30').some((g) => g.home_id === '2') && why('2026-10-30').includes('a Division I opponent not matched to an ESPN team'));
+const up = by('2026-11-03')[0];
+T.chk('a Division II school in the registry whose name and nickname are a Division I team\'s: that team (it moved up)', up && up.away_id === '4' && up.away_d1 === 1);
+T.chk('...only while the team is Division I this season', EX.exhibitions('ncaam', rows, Object.assign({}, o, { d1: new Set(['1', '2', '3']) })).games.some((g) => g.day === '2026-11-03' && g.away_id === 'x-moved-up' && g.away_d1 === 0));
+T.chk('a non-Division I school named as no Division I team stays non-Division I (ESPN team 9 is not Division I)', d2.away_id === 'x-d2' && d2.away_d1 === 0);
+T.chk('a name two Division I teams share is neither\'s', EX.espnIndex({ a: { name: 'Twin Owls' }, b: { name: 'Twin Owls' } }, new Set(['a', 'b'])).get('twin owls') === null);
 
 /* ------------------------------------------------------------------ real pages (probe rounds 11 and 12)
    Eleven schools' own 2025-26 and 2026-27 basketball schedules, as the collector reads them, against the committed

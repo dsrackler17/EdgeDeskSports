@@ -20,18 +20,26 @@
    those the school lists, the runner-up at most half as many, and no other
    school may match the same team; otherwise the school is left unmatched
    and its exhibitions are not priced.
-   An opponent is a school by the website the listing names, else by its
+   An opponent is a school by the website the listing names, else (no website,
+   or one the registry does not know: a school that moved its site) by its
    name exactly as the registry writes it (after the school's own labels,
-   "(Exh.)", a ranking, come off; "St." and "State" alike). A Division I
-   opponent is its ESPN team; any other NCAA school, or a website the registry
-   does not know (an NAIA school), is not a Division I team and is priced in
-   the model's pooled non-Division I regime, as a counted game against one is.
+   "(Exh.)", "Exhibition", a ranking, come off; "St." and "State" alike). Its
+   ESPN team is the one its results match, as above, else the Division I team
+   ESPN names exactly as the registry names the school and its teams
+   ("Mercyhurst" + "Lakers"). That match also stands over the registry's
+   division: a school the registry still has in Division II whose name and
+   nickname are a Division I team's this season (Mercyhurst, New Haven) moved
+   up. A Division I opponent with no ESPN team is not priced; any other NCAA
+   school, or a website and name the registry does not know (an NAIA school),
+   is not a Division I team and is priced in the model's pooled non-Division I
+   regime, as a counted game against one is.
    A listing whose opponent is the school itself (an intrasquad scrimmage) or
    reads as no school at all ("Red/White Showcase") is not priced.
 
    AN EXHIBITION IS NEVER A COUNTED GAME. A listing on a day the school's ESPN
    team has a counted game is dropped (the dataset has it). One played between
-   two Division I schools is listed by both and priced once.
+   two Division I schools is listed by both and priced once, from the listing
+   whose start time reads whole.
 
    TIMES. A school lists the local time ("7 p.m.", "6 p.m. CT"). The zone is the
    one the listing writes, else the state's in the listing's location (the
@@ -145,7 +153,10 @@ function learnTeams(schedules, games) {
 /* ------------------------------------------------------------------ opponents */
 /* a name as the registry writes it, and as a school lists it once its own labels come off */
 const normName = (x) => String(x || '').toLowerCase().replace(/&/g, ' and ').replace(/['’.]/g, '').replace(/\bst\b/g, 'state').replace(/[^a-z0-9]+/g, ' ').trim();
-const bareName = (x) => String(x || '').replace(/\s*\((?:exh\.?|exhibition|e)\)?\s*$/i, '').replace(/\s+-\s*exh(?:ibition|\.)?\s*$/i, '').replace(/^\s*(?:#\d+(?:\/\d+)?|no\.\s*\d+)\s+/i, '').trim();
+/* "(Exh.)", "(EXH)", "(Ex.)", "(ex)", "(exhib.)", "(Exhibition)", "(E)"; " - Exhibition"; "Exhibition " or "Exh: " in front; a ranking */
+const EXH_WORD = '(?:e|ex|exh|exhib|exhibition)\\.?';
+const bareName = (x) => String(x || '').replace(new RegExp('\\s*\\(' + EXH_WORD + '\\)?\\s*$', 'i'), '').replace(new RegExp('\\s+-\\s*' + EXH_WORD + '\\s*$', 'i'), '')
+  .replace(/^\s*(?:exhibition|exh\.?)\s*(?::|-)?\s+/i, '').replace(/^\s*(?:#\d+(?:\/\d+)?|no\.\s*\d+)\s+/i, '').trim();
 /** registry lookups: by website host, and by name (a name two schools share is no one's) */
 function registryIndex(registry) {
   const byHost = new Map(); const byName = new Map();
@@ -155,13 +166,22 @@ function registryIndex(registry) {
   }
   return { byHost, byName };
 }
+/** the season's Division I ESPN teams by name ("Mercyhurst Lakers"; a name two teams share is no one's)
+    teams: the dataset's teams.json map (id -> { name }); d1: the season's Division I ids */
+function espnIndex(teams, d1) {
+  const out = new Map();
+  for (const id of d1 || []) { const n = normName(((teams || {})[id] || {}).name); if (n) out.set(n, out.has(n) ? null : id); }
+  return out;
+}
+/* the Division I ESPN team a registry school's name and nickname are, or null */
+const espnByName = (E, s) => { const ids = new Set([s.name, s.ncaa_name].filter(Boolean).map((n) => E.get(normName(n + ' ' + (s.nickname || '')))).filter(Boolean)); return ids.size === 1 ? [...ids][0] : null; };
 
 /* ------------------------------------------------------------------ exhibitions */
 const gameId = (league, date, a, b) => '9' + String(BigInt('0x' + crypto.createHash('sha256').update([league, date, a, b].join('|')).digest('hex').slice(0, 15)) % 10n ** 17n).padStart(17, '0');
 
 /** the exhibitions to price, as dataset-shaped games: scheduled, starting inside [fromMs, toMs), both sides known;
     `skipped` says why every other exhibition listed in the window was left out
-    o: { season, fromMs, toMs, d1: Set of the season's Division I ESPN ids, dataDir, schools (registry list) } */
+    o: { season, fromMs, toMs, d1: Set of the season's Division I ESPN ids, teams (teams.json map), dataDir, schools (registry list) } */
 function exhibitions(league, games, o) {
   const season = o.season;
   const now = loadSchedules(league, season, o.dataDir);
@@ -175,10 +195,11 @@ function exhibitions(league, games, o) {
   /* the collector's registry with its host corrections applied (collegiate/rosters.loadSchools) */
   const registry = o.schools || require('../collegiate/rosters').loadSchools(o.dataDir || DATA, { learnt: false });
   const R = registryIndex(registry);
+  const E = espnIndex(o.teams, o.d1);
   /* a counted game the dataset holds, by ESPN team and local day */
   const counted = new Set();
   for (const g of games) if (g.season === season && g.day) for (const id of [g.home_id, g.away_id]) counted.add(id + '|' + g.day);
-  const seen = new Set();
+  const seen = new Map();
   for (const s of now) {
     const me = teams.get(s.school);
     const self = registry.find((r) => r.id === s.school) || {};
@@ -190,34 +211,37 @@ function exhibitions(league, games, o) {
       if (x.status !== 'scheduled') { skip('listed ' + x.status); continue; }
       if (!me) { skip('the school is not matched to an ESPN team'); continue; }
       if (!o.d1.has(me.id)) { skip('the school\'s ESPN team is not Division I this season'); continue; }
-      /* the opponent: by website, else by its registry name; a website the registry does not know is no NCAA school */
+      /* the opponent: by website, else by its registry name; a website and name the registry does not know is no NCAA school */
       const listedName = bareName(x.opponent);
-      const reg = x.opponent_host ? R.byHost.get(x.opponent_host) || null : R.byName.get(normName(listedName)) || null;
+      const reg = (x.opponent_host && R.byHost.get(x.opponent_host)) || R.byName.get(normName(listedName)) || null;
       if ((x.opponent_host && (x.opponent_host === s.host || x.opponent_host === self.host)) || (reg && reg.id === s.school)) { skip('an intrasquad game'); continue; }
       if (!x.opponent_host && !reg) { skip('the opponent reads as no school'); continue; }
+      /* its ESPN team: the one its results match, else the Division I team named as the school and its teams are */
       let oppId = null;
-      if (reg && reg.division === 1) {
+      if (reg) {
         const ot = teams.get(reg.id);
-        if (!ot || !o.d1.has(ot.id)) { skip('a Division I opponent not matched to an ESPN team'); continue; }
-        oppId = ot.id;
+        oppId = ot ? (o.d1.has(ot.id) ? ot.id : null) : espnByName(E, reg);
+        if (!oppId && reg.division === 1) { skip('a Division I opponent not matched to an ESPN team'); continue; }
       }
       if (oppId === me.id) { skip('an intrasquad game'); continue; }
       if (counted.has(me.id + '|' + x.date) || (oppId && counted.has(oppId + '|' + x.date))) { skip('a counted game the dataset holds that day'); continue; }
       const other = oppId || 'x-' + ((reg && reg.id) || x.opponent_host || normName(listedName).replace(/ /g, '-')).slice(0, 40);
       const key = [x.date].concat([me.id, other].sort()).join('|');
-      if (seen.has(key)) continue;                                    /* two Division I schools list the same game */
-      seen.add(key);
+      const prior = seen.get(key);                                    /* two Division I schools list the same game: priced once, */
+      if (prior && !(prior.start_approx && !t.approx)) continue;      /* from the listing whose start reads whole */
       const home = x.site === 'A' ? other : me.id, away = x.site === 'A' ? me.id : other;
       const oppName = oppId ? null : listedName || (reg && reg.name) || null;   /* the name the school lists ("UIS"), not the registry's abbreviation */
-      out.games.push({ game_id: gameId(league, x.date, home, away), season, season_type: 1, status: 'SCHEDULED', start_utc: new Date(t.ms).toISOString().replace(/\.000Z$/, 'Z'), start_ms: t.ms,
+      const game = { game_id: gameId(league, x.date, home, away), season, season_type: 1, status: 'SCHEDULED', start_utc: new Date(t.ms).toISOString().replace(/\.000Z$/, 'Z'), start_ms: t.ms,
         day: x.date, neutral: x.site === 'N' ? 1 : 0, conf_game: 0, event: 'exhibition', home_id: home, away_id: away,
         home_d1: home === me.id || home === oppId ? 1 : 0, away_d1: away === me.id || away === oppId ? 1 : 0,
         home_name: home === other ? oppName : null, away_name: away === other ? oppName : null, quarantine: [], exhibition: true, start_approx: t.approx,
-        source: { school: s.school, host: s.host, game_key: x.game_key || null, listed: { date: x.date, time: x.time || null, site: x.site, opponent: x.opponent || null, location: x.location || null } } });
+        source: { school: s.school, host: s.host, game_key: x.game_key || null, listed: { date: x.date, time: x.time || null, site: x.site, opponent: x.opponent || null, location: x.location || null } } };
+      if (prior) out.games[out.games.indexOf(prior)] = game; else out.games.push(game);
+      seen.set(key, game);
     }
   }
   out.games.sort((a, b) => a.start_ms - b.start_ms || (a.game_id < b.game_id ? -1 : 1));
   return out;
 }
 
-module.exports = { SPORT, MIN_MATCHED, MIN_SHARE, zoneOf, clockOf, startOf, offsetMin, loadSchedules, learnTeams, registryIndex, normName, bareName, exhibitions, gameId };
+module.exports = { SPORT, MIN_MATCHED, MIN_SHARE, zoneOf, clockOf, startOf, offsetMin, loadSchedules, learnTeams, registryIndex, espnIndex, normName, bareName, exhibitions, gameId };
