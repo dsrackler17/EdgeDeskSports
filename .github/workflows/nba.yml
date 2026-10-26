@@ -65,6 +65,13 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: nba-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -104,7 +111,9 @@ jobs:
       - name: No path around the odds gateway; the navigation and the sports list name the NBA
         run: node tools/odds/no_bypass.test.js && node tools/app/navigation.test.js && node tools/app/sports_config.test.js && node tools/presentation/presentation_sync.test.js
       - name: Install Chromium for the panel
-        continue-on-error: true
+        # no continue-on-error: a browser suite without a browser prints SKIPPED and
+        # exits 0, so a failed install would leave this job green having tested
+        # nothing. It fails here, at the install, instead (docs/ci/README.md).
         run: npm install --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
       - name: The NBA panel in Chromium, desktop and a 390 px phone
         run: node tools/nba/nba_ui.e2e.js

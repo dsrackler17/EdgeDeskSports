@@ -1,0 +1,74 @@
+{
+  "schema": "edgedesk_ci_checks_v1",
+  "note": "Every workflow a pull request can start belongs to exactly one category (tools/ci/workflows.test.js fails otherwise). npm run verify runs every category but integration; integration workflows reach live sources (ESPN, MLB Stats, the provider feeds) and run only with --include-live. Categories group the checks for people and for npm run verify:<alias>; they do not rename anything, so every check keeps the name branch protection may require.",
+  "categories": {
+    "core": {
+      "title": "Core validation",
+      "about": "the repository parses, every path a workflow runs exists, cross-cutting integrity",
+      "workflows": ["core-validation.yml", "system-integrity-tests.yml", "model-loop-tests.yml"]
+    },
+    "sports-models": {
+      "title": "Sports model validation",
+      "about": "the pregame models, their calibration, freezes and validation records",
+      "workflows": [
+        "cfb-altitude-tests.yml", "cfb-decision-tests.yml", "cfb-home-field-tests.yml", "cfb-lab-tests.yml",
+        "cfb-live-calibration-tests.yml", "cfb-production-tests.yml", "cfb-validation-tests.yml", "cfb-weekly-tests.yml",
+        "cfb-ref-tests.yml", "coaching-program-validation.yml", "nfl-coaching-staff-validation.yml", "nfl-model-tests.yml",
+        "nba.yml", "nhl.yml", "ncaam-forecast-tests.yml", "ncaaw-forecast-tests.yml", "ncaam-research.yml",
+        "college-baseball-research.yml", "lab.yml", "projections.yml", "linemaker.yml", "ref-flags-tests.yml", "performance-tests.yml"
+      ]
+    },
+    "market-odds": {
+      "title": "Market and odds integrity",
+      "about": "the odds gateway and its budget, quotes, EV, decisions, the market layers and the ledgers they settle",
+      "workflows": [
+        "odds-gateway-tests.yml", "decision-quality.yml", "cfb-board-integrity-tests.yml", "market-foresight-tests.yml",
+        "market-intelligence-tests.yml", "market-resilience-tests.yml", "market-structure-tests.yml", "kalshi.yml",
+        "player-props-tests.yml", "props-factory.yml", "clv-openers.yml", "record-pnl-tests.yml"
+      ]
+    },
+    "research-signals": {
+      "title": "Research and signals",
+      "about": "the research terminal, game research, Signal Center, intelligence and the published research",
+      "workflows": [
+        "cfb-terminal.yml", "game-research-tests.yml", "signal-center-tests.yml", "intelligence-ci.yml", "collective-tests.yml",
+        "desk-tests.yml", "content-engine.yml", "newsletter-suites.yml", "discord-tests.yml", "personal-tests.yml", "edgedesk-features.yml"
+      ]
+    },
+    "simulation": {
+      "title": "Simulation",
+      "about": "the simulator and the games built on it",
+      "workflows": ["simulator-tests.yml", "games-tests.yml"]
+    },
+    "database-security": {
+      "title": "Database and security",
+      "about": "row-level security on a real PostgreSQL, secrets and access audits",
+      "workflows": ["cfb-security.yml", "games-sql.yml"]
+    },
+    "frontend-navigation": {
+      "title": "Frontend and navigation",
+      "about": "the pages a reader sees, in a browser where it matters",
+      "workflows": [
+        "slate-tests.yml", "sport-graphic-tests.yml", "guide-tests.yml", "funnel-tests.yml", "growth-engine-tests.yml", "portfolio-tests.yml"
+      ]
+    },
+    "integration": {
+      "title": "Integration tests (live sources)",
+      "about": "pull-request runs that probe a live source; kept apart from the deterministic suites, never replaced by mocks",
+      "workflows": [
+        "cfb-ref-sync.yml", "college-baseball.yml", "mlb-pitchers.yml", "simulator-cfb-sources.yml",
+        "simulator-sources.yml", "simulator-sports-data.yml", "tennis-sync.yml"
+      ]
+    }
+  },
+  "aliases": {
+    "cfb": [
+      "cfb-validation-tests.yml", "cfb-terminal.yml", "decision-quality.yml", "cfb-board-integrity-tests.yml",
+      "cfb-altitude-tests.yml", "cfb-decision-tests.yml", "cfb-home-field-tests.yml", "cfb-lab-tests.yml",
+      "cfb-live-calibration-tests.yml", "cfb-production-tests.yml", "cfb-weekly-tests.yml", "cfb-ref-tests.yml",
+      "cfb-security.yml", "coaching-program-validation.yml"
+    ],
+    "odds": "market-odds",
+    "research": "research-signals"
+  }
+}

@@ -51,6 +51,13 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: linemaker-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -83,7 +90,9 @@ jobs:
       - name: The navigation names Lines
         run: node tools/app/navigation.test.js && node tools/app/sports_config.test.js
       - name: Install Chromium for the panel
-        continue-on-error: true
+        # no continue-on-error: a browser suite without a browser prints SKIPPED and
+        # exits 0, so a failed install would leave this job green having tested
+        # nothing. It fails here, at the install, instead (docs/ci/README.md).
         run: npm install --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
       - name: The Fair Lines panel in Chromium, desktop and a 390 px phone
         run: node tools/football/linemaker_ui.e2e.js
