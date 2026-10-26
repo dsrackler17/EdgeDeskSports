@@ -1,53 +1,53 @@
 # Changelog
 
+## 2026-10-26 — CI: `npm run verify` stops reporting this machine's gaps as failures
+
+A full `npm run verify` reported 19 failures, and 11 of them were this machine's, not the code's. `tools/ci/verify.js` now reports a failure the machine explains as **NOT VERIFIED**, with the reason and, where there is one, the command to run. A pass is always a pass, and any other failure stays FAIL.
+
+| Failure | Why it happened | Now |
+|---|---|---|
+| Data packs, NBA (3), NCAAM research (2) | `node` steps shell out to Python, but only a step whose own script says `python3` was checked against the job's skipped `pip install` | NOT VERIFIED when the log names a missing package, or an earlier step of the job already failed for one |
+| Simulator Typecheck (one step, counted 3 times) | the job's `npm ci --prefix simulator` is skipped, and `simulator/node_modules` is not here | NOT VERIFIED, naming `npm ci --prefix simulator`. A reused NOT VERIFIED step stays NOT VERIFIED; it was counted FAIL. |
+| games-sql "Refuse a silent skip" | it checks logs that its PostgreSQL steps write, and those did not run | NOT VERIFIED: it reads a file only a step that did not run writes |
+| MLB live probe | a live source inside a deterministic workflow | `tools/ci/checks.json` `live_jobs`; run only with `--include-live` |
+
+Files a step creates (screenshots, a suite's log) are no longer deleted. They move to `.cache/verify/<run>/created/`, and a rewritten committed file is copied to `.cache/verify/<run>/rewritten/` before it is restored.
+
+Tests: `tools/ci/verify.test.js` goes from 32 to 43; 11 of them fail on the previous `verify.js`. `tools/ci/workflows.test.js` adds 1 check: every `live_jobs` entry names a real job.
 
 
-## 2026-10-26 — Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market
 
-**Why.** Several of the day's NBA, NFL, CFB and NHL numbers sat far from the market. The question was whether any came from a wrong input or invalid math, as opposed to an honest disagreement. Two did: Philadelphia was priced with Jalen Hurts while he was on the reserve list, and EDINTEL's EV counted a push as a win.
+## 2026-10-26 — CFB altitude: the browser suite runs again, on a frozen snapshot, and cannot skip in CI
 
-**What.** One commit per defect, each with a regression test that fails on the old code:
-- NFL (`app.html`, `tools/football/build_nfl_slate.js`): a QB whose roster status is `RES`/`CUT`/`RET`/`SUS` is replaced as an OUT QB is. That status is PENDING when it comes from an earlier week's roster, and the replacement search skips players off the active roster.
-- EDINTEL `decide()`: a two-way no-vig probability becomes p(1−q) before the push mass is added, and the edge is measured against (1−q)/d.
-- Game, NBA and NHL graphics: the gap between a mean and a line is a *reading*. "EDGE" needs the exact bet's probability, pushes counted, to clear its offered price's break-even, and the sport's value claims enabled.
-- NHL `startersFor()`: a game is CONFIRMED only when both goalies are. An operator-listed unavailable goalie leaves the projection.
-- NBA `splitAbsent()`: a regular now on another roster is "left the team", never an absent regular or a return.
-- Board: the NHL whole-number total's market reference carries its push.
-- New shared audit `lib/edgedesk_model_integrity.js` → `engine/model_integrity.json`:
-  - built every 3 h by `projections-build.yml`;
-  - classifies each game as INPUT_ERROR, STALE_DATA, MISSING_CRITICAL_INPUT, CALIBRATION_WARNING, LARGE_MARKET_DISAGREEMENT, INSUFFICIENT_EVIDENCE or VALIDATED_INDEPENDENT_SIGNAL;
-  - compares each projection only with a quote captured before it;
-  - reads its thresholds from `engine/model_integrity_config.json`;
-  - publishes how games beyond each threshold have actually gone;
-  - shows as chips and a matchup section in Today's Games, which holds the signal chip while an input is unresolved.
-- `tools/model_integrity/calibration_report.js` and `docs/system-integrity/MODEL_INTEGRITY.md`: the calibration evidence and the methodology changes it calls for.
+**The silent pass.** `football/altitude/ui.e2e.js` read the Notre Dame at BYU game (401856809) from the live `football/game_research/current.json`. The hourly build dropped the game at `1d57b3cd` (2026-10-19 12:08 UTC), two days after kickoff. From then on the step printed `SKIPPED: the committed research snapshots no longer carry Notre Dame at BYU`, exited 0, and showed green in `CFB altitude tests`, testing nothing.
+- #807's own run shows it: the step took 0 s on the pull request that rewrote the game view.
+- AGENTS.md §4: a suite that prints SKIPPED has not passed.
 
-No model was moved toward the market. No ledger, fitted bound or methodology changed.
+**The fix.**
+- **The snapshot is frozen.** `football/altitude/fixtures/byu_notredame_research.json` holds the game's last pregame entry, copied unchanged from `current.json` at `23282594a` (generated 2026-10-17 22:38 UTC). The suite serves it inside the committed file's envelope.
+- **A stale fixture fails.** A new check fails when the committed file's snapshot version is no longer the fixture's.
+- **A missing browser fails in CI.** Under `CFB_ALTITUDE_E2E_REQUIRED=1`, now set in `cfb-altitude-tests.yml`, a missing Playwright or Chromium fails the step. Locally it prints `SKIPPED (not verified)`.
 
-**Evidence.**
-- Same feeds, same instant:
-  - DAL @ PHI moved from PHI −2.83 to −0.58 (Tanner McKee).
-  - PHI @ WAS moved from WAS −0.28 to −2.52.
-  - The other 14 games did not change.
-- EDINTEL: a 50% fair side at 1.909 with a 6% push read EV +1.45%; the correct figure is −4.27%.
-- The LAK @ NYR card read "EDGE: OVER 5.5" with P(6+) 52.67% against a 56.52% break-even.
-- College football out of sample, 2022–2025 (n = 3,120):
-  - Margins are too wide: slope 0.933, SE 0.022.
-  - Win probabilities are too extreme: recalibration slope 0.854, 95% CI 0.78–0.92.
-  - Disagreement with the opener carried no information about the result: slope 0.055 ± 0.057.
-  - Each fix is a methodology change for its own pull request (MODEL_INTEGRITY.md §7).
+No assertion changed, and no committed snapshot, parameter or record was touched.
 
-**Tests.**
-- Model integrity: `tools/model_integrity/model_integrity.test.js`, 67 checks. Three injected bugs each turn it red.
-- NFL roster regime: 71 checks; 7 of them fail on the old code.
-- EDINTEL: 580 checks; 4 fail on the old code.
-- NBA engine: 101 checks.
-- NHL brain: 107 checks.
-- Board: 39 checks.
-- NBA graphic: 375 checks.
-- NHL graphic: 350 checks.
-- NFL prior decay: 85 checks.
-- Today's Games end-to-end: 118 checks, including an integrity scenario.
+**Tests.** On `main` (`0ad40e40`) the step printed SKIPPED and exited 0, with or without the new variable. Now it runs 41 checks, all passing at 390 px and 1280 px, so #807's game view still draws the section. Each failure path was shown to fail: no Playwright under the variable (exit 1), and a fixture version the committed file does not carry (exit 1).
+
+## 2026-10-26 — NCAAW forecast tests: no longer tied to the served model's version
+
+**The failure on `main`.** At `cf8d09fb9` (17:22 UTC) the weekly model loop promoted the served NCAAW model, moving `docs/model-loop/ncaaw/versions.json` from 1.1.0 to 1.2.0. A push by a workflow starts no other workflow, so nothing ran, but two `NCAAW forecast suites` jobs fail from that commit on. Their tests assumed the old version.
+- **`tests/sql.test.js`** (`sql` job), 68/0 → 67/1. "A ROLLBACK needs a reason" named `ncaaw_points@1.1.0`. The registry now records the incumbent as `@1.2.0`, so `ncaaw_fc_set_champion` refused an unrecorded model and the check never reached the reason rule.
+- **`tests/ops.test.js`** (`ops` job), 37/0 → 34/3. The promote injection ran the frozen selection against the served incumbent and relied on its PROMOTE. Against 1.2.0 it is RETAIN, so the promote boundary was never reached.
+
+**The fix (tests only).**
+- **SQL test.** It takes the incumbent's key from the registry it initialized.
+- **Promote case.** It starts from a throwaway registry whose champion is the frozen selection with a prior 64 times too strong, and runs `--only lambda_weaker_prior`. The gain on 2026-10-26 was 0.029 log loss (95% CI 0.027 to 0.031) against the 0.0002 required, and every gated cohort improved.
+- **Store case.** The bootstrap run, served incumbent against the frozen selection, moves to the store case. It stops after evaluation whatever the decision, so it keeps that coverage without depending on the decision. A new check confirms it evaluated `selection_v1` against the incumbent.
+
+**Not touched.** No assertion is loosened. No model, version file, gate, policy or record changes.
+
+**Tests.** Both suites pass at the incumbent's old and new versions:
+- at `ed0691fda`, 1.1.0: SQL 68/0, operations 38/0;
+- at `main`, 1.2.0: SQL 68/0, operations 38/0.
 
 ## 2026-10-26 — All checks: one required check for every workflow a pull request starts
 

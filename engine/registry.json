@@ -754,23 +754,23 @@
    },
    "research": null,
    "readiness": {
-    "state": "OUTCOME_VALIDATED",
-    "label": "Validated vs outcomes — moneyline",
+    "state": "EXPERIMENTAL",
+    "label": "Experimental",
     "scope": [
      "moneyline"
     ],
     "primary": "moneyline",
-    "primary_state": "OUTCOME_VALIDATED",
+    "primary_state": "EXPERIMENTAL",
     "partial": false,
     "markets": {
      "moneyline": {
-      "state": "OUTCOME_VALIDATED",
+      "state": "EXPERIMENTAL",
       "value_claims": false,
       "reason": "never tested against the closing market",
-      "outcome": "VALIDATED",
+      "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
-      "n": 16696,
-      "headline": "outcomes (HOLDOUT): OUTCOME_VALIDATED; log loss 0.60257; vs elo_cal Δ -0.005471 (95% -0.007445 to -0.003488); vs close: not tested",
+      "n": 11950,
+      "headline": "outcomes (VALIDATION): PROVISIONAL (the HOLDOUT has not been evaluated for this model version); log loss 0.59375; vs elo_cal Δ -0.005612 (95% -0.008444 to -0.002949); vs close: not tested",
       "file": "college_baseball/validation/walkforward.json"
      }
     },
@@ -785,9 +785,9 @@
       "detail": "hier_cal"
      },
      "validation_passed": {
-      "done": true,
+      "done": false,
       "partial": false,
-      "detail": "1 of 1 markets validated vs outcomes; primary market (moneyline): outcome validated"
+      "detail": "no market passed (1 scored); primary market (moneyline): experimental"
      },
      "market_tested": {
       "done": false,
@@ -801,7 +801,7 @@
     "college_baseball/validation/audit.json",
     "college_baseball/validation/release_gates.json"
    ],
-   "evidence_generated_at": "2026-10-19T19:00:04.390Z",
+   "evidence_generated_at": "2026-10-26T18:59:23.900Z",
    "data": [
     {
      "source": "sportsdataverse/baseballr-data (stats.ncaa.org)",
@@ -1341,7 +1341,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 44014,
-      "headline": "Women's college basketball moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.45922; vs close: not tested; vs Elo Δ -0.050953 (95% -0.054665 to -0.047224)",
+      "headline": "Women's college basketball moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.45616; vs close: not tested; vs Elo Δ -0.054013 (95% -0.057929 to -0.050114)",
       "file": "basketball/validation/ncaaw_walkforward.json"
      },
      "spread": {
@@ -1351,7 +1351,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 44014,
-      "headline": "Women's college basketball point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 7.4173; vs close: not tested",
+      "headline": "Women's college basketball point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 7.2934; vs close: not tested",
       "file": "basketball/validation/ncaaw_walkforward.json"
      },
      "total": {
@@ -1361,7 +1361,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 44014,
-      "headline": "Women's college basketball total points (incl. overtime): OUTCOME_VALIDATED; held-out CRPS 9.2782; vs close: not tested",
+      "headline": "Women's college basketball total points (incl. overtime): OUTCOME_VALIDATED; held-out CRPS 9.2786; vs close: not tested",
       "file": "basketball/validation/ncaaw_walkforward.json"
      }
     },
@@ -1389,7 +1389,7 @@
    "evidence_files": [
     "basketball/validation/ncaaw_walkforward.json"
    ],
-   "evidence_generated_at": "2026-10-26T16:08:27.635Z",
+   "evidence_generated_at": "2026-10-26T17:22:25.390Z",
    "data": [
     {
      "source": "sportsdataverse wehoop-wbb-data (ESPN)",
@@ -1650,9 +1650,9 @@
   }
  ],
  "summary": {
-  "OUTCOME_VALIDATED": 9,
-  "RETIRED": 1,
-  "EXPERIMENTAL": 1
+  "OUTCOME_VALIDATED": 8,
+  "EXPERIMENTAL": 2,
+  "RETIRED": 1
  },
  "partial_validation": [
   "mlb",
@@ -1698,5 +1698,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-26T16:08:28.650Z"
+ "generated_at": "2026-10-26T20:45:10.160Z"
 }

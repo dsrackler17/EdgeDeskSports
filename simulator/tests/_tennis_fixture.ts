@@ -16,6 +16,12 @@ export async function tennisRuns(runs: number, seed: string): Promise<{ runs: Te
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tennis-runs-'));
   const live = await executeTennis({ season: 2026, runs, seed, workers: 1, snapshot: null, out: path.join(tmp, 'feeds'), traceRuns: [], offline: true }, () => {});
   if (live.runs.some((r) => r.results.run.competition !== 'matches') && live.runs.some((r) => r.results.run.competition === 'matches')) return { runs: live.runs, source: 'committed feeds' };
+  return { runs: await fixtureRuns(runs, seed), source: 'fixture' };
+}
+
+/* the frozen snapshots' runs alone, whatever the day's feeds hold (a check that must not depend on the day) */
+export async function fixtureRuns(runs: number, seed: string): Promise<TennisRunOutcome[]> {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tennis-runs-'));
   const out: TennisRunOutcome[] = [];
   for (const s of fixtureSnapshots()) {
     const f = path.join(tmp, s.data.competition + '.json');
@@ -23,5 +29,5 @@ export async function tennisRuns(runs: number, seed: string): Promise<{ runs: Te
     const o = await executeTennis({ season: 2026, runs, seed, workers: 1, snapshot: f, out: path.join(tmp, 'fixture'), traceRuns: [] , offline: true }, () => {});
     out.push(...o.runs);
   }
-  return { runs: out, source: 'fixture' };
+  return out;
 }

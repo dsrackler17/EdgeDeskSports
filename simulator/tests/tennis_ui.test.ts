@@ -10,7 +10,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { kit } from './_kit.ts';
 import { REPO } from '../src/sports/tennis/elo.ts';
-import { tennisRuns } from './_tennis_fixture.ts';
+import { tennisRuns, fixtureRuns } from './_tennis_fixture.ts';
 import { resultRows, entityRows } from '../src/publish/publish.ts';
 
 const req = createRequire(import.meta.url);
@@ -52,8 +52,43 @@ T.chk('no match prices published: says so on Matches', /No match prices have bee
 const d = paint(cache(), 'draws');
 T.chk('Draws: EXPERIMENTAL, the simulated-draw count and the tournament', /EXPERIMENTAL/.test(d) && /4,000 simulated draws/.test(d) && d.includes(UI.esc(S0.tournament.name)));
 T.chk('Draws: results Observed, simulation Research, the order\'s source stated', /sm-observed/.test(d) && /sm-research/.test(d) && /Draw order: /.test(d));
-/* decimal odds print as 2.73 below 1,000 and as 1,333 from 1,000 up (EDSim fairOdds), so a long shot in the draw still shows both formats */
-T.chk('Draws: who wins the title, with fair odds in both formats for every player still in', /Who wins the title/.test(d) && (d.match(/<td class="sm-num">(?:\d+\.\d\d|\d{1,3}(?:,\d{3})+) · [+-]\d+<\/td>/g) || []).length >= S0.players.filter((p: any) => !p.out).length - 1);
+/* the title table read row by row against each player's own simulated title share: every player still in and no one
+   else, decimal 1/p and American each to the precision printed (2.73 below 1,000 decimal, 1,333 from 1,000 up: EDSim
+   fairOdds), and no price (—) where the share is 0 of the draws simulated, since 1/p is then undefined. A count of
+   priced cells allowing one gap failed on a correct page whenever a draw had two such players (Curitiba, 2026-10-26) */
+const titleOdds = (x: any): string[] => {
+  const S = x.run.validation_summary.sport_summary, html = paint(cache({ ...x, comp: x.run.competition }), 'draws'), bad: string[] = [];
+  const share = new Map(x.results.filter((r: any) => r.outcome === 'win_title').map((r: any) => [r.entity_id, r.probability]));
+  const rows = [...((html.split('Who wins the title')[1] || '').split('</tbody>')[0]).matchAll(/<tr><td><b>(.*?)<\/b>.*?<td class="sm-num">([^<]*)<\/td><\/tr>/g)];
+  const alive = S.players.filter((p: any) => !p.out);
+  if (rows.length !== alive.length) bad.push(rows.length + ' rows for ' + alive.length + ' players still in');
+  for (const p of alive) {
+    const mine = rows.filter((r) => r[1] === UI.esc(p.name)), q = share.get(p.id);
+    if (mine.length !== 1) { bad.push(p.name + ': ' + mine.length + ' rows'); continue; }
+    const text = mine[0][2];
+    if (typeof q !== 'number') { bad.push(p.name + ': no title share published'); continue; }
+    if (!(q > 0 && q < 1)) { if (text !== '—') bad.push(p.name + ' (' + q + '): ' + text + ', not —'); continue; }
+    const f = /^(\d+\.\d\d|\d{1,3}(?:,\d{3})+) · ([+-]\d+)$/.exec(text), dec = 1 / q, am = q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q;
+    if (!f || f[1].includes(',') !== dec >= 1000 || Math.abs(Number(f[1].replace(/,/g, '')) - dec) > (dec >= 1000 ? 0.5 : 0.005) + 1e-9
+      || Math.abs(Number(f[2]) - am) > 0.5 + 1e-9 || (f[2][0] === '+') !== am > 0) bad.push(p.name + ' (' + q + '): ' + text);
+  }
+  return bad;
+};
+const titleBad = P.flatMap((x) => titleOdds(x).map((b) => x.run.competition + ' ' + b));
+T.chk('Draws: who wins the title, with fair odds in both formats for every player still in', /Who wins the title/.test(d) && titleBad.length === 0, titleBad);
+/* the same reading on the frozen fixture's draw, made to hold what a day's feeds may or may not: two players still in
+   with no simulated title (no price), and long shots past 1,000 decimal */
+{
+  const fx = (await fixtureRuns(4000, '3')).filter((r) => r.results.run.competition !== 'matches').map((r, i) => pub(r, 50 + i))[0];
+  const alive = (fx.run.validation_summary as any).sport_summary.players.filter((p: any) => !p.out), set = (id: string, n: number) => {
+    const r: any = fx.results.find((r: any) => r.entity_id === id && r.outcome === 'win_title'); r.outcome_count = n; r.probability = n / r.n_sims;
+  };
+  [0, 0, 1, 3].forEach((n, i) => set(alive[alive.length - 1 - i].id, n));
+  const h = paint(cache({ ...fx, comp: fx.run.competition }), 'draws'), rowOf = (p: any) => (h.split('<b>' + UI.esc(p.name) + '</b>')[1] || '').split('</tr>')[0];
+  T.eq('Draws: no title in 4,000 draws shows no price; 1 and 3 in 4,000 show 4,000 · +399900 and 1,333 · +133233',
+    [alive.length >= 4, ...alive.slice(-4).reverse().map((p: any) => (/<td class="sm-num">([^<]*)<\/td>$/.exec(rowOf(p)) || [])[1])], [true, '—', '—', '4,000 · +399900', '1,333 · +133233']);
+  T.eq('Draws: ...and the row-by-row reading accepts that page', titleOdds(fx), []);
+}
 T.chk('Draws: the next matches priced for both players', (S0.scheduled.length === 0 || /The next matches/.test(d)) && S0.scheduled.every((m: any) => d.includes(UI.esc(m.a_name)) && d.includes(UI.esc(m.b_name))));
 T.chk('Draws: the results so far, winner and loser', !S0.results.length || (/Results so far/.test(d) && / d\. /.test(d)));
 if (P.length > 1) {

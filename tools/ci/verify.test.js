@@ -92,8 +92,12 @@ chk('the summary counts them apart (passed 3 with the reuse · failed 1 · not v
 chk('NOT VERIFIED steps are listed as not passed', /NOT VERIFIED HERE — CI runs these; do not report them as passed:/.test(r.out));
 chk('a step that rewrote a committed file is named', /WROTE committed file data\/store\.json/.test(r.out) && /data\/store\.json ← pr\.yml · rewrites a committed file/.test(r.out), r.out.slice(-600));
 chk('...and the file is put back, so it cannot be committed by accident', fs.readFileSync(path.join(R, 'data', 'store.json'), 'utf8') === '{"v": 1}\n' && /restored 1 to HEAD/.test(r.out));
+const runDir = ((r.out.match(/into (\.cache\/verify\/[^/\s]+)\/created\//) || [])[1]) || '(none)';
+chk('...with the rewritten copy kept beside the run\'s logs, as evidence', /rewritten copies are in \.cache\/verify\/[^/\s]+\/rewritten\//.test(r.out)
+  && (() => { try { return fs.readFileSync(path.join(R, runDir, 'rewritten', 'data', 'store.json'), 'utf8') === '{"v": 2}\n'; } catch (e) { return false; } })(), runDir);
 chk('a step that created an untracked file is named', /CREATED untracked file data\/artifact\.json/.test(r.out) && /data\/artifact\.json ← pr\.yml · rewrites a committed file/.test(r.out), r.out.slice(-700));
-chk('...and the file is removed, so it cannot be committed by accident', !fs.existsSync(path.join(R, 'data', 'artifact.json')) && /removed 1 \(--keep-writes keeps them\)/.test(r.out));
+chk('...and the file leaves the checkout, so it cannot be committed by accident, but is moved beside the run\'s logs, not deleted (a screenshot is evidence)',
+  !fs.existsSync(path.join(R, 'data', 'artifact.json')) && fs.existsSync(path.join(R, runDir, 'created', 'data', 'artifact.json')) && /moved 1 out of the checkout/.test(r.out), runDir);
 chk('a step log is saved under .cache/verify/', /log \.cache\/verify\/[^ ]+\/pr\.t\.5\.log/.test(r.out), r.out);
 
 /* --keep-writes, --bail, --json */
@@ -162,6 +166,75 @@ git(['add', '-A']); git(['commit', '-q', '-m', 'net']);
 r = run(['--workflow', 'net.yml', '--net-audit']);
 chk('--net-audit names the step that reached example.invalid, and only that step', r.code === 0 && /NETWORK example\.invalid:9/.test(r.out) && (r.out.match(/NETWORK example/g) || []).length === 1
   && /STEPS WHOSE NODE PROCESSES REACHED THE NETWORK/.test(r.out), r.out.slice(-700));
+
+/* 2026-10-26: a full run reported 19 failures, and 11 were this machine's, not the code's.
+   A failure the machine explains is NOT VERIFIED, never passed; any other failure stays FAIL. */
+
+/* a Python package the job's skipped pip install would add, named by a step that runs node */
+write('.github/workflows/py.yml', [
+  'name: Python packages', 'on:', '  pull_request:', 'jobs:', '  t:', '    runs-on: ubuntu-latest', '    steps:',
+  '      - uses: actions/setup-python@v5',
+  '      - run: pip install --quiet edgedesk_no_such_pkg_zz',
+  '      - name: fails, and says nothing of the package',
+  "        run: node -e 'console.log(\"FAIL | unrelated\"); process.exit(1)'",
+  '      - name: reads a parquet through python',
+  "        run: node -e 'console.log(\"edgedesk_no_such_pkg_zz is not installed (pip install edgedesk_no_such_pkg_zz)\"); process.exit(1)'",
+  '      - name: builds on what that step made',
+  "        run: node -e 'process.exit(3)'",
+  '      - name: passes',
+  "        run: node -e 'process.exit(0)'",
+].join('\n') + '\n');
+/* a directory whose declared packages the job's skipped npm ci would install */
+write('sub/package.json', JSON.stringify({ name: 'sub', private: true, devDependencies: { 'edgedesk-no-such-dep': '1.0.0' } }) + '\n');
+write('sub/check.js', 'require("./node_modules/edgedesk-no-such-dep");\n');
+write('elsewhere.test.js', 'console.log("FAIL | not in sub"); process.exit(1);\n');
+write('.github/workflows/npm.yml', [
+  'name: Declared packages', 'on:', '  pull_request:', 'jobs:', '  t:', '    runs-on: ubuntu-latest', '    steps:',
+  '      - run: npm ci --prefix sub --no-audit --no-fund',
+  '      - name: fails outside sub',
+  '        run: node elsewhere.test.js',
+  '      - name: typechecks sub',
+  '        run: node sub/check.js',
+].join('\n') + '\n');
+/* a file only a step that could not run here writes (games-sql's "Refuse a silent skip") */
+write('.github/workflows/tee.yml', [
+  'name: Silent skip', 'on:', '  pull_request:', 'jobs:', '  t:', '    runs-on: ubuntu-latest', '    steps:',
+  '      - name: reads a log no step writes',
+  '        run: grep -q "ALL GREEN" other.log',
+  '      - name: the suite, behind a secret',
+  '        env: { K: "${{ secrets.SB_URL }}" }',
+  '        run: node ok.test.js | tee made.log',
+  '      - name: refuses a silent skip',
+  '        run: grep -q "ALL GREEN" made.log',
+].join('\n') + '\n');
+git(['add', '-A']); git(['commit', '-q', '-m', 'machine-explained failures']);
+r = run(['--workflow', 'py.yml']);
+chk('a node step whose log names a Python package its job would install is NOT VERIFIED, with the install line', /N\/A\s+[\d.]+s\s+reads a parquet through python — failed for want of Python packages its job installs \(edgedesk_no_such_pkg_zz\): pip install --quiet edgedesk_no_such_pkg_zz/.test(r.out), r.out.slice(-1200));
+chk('...a later failure in that job is NOT VERIFIED too: it may only lack what that step builds', /N\/A\s+[\d.]+s\s+builds on what that step made — failed after "reads a parquet through python" could not run here/.test(r.out), r.out.slice(-1200));
+chk('...a failure that names no missing package stays FAIL, and a pass is still a pass', /FAIL\s+[\d.]+s\s+fails, and says nothing of the package/.test(r.out) && /SUMMARY  passed 1 · failed 1 · NOT VERIFIED here 2/.test(r.out) && r.code === 1, (r.out.match(/SUMMARY.*/) || [])[0]);
+r = run(['--workflow', 'npm.yml']);
+chk('a failing step in a directory whose declared packages are not installed is NOT VERIFIED, with the install to run', /N\/A\s+[\d.]+s\s+typechecks sub — failed, and its job installs sub's packages \(edgedesk-no-such-dep\), which are not installed here: npm ci --prefix sub --no-audit --no-fund, then run it again/.test(r.out), r.out.slice(-1000));
+chk('...a failure outside that directory stays FAIL', /FAIL\s+[\d.]+s\s+fails outside sub/.test(r.out) && /SUMMARY  passed 0 · failed 1 · NOT VERIFIED here 1/.test(r.out), (r.out.match(/SUMMARY.*/) || [])[0]);
+write('.github/workflows/npm2.yml', fs.readFileSync(path.join(R, '.github', 'workflows', 'npm.yml'), 'utf8').replace('name: Declared packages', 'name: Declared packages again'));
+git(['add', '-A']); git(['commit', '-q', '-m', 'the same step in a second workflow']);
+r = run(['--workflow', 'npm.yml,npm2.yml']);
+chk('...and the same step in a second workflow is NOT VERIFIED too, not counted as a failure (the simulator Typecheck sits in three)', /N\/A  typechecks sub — same step as npm\.yml step 3, not run twice/.test(r.out)
+  && /SUMMARY  passed 0 · failed 2 · NOT VERIFIED here 2 · skipped 2 \(installs, false conditions\) · reused 2/.test(r.out), (r.out.match(/SUMMARY.*/) || [])[0]);
+fs.mkdirSync(path.join(R, 'sub', 'node_modules'));
+r = run(['--workflow', 'npm.yml']);
+chk('...and once the packages are installed, the same failure is a FAIL again', /FAIL\s+[\d.]+s\s+typechecks sub/.test(r.out) && /SUMMARY  passed 0 · failed 2 · NOT VERIFIED here 0/.test(r.out), (r.out.match(/SUMMARY.*/) || [])[0]);
+fs.rmSync(path.join(R, 'sub', 'node_modules'), { recursive: true });
+r = run(['--workflow', 'tee.yml']);
+chk('a step that reads a file only a step that did not run writes is NOT VERIFIED, naming both', /N\/A\s+[\d.]+s\s+refuses a silent skip — reads made\.log, which "the suite, behind a secret" writes, and that step did not run here/.test(r.out), r.out.slice(-1000));
+chk('...a step reading a file nothing skipped writes stays FAIL', /FAIL\s+[\d.]+s\s+reads a log no step writes/.test(r.out) && /SUMMARY  passed 0 · failed 1 · NOT VERIFIED here 2/.test(r.out), (r.out.match(/SUMMARY.*/) || [])[0]);
+
+/* checks.json live_jobs: the MLB probe is a live source inside a deterministic workflow */
+{
+  const rl = spawnSync(process.execPath, [VERIFY, '--workflow', 'simulator-tests.yml', '--list'], { cwd: path.join(__dirname, '..', '..'), env: ENV, encoding: 'utf8' });
+  const rli = spawnSync(process.execPath, [VERIFY, '--workflow', 'simulator-tests.yml', '--list', '--include-live'], { cwd: path.join(__dirname, '..', '..'), env: ENV, encoding: 'utf8' });
+  chk('a live_jobs job is NOT VERIFIED without --include-live, and planned with it', /job mlb-live-probe[^\n]*\n\s+N\/A  a live-source job: not run without --include-live/.test(rl.stdout)
+    && /job mlb-live-probe[^\n]*\n(\s+SKIP[^\n]*\n)*\s+RUN /.test(rli.stdout), (rl.stdout.match(/job mlb-live-probe[\s\S]{0,160}/) || [])[0]);
+}
 
 if (fail) { failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? ' | ' + JSON.stringify(f.detail).slice(0, 900) : ''))); console.log('FAILED verify — ' + pass + ' passed, ' + fail + ' failed'); process.exitCode = 1; }
 else console.log('ALL GREEN verify — ' + pass + ' passed, 0 failed');

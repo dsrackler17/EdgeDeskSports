@@ -14,4 +14,4 @@ generated record is [`docs/cfb-altitude/BACKTEST.md`](../../docs/cfb-altitude/BA
 | `flag.js` | `cfb_altitude_adjustment_enabled`, read fail-closed |
 | `monitor.js` → `monitoring.json` | anything moving that should not, coverage, and the prospective shadow record |
 | `sync_supabase.js` | mirrors sections, registry and verdict into `supabase/cfb_altitude.sql` |
-| `altitude.test.js`, `desk.test.js`, `sql.test.js`, `ui.e2e.js` | tests; the fixture is Notre Dame at BYU (`fixtures/byu_notredame.json`) |
+| `altitude.test.js`, `desk.test.js`, `sql.test.js`, `ui.e2e.js` | tests; the fixture is Notre Dame at BYU (`fixtures/byu_notredame.json`; the browser suite also serves the game's frozen pregame research snapshot, `fixtures/byu_notredame_research.json`) |

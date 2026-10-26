@@ -5,7 +5,7 @@ Every hypothesis that did not earn its place, with the evidence. Nothing is dele
 ## CBX-ABLATE-SEVEN-INNING-MIXTURE — Ablation: team model without seven inning mixture
 
 - **Hypothesis:** The seven inning mixture improves VALIDATION log loss of the team model
-- **Decision:** INCONCLUSIVE (revision 1, 2026-10-14, commit a903b91c28)
+- **Decision:** INCONCLUSIVE (revision 2, 2026-10-26, commit a3d199392d)
 - **Why:** NO MEASURABLE VALUE
 - **Metrics:** `{"full":0.59705,"ablated":0.59704}`
 - **Uncertainty:** `{"diff":-0.000008,"ci95":[-0.00002,0.000005]}`
@@ -13,7 +13,7 @@ Every hypothesis that did not earn its place, with the evidence. Nothing is dele
 ## CBX-ABLATE-UNCERTAINTY-INTEGRATION — Ablation: team model without uncertainty integration
 
 - **Hypothesis:** The uncertainty integration improves VALIDATION log loss of the team model
-- **Decision:** REJECT (revision 1, 2026-10-14, commit a903b91c28)
+- **Decision:** REJECT (revision 2, 2026-10-26, commit a3d199392d)
 - **Why:** REMOVAL IMPROVES
 - **Metrics:** `{"full":0.59705,"ablated":0.59676}`
 - **Uncertainty:** `{"diff":-0.000285,"ci95":[-0.000424,-0.000147]}`
@@ -37,7 +37,7 @@ Every hypothesis that did not earn its place, with the evidence. Nothing is dele
 ## CBX-ML-GBM — gbm on base-model OOS predictions + context
 
 - **Hypothesis:** gbm improves VALIDATION moneyline log loss over the chosen single model
-- **Decision:** REJECT (revision 3, 2026-10-19, commit dc472d5257)
+- **Decision:** REJECT (revision 4, 2026-10-26, commit a3d199392d)
 - **Why:** the 95% interval of the VALIDATION log-loss difference vs the chosen model is not wholly below zero
 - **Metrics:** `{"validation":{"n":11950,"log_loss":0.59424,"brier":0.2049,"citl":0.0007,"slope":1.023},"chosen":{"n":11950,"log_loss":0.59375,"brier":0.20471,"citl":-0.0021,"slope":1.008}}`
 - **Uncertainty:** `{"n":11950,"blocks":158,"mean_diff":0.000482,"ci95":[-0.000536,0.001567],"a_better":false,"b_better":false}`
@@ -116,4 +116,11 @@ Every hypothesis that did not earn its place, with the evidence. Nothing is dele
 - CBX-PRICING-ENGINE revision 3 (2026-10-19T19:02): decision ACCEPT
 - CBX-SIMULATOR-F5 revision 2 (2026-10-19T19:02): decision REJECT
 - CBX-ML-GBM revision 3 (2026-10-19T19:02): decision REJECT
+- CBX-ML-GBM revision 4 (2026-10-26T19:00): decision REJECT
+- CBX-ABLATE-HIERARCHY revision 2 (2026-10-26T19:02): decision ACCEPT
+- CBX-ABLATE-PARKS revision 2 (2026-10-26T19:02): decision ACCEPT
+- CBX-ABLATE-CARRYOVER revision 2 (2026-10-26T19:02): decision ACCEPT
+- CBX-ABLATE-UNCERTAINTY-INTEGRATION revision 2 (2026-10-26T19:02): decision REJECT
+- CBX-ABLATE-SEVEN-INNING-MIXTURE revision 2 (2026-10-26T19:02): decision INCONCLUSIVE
+- CBX-ABLATE-PRIOR-SEASON-CALIBRATION-MAP revision 2 (2026-10-26T19:02): decision ACCEPT
 
