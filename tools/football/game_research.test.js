@@ -714,7 +714,10 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
      docs/nfl-prior-decay/README.md): MORE than 5 points of win probability and the card says
      "Large gap vs market" with its top chip, and draws no EDGE label. The older Kalshi note
      (7 points or more) still governs a league the gate does not cover. */
-  const gapCard = (pp) => { const m = Math.round((NE.model.win_prob.away * 100 - pp) * 10) / 1000; return card([q(0, MIN, Math.round((m - 0.005) * 1e4) / 1e4, Math.round((m + 0.005) * 1e4) / 1e4)]).c; };
+  /* the mid at the model's own 4-decimal precision, so the gap is pp exactly: a mid
+     rounded to 0.1 pt left the "5.0" case anywhere from 4.95 to 5.05, and the gate
+     (more than 5) fired on whichever game the committed slate put first */
+  const gapCard = (pp) => { const m = Math.round((NE.model.win_prob.away * 100 - pp) * 100) / 10000; return card([q(0, MIN, Math.round((m - 0.005) * 1e4) / 1e4, Math.round((m + 0.005) * 1e4) / 1e4)]).c; };
   const g50 = gapCard(5.0), g51 = gapCard(5.1), gm51 = gapCard(-5.1);
   chk('the gate: 5.0 points (one team priced) is not gated and has no note', Math.abs(g50.compare.kalshi.gap_pp) === 5 && !g50.gate && !g50.compare.kalshi.large_gap && g50.compare.kalshi.note === null && g50.compare.title === 'EDGEDESK vs KALSHI', [g50.gate, g50.compare.kalshi]);
   chk('the gate: 5.1 points is gated: the title, the note beside the times (drawn, both formats) and the alt text say "Large gap vs market"', !!g51.gate && g51.compare.title === 'LARGE GAP VS MARKET'
@@ -862,7 +865,11 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
 
   /* the graphic: one chip per item, the legend, and an old spec redraws without either */
   const s = proj.find((x) => x.insights.length >= 5 && x.insights.some((i) => i.effect && i.effect.kind === 'zero')), spec = GS.graphicSpec(s);
-  chk('the graphic spec carries each chip’s kind and label only', spec.insights.every((i) => i.effect && Object.keys(i.effect).join() === 'kind,label'));
+  /* the NFL card's data window rides along when the chip has one (docs/nfl-prior-decay) */
+  chk('the graphic spec carries each chip’s kind and label, and its data window only when it has one', spec.insights.every((i) => {
+    const e = (s.insights.find((x) => x.id === i.id) || {}).effect || {};
+    return i.effect && Object.keys(i.effect).join() === (e.window_label ? 'kind,label,window_label' : 'kind,label') && (!e.window_label || i.effect.window_label === e.window_label);
+  }), spec.insights.map((i) => i.effect));
   const c = GG.content(spec, null, { now: t0 }).content;
   ['square', 'portrait'].forEach((f) => {
     const ops = GG.layout(c, f).ops.filter((o) => o.type === 'text');

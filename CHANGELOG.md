@@ -2,6 +2,18 @@
 
 
 
+## 2026-10-26 — Game research tests: two checks that broke after the NFL card's gate and data windows
+
+`tools/football/game_research.test.js` had failed on main since the NFL card commits added a large-gap gate and data windows to chips. The tests were wrong in both cases; the code is unchanged.
+
+- **The 5-point gate boundary.**
+  - The helper rounded the Kalshi mid to 0.1 pt, so its "5.0-point" case was really anywhere from 4.95 to 5.05.
+  - The gate fires above 5, so the check failed whenever the slate's first pregame NFL game landed above 5 (PIT @ NO: 5.03).
+  - The mid is now built at the model's own 4-decimal precision (the snapshot rounds win probability with `r4`), so the cases are exactly 5.0, 5.1 and −5.1.
+- **The chip spec.** The graphic spec now carries a chip's `window_label` when the chip has one; the alt text reads it ("Data 2025: 70% / 2026: 30%."). The check allows exactly that third key, and only when the snapshot's chip has a window.
+
+Tests: `game_research.test.js` passes 252 of 252 (it had 2 failures). `football_lines`, `game_context`, `build_game_research --check` and `nfl_prior_decay` (85) all pass.
+
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 
 - **The problem.** The MIN @ VAN card of 2026-10-25 named Lankinen all day, from the usage projection; Merilainen started. The projection reads completed games only, and confirming a starter needed a hand entry.
