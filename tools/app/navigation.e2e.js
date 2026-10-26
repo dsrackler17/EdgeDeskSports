@@ -25,7 +25,9 @@
      6  tracking a price keeps the reader where they were;
      7  every seat tap is recorded as primary_nav_<seat>;
      8  the disclaimer keeps every element and takes one line on a phone;
-     9  on a desktop the same ten destinations stand as a sidebar.
+     9  on a desktop the same ten destinations stand as a sidebar;
+    10  every seat (the Process Coach included) and every Research panel is
+        reached from the landing through what is drawn at each width.
 
    Run: node tools/app/navigation.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -468,6 +470,31 @@ function seededLedger(now) {
       st = await state(S.page);
       chk(W + ': a deep link beats setup', st.panel.join() === 'v-edges', st);
       chk(W + ': no script errors (setup)', S.errors.length === 0, S.errors);
+      await S.ctx.close();
+
+      /* ------------------------------------------------ 10 every place, reached through what is drawn
+         Every seat and every Research panel, from the landing, the way a reader at this width reaches
+         it (tools/app/nav_helper.js): the sidebar on a desktop; on a phone the bar's five seats, Menu
+         for the rest, and Research's row and Other. A place that can only be reached by a hidden
+         button, a link or show() fails here by name. */
+      S = await open(vp, '');
+      page = S.page;
+      const BAR = { overview: 1, research: 1, signals: 1, card: 1, portfolio: 1 };
+      for (const v of ['overview', 'research', 'signals', 'foresight', 'simulator', 'card', 'portfolio', 'performance', 'process', 'more']) {
+        let via = null, err = null;
+        try { via = await NAV.go(page, v); } catch (e) { err = String(e && e.message || e).slice(0, 200); }
+        const want = W >= NAV.WIDE ? 'sidebar' : (BAR[v] ? 'bar' : 'menu');
+        chk(W + ': ' + v + ' is reached ' + (want === 'menu' ? 'through Menu' : 'in the ' + want) + ', and lit where the reader sees it', !err && via === want && await NAV.seatShown(page, v), err || { via, nav: await NAV.state(page) });
+        if (v === 'process') chk(W + ': the Process Coach is drawn on Process', await page.evaluate(() => { const h = document.getElementById('pcoHost'); return !!h && h.getClientRects().length > 0 && h.textContent.trim().length > 0; }));
+      }
+      for (const sub of ['football', 'pprops', 'edges', 'ufc', 'baseball', 'nhl', 'nba', 'lines', 'engine', 'stats', 'lab', 'rdesk']) {
+        let err = null;
+        try { await NAV.research(page, sub); } catch (e) { err = String(e && e.message || e).slice(0, 200); }
+        /* a panel draws its content after its tab is lit: wait for it to take up room */
+        const drew = !err && await page.waitForFunction((id) => { const el = document.getElementById(id); return !!el && !el.classList.contains('hide') && el.getBoundingClientRect().height > 0; }, 'v-' + sub, { timeout: 15000 }).then(() => true, () => false);
+        chk(W + ': Research › ' + sub + ' opens through its tab and draws, with Research lit', drew && await NAV.seatShown(page, 'research'), err || await NAV.state(page));
+      }
+      chk(W + ': no script errors (every place)', S.errors.length === 0, S.errors);
       await S.ctx.close();
     }
   } catch (e) {

@@ -130,7 +130,8 @@ async function research(page, sub, opts) {
   const timeout = opts.timeout || 15000;
   if (!(await viewOpen(page, 'v-research'))) await go(page, 'research', { timeout });
   const sel = MAIN_SUBS[sub] ? '.research-sub button[data-sub="' + sub + '"]' : '#rsOther button[data-sub="' + sub + '"]';
-  if (!MAIN_SUBS[sub] && !(await drawn(page, sel))) {
+  /* Other is a toggle: open its row only when the row itself is closed (a tap on an open row folds it) */
+  if (!MAIN_SUBS[sub] && await page.evaluate(() => { const r = document.getElementById('rsOther'); return !r || r.classList.contains('hide'); })) {
     if (!(await drawn(page, '#rsOtherBtn'))) await page.locator('#rsOtherBtn').scrollIntoViewIfNeeded({ timeout }).catch(() => {});
     if (!(await drawn(page, '#rsOtherBtn'))) throw new Error('nav_helper: Research › Other is not drawn');
     await page.click('#rsOtherBtn');
