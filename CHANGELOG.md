@@ -5,8 +5,8 @@
 ## 2026-10-26 — CFB validation: the slate audit knows the implausible-EV guard
 
 - **The failure (11:08 UTC).** `football/cfb_validation/tests.js`: "the audit finds no status that contradicts its checks — got 3, want 0". Main went red, and so did every PR touching `app.html`, which is on the CFB validation workflow's path filter (#797, an NHL change, was one).
-- **The cause.** A second book arrived for Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas, so each passed all nine integrity requirements. Each still reads INVESTIGATE because a main-line quote prices past the implausible-EV bound, a rule `researchStatus` applies after the gate on purpose. The audit only knew the gate and called that a contradiction.
-- **The fix.** The audit now treats an all-PASS game held by the implausible-EV guard or a regime-change block as consistent, and its verdict names the rule and its reason. Any other INVESTIGATE on an all-PASS gate is still a contradiction. `slate_audit.json` is rebuilt at its own timestamp; nothing else moved. Five synthetic checks; 86 of 86 pass.
+- **Two faults.** Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas passed all nine integrity requirements yet read INVESTIGATE as "implausible EV". The guard measured them on the flat 25% fallback, which #799 fixed: they now read VERIFIED MAJOR and main is green. But the audit was also wrong. The implausible-EV guard and the regime-change block hold a gap below VERIFIED MAJOR *after* the gate by design, and the audit, knowing only the gate, called that a contradiction. With the σ bound, a real implausible gap on a game that passes the gate (0.7% of games on the 2024-25 holdout) would have turned main red again.
+- **The fix.** The audit now treats an all-PASS game held by either rule as consistent, and its verdict names the rule and its reason. Any other non-VERIFIED status on an all-PASS gate is still a contradiction. On today's board the audit is unchanged (no game is held). Five synthetic checks; 86 of 86 pass.
 
 ## 2026-10-26 — The matchup graphic on every sport: college basketball, the WNBA, MLB, college baseball and UFC
 
