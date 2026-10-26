@@ -47,6 +47,7 @@ T.chk('the layer never grants a client write', !/grant\s+(insert|update|delete|a
 T.chk('the migration copy is the same file', fs.readFileSync(path.join(ROOT, 'supabase', 'migrations', '20261025230000_nhl_goalie_layer.sql'), 'utf8') === LAYER);
 T.chk('the v2 registry file is current (node tools/hockey/build_goalie_v2_registry_sql.js)', require(path.join(ROOT, 'tools', 'hockey', 'build_goalie_v2_registry_sql.js')).build() === fs.readFileSync(F('nhl_goalie_v2_registry.sql'), 'utf8'));
 T.chk('no psql meta-command in any file', ['nhl_goalie_layer.sql', 'nhl_goalie_v2_registry.sql', 'nhl_goalie_cron.sql', 'nhl_goalie_layer_rollback.sql'].every((n) => !/^\s*\\/m.test(fs.readFileSync(F(n), 'utf8'))));
+T.chk('no psql meta-command in the job\'s checks', ['nhl_goalie_readiness_check.sql', 'nhl_goalie_cron_check.sql'].every((n) => !/^\s*\\/m.test(fs.readFileSync(path.join(__dirname, 'sql', n), 'utf8'))));
 
 const db = PG.start('nhlgoal');
 if (db.skip) {
@@ -212,11 +213,13 @@ try {
   /* ---- the cron poke ---- */
   db.sql(`create schema if not exists cron;
     create table if not exists cron.job (jobid bigserial primary key, jobname text, schedule text, command text, active boolean default true);
+    create table if not exists cron.job_run_details (jobid bigint, runid bigserial, status text, return_message text, start_time timestamptz, end_time timestamptz);
     create or replace function cron.schedule(n text, s text, c text) returns bigint language sql as $$ insert into cron.job (jobname, schedule, command) values (n, s, c) returning jobid $$;
     create or replace function cron.unschedule(j bigint) returns boolean language sql as $$ delete from cron.job where jobid = j returning true $$;
     create schema if not exists vault; create table if not exists vault.decrypted_secrets (name text, decrypted_secret text);
-    create schema if not exists net; create table if not exists net.calls (url text, headers jsonb);
-    create or replace function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds integer default 5000) returns bigint language sql as $$ insert into net.calls values (url, headers); select 1::bigint $$;`);
+    create schema if not exists net; create table if not exists net.calls (url text, headers jsonb); create sequence if not exists net.req_seq;
+    create table if not exists net._http_response (id bigint, status_code integer, content_type text, headers jsonb, content text, timed_out boolean, error_msg text, created timestamptz default now());
+    create or replace function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds integer default 5000) returns bigint language sql as $$ insert into net.calls values (url, headers); select nextval('net.req_seq') $$;`);
   out = db.applyFile(F('nhl_goalie_cron.sql'));
   T.chk('cron: scheduled every five minutes; the report flags the missing secret', /1 the five-minute poke is scheduled\|ok/.test(out) && /CHECK THIS: select vault\.create_secret/.test(out) && db.sql("select schedule from cron.job where jobname = 'nhl_goalie_sync'") === '*/5 * * * *', out);
   let pk = J(db.sql('select public.nhl_goalie_poke();'));
@@ -225,12 +228,55 @@ try {
     && db.sql('select code from public.nhl_goalie_alerts order by id desc limit 1') === 'no_cron_secret', [pk, rd]);
   db.sql("insert into vault.decrypted_secrets values ('nhl_goalie_cron_secret', 's3cret');");
   pk = J(db.sql('select public.nhl_goalie_poke();'));
+  T.chk('cron: the poke keeps its pg_net request id, so the function\'s answer can be read beside it', db.sql('select count(*) from public.nhl_goalie_pokes where request_id = ' + Number(pk.request_id)) === '1', pk);
+  T.chk('cron: no client may read the pokes', fails(() => db.anon('select * from public.nhl_goalie_pokes;')) || db.anon('select count(*) from public.nhl_goalie_pokes;') === '0');
   T.chk('cron: with the secret, the poke queues with the x-cron-secret header', pk.queued === true && db.sql("select headers ->> 'x-cron-secret' from net.calls limit 1") === 's3cret' && /nhl_goalie_sync$/.test(db.sql('select url from net.calls limit 1')));
   T.chk('cron: no client may call the poke', fails(() => db.anon('select public.nhl_goalie_poke();')) && fails(() => db.as('00000000-0000-0000-0000-000000000001', 'select public.nhl_goalie_poke();')));
   out = db.applyFile(F('nhl_goalie_cron.sql'));
   T.chk('cron: applying it twice keeps one job', db.sql("select count(*) from cron.job where jobname = 'nhl_goalie_sync'") === '1');
+
+  /* ---- what NHL goalie sync (the GitHub job) reads: tools/hockey/sql, judged by tools/hockey/nhl_goalie_run_summary.js ---- */
+  const S = require(path.join(__dirname, 'nhl_goalie_run_summary.js'));
+  const CHECK = (n) => fs.readFileSync(path.join(__dirname, 'sql', n), 'utf8');
+  let ck = J(db.sql(CHECK('nhl_goalie_cron_check.sql')));
+  T.chk('job: pg_cron scheduled but never run reads as never called (the job fails)', ck.exists === true && ck.schedule === '*/5 * * * *' && ck.active === true && ck.last_start === null && /never called/.test(S.verdict({ cron: ck }, Date.now()).errors[0] || ''), ck);
+  db.sql("insert into cron.job_run_details (jobid, status, return_message, start_time, end_time) select jobid, 'succeeded', '1 row', now() - interval '3 minutes', now() - interval '3 minutes' from cron.job where jobname = 'nhl_goalie_sync';");
+  ck = J(db.sql(CHECK('nhl_goalie_cron_check.sql')));
+  T.chk('job: a call three minutes ago reads as calling (the job does not call the sync itself)', ck.last_status === 'succeeded' && ck.failed_1h === 0 && S.verdict({ cron: ck }, Date.now()).errors.length === 0, ck);
+  // what the function answered: the 2026-10-26 failure, every poke refused while pg_cron's SQL "succeeded"
+  db.sql("update public.nhl_goalie_pokes set queued_at = now() - interval '5 minutes';");
+  db.sql(`insert into net._http_response (id, status_code, content) select request_id, 401, '{"ok":false,"error":"unauthorized"}' from public.nhl_goalie_pokes;`);
+  ck = J(db.sql(CHECK('nhl_goalie_cron_check.sql')));
+  let vc = S.verdict({ cron: ck }, Date.now());
+  T.chk('job: pokes the function refused (401) fail the job though pg_cron\'s SQL succeeded, and name the fix', ck.answers.length >= 1 && ck.answers[0].status === 401 && vc.errors.length === 1 && /refused \(HTTP 401: \{"ok":false,"error":"unauthorized"\}\)/.test(vc.errors[0]) && /set_cron_secret/.test(vc.errors[0]), [ck, vc]);
+  pk = J(db.sql('select public.nhl_goalie_poke();'));
+  db.sql("update public.nhl_goalie_pokes set queued_at = now() - interval '1 minute' where request_id = " + Number(pk.request_id) + ";");
+  ck = J(db.sql(CHECK('nhl_goalie_cron_check.sql')));
+  T.chk('job: a poke with no answer yet is no verdict (the earlier refusal still stands)', ck.answers[0].status === null && /refused/.test(S.verdict({ cron: ck }, Date.now()).errors[0] || ''), ck.answers);
+  db.sql(`insert into net._http_response (id, status_code, content) values (${Number(pk.request_id)}, 200, '{"build":"nhl_goalie_sync@test","status":"ok"}');`);
+  ck = J(db.sql(CHECK('nhl_goalie_cron_check.sql')));
+  T.chk('job: once the function answers 200 again, the job passes', ck.answers[0].status === 200 && S.verdict({ cron: ck }, Date.now()).errors.length === 0, ck.answers);
+  db.sql("insert into public.nhl_goalie_pokes (request_id, queued_at) values (999999, now() - interval '30 seconds'); insert into net._http_response (id, status_code, content) values (999999, 404, '{\"code\":\"NOT_FOUND\"}');");
+  ck = J(db.sql(CHECK('nhl_goalie_cron_check.sql')));
+  T.chk('job: any other answer but 200 or 500 (here 404: the function is not deployed) fails the job', /answered HTTP 404/.test(S.verdict({ cron: ck }, Date.now()).errors[0] || ''), ck.answers);
+  let rk = J(db.sql(CHECK('nhl_goalie_readiness_check.sql')));
+  T.chk('job: readiness carries the last check\'s alerts; a missing cron secret is EdgeDesk\'s to fix (the job fails)', rk.state === 'error' && rk.last_check_alerts.join() === 'FAILURE:no_cron_secret' && S.verdict({ readiness: rk }, Date.now()).errors.length === 1, rk);
+  db.sql(`with r as (insert into public.nhl_goalie_sync_runs (status, message, started_at, finished_at, trigger) values ('error', 'no starter source could be read (Daily Faceoff)', now(), now(), 'test') returning run_id)
+    insert into public.nhl_goalie_alerts (run_id, severity, code, message) select run_id, 'DEGRADED', 'daily_faceoff_unavailable', 'Daily Faceoff answered HTTP 403' from r
+    union all select run_id, 'FAILURE', 'sources_down', 'no starter source could be read (Daily Faceoff)' from r;`);
+  rk = J(db.sql(CHECK('nhl_goalie_readiness_check.sql')));
+  let vk = S.verdict({ readiness: rk }, Date.now());
+  T.chk('job: a last check that failed only because no outside source answered is a warning, not a failure', rk.state === 'error' && rk.last_check_alerts.join() === 'DEGRADED:daily_faceoff_unavailable,FAILURE:sources_down' && vk.errors.length === 0 && /outside source/.test(vk.warnings[0] || ''), [rk, vk]);
+  // Deploy NHL goalie layer re-applies all three files over the live tables (apply_sql): nothing kept may move
+  // (the registry may add its own goalie_v2_* keys; every key already there keeps its value)
+  const kept = () => ['nhl_goalie_sync_runs', 'nhl_goalie_alerts', 'nhl_goalie_pokes'].map((t) => t + '=' + db.sql('select count(*) from public.' + t)).join(' ');
+  const cfg = () => db.sql("select string_agg(key || '=' || value::text, ';' order by key) from public.nhl_goalie_config where key not like 'goalie\\_v2\\_%' escape '\\'");
+  const before = kept(), cb = cfg();
+  const reports = ['nhl_goalie_layer.sql', 'nhl_goalie_v2_registry.sql', 'nhl_goalie_cron.sql'].map((n) => db.applyFile(F(n)));
+  T.chk('re-applying the layer, the registry and the cron over live rows keeps every row and every setting, and every report row is ok', kept() === before && /=[1-9]/.test(before) && cfg() === cb && /live_goalie_variant=/.test(cb)
+    && reports.every((o) => !/CHECK THIS/.test(o)), [before, kept(), cb, cfg(), reports.map((o) => o.slice(-300))]);
   out = db.applyFile(F('nhl_goalie_layer_rollback.sql'));
-  T.chk('rollback removes the layer and its job', /\|ok/.test(out) && db.sql("select count(*) from cron.job where jobname = 'nhl_goalie_sync'") === '0');
+  T.chk('rollback removes the layer, its job and the pokes', /\|ok/.test(out) && db.sql("select count(*) from cron.job where jobname = 'nhl_goalie_sync'") === '0' && db.sql("select to_regclass('public.nhl_goalie_pokes') is null") === 't');
 } catch (e) { T.chk("the run completed", false, String(e.message).slice(0, 1200) + " @ " + String(e.stack).split("\n").filter((l) => /nhl_goalie_sql/.test(l)).slice(0, 2).join(" | ")); }
 finally { db.stop(); }
 process.exit(T.done());

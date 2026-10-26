@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-26T00:09:38.331Z",
- "board_generated_at": "2026-10-26T00:09:29.832Z",
+ "generated_at": "2026-10-26T12:08:18.362Z",
+ "board_generated_at": "2026-10-26T12:08:09.080Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -16,13 +16,211 @@
  ],
  "games": [
   {
+   "game_id": "401856847",
+   "game": "Oklahoma State @ Iowa State",
+   "kickoff": "2026-10-31T23:00:00.000Z",
+   "named": false,
+   "edgedesk": "Oklahoma State −1.0",
+   "market": "Oklahoma State −10.0",
+   "books": 2,
+   "gap": 8.8,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
+   "root_cause": "VALID_MODEL_DISAGREEMENT",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T23:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Jack Trice Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 9.4 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "WARN: Iowa State: starter unresolved (competition) · PASS: Oklahoma State: Drew Mestemaker (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Iowa State: availability sources checked, nothing filed · PASS: Oklahoma State: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 5.4 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.7"
+    }
+   ],
+   "consistent": false,
+   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+  },
+  {
+   "game_id": "401858503",
+   "game": "Illinois @ Maryland",
+   "kickoff": "2026-10-31T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "Illinois −10.0",
+   "market": "Illinois −2.5",
+   "books": 2,
+   "gap": 7.4,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
+   "root_cause": "VALID_MODEL_DISAGREEMENT",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T16:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (SECU Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.6 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Maryland: Malik Washington (previous game) · WARN: Illinois: starter unresolved (competition)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Maryland: availability sources checked, nothing filed · PASS: Illinois: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "WARN: the matchup term alone (-2.2 pts) lifts the gap over 7: without it the gap is 5.2 — historically informative, flagged for scrutiny"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.1 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.1"
+    }
+   ],
+   "consistent": false,
+   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+  },
+  {
+   "game_id": "401856737",
+   "game": "Mississippi State @ Texas",
+   "kickoff": "2026-10-31T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Texas −13.0",
+   "market": "Texas −20.75",
+   "books": 2,
+   "gap": 7.6,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
+   "root_cause": "VALID_MODEL_DISAGREEMENT",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T23:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (DKR-Texas Memorial Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0.5"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 5.4 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Texas: Arch Manning (previous game) · PASS: Mississippi State: Kamario Taylor (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Texas: availability sources checked, nothing filed · PASS: Mississippi State: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.3 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.2"
+    }
+   ],
+   "consistent": false,
+   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+  },
+  {
    "game_id": "401862814",
    "game": "Army @ Memphis",
    "kickoff": "2026-11-01T00:00:00.000Z",
    "named": false,
    "edgedesk": "Memphis −0.5",
    "market": "Memphis −6.5",
-   "books": 1,
+   "books": 2,
    "gap": 6.1,
    "gap_class": "MODERATE",
    "favorite_flip": false,
@@ -42,15 +240,15 @@
    "named": false,
    "edgedesk": "Notre Dame −22.0",
    "market": "Notre Dame −29.5",
-   "books": 1,
+   "books": 2,
    "gap": 7.5,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "PLAYER_AVAILABILITY_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -64,8 +262,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
     },
     {
      "requirement": "current team states",
@@ -99,73 +297,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
-  },
-  {
-   "game_id": "401856847",
-   "game": "Oklahoma State @ Iowa State",
-   "kickoff": "2026-10-31T23:00:00.000Z",
-   "named": false,
-   "edgedesk": "Oklahoma State −1.0",
-   "market": "Oklahoma State −10.0",
-   "books": 1,
-   "gap": 8.8,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T23:00:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Jack Trice Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 9.4 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "WARN: Iowa State: starter unresolved (competition) · PASS: Oklahoma State: Drew Mestemaker (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Iowa State: availability sources checked, nothing filed · PASS: Oklahoma State: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 9.3 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.7"
-    }
-   ],
-   "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
+   "verdict": "INVESTIGATE is correct: no abnormal availability fail; submodel support fail."
   },
   {
    "game_id": "401856843",
@@ -174,15 +306,15 @@
    "named": false,
    "edgedesk": "BYU −23.0",
    "market": "BYU −15.5",
-   "books": 1,
+   "books": 2,
    "gap": 7.3,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "EXTREME_FAVORITE_NONLINEARITY",
    "requirements": [
     {
      "requirement": "correct game",
@@ -196,8 +328,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
     },
     {
      "requirement": "current team states",
@@ -221,8 +353,8 @@
     },
     {
      "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 6.1 pts on EdgeDesk’s side"
+     "result": "FAIL",
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
@@ -231,54 +363,54 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: submodel support fail; football-only calibration preserves the major gap fail."
   },
   {
-   "game_id": "401856737",
-   "game": "Mississippi State @ Texas",
-   "kickoff": "2026-10-31T23:30:00.000Z",
+   "game_id": "401858505",
+   "game": "Northwestern @ Oregon",
+   "kickoff": "2026-10-31T04:00:00.000Z",
    "named": false,
-   "edgedesk": "Texas −13.0",
-   "market": "Texas −21.0",
-   "books": 1,
-   "gap": 7.8,
+   "edgedesk": "Northwestern −2.0",
+   "market": "Oregon −5.5",
+   "books": 2,
+   "gap": 7.3,
    "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "favorite_flip": true,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "root_cause": "STALE_MARKET",
    "requirements": [
     {
      "requirement": "correct game",
      "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T23:30:00.000Z"
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T04:00:00.000Z"
     },
     {
      "requirement": "correct home/away",
      "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (DKR-Texas Memorial Stadium), declared by the schedule feed"
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Autzen Stadium), declared by the schedule feed"
     },
     {
      "requirement": "fresh multi-book consensus",
      "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "detail": "FAIL: books disagree by SD 4 — past the archive’s p99: an outlier or stale book is driving the consensus"
     },
     {
      "requirement": "current team states",
      "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 5.4 rating pts"
+     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 4.3 rating pts"
     },
     {
      "requirement": "resolved QB",
      "result": "PASS",
-     "detail": "PASS: Texas: Arch Manning (previous game) · PASS: Mississippi State: Kamario Taylor (previous game)"
+     "detail": "PASS: Oregon: Dylan Raiola (previous game) · PASS: Northwestern: Aidan Chiles (previous game)"
     },
     {
      "requirement": "no abnormal availability",
      "result": "PASS",
-     "detail": "PASS: Texas: availability sources checked, nothing filed · PASS: Mississippi State: availability sources checked, nothing filed"
+     "detail": "PASS: Oregon: availability sources checked, nothing filed · PASS: Northwestern: availability sources checked, nothing filed"
     },
     {
      "requirement": "component adjustments within historical bounds",
@@ -287,17 +419,17 @@
     },
     {
      "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.7 pts on EdgeDesk’s side"
+     "result": "FAIL",
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (2 on the market’s side; 2 required) · FAIL: the independent ensemble is 2.3 pts on the market’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.4"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.3"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support fail."
   },
   {
    "game_id": "401862813",
@@ -305,16 +437,16 @@
    "kickoff": "2026-10-30T23:00:00.000Z",
    "named": false,
    "edgedesk": "Tulane −18.0",
-   "market": "Tulane −10.0",
-   "books": 1,
-   "gap": 8.2,
+   "market": "Tulane −10.25",
+   "books": 2,
+   "gap": 7.9,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "TEAM_RATING_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -328,8 +460,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0.5"
     },
     {
      "requirement": "current team states",
@@ -349,89 +481,27 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (-2.2 pts) lifts the gap over 7: without it the gap is 6 — historically informative, flagged for scrutiny"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.9 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.7"
-    }
-   ],
-   "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
-  },
-  {
-   "game_id": "401858503",
-   "game": "Illinois @ Maryland",
-   "kickoff": "2026-10-31T16:00:00.000Z",
-   "named": false,
-   "edgedesk": "Illinois −10.0",
-   "market": "Illinois −2.5",
-   "books": 1,
-   "gap": 7.4,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T16:00:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (SECU Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.6 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Maryland: Malik Washington (previous game) · WARN: Illinois: starter unresolved (competition)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Maryland: availability sources checked, nothing filed · PASS: Illinois: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "WARN: the matchup term alone (-2.2 pts) lifts the gap over 7: without it the gap is 5.2 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (-2.2 pts) lifts the gap over 7: without it the gap is 5.7 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.7 pts on the market’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.1"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.4"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "INVESTIGATE is correct: submodel support fail."
   }
  ],
- "inconsistent": [],
+ "inconsistent": [
+  "Oklahoma State @ Iowa State",
+  "Illinois @ Maryland",
+  "Mississippi State @ Texas"
+ ],
  "app_path_finding": "The app board used to count the books behind its gate consensus from the cfb.lines provider rows, which carry no capture time, while judging freshness on a different (dated) quote: \"fresh multi-book consensus\" was not actually verified on that path. The app now counts only dated, fresh quotes for the gate and shows the canonical research status from football/cfb_terminal/board.json (docs/cfb-validation/DELIVERABLE.md §32)."
 }

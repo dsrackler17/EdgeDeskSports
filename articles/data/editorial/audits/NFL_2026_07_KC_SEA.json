@@ -1,0 +1,1279 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "NFL:2026_07_KC_SEA",
+  "game_id": "2026_07_KC_SEA",
+  "sport": "NFL",
+  "snapshot_id": "snap_288e6f8fc38e08b2",
+  "audited_at": "2026-10-26T12:02:24.977Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Seattle Seahawks −4.5 with a fair total of 42.5, which makes Seattle Seahawks the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 4.4,
+      "favours_side": "home",
+      "favours_team": "Seattle Seahawks",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 4.37588444599499,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Kansas City Chiefs winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Seattle Seahawks is ahead on the scoreboard in a way that looks like Seattle Seahawks −4.5 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Seattle Seahawks −4.5 where the market has Seattle Seahawks −3.0 at DraftKings — a 1.4 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 1.4,
+      "favours_side": "home",
+      "favours_team": "Seattle Seahawks",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 1.4,
+        "unit": "points",
+        "market_margin": -3,
+        "market_text": "Seattle Seahawks −3.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Seattle Seahawks −3.0 and Seattle Seahawks −4.5.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Base team strength — Seattle Seahawks by 2.7 points (last season +3.7, this season -1.0) — worth +2.7 of the EdgeDesk number, in Seattle Seahawks’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "efficiency",
+      "weight": 2.7,
+      "favours_side": "home",
+      "favours_team": "Seattle Seahawks",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Kansas City Chiefs winning this part of the game instead.",
+      "watch": "Whether Seattle Seahawks is actually ahead on yards per play.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Passing — Seattle Seahawks by 0.2 points (last season +0.2, this season 0.0) — worth +0.2 of the EdgeDesk number, in Seattle Seahawks’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 0.2,
+      "favours_side": "home",
+      "favours_team": "Seattle Seahawks",
+      "expected_signal": null,
+      "falsifier": "Kansas City Chiefs winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Rushing — Kansas City Chiefs by 0.4 points (last season 0.0, this season -0.4) — worth -0.4 of the EdgeDesk number, in Kansas City Chiefs’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "rushing",
+      "weight": 0.4,
+      "favours_side": "away",
+      "favours_team": "Kansas City Chiefs",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Seattle Seahawks winning this part of the game instead.",
+      "watch": "Whether Kansas City Chiefs is actually ahead on yards per carry and rushing yards.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "claim": "Quarterback — Kansas City Chiefs by 1.8 points — worth -1.8 of the EdgeDesk number, in Kansas City Chiefs’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[3]",
+      "category": "QB",
+      "weight": 1.8,
+      "favours_side": "away",
+      "favours_team": "Kansas City Chiefs",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "completion_pct"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Seattle Seahawks winning this part of the game instead.",
+      "watch": "Whether Kansas City Chiefs is actually ahead on yards per pass attempt and completion percentage.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "claim": "Home field — Seattle Seahawks by 3.1 points — worth +3.1 of the EdgeDesk number, in Seattle Seahawks’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[4]",
+      "category": "home_field",
+      "weight": 3.1,
+      "favours_side": "home",
+      "favours_team": "Seattle Seahawks",
+      "expected_signal": null,
+      "falsifier": "Kansas City Chiefs winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "home advantage is priced into the number and cannot be isolated from one game’s box score."
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "claim": "Context (venue, division) — no lean — worth 0.0 of the EdgeDesk number.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[5]",
+      "category": "model",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the mechanism running the other way.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "the driver names no side, so there is nothing to test a direction against"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Kansas City Chiefs’ pass offence rates +0.002 (#15 of 32) and Seattle Seahawks’ pass defence rates −0.206 (#2 of 32). Added the way the model adds them, this pairing sits −0.204 from the league mean, which favours Seattle Seahawks.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 2,
+      "favours_side": "home",
+      "favours_team": "Seattle Seahawks",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Seattle Seahawks losing the phase it is rated to win.",
+      "watch": "How Kansas City Chiefs pass offence handles Seattle Seahawks pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Seattle Seahawks’ pass offence rates +0.035 (#12 of 32) and Kansas City Chiefs’ pass defence rates −0.059 (#6 of 32). Added the way the model adds them, this pairing sits −0.024 from the league mean, which favours Kansas City Chiefs.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "passing",
+      "weight": 0.2,
+      "favours_side": "away",
+      "favours_team": "Kansas City Chiefs",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Kansas City Chiefs losing the phase it is rated to win.",
+      "watch": "How Seattle Seahawks pass offence handles Kansas City Chiefs pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Kansas City Chiefs’ run offence rates +0.080 (#4 of 32) and Seattle Seahawks’ run defence rates −0.078 (#1 of 32). Added the way the model adds them, this pairing sits +0.002 from the league mean, which favours Kansas City Chiefs.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": "away",
+      "favours_team": "Kansas City Chiefs",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Kansas City Chiefs losing the phase it is rated to win.",
+      "watch": "How Kansas City Chiefs run offence handles Seattle Seahawks run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Seattle Seahawks’ run offence rates −0.083 (#30 of 32) and Kansas City Chiefs’ run defence rates −0.025 (#10 of 32). Added the way the model adds them, this pairing sits −0.108 from the league mean, which favours Kansas City Chiefs.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 1.1,
+      "favours_side": "away",
+      "favours_team": "Kansas City Chiefs",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Kansas City Chiefs losing the phase it is rated to win.",
+      "watch": "How Seattle Seahawks run offence handles Kansas City Chiefs run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Kansas City Chiefs holds the largest measured edge in this matchup: Kansas City Chiefs +0.080 (#4 of 32) vs Seattle Seahawks −0.083 (#30 of 32) — 26 places on the league board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "rushing",
+      "weight": 6.5,
+      "favours_side": "away",
+      "favours_team": "Kansas City Chiefs",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Seattle Seahawks winning that category on the day.",
+      "watch": "Whether Kansas City Chiefs’s edge in Run offence · EPA per carry shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Run offence · EPA per carry"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Seattle Seahawks holds the largest measured edge in this matchup: Seattle Seahawks +1.1 pp (#7 of 32) vs Kansas City Chiefs −1.5 pp (#28 of 32) — 21 places on the league board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "pressure",
+      "weight": 5.3,
+      "favours_side": "home",
+      "favours_team": "Seattle Seahawks",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Kansas City Chiefs winning that category on the day.",
+      "watch": "Whether Seattle Seahawks’s edge in Sacks generated per dropback shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Sacks generated per dropback"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 3,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on availability not on file.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Seattle Seahawks −4.5 with a fair total of 42.5, which makes Seattle Seahawks the better team here by that margin on this field.",
+      "weight": 4.4,
+      "favours_team": "Seattle Seahawks",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 4.37588444599499,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 17,
+          "away": -17,
+          "diff": 17
+        }
+      ],
+      "observed_result": "Seattle Seahawks won by 17 where EdgeDesk projected a 4.4-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Seattle Seahawks −4.5 where the market has Seattle Seahawks −3.0 at DraftKings — a 1.4 points disagreement.",
+      "weight": 1.4,
+      "favours_team": "Seattle Seahawks",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 1.4,
+        "unit": "points",
+        "market_margin": -3,
+        "market_text": "Seattle Seahawks −3.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 17,
+          "away": -17,
+          "diff": 17
+        }
+      ],
+      "observed_result": "Seattle Seahawks won by 17.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Seattle Seahawks beat a margin of -3"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "efficiency",
+      "claim": "Base team strength — Seattle Seahawks by 2.7 points (last season +3.7, this season -1.0) — worth +2.7 of the EdgeDesk number, in Seattle Seahawks’s favour.",
+      "weight": 2.7,
+      "favours_team": "Seattle Seahawks",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": true,
+          "label": "yards per play",
+          "unit": "yards",
+          "better": "high",
+          "home": 5.9420289855,
+          "away": 4.26,
+          "diff": 1.68,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.283,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Seattle Seahawks 5.94 yards per play against Kansas City Chiefs 4.26.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Passing — Seattle Seahawks by 0.2 points (last season +0.2, this season 0.0) — worth +0.2 of the EdgeDesk number, in Seattle Seahawks’s favour.",
+      "weight": 0.2,
+      "favours_team": "Seattle Seahawks",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "rushing",
+      "claim": "Rushing — Kansas City Chiefs by 0.4 points (last season 0.0, this season -0.4) — worth -0.4 of the EdgeDesk number, in Kansas City Chiefs’s favour.",
+      "weight": 0.4,
+      "favours_team": "Kansas City Chiefs",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 3.732,
+          "away": 3.125,
+          "diff": 0.61,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.163,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 153,
+          "away": 50,
+          "diff": 103,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.673,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "category": "QB",
+      "claim": "Quarterback — Kansas City Chiefs by 1.8 points — worth -1.8 of the EdgeDesk number, in Kansas City Chiefs’s favour.",
+      "weight": 1.8,
+      "favours_team": "Kansas City Chiefs",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "completion_pct"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 9.178571428571429,
+          "away": 4.794117647058823,
+          "diff": 4.38,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.478,
+          "at_size": false
+        },
+        {
+          "metric": "completion_pct",
+          "available": false,
+          "label": "completion percentage",
+          "unit": "%",
+          "why": "the box score for this game published no completion percentage"
+        }
+      ],
+      "observed_result": "Kansas City Chiefs 4.79 yards per pass attempt against Seattle Seahawks 9.18.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "category": "home_field",
+      "claim": "Home field — Seattle Seahawks by 3.1 points — worth +3.1 of the EdgeDesk number, in Seattle Seahawks’s favour.",
+      "weight": 3.1,
+      "favours_team": "Seattle Seahawks",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "home advantage is priced into the number and cannot be isolated from one game’s box score."
+    },
+    {
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Context (venue, division) — no lean — worth 0.0 of the EdgeDesk number.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the driver names no side, so there is nothing to test a direction against"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Kansas City Chiefs’ pass offence rates +0.002 (#15 of 32) and Seattle Seahawks’ pass defence rates −0.206 (#2 of 32). Added the way the model adds them, this pairing sits −0.204 from the league mean, which favours Seattle Seahawks.",
+      "weight": 2,
+      "favours_team": "Seattle Seahawks",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 9.178571428571429,
+          "away": 4.794117647058823,
+          "diff": 4.38,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.478,
+          "at_size": true
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 257,
+          "away": 163,
+          "diff": 94,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.366,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Seattle Seahawks 9.18 yards per pass attempt against Kansas City Chiefs 4.79; Seattle Seahawks 257 net passing yards against Kansas City Chiefs 163.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Seattle Seahawks’ pass offence rates +0.035 (#12 of 32) and Kansas City Chiefs’ pass defence rates −0.059 (#6 of 32). Added the way the model adds them, this pairing sits −0.024 from the league mean, which favours Kansas City Chiefs.",
+      "weight": 0.2,
+      "favours_team": "Kansas City Chiefs",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 9.178571428571429,
+          "away": 4.794117647058823,
+          "diff": 4.38,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.478,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 257,
+          "away": 163,
+          "diff": 94,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.366,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Kansas City Chiefs 4.79 yards per pass attempt against Seattle Seahawks 9.18; Kansas City Chiefs 163 net passing yards against Seattle Seahawks 257.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Kansas City Chiefs’ run offence rates +0.080 (#4 of 32) and Seattle Seahawks’ run defence rates −0.078 (#1 of 32). Added the way the model adds them, this pairing sits +0.002 from the league mean, which favours Kansas City Chiefs.",
+      "weight": 0,
+      "favours_team": "Kansas City Chiefs",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 3.732,
+          "away": 3.125,
+          "diff": 0.61,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.163,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 153,
+          "away": 50,
+          "diff": 103,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.673,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Seattle Seahawks’ run offence rates −0.083 (#30 of 32) and Kansas City Chiefs’ run defence rates −0.025 (#10 of 32). Added the way the model adds them, this pairing sits −0.108 from the league mean, which favours Kansas City Chiefs.",
+      "weight": 1.1,
+      "favours_team": "Kansas City Chiefs",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 3.732,
+          "away": 3.125,
+          "diff": 0.61,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.163,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 153,
+          "away": 50,
+          "diff": 103,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.673,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "rushing",
+      "claim": "Kansas City Chiefs holds the largest measured edge in this matchup: Kansas City Chiefs +0.080 (#4 of 32) vs Seattle Seahawks −0.083 (#30 of 32) — 26 places on the league board.",
+      "weight": 6.5,
+      "favours_team": "Kansas City Chiefs",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 3.732,
+          "away": 3.125,
+          "diff": 0.61,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.163,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 153,
+          "away": 50,
+          "diff": 103,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.673,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "pressure",
+      "claim": "Seattle Seahawks holds the largest measured edge in this matchup: Seattle Seahawks +1.1 pp (#7 of 32) vs Kansas City Chiefs −1.5 pp (#28 of 32) — 21 places on the league board.",
+      "weight": 5.3,
+      "favours_team": "Seattle Seahawks",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "sacks_generated",
+          "available": true,
+          "label": "sacks generated",
+          "unit": "sacks",
+          "better": "high",
+          "home": 1,
+          "away": 0,
+          "diff": 1,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 1,
+          "at_size": false
+        },
+        {
+          "metric": "sacks_allowed",
+          "available": true,
+          "label": "sacks allowed",
+          "unit": "sacks",
+          "better": "low",
+          "home": 0,
+          "away": 1,
+          "diff": -1,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 1,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Seattle Seahawks 1 sacks generated against Kansas City Chiefs 0; Seattle Seahawks 0 sacks allowed against Kansas City Chiefs 1.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "weight": 3,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 3,
+      "PARTIALLY CONFIRMED": 2,
+      "NOT CONFIRMED": 6,
+      "INCONCLUSIVE": 4
+    },
+    "graded": 11,
+    "total": 15,
+    "not_observable": 4,
+    "headline": "3 of 11 gradeable claims held up, 6 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "2026_07_KC_SEA",
+    "sport": "NFL",
+    "snapshot_id": "snap_288e6f8fc38e08b2",
+    "graded_at": "2026-10-26T12:02:24.977Z",
+    "final": {
+      "home_team": "Seattle Seahawks",
+      "away_team": "Kansas City Chiefs",
+      "home_score": 20,
+      "away_score": 3,
+      "margin": 17,
+      "total_points": 23,
+      "winner": "Seattle Seahawks"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "home",
+      "team": "Seattle Seahawks",
+      "point": 3,
+      "line_text": "Seattle Seahawks +3",
+      "book": "DraftKings",
+      "market_home_margin": 3,
+      "model_home_margin": -4.4,
+      "gap": 7.4,
+      "why": "EdgeDesk’s own number sat 7.4 points toward Seattle Seahawks of the quote EdgeDesk captured at DraftKings. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "under",
+      "line": 44.5,
+      "model_total": 42.3,
+      "gap": 2.2,
+      "why": "EdgeDesk’s fair total of 42.3 sat 2.2 points below the captured total of 44.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "win",
+        "cover_margin": 20,
+        "side": "home",
+        "point": 3,
+        "team": "Seattle Seahawks",
+        "line_text": "Seattle Seahawks +3"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 23,
+        "line": 44.5,
+        "side": "under",
+        "by": 21.5,
+        "direction": "under"
+      },
+      "moneyline": {
+        "outcome": "win",
+        "side": "home",
+        "team": "Seattle Seahawks"
+      }
+    },
+    "bet_headline": "WIN",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 4.4,
+      "actual_home_margin": 17,
+      "margin_error": 12.6,
+      "right_side": true,
+      "projected_total": 42.3,
+      "actual_total": 23,
+      "total_error": 19.3,
+      "projected_score": {
+        "away": 19,
+        "home": 23
+      },
+      "inside_published_range": true,
+      "range_text": "-11.0 → +23.0 (Seattle Seahawks)"
+    },
+    "process": {
+      "grade": "UNSOUND",
+      "reasons": [
+        "6 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+        "EdgeDesk projected a home margin of 4.4 and the game finished 17 the home way — 12.6 points of margin error, inside the range the model published."
+      ],
+      "confirmed": 2,
+      "partial": 1,
+      "wrong": 6,
+      "graded": 9,
+      "high_variance": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNSOUND",
+    "variance_markers": [],
+    "verdict": {
+      "key": "right_for_the_wrong_reason",
+      "line": "THE NUMBER LANDED AND THE REASONING DID NOT. This is the most dangerous result on this page, because it pays and teaches nothing. Nothing below should be read as EdgeDesk having understood this game."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_07_KC_SEA:contradicted:rushing",
+      "game_id": "2026_07_KC_SEA",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-nfl-2026_07_KC_SEA",
+      "snapshot_id": "snap_288e6f8fc38e08b2",
+      "thesis_id": "advantage.away matchup.3 driver.2 matchup.2",
+      "team": "Kansas City Chiefs",
+      "opponent": "Seattle Seahawks",
+      "category": "rushing",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "4 published claims said the same thing: Kansas City Chiefs holds the largest measured edge in this matchup: Kansas City Chiefs +0.080 (#4 of 32) vs Seattle Seahawks −0.083 (#30 of 32) — 26 places on the league board. Seattle Seahawks’ run offence rates −0.083 (#30 of 32) and Kansas City Chiefs’ run defence rates −0.025 (#10 of 32). Added the way the model adds them, this pairing sits −0.108 from the league mean, which favours Kansas City Chiefs. Rushing — Kansas City Chiefs by 0.4 points (last season 0.0, this season -0.4) — worth -0.4 of the EdgeDesk number, in Kansas City Chiefs’s favour. Kansas City Chiefs’ run offence rates +0.080 (#4 of 32) and Seattle Seahawks’ run defence rates −0.078 (#1 of 32). Added the way the model adds them, this pairing sits +0.002 from the league mean, which favours Kansas City Chiefs.",
+      "actual_result": "Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153. Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153. Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153. Kansas City Chiefs 3.13 yards per carry against Seattle Seahawks 3.73; Kansas City Chiefs 50 rushing yards against Seattle Seahawks 153.",
+      "lesson": "EdgeDesk named Kansas City Chiefs as better in rushing and the game went the other way, across 4 separate published claims. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "high",
+      "model_review_required": true,
+      "suggested_investigation": "These claims carried 8 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-26T12:02:24.977Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_07_KC_SEA:contradicted:QB",
+      "game_id": "2026_07_KC_SEA",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-nfl-2026_07_KC_SEA",
+      "snapshot_id": "snap_288e6f8fc38e08b2",
+      "thesis_id": "driver.3",
+      "team": "Kansas City Chiefs",
+      "opponent": "Seattle Seahawks",
+      "category": "QB",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "Quarterback — Kansas City Chiefs by 1.8 points — worth -1.8 of the EdgeDesk number, in Kansas City Chiefs’s favour.",
+      "actual_result": "Kansas City Chiefs 4.79 yards per pass attempt against Seattle Seahawks 9.18.",
+      "lesson": "EdgeDesk named Kansas City Chiefs as better in QB and the game went the other way. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-26T12:02:24.977Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_07_KC_SEA:contradicted:passing",
+      "game_id": "2026_07_KC_SEA",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-nfl-2026_07_KC_SEA",
+      "snapshot_id": "snap_288e6f8fc38e08b2",
+      "thesis_id": "matchup.1",
+      "team": "Kansas City Chiefs",
+      "opponent": "Seattle Seahawks",
+      "category": "passing",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "Seattle Seahawks’ pass offence rates +0.035 (#12 of 32) and Kansas City Chiefs’ pass defence rates −0.059 (#6 of 32). Added the way the model adds them, this pairing sits −0.024 from the league mean, which favours Kansas City Chiefs.",
+      "actual_result": "Kansas City Chiefs 4.79 yards per pass attempt against Seattle Seahawks 9.18; Kansas City Chiefs 163 net passing yards against Seattle Seahawks 257.",
+      "lesson": "EdgeDesk named Kansas City Chiefs as better in passing and the game went the other way. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-26T12:02:24.977Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_07_KC_SEA:unobservable",
+      "game_id": "2026_07_KC_SEA",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-nfl-2026_07_KC_SEA",
+      "snapshot_id": "snap_288e6f8fc38e08b2",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "3 of the claims in this article rested on model, home_field.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; home advantage is priced into the number and cannot be isolated from one game’s box score..",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, home_field.",
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-26T12:02:24.977Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_07_KC_SEA:won_wrong",
+      "game_id": "2026_07_KC_SEA",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-nfl-2026_07_KC_SEA",
+      "snapshot_id": "snap_288e6f8fc38e08b2",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "variance",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "The number implied Seattle Seahawks +3.",
+      "actual_result": "It graded a win. The reasoning behind it did not hold: 6 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+      "lesson": "A winning number built on a reading the game contradicted. Nothing about this result should increase confidence in the mechanism EdgeDesk named, and treating it as confirmation is how a model gets worse while its record gets better.",
+      "severity": "high",
+      "model_review_required": true,
+      "suggested_investigation": "Why did the number land while the mechanism failed? Either the number was right for a reason EdgeDesk has not identified, or it was luck. Both are worth knowing and they are different.",
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-26T12:02:24.977Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_07_KC_SEA:total_miss",
+      "game_id": "2026_07_KC_SEA",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-nfl-2026_07_KC_SEA",
+      "snapshot_id": "snap_288e6f8fc38e08b2",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "scoring",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "EdgeDesk published a fair total of 42.3.",
+      "actual_result": "The game finished with 23 points, an error of 19.3.",
+      "lesson": "A total missed by this much usually means a pace or a finishing assumption was wrong, not that both ratings were. Check which of the two moved.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Was the play count or the points per drive the miss? Both are in this game’s result record.",
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-26T12:02:24.977Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_07_KC_SEA:disagreement_landed",
+      "game_id": "2026_07_KC_SEA",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-nfl-2026_07_KC_SEA",
+      "snapshot_id": "snap_288e6f8fc38e08b2",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Seattle Seahawks −4.5 where the market has Seattle Seahawks −3.0 at DraftKings — a 1.4 points disagreement.",
+      "actual_result": "Seattle Seahawks won by 17. the result landed on EdgeDesk’s side of the market number: Seattle Seahawks beat a margin of -3",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-26T12:02:24.977Z"
+    }
+  ]
+}

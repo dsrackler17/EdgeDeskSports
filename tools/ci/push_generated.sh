@@ -96,6 +96,14 @@ MINE=$(git rev-parse HEAD)
 ORIG_MINE="$MINE"
 echo "committed $MINE: $MESSAGE"
 
+# a shallow checkout (actions/checkout's default, depth 1) fetches the new tip
+# at depth 1 too. A plain fetch walks back through every parent the clone
+# lacks, and a merged pull request's branch reaches into the whole history:
+# App version, 2026-10-26 00:42 and 00:52, downloaded 4 GB after a rejected
+# push and was cancelled at its five-minute timeout both times.
+FETCH=(fetch -q)
+if [ "$(git rev-parse --is-shallow-repository)" = true ]; then FETCH+=(--depth 1); fi
+
 read -r -a MERGE <<< "${PUSH_MERGE_PATHS:-}"
 is_merge() {
   local m
@@ -115,7 +123,7 @@ while [ "$i" -lt "$ATTEMPTS" ]; do
   # remote tip exactly
   git rebase --abort 2>/dev/null || true
   git merge --abort 2>/dev/null || true
-  git fetch -q "$REMOTE" "$BRANCH"
+  git "${FETCH[@]}" "$REMOTE" "$BRANCH"
   git reset -q --hard FETCH_HEAD
   # OUR artifacts on top: every file this run changed under a named path
   # becomes exactly what our commit holds, deletions included; a file it did

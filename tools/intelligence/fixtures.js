@@ -25,7 +25,14 @@ const AVAIL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/availability/
    NFL slate the browser's own projection wrote through Node, and the venue
    forecasts. Each is served as-is; a test that needs one absent passes null. */
 const METRICS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/matchup/metrics.json'), 'utf8'));
-const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/nfl/slate.json'), 'utf8'));
+/* THE NFL SLATE IS PINNED. The live artifact is rewritten several times a day and
+   drops each game as it kicks off, so the games the suite clock's "this weekend"
+   finds changed with every rebuild: 7 became 8 on 2026-10-16, none on 2026-10-19,
+   and four became three at the 2026-10-26 00:27 rebuild, failing quant_ui.e2e.js
+   from then on. The slate served here is the committed artifact as it stood at
+   2026-10-25 21:53 UTC (tools/fixtures/nfl_slate_2026-10-25.json), the last
+   rebuild every suite passed on; the move onto the clock below still applies. */
+const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/fixtures/nfl_slate_2026-10-25.json'), 'utf8'));
 const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/forecasts.json'), 'utf8'));
 /* The Slice 3 identity profiles: the REAL committed team files for the four
    clubs the suites name, so the interaction engine is exercised on the
@@ -154,22 +161,26 @@ function build(now) {
      games built above and A1, which needs a card of at least three, failed
      everywhere research_host runs. Picking the games still ahead (above) cannot
      help when every one of them is a week or more out. So when the artifact's
-     slate is at least a week past the clock, its rows are moved back by
+     next game is at least a week past the clock, its rows are moved back by
      whole weeks: the weekday, the kickoff time and every other byte stay the
-     artifact's own, and its slate lands on the clock's week. The clock's
+     artifact's own, and its next slate lands on the clock's week. The clock's
      own day stays the scenarios' ("nothing tonight"), so a leftover Monday
      night game from the artifact's previous week, which the move would put on
-     that evening, is left off.
-     The weeks are counted to the artifact's MIDDLE kickoff, not its next one.
-     On a Sunday evening the next game is that week's leftover night game:
-     counted from it (25 October 2026, KC @ SEA), the coming Sunday landed a
-     week past the clock, "this weekend" held that one game beside the two
-     above, and the desk's every-game table, which lists at least four, failed. */
+     that evening, is left off. The move is measured from the artifact's own
+     card, the week that holds most of its games: on 25 October 2026 it also
+     carried Week 7's Sunday and Monday night games and one Week 9 game, and
+     measured from the Sunday night game Week 8 landed a week past the clock's
+     weekend, leaving "this weekend" three games. */
   const DAY = 86400000, WEEK = 7 * DAY;
+  const cardWeek = (games) => {
+    const n = {};
+    games.forEach((g) => { if (g.week != null) n[g.week] = (n[g.week] || 0) + 1; });
+    return Object.keys(n).sort((a, b) => n[b] - n[a])[0];
+  };
   const onClock = (games) => {
-    const ks = games.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b);
-    const mid = ks[Math.floor(ks.length / 2)];
-    const weeks = mid == null ? 0 : Math.floor((mid - now) / WEEK);
+    const wk = cardWeek(games), card = wk == null ? games : games.filter((g) => String(g.week) === wk);
+    const next = card.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b)[0];
+    const weeks = next == null ? 0 : Math.floor((next - now) / WEEK);
     if (weeks < 1) return games;
     const back = (ms) => new Date(ms - weeks * WEEK).toISOString();
     return games.map((g) => Object.assign({}, g, { kickoff: back(Date.parse(g.kickoff)) },

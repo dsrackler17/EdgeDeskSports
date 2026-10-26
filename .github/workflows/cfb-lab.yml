@@ -259,6 +259,11 @@ jobs:
       # (football/cfb_production/tests.js checks this path stays in the list).
       - name: Publish
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        env:
+          # articles/ carries the article manifest, an AGGREGATE of every record:
+          # on a rejected push it is rebuilt on the new tip, never carried from
+          # this run (the same step in editorial.yml says why)
+          PUSH_REBUILD: node tools/articles/store.js --reindex && node tools/articles/build_articles.js --quiet
         run: |
           git config user.name "edgedesk-bot"
           git config user.email "edgedesk-bot@users.noreply.github.com"

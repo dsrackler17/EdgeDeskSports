@@ -1,14 +1,28 @@
 # Changelog
 
-## 2026-10-26 — Collective suites: the fixtures' NFL weekend counted from the card's middle kickoff
+## 2026-10-26 — College basketball exhibitions: opponents found by name and nickname
 
-- **The failure (00:28 UTC).** `quant_ui.e2e.js`: "the every-game table is open and lists the games", on desktop and phone.
-- **The cause.** The intelligence fixtures move the committed NFL card back by whole weeks onto the suites' fixed clock (Monday 2026-10-12), and the weeks were counted to the card's next kickoff.
-  - On Sunday evening the next kickoff is that week's leftover night game (KC @ SEA).
-  - Counted from it, the coming Sunday landed a week past the clock. "This weekend" held three games, and the table needs four.
-- **The fix.** The weeks are now counted to the card's middle kickoff, so the coming Sunday lands on the clock's weekend: seven games. Only `onClock` in `tools/intelligence/fixtures.js` changes. On the card as it stood before the Week 8 roll, at the roll, and now, the weekend holds eight games each time. Counted the old way it held 5, then 3, then 3.
+The first collector run held 299 men's and 300 women's schedules. Before the daily refreshes published them, a preview found three opponent mistakes, fixed here.
 
-Tests: `quant_ui.e2e.js` passes 89 of 89 (it had 2 failures). `intel_ui`, `desk_ui` (71) and `chat` (50) also pass in the browser. Every suite that reads the fixtures passes with the same counts as before the change: acceptance 308, intelligence 574, evals 259, research_host 214, board 118, multisport 128, desk 108, quant_host 100, conversation 48, analyst_evals 41, providers 41, multisport_host 37, personnel_desk 36, desk_host 25, benchmark 24.
+- **A school that moved its website is found by name.** Southern Miss lists Houston Christian at `hcuhuskies.com`, a site the registry does not know (it has `hbuhuskies.com`). The game was priced as a non-D-I opponent and a second time from Houston Christian's own listing. A website the registry does not know now falls back to the registry name, so the game is priced once, D-I against D-I.
+- **A school's ESPN team, when the collector does not read it,** is the D-I team ESPN names exactly as the registry names the school and its nickname. For the 442 teams (229 men's, 213 women's) whose results also identify them, the two never disagree. Arkansas, Kentucky, Northwestern State and Utah State opponents, skipped before, are now priced.
+- **The same rule fixes a stale division.** Mercyhurst and New Haven are D-I on ESPN but D-II in the registry. Louisville vs Mercyhurst was priced as a non-D-I game (99.8%); it is now D-I against D-I.
+- **A game both schools list is priced from the listing whose start time reads.** Houston Christian lists no time for Southern Miss; Southern Miss lists 6 PM, which is now used instead of noon, flagged approximate.
+- **More of the schools' labels come off a name:** "(Ex.)", "(ex)", "(exhib.)", "(EXH)", and "Exhibition" in front ("Exhibition Cal State Monterey Bay").
+- Preview from the collected schedules, through 2026-11-09: men's 42 priced (was 40), women's 57 (was 56).
+
+## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
+
+No feed this repository reads lists a college basketball exhibition, so the forecasts priced none. Every school lists its own, and the collegiate collector now reads every Division I school's men's and women's basketball schedule each week, beside baseball.
+
+- **Each school's exhibitions are flagged on every page generation.**
+  - SIDEARM: the preseason (`S`) and special-event (`X`) game types.
+  - SIDEARM's oldest markup: the school's own "(Exh.)" label.
+  - WMT: its exhibition marker, now read inside the last game's own element. The last game used to reach into the page's second rendering, which flagged a regular-season game as an exhibition at Purdue, Stanford, UCLA and Penn State; that also fixes three baseball pages.
+  - Checked on 22 real 2026-27 pages (probe round 11).
+- **Who is who, without guessing a name.** A school is the ESPN team with its results: last season's finals on the same local date with the same score. On the 11 schools probed (round 12), men's and women's, every school matched its own team on 28 to 40 finals.
+- **Priced like any game between the same two teams,** flagged `EXHIBITION`, never in Upset Watch, and never learnt from. A non-D-I or NAIA opponent is priced in the model's pooled non-D-I regime; an intrasquad game or a listing that names no school is not priced.
+- **Live after merge and the next collector run.** Merging the plan change runs the weekly collector. The daily refreshes price whatever exhibitions it holds.
 
 ## 2026-10-26 — Market structure suites: one pinned clock for the browser test
 
@@ -21,6 +35,15 @@ Tests: `quant_ui.e2e.js` passes 89 of 89 (it had 2 failures). `intel_ui`, `desk_
 - **Restored, once.** The file is now #777's exactly, as it was green on main (ed901e89): every page reads 2026-10-25 13:00 UTC, and the schedule it is served blanks every 2026 score from then on.
   - 25 of 25 pass on Playwright 1.63 and on 1.49.1 (CI's pin), and also against a schedule with every Week 7 and 8 game scored.
 
+## 2026-10-26 — Game research tests: the Kalshi fixture gives each side its own ticker
+
+Section 14 of `tools/football/game_research.test.js` names its two fake Kalshi markets by the first three letters of each team's name. For LAC @ LA both are "Los", so the two markets share a ticker, every quote lands on both teams, and the gate cases read a 57.2-point gap. The section reads the slate's first pregame NFL game, so it would have failed the day that game was LAC @ LA.
+
+- The tickers now end in `-AWAY` and `-HOME`. Nothing else reads them; the quotes still match teams by name.
+- The test changes only; the code is unchanged.
+
+Tests: `game_research.test.js` passes 252 of 252. The section 14 gate cases (5.0, 5.1, −5.1, 6.9, 7.0, −7.0) were also run against each of the 16 pregame NFL games on the committed slate: all pass (before: 15, with LAC @ LA failing).
+
 ## 2026-10-26 — Game research tests: two checks that broke after the NFL card's gate and data windows
 
 `tools/football/game_research.test.js` had failed on main since the NFL card commits added a large-gap gate and data windows to chips. The tests were wrong in both cases; the code is unchanged.
@@ -32,6 +55,22 @@ Tests: `quant_ui.e2e.js` passes 89 of 89 (it had 2 failures). `intel_ui`, `desk_
 - **The chip spec.** The graphic spec now carries a chip's `window_label` when the chip has one; the alt text reads it ("Data 2025: 70% / 2026: 30%."). The check allows exactly that third key, and only when the snapshot's chip has a window.
 
 Tests: `game_research.test.js` passes 252 of 252 (it had 2 failures). `football_lines`, `game_context`, `build_game_research --check` and `nfl_prior_decay` (85) all pass.
+
+## 2026-10-26 — NHL goalie sync: the cron secret fixed, and refused pokes seen at once
+
+- **The mismatch.** After the first deploy, the function's `NHL_GOALIE_CRON_SECRET` stopped matching Vault's, probably set by hand. Every pg_cron poke from 00:36 to 02:06 UTC was a 401, while pg_cron's own record showed each call as succeeded. The first run by hand of NHL goalie sync failed on it. Deploy NHL goalie layer (`set_cron_secret`) gave the function Vault's value, and its forced run answered 200, status `ok`.
+- **Refused pokes are seen.** `nhl_goalie_poke()` keeps each poke's pg_net request id in `public.nhl_goalie_pokes`. The watchdog reads what the function answered the last three pokes and fails on a 401 or any answer but 200 or 500, within half an hour instead of after a 90-minute silence.
+- **The summary prints a refused answer.** It tells the function's own 401 (the secret) from the Supabase gateway's (JWT verification on: redeploy with `--no-verify-jwt`).
+- **The docs.** They no longer say to set the secret by hand; the deploy sets both sides. Daily Faceoff's 403 comes and goes: it answered at 02:06, and its parser read the live page.
+- **Tests.** Sync 61 → 68, SQL 71 → 78 (one proves a re-apply over live rows keeps every row and setting).
+
+## 2026-10-26 — NHL starting goalies: deployed, and a GitHub job beside the other syncs
+
+- **Deployed.** Deploy NHL goalie layer now makes the cron secret exist and agree in Vault and on the function, schedules the five-minute poke, and runs the sync once. It ran from this branch. The first run wrote version 1 of the four cards inside the horizon (MIN @ VAN, LAK @ NYR, TOR @ CGY, DET @ EDM), all Projected and GATED.
+- **Daily Faceoff refuses the function (HTTP 403).** The NHL API read. Until a starter source answers, starters stay Projected until the NHL boxscore names them near puck drop, and runs more than three hours out record `sources_down` (`docs/engine/NHL_GOALIES.md` §10).
+- **NHL goalie sync** (`.github/workflows/nhl-goalie-sync.yml`). **Run workflow** calls the sync now: forced, dry, or with a simulated outage. On a schedule, every half hour from 8 AM ET, it is pg_cron's watchdog: it calls the sync only when pg_cron has stopped, and then fails. The job summary has the card versions written, pg_cron's last call and the readiness KPIs.
+- **The verdict** (`tools/hockey/nhl_goalie_run_summary.js`, shared with the deploy's first run). The job fails for anything EdgeDesk runs: the secret, the function, pg_cron, the inputs, a drifted parser. An outside source not answering is a warning. The two queries it reads are in `tools/hockey/sql/`, tested on real PostgreSQL.
+- **Tests.** Sync 49 → 61, SQL 66 → 71.
 
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 

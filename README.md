@@ -1256,12 +1256,14 @@ T-30 (7 days), and source conflicts.
 
 **Tests:**
 - `tools/hockey/nhl_goalie_core.test.js` (83);
-- `nhl_goalie_sync.test.js` (49, the MIN @ VAN replay);
-- `nhl_goalie_sql.test.js` (66, real PostgreSQL);
+- `nhl_goalie_sync.test.js` (68, the MIN @ VAN replay, and the GitHub jobs' verdict);
+- `nhl_goalie_sql.test.js` (78, real PostgreSQL);
 - `nhl_goalie_ui.test.js` (32);
 - `tools/engine/engine_ui.e2e.js` (+12).
 
-**Deploy:** `.github/workflows/deploy-nhl-goalie.yml`. Everything else, and
+**Deploy:** `.github/workflows/deploy-nhl-goalie.yml`. **The GitHub job:**
+`.github/workflows/nhl-goalie-sync.yml` (NHL goalie sync: run it by hand, or
+as the half-hourly watchdog of pg_cron). Everything else, and
 the limits, is in `docs/engine/NHL_GOALIES.md`.
 
 ## CFB referee flags — the Officiating block on the Analyst pass

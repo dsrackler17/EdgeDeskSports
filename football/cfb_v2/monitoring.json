@@ -2,22 +2,20 @@
  "alerts": [
   {
    "evidence": {
+    "brier": 0.2121,
+    "mean_gap": -0.02
+   },
+   "kind": "calibration",
+   "level": "warn",
+   "message": "season-to-date win probabilities are off by -0.020 on average (Brier 0.212)"
+  },
+  {
+   "evidence": {
     "game_id": 401861966
    },
    "kind": "disagreement",
    "level": "info",
-   "message": "UConn @ Air Force: C 14.2 vs D 6.7 (beyond the backtest 99th percentile 7.5)"
-  },
-  {
-   "evidence": {
-    "games": [
-     401871071,
-     401871072
-    ]
-   },
-   "kind": "stale_odds",
-   "level": "info",
-   "message": "2 games within 72 h have no line observation"
+   "message": "UConn @ Air Force: C 11.0 vs D 2.7 (beyond the backtest 99th percentile 7.5)"
   }
  ],
  "bet_enabled": false,
@@ -146,27 +144,62 @@
    "week": 7
   },
   {
+   "ats_at_close": 0.517,
+   "ats_at_freeze_line": 0.517,
+   "bias": -2.678,
+   "brier": 0.2493,
+   "clv_mean": 0.0,
    "disagreement_c_d_mean": 1.615,
-   "final": 0,
+   "final": 56,
    "frozen_games": 56,
+   "largest_misses": [
+    {
+     "abs_error": 34.8,
+     "final": -35.0,
+     "game": "Hawai'i @ Northern Illinois",
+     "v2": -0.2
+    },
+    {
+     "abs_error": 31.4,
+     "final": -22.0,
+     "game": "Boston College @ Georgia Tech",
+     "v2": 9.4
+    },
+    {
+     "abs_error": 27.2,
+     "final": 13.0,
+     "game": "Texas Tech @ Cincinnati",
+     "v2": -14.2
+    }
+   ],
+   "mae": 11.605,
+   "mae_candidate_001_same_games": 11.597,
+   "mae_close": 10.839,
+   "mae_line_at_freeze": 9.776,
+   "mae_v1_same_games": 11.587,
+   "mae_v2_same_close_games": 11.605,
+   "mae_v2_same_line_at_freeze_games": 10.317,
+   "mae_v2_vs_candidate_001_games": 11.605,
+   "mae_v2_vs_v1_games": 11.605,
+   "rmse": 14.123,
    "week": 8
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.137,
+  "ens_pred": 0.041,
   "ens_pred_noise_q99": 0.332,
-  "ens_sd": 0.309,
+  "ens_sd": 0.17,
   "ens_sd_noise_q99": 0.332,
-  "pred_total": 0.06,
+  "pred_total": 0.074,
   "pred_total_noise_q99": 0.332,
   "reference_weeks": "week8",
-  "sigma": 0.136,
+  "sigma": 0.166,
   "sigma_noise_q99": 0.332
  },
- "generated_at": "2026-10-25T10:09:00Z",
+ "generated_at": "2026-10-26T10:09:07Z",
  "learning": {
-  "bias": -0.8439826589595376,
+  "bias": -1.2924585152838428,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -179,32 +212,32 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -0.8439826589595376,
+    "bias": -1.2924585152838428,
     "fcs_not_priced_games": 6,
-    "games_scored": 173,
-    "mae": 12.234017341040461,
-    "major_miss_share": 0.1329479768786127,
+    "games_scored": 229,
+    "mae": 12.080231441048035,
+    "major_miss_share": 0.11790393013100436,
     "sources": {
-     "FROZEN": 173
+     "FROZEN": 229
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 173,
-  "mae": 12.234017341040461,
-  "major_miss_share": 0.1329479768786127,
+  "games_scored": 229,
+  "mae": 12.080231441048035,
+  "major_miss_share": 0.11790393013100436,
   "miss_classes": {
-   "explosive_variance": 2,
+   "explosive_variance": 3,
    "garbage_time": 4,
    "market_news_unavailable": 2,
-   "ordinary_variance": 9,
+   "ordinary_variance": 12,
    "qb_injury_miss": 3,
    "special_teams": 2,
    "turnover_variance": 1
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 173
+   "FROZEN": 229
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1886,8 +1919,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 173,
+  "final": 229,
   "frozen_games": 229,
-  "mae": 12.234
+  "mae": 12.08
  }
 }
