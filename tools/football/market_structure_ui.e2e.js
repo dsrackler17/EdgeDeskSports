@@ -72,26 +72,6 @@ function asOfPin(csv) {
   }).join('\n');
 }
 
-/* THE STAGED INSTANT. Every staged row is a Week 7 pregame state, so the page
-   runs on a clock set to Sunday of Week 7, noon ET (before its 1 PM kickoffs),
-   and is served the schedule as it stood then: results of games kicked off at
-   or after that instant are blanked. Without both, IND @ MIN went final on the
-   live feed on Sunday afternoon, its card left the board and the suite failed;
-   DAL @ PHI would follow on Monday night. */
-const AT = '2026-10-25T16:00:00Z';
-const RESULT_COLS = ['away_score', 'home_score', 'result', 'total', 'overtime'];
-function asOf(csv, at) {
-  const rows = csv.split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
-  const blank = RESULT_COLS.map(ix).filter((i) => i >= 0), t = Date.parse(at);
-  return rows.map((l, i) => {
-    if (!i || !l) return l;
-    const c = l.split(',');
-    if (Date.parse(kickIso(c[ix('gameday')], c[ix('gametime')])) < t) return l;
-    blank.forEach((k) => { c[k] = ''; });
-    return c.join(',');
-  }).join('\n');
-}
-
 /* IND @ MIN's line is the schedule's own spread_line, which nflverse updates
    as the market moves (5.5 when this suite was written, 6.5 a day later). The
    suite pins it to MIN −5.5 in the copy it serves, so the Six watch case is
@@ -125,7 +105,7 @@ function staged(csv) {
   const board = [
     { event_id: 'evDALPHI', canonical_game_id: 'g1', home_team: NAME.PHI, away_team: NAME.DAL, commence_time: kickIso(g1.day, g1.time), snapshot_at: '2026-10-22T17:00:00Z',
       snapshot_status: 'ok', snapshot_backfilled: false, snap_home_spread: 3, snap_fair_home: 0.482, snap_n_books: 14, snap_books: ['draftkings', 'pinnacle'], snap_pass_at: '2026-10-22T16:20:00Z',
-
+      current_status: 'ok', current_at: new Date(PIN).toISOString(), current_home_spread: 4.5, current_delta: 1.5, current_crossed: [3], current_flagged: true,
       close_status: null, close_at: null, close_home_spread: null, close_delta: null, close_crossed: null, close_flagged: null, moved_toward: null, clv: null, clv_source: null, clv_reason: 'not_closed' },
     { event_id: 'evINDMIN', canonical_game_id: null, home_team: NAME.MIN, away_team: NAME.IND, commence_time: kickIso(g2.day, g2.time), snapshot_at: '2026-10-22T17:00:00Z',
       snapshot_status: 'no_capture', snapshot_backfilled: false, snap_home_spread: null, current_status: null, close_status: null, clv: null, clv_reason: 'no_snapshot_line' }
@@ -174,7 +154,7 @@ function staged(csv) {
 
   async function open(viewport, mode, appPath) {
     const ctx = await browser.newContext({ viewport });
-
+    if (ctx.clock) await ctx.clock.setFixedTime(new Date(PIN));
     await ctx.addInitScript(() => { try {
       localStorage.setItem('edgedesk_welcome_seen', String(Date.now()));
       localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400, user: { id: 'e2e-reader', email: 'e2e@edgedesk.test' } }));
