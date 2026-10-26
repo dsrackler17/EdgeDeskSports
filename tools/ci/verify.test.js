@@ -33,7 +33,7 @@ write('lib/a.js', 'module.exports = 1;\n');
 write('data/store.json', '{"v": 1}\n');
 write('ok.test.js', 'console.log("ALL GREEN");\n');
 write('bad.test.js', 'console.log("FAIL | a check — got 2, want 1"); process.exit(1);\n');
-write('writes.test.js', 'require("fs").writeFileSync(require("path").join(__dirname, "data", "store.json"), "{\\"v\\": 2}\\n");\n');
+write('writes.test.js', 'require("fs").writeFileSync(require("path").join(__dirname, "data", "store.json"), "{\\"v\\": 2}\\n"); require("fs").writeFileSync(require("path").join(__dirname, "data", "artifact.json"), "{}\\n");\n');
 write('.github/workflows/pr.yml', [
   'name: PR suite',
   'on:',
@@ -92,14 +92,16 @@ chk('the summary counts them apart (passed 3 with the reuse · failed 1 · not v
 chk('NOT VERIFIED steps are listed as not passed', /NOT VERIFIED HERE — CI runs these; do not report them as passed:/.test(r.out));
 chk('a step that rewrote a committed file is named', /WROTE committed file data\/store\.json/.test(r.out) && /data\/store\.json ← pr\.yml · rewrites a committed file/.test(r.out), r.out.slice(-600));
 chk('...and the file is put back, so it cannot be committed by accident', fs.readFileSync(path.join(R, 'data', 'store.json'), 'utf8') === '{"v": 1}\n' && /restored 1 to HEAD/.test(r.out));
+chk('a step that created an untracked file is named', /CREATED untracked file data\/artifact\.json/.test(r.out) && /data\/artifact\.json ← pr\.yml · rewrites a committed file/.test(r.out), r.out.slice(-700));
+chk('...and the file is removed, so it cannot be committed by accident', !fs.existsSync(path.join(R, 'data', 'artifact.json')) && /removed 1 \(--keep-writes keeps them\)/.test(r.out));
 chk('a step log is saved under .cache/verify/', /log \.cache\/verify\/[^ ]+\/pr\.t\.5\.log/.test(r.out), r.out);
 
 /* --keep-writes, --bail, --json */
 r = run(['--base', 'main', '--keep-writes', '--json', path.join(R, 'out.json')]);
-chk('--keep-writes leaves the rewritten file', fs.readFileSync(path.join(R, 'data', 'store.json'), 'utf8') === '{"v": 2}\n');
-git(['checkout', '--', 'data/store.json']);
+chk('--keep-writes leaves the rewritten file and the created one', fs.readFileSync(path.join(R, 'data', 'store.json'), 'utf8') === '{"v": 2}\n' && fs.existsSync(path.join(R, 'data', 'artifact.json')));
+git(['checkout', '--', 'data/store.json']); fs.rmSync(path.join(R, 'data', 'artifact.json'));
 let j = null; try { j = JSON.parse(fs.readFileSync(path.join(R, 'out.json'), 'utf8')); } catch (e) { j = null; }
-chk('--json writes the tally, every result, and what was written', !!j && j.tally.fail === 1 && j.tally.pass === 3 && j.results.length > 0 && j.wrote.length === 1, j && j.tally);
+chk('--json writes the tally, every result, and what was written or created', !!j && j.tally.fail === 1 && j.tally.pass === 3 && j.results.length > 0 && j.wrote.length === 1 && j.created.length === 1, j && j.tally);
 r = run(['--base', 'main', '--bail']);
 chk('--bail stops after the first failure', r.code === 1 && /not run \(--bail\)/.test(r.out), r.out.slice(-600));
 
@@ -126,6 +128,32 @@ r = run(['--workflow', 'clock.yml']);
 chk('without the audit the clock is today\'s', r.code === 1, r.out.slice(-300));
 r = run(['--workflow', 'clock.yml', '--clock-shift', String(365 * 100)]);
 chk('--clock-shift moves Date for the step\'s node process, and the header says it is an audit', r.code === 0 && /CLOCK MOVED/.test(r.out), r.out.slice(-400));
+
+/* what a step appends to GITHUB_PATH and GITHUB_ENV, the job's later steps see */
+write('bin/edgedesk-hello', '#!/bin/sh\necho hello-from-path\n'); fs.chmodSync(path.join(R, 'bin', 'edgedesk-hello'), 0o755);
+write('.github/workflows/runner.yml', [
+  'name: Runner files', 'on:', '  pull_request:', 'jobs:', '  t:', '    runs-on: ubuntu-latest', '    steps:',
+  '      - run: echo "$GITHUB_WORKSPACE/bin" >> "$GITHUB_PATH"',
+  '      - run: |', '          echo "EDGEDESK_A=one" >> "$GITHUB_ENV"', '          { echo "EDGEDESK_B<<EOF"; echo "two lines"; echo "here"; echo "EOF"; } >> "$GITHUB_ENV"',
+  '          echo "x=1" >> "$GITHUB_OUTPUT"; echo "# summary" >> "$GITHUB_STEP_SUMMARY"',
+  '      - run: test "$(edgedesk-hello)" = hello-from-path',
+  '      - run: test "$EDGEDESK_A" = one && test "$EDGEDESK_B" = "$(printf \'two lines\\nhere\')"',
+].join('\n') + '\n');
+git(['add', '-A']); git(['commit', '-q', '-m', 'runner files']);
+r = run(['--workflow', 'runner.yml']);
+chk('GITHUB_PATH, GITHUB_ENV (incl. a multi-line value), GITHUB_OUTPUT and the step summary work as on a runner', r.code === 0 && /SUMMARY  passed 4 · failed 0/.test(r.out), r.out.slice(-900));
+chk('verify never counts its own step logs as files a step created', !/CREATED untracked file \.cache\/verify/.test(r.out) && fs.existsSync(path.join(R, '.cache', 'verify')));
+
+/* a job that checks out full history, failing on a shallow clone, is NOT VERIFIED, never passed */
+{
+  const SH = R + '-shallow';
+  execFileSync('git', ['clone', '-q', '--depth', '1', 'file://' + R, SH], { env: ENV, stdio: ['ignore', 'pipe', 'pipe'] });
+  fs.mkdirSync(path.join(SH, '.github', 'workflows'), { recursive: true });
+  fs.writeFileSync(path.join(SH, 'hist.test.js'), 'process.exit(require("child_process").spawnSync("git", ["rev-parse", "HEAD~1"]).status === 0 ? 0 : 1);\n');
+  fs.writeFileSync(path.join(SH, '.github', 'workflows', 'hist.yml'), "name: History\non:\n  pull_request:\njobs:\n  t:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n        with:\n          fetch-depth: 0\n      - run: node hist.test.js\n      - run: node -e 'process.exit(0)'\n");
+  const rs = spawnSync(process.execPath, [VERIFY, '--root', SH, '--workflow', 'hist.yml'], { cwd: SH, env: ENV, encoding: 'utf8' });
+  chk('on a shallow clone, a failure in a fetch-depth: 0 job is NOT VERIFIED with the remedy, and a pass still passes', rs.status === 0 && /N\/A .*failed on a shallow clone.*git fetch --unshallow/.test(rs.stdout) && /SUMMARY  passed 1 · failed 0 · NOT VERIFIED here 1/.test(rs.stdout), rs.stdout.slice(-700));
+}
 
 /* the network audit names a step whose node process opened a connection beyond loopback */
 write('net.test.js', 'const s = require("net").connect(9, "example.invalid"); s.on("error", () => {}); setTimeout(() => process.exit(0), 200);\n');

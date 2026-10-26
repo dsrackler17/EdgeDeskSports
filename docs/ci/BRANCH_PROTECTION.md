@@ -27,15 +27,55 @@ version stamp. They authenticate with the workflow's `GITHUB_TOKEN`, as
 
 A rule that requires a pull request, or required status checks, applies to
 those pushes too. Turn either on without a bypass and every data pipeline
-stops at its next push. The bypass list below therefore contains the GitHub
-Actions app and nothing else.
+stops at its next push: `push_generated.sh` retries, fails, and turns every
+scheduled job red. No workflow pushes with a personal token or a deploy key
+(checked 2026-10-26), so one bypass, for the GitHub Actions app, covers all
+65. The bypass list below therefore contains that app and nothing else.
+
+## Applying it
+
+**1. Merge #805 first.** Two of the three required checks,
+`Repository integrity` and `Odds gateway suites`, exist only once #805 is on
+`main`. Applied before that, every other pull request would wait on them
+forever.
+
+**2. Import the ruleset.** [`main-ruleset.json`](main-ruleset.json) holds
+exactly the table below.
+
+- In the browser: Settings → Rules → Rulesets → **New ruleset → Import a
+  ruleset**, then choose the file.
+- From your own machine, with `gh` logged in as the owner:
+
+```
+gh api --method POST repos/dsrackler17/EdgeDeskSports/rulesets --input docs/ci/main-ruleset.json
+```
+
+**3. Before you leave the page, check the bypass list shows "GitHub Actions"**
+(app id 15368).
+
+If GitHub does not accept that bypass actor on this account, set the ruleset
+to **Disabled** and stop: active without it, it would block the data bots. The
+fallback is a deploy key that `push_generated.sh` pushes with, added to the
+bypass list as *Deploy keys*. That is a change to the publishing workflows.
+
+**4. Verify, within the hour:**
+
+- The next scheduled data push still lands. The Editorial system commits
+  every few minutes: its run is green and its commit is on `main`.
+- A pull request's merge button waits for `Repository integrity`.
+- `GET /repos/dsrackler17/EdgeDeskSports/rules/branches/main` lists the
+  ruleset.
+
+Evaluate mode (log, do not block) is offered only on GitHub Enterprise. On
+this account a ruleset is Active or Disabled, which is why step 4 is a
+checklist rather than a trial period.
 
 ## The ruleset (Settings → Rules → Rulesets → New ruleset → New branch ruleset)
 
 | Field | Value | Why |
 |---|---|---|
 | Ruleset name | `main: verified merges` | |
-| Enforcement status | **Evaluate** for a day, then **Active** | Evaluate logs what it would block without blocking it, so a missed bot shows up before it breaks |
+| Enforcement status | **Active** (after #805 merges) | this account has no Evaluate mode (Enterprise only); step 4 above is the check that the bots still push |
 | Bypass list | **GitHub Actions** (the app), mode *Always* | the data bots above. Do **not** add *Repository admin*: coding agents act through the owner's account, so an admin bypass is an agent bypass |
 | Target branches | *Include default branch* | |
 | Restrict deletions | on | |
