@@ -23,6 +23,14 @@
 
 Tests: `game_research.test.js` passes 252 of 252 (it had 2 failures). `football_lines`, `game_context`, `build_game_research --check` and `nfl_prior_decay` (85) all pass.
 
+## 2026-10-26 — NHL goalie sync: the cron secret fixed, and refused pokes seen at once
+
+- **The mismatch.** After the first deploy, the function's `NHL_GOALIE_CRON_SECRET` stopped matching Vault's, probably set by hand. Every pg_cron poke from 00:36 to 02:06 UTC was a 401, while pg_cron's own record showed each call as succeeded. The first run by hand of NHL goalie sync failed on it. Deploy NHL goalie layer (`set_cron_secret`) gave the function Vault's value, and its forced run answered 200, status `ok`.
+- **Refused pokes are seen.** `nhl_goalie_poke()` keeps each poke's pg_net request id in `public.nhl_goalie_pokes`. The watchdog reads what the function answered the last three pokes and fails on a 401 or any answer but 200 or 500, within half an hour instead of after a 90-minute silence.
+- **The summary prints a refused answer.** It tells the function's own 401 (the secret) from the Supabase gateway's (JWT verification on: redeploy with `--no-verify-jwt`).
+- **The docs.** They no longer say to set the secret by hand; the deploy sets both sides. Daily Faceoff's 403 comes and goes: it answered at 02:06, and its parser read the live page.
+- **Tests.** Sync 61 → 68, SQL 71 → 78 (one proves a re-apply over live rows keeps every row and setting).
+
 ## 2026-10-26 — NHL starting goalies: deployed, and a GitHub job beside the other syncs
 
 - **Deployed.** Deploy NHL goalie layer now makes the cron secret exist and agree in Vault and on the function, schedules the five-minute poke, and runs the sync once. It ran from this branch. The first run wrote version 1 of the four cards inside the horizon (MIN @ VAN, LAK @ NYR, TOR @ CGY, DET @ EDM), all Projected and GATED.

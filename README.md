@@ -1256,8 +1256,8 @@ T-30 (7 days), and source conflicts.
 
 **Tests:**
 - `tools/hockey/nhl_goalie_core.test.js` (83);
-- `nhl_goalie_sync.test.js` (61, the MIN @ VAN replay, and the GitHub jobs' verdict);
-- `nhl_goalie_sql.test.js` (71, real PostgreSQL);
+- `nhl_goalie_sync.test.js` (68, the MIN @ VAN replay, and the GitHub jobs' verdict);
+- `nhl_goalie_sql.test.js` (78, real PostgreSQL);
 - `nhl_goalie_ui.test.js` (32);
 - `tools/engine/engine_ui.e2e.js` (+12).
 

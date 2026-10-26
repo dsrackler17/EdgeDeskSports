@@ -18,6 +18,16 @@
 -- so the readiness KPIs can tell a quiet morning from a dead scheduler (no
 -- run of any kind in 90 minutes is a failure).
 --
+-- WHAT THE FUNCTION ANSWERED. pg_net sends the poke later, and pg_cron records
+-- only that the poke's SQL ran, never what the function said. A refused
+-- secret therefore looked like a working scheduler until the 90-minute
+-- silence (2026-10-26: the function's NHL_GOALIE_CRON_SECRET no longer matched
+-- Vault, and every poke for 85 minutes was a 401). Each poke's pg_net request
+-- id is kept in public.nhl_goalie_pokes for two days, so its answer
+-- (net._http_response, which pg_net keeps for six hours) can be read beside it.
+-- NHL goalie sync (.github/workflows/nhl-goalie-sync.yml) reads them through
+-- tools/hockey/sql/nhl_goalie_cron_check.sql and fails on a refused poke.
+--
 -- CONVENTION (supabase/README.md): idempotent, pasted into the SQL editor, no
 -- psql meta-commands, ends in a report. Safe to run again.
 -- =============================================================================
@@ -27,6 +37,13 @@ do $req$ begin
   if to_regclass('cron.job') is null then raise exception 'pg_cron is not enabled (Database -> Extensions -> pg_cron)'; end if;
   if to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null then raise exception 'pg_net is not enabled (Database -> Extensions -> pg_net)'; end if;
 end $req$;
+
+create table if not exists public.nhl_goalie_pokes (
+  request_id bigint primary key,   -- net.http_post's id = net._http_response.id
+  queued_at  timestamptz not null default now()
+);
+alter table public.nhl_goalie_pokes enable row level security;
+revoke all on public.nhl_goalie_pokes from public, anon, authenticated;
 
 create or replace function public.nhl_goalie_poke()
 returns jsonb
@@ -55,6 +72,8 @@ begin
     headers              := jsonb_build_object('content-type', 'application/json', 'x-cron-secret', v_secret),
     timeout_milliseconds := 120000
   ) into v_req;
+  insert into public.nhl_goalie_pokes (request_id) values (v_req) on conflict do nothing;
+  delete from public.nhl_goalie_pokes where queued_at < now() - interval '2 days';
   return jsonb_build_object('queued', true, 'request_id', v_req);
 end $fn$;
 revoke all on function public.nhl_goalie_poke() from public, anon, authenticated;
@@ -70,6 +89,7 @@ select cron.schedule('nhl_goalie_sync', '*/5 * * * *', $job$ select public.nhl_g
 -- THE REPORT. Every row should say ok.
 select piece, state from (
   select '1 the five-minute poke is scheduled' as piece, case when exists (select 1 from cron.job where jobname = 'nhl_goalie_sync' and active) then 'ok' else 'CHECK THIS' end as state
+  union all select '3 each poke''s answer is kept (public.nhl_goalie_pokes)', case when to_regclass('public.nhl_goalie_pokes') is not null then 'ok' else 'CHECK THIS' end
   union all select '2 Vault nhl_goalie_cron_secret is set', case when exists (select 1 from vault.decrypted_secrets where name = 'nhl_goalie_cron_secret' and nullif(decrypted_secret, '') is not null) then 'ok'
     else 'CHECK THIS: select vault.create_secret(''<NHL_GOALIE_CRON_SECRET>'', ''nhl_goalie_cron_secret'');' end
 ) r order by 1;

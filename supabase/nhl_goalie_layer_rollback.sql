@@ -13,6 +13,7 @@ do $c$ begin
   end if;
 end $c$;
 drop function if exists public.nhl_goalie_poke();
+drop table if exists public.nhl_goalie_pokes;
 drop function if exists public.nhl_goalie_card(text);
 drop view if exists public.nhl_goalie_meta, public.nhl_goalie_readiness, public.nhl_card_edge_clv_detail, public.nhl_game_cards_current, public.nhl_goalie_starters_current;
 drop table if exists public.nhl_card_edge_clv, public.nhl_card_edge_events, public.nhl_game_cards, public.nhl_goalie_starters,
