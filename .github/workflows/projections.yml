@@ -26,6 +26,10 @@ on:
       - 'tools/quant/**'
       - 'tools/intelligence/multisport*.test.js'
       - 'tools/intelligence/fixtures/quant_oct15_2026.json'
+      - 'lib/edgedesk_model_integrity.js'
+      - 'lib/edgedesk_calc.js'
+      - 'tools/model_integrity/**'
+      - 'engine/model_integrity_config.json'
       - '.github/workflows/projections.yml'
       - '.github/workflows/projections-build.yml'
 
@@ -52,5 +56,7 @@ jobs:
         run: node tools/intelligence/multisport.test.js
       - name: The 2026-10-15 regression, the model-first order and the desk with every odds integration off (real handler)
         run: node tools/intelligence/multisport_host.test.js
+      - name: The model integrity audit (classifications, timestamp-matched market, the signal rule, each sport's inputs, chronological threshold validation)
+        run: node tools/model_integrity/model_integrity.test.js
       - name: The build reads no price and is reproducible
         run: node engine/build_projections.js --check || echo "::notice::engine/projections.json differs from a fresh build (the slates moved since it was committed)"

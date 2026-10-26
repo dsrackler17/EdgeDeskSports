@@ -106,6 +106,37 @@ async function refreshFromApi(games, now, hours, offline) {
 
 function bin(bins, p) { return (bins || []).find((b) => p >= b.lo && p < b.hi) || null; }
 
+/* THE STARTERS A GAME IS PRICED WITH (the goalie scenarios; the headline price
+   has no goalie term). A confirmation replaces one side's projection, and the
+   game is CONFIRMED only when BOTH sides are: lib/edgedesk_nhl_market.js opens
+   its goalie gate on that word, and a one-sided entry once opened it. A goalie
+   the operator file lists as unavailable (hockey/data/confirmed_starters.json
+   `unavailable`, by goalie id, with reason, source and time) is never an
+   assumed starter: he leaves the projection, the others are renormalised and
+   the removal is stated; a confirmation naming him is a CONFLICT, not a
+   confirmed start. No NHL injury feed exists, so a projected goalie's
+   availability is UNVERIFIED, never assumed. */
+function startersFor(conf, projH, projA, unavailable) {
+  const out = { gH: null, gA: null, certainty: null, availability: {}, removed: [], conflicts: [] };
+  const un = unavailable || {};
+  for (const [k, proj] of [['home', projH], ['away', projA]]) {
+    const cg = conf && conf[k] != null ? conf[k] : null;
+    if (cg != null && un[cg]) {
+      out.conflicts.push({ side: k, goalie: cg, reason: un[cg].reason || null, source: un[cg].source || null });
+      out.availability[k] = 'CONFLICT';
+    } else if (cg != null) { out[k === 'home' ? 'gH' : 'gA'] = [{ goalie: cg, p: 1, confirmed: true }]; out.availability[k] = 'CONFIRMED'; continue; }
+    const keep = proj.filter((x) => !un[x.goalie]);
+    for (const x of proj) if (un[x.goalie]) out.removed.push({ side: k, goalie: x.goalie, p_start_before: x.p, reason: un[x.goalie].reason || null, source: un[x.goalie].source || null, recorded_at: un[x.goalie].recorded_at || null });
+    const s = keep.reduce((a, x) => a + x.p, 0);
+    out[k === 'home' ? 'gH' : 'gA'] = s > 0 ? keep.map((x) => ({ goalie: x.goalie, p: x.p / s })) : [];
+    if (!out.availability[k]) out.availability[k] = 'UNVERIFIED';
+  }
+  const gH = out.gH, gA = out.gA;
+  out.certainty = out.availability.home === 'CONFIRMED' && out.availability.away === 'CONFIRMED' ? 'CONFIRMED'
+    : (gH[0] && gH[0].p >= 0.8 && gA[0] && gA[0].p >= 0.8 && !out.conflicts.length ? 'PROJECTED_LIKELY' : 'PROJECTED_UNCERTAIN');
+  return out;
+}
+
 /* a goalie's rating at `day` WITHOUT ageing the accumulator (RatingState.goalieRating ages it in place):
    the same arithmetic, so it equals goalieRating(id, day).rate for every day at or after the last game absorbed */
 function peekGoalieRate(rs, id, day) {
@@ -144,7 +175,8 @@ function build(o) {
   const luNote = 'The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar' +
     (luCmp ? '; confirmed lineups changed held-out log loss by ' + luCmp.mean_diff + ' (95% CI ' + luCmp.ci95.join(' to ') + ')' : '') + '.';
   const goalieNames = readJson(C.PATHS.goalies, {});
-  const confirmed = readJson(path.join(C.HOCKEY, 'data', 'confirmed_starters.json'), { starters: {} }).starters || {};
+  const confFile = readJson(path.join(C.HOCKEY, 'data', 'confirmed_starters.json'), { starters: {} }) || {};
+  const confirmed = confFile.starters || {}, unavailableGoalies = confFile.unavailable || {};
   const lastCompleted = games.length ? games[games.length - 1] : null;
   const completedIds = new Set(games.map((g) => g.game_id));
 
@@ -205,8 +237,8 @@ function build(o) {
     const projH = rs.projectStarters(g.home, day).slice(0, 2), projA = rs.projectStarters(g.away, day).slice(0, 2);
     const conf = confirmed[String(g.game_id)] || null;
     const scen = [];
-    const gH = conf && conf.home ? [{ goalie: conf.home, p: 1, confirmed: true }] : projH;
-    const gA = conf && conf.away ? [{ goalie: conf.away, p: 1, confirmed: true }] : projA;
+    const st = startersFor(conf, projH, projA, unavailableGoalies);
+    const gH = st.gH, gA = st.gA;
     const sumH = gH.reduce((a, x) => a + x.p, 0) || 1, sumA = gA.reduce((a, x) => a + x.p, 0) || 1;
     for (const h of gH.length ? gH : [{ goalie: null, p: 1 }]) for (const a of gA.length ? gA : [{ goalie: null, p: 1 }]) {
       const sh = Object.assign({}, fh, { opp_goalie_act: rs.goalieRating(a.goalie, day).rate });
@@ -251,7 +283,7 @@ function build(o) {
     const totSd = Math.sqrt(totals.reduce((a, v) => a + (v - tm) * (v - tm), 0) / totals.length);
     const b = bin(bins, D.p_home);
     const pct = (v) => r4(v);
-    const goalieCertainty = conf ? 'CONFIRMED' : (gH[0] && gH[0].p >= 0.8 && gA[0] && gA[0].p >= 0.8 ? 'PROJECTED_LIKELY' : 'PROJECTED_UNCERTAIN');
+    const goalieCertainty = st.certainty;
     const weights = Math.min(fh.weight || 0, fa.weight || 0);
     out.push({
       game_id: g.game_id, event_key: 'NHL|' + g.game_id, date: g.date, start_utc: g.start_utc, type: g.game_type, home: g.home, away: g.away, venue: g.venue || null, state: g.state || null, schedule_source: g.source,
@@ -281,7 +313,9 @@ function build(o) {
         basis: 'spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club\'s last lineup). A sensitivity, not a confidence interval.',
         calibration_bin: b ? { range: [b.lo, b.hi], n: b.n, model_mean: b.mean_p, observed: b.observed, wilson95: [b.wilson_low, b.wilson_high], window: 'confirmation 2020-21 to 2025-26' } : null,
       },
-      goalies: { certainty: goalieCertainty, home: gH.map((x) => ({ goalie: x.goalie, name: goalieNames[x.goalie] || null, p_start: r4(x.p), confirmed: !!x.confirmed, gsax_rate: r4(rs.goalieRating(x.goalie, day).rate) })), away: gA.map((x) => ({ goalie: x.goalie, name: goalieNames[x.goalie] || null, p_start: r4(x.p), confirmed: !!x.confirmed, gsax_rate: r4(rs.goalieRating(x.goalie, day).rate) })), scenarios: scen, confirmed_source: conf ? { source: conf.source, url: conf.url || null, recorded_at: conf.recorded_at } : null },
+      goalies: { certainty: goalieCertainty, home: gH.map((x) => ({ goalie: x.goalie, name: goalieNames[x.goalie] || null, p_start: r4(x.p), confirmed: !!x.confirmed, gsax_rate: r4(rs.goalieRating(x.goalie, day).rate) })), away: gA.map((x) => ({ goalie: x.goalie, name: goalieNames[x.goalie] || null, p_start: r4(x.p), confirmed: !!x.confirmed, gsax_rate: r4(rs.goalieRating(x.goalie, day).rate) })), scenarios: scen, confirmed_source: conf ? { source: conf.source, url: conf.url || null, recorded_at: conf.recorded_at } : null,
+        availability: st.availability, availability_basis: 'CONFIRMED: a recorded starter (hockey/data/confirmed_starters.json); UNVERIFIED: a usage projection, and no NHL injury or roster feed exists to say the goalie is available; CONFLICT: a confirmation names a goalie listed unavailable',
+        removed_unavailable: st.removed.map((x) => Object.assign({}, x, { name: goalieNames[x.goalie] || null })), conflicts: st.conflicts.map((x) => Object.assign({}, x, { name: goalieNames[x.goalie] || null })) },
       lineups: {
         state: lineupState,
         basis: 'each club\'s previous game\'s dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.',
@@ -303,6 +337,9 @@ function build(o) {
         history_weight_games: r2(weights), early_season: weights < 40,
         goalie_certainty: goalieCertainty,
         missing: [].concat(gH.length ? [] : ['no starter history for ' + g.home]).concat(gA.length ? [] : ['no starter history for ' + g.away]),
+        warnings: [].concat(['home', 'away'].filter((k) => st.availability[k] === 'UNVERIFIED').map((k) => 'starting goalie unconfirmed for ' + g[k] + ': a usage projection, availability unverified (no injury feed)'))
+          .concat(st.removed.map((x) => (goalieNames[x.goalie] || x.goalie) + ' (' + g[x.side] + ') listed unavailable' + (x.reason ? ' (' + x.reason + ')' : '') + ': removed from the projection'))
+          .concat(st.conflicts.map((x) => 'a confirmation names ' + (goalieNames[x.goalie] || x.goalie) + ' (' + g[x.side] + '), who is listed unavailable' + (x.reason ? ' (' + x.reason + ')' : '') + ': not priced as confirmed')),
       },
       invalidators: [
         'A starting goalie other than the projected one (see the goalie scenarios for the size of the move).',
@@ -548,4 +585,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(1); });
-module.exports = { build, ledgerAppend, carryRecent, goalieInputsFile, checkGoalieInputs, peekGoalieRate };
+module.exports = { build, ledgerAppend, carryRecent, goalieInputsFile, checkGoalieInputs, peekGoalieRate, startersFor };

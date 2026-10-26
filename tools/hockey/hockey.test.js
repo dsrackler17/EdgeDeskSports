@@ -299,6 +299,30 @@ const near = (a, b, e) => Math.abs(a - b) <= (e == null ? 1e-6 : e);
     chk('second source: the id crosswalk has one row per matched game, no id twice', xw.length - 1 === xc.games.matched && new Set(xw.slice(1).map((l) => l.split(',')[0])).size === xw.length - 1 && new Set(xw.slice(1).map((l) => l.split(',')[1])).size === xw.length - 1);
   }
 
+  /* ---------------- the starters a game is priced with ----------------
+     A confirmation names one side's goalie; the game is CONFIRMED only when
+     both sides are (a one-sided entry once marked the whole game CONFIRMED,
+     and lib/edgedesk_nhl_market.js opens its goalie gate on that word). A
+     goalie the operator file lists as unavailable is never an assumed
+     starter; with no injury feed every projected goalie is UNVERIFIED. */
+  {
+    const BS = require(path.join(ROOT, 'hockey', 'build_slate.js'));
+    const projH = [{ goalie: 1, p: 0.85 }, { goalie: 2, p: 0.15 }], projA = [{ goalie: 7, p: 0.6 }, { goalie: 8, p: 0.4 }];
+    const one = BS.startersFor({ home: 2, source: 'manual' }, projH, projA, {});
+    chk('starters: a one-sided confirmation is not a CONFIRMED game', one.certainty !== 'CONFIRMED', one.certainty);
+    chk('starters: the confirmed side is priced with its confirmed goalie only (a projected starter scratched)', one.gH.length === 1 && one.gH[0].goalie === 2 && one.gH[0].p === 1 && one.gH[0].confirmed === true);
+    chk('starters: the unconfirmed side keeps its projection and is UNVERIFIED', one.gA.length === 2 && one.availability.away === 'UNVERIFIED' && one.availability.home === 'CONFIRMED', one.availability);
+    const both = BS.startersFor({ home: 1, away: 8, source: 'manual' }, projH, projA, {});
+    chk('starters: both sides confirmed is CONFIRMED', both.certainty === 'CONFIRMED' && both.gA[0].goalie === 8);
+    const out = BS.startersFor(null, projH, projA, { 1: { reason: 'injured reserve', source: 'manual', recorded_at: '2026-10-26T15:00:00Z' } });
+    chk('starters: a goalie listed unavailable is removed and the rest renormalised', out.gH.length === 1 && out.gH[0].goalie === 2 && near(out.gH[0].p, 1), out.gH);
+    chk('starters: the removal is stated, with its reason and source', out.removed.length === 1 && out.removed[0].goalie === 1 && /injured reserve/.test(out.removed[0].reason) && out.removed[0].side === 'home', out.removed);
+    const bad = BS.startersFor({ home: 1, source: 'manual' }, projH, projA, { 1: { reason: 'injured reserve', source: 'manual' } });
+    chk('starters: a confirmation naming an unavailable goalie is a conflict, never silently priced as confirmed', bad.conflicts.length === 1 && bad.availability.home === 'CONFLICT' && bad.certainty !== 'CONFIRMED', bad);
+    const none = BS.startersFor(null, projH, projA, {});
+    chk('starters: with nothing confirmed, every side is UNVERIFIED and the certainty never says CONFIRMED', none.availability.home === 'UNVERIFIED' && none.availability.away === 'UNVERIFIED' && none.certainty === 'PROJECTED_UNCERTAIN');
+  }
+
   /* ---------------- committed artifacts ---------------- */
   {
     const TG = require(path.join(ROOT, 'hockey', 'ingest', 'team_games.js'));

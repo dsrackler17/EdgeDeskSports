@@ -296,6 +296,27 @@ const SY = R('nba/tools/sync_supabase.js');
   ok('the loader maps team games with possessions and context', tr.length > 2600 && tr.every((r) => typeof r.is_home === 'boolean') && tr.some((r) => r.possessions > 80));
 }
 
+/* ---------------------------------------------------------------- 9b. absent regulars against the current roster
+   A team's regulars are everyone in its last ten games, which early in a season
+   reach back into last season. A regular who has since left (traded, released)
+   is not "absent" and cannot "return": on 2026-10-26 the slate offered
+   "Naz Reid (MIN) returns" while the same build's roster placed him on CHA, and
+   "LeBron James (LAL) returns" with LeBron on no LAL roster. */
+{
+  const BS = R('nba/build_slate.js');
+  const usual = { r1: 30, r2: 25, gone: 28, cameo: 5, star: 34 };
+  const desc = (pid) => ({ id: pid, name: pid, usual_minutes: usual[pid] == null ? 10 : usual[pid], off: 1, def: 0 });
+  const regs = ['star', 'r1', 'r2', 'gone', 'cameo'], proj = ['star', 'r1'];
+  const roster = new Set(['star', 'r1', 'r2', 'cameo']);
+  const sp = BS.splitAbsent({ regs, proj, inRoster: roster, teamOf: { gone: '30' }, describe: desc });
+  ok('a regular traded to another team is not an absent regular', sp.absent.map((x) => x.id).join() === 'r2', sp);
+  ok('he is listed as left the team, with his new team', sp.left.length === 1 && sp.left[0].id === 'gone' && sp.left[0].now_with === '30', sp.left);
+  ok('the roster was checked', sp.roster_checked === true);
+  ok('a regular under 8 usual minutes is neither absent nor left', !sp.absent.concat(sp.left).some((x) => x.id === 'cameo'));
+  const none = BS.splitAbsent({ regs, proj, inRoster: null, teamOf: {}, describe: desc });
+  ok('with no roster source, absent regulars are kept but the list says it was not roster-checked', none.roster_checked === false && none.absent.map((x) => x.id).join() === 'gone,r2' && none.left.length === 0, none);
+}
+
 /* ---------------------------------------------------------------- 10. committed artifacts */
 const run = (cmd) => { try { require('child_process').execSync(cmd, { cwd: ROOT, stdio: 'pipe' }); return true; } catch (e) { return String(e.stdout || '') + String(e.stderr || ''); } };
 if (fs.existsSync(path.join(ROOT, 'nba', 'validation', 'nba_walkforward.json'))) {

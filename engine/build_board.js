@@ -98,7 +98,9 @@ function nhlCandidates(slate, quotes) {
         out.push(Object.assign({}, base, { market: { kind: 'total', side, line, settles: g.prices.total.settles },
           quote: bq ? { book: bq.book, american: bq[side], captured_at: bq.last_update, source: 'odds_gateway', verified: true } : null,
           model: { p_win: tl[side], p_push: tl.push || 0, method: 'MODEL', model_id: slate.model.id, sd: Math.max(0.02, (g.uncertainty.total_sd_goals || 0.1) * 0.18) },
-          market_ref: tRef ? { p_novig: side === 'over' ? tRef.p_a : tRef.p_b, method: tRef.method, book: tRef.book || null, books: tRef.books, captured_at: tRef.captured_at } : null }));
+          /* the model's over/under are unconditional (a whole-number total pushes); a two-way no-vig is not,
+             so the reference is scaled by (1 - push) onto the model's basis, as the football board's refAt is */
+          market_ref: tRef ? { p_novig: (side === 'over' ? tRef.p_a : tRef.p_b) * (1 - (tl.push || 0)), method: tRef.method, push_basis: tl.push ? 'no-vig x (1 - model push)' : null, book: tRef.book || null, books: tRef.books, captured_at: tRef.captured_at } : null }));
       }
     }
   }

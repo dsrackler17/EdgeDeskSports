@@ -1,0 +1,18 @@
+{
+ "schema": "edgedesk_model_integrity_config_v1",
+ "note": "Review thresholds for the model integrity audit (lib/edgedesk_model_integrity.js, tools/model_integrity/build.js). Each is an INVESTIGATION TRIGGER, not statistical proof of an error. engine/model_integrity.json publishes, beside every build, how games beyond each threshold have actually gone (threshold_validation); change a number here only with that record in hand, and say so in the pull request.",
+ "thresholds": {
+  "nba": { "spread_pts": 3, "basis": "initial review threshold (2026-10-26 audit brief): |model unrounded margin - market home line| > 3 points" },
+  "nfl": { "spread_pts": 3, "basis": "initial review threshold (2026-10-26 audit brief)" },
+  "cfb": { "spread_pts": 5, "basis": "initial review threshold (2026-10-26 audit brief)" },
+  "nhl": { "ml_pp": 5, "total_goals": 0.5, "basis": "initial review thresholds (2026-10-26 audit brief): model win probability against the no-vig moneyline, in percentage points; expected total against the market total, in goals" }
+ },
+ "quote": { "max_age_hours": 24, "basis": "a quote older than this before the projection is shown, never compared" },
+ "signal": {
+  "states": ["MARKET_VALIDATED"],
+  "market_test": ["TESTED_AHEAD"],
+  "min_n": 200,
+  "break_even": 0.5238,
+  "basis": "VALIDATED_INDEPENDENT_SIGNAL needs the market validated against the close (engine/registry.json) AND at least min_n graded disagreements beyond the threshold whose model-side win rate's Wilson 95% lower bound clears the -110 break-even, AND clean inputs"
+ }
+}
