@@ -79,6 +79,28 @@ c = N.content(G1, Object.assign({}, base, { market: mk(10, { moneyline: {}, tota
 chk('a quote that carries no price is not shown', !c.market);
 
 /* ---------------------------------------------------------------- words */
+/* A READING IS NOT AN EDGE (2026-10-26 audit). Kings @ Rangers that day: 5.99 expected goals against
+   a 5.5 total, over −130 (DraftKings via ESPN). The mean sits 0.49 over the line, so the old card
+   printed "EDGE: OVER 5.5"; the model's own P(6+ goals) was 52.67%, and −130 breaks even at 56.52%. */
+{
+  const nyr = clone(G1);
+  nyr.prices.total.expected = 5.99;
+  nyr.prices.total.lines['5.5'] = Object.assign({}, nyr.prices.total.lines['5.5'], { over: 0.5267, under: 0.4733, push: 0 });
+  nyr.prices.moneyline.home = 0.5373; nyr.prices.moneyline.away = 0.4627;
+  const m = mk(20, { moneyline: { home: -130, away: 110 }, total: { point: 5.5, over: -130, under: 110 } });
+  const c1 = N.content(nyr, Object.assign({}, base, { market: m })).content;
+  const ov = c1.edge && c1.edge.price_checks.find((x) => x.label === 'OVER 5.5');
+  chk('a 0.49-goal gap READS over 5.5', c1.edge && /OVER 5\.5/.test(c1.edge.reading || ''), c1.edge);
+  chk('…and is never an EDGE: value claims are off, and the card says why', c1.edge && c1.edge.headline === null && /value claims are off/.test(c1.edge.withheld), c1.edge);
+  chk('…priced exactly: P(over 5.5) 52.67% against a 56.52% break-even at −130, 3.9 points short, EV −6.8%', ov && ov.p_win === 0.5267 && ov.break_even === 0.5652 && ov.edge_pp === -3.9 && Math.abs(ov.ev + 0.0682) < 1e-3, ov);
+  const on = N.content(nyr, Object.assign({}, base, { market: m, value_claims: 'ENABLED' })).content;
+  chk('even with value claims on, the over is not named: the mean beyond the line is not the probability of the bet', on.edge && !/OVER/.test(on.edge.headline || ''), on.edge);
+  const ml = on.edge && on.edge.price_checks.find((x) => /ML −130/.test(x.label));
+  chk('the moneyline is checked against the offered price’s break-even, not the no-vig split', ml && ml.break_even === 0.5652 && ml.p_win === 0.5373, ml);
+  const off = N.content(nyr, Object.assign({}, base, { market: mk(20, { total: { point: 9.5, over: -110, under: -110 } }) })).content;
+  chk('a book total off the model’s sheet is no check at all, never an estimate', !(off.edge && off.edge.price_checks || []).some((x) => /9\.5/.test(x.label)));
+}
+
 const bad = clone(G1); bad.explanation.factors[0].label = 'lock of the night'; bad.explanation.factors[0].key = 'home_mystery'; bad.explanation.factors[0].pp = 9;
 chk('the copy rule refuses a graphic with banned words', N.content(bad, base).ok === false);
 chk('the alt text says research, not picks', /Research, not picks\.$/.test(N.content(G1, base).content.alt));

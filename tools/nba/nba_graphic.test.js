@@ -89,7 +89,27 @@ chk('the same line both ways reads as agreement', c.market.vs.join(' | ') === 'S
 {
   const co = N.content(G1, Object.assign({}, base, { market: mk(181) })).content;
   chk('a price older than 180 minutes is the last known market, with its time (the nearest price, never hidden)', co.market && co.market.title === 'LAST KNOWN MARKET' && co.market.state === 'STALE' && !co.detail && /Last known market/.test(N.altText ? N.altText(co) : co.alt || 'Last known market'), co.market);
-  chk('…a gap of 2+ points on the spread or 3+ on the total names the edge, at the book’s line', co.edge && co.edge.headline === G1.home.abbr + ' ' + co.market.home_spread + ' · UNDER ' + co.market.total, co.edge);
+  chk('…a gap of 2+ points on the spread or 3+ on the total READS a side at the book’s line', co.edge && co.edge.reading === G1.home.abbr + ' ' + co.market.home_spread + ' · UNDER ' + co.market.total, co.edge);
+  /* a reading is not an edge (2026-10-26 audit): an EDGE is the exact bet at its offered price, and NBA value claims are off */
+  chk('…but with NBA value claims off it is never an EDGE, and the card says why', co.edge && co.edge.headline === null && /value claims are off/.test(co.edge.withheld) && !/Edge: /.test(co.alt || ''), co.edge);
+  const hs = co.edge && co.edge.price_checks.find((x) => x.label === G1.home.abbr + ' ' + co.market.home_spread);
+  const rs = G1.price.spread.ladder.find((r) => Math.abs(r.line_home - (fl1 + 4)) < 1e-9);
+  chk('…each exact bet is priced from the model’s own ladder at the book’s line: P(win), P(push), the push-aware break-even and EV', hs && rs && hs.p_win === Math.round(rs.win * 1e4) / 1e4 && Math.abs(hs.break_even - (1 - rs.push) / (1 + 100 / 112)) < 1e-4
+    && Math.abs(hs.ev - (rs.win * (100 / 112) - rs.lose)) < 1e-4, [hs, rs]);
+  chk('…and a caller cannot switch value claims on over the slate’s own DISABLED', !(N.content(G1, Object.assign({}, base, { value_claims: 'ENABLED', market: mk(181) })).content.edge || {}).headline);
+  /* value claims on for this game only (a slate that passed a market test would carry it): the rule, not the policy, is tested */
+  const G1on = clone(G1); G1on.market = Object.assign({}, G1.market, { value_claims: 'ENABLED' });
+  const on = N.content(G1on, Object.assign({}, base, { market: mk(181, { total: { point: ft1 + 4, over: -105, under: -400 } }) })).content;
+  const named = (on.edge && on.edge.headline || '').split(' · ').filter(Boolean);
+  chk('with value claims on, only a side whose exact probability clears its price by EDGE_PP is named', named.length > 0 && named.every((l) => on.edge.price_checks.some((x) => x.label === l && x.edge_pp >= N.EDGE_PP)), on.edge);
+  chk('…so the UNDER the reading names is not an edge at −400 (its break-even is above the model’s probability)', on.edge && /UNDER/.test(on.edge.reading) && !named.some((l) => /^UNDER/.test(l)), on.edge);
+}
+{
+  /* the user's example, priced exactly: an over at −130 needs 56.52%, whatever the mean says */
+  const pc = N.priceCheck('OVER 5.5', 0.5267, 0, -130);
+  chk('price check: −130 breaks even at 56.52%', Math.abs(pc.break_even - 0.5652) < 1e-4, pc);
+  chk('price check: a 52.67% over at −130 is −EV (−6.8%) and 3.9 points short', pc.edge_pp === -3.9 && Math.abs(pc.ev - (0.5267 * (100 / 130) - 0.4733)) < 1e-4, pc);
+  chk('price check: a missing price is no check at all, never a made-up one', N.priceCheck('X', 0.6, 0, null) === null && N.priceCheck('X', null, 0, -110) === null);
 }
 chk('a price with no named book is not shown', !N.content(G1, Object.assign({}, base, { market: mk(10, { book: null }) })).content.market);
 chk('a quote that carries no price is not shown', !N.content(G1, Object.assign({}, base, { market: mk(10, { moneyline: {}, spread: {}, total: {} }) })).content.market);

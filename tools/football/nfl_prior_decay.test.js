@@ -263,7 +263,9 @@ const ins = Object.fromEntries((snap.insights || []).map((i) => [i.id, i]));
   const c = GG.content(spec, live, { now: t0, kalshi: Object.assign({}, ks, { home: Object.assign({ snapshot_at: '2026-10-25T21:54:59Z', spread: 0.02, ml: -141 }, ks.home), away: Object.assign({ snapshot_at: '2026-10-25T21:54:59Z', spread: 0.02, ml: 141 }, ks.away) }) }).content;
   const keep = GG.GATE_LEAGUES; GG.GATE_LEAGUES = {};
   const ungated = GG.content(spec, live, { now: t0 }).content; GG.GATE_LEAGUES = keep;
-  chk('control: without the gate this quote names an edge, "EDGE: SEA −2.5"', ungated.edge && ungated.edge.headline === 'SEA −2.5', ungated.edge);
+  /* a reading is not an edge (2026-10-26 audit): the card READS SEA −2.5 from a 1.9-point gap, and with no
+     exact-price probability on a football card it is never labelled EDGE, gate or no gate */
+  chk('control: without the gate this quote READS "SEA −2.5", and no EDGE label is drawn from a gap alone', ungated.edge && ungated.edge.reading === 'SEA −2.5' && ungated.edge.headline === null && /not an edge/.test(ungated.edge.withheld || ''), ungated.edge);
   chk('graphic: gated, so no EDGE label: the headline is withheld (and recorded as what it would have been)', c.gate && c.edge && c.edge.headline === null && c.edge.gated === 'SEA −2.5', [c.gate, c.edge]);
   const texts = (f) => GG.layout(c, f).ops.filter((o) => o.type === 'text').map((o) => o.text);
   chk('graphic: the table reads LARGE GAP VS MARKET and no EDGE: text is drawn, square or portrait', ['square', 'portrait'].every((f) => texts(f).indexOf('LARGE GAP VS MARKET') >= 0 && !texts(f).some((t) => /^EDGE: /.test(t))));
