@@ -24,7 +24,7 @@ const C = require('../config');
 const HERE = path.join(__dirname, '..');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'ncaawops-'));
 const copyDir = (from, to) => { fs.mkdirSync(to, { recursive: true }); for (const f of fs.readdirSync(from)) { const s = path.join(from, f), d = path.join(to, f); if (fs.statSync(s).isDirectory()) copyDir(s, d); else fs.copyFileSync(s, d); } };
-const env = (reg, rep, failAt) => Object.assign({}, process.env, { NCAAW_REGISTRY_DIR: reg, NCAAW_REPORTS_DIR: rep, NCAAW_FAIL_AT: failAt || '' });
+const env = (reg, rep, failAt, incumbent) => Object.assign({}, process.env, { NCAAW_REGISTRY_DIR: reg, NCAAW_REPORTS_DIR: rep, NCAAW_FAIL_AT: failAt || '' }, incumbent ? { NCAAW_INCUMBENT_VERSION: incumbent } : {});
 const history = (reg) => fs.readFileSync(path.join(reg, 'history.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 const pointer = (reg) => fs.readFileSync(path.join(reg, 'champion.json'), 'utf8');
 const tmpLeft = (dir) => { const out = []; const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) walk(p); else if (/\.tmp-/.test(f)) out.push(p); } }; walk(dir); return out; };
@@ -40,22 +40,26 @@ const run = (script, args, e) => new Promise((resolve) => {
      with carry_lower (the women's champion's carry is already 1.0, so
      carry_higher is not a change and is never a candidate);
      a fresh registry (the incumbent as champion) for promote, whose first
-     candidate (the frozen selection) is known to pass every gate */
+     candidate (the frozen selection) is known to pass every gate against
+     the incumbent at 1.1.0. The weekly model loop moves the served incumbent
+     when it promotes (cf8d09fb9 made 1.2.0, which the selection does not
+     beat, so promote was never reached), so this case names its incumbent */
   const cases = [
     { stage: 'ingest', fresh: false, only: 'carry_lower', wantStage: 'data' },
     { stage: 'train', fresh: false, only: 'carry_lower', wantStage: 'train' },
     { stage: 'evaluate', fresh: false, only: 'carry_lower', wantStage: 'evaluate' },
     { stage: 'store', fresh: false, only: 'carry_lower', wantStage: 'store' },
-    { stage: 'promote', fresh: true, only: null, wantStage: 'promote' },
+    { stage: 'promote', fresh: true, only: null, wantStage: 'promote', incumbent: '1.1.0' },
   ];
   for (const c of cases) {
     c.reg = path.join(TMP, c.stage, 'registry'); c.rep = path.join(TMP, c.stage, 'reports');
-    if (c.fresh) { fs.mkdirSync(c.reg, { recursive: true }); spawnSync(process.execPath, [path.join(HERE, 'registry.js'), 'init'], { env: env(c.reg, c.rep) }); }
+    if (c.fresh) { fs.mkdirSync(c.reg, { recursive: true }); spawnSync(process.execPath, [path.join(HERE, 'registry.js'), 'init'], { env: env(c.reg, c.rep, '', c.incumbent) }); }
     else copyDir(C.PATHS.registry, c.reg);
     c.before = pointer(c.reg); c.lines = history(c.reg).length;
   }
+  T.chk('promote: the fresh registry starts from the named incumbent (1.1.0), not the one the model loop serves today', /"key": "ncaaw_points@1\.1\.0"/.test(cases.find((c) => c.stage === 'promote').before));
   const t0 = Date.now();
-  const res = await Promise.all(cases.map((c) => run('weekly.js', c.only ? ['--only', c.only] : ['--max', '1'], env(c.reg, c.rep, c.stage))));
+  const res = await Promise.all(cases.map((c) => run('weekly.js', c.only ? ['--only', c.only] : ['--max', '1'], env(c.reg, c.rep, c.stage, c.incumbent))));
   console.log('NOTE | five injected runs in ' + ((Date.now() - t0) / 1000).toFixed(0) + ' s');
   cases.forEach((c, i) => {
     const r = res[i]; const h = history(c.reg); const last = h[h.length - 1];

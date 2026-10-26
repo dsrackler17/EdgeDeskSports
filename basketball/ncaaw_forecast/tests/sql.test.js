@@ -92,8 +92,6 @@ const PUB = require('../publish');
     T.chk('applying it again changes nothing and still reports ok', !/CHECK THIS/.test(out));
 
     /* ---- the registry, replayed into the database ---- */
-    /* the incumbent is ncaaw_points@ the served version (docs/model-loop/ncaaw/versions.json current), which moves
-       whenever the model loop promotes: name it from the registry, never as a constant */
     const incumbent = RG.init().current.key;
     const challenger = { schema: 'edgedesk_ncaaw_fc_model_v1', model_id: 'ncaaw_adjeff', version: '1.0.0', engine: 'research_team_model', config: { engine: 'research_team_model', params: { lambda: 300 }, calibration: {} },
       training_snapshot: { through: '2026-10-23T00:00:00.000Z', rows: 100, sha256: sha('snap'), seasons: [2026] } };
