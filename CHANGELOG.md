@@ -1,6 +1,7 @@
 # Changelog
 
 
+
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 
 - **The problem.** The MIN @ VAN card of 2026-10-25 named Lankinen all day, from the usage projection; Merilainen started. The projection reads completed games only, and confirming a starter needed a hand entry.

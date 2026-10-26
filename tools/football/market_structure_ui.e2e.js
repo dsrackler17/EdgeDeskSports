@@ -86,12 +86,22 @@ function pinLine(csv, season, week, away, home, spreadLine) {
     return l;
   }).join('\n');
 }
+
+    blank.forEach((k) => { c[k] = ''; });
+    return c.join(',');
+  }).join('\n');
+}
 function staged(csv) {
   const rows = csv.trim().split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
   const want = {};
   rows.slice(1).forEach((l) => { const c = l.split(','); if (c[ix('season')] === '2026' && c[ix('week')] === '7') want[c[ix('away_team')] + '@' + c[ix('home_team')]] = { day: c[ix('gameday')], time: c[ix('gametime')], id: c[ix('game_id')] }; });
   const g1 = want['DAL@PHI'], g2 = want['IND@MIN'];
   if (!g1 || !g2) return null;
+  /* THE PAGE'S CLOCK. The board lists only games that have not kicked off, so the
+     browser is pinned two hours before the earlier of the two staged kickoffs; read
+     on the real clock, IND @ MIN left the board at its Sunday kickoff and the suite
+     failed from then on (2026-10-26 00:06). Everything staged is dated against it. */
+  const pin = Math.min(Date.parse(kickIso(g1.day, g1.time)), Date.parse(kickIso(g2.day, g2.time))) - 2 * 3600e3;
   const board = [
     { event_id: 'evDALPHI', canonical_game_id: 'g1', home_team: NAME.PHI, away_team: NAME.DAL, commence_time: kickIso(g1.day, g1.time), snapshot_at: '2026-10-22T17:00:00Z',
       snapshot_status: 'ok', snapshot_backfilled: false, snap_home_spread: 3, snap_fair_home: 0.482, snap_n_books: 14, snap_books: ['draftkings', 'pinnacle'], snap_pass_at: '2026-10-22T16:20:00Z',
@@ -105,7 +115,7 @@ function staged(csv) {
   const own = [Object.assign({}, run, { side_team_code: 'PHI', contest_game_no: 6, contest_line: 3.5, picks: 720, share_of_cards: 0.3, share_of_game: 0.72 }),
     Object.assign({}, run, { side_team_code: 'DAL', contest_game_no: 5, contest_line: -3.5, picks: 280, share_of_cards: 0.116667, share_of_game: 0.28 })];
   const models = ['H-NFL-KEY-01', 'H-NFL-STALE-01', 'H-NFL-OWN-01', 'H-NFL-DIV-01'].map((k) => ({ model_key: k, status: 'experimental', version: '1.0.0-prereg', passed: null }));
-  return { board, own, models, ids: { dalphi: g1.id, indmin: g2.id } };
+  return { board, own, models, pin, ids: { dalphi: g1.id, indmin: g2.id } };
 }
 
 (async function main() {
@@ -114,9 +124,9 @@ function staged(csv) {
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   const raw = await gamesCsv();
   if (!raw) { console.log('SKIPPED: the nflverse schedule is neither cached nor reachable'); process.exit(0); }
-  const csv = pinLine(asOfPin(raw), '2026', '7', 'IND', 'MIN', '5.5');
-  const ST = staged(csv);
+
   if (!ST) { console.log('SKIPPED: the schedule carries no 2026 Week 7 DAL @ PHI / IND @ MIN to stage'); process.exit(0); }
+  const csv = asOf(pinned, ST.pin);
   let HEAD_APP = null;
   try { HEAD_APP = cp.execSync('git show HEAD:app.html', { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 }).toString('utf8'); } catch (_) { HEAD_APP = null; }
 
