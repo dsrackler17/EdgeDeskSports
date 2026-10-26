@@ -15,6 +15,7 @@ The push came from `GITHUB_TOKEN`, so no workflow ran on it, and no check showed
 - `legacyConfig()` compares configurations only, as the 2026-10-21 protocol amendment states: "carried forward only to a report of that exact configuration".
 - The 2026-10-19 records are restored by reverting the bot's commit. They are the job's own outputs, and the look was stored nowhere else (`holdout_looks.json` did not exist yet).
 - The next weekly run, or Actions → College baseball research validate, rebuilds this week's records. It carries the look and stores it in `holdout_looks.json`.
+- `lab.yml` now also starts on `college_baseball/validation/**`, the records `engine/build_registry.js` reads. Before, no pull request that changed college baseball's evidence started the workflow that checks it.
 
 **Before and after.** `walkforward.js`, run as the job runs it, on the restored records:
 
