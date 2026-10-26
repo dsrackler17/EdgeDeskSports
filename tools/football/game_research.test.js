@@ -319,7 +319,9 @@ chk('laid out every projected game in both formats', laid === proj.length * 2, l
   const sg = C.spreadComparison({ model_home_margin: s.model.home_margin, market_home_margin: 3.5 }).signed;
   chk('…its spread gap is the unrounded projection against −3.5', cl.market.vs[0] === (sg === 0 ? 'Spread: EdgeDesk and the market agree' : 'Spread: EdgeDesk ' + Math.abs(sg).toFixed(1) + ' pts toward ' + (sg > 0 ? cl.home.abbr : cl.away.abbr)), cl.market.vs);
   const shown = Math.abs(s.model.display.spread.home_line + 3.5), tshown = Math.abs(s.model.display.total.value - 47.5);
-  chk('…with the half-point note exactly when a printed line does not reproduce its gap', (cl.market.note === GG.ROUNDING_NOTE) === (Math.abs(shown - Math.abs(sg)) > 1e-9 || Math.abs(tshown - C.totalComparison({ model_total: s.model.total_exact, market_total: 47.5 }).gap) > 1e-9), [cl.market.vs, cl.market.note]);
+  /* an NFL card more than 5 points of win probability from the quote names the large gap in that footnote instead (docs/nfl-prior-decay) */
+  chk('…with the half-point note exactly when a printed line does not reproduce its gap', cl.gate ? /^LARGE GAP VS MARKET \(\d+\.\d PTS\)/.test(cl.market.note)
+    : (cl.market.note === GG.ROUNDING_NOTE) === (Math.abs(shown - Math.abs(sg)) > 1e-9 || Math.abs(tshown - C.totalComparison({ model_total: s.model.total_exact, market_total: 47.5 }).gap) > 1e-9), [cl.market.vs, cl.market.note]);
   const q = clone(spec); const cq = GG.content(q, GS.market({ home_line: -6.75, total: 47.25, book: 'draftkings', captured_at: new Date(t0 - 60000).toISOString() }, { now: t0 }), { now: t0 }).content;
   chk('a quarter-point sportsbook line prints as received', cq.market.home_spread === '−6.75' && cq.market.away_spread === '+6.75' && cq.market.total === '47.25', cq.market);
   chk('the market panel labels its probability no-vig', cl.market.no_vig && /%$/.test(cl.market.no_vig.home));
@@ -549,7 +551,7 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
     && /^Model \d{1,2}:\d{2} [AP]M ET · Kalshi \d{1,2}:\d{2} [AP]M ET$/.test(cd.compare.times), [cd.compare.rows, cd.compare.times]);
   chk('…and the model detail strip it replaces is left exactly as it was', cd.detail && cd.detail.note === 'No live sportsbook quote is shown. Every number here is EdgeDesk’s own.' && !cd.detail.cells.some((x) => /KALSHI/.test(x.k)));
   const cm = GG.content(spec, live, { now: t0, kalshi: kc }).content, Lm = GG.layout(cm, 'square');
-  chk('graphic: with a live book, EDGEDESK vs MARKET (or the edge it shows): the book’s spread and total, then Kalshi for each team', cm.compare.title === (cm.edge && cm.edge.headline ? 'EDGE: ' + cm.edge.headline : 'EDGEDESK vs MARKET')
+  chk('graphic: with a live book, EDGEDESK vs MARKET (or the edge it shows): the book’s spread and total, then Kalshi for each team', cm.compare.title === (cm.gate ? 'LARGE GAP VS MARKET' : (cm.edge && cm.edge.headline ? 'EDGE: ' + cm.edge.headline : 'EDGEDESK vs MARKET'))
     && cm.compare.cols.map((x) => x.head).join('|') === 'SPREAD|TOTAL|' + cm.away.abbr + ' WIN % · ML|' + cm.home.abbr + ' WIN % · ML'
     && /^DRAFTKINGS ([A-Z][a-z]{2} \d{1,2}, )?\d{1,2}:\d{2} [AP]M ET · KALSHI MID$/.test(cm.compare.rows[1]), cm.compare);
   chk('…drawn in place of the market strip (its title is not drawn), every cell, the sentence and both times on the canvas', Lm.ops.some((o) => o.text === cm.compare.title) && !Lm.ops.some((o) => o.text === 'CURRENT MARKET')
@@ -610,7 +612,9 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
         const bad = L.ops.filter((o) => o.type === 'text' && (o.y < 0 || o.y > h || (o.align === 'left' && o.x + Math.min(o.width || 0, o.maxW || 1e9) > w + 1) || (o.align === 'center' && (o.x - (o.width || 0) / 2 < -1 || o.x + (o.width || 0) / 2 > w + 1))));
         const over = L.ops.filter((o) => o.type === 'text' && o.maxW && o.width > o.maxW + 1 && o.size > 12);
         if (bad.length || over.length) chk('with the table, every text inside the canvas and its box · ' + s.game_key + ' ' + f + (mk ? ' market' : ' detail'), false, bad.concat(over).slice(0, 3).map((o) => [o.text, o.x, o.y, o.width, o.maxW]));
-        if (!L.ops.some((o) => o.type === 'text' && /^(EDGEDESK vs |EDGE: )/.test(o.text))) chk('the table is drawn · ' + s.game_key + ' ' + f, false);
+        if (!L.ops.some((o) => o.type === 'text' && /^(EDGEDESK vs |EDGE: |LARGE GAP VS MARKET$)/.test(o.text))) chk('the table is drawn · ' + s.game_key + ' ' + f, false);
+        /* the gate: an NFL table more than 5 points from a market draws no EDGE label */
+        if (c.gate && L.ops.some((o) => o.type === 'text' && /^EDGE: /.test(o.text))) chk('a gated card draws no EDGE label · ' + s.game_key + ' ' + f, false);
         /* the table keeps clear of the model panels above it and the watch panel below */
         const tb = L.ops.find((o) => o.type === 'rect' && o.y > 600 && o.y < 900 && o.h > 100 && o.h < 160);
         const gq = f === 'portrait' ? { top: 752, bottom: 914 } : { top: 650, bottom: 790 };
@@ -642,7 +646,10 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
 /* ======================================================================= */
 section('14. the card’s Kalshi labels: matched times, the unavailable state, the large-gap note, home field (docs/KALSHI_NOTES.md)');
 {
-  const NE = proj.find((g) => g.game_key === 'nfl|2026_07_NE_CHI') || proj.find((g) => g.league === 'nfl');
+  /* a game whose model time is before its kickoff: the comparison is a pregame one (a committed
+     snapshot's earliest games may have kicked off since, and those compare against Kalshi's close) */
+  const pre = (g) => g.league === 'nfl' && g.model.available && Date.parse(g.model.built_at) < Date.parse(g.kickoff);
+  const NE = proj.find((g) => g.game_key === 'nfl|2026_07_NE_CHI' && pre(g)) || proj.find(pre) || proj.find((g) => g.league === 'nfl');
   const spec = GS.graphicSpec(NE), mt = Date.parse(NE.model.built_at), iso = (ms) => new Date(mt + ms).toISOString(), MIN = 60000;
   delete spec.consensus; /* the Kalshi-only card: the snapshot's market line is tested in section 8 */
   const link = (yes, opp) => ({ sport: NE.league, game_id: NE.game_id, game_key: NE.game_key, event_ticker: 'KXT-' + NE.game_id, market_ticker: 'KXT-' + NE.game_id + '-' + yes.slice(0, 3),
@@ -679,7 +686,7 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
   /* 2 · the comparison, with both times */
   let r = card([q(0, MIN, 0.40, 0.41), q(1, MIN, 0.59, 0.60)]);
   const KC = r.c.compare.kalshi, AB = r.c.away.abbr, HB = r.c.home.abbr;
-  chk('compared: EDGEDESK vs KALSHI with both teams at the model’s time, the market row labelled KALSHI MID', r.k.state === 'OK' && r.c.compare.title === 'EDGEDESK vs KALSHI' && KC.available && r.c.compare.rows[1] === 'KALSHI MID'
+  chk('compared: EDGEDESK vs KALSHI with both teams at the model’s time, the market row labelled KALSHI MID', r.k.state === 'OK' && r.c.compare.title === (r.c.gate ? 'LARGE GAP VS MARKET' : 'EDGEDESK vs KALSHI') && KC.available && r.c.compare.rows[1] === 'KALSHI MID'
     && r.c.compare.cols.map((x) => x.mk.split(/\s+/)[0]).join('|') === '40.5%|59.5%', r.c.compare);
   chk('…both times on the card, model first: "Model h:mm PM ET · Kalshi h:mm PM ET"', r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(MIN))
     && drawn(r.c).indexOf(r.c.compare.times) >= 0 && drawn(r.c, 'portrait').indexOf(r.c.compare.times) >= 0, r.c.compare.times);
@@ -688,9 +695,12 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
   chk('…on different days the times carry their dates', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z') === 'Model Oct 21, 2:04 PM ET · Kalshi Oct 22, 4:10 PM ET', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z'));
 
   /* 3 · the difference, in words, naming the team */
-  const pa = Math.round(NE.model.win_prob.away * 1000) / 10;
-  chk('difference: a sentence that names the team EdgeDesk is higher on ("EdgeDesk 9.5 pts higher on NE than Kalshi"), from the numbers printed above it',
-    KC.team === AB && KC.diff === 'EdgeDesk ' + (Math.round((pa - 40.5) * 10) / 10).toFixed(1) + ' pts higher on ' + AB + ' than Kalshi', KC);
+  const pa = Math.round(NE.model.win_prob.away * 1000) / 10, ph0 = Math.round(NE.model.win_prob.home * 1000) / 10;
+  /* the sentence names the team with the larger gap (a tie: the team EdgeDesk is higher on, then the away team) */
+  const dA = Math.round((pa - 40.5) * 10) / 10, dH = Math.round((ph0 - 59.5) * 10) / 10;
+  const nm = Math.abs(dH) > Math.abs(dA) || (Math.abs(dH) === Math.abs(dA) && dH > 0 && !(dA > 0)) ? { t: HB, d: dH } : { t: AB, d: dA };
+  chk('difference: a sentence that names the team with the larger gap ("EdgeDesk 9.5 pts higher on NE than Kalshi"), from the numbers printed above it',
+    KC.team === nm.t && KC.diff === (nm.d === 0 ? 'EdgeDesk matches Kalshi on ' + nm.t : 'EdgeDesk ' + Math.abs(nm.d).toFixed(1) + ' pts ' + (nm.d > 0 ? 'higher' : 'lower') + ' on ' + nm.t + ' than Kalshi'), [KC, dA, dH]);
   if (NE.game_key === 'nfl|2026_07_NE_CHI') chk('…NE at CHI: "EdgeDesk 9.5 pts higher on NE than Kalshi"', KC.diff === 'EdgeDesk 9.5 pts higher on NE than Kalshi', KC.diff);
   chk('…drawn once, in Kalshi’s columns, and no "PP HIGHER" / "PP LOWER" anywhere', drawn(r.c).filter((t) => t === KC.diff).length === 1 && !drawn(r.c).some((t) => /\bPP (HIGHER|LOWER)\b/.test(t)) && !/\bPP (HIGHER|LOWER)\b/.test(GG.altText(r.c)));
   r = card([q(1, MIN, 0.70, 0.71)]);
@@ -700,16 +710,27 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
   r = card([q(0, MIN, evenAt - 0.005, evenAt + 0.005)]);
   chk('difference: equal numbers read "EdgeDesk matches Kalshi on …"', r.c.compare.kalshi.diff === 'EdgeDesk matches Kalshi on ' + AB, [r.c.compare.cols, r.c.compare.kalshi.diff]);
 
-  /* 4 · the large-gap note */
+  /* 4 · the large-gap note. On an NFL card it is the large-gap gate (EDGameSnapshot.gapGate,
+     docs/nfl-prior-decay/README.md): MORE than 5 points of win probability and the card says
+     "Large gap vs market" with its top chip, and draws no EDGE label. The older Kalshi note
+     (7 points or more) still governs a league the gate does not cover. */
   const gapCard = (pp) => { const m = Math.round((NE.model.win_prob.away * 100 - pp) * 10) / 1000; return card([q(0, MIN, Math.round((m - 0.005) * 1e4) / 1e4, Math.round((m + 0.005) * 1e4) / 1e4)]).c; };
+  const g50 = gapCard(5.0), g51 = gapCard(5.1), gm51 = gapCard(-5.1);
+  chk('the gate: 5.0 points (one team priced) is not gated and has no note', Math.abs(g50.compare.kalshi.gap_pp) === 5 && !g50.gate && !g50.compare.kalshi.large_gap && g50.compare.kalshi.note === null && g50.compare.title === 'EDGEDESK vs KALSHI', [g50.gate, g50.compare.kalshi]);
+  chk('the gate: 5.1 points is gated: the title, the note beside the times (drawn, both formats) and the alt text say "Large gap vs market"', !!g51.gate && g51.compare.title === 'LARGE GAP VS MARKET'
+    && /^Large gap vs market \(5\.1 pts\)/.test(g51.compare.kalshi.note) && drawn(g51).indexOf(g51.compare.kalshi.note) >= 0 && drawn(g51, 'portrait').indexOf(g51.compare.kalshi.note) >= 0
+    && GG.altText(g51).indexOf('Large gap vs market:') > 0 && !/Edge: /.test(GG.altText(g51)), [g51.gate, g51.compare.kalshi.note]);
+  chk('the gate: the gap is absolute (5.1 points lower is gated too)', gm51.compare.kalshi.gap_pp === -5.1 && !!gm51.gate, gm51.compare.kalshi);
+  chk('the gate names the chip that drives the gap when the snapshot has its rows', !g51.gate.chip || (/^Large gap vs market \(5\.1 pts\) · top chip [A-Z &]+ [A-Z]+ \+\d+\.\d/.test(g51.compare.kalshi.note)), g51.gate);
+  const keepLeagues = GG.GATE_LEAGUES; GG.GATE_LEAGUES = {};
   const g69 = gapCard(6.9), g70 = gapCard(7.0), gm70 = gapCard(-7.0);
-  chk('large gap: 6.9 points has no note', Math.abs(g69.compare.kalshi.gap_pp) === 6.9 && !g69.compare.kalshi.large_gap && g69.compare.kalshi.note === null && !drawn(g69).some((t) => /^Large gap/.test(t)), g69.compare.kalshi);
-  chk('large gap: 7.0 points adds the note, word for word, drawn beside the times', Math.abs(g70.compare.kalshi.gap_pp) === 7 && g70.compare.kalshi.note === 'Large gap vs market. Checking injuries, QB status, and weather before trusting it.'
+  chk('ungated league: 6.9 points has no note', Math.abs(g69.compare.kalshi.gap_pp) === 6.9 && !g69.compare.kalshi.large_gap && g69.compare.kalshi.note === null && !drawn(g69).some((t) => /^Large gap/.test(t)), g69.compare.kalshi);
+  chk('ungated league: 7.0 points adds the note, word for word, drawn beside the times', Math.abs(g70.compare.kalshi.gap_pp) === 7 && g70.compare.kalshi.note === 'Large gap vs market. Checking injuries, QB status, and weather before trusting it.'
     && drawn(g70).indexOf(g70.compare.kalshi.note) >= 0 && drawn(g70, 'portrait').indexOf(g70.compare.kalshi.note) >= 0 && GG.altText(g70).indexOf(g70.compare.kalshi.note) > 0, g70.compare.kalshi);
-  chk('large gap: the gap is absolute (7.0 points lower adds it too)', gm70.compare.kalshi.gap_pp === -7 && gm70.compare.kalshi.large_gap, gm70.compare.kalshi);
+  chk('ungated league: the gap is absolute (7.0 points lower adds it too)', gm70.compare.kalshi.gap_pp === -7 && gm70.compare.kalshi.large_gap, gm70.compare.kalshi);
   const keepGap = GG.LARGE_GAP_PP; GG.LARGE_GAP_PP = 7.5;
-  const g70b = gapCard(7.0); GG.LARGE_GAP_PP = keepGap;
-  chk('large gap: the threshold is the constant G.LARGE_GAP_PP (raised to 7.5, 7.0 has no note)', !g70b.compare.kalshi.large_gap && g70b.compare.kalshi.note === null);
+  const g70b = gapCard(7.0); GG.LARGE_GAP_PP = keepGap; GG.GATE_LEAGUES = keepLeagues;
+  chk('ungated league: the threshold is the constant G.LARGE_GAP_PP (raised to 7.5, 7.0 has no note)', !g70b.compare.kalshi.large_gap && g70b.compare.kalshi.note === null);
 
   /* 5 · the NEAREST quote, whatever its distance from the model: compared, saying how far it is and how wide */
   const nearest = (c, why) => c.compare && c.compare.kalshi.available === true && c.compare.cols.some((x) => x.win) && why.test(c.compare.kalshi.caveat || '') && c.compare.kalshi.note.indexOf(c.compare.kalshi.caveat) === 0;

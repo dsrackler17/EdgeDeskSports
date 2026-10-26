@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-10-25T23:34:10.084Z",
+ "updated_at": "2026-10-26T00:28:33.334Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -15189,20 +15189,109 @@
     "book": "consensus",
     "at": "2026-10-21T03:55:13.172Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 4.5,
+    "total": 44.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -108,
+     "away": -112,
+     "over": -105,
+     "under": -115,
+     "home_ml": 190,
+     "away_ml": -230
+    }
+   },
+   "final": {
+    "home_score": 16,
+    "away_score": 30,
+    "source": "nflverse",
+    "at": "2026-10-26T00:28:33.334Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 0.5,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 0.05,
+     "result": "win"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 5.5,
+      "close": 4.5,
+      "gap": 3.19,
+      "pts": 1
+     },
+     "total": {
+      "side": "under",
+      "market": 45.5,
+      "close": 44.5,
+      "gap": 0.03,
+      "pts": 1
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 4.5,
+      "close": 4.5,
+      "gap": 0.5,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 43.5,
+      "close": 44.5,
+      "gap": 1.05,
+      "pts": 1
+     }
+    },
+    "error": {
+     "margin": -14,
+     "model_margin_err": 10,
+     "close_margin_err": 9.5,
+     "model_total_err": 1.45,
+     "close_total_err": 1.5
+    },
+    "brier": 0.1188,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -108,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "ml": {
+      "side": "away",
+      "odds": -230,
+      "basis": "close",
+      "result": "win",
+      "units": 0.4348
+     },
+     "units": 0.3872,
+     "bets": 3
+    }
    }
   },
   "2026_07_GB_DET": {
@@ -15298,20 +15387,109 @@
     "book": "consensus",
     "at": "2026-10-21T03:55:13.172Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -3.5,
+    "total": 55.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -112,
+     "away": -108,
+     "over": -108,
+     "under": -112,
+     "home_ml": -192,
+     "away_ml": 160
+    }
+   },
+   "final": {
+    "home_score": 20,
+    "away_score": 17,
+    "source": "nflverse",
+    "at": "2026-10-26T00:28:33.334Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 1.98,
+     "result": "loss"
+    },
+    "total": {
+     "side": "under",
+     "gap": 5.65,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -3,
+      "close": -3.5,
+      "gap": 4.58,
+      "pts": 0.5
+     },
+     "total": {
+      "side": "under",
+      "market": 52.5,
+      "close": 55.5,
+      "gap": 2.29,
+      "pts": -3
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": -3,
+      "close": -3.5,
+      "gap": 2.48,
+      "pts": 0.5
+     },
+     "total": {
+      "side": "under",
+      "market": 53.5,
+      "close": 55.5,
+      "gap": 3.65,
+      "pts": -2
+     }
+    },
+    "error": {
+     "margin": 3,
+     "model_margin_err": 2.48,
+     "close_margin_err": 0.5,
+     "model_total_err": 12.85,
+     "close_total_err": 18.5
+    },
+    "brier": 0.1016,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -112,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "under",
+      "odds": -112,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8929
+     },
+     "ml": {
+      "side": "home",
+      "odds": -192,
+      "basis": "close",
+      "result": "win",
+      "units": 0.5208
+     },
+     "units": 0.4137,
+     "bets": 3
+    }
    }
   },
   "2026_07_LA_LV": {
@@ -15407,20 +15585,109 @@
     "book": "consensus",
     "at": "2026-10-21T03:55:13.172Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 3.5,
+    "total": 49.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -120,
+     "away": 100,
+     "over": -105,
+     "under": -115,
+     "home_ml": 150,
+     "away_ml": -180
+    }
+   },
+   "final": {
+    "home_score": 21,
+    "away_score": 35,
+    "source": "nflverse",
+    "at": "2026-10-26T00:28:33.334Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 0.46,
+     "result": "loss"
+    },
+    "total": {
+     "side": "under",
+     "gap": 0.74,
+     "result": "loss"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 7,
+      "close": 3.5,
+      "gap": 1.89,
+      "pts": 3.5
+     },
+     "total": {
+      "side": "over",
+      "market": 48.5,
+      "close": 49.5,
+      "gap": 1.19,
+      "pts": 1
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 4.5,
+      "close": 3.5,
+      "gap": 1.46,
+      "pts": 1
+     },
+     "total": {
+      "side": "over",
+      "market": 48.5,
+      "close": 49.5,
+      "gap": 0.26,
+      "pts": 1
+     }
+    },
+    "error": {
+     "margin": -14,
+     "model_margin_err": 10.96,
+     "close_margin_err": 10.5,
+     "model_total_err": 7.24,
+     "close_total_err": 6.5
+    },
+    "brier": 0.1674,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -120,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "under",
+      "odds": -115,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "away",
+      "odds": -180,
+      "basis": "close",
+      "result": "win",
+      "units": 0.5556
+     },
+     "units": -1.4444,
+     "bets": 3
+    }
    }
   },
   "2026_07_KC_SEA": {
@@ -15519,7 +15786,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -15662,50 +15929,32 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-25T21:53:59.162Z",
-    "home_line": -5.91,
-    "total": 45.37,
-    "home_win_prob": 0.6952,
+    "at": "2026-10-26T00:27:01.626Z",
+    "home_line": -5.92,
+    "total": 44.87,
+    "home_win_prob": 0.6954,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-25T21:53:59.162Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_9facb87f9ea245a0dcf45299",
-      "book": "draftkings",
-      "observed_at": "2026-10-25T16:35:45.392Z",
-      "home_line": -3,
-      "total": null,
-      "prices": {
-       "home": -110,
-       "away": -110
-      },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored spread price before the decision was 471 minutes old — past the 360-minute limit"
      },
      "total": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored total price before the decision was 605 minutes old — past the 360-minute limit"
+      "detail": "the latest stored total price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "moneyline": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_d64ed4a8d0bf412b0e80f55c",
-      "book": "draftkings",
-      "observed_at": "2026-10-25T16:35:45.392Z",
-      "home_line": null,
-      "total": null,
-      "prices": {
-       "home_ml": -162,
-       "away_ml": 136
-      },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored moneyline price before the decision was 471 minutes old — past the 360-minute limit"
      }
     }
    },
-   "revisions": 7,
+   "revisions": 8,
    "entry": {
     "model_at": "2026-10-19T14:45:59.206Z",
     "home_line": -1.5,
@@ -15726,18 +15975,10 @@
    },
    "market_pick": {
     "home_line": -3.5,
-    "total": 46.5,
+    "total": 47.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-25T23:34:10.084Z",
-    "prices": {
-     "home": -110,
-     "away": -110,
-     "over": -115,
-     "under": -105,
-     "home_ml": -180,
-     "away_ml": 152
-    }
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,
@@ -15994,32 +16235,32 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-21T18:04:28.522Z",
-    "home_line": -5.13,
-    "total": 51.88,
-    "home_win_prob": 0.6743,
+    "at": "2026-10-26T00:27:01.626Z",
+    "home_line": -5.76,
+    "total": 52.03,
+    "home_win_prob": 0.6903,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-21T18:04:28.522Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored spread price before the decision was 373 minutes old — past the 360-minute limit"
+      "detail": "the latest stored spread price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "total": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored total price before the decision was 373 minutes old — past the 360-minute limit"
+      "detail": "the latest stored total price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "moneyline": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored moneyline price before the decision was 373 minutes old — past the 360-minute limit"
+      "detail": "the latest stored moneyline price before the decision was 759 minutes old — past the 360-minute limit"
      }
     }
    },
-   "revisions": 4,
+   "revisions": 5,
    "entry": {
     "model_at": "2026-10-20T18:00:18.356Z",
     "home_line": -4.05,
@@ -16034,10 +16275,10 @@
    },
    "market_pick": {
     "home_line": -6.5,
-    "total": 51.5,
+    "total": 52.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-21T18:04:28.522Z"
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,
@@ -16076,32 +16317,32 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-25T21:53:59.162Z",
-    "home_line": -2.35,
-    "total": 43.91,
-    "home_win_prob": 0.5432,
+    "at": "2026-10-26T00:27:01.626Z",
+    "home_line": -2.07,
+    "total": 43.32,
+    "home_win_prob": 0.5368,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-25T21:53:59.162Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored spread price before the decision was 605 minutes old — past the 360-minute limit"
+      "detail": "the latest stored spread price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "total": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored total price before the decision was 605 minutes old — past the 360-minute limit"
+      "detail": "the latest stored total price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "moneyline": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored moneyline price before the decision was 605 minutes old — past the 360-minute limit"
+      "detail": "the latest stored moneyline price before the decision was 759 minutes old — past the 360-minute limit"
      }
     }
    },
-   "revisions": 5,
+   "revisions": 6,
    "entry": {
     "model_at": "2026-10-20T18:00:18.356Z",
     "home_line": -5.69,
@@ -16125,15 +16366,7 @@
     "total": 46.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-25T23:34:10.084Z",
-    "prices": {
-     "home": -104,
-     "away": -118,
-     "over": -104,
-     "under": -118,
-     "home_ml": -146,
-     "away_ml": 124
-    }
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,
@@ -16281,41 +16514,32 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-25T21:53:59.162Z",
-    "home_line": -1.11,
-    "total": 43.78,
-    "home_win_prob": 0.5149,
+    "at": "2026-10-26T00:27:01.626Z",
+    "home_line": -2.34,
+    "total": 43.89,
+    "home_win_prob": 0.5429,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-25T21:53:59.162Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_7c9d0a8c2e2fe6c719908a4a",
-      "book": "draftkings",
-      "observed_at": "2026-10-25T16:35:45.478Z",
-      "home_line": 1.5,
-      "total": null,
-      "prices": {
-       "home": -122,
-       "away": 102
-      },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored spread price before the decision was 471 minutes old — past the 360-minute limit"
      },
      "total": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored total price before the decision was 605 minutes old — past the 360-minute limit"
+      "detail": "the latest stored total price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "moneyline": {
       "status": "historical_price_unavailable",
       "why": "stale",
-      "detail": "the latest stored moneyline price before the decision was 605 minutes old — past the 360-minute limit"
+      "detail": "the latest stored moneyline price before the decision was 759 minutes old — past the 360-minute limit"
      }
     }
    },
-   "revisions": 5,
+   "revisions": 6,
    "entry": {
     "model_at": "2026-10-20T18:00:18.356Z",
     "home_line": 1.64,
@@ -16333,15 +16557,7 @@
     "total": 44.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-25T23:34:10.084Z",
-    "prices": {
-     "home": -104,
-     "away": -118,
-     "over": -105,
-     "under": -115,
-     "home_ml": -116,
-     "away_ml": -102
-    }
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,
@@ -16380,27 +16596,27 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-25T21:53:59.162Z",
-    "home_line": -4.47,
+    "at": "2026-10-26T00:27:01.626Z",
+    "home_line": -4.46,
     "total": 38.49,
-    "home_win_prob": 0.6606,
+    "home_win_prob": 0.6605,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-25T21:53:59.162Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
       "status": "locked",
       "source": "record_quotes",
-      "quote_id": "edq_19b7ae06aff9cde3055b2ab3",
+      "quote_id": "edq_143b89bb9ed55712c1a1dccc",
       "book": "draftkings",
-      "observed_at": "2026-10-25T21:15:10.361Z",
+      "observed_at": "2026-10-25T21:55:31.351Z",
       "home_line": -3.5,
       "total": null,
       "prices": {
-       "home": -115,
-       "away": -105
+       "home": -118,
+       "away": -102
       },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "locked_at": "2026-10-26T00:28:33.334Z"
      },
      "total": {
       "status": "locked",
@@ -16414,25 +16630,25 @@
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "locked_at": "2026-10-26T00:28:33.334Z"
      },
      "moneyline": {
       "status": "locked",
       "source": "record_quotes",
-      "quote_id": "edq_fd3c9772919511009495fdaf",
+      "quote_id": "edq_50dbe83151b5d1f9db5218e9",
       "book": "draftkings",
-      "observed_at": "2026-10-25T21:15:10.361Z",
+      "observed_at": "2026-10-25T21:55:31.351Z",
       "home_line": null,
       "total": null,
       "prices": {
-       "home_ml": -192,
-       "away_ml": 160
+       "home_ml": -185,
+       "away_ml": 154
       },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "locked_at": "2026-10-26T00:28:33.334Z"
      }
     }
    },
-   "revisions": 5,
+   "revisions": 6,
    "entry": {
     "model_at": "2026-10-20T18:00:18.356Z",
     "home_line": -2.77,
@@ -16450,7 +16666,7 @@
     "total": 39.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-25T21:53:59.162Z"
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,
@@ -16598,59 +16814,32 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-21T18:04:28.522Z",
-    "home_line": -6.94,
-    "total": 45.51,
-    "home_win_prob": 0.7367,
+    "at": "2026-10-26T00:27:01.626Z",
+    "home_line": -7.39,
+    "total": 45.65,
+    "home_win_prob": 0.7608,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-21T18:04:28.522Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_dce1709a9e4a07b5e53b6519",
-      "book": "draftkings",
-      "observed_at": "2026-10-21T13:57:38.432Z",
-      "home_line": -7.5,
-      "total": null,
-      "prices": {
-       "home": -105,
-       "away": -115
-      },
-      "locked_at": "2026-10-21T18:05:53.647Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored spread price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "total": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_b746112c30aa5178bde15964",
-      "book": "draftkings",
-      "observed_at": "2026-10-21T13:57:38.432Z",
-      "home_line": null,
-      "total": 46.5,
-      "prices": {
-       "over": -110,
-       "under": -110
-      },
-      "locked_at": "2026-10-21T18:05:53.647Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored total price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "moneyline": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_2eb628b43d658a0b58fb25e3",
-      "book": "draftkings",
-      "observed_at": "2026-10-21T13:57:38.432Z",
-      "home_line": null,
-      "total": null,
-      "prices": {
-       "home_ml": -355,
-       "away_ml": 280
-      },
-      "locked_at": "2026-10-21T18:05:53.647Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored moneyline price before the decision was 759 minutes old — past the 360-minute limit"
      }
     }
    },
-   "revisions": 3,
+   "revisions": 4,
    "entry": {
     "model_at": "2026-10-21T01:09:13.224Z",
     "home_line": -5.71,
@@ -16665,10 +16854,10 @@
    },
    "market_pick": {
     "home_line": -7.5,
-    "total": 46.5,
+    "total": 45.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-21T18:04:28.522Z"
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,
@@ -16707,59 +16896,32 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-21T18:04:28.522Z",
-    "home_line": 0.52,
-    "total": 39.66,
-    "home_win_prob": 0.4986,
+    "at": "2026-10-26T00:27:01.626Z",
+    "home_line": -0.31,
+    "total": 39.74,
+    "home_win_prob": 0.5006,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-21T18:04:28.522Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_c9c934f8c9002c06aa17e06d",
-      "book": "draftkings",
-      "observed_at": "2026-10-21T13:57:38.432Z",
-      "home_line": 1.5,
-      "total": null,
-      "prices": {
-       "home": -110,
-       "away": -110
-      },
-      "locked_at": "2026-10-21T18:05:53.647Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored spread price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "total": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_6f6c832118b059d280217239",
-      "book": "draftkings",
-      "observed_at": "2026-10-21T13:57:38.432Z",
-      "home_line": null,
-      "total": 42.5,
-      "prices": {
-       "over": -110,
-       "under": -110
-      },
-      "locked_at": "2026-10-21T18:05:53.647Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored total price before the decision was 759 minutes old — past the 360-minute limit"
      },
      "moneyline": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_761a0c38f5c49abd8ab88134",
-      "book": "draftkings",
-      "observed_at": "2026-10-21T13:57:38.432Z",
-      "home_line": null,
-      "total": null,
-      "prices": {
-       "home_ml": 102,
-       "away_ml": -122
-      },
-      "locked_at": "2026-10-21T18:05:53.647Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored moneyline price before the decision was 759 minutes old — past the 360-minute limit"
      }
     }
    },
-   "revisions": 3,
+   "revisions": 4,
    "entry": {
     "model_at": "2026-10-21T01:09:13.224Z",
     "home_line": -1.35,
@@ -16777,7 +16939,7 @@
     "total": 42.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-21T18:04:28.522Z"
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,
@@ -16816,14 +16978,14 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-25T21:53:59.162Z",
+    "at": "2026-10-26T00:27:01.626Z",
     "home_line": 7.97,
-    "total": 43.86,
-    "home_win_prob": 0.2229,
+    "total": 43.85,
+    "home_win_prob": 0.2228,
     "model_version": "edgedesk_nfl_v2.1.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-25T21:53:59.162Z",
+     "decided_at": "2026-10-26T00:27:01.626Z",
      "spread": {
       "status": "locked",
       "source": "record_quotes",
@@ -16836,7 +16998,7 @@
        "home": -115,
        "away": -105
       },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "locked_at": "2026-10-26T00:28:33.334Z"
      },
      "total": {
       "status": "locked",
@@ -16850,7 +17012,7 @@
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "locked_at": "2026-10-26T00:28:33.334Z"
      },
      "moneyline": {
       "status": "locked",
@@ -16864,11 +17026,11 @@
        "home_ml": 300,
        "away_ml": -380
       },
-      "locked_at": "2026-10-25T21:55:30.681Z"
+      "locked_at": "2026-10-26T00:28:33.334Z"
      }
     }
    },
-   "revisions": 5,
+   "revisions": 6,
    "entry": {
     "model_at": "2026-10-21T01:09:13.224Z",
     "home_line": 7.87,
@@ -16886,7 +17048,7 @@
     "total": 44.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-25T21:53:59.162Z"
+    "at": "2026-10-26T00:27:01.626Z"
    },
    "close": null,
    "final": null,

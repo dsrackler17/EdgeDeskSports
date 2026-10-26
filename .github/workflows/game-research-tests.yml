@@ -40,6 +40,17 @@ on:
       - 'tools/football/football_lines.test.js'
       - 'football/game_research/**'
       - 'app.html'
+      # the NFL card's prior windows, starter sync and large-gap gate (docs/nfl-prior-decay)
+      - 'football/nfl_model.js'
+      - 'football/nfl/starter_sync.js'
+      - 'football/injuries/fetch_injuries.js'
+      - 'football/research/nfl_v2/prior_decay/**'
+      - 'tools/football/nfl_prior_*.js'
+      - 'tools/football/nfl_starter_sync.js'
+      - 'tools/football/build_nfl_prior_decay_sql.js'
+      - 'tools/football/build_prereg_sql.js'
+      - 'tools/football/fixtures/nfl_2026_w7_schedule.json'
+      - 'supabase/nfl_prior_decay_registry.sql'
       - '.github/workflows/game-research-tests.yml'
   workflow_dispatch:
 
@@ -71,6 +82,10 @@ jobs:
         run: node tools/football/game_context.test.js
       - name: Snapshot, insights, consistency, market states, price check, graphic, history, wiring
         run: node tools/football/game_research.test.js
+      - name: NFL prior windows, starter sync and the large-gap gate (KC @ SEA replayed from committed files)
+        run: node tools/football/nfl_prior_decay.test.js
+      - name: The prior-decay registry SQL is current with its documents
+        run: node tools/football/build_nfl_prior_decay_sql.js --check
       - name: Install Chromium for the browser suite
         run: |
           npm install --no-save playwright@1.49.1

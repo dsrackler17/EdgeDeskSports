@@ -2,7 +2,7 @@
  "schema": "edgedesk_nhl_slate_v1",
  "sport": "NHL",
  "sport_key": "icehockey_nhl",
- "generated_at": "2026-10-25T23:32:14.428Z",
+ "generated_at": "2026-10-26T00:27:30.975Z",
  "horizon_hours": 120,
  "model": {
   "id": "edgedesk_nhl_v1:xg_core",
@@ -25,11 +25,11 @@
   "data": {
    "state": "FRESH",
    "latest_completed_game": "2026-10-24",
-   "hours_since_latest_result": 17.54,
+   "hours_since_latest_result": 18.46,
    "results_lagging": [],
    "schedule": {
     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2027.parquet",
-    "fetched_at": "2026-10-25T23:31:47.968Z",
+    "fetched_at": "2026-10-26T00:27:05.798Z",
     "ok": true,
     "sha256": "66c23b81b9ee914905a2d8337d929596e5f37e20515387315a70e88a01181c0f"
    },
@@ -952,948 +952,6 @@
  "attribution": "NHL game data: sportsdataverse fastRhockey (compiled from the NHL's public game feeds). sportsdataverse/fastRhockey-nhl-data and -raw are MIT-licensed repositories; the game data inside them is compiled from the NHL's public game feeds and remains the NHL's. NHL.com terms restrict commercial use of its content: the owner must review this before NHL output is sold in a paid tier. Attribution is printed on every NHL artifact.",
  "games": [
   {
-   "game_id": 2026020183,
-   "event_key": "NHL|2026020183",
-   "date": "2026-10-25",
-   "start_utc": "2026-10-26T00:00:00Z",
-   "type": "R",
-   "home": "NSH",
-   "away": "COL",
-   "venue": "Bridgestone Arena",
-   "state": "PRE",
-   "schedule_source": "nhl_api",
-   "lambda": {
-    "home": 2.5242,
-    "away": 3.6326
-   },
-   "explanation": {
-    "method": "exact Shapley values over the model's 9 factor groups through the full pricing chain (GLM → pair recalibration → score distribution with overtime and the shootout); contributions sum exactly to the published probability",
-    "baseline": {
-     "p_home": 0.5011,
-     "expected_total": 6.17,
-     "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
-     "neutral": {
-      "ev_off": 1.0006095456296238,
-      "ev_def_opp": 0.9979564750579885,
-      "g_off": 1.0008519799084659,
-      "g_def_opp": 0.9973328572668195,
-      "pp_off": 0.9987551520090905,
-      "pk_def_opp": 1.002000266153323,
-      "pp_draw": 0.9991211355567046,
-      "pk_take_opp": 0.9995727068706847,
-      "fin": 0.9659527106145798
-     }
-    },
-    "published": {
-     "p_home": 0.3296,
-     "expected_total": 6.35,
-     "lambda_home": 2.5242,
-     "lambda_away": 3.6326
-    },
-    "factors": [
-     {
-      "key": "away_results",
-      "team": "COL",
-      "side": "away",
-      "label": "results beyond chances (goals for and against, finishing)",
-      "pp": -6.9209,
-      "goals": 0.06,
-      "evidence": {
-       "metric": "its goals for per game / its goals against per game / its finishing (goals ÷ xG)",
-       "vs_league": [
-        1.1203,
-        0.9225,
-        1.0651
-       ],
-       "better": true
-      }
-     },
-     {
-      "key": "home_rest",
-      "team": "NSH",
-      "side": "home",
-      "label": "rest (second night of a back-to-back)",
-      "pp": -5.5792,
-      "goals": 0.01,
-      "evidence": {
-       "metric": "second night of a back-to-back",
-       "vs_league": 1,
-       "better": false,
-       "note": "the production model carries no goalie term, so this effect includes how often a club starts its backup on the second night; the goalie scenarios show the move once a starter is named"
-      }
-     },
-     {
-      "key": "home_results",
-      "team": "NSH",
-      "side": "home",
-      "label": "results beyond chances (goals for and against, finishing)",
-      "pp": -2.6059,
-      "goals": -0.02,
-      "evidence": {
-       "metric": "its goals for per game / its goals against per game / its finishing (goals ÷ xG)",
-       "vs_league": [
-        0.9545,
-        1.0268,
-        0.9614
-       ],
-       "better": false
-      }
-     },
-     {
-      "key": "home_ice",
-      "team": null,
-      "side": null,
-      "label": "home ice",
-      "pp": 2.3897,
-      "goals": 0.08,
-      "evidence": {
-       "metric": "home ice",
-       "vs_league": null,
-       "better": true
-      }
-     },
-     {
-      "key": "away_ev_off",
-      "team": "COL",
-      "side": "away",
-      "label": "5v5 chance creation",
-      "pp": -1.7493,
-      "goals": 0.06,
-      "evidence": {
-       "metric": "5v5 expected goals created per 60",
-       "vs_league": 1.0901,
-       "better": true
-      }
-     },
-     {
-      "key": "home_ev_def",
-      "team": "NSH",
-      "side": "home",
-      "label": "5v5 chance suppression",
-      "pp": -1.1466,
-      "goals": 0.04,
-      "evidence": {
-       "metric": "5v5 expected goals allowed per 60",
-       "vs_league": 1.0399,
-       "better": false
-      }
-     },
-     {
-      "key": "away_ev_def",
-      "team": "COL",
-      "side": "away",
-      "label": "5v5 chance suppression",
-      "pp": -1.114,
-      "goals": -0.04,
-      "evidence": {
-       "metric": "5v5 expected goals allowed per 60",
-       "vs_league": 0.9608,
-       "better": true
-      }
-     },
-     {
-      "key": "home_ev_off",
-      "team": "NSH",
-      "side": "home",
-      "label": "5v5 chance creation",
-      "pp": -0.4204,
-      "goals": -0.01,
-      "evidence": {
-       "metric": "5v5 expected goals created per 60",
-       "vs_league": 0.9784,
-       "better": false
-      }
-     },
-     {
-      "key": "away_rest",
-      "team": "COL",
-      "side": "away",
-      "label": "rest (second night of a back-to-back)",
-      "pp": 0,
-      "goals": 0,
-      "evidence": {
-       "metric": "second night of a back-to-back",
-       "vs_league": 0,
-       "better": true,
-       "note": "the production model carries no goalie term, so this effect includes how often a club starts its backup on the second night; the goalie scenarios show the move once a starter is named"
-      }
-     }
-    ],
-    "check": {
-     "sum_of_contributions_pp": -17.1467,
-     "published_minus_baseline_pp": -17.1467,
-     "exact": true
-    },
-    "generated_by": "deterministic decomposition of the production model (hockey/model/explain.js) — no language model",
-    "narrative": [
-     "COL 67.0% to win (overtime and shootout included). Two league-average clubs at a neutral rink would be 50.1% for the home side; the factors below move NSH from there to 33.0%.",
-     "COL's results beyond chances (goals for 1.12×, goals against 0.92×, finishing 1.07× the league-average club): −6.9 pp for NSH.",
-     "NSH's rest (its backup goalie is likelier to start; the model has no goalie term): −5.6 pp for NSH.",
-     "NSH's results beyond chances (goals for 0.95×, goals against 1.03×, finishing 0.96× the league-average club): −2.6 pp for NSH.",
-     "home ice: +2.4 pp for NSH.",
-     "COL's 5v5 chance creation (1.09× the league-average club, opponent- and score-adjusted): −1.7 pp for NSH.",
-     "NSH's 5v5 chance suppression (allows 1.04× the league-average club): −1.1 pp for NSH.",
-     "1 smaller factor move it less than 0.3 points each.",
-     "Expected goals: NSH 2.52, COL 3.63 in regulation; total 6.35 including overtime."
-    ]
-   },
-   "markets": {
-    "settles": {
-     "moneyline": "two-way: includes overtime and the shootout",
-     "regulation": "60 minutes only; a tie is its own outcome",
-     "puck_line": "includes overtime and the shootout; an OT or shootout win is a one-goal win; a whole-number line can push",
-     "total": "includes overtime; the shootout winner is credited one goal (the official final); a whole-number line can push",
-     "regulation_total": "60 minutes only (no overtime, no shootout); a whole-number line can push",
-     "team_total": "includes overtime; the shootout winner is credited one goal; a whole-number line can push",
-     "first_period": "first period only (20 minutes); a tie is its own outcome on the 3-way; a whole-number total can push"
-    },
-    "puck_line": [
-     {
-      "home_line": -3.5,
-      "p": 0.0319,
-      "push": 0,
-      "p_other": 0.9681,
-      "fair": 3035,
-      "fair_other": -3035,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "home_line": -2.5,
-      "p": 0.0925,
-      "push": 0,
-      "p_other": 0.9075,
-      "fair": 981,
-      "fair_other": -981,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": -1.5,
-      "p": 0.1635,
-      "push": 0,
-      "p_other": 0.8365,
-      "fair": 512,
-      "fair_other": -512,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": -1,
-      "p": 0.1635,
-      "push": 0.1661,
-      "p_other": 0.6704,
-      "fair": 410,
-      "fair_other": -410,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "home_line": 1,
-      "p": 0.3296,
-      "push": 0.2111,
-      "p_other": 0.4593,
-      "fair": 139,
-      "fair_other": -139,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "home_line": 1.5,
-      "p": 0.5407,
-      "push": 0,
-      "p_other": 0.4593,
-      "fair": -118,
-      "fair_other": 118,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": 2.5,
-      "p": 0.6701,
-      "push": 0,
-      "p_other": 0.3299,
-      "fair": -203,
-      "fair_other": 203,
-      "validation": "OUTCOME_VALIDATED"
-     },
-     {
-      "home_line": 3.5,
-      "p": 0.8385,
-      "push": 0,
-      "p_other": 0.1615,
-      "fair": -519,
-      "fair_other": 519,
-      "validation": "OUTCOME_VALIDATED"
-     }
-    ],
-    "total": [
-     {
-      "line": 4.5,
-      "p": 0.8017,
-      "push": 0,
-      "p_other": 0.1983,
-      "fair": -404,
-      "fair_other": 404,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 5,
-      "p": 0.5899,
-      "push": 0.2117,
-      "p_other": 0.1983,
-      "fair": -297,
-      "fair_other": 297,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 5.5,
-      "p": 0.5899,
-      "push": 0,
-      "p_other": 0.4101,
-      "fair": -144,
-      "fair_other": 144,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 6,
-      "p": 0.4771,
-      "push": 0.1129,
-      "p_other": 0.4101,
-      "fair": -116,
-      "fair_other": 116,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 6.5,
-      "p": 0.4771,
-      "push": 0,
-      "p_other": 0.5229,
-      "fair": 110,
-      "fair_other": -110,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 7,
-      "p": 0.2752,
-      "push": 0.2018,
-      "p_other": 0.5229,
-      "fair": 190,
-      "fair_other": -190,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 7.5,
-      "p": 0.2752,
-      "push": 0,
-      "p_other": 0.7248,
-      "fair": 263,
-      "fair_other": -263,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 8,
-      "p": 0.1936,
-      "push": 0.0817,
-      "p_other": 0.7248,
-      "fair": 374,
-      "fair_other": -374,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "line": 8.5,
-      "p": 0.1936,
-      "push": 0,
-      "p_other": 0.8064,
-      "fair": 417,
-      "fair_other": -417,
-      "validation": "PROVISIONAL"
-     }
-    ],
-    "regulation_total": [
-     {
-      "line": 4.5,
-      "p": 0.7409,
-      "push": 0,
-      "p_other": 0.2591,
-      "fair": -286,
-      "fair_other": 286,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 5,
-      "p": 0.5899,
-      "push": 0.151,
-      "p_other": 0.2591,
-      "fair": -228,
-      "fair_other": 228,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "line": 5.5,
-      "p": 0.5899,
-      "push": 0,
-      "p_other": 0.4101,
-      "fair": -144,
-      "fair_other": 144,
-      "validation": "PROVISIONAL"
-     },
-     {
-      "line": 6,
-      "p": 0.4169,
-      "push": 0.1731,
-      "p_other": 0.4101,
-      "fair": -102,
-      "fair_other": 102,
-      "validation": "NOT_SCORED"
-     },
-     {
-      "line": 6.5,
-      "p": 0.4169,
-      "push": 0,
-      "p_other": 0.5831,
-      "fair": 140,
-      "fair_other": -140,
-      "validation": "PROVISIONAL"
-     }
-    ],
-    "team_total": {
-     "home": [
-      {
-       "line": 1.5,
-       "p": 0.7242,
-       "push": 0,
-       "p_other": 0.2758,
-       "fair": -263,
-       "fair_other": 263,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 2,
-       "p": 0.4858,
-       "push": 0.2384,
-       "p_other": 0.2758,
-       "fair": -176,
-       "fair_other": 176,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 2.5,
-       "p": 0.4858,
-       "push": 0,
-       "p_other": 0.5142,
-       "fair": 106,
-       "fair_other": -106,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 3,
-       "p": 0.2774,
-       "push": 0.2084,
-       "p_other": 0.5142,
-       "fair": 185,
-       "fair_other": -185,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 3.5,
-       "p": 0.2774,
-       "push": 0,
-       "p_other": 0.7226,
-       "fair": 261,
-       "fair_other": -261,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 4.5,
-       "p": 0.1316,
-       "push": 0,
-       "p_other": 0.8684,
-       "fair": 660,
-       "fair_other": -660,
-       "validation": "NOT_SCORED"
-      }
-     ],
-     "away": [
-      {
-       "line": 1.5,
-       "p": 0.8868,
-       "push": 0,
-       "p_other": 0.1132,
-       "fair": -783,
-       "fair_other": 783,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 2,
-       "p": 0.7351,
-       "push": 0.1516,
-       "p_other": 0.1132,
-       "fair": -649,
-       "fair_other": 649,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 2.5,
-       "p": 0.7351,
-       "push": 0,
-       "p_other": 0.2649,
-       "fair": -278,
-       "fair_other": 278,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 3,
-       "p": 0.5353,
-       "push": 0.1998,
-       "p_other": 0.2649,
-       "fair": -202,
-       "fair_other": 202,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 3.5,
-       "p": 0.5353,
-       "push": 0,
-       "p_other": 0.4647,
-       "fair": -115,
-       "fair_other": 115,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 4.5,
-       "p": 0.328,
-       "push": 0,
-       "p_other": 0.672,
-       "fair": 205,
-       "fair_other": -205,
-       "validation": "NOT_SCORED"
-      }
-     ]
-    },
-    "first_period": {
-     "home": 0.2516,
-     "draw": 0.3256,
-     "away": 0.4228,
-     "fair_home": 297,
-     "fair_draw": 207,
-     "fair_away": 137,
-     "expected": 1.84,
-     "validation_3way": "PROVISIONAL",
-     "total": [
-      {
-       "line": 0.5,
-       "p": 0.8416,
-       "push": 0,
-       "p_other": 0.1584,
-       "fair": -531,
-       "fair_other": 531,
-       "validation": "PROVISIONAL"
-      },
-      {
-       "line": 1,
-       "p": 0.5548,
-       "push": 0.2868,
-       "p_other": 0.1584,
-       "fair": -350,
-       "fair_other": 350,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 1.5,
-       "p": 0.5548,
-       "push": 0,
-       "p_other": 0.4452,
-       "fair": -125,
-       "fair_other": 125,
-       "validation": "OUTCOME_VALIDATED"
-      },
-      {
-       "line": 2,
-       "p": 0.2783,
-       "push": 0.2765,
-       "p_other": 0.4452,
-       "fair": 160,
-       "fair_other": -160,
-       "validation": "NOT_SCORED"
-      },
-      {
-       "line": 2.5,
-       "p": 0.2783,
-       "push": 0,
-       "p_other": 0.7217,
-       "fair": 259,
-       "fair_other": -259,
-       "validation": "PROVISIONAL"
-      }
-     ]
-    },
-    "regulation_3way_validation": "PROVISIONAL"
-   },
-   "repricing": {
-    "base": {
-     "home": 2.5242,
-     "away": 3.6326
-    },
-    "lineup_variant": {
-     "home": 2.5638,
-     "away": 3.5447
-    },
-    "ot": "regular",
-    "basis": "the expected regulation goals of each variant; the page re-prices every market from them with hockey/model/distribution.js and the slate's distribution block"
-   },
-   "challengers": {
-    "models": [
-     {
-      "model": "B_incumbent",
-      "p_home": 0.3296
-     },
-     {
-      "model": "A_goals_only",
-      "p_home": 0.3367
-     },
-     {
-      "model": "A_elo",
-      "p_home": 0.4018
-     },
-     {
-      "model": "C_goalie_projected",
-      "p_home": 0.337
-     },
-     {
-      "model": "D_lineup_projected",
-      "p_home": 0.3446
-     },
-     {
-      "model": "E_logistic",
-      "p_home": 0.3608
-     },
-     {
-      "model": "E_gbdt",
-      "p_home": 0.343
-     },
-     {
-      "model": "G_stack",
-      "p_home": 0.3628
-     }
-    ],
-    "spread_pp": 7.22,
-    "sd_pp": 2.17
-   },
-   "context": {
-    "home": {
-     "travel_km": 760,
-     "tz_shift": -1,
-     "games_in_prior_3_days": 2,
-     "road_trip_game": 0,
-     "recent_5v5_xg_for_vs_last_40": 0.9181,
-     "recent_5v5_xg_against_vs_last_40": 0.9423,
-     "goals_vs_xg_last_20": 0.9136,
-     "goals_against_vs_xg_last_20": 0.8879
-    },
-    "away": {
-     "travel_km": 1644,
-     "tz_shift": 1,
-     "games_in_prior_3_days": 1,
-     "road_trip_game": 1,
-     "recent_5v5_xg_for_vs_last_40": 0.9223,
-     "recent_5v5_xg_against_vs_last_40": 1.0982,
-     "goals_vs_xg_last_20": 1.1668,
-     "goals_against_vs_xg_last_20": 1.0399
-    },
-    "note": "Measured, not in the price: travel, time zones, congestion, road trips, recent form and finishing luck were each tested out of sample (hockey/validation/nhl_lab.json) and none cleared the bar."
-   },
-   "prices": {
-    "moneyline": {
-     "home": 0.3296,
-     "away": 0.6704,
-     "fair_home": 203,
-     "fair_away": -203,
-     "settles": "includes overtime and shootout"
-    },
-    "regulation": {
-     "home": 0.2427,
-     "draw": 0.1964,
-     "away": 0.5609,
-     "fair_home": 312,
-     "fair_draw": 409,
-     "fair_away": -128,
-     "settles": "60 minutes only"
-    },
-    "puck_line": {
-     "home_minus_1_5": 0.1635,
-     "away_plus_1_5": 0.8365,
-     "away_minus_1_5": 0.4593,
-     "home_plus_1_5": 0.5407,
-     "fair_home_minus_1_5": 512,
-     "fair_away_plus_1_5": -512,
-     "fair_away_minus_1_5": 118,
-     "fair_home_plus_1_5": -118,
-     "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-    },
-    "total": {
-     "expected": 6.35,
-     "fair_line": 6.5,
-     "lines": {
-      "5": {
-       "over": 0.5899,
-       "under": 0.1983,
-       "push": 0.2117,
-       "fair_over": -297,
-       "fair_under": 297
-      },
-      "6": {
-       "over": 0.4771,
-       "under": 0.4101,
-       "push": 0.1129,
-       "fair_over": -116,
-       "fair_under": 116
-      },
-      "7": {
-       "over": 0.2752,
-       "under": 0.5229,
-       "push": 0.2018,
-       "fair_over": 190,
-       "fair_under": -190
-      },
-      "5.5": {
-       "over": 0.5899,
-       "under": 0.4101,
-       "push": 0,
-       "fair_over": -144,
-       "fair_under": 144
-      },
-      "6.5": {
-       "over": 0.4771,
-       "under": 0.5229,
-       "push": 0,
-       "fair_over": 110,
-       "fair_under": -110
-      }
-     },
-     "settles": "includes overtime; the shootout winner is credited one goal"
-    },
-    "team_total": {
-     "home": {
-      "3": {
-       "over": 0.2774,
-       "under": 0.5142,
-       "push": 0.2084,
-       "fair_over": 185,
-       "fair_under": -185
-      },
-      "2.5": {
-       "over": 0.4858,
-       "under": 0.5142,
-       "push": 0,
-       "fair_over": 106,
-       "fair_under": -106
-      },
-      "3.5": {
-       "over": 0.2774,
-       "under": 0.7226,
-       "push": 0,
-       "fair_over": 261,
-       "fair_under": -261
-      }
-     },
-     "away": {
-      "3": {
-       "over": 0.5353,
-       "under": 0.2649,
-       "push": 0.1998,
-       "fair_over": -202,
-       "fair_under": 202
-      },
-      "2.5": {
-       "over": 0.7351,
-       "under": 0.2649,
-       "push": 0,
-       "fair_over": -278,
-       "fair_under": 278
-      },
-      "3.5": {
-       "over": 0.5353,
-       "under": 0.4647,
-       "push": 0,
-       "fair_over": -115,
-       "fair_under": 115
-      }
-     }
-    },
-    "p_overtime": 0.1358,
-    "p_shootout": 0.0606
-   },
-   "uncertainty": {
-    "moneyline_sd_pp": 0.55,
-    "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
-    "calibration_bin": {
-     "range": [
-      0.3,
-      0.4
-     ],
-     "n": 623,
-     "model_mean": 0.3606,
-     "observed": 0.3547,
-     "wilson95": [
-      0.3182,
-      0.3931
-     ],
-     "window": "confirmation 2020-21 to 2025-26"
-    }
-   },
-   "goalies": {
-    "certainty": "PROJECTED_UNCERTAIN",
-    "home": [
-     {
-      "goalie": 8481020,
-      "name": "J. Annunen",
-      "p_start": 0.5048,
-      "confirmed": false,
-      "gsax_rate": -0.011
-     },
-     {
-      "goalie": 8483575,
-      "name": "M. Murray",
-      "p_start": 0.2635,
-      "confirmed": false,
-      "gsax_rate": -0.0272
-     }
-    ],
-    "away": [
-     {
-      "goalie": 8478406,
-      "name": "M. Blackwood",
-      "p_start": 0.6839,
-      "confirmed": false,
-      "gsax_rate": 0.0006
-     },
-     {
-      "goalie": 8475809,
-      "name": "S. Wedgewood",
-      "p_start": 0.3161,
-      "confirmed": false,
-      "gsax_rate": 0.0131
-     }
-    ],
-    "scenarios": [
-     {
-      "home_goalie": 8481020,
-      "home_goalie_name": "J. Annunen",
-      "away_goalie": 8478406,
-      "away_goalie_name": "M. Blackwood",
-      "p_scenario": 0.4493,
-      "p_home": 0.3402,
-      "exp_total": 6.32,
-      "lambda": {
-       "home": 2.5434,
-       "away": 3.5772
-      }
-     },
-     {
-      "home_goalie": 8481020,
-      "home_goalie_name": "J. Annunen",
-      "away_goalie": 8475809,
-      "away_goalie_name": "S. Wedgewood",
-      "p_scenario": 0.2077,
-      "p_home": 0.3368,
-      "exp_total": 6.31,
-      "lambda": {
-       "home": 2.5267,
-       "away": 3.5823
-      }
-     },
-     {
-      "home_goalie": 8483575,
-      "home_goalie_name": "M. Murray",
-      "away_goalie": 8478406,
-      "away_goalie_name": "M. Blackwood",
-      "p_scenario": 0.2346,
-      "p_home": 0.3353,
-      "exp_total": 6.34,
-      "lambda": {
-       "home": 2.5371,
-       "away": 3.6055
-      }
-     },
-     {
-      "home_goalie": 8483575,
-      "home_goalie_name": "M. Murray",
-      "away_goalie": 8475809,
-      "away_goalie_name": "S. Wedgewood",
-      "p_scenario": 0.1084,
-      "p_home": 0.332,
-      "exp_total": 6.33,
-      "lambda": {
-       "home": 2.5205,
-       "away": 3.6106
-      }
-     }
-    ],
-    "confirmed_source": null
-   },
-   "lineups": {
-    "state": "PROJECTED_FROM_LAST_GAME",
-    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
-    "home": {
-     "projected_delta": 0.0124,
-     "regulars_absent": []
-    },
-    "away": {
-     "projected_delta": -0.0066,
-     "regulars_absent": []
-    },
-    "p_home_lineup_variant": 0.3479,
-    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001696 to -0.000051)."
-   },
-   "evidence": {
-    "home": {
-     "ev_xg_for_vs_league": 0.979,
-     "ev_xg_against_vs_league": 1.0377,
-     "goals_for_vs_league": 0.9554,
-     "goals_against_vs_league": 1.024,
-     "pp_vs_league": 0.9824,
-     "pk_xga_vs_league": 0.9578,
-     "pp_minutes_vs_league": 0.9876,
-     "rest_days": 1,
-     "back_to_back": true,
-     "history_weight_games": 46.33
-    },
-    "away": {
-     "ev_xg_for_vs_league": 1.0908,
-     "ev_xg_against_vs_league": 0.9588,
-     "goals_for_vs_league": 1.1213,
-     "goals_against_vs_league": 0.92,
-     "pp_vs_league": 0.9723,
-     "pk_xga_vs_league": 0.9548,
-     "pp_minutes_vs_league": 1.0442,
-     "rest_days": 2,
-     "back_to_back": false,
-     "history_weight_games": 55.24
-    },
-    "league": {
-     "ev_xg_per60": 2.61,
-     "goals_per_team_game": 3.12
-    },
-    "notes": [
-     "Ratios are to the league's running average (1.00 = average); xG ratings are score-adjusted and opponent-adjusted.",
-     "Ratings decay with a 180-day half-life and are shrunk toward average by a 32-game prior; early-season ratings lean on last season."
-    ]
-   },
-   "data_quality": {
-    "history_weight_games": 46.33,
-    "early_season": false,
-    "goalie_certainty": "PROJECTED_UNCERTAIN",
-    "missing": []
-   },
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
-    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
-   ],
-   "market_check": {
-    "state": "NOT_CAPTURED",
-    "checks": [],
-    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
-   }
-  },
-  {
    "game_id": 2026020184,
    "event_key": "NHL|2026020184",
    "date": "2026-10-25",
@@ -2725,6 +1783,49 @@
       "lambda": {
        "home": 2.8156,
        "away": 3.3842
+      },
+      "fair_home": 143,
+      "fair_away": -143,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1358,
+        0
+       ],
+       "-1.5": [
+        0.224,
+        0
+       ],
+       "1.5": [
+        0.6226,
+        0
+       ],
+       "2.5": [
+        0.7418,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5975,
+        0.2105
+       ],
+       "6": [
+        0.4877,
+        0.1099
+       ],
+       "7": [
+        0.2824,
+        0.2053
+       ],
+       "5.5": [
+        0.5975,
+        0
+       ],
+       "6.5": [
+        0.4877,
+        0
+       ]
       }
      },
      {
@@ -2738,6 +1839,49 @@
       "lambda": {
        "home": 2.7266,
        "away": 3.4098
+      },
+      "fair_home": 154,
+      "fair_away": -154,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1244,
+        0
+       ],
+       "-1.5": [
+        0.2091,
+        0
+       ],
+       "1.5": [
+        0.6064,
+        0
+       ],
+       "2.5": [
+        0.7286,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5872,
+        0.2136
+       ],
+       "6": [
+        0.4765,
+        0.1107
+       ],
+       "7": [
+        0.273,
+        0.2035
+       ],
+       "5.5": [
+        0.5872,
+        0
+       ],
+       "6.5": [
+        0.4765,
+        0
+       ]
       }
      },
      {
@@ -2751,6 +1895,49 @@
       "lambda": {
        "home": 2.8317,
        "away": 3.3175
+      },
+      "fair_home": 136,
+      "fair_away": -136,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.142,
+        0
+       ],
+       "-1.5": [
+        0.2328,
+        0
+       ],
+       "1.5": [
+        0.6356,
+        0
+       ],
+       "2.5": [
+        0.7534,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5895,
+        0.2132
+       ],
+       "6": [
+        0.4796,
+        0.1099
+       ],
+       "7": [
+        0.2751,
+        0.2045
+       ],
+       "5.5": [
+        0.5895,
+        0
+       ],
+       "6.5": [
+        0.4796,
+        0
+       ]
       }
      },
      {
@@ -2764,6 +1951,49 @@
       "lambda": {
        "home": 2.7425,
        "away": 3.343
+      },
+      "fair_home": 146,
+      "fair_away": -146,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1302,
+        0
+       ],
+       "-1.5": [
+        0.2175,
+        0
+       ],
+       "1.5": [
+        0.6196,
+        0
+       ],
+       "2.5": [
+        0.7405,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.579,
+        0.2163
+       ],
+       "6": [
+        0.4684,
+        0.1106
+       ],
+       "7": [
+        0.2657,
+        0.2027
+       ],
+       "5.5": [
+        0.579,
+        0
+       ],
+       "6.5": [
+        0.4684,
+        0
+       ]
       }
      }
     ],
@@ -3676,6 +2906,49 @@
       "lambda": {
        "home": 3.0071,
        "away": 2.7779
+      },
+      "fair_home": -117,
+      "fair_away": 117,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2065,
+        0
+       ],
+       "-1.5": [
+        0.3203,
+        0
+       ],
+       "1.5": [
+        0.7432,
+        0
+       ],
+       "2.5": [
+        0.843,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5288,
+        0.2309
+       ],
+       "6": [
+        0.4189,
+        0.1098
+       ],
+       "7": [
+        0.2241,
+        0.1949
+       ],
+       "5.5": [
+        0.5288,
+        0
+       ],
+       "6.5": [
+        0.4189,
+        0
+       ]
       }
      },
      {
@@ -3689,6 +2962,49 @@
       "lambda": {
        "home": 2.9909,
        "away": 2.782
+      },
+      "fair_home": -115,
+      "fair_away": 115,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.2038,
+        0
+       ],
+       "-1.5": [
+        0.3171,
+        0
+       ],
+       "1.5": [
+        0.7407,
+        0
+       ],
+       "2.5": [
+        0.8413,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5267,
+        0.2315
+       ],
+       "6": [
+        0.4169,
+        0.1098
+       ],
+       "7": [
+        0.2224,
+        0.1945
+       ],
+       "5.5": [
+        0.5267,
+        0
+       ],
+       "6.5": [
+        0.4169,
+        0
+       ]
       }
      },
      {
@@ -3702,6 +3018,49 @@
       "lambda": {
        "home": 3.0264,
        "away": 2.7076
+      },
+      "fair_home": -124,
+      "fair_away": 124,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.2157,
+        0
+       ],
+       "-1.5": [
+        0.3324,
+        0
+       ],
+       "1.5": [
+        0.756,
+        0
+       ],
+       "2.5": [
+        0.8531,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5199,
+        0.2331
+       ],
+       "6": [
+        0.4101,
+        0.1099
+       ],
+       "7": [
+        0.2171,
+        0.1929
+       ],
+       "5.5": [
+        0.5199,
+        0
+       ],
+       "6.5": [
+        0.4101,
+        0
+       ]
       }
      },
      {
@@ -3715,6 +3074,49 @@
       "lambda": {
        "home": 3.0101,
        "away": 2.7116
+      },
+      "fair_home": -122,
+      "fair_away": 122,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.2129,
+        0
+       ],
+       "-1.5": [
+        0.3291,
+        0
+       ],
+       "1.5": [
+        0.7537,
+        0
+       ],
+       "2.5": [
+        0.8514,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5178,
+        0.2336
+       ],
+       "6": [
+        0.408,
+        0.1098
+       ],
+       "7": [
+        0.2155,
+        0.1925
+       ],
+       "5.5": [
+        0.5178,
+        0
+       ],
+       "6.5": [
+        0.408,
+        0
+       ]
       }
      }
     ],
@@ -4634,6 +4036,49 @@
       "lambda": {
        "home": 2.9845,
        "away": 3.0734
+      },
+      "fair_home": 105,
+      "fair_away": -105,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1784,
+        0
+       ],
+       "-1.5": [
+        0.2816,
+        0
+       ],
+       "1.5": [
+        0.6942,
+        0
+       ],
+       "2.5": [
+        0.8024,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5747,
+        0.2181
+       ],
+       "6": [
+        0.4652,
+        0.1095
+       ],
+       "7": [
+        0.2622,
+        0.203
+       ],
+       "5.5": [
+        0.5747,
+        0
+       ],
+       "6.5": [
+        0.4652,
+        0
+       ]
       }
      },
      {
@@ -4647,6 +4092,49 @@
       "lambda": {
        "home": 2.9625,
        "away": 3.0793
+      },
+      "fair_home": 107,
+      "fair_away": -107,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1751,
+        0
+       ],
+       "-1.5": [
+        0.2775,
+        0
+       ],
+       "1.5": [
+        0.6906,
+        0
+       ],
+       "2.5": [
+        0.7997,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5721,
+        0.2189
+       ],
+       "6": [
+        0.4625,
+        0.1096
+       ],
+       "7": [
+        0.2598,
+        0.2026
+       ],
+       "5.5": [
+        0.5721,
+        0
+       ],
+       "6.5": [
+        0.4625,
+        0
+       ]
       }
      },
      {
@@ -4660,6 +4148,49 @@
       "lambda": {
        "home": 2.9678,
        "away": 3.1384
+      },
+      "fair_home": 111,
+      "fair_away": -111,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1712,
+        0
+       ],
+       "-1.5": [
+        0.2718,
+        0
+       ],
+       "1.5": [
+        0.6818,
+        0
+       ],
+       "2.5": [
+        0.792,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5826,
+        0.2156
+       ],
+       "6": [
+        0.4732,
+        0.1094
+       ],
+       "7": [
+        0.2691,
+        0.2041
+       ],
+       "5.5": [
+        0.5826,
+        0
+       ],
+       "6.5": [
+        0.4732,
+        0
+       ]
       }
      },
      {
@@ -4673,6 +4204,49 @@
       "lambda": {
        "home": 2.9458,
        "away": 3.1444
+      },
+      "fair_home": 113,
+      "fair_away": -113,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.168,
+        0
+       ],
+       "-1.5": [
+        0.2678,
+        0
+       ],
+       "1.5": [
+        0.6781,
+        0
+       ],
+       "2.5": [
+        0.7892,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.58,
+        0.2164
+       ],
+       "6": [
+        0.4705,
+        0.1095
+       ],
+       "7": [
+        0.2668,
+        0.2037
+       ],
+       "5.5": [
+        0.58,
+        0
+       ],
+       "6.5": [
+        0.4705,
+        0
+       ]
       }
      }
     ],
@@ -5583,6 +5157,49 @@
       "lambda": {
        "home": 3.3877,
        "away": 2.8471
+      },
+      "fair_home": -141,
+      "fair_away": 141,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2555,
+        0
+       ],
+       "-1.5": [
+        0.3738,
+        0
+       ],
+       "1.5": [
+        0.7719,
+        0
+       ],
+       "2.5": [
+        0.8608,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6031,
+        0.2086
+       ],
+       "6": [
+        0.4936,
+        0.1095
+       ],
+       "7": [
+        0.2876,
+        0.206
+       ],
+       "5.5": [
+        0.6031,
+        0
+       ],
+       "6.5": [
+        0.4936,
+        0
+       ]
       }
      },
      {
@@ -5596,6 +5213,49 @@
       "lambda": {
        "home": 3.3844,
        "away": 2.8479
+      },
+      "fair_home": -141,
+      "fair_away": 141,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2549,
+        0
+       ],
+       "-1.5": [
+        0.3731,
+        0
+       ],
+       "1.5": [
+        0.7714,
+        0
+       ],
+       "2.5": [
+        0.8606,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6027,
+        0.2088
+       ],
+       "6": [
+        0.4932,
+        0.1095
+       ],
+       "7": [
+        0.2872,
+        0.206
+       ],
+       "5.5": [
+        0.6027,
+        0
+       ],
+       "6.5": [
+        0.4932,
+        0
+       ]
       }
      },
      {
@@ -5609,6 +5269,49 @@
       "lambda": {
        "home": 3.3777,
        "away": 2.8823
+      },
+      "fair_home": -137,
+      "fair_away": 137,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2504,
+        0
+       ],
+       "-1.5": [
+        0.3675,
+        0
+       ],
+       "1.5": [
+        0.7658,
+        0
+       ],
+       "2.5": [
+        0.8562,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6072,
+        0.2073
+       ],
+       "6": [
+        0.498,
+        0.1092
+       ],
+       "7": [
+        0.2913,
+        0.2066
+       ],
+       "5.5": [
+        0.6072,
+        0
+       ],
+       "6.5": [
+        0.498,
+        0
+       ]
       }
      },
      {
@@ -5622,6 +5325,49 @@
       "lambda": {
        "home": 3.3744,
        "away": 2.8831
+      },
+      "fair_home": -137,
+      "fair_away": 137,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2499,
+        0
+       ],
+       "-1.5": [
+        0.3669,
+        0
+       ],
+       "1.5": [
+        0.7654,
+        0
+       ],
+       "2.5": [
+        0.8559,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6068,
+        0.2075
+       ],
+       "6": [
+        0.4976,
+        0.1092
+       ],
+       "7": [
+        0.291,
+        0.2066
+       ],
+       "5.5": [
+        0.6068,
+        0
+       ],
+       "6.5": [
+        0.4976,
+        0
+       ]
       }
      }
     ],
@@ -6532,6 +6278,49 @@
       "lambda": {
        "home": 2.8897,
        "away": 2.8594
+      },
+      "fair_home": -102,
+      "fair_away": 102,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1831,
+        0
+       ],
+       "-1.5": [
+        0.2912,
+        0
+       ],
+       "1.5": [
+        0.7172,
+        0
+       ],
+       "2.5": [
+        0.8234,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5226,
+        0.2326
+       ],
+       "6": [
+        0.4131,
+        0.1096
+       ],
+       "7": [
+        0.2193,
+        0.1938
+       ],
+       "5.5": [
+        0.5226,
+        0
+       ],
+       "6.5": [
+        0.4131,
+        0
+       ]
       }
      },
      {
@@ -6545,6 +6334,49 @@
       "lambda": {
        "home": 2.9489,
        "away": 2.844
+      },
+      "fair_home": -108,
+      "fair_away": 108,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1925,
+        0
+       ],
+       "-1.5": [
+        0.3027,
+        0
+       ],
+       "1.5": [
+        0.7264,
+        0
+       ],
+       "2.5": [
+        0.8301,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5302,
+        0.2306
+       ],
+       "6": [
+        0.4205,
+        0.1097
+       ],
+       "7": [
+        0.2252,
+        0.1953
+       ],
+       "5.5": [
+        0.5302,
+        0
+       ],
+       "6.5": [
+        0.4205,
+        0
+       ]
       }
      },
      {
@@ -6558,6 +6390,49 @@
       "lambda": {
        "home": 2.8992,
        "away": 2.8235
+      },
+      "fair_home": -106,
+      "fair_away": 106,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1874,
+        0
+       ],
+       "-1.5": [
+        0.297,
+        0
+       ],
+       "1.5": [
+        0.724,
+        0
+       ],
+       "2.5": [
+        0.8289,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5181,
+        0.2337
+       ],
+       "6": [
+        0.4086,
+        0.1095
+       ],
+       "7": [
+        0.2157,
+        0.1928
+       ],
+       "5.5": [
+        0.5181,
+        0
+       ],
+       "6.5": [
+        0.4086,
+        0
+       ]
       }
      },
      {
@@ -6571,6 +6446,49 @@
       "lambda": {
        "home": 2.9585,
        "away": 2.8082
+      },
+      "fair_home": -111,
+      "fair_away": 111,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1969,
+        0
+       ],
+       "-1.5": [
+        0.3086,
+        0
+       ],
+       "1.5": [
+        0.7331,
+        0
+       ],
+       "2.5": [
+        0.8355,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5257,
+        0.2318
+       ],
+       "6": [
+        0.416,
+        0.1097
+       ],
+       "7": [
+        0.2216,
+        0.1943
+       ],
+       "5.5": [
+        0.5257,
+        0
+       ],
+       "6.5": [
+        0.416,
+        0
+       ]
       }
      }
     ],
@@ -7490,6 +7408,49 @@
       "lambda": {
        "home": 3.3516,
        "away": 2.7245
+      },
+      "fair_home": -150,
+      "fair_away": 150,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2627,
+        0
+       ],
+       "-1.5": [
+        0.3843,
+        0
+       ],
+       "1.5": [
+        0.7858,
+        0
+       ],
+       "2.5": [
+        0.8723,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5774,
+        0.2167
+       ],
+       "6": [
+        0.4667,
+        0.1107
+       ],
+       "7": [
+        0.2644,
+        0.2023
+       ],
+       "5.5": [
+        0.5774,
+        0
+       ],
+       "6.5": [
+        0.4667,
+        0
+       ]
       }
      },
      {
@@ -7503,6 +7464,49 @@
       "lambda": {
        "home": 3.4371,
        "away": 2.7044
+      },
+      "fair_home": -160,
+      "fair_away": 160,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.278,
+        0
+       ],
+       "-1.5": [
+        0.4012,
+        0
+       ],
+       "1.5": [
+        0.7965,
+        0
+       ],
+       "2.5": [
+        0.8795,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.588,
+        0.2133
+       ],
+       "6": [
+        0.4771,
+        0.1108
+       ],
+       "7": [
+        0.2737,
+        0.2034
+       ],
+       "5.5": [
+        0.588,
+        0
+       ],
+       "6.5": [
+        0.4771,
+        0
+       ]
       }
      },
      {
@@ -7516,6 +7520,49 @@
       "lambda": {
        "home": 3.3481,
        "away": 2.7366
+      },
+      "fair_home": -149,
+      "fair_away": 149,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2609,
+        0
+       ],
+       "-1.5": [
+        0.3821,
+        0
+       ],
+       "1.5": [
+        0.7838,
+        0
+       ],
+       "2.5": [
+        0.8707,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5788,
+        0.2163
+       ],
+       "6": [
+        0.4682,
+        0.1106
+       ],
+       "7": [
+        0.2656,
+        0.2026
+       ],
+       "5.5": [
+        0.5788,
+        0
+       ],
+       "6.5": [
+        0.4682,
+        0
+       ]
       }
      },
      {
@@ -7529,6 +7576,49 @@
       "lambda": {
        "home": 3.4336,
        "away": 2.7164
+      },
+      "fair_home": -159,
+      "fair_away": 159,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2762,
+        0
+       ],
+       "-1.5": [
+        0.3989,
+        0
+       ],
+       "1.5": [
+        0.7945,
+        0
+       ],
+       "2.5": [
+        0.878,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5894,
+        0.2128
+       ],
+       "6": [
+        0.4786,
+        0.1107
+       ],
+       "7": [
+        0.2749,
+        0.2037
+       ],
+       "5.5": [
+        0.5894,
+        0
+       ],
+       "6.5": [
+        0.4786,
+        0
+       ]
       }
      }
     ],
@@ -8431,6 +8521,49 @@
       "lambda": {
        "home": 2.8204,
        "away": 2.937
+      },
+      "fair_home": 107,
+      "fair_away": -107,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1677,
+        0
+       ],
+       "-1.5": [
+        0.2712,
+        0
+       ],
+       "1.5": [
+        0.6964,
+        0
+       ],
+       "2.5": [
+        0.8071,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5241,
+        0.2322
+       ],
+       "6": [
+        0.4144,
+        0.1096
+       ],
+       "7": [
+        0.2204,
+        0.1941
+       ],
+       "5.5": [
+        0.5241,
+        0
+       ],
+       "6.5": [
+        0.4144,
+        0
+       ]
       }
      },
      {
@@ -8444,6 +8577,49 @@
       "lambda": {
        "home": 2.805,
        "away": 2.9411
+      },
+      "fair_home": 109,
+      "fair_away": -109,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1654,
+        0
+       ],
+       "-1.5": [
+        0.2683,
+        0
+       ],
+       "1.5": [
+        0.6939,
+        0
+       ],
+       "2.5": [
+        0.8052,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5221,
+        0.2327
+       ],
+       "6": [
+        0.4125,
+        0.1096
+       ],
+       "7": [
+        0.2189,
+        0.1936
+       ],
+       "5.5": [
+        0.5221,
+        0
+       ],
+       "6.5": [
+        0.4125,
+        0
+       ]
       }
      },
      {
@@ -8457,6 +8633,49 @@
       "lambda": {
        "home": 2.8028,
        "away": 3.0056
+      },
+      "fair_home": 114,
+      "fair_away": -114,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1603,
+        0
+       ],
+       "-1.5": [
+        0.2609,
+        0
+       ],
+       "1.5": [
+        0.683,
+        0
+       ],
+       "2.5": [
+        0.796,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5328,
+        0.2299
+       ],
+       "6": [
+        0.423,
+        0.1098
+       ],
+       "7": [
+        0.2273,
+        0.1957
+       ],
+       "5.5": [
+        0.5328,
+        0
+       ],
+       "6.5": [
+        0.423,
+        0
+       ]
       }
      },
      {
@@ -8470,6 +8689,49 @@
       "lambda": {
        "home": 2.7875,
        "away": 3.0098
+      },
+      "fair_home": 115,
+      "fair_away": -115,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.158,
+        0
+       ],
+       "-1.5": [
+        0.258,
+        0
+       ],
+       "1.5": [
+        0.6805,
+        0
+       ],
+       "2.5": [
+        0.794,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5309,
+        0.2304
+       ],
+       "6": [
+        0.421,
+        0.1099
+       ],
+       "7": [
+        0.2257,
+        0.1953
+       ],
+       "5.5": [
+        0.5309,
+        0
+       ],
+       "6.5": [
+        0.421,
+        0
+       ]
       }
      }
     ],
@@ -9399,6 +9661,49 @@
       "lambda": {
        "home": 3.1213,
        "away": 2.8845
+      },
+      "fair_home": -117,
+      "fair_away": 117,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2131,
+        0
+       ],
+       "-1.5": [
+        0.3257,
+        0
+       ],
+       "1.5": [
+        0.7391,
+        0
+       ],
+       "2.5": [
+        0.838,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5661,
+        0.2206
+       ],
+       "6": [
+        0.4562,
+        0.1098
+       ],
+       "7": [
+        0.2547,
+        0.2016
+       ],
+       "5.5": [
+        0.5661,
+        0
+       ],
+       "6.5": [
+        0.4562,
+        0
+       ]
       }
      },
      {
@@ -9412,6 +9717,49 @@
       "lambda": {
        "home": 3.0873,
        "away": 2.8931
+      },
+      "fair_home": -114,
+      "fair_away": 114,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2075,
+        0
+       ],
+       "-1.5": [
+        0.3191,
+        0
+       ],
+       "1.5": [
+        0.7341,
+        0
+       ],
+       "2.5": [
+        0.8344,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5619,
+        0.2219
+       ],
+       "6": [
+        0.4521,
+        0.1098
+       ],
+       "7": [
+        0.2511,
+        0.2009
+       ],
+       "5.5": [
+        0.5619,
+        0
+       ],
+       "6.5": [
+        0.4521,
+        0
+       ]
       }
      },
      {
@@ -9425,6 +9773,49 @@
       "lambda": {
        "home": 3.0938,
        "away": 2.9864
+      },
+      "fair_home": -108,
+      "fair_away": 108,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2002,
+        0
+       ],
+       "-1.5": [
+        0.3089,
+        0
+       ],
+       "1.5": [
+        0.7204,
+        0
+       ],
+       "2.5": [
+        0.8229,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5784,
+        0.2169
+       ],
+       "6": [
+        0.4689,
+        0.1095
+       ],
+       "7": [
+        0.2654,
+        0.2036
+       ],
+       "5.5": [
+        0.5784,
+        0
+       ],
+       "6.5": [
+        0.4689,
+        0
+       ]
       }
      },
      {
@@ -9438,6 +9829,49 @@
       "lambda": {
        "home": 3.0599,
        "away": 2.9952
+      },
+      "fair_home": -105,
+      "fair_away": 105,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1949,
+        0
+       ],
+       "-1.5": [
+        0.3024,
+        0
+       ],
+       "1.5": [
+        0.7152,
+        0
+       ],
+       "2.5": [
+        0.8191,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5743,
+        0.2182
+       ],
+       "6": [
+        0.4647,
+        0.1095
+       ],
+       "7": [
+        0.2618,
+        0.203
+       ],
+       "5.5": [
+        0.5743,
+        0
+       ],
+       "6.5": [
+        0.4647,
+        0
+       ]
       }
      }
     ],
@@ -10349,6 +10783,49 @@
       "lambda": {
        "home": 2.9114,
        "away": 2.9853
+      },
+      "fair_home": 104,
+      "fair_away": -104,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1759,
+        0
+       ],
+       "-1.5": [
+        0.2801,
+        0
+       ],
+       "1.5": [
+        0.6995,
+        0
+       ],
+       "2.5": [
+        0.8082,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5479,
+        0.2259
+       ],
+       "6": [
+        0.4381,
+        0.1098
+       ],
+       "7": [
+        0.2394,
+        0.1986
+       ],
+       "5.5": [
+        0.5479,
+        0
+       ],
+       "6.5": [
+        0.4381,
+        0
+       ]
       }
      },
      {
@@ -10362,6 +10839,49 @@
       "lambda": {
        "home": 2.9921,
        "away": 2.964
+      },
+      "fair_home": -102,
+      "fair_away": 102,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1883,
+        0
+       ],
+       "-1.5": [
+        0.2954,
+        0
+       ],
+       "1.5": [
+        0.7124,
+        0
+       ],
+       "2.5": [
+        0.8178,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5579,
+        0.2231
+       ],
+       "6": [
+        0.4481,
+        0.1097
+       ],
+       "7": [
+        0.2477,
+        0.2004
+       ],
+       "5.5": [
+        0.5579,
+        0
+       ],
+       "6.5": [
+        0.4481,
+        0
+       ]
       }
      },
      {
@@ -10375,6 +10895,49 @@
       "lambda": {
        "home": 2.9141,
        "away": 2.9752
+      },
+      "fair_home": 104,
+      "fair_away": -104,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.177,
+        0
+       ],
+       "-1.5": [
+        0.2817,
+        0
+       ],
+       "1.5": [
+        0.7015,
+        0
+       ],
+       "2.5": [
+        0.8098,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5466,
+        0.2263
+       ],
+       "6": [
+        0.4368,
+        0.1098
+       ],
+       "7": [
+        0.2384,
+        0.1984
+       ],
+       "5.5": [
+        0.5466,
+        0
+       ],
+       "6.5": [
+        0.4368,
+        0
+       ]
       }
      },
      {
@@ -10388,6 +10951,49 @@
       "lambda": {
        "home": 2.9948,
        "away": 2.9539
+      },
+      "fair_home": -103,
+      "fair_away": 103,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1895,
+        0
+       ],
+       "-1.5": [
+        0.297,
+        0
+       ],
+       "1.5": [
+        0.7143,
+        0
+       ],
+       "2.5": [
+        0.8193,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5566,
+        0.2234
+       ],
+       "6": [
+        0.4469,
+        0.1098
+       ],
+       "7": [
+        0.2467,
+        0.2002
+       ],
+       "5.5": [
+        0.5566,
+        0
+       ],
+       "6.5": [
+        0.4469,
+        0
+       ]
       }
      }
     ],
@@ -11290,6 +11896,49 @@
       "lambda": {
        "home": 3.1363,
        "away": 2.6656
+      },
+      "fair_home": -137,
+      "fair_away": 137,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.236,
+        0
+       ],
+       "-1.5": [
+        0.3563,
+        0
+       ],
+       "1.5": [
+        0.7736,
+        0
+       ],
+       "2.5": [
+        0.8654,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5315,
+        0.2299
+       ],
+       "6": [
+        0.4211,
+        0.1105
+       ],
+       "7": [
+        0.2262,
+        0.1949
+       ],
+       "5.5": [
+        0.5315,
+        0
+       ],
+       "6.5": [
+        0.4211,
+        0
+       ]
       }
      },
      {
@@ -11303,6 +11952,49 @@
       "lambda": {
        "home": 3.1614,
        "away": 2.6596
+      },
+      "fair_home": -140,
+      "fair_away": 140,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2404,
+        0
+       ],
+       "-1.5": [
+        0.3613,
+        0
+       ],
+       "1.5": [
+        0.7769,
+        0
+       ],
+       "2.5": [
+        0.8677,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5347,
+        0.2291
+       ],
+       "6": [
+        0.4241,
+        0.1106
+       ],
+       "7": [
+        0.2287,
+        0.1954
+       ],
+       "5.5": [
+        0.5347,
+        0
+       ],
+       "6.5": [
+        0.4241,
+        0
+       ]
       }
      },
      {
@@ -11316,6 +12008,49 @@
       "lambda": {
        "home": 3.1258,
        "away": 2.7027
+      },
+      "fair_home": -132,
+      "fair_away": 132,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2308,
+        0
+       ],
+       "-1.5": [
+        0.3496,
+        0
+       ],
+       "1.5": [
+        0.767,
+        0
+       ],
+       "2.5": [
+        0.8604,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5361,
+        0.2288
+       ],
+       "6": [
+        0.4258,
+        0.1103
+       ],
+       "7": [
+        0.2298,
+        0.1959
+       ],
+       "5.5": [
+        0.5361,
+        0
+       ],
+       "6.5": [
+        0.4258,
+        0
+       ]
       }
      },
      {
@@ -11329,6 +12064,49 @@
       "lambda": {
        "home": 3.1509,
        "away": 2.6966
+      },
+      "fair_home": -135,
+      "fair_away": 135,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2351,
+        0
+       ],
+       "-1.5": [
+        0.3546,
+        0
+       ],
+       "1.5": [
+        0.7704,
+        0
+       ],
+       "2.5": [
+        0.8627,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5393,
+        0.2279
+       ],
+       "6": [
+        0.4288,
+        0.1105
+       ],
+       "7": [
+        0.2324,
+        0.1964
+       ],
+       "5.5": [
+        0.5393,
+        0
+       ],
+       "6.5": [
+        0.4288,
+        0
+       ]
       }
      }
     ],
@@ -12248,6 +13026,49 @@
       "lambda": {
        "home": 2.9411,
        "away": 2.9695
+      },
+      "fair_home": 101,
+      "fair_away": -101,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.181,
+        0
+       ],
+       "-1.5": [
+        0.2866,
+        0
+       ],
+       "1.5": [
+        0.7055,
+        0
+       ],
+       "2.5": [
+        0.8128,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5502,
+        0.2253
+       ],
+       "6": [
+        0.4404,
+        0.1098
+       ],
+       "7": [
+        0.2414,
+        0.1991
+       ],
+       "5.5": [
+        0.5502,
+        0
+       ],
+       "6.5": [
+        0.4404,
+        0
+       ]
       }
      },
      {
@@ -12261,6 +13082,49 @@
       "lambda": {
        "home": 2.9321,
        "away": 2.9719
+      },
+      "fair_home": 102,
+      "fair_away": -102,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1797,
+        0
+       ],
+       "-1.5": [
+        0.2849,
+        0
+       ],
+       "1.5": [
+        0.7041,
+        0
+       ],
+       "2.5": [
+        0.8118,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5491,
+        0.2256
+       ],
+       "6": [
+        0.4393,
+        0.1098
+       ],
+       "7": [
+        0.2405,
+        0.1989
+       ],
+       "5.5": [
+        0.5491,
+        0
+       ],
+       "6.5": [
+        0.4393,
+        0
+       ]
       }
      },
      {
@@ -12274,6 +13138,49 @@
       "lambda": {
        "home": 2.9294,
        "away": 3.0142
+      },
+      "fair_home": 105,
+      "fair_away": -105,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1759,
+        0
+       ],
+       "-1.5": [
+        0.2797,
+        0
+       ],
+       "1.5": [
+        0.697,
+        0
+       ],
+       "2.5": [
+        0.8058,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5558,
+        0.2237
+       ],
+       "6": [
+        0.446,
+        0.1098
+       ],
+       "7": [
+        0.246,
+        0.2
+       ],
+       "5.5": [
+        0.5558,
+        0
+       ],
+       "6.5": [
+        0.446,
+        0
+       ]
       }
      },
      {
@@ -12287,6 +13194,49 @@
       "lambda": {
        "home": 2.9205,
        "away": 3.0166
+      },
+      "fair_home": 106,
+      "fair_away": -106,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1746,
+        0
+       ],
+       "-1.5": [
+        0.278,
+        0
+       ],
+       "1.5": [
+        0.6956,
+        0
+       ],
+       "2.5": [
+        0.8047,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5547,
+        0.224
+       ],
+       "6": [
+        0.4449,
+        0.1098
+       ],
+       "7": [
+        0.2451,
+        0.1998
+       ],
+       "5.5": [
+        0.5547,
+        0
+       ],
+       "6.5": [
+        0.4449,
+        0
+       ]
       }
      }
     ],
@@ -13189,6 +14139,49 @@
       "lambda": {
        "home": 3.0477,
        "away": 2.99
+      },
+      "fair_home": -104,
+      "fair_away": 104,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1936,
+        0
+       ],
+       "-1.5": [
+        0.3011,
+        0
+       ],
+       "1.5": [
+        0.7146,
+        0
+       ],
+       "2.5": [
+        0.8188,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5714,
+        0.2191
+       ],
+       "6": [
+        0.4618,
+        0.1096
+       ],
+       "7": [
+        0.2593,
+        0.2025
+       ],
+       "5.5": [
+        0.5714,
+        0
+       ],
+       "6.5": [
+        0.4618,
+        0
+       ]
       }
      },
      {
@@ -13202,6 +14195,49 @@
       "lambda": {
        "home": 3.144,
        "away": 2.9652
+      },
+      "fair_home": -113,
+      "fair_away": 113,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.209,
+        0
+       ],
+       "-1.5": [
+        0.3194,
+        0
+       ],
+       "1.5": [
+        0.7292,
+        0
+       ],
+       "2.5": [
+        0.8295,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5831,
+        0.2154
+       ],
+       "6": [
+        0.4737,
+        0.1094
+       ],
+       "7": [
+        0.2695,
+        0.2042
+       ],
+       "5.5": [
+        0.5831,
+        0
+       ],
+       "6.5": [
+        0.4737,
+        0
+       ]
       }
      },
      {
@@ -13215,6 +14251,49 @@
       "lambda": {
        "home": 3.0368,
        "away": 3.0312
+      },
+      "fair_home": -101,
+      "fair_away": 101,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1887,
+        0
+       ],
+       "-1.5": [
+        0.2946,
+        0
+       ],
+       "1.5": [
+        0.7069,
+        0
+       ],
+       "2.5": [
+        0.8125,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5764,
+        0.2176
+       ],
+       "6": [
+        0.4669,
+        0.1095
+       ],
+       "7": [
+        0.2636,
+        0.2033
+       ],
+       "5.5": [
+        0.5764,
+        0
+       ],
+       "6.5": [
+        0.4669,
+        0
+       ]
       }
      },
      {
@@ -13228,6 +14307,49 @@
       "lambda": {
        "home": 3.1329,
        "away": 3.0062
+      },
+      "fair_home": -109,
+      "fair_away": 109,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2039,
+        0
+       ],
+       "-1.5": [
+        0.3127,
+        0
+       ],
+       "1.5": [
+        0.7217,
+        0
+       ],
+       "2.5": [
+        0.8234,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.588,
+        0.2139
+       ],
+       "6": [
+        0.4787,
+        0.1092
+       ],
+       "7": [
+        0.2739,
+        0.2049
+       ],
+       "5.5": [
+        0.588,
+        0
+       ],
+       "6.5": [
+        0.4787,
+        0
+       ]
       }
      }
     ],
@@ -14139,6 +15261,49 @@
       "lambda": {
        "home": 3.0441,
        "away": 2.7868
+      },
+      "fair_home": -119,
+      "fair_away": 119,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.211,
+        0
+       ],
+       "-1.5": [
+        0.3253,
+        0
+       ],
+       "1.5": [
+        0.7458,
+        0
+       ],
+       "2.5": [
+        0.8445,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5366,
+        0.2289
+       ],
+       "6": [
+        0.4267,
+        0.11
+       ],
+       "7": [
+        0.2303,
+        0.1964
+       ],
+       "5.5": [
+        0.5366,
+        0
+       ],
+       "6.5": [
+        0.4267,
+        0
+       ]
       }
      },
      {
@@ -14152,6 +15317,49 @@
       "lambda": {
        "home": 3.1612,
        "away": 2.7576
+      },
+      "fair_home": -131,
+      "fair_away": 131,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2307,
+        0
+       ],
+       "-1.5": [
+        0.3483,
+        0
+       ],
+       "1.5": [
+        0.7624,
+        0
+       ],
+       "2.5": [
+        0.8563,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5514,
+        0.2247
+       ],
+       "6": [
+        0.4411,
+        0.1103
+       ],
+       "7": [
+        0.2423,
+        0.1988
+       ],
+       "5.5": [
+        0.5514,
+        0
+       ],
+       "6.5": [
+        0.4411,
+        0
+       ]
       }
      },
      {
@@ -14165,6 +15373,49 @@
       "lambda": {
        "home": 3.0337,
        "away": 2.8249
+      },
+      "fair_home": -115,
+      "fair_away": 115,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.206,
+        0
+       ],
+       "-1.5": [
+        0.3188,
+        0
+       ],
+       "1.5": [
+        0.7388,
+        0
+       ],
+       "2.5": [
+        0.839,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5414,
+        0.2276
+       ],
+       "6": [
+        0.4315,
+        0.1099
+       ],
+       "7": [
+        0.2341,
+        0.1973
+       ],
+       "5.5": [
+        0.5414,
+        0
+       ],
+       "6.5": [
+        0.4315,
+        0
+       ]
       }
      },
      {
@@ -14178,6 +15429,49 @@
       "lambda": {
        "home": 3.1506,
        "away": 2.7956
+      },
+      "fair_home": -126,
+      "fair_away": 126,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2255,
+        0
+       ],
+       "-1.5": [
+        0.3417,
+        0
+       ],
+       "1.5": [
+        0.7556,
+        0
+       ],
+       "2.5": [
+        0.851,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5561,
+        0.2234
+       ],
+       "6": [
+        0.4459,
+        0.1102
+       ],
+       "7": [
+        0.2462,
+        0.1997
+       ],
+       "5.5": [
+        0.5561,
+        0
+       ],
+       "6.5": [
+        0.4459,
+        0
+       ]
       }
      }
     ],
@@ -15098,6 +16392,49 @@
       "lambda": {
        "home": 3.6035,
        "away": 2.8348
+      },
+      "fair_home": -162,
+      "fair_away": 162,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2894,
+        0
+       ],
+       "-1.5": [
+        0.4104,
+        0
+       ],
+       "1.5": [
+        0.7936,
+        0
+       ],
+       "2.5": [
+        0.8755,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6346,
+        0.1974
+       ],
+       "6": [
+        0.526,
+        0.1086
+       ],
+       "7": [
+        0.3177,
+        0.2083
+       ],
+       "5.5": [
+        0.6346,
+        0
+       ],
+       "6.5": [
+        0.526,
+        0
+       ]
       }
      },
      {
@@ -15111,6 +16448,49 @@
       "lambda": {
        "home": 3.5333,
        "away": 2.8514
+      },
+      "fair_home": -154,
+      "fair_away": 154,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2769,
+        0
+       ],
+       "-1.5": [
+        0.3968,
+        0
+       ],
+       "1.5": [
+        0.785,
+        0
+       ],
+       "2.5": [
+        0.8695,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6265,
+        0.2004
+       ],
+       "6": [
+        0.5177,
+        0.1088
+       ],
+       "7": [
+        0.3097,
+        0.208
+       ],
+       "5.5": [
+        0.6265,
+        0
+       ],
+       "6.5": [
+        0.5177,
+        0
+       ]
       }
      },
      {
@@ -15124,6 +16504,49 @@
       "lambda": {
        "home": 3.5997,
        "away": 2.848
+      },
+      "fair_home": -161,
+      "fair_away": 161,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2874,
+        0
+       ],
+       "-1.5": [
+        0.408,
+        0
+       ],
+       "1.5": [
+        0.7915,
+        0
+       ],
+       "2.5": [
+        0.8739,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6361,
+        0.1969
+       ],
+       "6": [
+        0.5276,
+        0.1085
+       ],
+       "7": [
+        0.3191,
+        0.2085
+       ],
+       "5.5": [
+        0.6361,
+        0
+       ],
+       "6.5": [
+        0.5276,
+        0
+       ]
       }
      },
      {
@@ -15137,6 +16560,49 @@
       "lambda": {
        "home": 3.5295,
        "away": 2.8646
+      },
+      "fair_home": -152,
+      "fair_away": 152,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2749,
+        0
+       ],
+       "-1.5": [
+        0.3944,
+        0
+       ],
+       "1.5": [
+        0.7829,
+        0
+       ],
+       "2.5": [
+        0.8679,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.628,
+        0.1999
+       ],
+       "6": [
+        0.5193,
+        0.1087
+       ],
+       "7": [
+        0.3111,
+        0.2082
+       ],
+       "5.5": [
+        0.628,
+        0
+       ],
+       "6.5": [
+        0.5193,
+        0
+       ]
       }
      }
     ],
@@ -16057,6 +17523,49 @@
       "lambda": {
        "home": 2.9352,
        "away": 3.3087
+      },
+      "fair_home": 126,
+      "fair_away": -126,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1547,
+        0
+       ],
+       "-1.5": [
+        0.2488,
+        0
+       ],
+       "1.5": [
+        0.6504,
+        0
+       ],
+       "2.5": [
+        0.7649,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6047,
+        0.2083
+       ],
+       "6": [
+        0.4957,
+        0.109
+       ],
+       "7": [
+        0.2891,
+        0.2066
+       ],
+       "5.5": [
+        0.6047,
+        0
+       ],
+       "6.5": [
+        0.4957,
+        0
+       ]
       }
      },
      {
@@ -16070,6 +17579,49 @@
       "lambda": {
        "home": 2.9461,
        "away": 3.3056
+      },
+      "fair_home": 125,
+      "fair_away": -125,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1562,
+        0
+       ],
+       "-1.5": [
+        0.2507,
+        0
+       ],
+       "1.5": [
+        0.6523,
+        0
+       ],
+       "2.5": [
+        0.7663,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.606,
+        0.2079
+       ],
+       "6": [
+        0.497,
+        0.1089
+       ],
+       "7": [
+        0.2902,
+        0.2068
+       ],
+       "5.5": [
+        0.606,
+        0
+       ],
+       "6.5": [
+        0.497,
+        0
+       ]
       }
      },
      {
@@ -16083,6 +17635,49 @@
       "lambda": {
        "home": 2.9268,
        "away": 3.3428
+      },
+      "fair_home": 129,
+      "fair_away": -129,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1514,
+        0
+       ],
+       "-1.5": [
+        0.2441,
+        0
+       ],
+       "1.5": [
+        0.6439,
+        0
+       ],
+       "2.5": [
+        0.7591,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6087,
+        0.2069
+       ],
+       "6": [
+        0.4998,
+        0.1089
+       ],
+       "7": [
+        0.2928,
+        0.207
+       ],
+       "5.5": [
+        0.6087,
+        0
+       ],
+       "6.5": [
+        0.4998,
+        0
+       ]
       }
      },
      {
@@ -16096,6 +17691,49 @@
       "lambda": {
        "home": 2.9377,
        "away": 3.3397
+      },
+      "fair_home": 128,
+      "fair_away": -128,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1529,
+        0
+       ],
+       "-1.5": [
+        0.246,
+        0
+       ],
+       "1.5": [
+        0.6457,
+        0
+       ],
+       "2.5": [
+        0.7606,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.61,
+        0.2065
+       ],
+       "6": [
+        0.5011,
+        0.1088
+       ],
+       "7": [
+        0.294,
+        0.2071
+       ],
+       "5.5": [
+        0.61,
+        0
+       ],
+       "6.5": [
+        0.5011,
+        0
+       ]
       }
      }
     ],
@@ -17015,6 +18653,49 @@
       "lambda": {
        "home": 3.3136,
        "away": 2.5422
+      },
+      "fair_home": -167,
+      "fair_away": 167,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2764,
+        0
+       ],
+       "-1.5": [
+        0.4032,
+        0
+       ],
+       "1.5": [
+        0.8078,
+        0
+       ],
+       "2.5": [
+        0.8896,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5404,
+        0.227
+       ],
+       "6": [
+        0.4286,
+        0.1118
+       ],
+       "7": [
+        0.2331,
+        0.1955
+       ],
+       "5.5": [
+        0.5404,
+        0
+       ],
+       "6.5": [
+        0.4286,
+        0
+       ]
       }
      },
      {
@@ -17028,6 +18709,49 @@
       "lambda": {
        "home": 3.2734,
        "away": 2.5515
+      },
+      "fair_home": -161,
+      "fair_away": 161,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.269,
+        0
+       ],
+       "-1.5": [
+        0.395,
+        0
+       ],
+       "1.5": [
+        0.803,
+        0
+       ],
+       "2.5": [
+        0.8863,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5352,
+        0.2285
+       ],
+       "6": [
+        0.4237,
+        0.1115
+       ],
+       "7": [
+        0.229,
+        0.1947
+       ],
+       "5.5": [
+        0.5352,
+        0
+       ],
+       "6.5": [
+        0.4237,
+        0
+       ]
       }
      },
      {
@@ -17041,6 +18765,49 @@
       "lambda": {
        "home": 3.2814,
        "away": 2.6522
+      },
+      "fair_home": -151,
+      "fair_away": 151,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2595,
+        0
+       ],
+       "-1.5": [
+        0.3824,
+        0
+       ],
+       "1.5": [
+        0.7895,
+        0
+       ],
+       "2.5": [
+        0.876,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5537,
+        0.2237
+       ],
+       "6": [
+        0.4426,
+        0.1111
+       ],
+       "7": [
+        0.2441,
+        0.1985
+       ],
+       "5.5": [
+        0.5537,
+        0
+       ],
+       "6.5": [
+        0.4426,
+        0
+       ]
       }
      },
      {
@@ -17054,6 +18821,49 @@
       "lambda": {
        "home": 3.2414,
        "away": 2.6617
+      },
+      "fair_home": -146,
+      "fair_away": 146,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2524,
+        0
+       ],
+       "-1.5": [
+        0.3744,
+        0
+       ],
+       "1.5": [
+        0.7844,
+        0
+       ],
+       "2.5": [
+        0.8725,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5486,
+        0.2252
+       ],
+       "6": [
+        0.4377,
+        0.1109
+       ],
+       "7": [
+        0.24,
+        0.1978
+       ],
+       "5.5": [
+        0.5486,
+        0
+       ],
+       "6.5": [
+        0.4377,
+        0
+       ]
       }
      }
     ],
@@ -17983,6 +19793,49 @@
       "lambda": {
        "home": 3.4651,
        "away": 2.6918
+      },
+      "fair_home": -165,
+      "fair_away": 165,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2838,
+        0
+       ],
+       "-1.5": [
+        0.4076,
+        0
+       ],
+       "1.5": [
+        0.8007,
+        0
+       ],
+       "2.5": [
+        0.8825,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5904,
+        0.2124
+       ],
+       "6": [
+        0.4795,
+        0.111
+       ],
+       "7": [
+        0.2758,
+        0.2036
+       ],
+       "5.5": [
+        0.5904,
+        0
+       ],
+       "6.5": [
+        0.4795,
+        0
+       ]
       }
      },
      {
@@ -17996,6 +19849,49 @@
       "lambda": {
        "home": 3.5362,
        "away": 2.6753
+      },
+      "fair_home": -174,
+      "fair_away": 174,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2967,
+        0
+       ],
+       "-1.5": [
+        0.4216,
+        0
+       ],
+       "1.5": [
+        0.8091,
+        0
+       ],
+       "2.5": [
+        0.8881,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5991,
+        0.2094
+       ],
+       "6": [
+        0.488,
+        0.111
+       ],
+       "7": [
+        0.2837,
+        0.2044
+       ],
+       "5.5": [
+        0.5991,
+        0
+       ],
+       "6.5": [
+        0.488,
+        0
+       ]
       }
      },
      {
@@ -18009,6 +19905,49 @@
       "lambda": {
        "home": 3.4553,
        "away": 2.7252
+      },
+      "fair_home": -160,
+      "fair_away": 160,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2786,
+        0
+       ],
+       "-1.5": [
+        0.4013,
+        0
+       ],
+       "1.5": [
+        0.7953,
+        0
+       ],
+       "2.5": [
+        0.8784,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5943,
+        0.2112
+       ],
+       "6": [
+        0.4836,
+        0.1106
+       ],
+       "7": [
+        0.2794,
+        0.2043
+       ],
+       "5.5": [
+        0.5943,
+        0
+       ],
+       "6.5": [
+        0.4836,
+        0
+       ]
       }
      },
      {
@@ -18022,6 +19961,49 @@
       "lambda": {
        "home": 3.5263,
        "away": 2.7086
+      },
+      "fair_home": -169,
+      "fair_away": 169,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2914,
+        0
+       ],
+       "-1.5": [
+        0.4153,
+        0
+       ],
+       "1.5": [
+        0.8038,
+        0
+       ],
+       "2.5": [
+        0.8842,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6029,
+        0.2083
+       ],
+       "6": [
+        0.4922,
+        0.1107
+       ],
+       "7": [
+        0.2872,
+        0.205
+       ],
+       "5.5": [
+        0.6029,
+        0
+       ],
+       "6.5": [
+        0.4922,
+        0
+       ]
       }
      }
     ],
@@ -18942,6 +20924,49 @@
       "lambda": {
        "home": 3.522,
        "away": 2.516
+      },
+      "fair_home": -193,
+      "fair_away": 193,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.3129,
+        0
+       ],
+       "-1.5": [
+        0.4421,
+        0
+       ],
+       "1.5": [
+        0.8289,
+        0
+       ],
+       "2.5": [
+        0.903,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5706,
+        0.2179
+       ],
+       "6": [
+        0.4578,
+        0.1128
+       ],
+       "7": [
+        0.2583,
+        0.1995
+       ],
+       "5.5": [
+        0.5706,
+        0
+       ],
+       "6.5": [
+        0.4578,
+        0
+       ]
       }
      },
      {
@@ -18955,6 +20980,49 @@
       "lambda": {
        "home": 3.5495,
        "away": 2.5098
+      },
+      "fair_home": -197,
+      "fair_away": 197,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.3181,
+        0
+       ],
+       "-1.5": [
+        0.4476,
+        0
+       ],
+       "1.5": [
+        0.8318,
+        0
+       ],
+       "2.5": [
+        0.9049,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5741,
+        0.2168
+       ],
+       "6": [
+        0.4612,
+        0.1129
+       ],
+       "7": [
+        0.2613,
+        0.1999
+       ],
+       "5.5": [
+        0.5741,
+        0
+       ],
+       "6.5": [
+        0.4612,
+        0
+       ]
       }
      },
      {
@@ -18968,6 +21036,49 @@
       "lambda": {
        "home": 3.527,
        "away": 2.4997
+      },
+      "fair_home": -196,
+      "fair_away": 196,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.3157,
+        0
+       ],
+       "-1.5": [
+        0.4453,
+        0
+       ],
+       "1.5": [
+        0.8314,
+        0
+       ],
+       "2.5": [
+        0.9048,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5687,
+        0.2184
+       ],
+       "6": [
+        0.4557,
+        0.113
+       ],
+       "7": [
+        0.2566,
+        0.1991
+       ],
+       "5.5": [
+        0.5687,
+        0
+       ],
+       "6.5": [
+        0.4557,
+        0
+       ]
       }
      },
      {
@@ -18981,6 +21092,49 @@
       "lambda": {
        "home": 3.5545,
        "away": 2.4936
+      },
+      "fair_home": -200,
+      "fair_away": 200,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.3209,
+        0
+       ],
+       "-1.5": [
+        0.4508,
+        0
+       ],
+       "1.5": [
+        0.8343,
+        0
+       ],
+       "2.5": [
+        0.9067,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5722,
+        0.2173
+       ],
+       "6": [
+        0.4591,
+        0.1131
+       ],
+       "7": [
+        0.2596,
+        0.1995
+       ],
+       "5.5": [
+        0.5722,
+        0
+       ],
+       "6.5": [
+        0.4591,
+        0
+       ]
       }
      }
     ],
@@ -19893,6 +22047,49 @@
       "lambda": {
        "home": 3.1181,
        "away": 3.0679
+      },
+      "fair_home": -104,
+      "fair_away": 104,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1966,
+        0
+       ],
+       "-1.5": [
+        0.3031,
+        0
+       ],
+       "1.5": [
+        0.7105,
+        0
+       ],
+       "2.5": [
+        0.8142,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5956,
+        0.2115
+       ],
+       "6": [
+        0.4866,
+        0.109
+       ],
+       "7": [
+        0.2807,
+        0.2059
+       ],
+       "5.5": [
+        0.5956,
+        0
+       ],
+       "6.5": [
+        0.4866,
+        0
+       ]
       }
      },
      {
@@ -19906,6 +22103,49 @@
       "lambda": {
        "home": 3.0953,
        "away": 3.0739
+      },
+      "fair_home": -102,
+      "fair_away": 102,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.193,
+        0
+       ],
+       "-1.5": [
+        0.2988,
+        0
+       ],
+       "1.5": [
+        0.707,
+        0
+       ],
+       "2.5": [
+        0.8116,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5929,
+        0.2124
+       ],
+       "6": [
+        0.4838,
+        0.109
+       ],
+       "7": [
+        0.2783,
+        0.2056
+       ],
+       "5.5": [
+        0.5929,
+        0
+       ],
+       "6.5": [
+        0.4838,
+        0
+       ]
       }
      },
      {
@@ -19919,6 +22159,49 @@
       "lambda": {
        "home": 3.1091,
        "away": 3.1021
+      },
+      "fair_home": -101,
+      "fair_away": 101,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1925,
+        0
+       ],
+       "-1.5": [
+        0.2977,
+        0
+       ],
+       "1.5": [
+        0.7042,
+        0
+       ],
+       "2.5": [
+        0.809,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5996,
+        0.2102
+       ],
+       "6": [
+        0.4908,
+        0.1088
+       ],
+       "7": [
+        0.2844,
+        0.2064
+       ],
+       "5.5": [
+        0.5996,
+        0
+       ],
+       "6.5": [
+        0.4908,
+        0
+       ]
       }
      },
      {
@@ -19932,6 +22215,49 @@
       "lambda": {
        "home": 3.0863,
        "away": 3.1081
+      },
+      "fair_home": 101,
+      "fair_away": -101,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.189,
+        0
+       ],
+       "-1.5": [
+        0.2934,
+        0
+       ],
+       "1.5": [
+        0.7007,
+        0
+       ],
+       "2.5": [
+        0.8063,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5969,
+        0.2111
+       ],
+       "6": [
+        0.488,
+        0.1089
+       ],
+       "7": [
+        0.2819,
+        0.2061
+       ],
+       "5.5": [
+        0.5969,
+        0
+       ],
+       "6.5": [
+        0.488,
+        0
+       ]
       }
      }
     ],
@@ -20843,6 +23169,49 @@
       "lambda": {
        "home": 3.3077,
        "away": 2.6048
+      },
+      "fair_home": -159,
+      "fair_away": 159,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2686,
+        0
+       ],
+       "-1.5": [
+        0.3934,
+        0
+       ],
+       "1.5": [
+        0.7986,
+        0
+       ],
+       "2.5": [
+        0.8826,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5501,
+        0.2245
+       ],
+       "6": [
+        0.4386,
+        0.1114
+       ],
+       "7": [
+        0.2411,
+        0.1976
+       ],
+       "5.5": [
+        0.5501,
+        0
+       ],
+       "6.5": [
+        0.4386,
+        0
+       ]
       }
      },
      {
@@ -20856,6 +23225,49 @@
       "lambda": {
        "home": 3.356,
        "away": 2.5935
+      },
+      "fair_home": -165,
+      "fair_away": 165,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2774,
+        0
+       ],
+       "-1.5": [
+        0.4031,
+        0
+       ],
+       "1.5": [
+        0.8045,
+        0
+       ],
+       "2.5": [
+        0.8866,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5562,
+        0.2227
+       ],
+       "6": [
+        0.4446,
+        0.1117
+       ],
+       "7": [
+        0.2462,
+        0.1984
+       ],
+       "5.5": [
+        0.5562,
+        0
+       ],
+       "6.5": [
+        0.4446,
+        0
+       ]
       }
      },
      {
@@ -20869,6 +23281,49 @@
       "lambda": {
        "home": 3.2937,
        "away": 2.6529
+      },
+      "fair_home": -152,
+      "fair_away": 152,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2613,
+        0
+       ],
+       "-1.5": [
+        0.3844,
+        0
+       ],
+       "1.5": [
+        0.7905,
+        0
+       ],
+       "2.5": [
+        0.8766,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5559,
+        0.223
+       ],
+       "6": [
+        0.4448,
+        0.1111
+       ],
+       "7": [
+        0.2459,
+        0.1988
+       ],
+       "5.5": [
+        0.5559,
+        0
+       ],
+       "6.5": [
+        0.4448,
+        0
+       ]
       }
      },
      {
@@ -20882,6 +23337,49 @@
       "lambda": {
        "home": 3.3419,
        "away": 2.6416
+      },
+      "fair_home": -158,
+      "fair_away": 158,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.27,
+        0
+       ],
+       "-1.5": [
+        0.394,
+        0
+       ],
+       "1.5": [
+        0.7966,
+        0
+       ],
+       "2.5": [
+        0.8807,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.562,
+        0.2212
+       ],
+       "6": [
+        0.4507,
+        0.1113
+       ],
+       "7": [
+        0.2511,
+        0.1996
+       ],
+       "5.5": [
+        0.562,
+        0
+       ],
+       "6.5": [
+        0.4507,
+        0
+       ]
       }
      }
     ],
@@ -21793,6 +24291,49 @@
       "lambda": {
        "home": 3.1228,
        "away": 3.1366
+      },
+      "fair_home": 100,
+      "fair_away": -100,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1915,
+        0
+       ],
+       "-1.5": [
+        0.2958,
+        0
+       ],
+       "1.5": [
+        0.7005,
+        0
+       ],
+       "2.5": [
+        0.8056,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6073,
+        0.2076
+       ],
+       "6": [
+        0.4988,
+        0.1085
+       ],
+       "7": [
+        0.2915,
+        0.2073
+       ],
+       "5.5": [
+        0.6073,
+        0
+       ],
+       "6.5": [
+        0.4988,
+        0
+       ]
       }
      },
      {
@@ -21806,6 +24347,49 @@
       "lambda": {
        "home": 3.1655,
        "away": 3.1254
+      },
+      "fair_home": -103,
+      "fair_away": 103,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1981,
+        0
+       ],
+       "-1.5": [
+        0.3037,
+        0
+       ],
+       "1.5": [
+        0.7071,
+        0
+       ],
+       "2.5": [
+        0.8106,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6122,
+        0.2059
+       ],
+       "6": [
+        0.5039,
+        0.1083
+       ],
+       "7": [
+        0.2962,
+        0.2078
+       ],
+       "5.5": [
+        0.6122,
+        0
+       ],
+       "6.5": [
+        0.5039,
+        0
+       ]
       }
      },
      {
@@ -21819,6 +24403,49 @@
       "lambda": {
        "home": 3.1183,
        "away": 3.1537
+      },
+      "fair_home": 102,
+      "fair_away": -102,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1895,
+        0
+       ],
+       "-1.5": [
+        0.2932,
+        0
+       ],
+       "1.5": [
+        0.6973,
+        0
+       ],
+       "2.5": [
+        0.8029,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6093,
+        0.2069
+       ],
+       "6": [
+        0.5008,
+        0.1084
+       ],
+       "7": [
+        0.2934,
+        0.2075
+       ],
+       "5.5": [
+        0.6093,
+        0
+       ],
+       "6.5": [
+        0.5008,
+        0
+       ]
       }
      },
      {
@@ -21832,6 +24459,49 @@
       "lambda": {
        "home": 3.161,
        "away": 3.1425
+      },
+      "fair_home": -102,
+      "fair_away": 102,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.196,
+        0
+       ],
+       "-1.5": [
+        0.3011,
+        0
+       ],
+       "1.5": [
+        0.7039,
+        0
+       ],
+       "2.5": [
+        0.808,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6142,
+        0.2052
+       ],
+       "6": [
+        0.506,
+        0.1082
+       ],
+       "7": [
+        0.298,
+        0.208
+       ],
+       "5.5": [
+        0.6142,
+        0
+       ],
+       "6.5": [
+        0.506,
+        0
+       ]
       }
      }
     ],
@@ -22767,6 +25437,49 @@
       "lambda": {
        "home": 3.4697,
        "away": 2.5859
+      },
+      "fair_home": -178,
+      "fair_away": 178,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2963,
+        0
+       ],
+       "-1.5": [
+        0.4232,
+        0
+       ],
+       "1.5": [
+        0.8154,
+        0
+       ],
+       "2.5": [
+        0.8935,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5737,
+        0.2173
+       ],
+       "6": [
+        0.4617,
+        0.112
+       ],
+       "7": [
+        0.261,
+        0.2007
+       ],
+       "5.5": [
+        0.5737,
+        0
+       ],
+       "6.5": [
+        0.4617,
+        0
+       ]
       }
      },
      {
@@ -22780,6 +25493,49 @@
       "lambda": {
        "home": 3.5381,
        "away": 2.5704
+      },
+      "fair_home": -187,
+      "fair_away": 187,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.3091,
+        0
+       ],
+       "-1.5": [
+        0.4369,
+        0
+       ],
+       "1.5": [
+        0.8231,
+        0
+       ],
+       "2.5": [
+        0.8986,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5823,
+        0.2145
+       ],
+       "6": [
+        0.47,
+        0.1123
+       ],
+       "7": [
+        0.2685,
+        0.2015
+       ],
+       "5.5": [
+        0.5823,
+        0
+       ],
+       "6.5": [
+        0.47,
+        0
+       ]
       }
      },
      {
@@ -22793,6 +25549,49 @@
       "lambda": {
        "home": 3.4662,
        "away": 2.5974
+      },
+      "fair_home": -176,
+      "fair_away": 176,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2945,
+        0
+       ],
+       "-1.5": [
+        0.421,
+        0
+       ],
+       "1.5": [
+        0.8135,
+        0
+       ],
+       "2.5": [
+        0.8922,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5751,
+        0.2169
+       ],
+       "6": [
+        0.4632,
+        0.1119
+       ],
+       "7": [
+        0.2622,
+        0.201
+       ],
+       "5.5": [
+        0.5751,
+        0
+       ],
+       "6.5": [
+        0.4632,
+        0
+       ]
       }
      },
      {
@@ -22806,6 +25605,49 @@
       "lambda": {
        "home": 3.5346,
        "away": 2.5818
+      },
+      "fair_home": -186,
+      "fair_away": 186,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.3072,
+        0
+       ],
+       "-1.5": [
+        0.4346,
+        0
+       ],
+       "1.5": [
+        0.8213,
+        0
+       ],
+       "2.5": [
+        0.8973,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5836,
+        0.2141
+       ],
+       "6": [
+        0.4715,
+        0.1121
+       ],
+       "7": [
+        0.2697,
+        0.2018
+       ],
+       "5.5": [
+        0.5836,
+        0
+       ],
+       "6.5": [
+        0.4715,
+        0
+       ]
       }
      }
     ],
@@ -23708,6 +26550,49 @@
       "lambda": {
        "home": 3.3429,
        "away": 2.6442
+      },
+      "fair_home": -158,
+      "fair_away": 158,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2699,
+        0
+       ],
+       "-1.5": [
+        0.3938,
+        0
+       ],
+       "1.5": [
+        0.7963,
+        0
+       ],
+       "2.5": [
+        0.8805,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5626,
+        0.221
+       ],
+       "6": [
+        0.4513,
+        0.1113
+       ],
+       "7": [
+        0.2516,
+        0.1997
+       ],
+       "5.5": [
+        0.5626,
+        0
+       ],
+       "6.5": [
+        0.4513,
+        0
+       ]
       }
      },
      {
@@ -23721,6 +26606,49 @@
       "lambda": {
        "home": 3.4189,
        "away": 2.6265
+      },
+      "fair_home": -168,
+      "fair_away": 168,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2837,
+        0
+       ],
+       "-1.5": [
+        0.409,
+        0
+       ],
+       "1.5": [
+        0.8055,
+        0
+       ],
+       "2.5": [
+        0.8866,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5722,
+        0.218
+       ],
+       "6": [
+        0.4606,
+        0.1116
+       ],
+       "7": [
+        0.2597,
+        0.2009
+       ],
+       "5.5": [
+        0.5722,
+        0
+       ],
+       "6.5": [
+        0.4606,
+        0
+       ]
       }
      },
      {
@@ -23734,6 +26662,49 @@
       "lambda": {
        "home": 3.3437,
        "away": 2.6416
+      },
+      "fair_home": -158,
+      "fair_away": 158,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2703,
+        0
+       ],
+       "-1.5": [
+        0.3943,
+        0
+       ],
+       "1.5": [
+        0.7967,
+        0
+       ],
+       "2.5": [
+        0.8808,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5623,
+        0.2211
+       ],
+       "6": [
+        0.451,
+        0.1113
+       ],
+       "7": [
+        0.2513,
+        0.1997
+       ],
+       "5.5": [
+        0.5623,
+        0
+       ],
+       "6.5": [
+        0.451,
+        0
+       ]
       }
      },
      {
@@ -23747,6 +26718,49 @@
       "lambda": {
        "home": 3.4197,
        "away": 2.6239
+      },
+      "fair_home": -168,
+      "fair_away": 168,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2841,
+        0
+       ],
+       "-1.5": [
+        0.4095,
+        0
+       ],
+       "1.5": [
+        0.806,
+        0
+       ],
+       "2.5": [
+        0.887,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5718,
+        0.2181
+       ],
+       "6": [
+        0.4603,
+        0.1116
+       ],
+       "7": [
+        0.2594,
+        0.2008
+       ],
+       "5.5": [
+        0.5718,
+        0
+       ],
+       "6.5": [
+        0.4603,
+        0
+       ]
       }
      }
     ],
@@ -24657,6 +27671,49 @@
       "lambda": {
        "home": 2.9306,
        "away": 2.9394
+      },
+      "fair_home": 100,
+      "fair_away": -100,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1821,
+        0
+       ],
+       "-1.5": [
+        0.2884,
+        0
+       ],
+       "1.5": [
+        0.7091,
+        0
+       ],
+       "2.5": [
+        0.816,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5433,
+        0.2272
+       ],
+       "6": [
+        0.4336,
+        0.1098
+       ],
+       "7": [
+        0.2357,
+        0.1978
+       ],
+       "5.5": [
+        0.5433,
+        0
+       ],
+       "6.5": [
+        0.4336,
+        0
+       ]
       }
      },
      {
@@ -24670,6 +27727,49 @@
       "lambda": {
        "home": 3.0068,
        "away": 2.9194
+      },
+      "fair_home": -106,
+      "fair_away": 106,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1941,
+        0
+       ],
+       "-1.5": [
+        0.303,
+        0
+       ],
+       "1.5": [
+        0.721,
+        0
+       ],
+       "2.5": [
+        0.8248,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5528,
+        0.2245
+       ],
+       "6": [
+        0.443,
+        0.1098
+       ],
+       "7": [
+        0.2435,
+        0.1995
+       ],
+       "5.5": [
+        0.5528,
+        0
+       ],
+       "6.5": [
+        0.443,
+        0
+       ]
       }
      },
      {
@@ -24683,6 +27783,49 @@
       "lambda": {
        "home": 2.9039,
        "away": 3.0418
+      },
+      "fair_home": 109,
+      "fair_away": -109,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1705,
+        0
+       ],
+       "-1.5": [
+        0.2726,
+        0
+       ],
+       "1.5": [
+        0.6895,
+        0
+       ],
+       "2.5": [
+        0.7998,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5561,
+        0.2236
+       ],
+       "6": [
+        0.4463,
+        0.1098
+       ],
+       "7": [
+        0.2462,
+        0.2
+       ],
+       "5.5": [
+        0.5561,
+        0
+       ],
+       "6.5": [
+        0.4463,
+        0
+       ]
       }
      },
      {
@@ -24696,6 +27839,49 @@
       "lambda": {
        "home": 2.9799,
        "away": 3.0215
+      },
+      "fair_home": 102,
+      "fair_away": -102,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.182,
+        0
+       ],
+       "-1.5": [
+        0.2868,
+        0
+       ],
+       "1.5": [
+        0.7018,
+        0
+       ],
+       "2.5": [
+        0.809,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5654,
+        0.2209
+       ],
+       "6": [
+        0.4557,
+        0.1097
+       ],
+       "7": [
+        0.2541,
+        0.2016
+       ],
+       "5.5": [
+        0.5654,
+        0
+       ],
+       "6.5": [
+        0.4557,
+        0
+       ]
       }
      }
     ],
@@ -25598,6 +28784,49 @@
       "lambda": {
        "home": 3.0736,
        "away": 2.9821
+      },
+      "fair_home": -106,
+      "fair_away": 106,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1978,
+        0
+       ],
+       "-1.5": [
+        0.3062,
+        0
+       ],
+       "1.5": [
+        0.7188,
+        0
+       ],
+       "2.5": [
+        0.8219,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5744,
+        0.2182
+       ],
+       "6": [
+        0.4648,
+        0.1096
+       ],
+       "7": [
+        0.2618,
+        0.203
+       ],
+       "5.5": [
+        0.5744,
+        0
+       ],
+       "6.5": [
+        0.4648,
+        0
+       ]
       }
      },
      {
@@ -25611,6 +28840,49 @@
       "lambda": {
        "home": 3.2019,
        "away": 2.9492
+      },
+      "fair_home": -118,
+      "fair_away": 118,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2186,
+        0
+       ],
+       "-1.5": [
+        0.3307,
+        0
+       ],
+       "1.5": [
+        0.7379,
+        0
+       ],
+       "2.5": [
+        0.8359,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5899,
+        0.2133
+       ],
+       "6": [
+        0.4805,
+        0.1093
+       ],
+       "7": [
+        0.2755,
+        0.205
+       ],
+       "5.5": [
+        0.5899,
+        0
+       ],
+       "6.5": [
+        0.4805,
+        0
+       ]
       }
      },
      {
@@ -25624,6 +28896,49 @@
       "lambda": {
        "home": 3.0762,
        "away": 2.972
+      },
+      "fair_home": -107,
+      "fair_away": 107,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1991,
+        0
+       ],
+       "-1.5": [
+        0.3078,
+        0
+       ],
+       "1.5": [
+        0.7207,
+        0
+       ],
+       "2.5": [
+        0.8234,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5731,
+        0.2186
+       ],
+       "6": [
+        0.4636,
+        0.1096
+       ],
+       "7": [
+        0.2608,
+        0.2028
+       ],
+       "5.5": [
+        0.5731,
+        0
+       ],
+       "6.5": [
+        0.4636,
+        0
+       ]
       }
      },
      {
@@ -25637,6 +28952,49 @@
       "lambda": {
        "home": 3.2046,
        "away": 2.9392
+      },
+      "fair_home": -119,
+      "fair_away": 119,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2199,
+        0
+       ],
+       "-1.5": [
+        0.3323,
+        0
+       ],
+       "1.5": [
+        0.7397,
+        0
+       ],
+       "2.5": [
+        0.8373,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5887,
+        0.2136
+       ],
+       "6": [
+        0.4793,
+        0.1094
+       ],
+       "7": [
+        0.2745,
+        0.2048
+       ],
+       "5.5": [
+        0.5887,
+        0
+       ],
+       "6.5": [
+        0.4793,
+        0
+       ]
       }
      }
     ],
@@ -26549,6 +29907,49 @@
       "lambda": {
        "home": 3.2916,
        "away": 2.7142
+      },
+      "fair_home": -146,
+      "fair_away": 146,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2546,
+        0
+       ],
+       "-1.5": [
+        0.3757,
+        0
+       ],
+       "1.5": [
+        0.7816,
+        0
+       ],
+       "2.5": [
+        0.8697,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5658,
+        0.2203
+       ],
+       "6": [
+        0.4551,
+        0.1107
+       ],
+       "7": [
+        0.2544,
+        0.2007
+       ],
+       "5.5": [
+        0.5658,
+        0
+       ],
+       "6.5": [
+        0.4551,
+        0
+       ]
       }
      },
      {
@@ -26562,6 +29963,49 @@
       "lambda": {
        "home": 3.2563,
        "away": 2.7227
+      },
+      "fair_home": -142,
+      "fair_away": 142,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2484,
+        0
+       ],
+       "-1.5": [
+        0.3687,
+        0
+       ],
+       "1.5": [
+        0.777,
+        0
+       ],
+       "2.5": [
+        0.8665,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5614,
+        0.2216
+       ],
+       "6": [
+        0.4508,
+        0.1106
+       ],
+       "7": [
+        0.2506,
+        0.2001
+       ],
+       "5.5": [
+        0.5614,
+        0
+       ],
+       "6.5": [
+        0.4508,
+        0
+       ]
       }
      },
      {
@@ -26575,6 +30019,49 @@
       "lambda": {
        "home": 3.2808,
        "away": 2.752
+      },
+      "fair_home": -141,
+      "fair_away": 141,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2491,
+        0
+       ],
+       "-1.5": [
+        0.3689,
+        0
+       ],
+       "1.5": [
+        0.7751,
+        0
+       ],
+       "2.5": [
+        0.8648,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5704,
+        0.219
+       ],
+       "6": [
+        0.4599,
+        0.1105
+       ],
+       "7": [
+        0.2583,
+        0.2016
+       ],
+       "5.5": [
+        0.5704,
+        0
+       ],
+       "6.5": [
+        0.4599,
+        0
+       ]
       }
      },
      {
@@ -26588,6 +30075,49 @@
       "lambda": {
        "home": 3.2455,
        "away": 2.7605
+      },
+      "fair_home": -137,
+      "fair_away": 137,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.243,
+        0
+       ],
+       "-1.5": [
+        0.3619,
+        0
+       ],
+       "1.5": [
+        0.7704,
+        0
+       ],
+       "2.5": [
+        0.8615,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.566,
+        0.2204
+       ],
+       "6": [
+        0.4555,
+        0.1104
+       ],
+       "7": [
+        0.2545,
+        0.201
+       ],
+       "5.5": [
+        0.566,
+        0
+       ],
+       "6.5": [
+        0.4555,
+        0
+       ]
       }
      }
     ],
@@ -27507,6 +31037,49 @@
       "lambda": {
        "home": 3.1771,
        "away": 2.6558
+      },
+      "fair_home": -141,
+      "fair_away": 141,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2432,
+        0
+       ],
+       "-1.5": [
+        0.3644,
+        0
+       ],
+       "1.5": [
+        0.779,
+        0
+       ],
+       "2.5": [
+        0.8691,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5368,
+        0.2285
+       ],
+       "6": [
+        0.4261,
+        0.1107
+       ],
+       "7": [
+        0.2303,
+        0.1958
+       ],
+       "5.5": [
+        0.5368,
+        0
+       ],
+       "6.5": [
+        0.4261,
+        0
+       ]
       }
      },
      {
@@ -27520,6 +31093,49 @@
       "lambda": {
        "home": 3.2628,
        "away": 2.6353
+      },
+      "fair_home": -151,
+      "fair_away": 151,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2584,
+        0
+       ],
+       "-1.5": [
+        0.3816,
+        0
+       ],
+       "1.5": [
+        0.7902,
+        0
+       ],
+       "2.5": [
+        0.8767,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5477,
+        0.2253
+       ],
+       "6": [
+        0.4366,
+        0.1111
+       ],
+       "7": [
+        0.2392,
+        0.1974
+       ],
+       "5.5": [
+        0.5477,
+        0
+       ],
+       "6.5": [
+        0.4366,
+        0
+       ]
       }
      },
      {
@@ -27533,6 +31149,49 @@
       "lambda": {
        "home": 3.153,
        "away": 2.7411
+      },
+      "fair_home": -131,
+      "fair_away": 131,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2311,
+        0
+       ],
+       "-1.5": [
+        0.3491,
+        0
+       ],
+       "1.5": [
+        0.764,
+        0
+       ],
+       "2.5": [
+        0.8577,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5473,
+        0.2258
+       ],
+       "6": [
+        0.4369,
+        0.1103
+       ],
+       "7": [
+        0.2389,
+        0.198
+       ],
+       "5.5": [
+        0.5473,
+        0
+       ],
+       "6.5": [
+        0.4369,
+        0
+       ]
       }
      },
      {
@@ -27546,6 +31205,49 @@
       "lambda": {
        "home": 3.2384,
        "away": 2.7203
+      },
+      "fair_home": -140,
+      "fair_away": 140,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2459,
+        0
+       ],
+       "-1.5": [
+        0.3661,
+        0
+       ],
+       "1.5": [
+        0.7756,
+        0
+       ],
+       "2.5": [
+        0.8657,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.558,
+        0.2226
+       ],
+       "6": [
+        0.4474,
+        0.1106
+       ],
+       "7": [
+        0.2478,
+        0.1996
+       ],
+       "5.5": [
+        0.558,
+        0
+       ],
+       "6.5": [
+        0.4474,
+        0
+       ]
       }
      }
     ],
@@ -28448,6 +32150,49 @@
       "lambda": {
        "home": 3.0707,
        "away": 3.2571
+      },
+      "fair_home": 112,
+      "fair_away": -112,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1751,
+        0
+       ],
+       "-1.5": [
+        0.2744,
+        0
+       ],
+       "1.5": [
+        0.6754,
+        0
+       ],
+       "2.5": [
+        0.7847,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.618,
+        0.2039
+       ],
+       "6": [
+        0.5099,
+        0.1081
+       ],
+       "7": [
+        0.3016,
+        0.2083
+       ],
+       "5.5": [
+        0.618,
+        0
+       ],
+       "6.5": [
+        0.5099,
+        0
+       ]
       }
      },
      {
@@ -28461,6 +32206,49 @@
       "lambda": {
        "home": 3.082,
        "away": 3.2541
+      },
+      "fair_home": 111,
+      "fair_away": -111,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1768,
+        0
+       ],
+       "-1.5": [
+        0.2764,
+        0
+       ],
+       "1.5": [
+        0.6773,
+        0
+       ],
+       "2.5": [
+        0.7861,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6193,
+        0.2035
+       ],
+       "6": [
+        0.5113,
+        0.108
+       ],
+       "7": [
+        0.3028,
+        0.2084
+       ],
+       "5.5": [
+        0.6193,
+        0
+       ],
+       "6.5": [
+        0.5113,
+        0
+       ]
       }
      },
      {
@@ -28474,6 +32262,49 @@
       "lambda": {
        "home": 3.067,
        "away": 3.2717
+      },
+      "fair_home": 113,
+      "fair_away": -113,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1736,
+        0
+       ],
+       "-1.5": [
+        0.2722,
+        0
+       ],
+       "1.5": [
+        0.6727,
+        0
+       ],
+       "2.5": [
+        0.7824,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6197,
+        0.2033
+       ],
+       "6": [
+        0.5116,
+        0.108
+       ],
+       "7": [
+        0.3032,
+        0.2084
+       ],
+       "5.5": [
+        0.6197,
+        0
+       ],
+       "6.5": [
+        0.5116,
+        0
+       ]
       }
      },
      {
@@ -28487,6 +32318,49 @@
       "lambda": {
        "home": 3.0783,
        "away": 3.2686
+      },
+      "fair_home": 112,
+      "fair_away": -112,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.1752,
+        0
+       ],
+       "-1.5": [
+        0.2743,
+        0
+       ],
+       "1.5": [
+        0.6746,
+        0
+       ],
+       "2.5": [
+        0.7838,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6209,
+        0.2029
+       ],
+       "6": [
+        0.513,
+        0.1079
+       ],
+       "7": [
+        0.3045,
+        0.2085
+       ],
+       "5.5": [
+        0.6209,
+        0
+       ],
+       "6.5": [
+        0.513,
+        0
+       ]
       }
      }
     ],
@@ -29398,6 +33272,49 @@
       "lambda": {
        "home": 2.7282,
        "away": 2.9712
+      },
+      "fair_home": 117,
+      "fair_away": -117,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1534,
+        0
+       ],
+       "-1.5": [
+        0.253,
+        0
+       ],
+       "1.5": [
+        0.6794,
+        0
+       ],
+       "2.5": [
+        0.7942,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.514,
+        0.2346
+       ],
+       "6": [
+        0.4044,
+        0.1096
+       ],
+       "7": [
+        0.2126,
+        0.1918
+       ],
+       "5.5": [
+        0.514,
+        0
+       ],
+       "6.5": [
+        0.4044,
+        0
+       ]
       }
      },
      {
@@ -29411,6 +33328,49 @@
       "lambda": {
        "home": 2.8346,
        "away": 2.9424
+      },
+      "fair_home": 107,
+      "fair_away": -107,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1692,
+        0
+       ],
+       "-1.5": [
+        0.2729,
+        0
+       ],
+       "1.5": [
+        0.6973,
+        0
+       ],
+       "2.5": [
+        0.8076,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5274,
+        0.2313
+       ],
+       "6": [
+        0.4178,
+        0.1097
+       ],
+       "7": [
+        0.223,
+        0.1947
+       ],
+       "5.5": [
+        0.5274,
+        0
+       ],
+       "6.5": [
+        0.4178,
+        0
+       ]
       }
      },
      {
@@ -29424,6 +33384,49 @@
       "lambda": {
        "home": 2.7322,
        "away": 2.9553
+      },
+      "fair_home": 115,
+      "fair_away": -115,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1551,
+        0
+       ],
+       "-1.5": [
+        0.2554,
+        0
+       ],
+       "1.5": [
+        0.6826,
+        0
+       ],
+       "2.5": [
+        0.7969,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5119,
+        0.2351
+       ],
+       "6": [
+        0.4024,
+        0.1095
+       ],
+       "7": [
+        0.211,
+        0.1914
+       ],
+       "5.5": [
+        0.5119,
+        0
+       ],
+       "6.5": [
+        0.4024,
+        0
+       ]
       }
      },
      {
@@ -29437,6 +33440,49 @@
       "lambda": {
        "home": 2.8387,
        "away": 2.9266
+      },
+      "fair_home": 105,
+      "fair_away": -105,
+      "fair_total_line": 5.5,
+      "puck_line": {
+       "-2.5": [
+        0.1709,
+        0
+       ],
+       "-1.5": [
+        0.2753,
+        0
+       ],
+       "1.5": [
+        0.7003,
+        0
+       ],
+       "2.5": [
+        0.8101,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5254,
+        0.2319
+       ],
+       "6": [
+        0.4158,
+        0.1096
+       ],
+       "7": [
+        0.2214,
+        0.1943
+       ],
+       "5.5": [
+        0.5254,
+        0
+       ],
+       "6.5": [
+        0.4158,
+        0
+       ]
       }
      }
     ],
@@ -30365,6 +34411,49 @@
       "lambda": {
        "home": 3.4491,
        "away": 2.8841
+      },
+      "fair_home": -143,
+      "fair_away": 143,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2608,
+        0
+       ],
+       "-1.5": [
+        0.3789,
+        0
+       ],
+       "1.5": [
+        0.7725,
+        0
+       ],
+       "2.5": [
+        0.8607,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6186,
+        0.2034
+       ],
+       "6": [
+        0.5097,
+        0.1089
+       ],
+       "7": [
+        0.3021,
+        0.2076
+       ],
+       "5.5": [
+        0.6186,
+        0
+       ],
+       "6.5": [
+        0.5097,
+        0
+       ]
       }
      },
      {
@@ -30378,6 +34467,49 @@
       "lambda": {
        "home": 3.3818,
        "away": 2.9004
+      },
+      "fair_home": -136,
+      "fair_away": 136,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2492,
+        0
+       ],
+       "-1.5": [
+        0.3658,
+        0
+       ],
+       "1.5": [
+        0.7637,
+        0
+       ],
+       "2.5": [
+        0.8544,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6107,
+        0.2062
+       ],
+       "6": [
+        0.5017,
+        0.109
+       ],
+       "7": [
+        0.2946,
+        0.207
+       ],
+       "5.5": [
+        0.6107,
+        0
+       ],
+       "6.5": [
+        0.5017,
+        0
+       ]
       }
      },
      {
@@ -30391,6 +34523,49 @@
       "lambda": {
        "home": 3.4404,
        "away": 2.9146
+      },
+      "fair_home": -140,
+      "fair_away": 140,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2564,
+        0
+       ],
+       "-1.5": [
+        0.3734,
+        0
+       ],
+       "1.5": [
+        0.7674,
+        0
+       ],
+       "2.5": [
+        0.8566,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.622,
+        0.2022
+       ],
+       "6": [
+        0.5135,
+        0.1086
+       ],
+       "7": [
+        0.3054,
+        0.208
+       ],
+       "5.5": [
+        0.622,
+        0
+       ],
+       "6.5": [
+        0.5135,
+        0
+       ]
       }
      },
      {
@@ -30404,6 +34579,49 @@
       "lambda": {
        "home": 3.3732,
        "away": 2.9311
+      },
+      "fair_home": -133,
+      "fair_away": 133,
+      "fair_total_line": 6.5,
+      "puck_line": {
+       "-2.5": [
+        0.2449,
+        0
+       ],
+       "-1.5": [
+        0.3605,
+        0
+       ],
+       "1.5": [
+        0.7584,
+        0
+       ],
+       "2.5": [
+        0.8502,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.6142,
+        0.205
+       ],
+       "6": [
+        0.5054,
+        0.1087
+       ],
+       "7": [
+        0.2979,
+        0.2075
+       ],
+       "5.5": [
+        0.6142,
+        0
+       ],
+       "6.5": [
+        0.5054,
+        0
+       ]
       }
      }
     ],
@@ -31332,6 +35550,49 @@
       "lambda": {
        "home": 3.2005,
        "away": 2.6873
+      },
+      "fair_home": -140,
+      "fair_away": 140,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2435,
+        0
+       ],
+       "-1.5": [
+        0.3641,
+        0
+       ],
+       "1.5": [
+        0.7767,
+        0
+       ],
+       "2.5": [
+        0.867,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5461,
+        0.226
+       ],
+       "6": [
+        0.4354,
+        0.1107
+       ],
+       "7": [
+        0.2379,
+        0.1975
+       ],
+       "5.5": [
+        0.5461,
+        0
+       ],
+       "6.5": [
+        0.4354,
+        0
+       ]
       }
      },
      {
@@ -31345,6 +35606,49 @@
       "lambda": {
        "home": 3.2258,
        "away": 2.6812
+      },
+      "fair_home": -143,
+      "fair_away": 143,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.248,
+        0
+       ],
+       "-1.5": [
+        0.3692,
+        0
+       ],
+       "1.5": [
+        0.78,
+        0
+       ],
+       "2.5": [
+        0.8693,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5493,
+        0.2251
+       ],
+       "6": [
+        0.4385,
+        0.1108
+       ],
+       "7": [
+        0.2405,
+        0.198
+       ],
+       "5.5": [
+        0.5493,
+        0
+       ],
+       "6.5": [
+        0.4385,
+        0
+       ]
       }
      },
      {
@@ -31358,6 +35662,49 @@
       "lambda": {
        "home": 3.19,
        "away": 2.7242
+      },
+      "fair_home": -136,
+      "fair_away": 136,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2383,
+        0
+       ],
+       "-1.5": [
+        0.3575,
+        0
+       ],
+       "1.5": [
+        0.7703,
+        0
+       ],
+       "2.5": [
+        0.8621,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5506,
+        0.2248
+       ],
+       "6": [
+        0.4401,
+        0.1105
+       ],
+       "7": [
+        0.2416,
+        0.1985
+       ],
+       "5.5": [
+        0.5506,
+        0
+       ],
+       "6.5": [
+        0.4401,
+        0
+       ]
       }
      },
      {
@@ -31371,6 +35718,49 @@
       "lambda": {
        "home": 3.2153,
        "away": 2.718
+      },
+      "fair_home": -139,
+      "fair_away": 139,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2427,
+        0
+       ],
+       "-1.5": [
+        0.3625,
+        0
+       ],
+       "1.5": [
+        0.7737,
+        0
+       ],
+       "2.5": [
+        0.8644,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5538,
+        0.2239
+       ],
+       "6": [
+        0.4432,
+        0.1106
+       ],
+       "7": [
+        0.2443,
+        0.1989
+       ],
+       "5.5": [
+        0.5538,
+        0
+       ],
+       "6.5": [
+        0.4432,
+        0
+       ]
       }
      }
     ],
@@ -32291,6 +36681,49 @@
       "lambda": {
        "home": 3.2894,
        "away": 2.6254
+      },
+      "fair_home": -155,
+      "fair_away": 155,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2636,
+        0
+       ],
+       "-1.5": [
+        0.3874,
+        0
+       ],
+       "1.5": [
+        0.794,
+        0
+       ],
+       "2.5": [
+        0.8794,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5505,
+        0.2245
+       ],
+       "6": [
+        0.4393,
+        0.1112
+       ],
+       "7": [
+        0.2415,
+        0.1978
+       ],
+       "5.5": [
+        0.5505,
+        0
+       ],
+       "6.5": [
+        0.4393,
+        0
+       ]
       }
      },
      {
@@ -32304,6 +36737,49 @@
       "lambda": {
        "home": 3.3374,
        "away": 2.6141
+      },
+      "fair_home": -161,
+      "fair_away": 161,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2723,
+        0
+       ],
+       "-1.5": [
+        0.3971,
+        0
+       ],
+       "1.5": [
+        0.8,
+        0
+       ],
+       "2.5": [
+        0.8833,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5566,
+        0.2227
+       ],
+       "6": [
+        0.4451,
+        0.1115
+       ],
+       "7": [
+        0.2465,
+        0.1986
+       ],
+       "5.5": [
+        0.5566,
+        0
+       ],
+       "6.5": [
+        0.4451,
+        0
+       ]
       }
      },
      {
@@ -32317,6 +36793,49 @@
       "lambda": {
        "home": 3.2917,
        "away": 2.6173
+      },
+      "fair_home": -156,
+      "fair_away": 156,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2648,
+        0
+       ],
+       "-1.5": [
+        0.389,
+        0
+       ],
+       "1.5": [
+        0.7954,
+        0
+       ],
+       "2.5": [
+        0.8804,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5495,
+        0.2247
+       ],
+       "6": [
+        0.4382,
+        0.1113
+       ],
+       "7": [
+        0.2407,
+        0.1976
+       ],
+       "5.5": [
+        0.5495,
+        0
+       ],
+       "6.5": [
+        0.4382,
+        0
+       ]
       }
      },
      {
@@ -32330,6 +36849,49 @@
       "lambda": {
        "home": 3.3397,
        "away": 2.6061
+      },
+      "fair_home": -162,
+      "fair_away": 162,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.2735,
+        0
+       ],
+       "-1.5": [
+        0.3986,
+        0
+       ],
+       "1.5": [
+        0.8013,
+        0
+       ],
+       "2.5": [
+        0.8843,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5556,
+        0.2229
+       ],
+       "6": [
+        0.4441,
+        0.1115
+       ],
+       "7": [
+        0.2457,
+        0.1984
+       ],
+       "5.5": [
+        0.5556,
+        0
+       ],
+       "6.5": [
+        0.4441,
+        0
+       ]
       }
      }
     ],
@@ -32394,6 +36956,1137 @@
     "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "market_check": {
+    "state": "NOT_CAPTURED",
+    "checks": [],
+    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
+   }
+  },
+  {
+   "game_id": 2026020216,
+   "event_key": "NHL|2026020216",
+   "date": "2026-10-30",
+   "start_utc": "2026-10-31T00:00:00Z",
+   "type": "R",
+   "home": "CGY",
+   "away": "SEA",
+   "venue": "Scotiabank Saddledome",
+   "state": "FUT",
+   "schedule_source": "nhl_api",
+   "lambda": {
+    "home": 2.984,
+    "away": 2.9814
+   },
+   "explanation": {
+    "method": "exact Shapley values over the model's 9 factor groups through the full pricing chain (GLM → pair recalibration → score distribution with overtime and the shootout); contributions sum exactly to the published probability",
+    "baseline": {
+     "p_home": 0.5011,
+     "expected_total": 6.17,
+     "what": "two league-average clubs (every rating at the mean of the 32 clubs' current ratings) at a neutral rink, both rested",
+     "neutral": {
+      "ev_off": 1.000615164420903,
+      "ev_def_opp": 0.9979630187632746,
+      "g_off": 1.0008599328585577,
+      "g_def_opp": 0.9973447463791064,
+      "pp_off": 0.9987735775916584,
+      "pk_def_opp": 1.0019711685847403,
+      "pp_draw": 0.9991342109834921,
+      "pk_take_opp": 0.9995793719056034,
+      "fin": 0.9660942910921548
+     }
+    },
+    "published": {
+     "p_home": 0.5015,
+     "expected_total": 6.18,
+     "lambda_home": 2.984,
+     "lambda_away": 2.9814
+    },
+    "factors": [
+     {
+      "key": "home_results",
+      "team": "CGY",
+      "side": "home",
+      "label": "results beyond chances (goals for and against, finishing)",
+      "pp": -4.7246,
+      "goals": -0.09,
+      "evidence": {
+       "metric": "its goals for per game / its goals against per game / its finishing (goals ÷ xG)",
+       "vs_league": [
+        0.9029,
+        1.0301,
+        0.9604
+       ],
+       "better": false
+      }
+     },
+     {
+      "key": "home_ice",
+      "team": null,
+      "side": null,
+      "label": "home ice",
+      "pp": 2.5273,
+      "goals": 0.09,
+      "evidence": {
+       "metric": "home ice",
+       "vs_league": null,
+       "better": true
+      }
+     },
+     {
+      "key": "away_results",
+      "team": "SEA",
+      "side": "away",
+      "label": "results beyond chances (goals for and against, finishing)",
+      "pp": 1.6471,
+      "goals": 0.04,
+      "evidence": {
+       "metric": "its goals for per game / its goals against per game / its finishing (goals ÷ xG)",
+       "vs_league": [
+        0.9827,
+        1.0388,
+        1.0916
+       ],
+       "better": false
+      }
+     },
+     {
+      "key": "away_ev_off",
+      "team": "SEA",
+      "side": "away",
+      "label": "5v5 chance creation",
+      "pp": 1.6306,
+      "goals": -0.06,
+      "evidence": {
+       "metric": "5v5 expected goals created per 60",
+       "vs_league": 0.9229,
+       "better": false
+      }
+     },
+     {
+      "key": "home_ev_def",
+      "team": "CGY",
+      "side": "home",
+      "label": "5v5 chance suppression",
+      "pp": -0.9571,
+      "goals": 0.03,
+      "evidence": {
+       "metric": "5v5 expected goals allowed per 60",
+       "vs_league": 1.0331,
+       "better": false
+      }
+     },
+     {
+      "key": "home_ev_off",
+      "team": "CGY",
+      "side": "home",
+      "label": "5v5 chance creation",
+      "pp": -0.893,
+      "goals": -0.03,
+      "evidence": {
+       "metric": "5v5 expected goals created per 60",
+       "vs_league": 0.957,
+       "better": false
+      }
+     },
+     {
+      "key": "away_ev_def",
+      "team": "SEA",
+      "side": "away",
+      "label": "5v5 chance suppression",
+      "pp": 0.8113,
+      "goals": 0.03,
+      "evidence": {
+       "metric": "5v5 expected goals allowed per 60",
+       "vs_league": 1.028,
+       "better": false
+      }
+     },
+     {
+      "key": "home_rest",
+      "team": "CGY",
+      "side": "home",
+      "label": "rest (second night of a back-to-back)",
+      "pp": 0,
+      "goals": 0,
+      "evidence": {
+       "metric": "second night of a back-to-back",
+       "vs_league": 0,
+       "better": true,
+       "note": "the production model carries no goalie term, so this effect includes how often a club starts its backup on the second night; the goalie scenarios show the move once a starter is named"
+      }
+     },
+     {
+      "key": "away_rest",
+      "team": "SEA",
+      "side": "away",
+      "label": "rest (second night of a back-to-back)",
+      "pp": 0,
+      "goals": 0,
+      "evidence": {
+       "metric": "second night of a back-to-back",
+       "vs_league": 0,
+       "better": true,
+       "note": "the production model carries no goalie term, so this effect includes how often a club starts its backup on the second night; the goalie scenarios show the move once a starter is named"
+      }
+     }
+    ],
+    "check": {
+     "sum_of_contributions_pp": 0.0416,
+     "published_minus_baseline_pp": 0.0416,
+     "exact": true
+    },
+    "generated_by": "deterministic decomposition of the production model (hockey/model/explain.js) — no language model",
+    "narrative": [
+     "CGY 50.1% to win (overtime and shootout included). Two league-average clubs at a neutral rink would be 50.1% for the home side; the factors below move CGY from there to 50.1%.",
+     "CGY's results beyond chances (goals for 0.90×, goals against 1.03×, finishing 0.96× the league-average club): −4.7 pp for CGY.",
+     "home ice: +2.5 pp for CGY.",
+     "SEA's results beyond chances (goals for 0.98×, goals against 1.04×, finishing 1.09× the league-average club): +1.6 pp for CGY.",
+     "SEA's 5v5 chance creation (0.92× the league-average club, opponent- and score-adjusted): +1.6 pp for CGY.",
+     "CGY's 5v5 chance suppression (allows 1.03× the league-average club): −1.0 pp for CGY.",
+     "CGY's 5v5 chance creation (0.96× the league-average club, opponent- and score-adjusted): −0.9 pp for CGY.",
+     "2 smaller factors move it less than 0.3 points each.",
+     "Expected goals: CGY 2.98, SEA 2.98 in regulation; total 6.18 including overtime."
+    ]
+   },
+   "markets": {
+    "settles": {
+     "moneyline": "two-way: includes overtime and the shootout",
+     "regulation": "60 minutes only; a tie is its own outcome",
+     "puck_line": "includes overtime and the shootout; an OT or shootout win is a one-goal win; a whole-number line can push",
+     "total": "includes overtime; the shootout winner is credited one goal (the official final); a whole-number line can push",
+     "regulation_total": "60 minutes only (no overtime, no shootout); a whole-number line can push",
+     "team_total": "includes overtime; the shootout winner is credited one goal; a whole-number line can push",
+     "first_period": "first period only (20 minutes); a tie is its own outcome on the 3-way; a whole-number total can push"
+    },
+    "puck_line": [
+     {
+      "home_line": -3.5,
+      "p": 0.0757,
+      "push": 0,
+      "p_other": 0.9243,
+      "fair": 1221,
+      "fair_other": -1221,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "home_line": -2.5,
+      "p": 0.1858,
+      "push": 0,
+      "p_other": 0.8142,
+      "fair": 438,
+      "fair_other": -438,
+      "validation": "OUTCOME_VALIDATED"
+     },
+     {
+      "home_line": -1.5,
+      "p": 0.292,
+      "push": 0,
+      "p_other": 0.708,
+      "fair": 242,
+      "fair_other": -242,
+      "validation": "OUTCOME_VALIDATED"
+     },
+     {
+      "home_line": -1,
+      "p": 0.292,
+      "push": 0.2095,
+      "p_other": 0.4985,
+      "fair": 171,
+      "fair_other": -171,
+      "validation": "NOT_SCORED"
+     },
+     {
+      "home_line": 1,
+      "p": 0.5015,
+      "push": 0.2072,
+      "p_other": 0.2913,
+      "fair": -172,
+      "fair_other": 172,
+      "validation": "NOT_SCORED"
+     },
+     {
+      "home_line": 1.5,
+      "p": 0.7087,
+      "push": 0,
+      "p_other": 0.2913,
+      "fair": -243,
+      "fair_other": 243,
+      "validation": "OUTCOME_VALIDATED"
+     },
+     {
+      "home_line": 2.5,
+      "p": 0.8148,
+      "push": 0,
+      "p_other": 0.1852,
+      "fair": -440,
+      "fair_other": 440,
+      "validation": "OUTCOME_VALIDATED"
+     },
+     {
+      "home_line": 3.5,
+      "p": 0.9246,
+      "push": 0,
+      "p_other": 0.0754,
+      "fair": -1226,
+      "fair_other": 1226,
+      "validation": "OUTCOME_VALIDATED"
+     }
+    ],
+    "total": [
+     {
+      "line": 4.5,
+      "p": 0.7821,
+      "push": 0,
+      "p_other": 0.2179,
+      "fair": -359,
+      "fair_other": 359,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 5,
+      "p": 0.5594,
+      "push": 0.2226,
+      "p_other": 0.2179,
+      "fair": -257,
+      "fair_other": 257,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 5.5,
+      "p": 0.5594,
+      "push": 0,
+      "p_other": 0.4406,
+      "fair": -127,
+      "fair_other": 127,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 6,
+      "p": 0.4497,
+      "push": 0.1097,
+      "p_other": 0.4406,
+      "fair": -102,
+      "fair_other": 102,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 6.5,
+      "p": 0.4497,
+      "push": 0,
+      "p_other": 0.5503,
+      "fair": 122,
+      "fair_other": -122,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 7,
+      "p": 0.249,
+      "push": 0.2006,
+      "p_other": 0.5503,
+      "fair": 221,
+      "fair_other": -221,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 7.5,
+      "p": 0.249,
+      "push": 0,
+      "p_other": 0.751,
+      "fair": 302,
+      "fair_other": -302,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 8,
+      "p": 0.175,
+      "push": 0.0741,
+      "p_other": 0.751,
+      "fair": 429,
+      "fair_other": -429,
+      "validation": "NOT_SCORED"
+     },
+     {
+      "line": 8.5,
+      "p": 0.175,
+      "push": 0,
+      "p_other": 0.825,
+      "fair": 472,
+      "fair_other": -472,
+      "validation": "PROVISIONAL"
+     }
+    ],
+    "regulation_total": [
+     {
+      "line": 4.5,
+      "p": 0.7137,
+      "push": 0,
+      "p_other": 0.2863,
+      "fair": -249,
+      "fair_other": 249,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 5,
+      "p": 0.5594,
+      "push": 0.1543,
+      "p_other": 0.2863,
+      "fair": -195,
+      "fair_other": 195,
+      "validation": "NOT_SCORED"
+     },
+     {
+      "line": 5.5,
+      "p": 0.5594,
+      "push": 0,
+      "p_other": 0.4406,
+      "fair": -127,
+      "fair_other": 127,
+      "validation": "PROVISIONAL"
+     },
+     {
+      "line": 6,
+      "p": 0.3843,
+      "push": 0.1751,
+      "p_other": 0.4406,
+      "fair": 115,
+      "fair_other": -115,
+      "validation": "NOT_SCORED"
+     },
+     {
+      "line": 6.5,
+      "p": 0.3843,
+      "push": 0,
+      "p_other": 0.6157,
+      "fair": 160,
+      "fair_other": -160,
+      "validation": "PROVISIONAL"
+     }
+    ],
+    "team_total": {
+     "home": [
+      {
+       "line": 1.5,
+       "p": 0.8077,
+       "push": 0,
+       "p_other": 0.1923,
+       "fair": -420,
+       "fair_other": 420,
+       "validation": "OUTCOME_VALIDATED"
+      },
+      {
+       "line": 2,
+       "p": 0.604,
+       "push": 0.2037,
+       "p_other": 0.1923,
+       "fair": -314,
+       "fair_other": 314,
+       "validation": "NOT_SCORED"
+      },
+      {
+       "line": 2.5,
+       "p": 0.604,
+       "push": 0,
+       "p_other": 0.396,
+       "fair": -153,
+       "fair_other": 153,
+       "validation": "OUTCOME_VALIDATED"
+      },
+      {
+       "line": 3,
+       "p": 0.3881,
+       "push": 0.2159,
+       "p_other": 0.396,
+       "fair": 102,
+       "fair_other": -102,
+       "validation": "NOT_SCORED"
+      },
+      {
+       "line": 3.5,
+       "p": 0.3881,
+       "push": 0,
+       "p_other": 0.6119,
+       "fair": 158,
+       "fair_other": -158,
+       "validation": "OUTCOME_VALIDATED"
+      },
+      {
+       "line": 4.5,
+       "p": 0.2066,
+       "push": 0,
+       "p_other": 0.7934,
+       "fair": 384,
+       "fair_other": -384,
+       "validation": "NOT_SCORED"
+      }
+     ],
+     "away": [
+      {
+       "line": 1.5,
+       "p": 0.807,
+       "push": 0,
+       "p_other": 0.193,
+       "fair": -418,
+       "fair_other": 418,
+       "validation": "OUTCOME_VALIDATED"
+      },
+      {
+       "line": 2,
+       "p": 0.6027,
+       "push": 0.2043,
+       "p_other": 0.193,
+       "fair": -312,
+       "fair_other": 312,
+       "validation": "NOT_SCORED"
+      },
+      {
+       "line": 2.5,
+       "p": 0.6027,
+       "push": 0,
+       "p_other": 0.3973,
+       "fair": -152,
+       "fair_other": 152,
+       "validation": "OUTCOME_VALIDATED"
+      },
+      {
+       "line": 3,
+       "p": 0.3868,
+       "push": 0.2159,
+       "p_other": 0.3973,
+       "fair": 103,
+       "fair_other": -103,
+       "validation": "NOT_SCORED"
+      },
+      {
+       "line": 3.5,
+       "p": 0.3868,
+       "push": 0,
+       "p_other": 0.6132,
+       "fair": 159,
+       "fair_other": -159,
+       "validation": "OUTCOME_VALIDATED"
+      },
+      {
+       "line": 4.5,
+       "p": 0.2058,
+       "push": 0,
+       "p_other": 0.7942,
+       "fair": 386,
+       "fair_other": -386,
+       "validation": "NOT_SCORED"
+      }
+     ]
+    },
+    "first_period": {
+     "home": 0.3311,
+     "draw": 0.3381,
+     "away": 0.3307,
+     "fair_home": 202,
+     "fair_draw": 196,
+     "fair_away": 202,
+     "expected": 1.78,
+     "validation_3way": "PROVISIONAL",
+     "total": [
+      {
+       "line": 0.5,
+       "p": 0.8319,
+       "push": 0,
+       "p_other": 0.1681,
+       "fair": -495,
+       "fair_other": 495,
+       "validation": "PROVISIONAL"
+      },
+      {
+       "line": 1,
+       "p": 0.5374,
+       "push": 0.2945,
+       "p_other": 0.1681,
+       "fair": -320,
+       "fair_other": 320,
+       "validation": "NOT_SCORED"
+      },
+      {
+       "line": 1.5,
+       "p": 0.5374,
+       "push": 0,
+       "p_other": 0.4626,
+       "fair": -116,
+       "fair_other": 116,
+       "validation": "OUTCOME_VALIDATED"
+      },
+      {
+       "line": 2,
+       "p": 0.2625,
+       "push": 0.2748,
+       "p_other": 0.4626,
+       "fair": 176,
+       "fair_other": -176,
+       "validation": "NOT_SCORED"
+      },
+      {
+       "line": 2.5,
+       "p": 0.2625,
+       "push": 0,
+       "p_other": 0.7375,
+       "fair": 281,
+       "fair_other": -281,
+       "validation": "PROVISIONAL"
+      }
+     ]
+    },
+    "regulation_3way_validation": "PROVISIONAL"
+   },
+   "repricing": {
+    "base": {
+     "home": 2.984,
+     "away": 2.9814
+    },
+    "lineup_variant": {
+     "home": 2.9442,
+     "away": 2.984
+    },
+    "ot": "regular",
+    "basis": "the expected regulation goals of each variant; the page re-prices every market from them with hockey/model/distribution.js and the slate's distribution block"
+   },
+   "challengers": {
+    "models": [
+     {
+      "model": "B_incumbent",
+      "p_home": 0.5015
+     },
+     {
+      "model": "A_goals_only",
+      "p_home": 0.4897
+     },
+     {
+      "model": "A_elo",
+      "p_home": 0.5301
+     },
+     {
+      "model": "C_goalie_projected",
+      "p_home": 0.5026
+     },
+     {
+      "model": "D_lineup_projected",
+      "p_home": 0.4961
+     },
+     {
+      "model": "E_logistic",
+      "p_home": 0.5176
+     },
+     {
+      "model": "E_gbdt",
+      "p_home": 0.457
+     },
+     {
+      "model": "G_stack",
+      "p_home": 0.5312
+     }
+    ],
+    "spread_pp": 7.42,
+    "sd_pp": 2.26
+   },
+   "context": {
+    "home": {
+     "travel_km": 282,
+     "tz_shift": 0,
+     "games_in_prior_3_days": 1,
+     "road_trip_game": 0,
+     "recent_5v5_xg_for_vs_last_40": 1.0488,
+     "recent_5v5_xg_against_vs_last_40": 0.9511,
+     "goals_vs_xg_last_20": 1,
+     "goals_against_vs_xg_last_20": 1.0357
+    },
+    "away": {
+     "travel_km": 711,
+     "tz_shift": 1,
+     "games_in_prior_3_days": 1,
+     "road_trip_game": 1,
+     "recent_5v5_xg_for_vs_last_40": 0.975,
+     "recent_5v5_xg_against_vs_last_40": 1.0459,
+     "goals_vs_xg_last_20": 1.1303,
+     "goals_against_vs_xg_last_20": 1.0019
+    },
+    "note": "Measured, not in the price: travel, time zones, congestion, road trips, recent form and finishing luck were each tested out of sample (hockey/validation/nhl_lab.json) and none cleared the bar."
+   },
+   "prices": {
+    "moneyline": {
+     "home": 0.5015,
+     "away": 0.4985,
+     "fair_home": -101,
+     "fair_away": 101,
+     "settles": "includes overtime and shootout"
+    },
+    "regulation": {
+     "home": 0.3924,
+     "draw": 0.2159,
+     "away": 0.3917,
+     "fair_home": 155,
+     "fair_draw": 363,
+     "fair_away": 155,
+     "settles": "60 minutes only"
+    },
+    "puck_line": {
+     "home_minus_1_5": 0.292,
+     "away_plus_1_5": 0.708,
+     "away_minus_1_5": 0.2913,
+     "home_plus_1_5": 0.7087,
+     "fair_home_minus_1_5": 242,
+     "fair_away_plus_1_5": -242,
+     "fair_away_minus_1_5": 243,
+     "fair_home_plus_1_5": -243,
+     "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+    },
+    "total": {
+     "expected": 6.18,
+     "fair_line": 6,
+     "lines": {
+      "5": {
+       "over": 0.5594,
+       "under": 0.2179,
+       "push": 0.2226,
+       "fair_over": -257,
+       "fair_under": 257
+      },
+      "6": {
+       "over": 0.4497,
+       "under": 0.4406,
+       "push": 0.1097,
+       "fair_over": -102,
+       "fair_under": 102
+      },
+      "7": {
+       "over": 0.249,
+       "under": 0.5503,
+       "push": 0.2006,
+       "fair_over": 221,
+       "fair_under": -221
+      },
+      "5.5": {
+       "over": 0.5594,
+       "under": 0.4406,
+       "push": 0,
+       "fair_over": -127,
+       "fair_under": 127
+      },
+      "6.5": {
+       "over": 0.4497,
+       "under": 0.5503,
+       "push": 0,
+       "fair_over": 122,
+       "fair_under": -122
+      }
+     },
+     "settles": "includes overtime; the shootout winner is credited one goal"
+    },
+    "team_total": {
+     "home": {
+      "3": {
+       "over": 0.3881,
+       "under": 0.396,
+       "push": 0.2159,
+       "fair_over": 102,
+       "fair_under": -102
+      },
+      "2.5": {
+       "over": 0.604,
+       "under": 0.396,
+       "push": 0,
+       "fair_over": -153,
+       "fair_under": 153
+      },
+      "3.5": {
+       "over": 0.3881,
+       "under": 0.6119,
+       "push": 0,
+       "fair_over": 158,
+       "fair_under": -158
+      }
+     },
+     "away": {
+      "3": {
+       "over": 0.3868,
+       "under": 0.3973,
+       "push": 0.2159,
+       "fair_over": 103,
+       "fair_under": -103
+      },
+      "2.5": {
+       "over": 0.6027,
+       "under": 0.3973,
+       "push": 0,
+       "fair_over": -152,
+       "fair_under": 152
+      },
+      "3.5": {
+       "over": 0.3868,
+       "under": 0.6132,
+       "push": 0,
+       "fair_over": 159,
+       "fair_under": -159
+      }
+     }
+    },
+    "p_overtime": 0.1468,
+    "p_shootout": 0.0691
+   },
+   "uncertainty": {
+    "moneyline_sd_pp": 0.69,
+    "total_sd_goals": 0.02,
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
+    "calibration_bin": {
+     "range": [
+      0.5,
+      0.6
+     ],
+     "n": 2793,
+     "model_mean": 0.5503,
+     "observed": 0.5274,
+     "wilson95": [
+      0.5088,
+      0.5459
+     ],
+     "window": "confirmation 2020-21 to 2025-26"
+    }
+   },
+   "goalies": {
+    "certainty": "PROJECTED_UNCERTAIN",
+    "home": [
+     {
+      "goalie": 8482445,
+      "name": "D. Cooley",
+      "p_start": 0.6018,
+      "confirmed": false,
+      "gsax_rate": 0.0078
+     },
+     {
+      "goalie": 8481692,
+      "name": "D. Wolf",
+      "p_start": 0.3982,
+      "confirmed": false,
+      "gsax_rate": -0.0333
+     }
+    ],
+    "away": [
+     {
+      "goalie": 8475831,
+      "name": "P. Grubauer",
+      "p_start": 0.5339,
+      "confirmed": false,
+      "gsax_rate": -0.0085
+     },
+     {
+      "goalie": 8478916,
+      "name": "J. Daccord",
+      "p_start": 0.4661,
+      "confirmed": false,
+      "gsax_rate": -0.0302
+     }
+    ],
+    "scenarios": [
+     {
+      "home_goalie": 8482445,
+      "home_goalie_name": "D. Cooley",
+      "away_goalie": 8475831,
+      "away_goalie_name": "P. Grubauer",
+      "p_scenario": 0.3213,
+      "p_home": 0.5041,
+      "exp_total": 6.13,
+      "lambda": {
+       "home": 2.9679,
+       "away": 2.9492
+      },
+      "fair_home": -102,
+      "fair_away": 102,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1863,
+        0
+       ],
+       "-1.5": [
+        0.2932,
+        0
+       ],
+       "1.5": [
+        0.7119,
+        0
+       ],
+       "2.5": [
+        0.8178,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5513,
+        0.225
+       ],
+       "6": [
+        0.4415,
+        0.1098
+       ],
+       "7": [
+        0.2423,
+        0.1992
+       ],
+       "5.5": [
+        0.5513,
+        0
+       ],
+       "6.5": [
+        0.4415,
+        0
+       ]
+      }
+     },
+     {
+      "home_goalie": 8482445,
+      "home_goalie_name": "D. Cooley",
+      "away_goalie": 8478916,
+      "away_goalie_name": "J. Daccord",
+      "p_scenario": 0.2805,
+      "p_home": 0.5108,
+      "exp_total": 6.16,
+      "lambda": {
+       "home": 3.0006,
+       "away": 2.9406
+      },
+      "fair_home": -104,
+      "fair_away": 104,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1914,
+        0
+       ],
+       "-1.5": [
+        0.2995,
+        0
+       ],
+       "1.5": [
+        0.717,
+        0
+       ],
+       "2.5": [
+        0.8215,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.5554,
+        0.2238
+       ],
+       "6": [
+        0.4456,
+        0.1098
+       ],
+       "7": [
+        0.2456,
+        0.1999
+       ],
+       "5.5": [
+        0.5554,
+        0
+       ],
+       "6.5": [
+        0.4456,
+        0
+       ]
+      }
+     },
+     {
+      "home_goalie": 8481692,
+      "home_goalie_name": "D. Wolf",
+      "away_goalie": 8475831,
+      "away_goalie_name": "P. Grubauer",
+      "p_scenario": 0.2126,
+      "p_home": 0.4915,
+      "exp_total": 6.18,
+      "lambda": {
+       "home": 2.9516,
+       "away": 3.0111
+      },
+      "fair_home": 103,
+      "fair_away": -103,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1791,
+        0
+       ],
+       "-1.5": [
+        0.2835,
+        0
+       ],
+       "1.5": [
+        0.7002,
+        0
+       ],
+       "2.5": [
+        0.8081,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.559,
+        0.2228
+       ],
+       "6": [
+        0.4492,
+        0.1097
+       ],
+       "7": [
+        0.2487,
+        0.2006
+       ],
+       "5.5": [
+        0.559,
+        0
+       ],
+       "6.5": [
+        0.4492,
+        0
+       ]
+      }
+     },
+     {
+      "home_goalie": 8481692,
+      "home_goalie_name": "D. Wolf",
+      "away_goalie": 8478916,
+      "away_goalie_name": "J. Daccord",
+      "p_scenario": 0.1856,
+      "p_home": 0.4982,
+      "exp_total": 6.2,
+      "lambda": {
+       "home": 2.9843,
+       "away": 3.0024
+      },
+      "fair_home": 101,
+      "fair_away": -101,
+      "fair_total_line": 6,
+      "puck_line": {
+       "-2.5": [
+        0.1841,
+        0
+       ],
+       "-1.5": [
+        0.2896,
+        0
+       ],
+       "1.5": [
+        0.7054,
+        0
+       ],
+       "2.5": [
+        0.812,
+        0
+       ]
+      },
+      "total": {
+       "5": [
+        0.563,
+        0.2216
+       ],
+       "6": [
+        0.4533,
+        0.1097
+       ],
+       "7": [
+        0.252,
+        0.2012
+       ],
+       "5.5": [
+        0.563,
+        0
+       ],
+       "6.5": [
+        0.4533,
+        0
+       ]
+      }
+     }
+    ],
+    "confirmed_source": null
+   },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0216,
+     "regulars_absent": [
+      {
+       "player_id": 8474150,
+       "name": "M. Backlund",
+       "toi_per_game": "17:15",
+       "dressed_in_last_10": "8/10",
+       "absent_last_games": 2,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0097,
+     "regulars_absent": [
+      {
+       "player_id": 8477955,
+       "name": "J. McCann",
+       "toi_per_game": "15:14",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.4947,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001696 to -0.000051)."
+   },
+   "evidence": {
+    "home": {
+     "ev_xg_for_vs_league": 0.9575,
+     "ev_xg_against_vs_league": 1.031,
+     "goals_for_vs_league": 0.9037,
+     "goals_against_vs_league": 1.0274,
+     "pp_vs_league": 0.9251,
+     "pk_xga_vs_league": 1.0204,
+     "pp_minutes_vs_league": 0.9351,
+     "rest_days": 2,
+     "back_to_back": false,
+     "history_weight_games": 45.24
+    },
+    "away": {
+     "ev_xg_for_vs_league": 0.9235,
+     "ev_xg_against_vs_league": 1.0259,
+     "goals_for_vs_league": 0.9836,
+     "goals_against_vs_league": 1.036,
+     "pp_vs_league": 0.9402,
+     "pk_xga_vs_league": 1.0661,
+     "pp_minutes_vs_league": 0.9731,
+     "rest_days": 2,
+     "back_to_back": false,
+     "history_weight_games": 47.35
+    },
+    "league": {
+     "ev_xg_per60": 2.61,
+     "goals_per_team_game": 3.12
+    },
+    "notes": [
+     "Ratios are to the league's running average (1.00 = average); xG ratings are score-adjusted and opponent-adjusted.",
+     "Ratings decay with a 180-day half-life and are shrunk toward average by a 32-game prior; early-season ratings lean on last season."
+    ]
+   },
+   "data_quality": {
+    "history_weight_games": 45.24,
+    "early_season": false,
+    "goalie_certainty": "PROJECTED_UNCERTAIN",
+    "missing": []
+   },
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ],
    "market_check": {
     "state": "NOT_CAPTURED",

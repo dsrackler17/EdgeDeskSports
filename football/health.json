@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-10-25T13:51:43.041Z",
+  "generated_at": "2026-10-26T00:26:05.230Z",
   "ok": true,
-  "last_ok_at": "2026-10-25T13:51:43.041Z",
+  "last_ok_at": "2026-10-26T00:26:05.230Z",
   "run": {
-    "trigger": "schedule",
+    "trigger": "push",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -21,10 +21,10 @@
   },
   "learning": {
     "nfl": {
-      "completed_in_feed": 94,
-      "absorbed": 94,
+      "completed_in_feed": 105,
+      "absorbed": 105,
       "join_missed": 0,
-      "data_through": "2026-10-22",
+      "data_through": "2026-10-25",
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
@@ -36,9 +36,9 @@
   },
   "lines": {
     "nfl": {
-      "compared": 27,
-      "median_gap": 1.63,
-      "max_gap": 5.75,
+      "compared": 16,
+      "median_gap": 1.04,
+      "max_gap": 6.51,
       "outliers": [],
       "orientation_faults": []
     },
@@ -79,31 +79,31 @@
       "id": "nfl_ingest",
       "label": "NFL: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "94/94 absorbed, data through 2026-10-22"
+      "detail": "105/105 absorbed, data through 2026-10-25"
     },
     {
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "27/27 upcoming games PREDICTED, all inside bounds"
+      "detail": "16/16 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "27 lines inside plausible bounds"
+      "detail": "16 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines_orientation",
       "label": "NFL: market lines point the right way",
       "status": "pass",
-      "detail": "27 joined line(s), none reconciled by negation"
+      "detail": "16 joined line(s), none reconciled by negation"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 1.63 pts over 27 games, max 5.75"
+      "detail": "median gap 1.04 pts over 16 games, max 6.51"
     },
     {
       "id": "p4_season_window",
@@ -185,21 +185,21 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-10-25T13:51:43.041Z",
+    "daily_check_last_run": "2026-10-26T00:26:05.230Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-10-25T13:51:43.041Z",
+    "engine_tests_last_run": "2026-10-26T00:26:05.230Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-10-25T13:51:43.041Z",
+    "nfl_ingest_last_run": "2026-10-26T00:26:05.230Z",
     "nfl_ingest_last_status": "ok",
-    "row_count_nfl_ingest": 94,
-    "p4_ingest_last_run": "2026-10-25T13:51:43.041Z",
+    "row_count_nfl_ingest": 105,
+    "p4_ingest_last_run": "2026-10-26T00:26:05.230Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 542,
-    "projection_guard_last_run": "2026-10-25T13:51:43.041Z",
+    "projection_guard_last_run": "2026-10-26T00:26:05.230Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-10-25T13:51:43.041Z",
+    "line_guard_last_run": "2026-10-26T00:26:05.230Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 27
+    "row_count_line_guard": 16
   },
   "scope": {
     "what_ok_means": "the pipeline ran: the engine suites pass, every feed answered, completed games absorbed into the ratings, every upcoming game projects inside bounds and no joined market line points the wrong way.",
@@ -208,16 +208,16 @@
   "coverage": {
     "games": 61,
     "information_confidence": {
-      "mean": 83.1,
-      "median": 84.3,
-      "lower_decile": 77.4,
+      "mean": 82.9,
+      "median": 84.4,
+      "lower_decile": 77.2,
       "at_90": 0,
       "at_95": 0
     },
     "biggest_gaps": [
       {
         "field": "qb_availability",
-        "mean_points_lost": 7.69
+        "mean_points_lost": 8
       },
       {
         "field": "off_field",
@@ -225,7 +225,7 @@
       },
       {
         "field": "roster",
-        "mean_points_lost": 1.77
+        "mean_points_lost": 1.73
       },
       {
         "field": "roster_talent",
@@ -233,11 +233,11 @@
       },
       {
         "field": "qb_starter",
-        "mean_points_lost": 0.74
+        "mean_points_lost": 0.58
       },
       {
         "field": "availability",
-        "mean_points_lost": 0.36
+        "mean_points_lost": 0.45
       }
     ],
     "ledgers_reconciling": 61,
