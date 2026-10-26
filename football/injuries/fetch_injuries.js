@@ -144,6 +144,37 @@ function observations(ledger, ds, observedAt) {
   });
   return out;
 }
+/* THE QUARTERBACK REPORT LEDGER (football/injuries/history/nfl_<season>_qb.jsonl,
+   docs/nfl-prior-decay/README.md §2). A quarterback's practice status is an input
+   the NFL card shows beside the priced starter (football/nfl/starter_sync.js
+   qbReport, Observed / T0), and a Wednesday DNP can matter before any game
+   designation exists. The designation ledger above records designations only,
+   and Signal Center reads it. So every QB line on the report whose designation OR
+   practice status is new or changed for its player-week gets its own row here,
+   stamped with this run's retrieval time. It is append-only, and the first run
+   on a season writes a baseline, exactly as above. */
+const QB_OBS_SCHEMA = 'edgedesk_nfl_qb_report_observation_v1';
+function qbObservations(ledger, ds, observedAt) {
+  if (!ds || !ds.published) return [];
+  const last = new Map();
+  (ledger || []).forEach((r) => { if (r && r.schema === QB_OBS_SCHEMA && r.key) last.set(r.key, r); });
+  const baseline = !(ledger || []).some((r) => r && r.schema === QB_OBS_SCHEMA);
+  const out = [];
+  Object.keys(ds.teams).sort().forEach((team) => {
+    const t = ds.teams[team];
+    (t.players || []).forEach((p) => {
+      if (clean(p.position).toUpperCase() !== 'QB') return;
+      const designation = DESIGNATIONS[clean(p.status).toLowerCase()] || null, practice = p.practice || null;
+      const key = ds.season + '|' + t.week + '|' + team + '|' + (p.gsis_id || p.name.toLowerCase());
+      const prev = last.get(key);
+      if (prev && prev.designation === designation && prev.practice === practice) return;
+      out.push({ schema: QB_OBS_SCHEMA, key, season: ds.season, week: t.week, game_type: t.game_type || null, team, gsis_id: p.gsis_id || null, name: p.name,
+        designation, practice, injury: p.injury || p.practice_injury || null,
+        previous: prev ? { designation: prev.designation, practice: prev.practice } : null, observed_at: observedAt, baseline, tier: 'T0', source: ds.source });
+    });
+  });
+  return out;
+}
 function appendObservations(file, rows) {
   if (!rows.length) return 0;
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -171,7 +202,11 @@ async function main() {
   const obs = observations(readLedger(ledgerFile), ds, now);
   appendObservations(ledgerFile, obs);
   console.log(`[injuries] ${season}: ${obs.length} designation(s) observed${obs.length && obs[0].baseline ? ' (baseline: already listed when the ledger began)' : ''} → ${path.relative(process.cwd(), ledgerFile)}`);
+  const qbFile = path.join(out, 'history', `nfl_${season}_qb.jsonl`);
+  const qbObs = qbObservations(readLedger(qbFile), ds, now);
+  appendObservations(qbFile, qbObs);
+  console.log(`[injuries] ${season}: ${qbObs.length} quarterback report line(s) observed${qbObs.length && qbObs[0].baseline ? ' (baseline)' : ''} → ${path.relative(process.cwd(), qbFile)}`);
   return 0;
 }
-module.exports = { parseCsv, build, unpublished, validate, statusRank, teamCode, writeIfChanged, defaultSeason, observations, readLedger, appendObservations, SCHEMA, OBS_SCHEMA };
+module.exports = { parseCsv, build, unpublished, validate, statusRank, teamCode, writeIfChanged, defaultSeason, observations, qbObservations, readLedger, appendObservations, SCHEMA, OBS_SCHEMA, QB_OBS_SCHEMA };
 if (require.main === module) main().then(c => process.exit(c)).catch(e => { console.error('[injuries] ' + e.message); process.exit(1); });

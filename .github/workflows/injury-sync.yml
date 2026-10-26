@@ -38,7 +38,7 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
@@ -58,6 +58,17 @@ jobs:
           else
             node football/injuries/fetch_injuries.js
           fi
+
+      # THE STARTER SYNC (football/nfl/starter_sync.js, docs/nfl-prior-decay/README.md):
+      # the report just fetched can change who an upcoming card prices at
+      # quarterback (OUT or DOUBTFUL). When any upcoming game's starter inputs
+      # (schedule feed id, depth-chart QB1, the club's QB lines on the report)
+      # moved since the slate was built, the slate is rebuilt now and every
+      # priced-starter change is logged to football/nfl/starter_sync/. The game
+      # cards follow at the next hourly game-research build (cfb-lab.yml, the
+      # one writer of football/game_research/).
+      - name: NFL starter sync
+        run: node tools/football/nfl_starter_sync.js || echo "::warning::the starter sync could not rebuild the slate; the previous slate stands"
 
       # The research desk reads the report through the compact metrics
       # artifact, so it is rebuilt here and committed beside the report.
@@ -93,22 +104,17 @@ jobs:
       - name: Rebuild the team identity profiles
         run: node tools/football/build_team_identity.js
 
+      # THE PUSH goes through the shared helper (tools/ci/push_generated.sh): the
+      # starter sync can rewrite football/nfl/slate.json, which starter-context.yml
+      # also publishes, and a `git pull --rebase` retry cannot survive that race.
+      # The helper carries only the files this run changed onto the remote tip.
       - name: Commit the report
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          # a directory, not a glob: an unmatched glob is passed through
+          # directories, not globs: an unmatched glob is passed through
           # literally and fails the whole add
-          git add -A -- football/injuries/ football/matchup/metrics.json football/identity/ football/pricing/ football/validation/key_numbers.json football/market_structure/nfl.json
-          if git diff --cached --quiet; then
-            echo 'injury report unchanged — nothing to commit'
-            exit 0
-          fi
-          git commit -m 'injury sync: NFL injury report from nflverse'
-          for i in 1 2 3 4; do
-            git push origin "${{ github.ref_name }}" && exit 0
-            git pull --rebase origin "${{ github.ref_name }}" || true
-            sleep $((2 ** i))
-          done
-          echo 'could not push the injury report after 4 attempts'
-          exit 1
+          bash tools/ci/push_generated.sh "${{ github.ref_name }}" \
+            'injury sync: NFL injury report from nflverse' -- \
+            football/injuries/ football/matchup/metrics.json football/identity/ football/pricing/ football/validation/key_numbers.json football/market_structure/nfl.json \
+            football/nfl/slate.json football/nfl/starter_sync/ football/venues/forecasts.json
