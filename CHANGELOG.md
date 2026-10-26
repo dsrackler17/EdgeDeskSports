@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-10-26 — CI: a gate on every pull request, `npm run verify`, and the rules that would have stopped today's eighteen failed runs
+
+Eighteen failed runs between 12:03 and 12:54 UTC came from three root causes, all already fixed on `main` by #799, #800, #803 and #804 ([docs/ci/INCIDENT-2026-10-26.md](docs/ci/INCIDENT-2026-10-26.md)):
+- a web-editor conflict resolution that left `lib/edgedesk_quote_ev.js` and `slate_audit.json` unparseable;
+- the terminal's σ guard falling back to the flat 25% bound;
+- a cache-token test stricter than its rule.
+
+What let them reach `main` was the process: no branch protection, and four merges while a check was red or had not reported. This change adds the gate and the tooling. No model, threshold, fixture, ledger, record or committed output moves.
+
+- **`Core validation / Repository integrity`** (`tools/ci/integrity.js`, new workflow `core-validation.yml`) runs on every pull request and push to `main`, with no path filter, in about 20 s. It checks that:
+  - every tracked JS, ES module, TypeScript, JSON and JSONL file, inline `<script>`, shell script and Python file parses;
+  - no tracked file holds a conflict marker;
+  - every file or npm script a workflow or `package.json` runs exists.
+
+  On `6f1c69e7d` it names exactly the two broken files and their lines; on `main` it is clean. Twelve docs JSON files written by Python's `json.dump` hold `NaN`; they are accepted as Python's dialect and named in a note.
+- **`npm run verify`** (`tools/ci/verify.js`) runs what GitHub would run, read from the workflow files themselves. Variants: `verify:affected` (the workflows this change starts), `verify:plan`, `verify:core`, `verify:cfb`, `verify:odds`, `verify:research`.
+  - Each step runs as its job runs it, or is reported NOT VERIFIED with its reason: a secret, a step output, a service, missing Python packages, or a live source.
+  - On #799, #800, #803 and #804 its prediction of which workflows start matched GitHub's runs exactly.
+  - `tools/ci/workflows.js` reads the YAML with no dependency and is held equal to PyYAML on every workflow.
+  - `--clock-shift` and `--tz` run the suites with the clock or the zone moved, to find tests that will fail on a later day.
+  - `--net-audit` names the steps whose node processes reached the network.
+  - Every step that rewrites a committed file is named, and the file is restored afterwards.
+- **`tools/football/nfl_slate.test.js` no longer reaches the network or writes `football/venues/forecasts.json`.**
+  - It builds from fixture feeds, but the builder's forecast fetch still asked open-meteo for the fixture games, and rewrote the committed forecast store whenever one answered or was a dome.
+  - It now builds `offline`. The feeds still come from its fixtures, and nothing it asserts reads a forecast.
+  - Two new checks hold the store byte for byte; 38 of 38 pass.
+- **`CFB published-board validation`** (new workflow) runs the CFB validation and research-terminal suites on `main` after every hourly Model Lab run. A workflow's push starts no other workflow, so the 11:08 board's contradiction sat unseen until an NHL pull request failed on it.
+- **Workflows.**
+  - 13 test workflows now cancel a pull request's superseded run; runs on `main` keep their own group.
+  - The six Playwright installs no longer `continue-on-error`. A browser suite without a browser exits 0, so a failed install had left jobs green having tested nothing.
+  - The odds gateway's job is named `Odds gateway suites`, so a required check can name it (32 jobs are called `suites`).
+- **`tools/ci/checks.json`** puts every pull-request workflow in one of eight categories; the tests fail when a new workflow has none.
+- **`AGENTS.md`** holds the permanent engineering rules, and `CLAUDE.md` imports it. [docs/ci/BRANCH_PROTECTION.md](docs/ci/BRANCH_PROTECTION.md) gives the exact ruleset, with a bypass for the data bots, the three checks to require, and why approvals stay at 0 and "up to date" stays off. It also lists the three workflows that act on production from an agent branch's commit message. None of the settings is applied: that needs the owner.
+- **Tests:** `tools/ci/integrity.test.js` and `tools/ci/workflows.test.js`.
+
 
 
 ## 2026-10-26 — CFB: the EV plausibility check reads each game's width again
