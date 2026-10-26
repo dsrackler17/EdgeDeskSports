@@ -92,7 +92,9 @@ const PUB = require('../publish');
     T.chk('applying it again changes nothing and still reports ok', !/CHECK THIS/.test(out));
 
     /* ---- the registry, replayed into the database ---- */
-    RG.init();
+    /* the incumbent is ncaaw_points@ the served version (docs/model-loop/ncaaw/versions.json current), which moves
+       whenever the model loop promotes: name it from the registry, never as a constant */
+    const incumbent = RG.init().current.key;
     const challenger = { schema: 'edgedesk_ncaaw_fc_model_v1', model_id: 'ncaaw_adjeff', version: '1.0.0', engine: 'research_team_model', config: { engine: 'research_team_model', params: { lambda: 300 }, calibration: {} },
       training_snapshot: { through: '2026-10-23T00:00:00.000Z', rows: 100, sha256: sha('snap'), seasons: [2026] } };
     challenger.config_sha256 = sha(JSON.stringify(challenger.config)); challenger.code_sha256 = sha('code');
@@ -116,7 +118,7 @@ const PUB = require('../publish');
     svc(`select public.ncaaw_fc_record_report(${lit(JSON.stringify({ report_sha256: sha('retain'), candidate: 'c', champion_key: 'ncaaw_adjeff@1.0.0', challenger_key: 'ncaaw_adjeff@1.1.0', decision: 'RETAIN', policy_version: '1.0.0', gates: [] }))}::jsonb);`);
     T.chk('PROMOTE with a RETAIN report is refused', /not PROMOTE/.test(fails(() => svc(`select public.ncaaw_fc_set_champion(${lit(JSON.stringify({ decision: 'PROMOTE', model_key: 'ncaaw_adjeff@1.1.0', report_sha256: sha('retain') }))}::jsonb);`)) || ''));
     T.chk('PROMOTE without any stored report is refused', /no stored report/.test(fails(() => svc(`select public.ncaaw_fc_set_champion(${lit(JSON.stringify({ decision: 'PROMOTE', model_key: 'ncaaw_adjeff@1.1.0', report_sha256: sha('nothing') }))}::jsonb);`)) || ''));
-    T.chk('a ROLLBACK needs a reason', /reason/.test(fails(() => svc(`select public.ncaaw_fc_set_champion(${lit(JSON.stringify({ decision: 'ROLLBACK', model_key: 'ncaaw_points@1.1.0' }))}::jsonb);`)) || ''));
+    T.chk('a ROLLBACK needs a reason', /reason/.test(fails(() => svc(`select public.ncaaw_fc_set_champion(${lit(JSON.stringify({ decision: 'ROLLBACK', model_key: incumbent }))}::jsonb);`)) || ''));
     T.chk('the same model key with another configuration is refused', /another configuration/.test(fails(() => svc(`select public.ncaaw_fc_record_model(${lit(JSON.stringify({ model_id: 'ncaaw_adjeff', version: '1.1.0', engine: 'research_team_model', config: { x: 2 }, config_sha256: sha('y') }))}::jsonb);`)) || ''));
     T.eq('the champion is unchanged after the refusals', svc("select model_key from public.ncaaw_fc_champion;").trim(), 'ncaaw_adjeff@1.0.0');
     T.chk('an authenticated client cannot move the champion', !!fails(() => asU(SUB, `select public.ncaaw_fc_set_champion('{"decision":"INIT","model_key":"ncaaw_adjeff@1.0.0"}'::jsonb)`)));
