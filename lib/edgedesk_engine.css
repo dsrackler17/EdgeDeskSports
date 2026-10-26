@@ -47,6 +47,7 @@
 .xe-sechd .r{font-size:11px;color:var(--faint);font-weight:500}
 .xe-cov{display:flex;flex-wrap:wrap;gap:6px 10px;margin:4px 0 10px;font-size:12px}
 .xe-covi{white-space:nowrap}
+.xe-nw{white-space:nowrap}
 .xe-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
 .xe-card{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--xe-line);border-radius:var(--rad,14px);padding:0;color:var(--text);min-width:0}
 .xe-card.xe-game{padding:12px;cursor:pointer}
@@ -160,4 +161,9 @@
   .xe-facts dl{grid-template-columns:1fr}
   .xe-list{grid-template-columns:1fr}
   .xe-title h3{font-size:18px}
+  /* the NHL record tables (a label and up to three windows) wrap to the phone's width instead of scrolling sideways */
+  .xe-t.xe-ts{min-width:0;font-size:12px}
+  .xe-t.xe-ts caption{white-space:normal}
+  .xe-t.xe-ts th,.xe-t.xe-ts td{white-space:normal;padding:5px 4px}
+  .xe-t.xe-ts td:first-child{min-width:0;width:34%}
 }
