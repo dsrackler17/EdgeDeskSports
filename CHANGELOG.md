@@ -1,15 +1,6 @@
 # Changelog
 
-## 2026-10-26 — College basketball exhibitions: opponents found by name and nickname
 
-The first collector run held 299 men's and 300 women's schedules. Before the daily refreshes published them, a preview found three opponent mistakes, fixed here.
-
-- **A school that moved its website is found by name.** Southern Miss lists Houston Christian at `hcuhuskies.com`, a site the registry does not know (it has `hbuhuskies.com`). The game was priced as a non-D-I opponent and a second time from Houston Christian's own listing. A website the registry does not know now falls back to the registry name, so the game is priced once, D-I against D-I.
-- **A school's ESPN team, when the collector does not read it,** is the D-I team ESPN names exactly as the registry names the school and its nickname. For the 442 teams (229 men's, 213 women's) whose results also identify them, the two never disagree. Arkansas, Kentucky, Northwestern State and Utah State opponents, skipped before, are now priced.
-- **The same rule fixes a stale division.** Mercyhurst and New Haven are D-I on ESPN but D-II in the registry. Louisville vs Mercyhurst was priced as a non-D-I game (99.8%); it is now D-I against D-I.
-- **A game both schools list is priced from the listing whose start time reads.** Houston Christian lists no time for Southern Miss; Southern Miss lists 6 PM, which is now used instead of noon, flagged approximate.
-- **More of the schools' labels come off a name:** "(Ex.)", "(ex)", "(exhib.)", "(EXH)", and "Exhibition" in front ("Exhibition Cal State Monterey Bay").
-- Preview from the collected schedules, through 2026-11-09: men's 42 priced (was 40), women's 57 (was 56).
 
 ## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
 

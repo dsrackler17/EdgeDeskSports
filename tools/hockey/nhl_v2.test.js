@@ -46,6 +46,7 @@ const SYNC = R('hockey/warehouse/sync.js');
 const REG = R('hockey/sources/registry.js');
 const FAKE = R('tools/lib/fake_pgrest.js');
 const ST = R('engine/stats.js');
+const DG = R('hockey/model/diagnostics.js');
 
 let pass = 0, fail = 0; const failures = [];
 function chk(name, ok, detail) { if (ok) pass++; else { fail++; failures.push({ name, detail }); } }
@@ -147,6 +148,29 @@ const live = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'model', 'para
   chk('lab: the promotion rule refuses a gain under 0.001 on selection', !RUN.promotionCheck('x', sc, { mean_diff: -0.0005 }, { ci95: [-0.002, -0.0001] }, true).passes);
   chk('lab: the promotion rule refuses a confirmation interval that crosses zero', !RUN.promotionCheck('x', sc, { mean_diff: -0.002 }, { ci95: [-0.002, 0.0003] }, true).passes);
   chk('lab: the promotion rule accepts only when every condition holds', RUN.promotionCheck('x', sc, { mean_diff: -0.002 }, { ci95: [-0.003, -0.001] }, true).passes);
+
+  /* ---------------- diagnostics: team strength ---------------- */
+  const prand = ST.rng(11);
+  const poisson = (l) => { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= prand(); } while (p > L); return k - 1; };
+  const truth = []; for (let i = 0; i < 6000; i++) { const l = 3 * Math.exp(0.25 * (prand() * 2 - 1)); truth.push({ l, y: poisson(l) }); }
+  /* forecasts at the truth, spread 1.5 times too far apart, and bunched to half the spread */
+  const at = (e) => truth.map((x) => ({ y: x.y, lam: 3 * Math.pow(x.l / 3, e) }));
+  const sRight = DG.poissonSlope(at(1)), sWide = DG.poissonSlope(at(1.5)), sNarrow = DG.poissonSlope(at(0.5));
+  chk('team strength: a forecast at the truth reads OK (slope near 1)', DG.spreadReading(sRight) === 'OK' && near(sRight.slope, 1, 0.12), sRight);
+  chk('team strength: clubs priced too far apart read TOO_WIDE (slope near 1/1.5)', DG.spreadReading(sWide) === 'TOO_WIDE' && near(sWide.slope, 1 / 1.5, 0.1), sWide);
+  chk('team strength: clubs bunched toward average read TOO_NARROW (slope near 2)', DG.spreadReading(sNarrow) === 'TOO_NARROW' && near(sNarrow.slope, 2, 0.25), sNarrow);
+  chk('team strength: fewer than 30 team-games read TOO_EARLY', DG.spreadReading(DG.poissonSlope(at(1).slice(0, 20))) === 'TOO_EARLY');
+  const rr = DG.ratio([{ y: 4, lam: 2 }].concat(Array.from({ length: 39 }, () => ({ y: 2, lam: 2 }))));
+  chk('team strength: scored ÷ forecast is total goals over total λ', near(rr.ratio, 82 / 80, 1e-3) && rr.n === 40, rr);
+  /* the season-to-date context sees only earlier dates */
+  const tg = (team, gf, ga) => ({ team, gf_reg: gf, ga_reg: ga, pp_gf: 1, ev5_gf: gf - 1, evo_gf: 0, sh_gf: 0, ev5_xgf: 2, evo_xgf: 0, pp_xgf: 1, sh_xgf: 0 });
+  const tgames = [];
+  for (let d = 1; d <= 12; d++) for (const [h, a] of [['AAA', 'BBB'], ['CCC', 'DDD']]) tgames.push({ game_id: d * 10 + (h === 'AAA' ? 1 : 2), season: 2027, type: 'R', date: '2026-10-' + String(d).padStart(2, '0'), home: h, away: a, reg_home: d === 12 && h === 'AAA' ? 9 : 3, reg_away: 2, h: tg(h, d === 12 && h === 'AAA' ? 9 : 3, 2), a: tg(a, 2, d === 12 && h === 'AAA' ? 9 : 3) });
+  const trows = DG.teamGameRows(tgames, () => ({ lh: 3, la: 2 }), 2027);
+  const last = trows.teams.find((x) => x.date === '2026-10-12' && x.team === 'AAA'), first = trows.teams.find((x) => x.date === '2026-10-01' && x.team === 'AAA');
+  chk('team strength: a game\'s own score never reaches its own season-to-date context', last.gp === 11 && last.y === 9 && near(last.ctx.gf, 3 / 2.5, 1e-9) && near(last.ctx.l3, 3 / 2.5, 1e-9), last);
+  chk('team strength: a club\'s first game has no season-to-date context', first.gp === 0 && first.ctx === null);
+  chk('team strength: one row per team-game and one per game', trows.teams.length === 48 && trows.games.length === 24);
 
   /* ---------------- props ---------------- */
   const nb = PM.nbPmf(2.6, 6, 30);
