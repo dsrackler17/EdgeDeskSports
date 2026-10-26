@@ -253,7 +253,32 @@ function runRebuild(cwd, args, rebuild) {
   chk('and leaves the working tree clean', git(A, ['status', '--porcelain']) === '' && !fs.existsSync(path.join(A, 'articles/half-built.html')), git(A, ['status', '--porcelain']));
 }
 
-/* 10. every workflow that pushes an aggregate rebuilds it on a rejected push. The
+/* 10. a shallow checkout (actions/checkout's default) stays shallow on a rejected
+       push. A pull request merged meanwhile has a branch reaching back to the first
+       commit, and a plain fetch pulled all of it: App version, 2026-10-26 00:42 and
+       00:52, 4 GB into a five-minute job, cancelled both times */
+{
+  git(B, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  const S = path.join(root, 'shallow');
+  git(root, ['clone', '-q', '--depth', '1', 'file://' + bare, S]);
+  const first = git(B, ['rev-list', '--max-parents=0', 'HEAD']);
+  git(B, ['checkout', '-q', '-b', 'pr', first]);
+  write(B, 'lib/feature.js', 'x\n');
+  git(B, ['add', '-A']); git(B, ['commit', '-q', '-m', 'pr: feature']);
+  git(B, ['checkout', '-q', 'main']);
+  git(B, ['merge', '-q', '--no-ff', '-m', 'Merge pull request', 'pr']);
+  git(B, ['push', '-q', 'origin', 'main']);
+  write(S, 'app-version.json', '{"version":"new"}\n');
+  const r = run(S, ['main', 'app: version stamp for open tabs', '--', 'app-version.json']);
+  git(seed, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  chk('a shallow checkout\'s rejected push lands on the new tip', r.code === 0 && /rebuilding the commit/.test(r.out)
+    && fs.readFileSync(path.join(seed, 'app-version.json'), 'utf8') === '{"version":"new"}\n' && fs.existsSync(path.join(seed, 'lib/feature.js')), r.out);
+  chk('without fetching the history behind the merged branch',
+    git(S, ['rev-parse', '--is-shallow-repository']) === 'true' && spawnSync('git', ['cat-file', '-e', first + '^{commit}'], { cwd: S }).status !== 0);
+  chk('while a full clone stays full', git(A, ['rev-parse', '--is-shallow-repository']) === 'false');
+}
+
+/* 11. every workflow that pushes an aggregate rebuilds it on a rejected push. The
        articles job carried a stale manifest (2026-10-25 20:47) and the weekly build a
        stale football/matchup/metrics.json (2026-10-26 00:30, built from starters three
        hours old), each over a newer tip: a job that names one of these paths and sets
@@ -284,7 +309,7 @@ function runRebuild(cwd, args, rebuild) {
   chk('every workflow that pushes an aggregate rebuilds it on the new tip (' + seen + ' steps)', seen > 0 && missing.length === 0, missing.join('; '));
 }
 
-/* 11. bad usage is refused, not silently a no-op */
+/* 12. bad usage is refused, not silently a no-op */
 {
   const r = run(A, ['main', 'msg']);
   chk('missing paths are a usage error', r.code === 64, String(r.code));
