@@ -127,6 +127,17 @@ ok('a stored look is found by its configuration', WF.lookFor({ config_sha256: 'b
 ok('a previous report of another configuration is never carried', WF.lookFor({ config_sha256: 'bbb' }, prev, { looks: {} }) === null);
 ok('a report made before configurations were hashed is carried only to the configuration team_tuning names', WF.lookFor({ config_sha256: 'bbb', legacy_config: true }, { status: {} }, { looks: {} }) !== null && WF.lookFor({ config_sha256: 'bbb', legacy_config: false }, { status: {} }, { looks: {} }) === null);
 ok('today the record serves team_tuning.json (no released loop version yet)', !WF.cfgsFromTuning().hier.loop_version || !!WF.servedLoopVersion());
+/* 2026-10-26: the loop's first SERVED version (1.0.0) is team_tuning's configuration, and the weekly
+   run dropped the 2026-10-14 holdout look because a loop version was being served at all */
+{
+  const tt = { models: { hier: { cfg: { a: 1 } } }, dist: { k: 2 } };
+  const same = WF.configHash({ tq: { a: 1 }, dist: { k: 2 } }), other = WF.configHash({ tq: { a: 9 }, dist: { k: 2 } });
+  ok('a served loop version with team_tuning\'s configuration is the configuration a pre-hash report measured', WF.legacyConfig({ config_sha256: same, loop_version: '1.0.0' }, tt) === true);
+  ok('...and a loop version with another configuration is not', WF.legacyConfig({ config_sha256: other, loop_version: '1.1.0' }, tt) === false && WF.legacyConfig({ config_sha256: same }, tt) === true);
+  const served = WF.cfgsFromTuning().hier, t = WF.tuning();
+  const sameNow = WF.configHash(served) === WF.configHash({ tq: t.models.hier && t.models.hier.cfg, dist: t.dist });
+  ok('on the committed record: whenever the served configuration is team_tuning\'s, the registered holdout look is carried to it', WF.legacyConfig({ config_sha256: WF.configHash(served), loop_version: served.loop_version }, t) === sameNow, { loop_version: served.loop_version, sameNow });
+}
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log((fail === 0 ? 'ALL GREEN' : 'FAILED') + ' college baseball loop — ' + pass + ' passed, ' + fail + ' failed');

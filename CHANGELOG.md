@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-26 — College baseball: the weekly run keeps its registered holdout look
+
+**What broke.** The weekly validation run of 2026-10-26 (`fee3a2e0b`) dropped college baseball's registered HOLDOUT look: `OUTCOME_VALIDATED` on 16,696 games, taken on 2026-10-14. Moneyline readiness became `PROVISIONAL`, so two Lab checks failed on `main`:
+
+- `engine/build_registry.js --check`: "the committed readiness state differs from the evidence";
+- the Lab test "college baseball is validated only by its own holdout record".
+
+The push came from `GITHUB_TOKEN`, so no workflow ran on it, and no check showed the failure.
+
+**Why.** Since 2026-10-21, `college_baseball/walkforward.js` carries a holdout look only to a report of the same configuration (`config_sha256`). A report made before configurations were hashed was carried only if `legacy_config` held, and `legacy_config` also required that **no loop version be served**. The loop's first run seeds `versions.json` with version 1.0.0, "selection-window tuning", served. That version is exactly team_tuning's configuration (`3252f395…` for team_tuning, version 1.0.0 and the weekly report alike). Being served at all made it look like another configuration, and the look was withheld.
+
+**The repair.**
+- `legacyConfig()` compares configurations only, as the 2026-10-21 protocol amendment states: "carried forward only to a report of that exact configuration".
+- The 2026-10-19 records are restored by reverting the bot's commit. They are the job's own outputs, and the look was stored nowhere else (`holdout_looks.json` did not exist yet).
+- The next weekly run, or Actions → College baseball research validate, rebuilds this week's records. It carries the look and stores it in `holdout_looks.json`.
+
+**Before and after.** `walkforward.js`, run as the job runs it, on the restored records:
+
+| Code | Moneyline | n | Holdout |
+|---|---|---|---|
+| old | `PROVISIONAL` | 11,950 | withheld; no `holdout_looks.json` |
+| fixed | `OUTCOME_VALIDATED` | 16,696 | carried from 2026-10-14; stored in `holdout_looks.json` |
+
+On this branch:
+- Lab: 76 passed, 0 failed (it was 75 and 1);
+- `build_registry.js --check`: ok;
+- `tools/college_baseball/loop.test.js`: 32 passed, 0 failed (+3). On the old `walkforward.js` it throws.
+
 ## 2026-10-26 — CI: `npm run verify` stops reporting this machine's gaps as failures
 
 A full `npm run verify` reported 19 failures, and 11 of them were this machine's, not the code's. `tools/ci/verify.js` now reports a failure the machine explains as **NOT VERIFIED**, with the reason and, where there is one, the command to run. A pass is always a pass, and any other failure stays FAIL.
@@ -14,6 +42,7 @@ A full `npm run verify` reported 19 failures, and 11 of them were this machine's
 Files a step creates (screenshots, a suite's log) are no longer deleted. They move to `.cache/verify/<run>/created/`, and a rewritten committed file is copied to `.cache/verify/<run>/rewritten/` before it is restored.
 
 Tests: `tools/ci/verify.test.js` goes from 32 to 43; 11 of them fail on the previous `verify.js`. `tools/ci/workflows.test.js` adds 1 check: every `live_jobs` entry names a real job.
+
 
 
 
