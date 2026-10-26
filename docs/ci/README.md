@@ -109,6 +109,13 @@ keeps the name branch protection may require.
 - **Concurrency**: 13 test workflows that had none now let a newer push to a
   pull request replace its older run. Runs on `main` (push, schedule,
   dispatch) each keep their own group, so none of them is cancelled.
+  - 30 more test workflows grouped by `github.ref` with `cancel-in-progress`,
+    so each merge cancelled the previous merge's run on `main`. 27 of the last
+    100 runs on `main` before 2026-10-26 14:00 UTC were cancelled. They now use
+    the same pattern.
+  - `tools/ci/workflows.test.js` §8 evaluates every concurrency block that a
+    push to `main` reaches, and fails if two pushes would share a cancelling
+    group.
 - **Browser installs**: `continue-on-error` is gone from the six Playwright
   install steps. A browser suite without a browser prints SKIPPED and exits
   0, so a failed install used to leave its job green having tested nothing.

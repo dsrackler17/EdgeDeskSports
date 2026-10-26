@@ -213,5 +213,41 @@ chk('paths-ignore: started unless every file is ignored', W.triggeredBy(wf({ on:
   chk('a line that installs AND tests is kept whole', keep.dropped.length === 0 && /node a\.test\.js/.test(keep.script));
 }
 
+/* 8. no push to main cancels the run of the push before it. Until 2026-10-26,
+      30 suites grouped by github.ref with cancel-in-progress, so each merge
+      cancelled the previous merge's run: 27 of the last 100 runs on main were
+      cancelled, and main's result was often never known. Evaluated, not
+      pattern-matched: two pushes to main must land in different groups
+      wherever a run can be cancelled. */
+{
+  const ctx = (event, n) => ({
+    github: { event_name: event, ref: event === 'push' ? 'refs/heads/main' : 'refs/pull/7/merge', ref_name: event === 'push' ? 'main' : '7/merge', head_ref: event === 'push' ? '' : 'feature', base_ref: event === 'push' ? '' : 'main',
+      sha: 'c0ffee' + n, run_id: String(9000 + n), repository: 'dsrackler17/EdgeDeskSports', event: {} },
+    inputs: {}, env: {}, matrix: { __unknown: true }, needs: { __unknown: true }, steps: { __unknown: true }, secrets: { __unknown: true }, vars: { __unknown: true } });
+  const val = (v, c) => (typeof v === 'string' ? W.interpolate(v, c) : { ok: true, value: String(v) });
+  const shared = [], unreadable = [];
+  let blocks = 0;
+  for (const wf of W.loadWorkflows(ROOT)) {
+    const push = wf.on.push;
+    if (push === undefined || (push && push.branches && !W.pathMatches([].concat(push.branches), 'main'))) continue;
+    const cs = [['workflow', wf.doc.concurrency]].concat(Object.entries(wf.doc.jobs || {}).map(([id, j]) => [id, j && j.concurrency]));
+    for (const [where, c] of cs) {
+      if (!c || typeof c !== 'object') continue;
+      blocks++;
+      const cancel = val(c['cancel-in-progress'] === undefined ? false : c['cancel-in-progress'], ctx('push', 1));
+      if (!cancel.ok) { unreadable.push(wf.base + ' ' + where + ': cancel-in-progress'); continue; }
+      if (cancel.value !== 'true') continue;
+      const a = val(c.group, ctx('push', 1)), b = val(c.group, ctx('push', 2));
+      if (!a.ok || !b.ok) unreadable.push(wf.base + ' ' + where + ': group');
+      else if (a.value === b.value) shared.push(wf.base + ' ' + where + ': ' + a.value);
+    }
+  }
+  chk('(the concurrency blocks reached by a push to main were read: ' + blocks + ')', blocks > 30, blocks);
+  chk('no push to main cancels the previous push\'s run (the group differs per run wherever cancel-in-progress is on)', shared.length === 0, shared);
+  chk('every such group and cancel-in-progress evaluates for a push to main', unreadable.length === 0, unreadable);
+  const g = W.interpolate("x-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}", ctx('pull_request', 1)).value;
+  chk('…while two pushes to one pull request still share a group, so the newer supersedes the older', g === W.interpolate("x-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}", ctx('pull_request', 2)).value && g === 'x-refs/pull/7/merge', g);
+}
+
 if (fail) { failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? ' | ' + JSON.stringify(f.detail).slice(0, 600) : ''))); console.log('FAILED workflow reader — ' + pass + ' passed, ' + fail + ' failed'); process.exitCode = 1; }
 else console.log('ALL GREEN workflow reader — ' + pass + ' passed, 0 failed');
