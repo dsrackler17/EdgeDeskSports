@@ -1,26 +1,29 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   THE FIVE DESTINATIONS, IN A REAL BROWSER.
+   THE NAVIGATION, IN A REAL BROWSER (docs/research-os/DESIGN.md §1).
 
    tools/app/navigation.test.js holds the markup and the router as text; this
    drives the authenticated app in Chromium at a phone (390×844) and a desktop
    (1440×900) and holds what a reader actually gets:
 
-     1  seven seats — Signals · Research · Card · Portfolio · Process · Simulator · More — no eighth one
-        appearing at runtime, no horizontal scroll, no clipped label, tap
-        targets at least 44px;
+     1  ten seats — Overview · Research · Signals · Market Foresight · Simulator ·
+        My Card · Portfolio · Performance · Process · More — no eleventh one
+        appearing at runtime; on a phone five of them on the bar and the rest
+        in Menu's sheet; no horizontal scroll, no clipped label, tap targets
+        at least 44px; a new reader lands on the Overview;
      2  every old route still lands somewhere real (#playerprops…, #research/…,
         #card, #receipt=…, #ledger, #record, show('pprops'|'edges'|'ledger'|
         'ai'|'record') …) and lights the seat that owns it;
      3  Portfolio (the Phase A book, with what EdgeDesk tracked under it) and
         Process never look broken when empty, and with a seeded history show
         the reader's own numbers — never EdgeDesk's record;
-     4  More is sections, not a drawer; Model performance is in it;
+     4  More is sections, not a drawer; Model performance is in it and lights
+        Performance;
      5  a new account starts at setup, once; a deep link beats it;
      6  tracking a price keeps the reader where they were;
      7  every seat tap is recorded as primary_nav_<seat>;
      8  the disclaimer keeps every element and takes one line on a phone;
-     9  on a desktop the same seven destinations stand as a rail.
+     9  on a desktop the same ten destinations stand as a sidebar.
 
    Run: node tools/app/navigation.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -127,10 +130,16 @@ function seededLedger(now) {
     const vis = (id) => { const e = document.getElementById(id); return !!(e && !e.classList.contains('hide') && e.offsetParent !== null); };
     const views = [...document.querySelectorAll('main > .view, body > .view, section.view')].filter((v) => !v.classList.contains('hide')).map((v) => v.id);
     const panel = [...document.querySelectorAll('#v-research .rpanel')].filter((p) => !p.classList.contains('hide')).map((p) => p.id);
-    const seat = [...document.querySelectorAll('.bottomnav button.on')].map((b) => b.dataset.v);
+    const seat = [...document.querySelectorAll('.bottomnav button.on[data-v]')].map((b) => b.dataset.v);
     return { views, panel, seat, hash: location.hash, research: vis('v-research'), ai: !!(document.getElementById('edaiPanel') && document.getElementById('edaiPanel').classList.contains('open')) };
   });
 
+  /* tap a seat the way a reader does: on a phone, a seat that is not on the bar is in Menu's sheet */
+  async function seat(page, v) {
+    const visible = await page.evaluate((x) => { const b = document.querySelector('.bottomnav button[data-v="' + x + '"]'); return !!b && b.offsetParent !== null && b.getBoundingClientRect().width > 0; }, v);
+    if (!visible) { await page.click('#navMenuBtn'); await page.waitForSelector('#edNav.open button[data-v="' + v + '"]', { state: 'visible', timeout: 5000 }); }
+    await page.click('.bottomnav button[data-v="' + v + '"]');
+  }
   try {
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
@@ -138,21 +147,42 @@ function seededLedger(now) {
       let S = await open(vp, '');
       let { page } = S;
       await page.waitForTimeout(1500);   // the AI block, first-run and every late script have run
-      const nav = await page.evaluate(() => {
-        const bs = [...document.querySelectorAll('.bottomnav button')];
-        return { seats: bs.map((b) => b.dataset.v), labels: bs.map((b) => b.textContent.trim()), on: bs.filter((b) => b.classList.contains('on')).map((b) => b.dataset.v),
-          clipped: bs.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.dataset.v), minH: Math.min.apply(null, bs.map((b) => b.getBoundingClientRect().height)),
+      const navInfo = () => page.evaluate(() => {
+        const shown = (b) => b.offsetParent !== null && b.getBoundingClientRect().width > 0;
+        const all = [...document.querySelectorAll('.bottomnav button[data-v]')], bs = [...document.querySelectorAll('.bottomnav button')].filter(shown);
+        return { seats: all.map((b) => b.dataset.v), shown: bs.map((b) => b.dataset.v || b.id), labels: bs.map((b) => b.innerText.trim()), on: all.filter((b) => b.classList.contains('on')).map((b) => b.dataset.v),
+          clipped: bs.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.dataset.v || b.id), minH: Math.min.apply(null, bs.map((b) => b.getBoundingClientRect().height)),
           minW: Math.min.apply(null, bs.map((b) => b.getBoundingClientRect().width)), rect: (() => { const r = document.querySelector('.bottomnav').getBoundingClientRect(); return { w: r.width, h: r.height }; })() };
       });
-      chk(W + ': exactly seven seats, in order', nav.seats.join(',') === 'signals,research,card,portfolio,process,simulator,more', nav.seats);
-      chk(W + ': labelled Signals · Research · Card · Portfolio · Process · Simulator · More', nav.labels.join(',') === 'Signals,Research,Card,Portfolio,Process,Simulator,More', nav.labels);
+      const nav = await navInfo();
+      chk(W + ': exactly ten seats, in order', nav.seats.join(',') === 'overview,research,signals,foresight,simulator,card,portfolio,performance,process,more', nav.seats);
+      if (W < 1024) {
+        chk(W + ': the bar shows five seats and Menu', nav.shown.join(',') === 'overview,research,signals,card,portfolio,navMenuBtn', nav.shown);
+        chk(W + ': labelled Overview · Research · Signals · Card · Portfolio · Menu', nav.labels.join(',') === 'Overview,Research,Signals,Card,Portfolio,Menu', nav.labels);
+      } else {
+        chk(W + ': the sidebar shows every seat', nav.shown.join(',') === nav.seats.join(','), nav.shown);
+        chk(W + ': labelled in full', nav.labels.join(',') === 'Overview,Research,Signals,Market Foresight,Simulator,My Card,Portfolio,Performance,Process,More', nav.labels);
+      }
       chk(W + ': no AI seat appears at runtime', nav.seats.indexOf('ai') < 0);
-      /* a new reader lands on Signal Center only once it is live; here its doors answer 404, so they are handed on to Research */
-      chk(W + ': Research is the landing seat while Signal Center is not deployed', nav.on.join() === 'research', nav.on);
+      /* a reader with nothing saved starts on the Overview (docs/research-os/DESIGN.md §3) */
+      chk(W + ': the Overview is the landing seat for a new reader', nav.on.join() === 'overview' && await page.evaluate(() => !document.getElementById('v-overview').classList.contains('hide')), nav.on);
       chk(W + ': no seat label is clipped', nav.clipped.length === 0, nav.clipped);
       chk(W + ': every seat is a 44px tap target', nav.minH >= 44 && nav.minW >= 44, [nav.minH, nav.minW]);
+      chk(W + ': no horizontal scroll on the Overview', await noHScroll(page));
+      if (W === 1440) chk('1440: the same ten destinations stand as a sidebar', nav.rect.h > nav.rect.w, nav.rect);
+      if (W < 1024) {
+        /* Menu: the same list as a sheet, a dialog with focus inside it, closed by Escape */
+        await page.click('#navMenuBtn');
+        const sh = await navInfo();
+        chk(W + ': Menu opens every seat as a list', sh.seats.every((v) => sh.shown.indexOf(v) >= 0), sh.shown);
+        chk(W + ': the sheet is a dialog, with focus inside it', await page.evaluate(() => { const n = document.getElementById('edNav'); return n.getAttribute('role') === 'dialog' && n.getAttribute('aria-modal') === 'true' && n.contains(document.activeElement) && document.getElementById('navMenuBtn').getAttribute('aria-expanded') === 'true'; }));
+        chk(W + ': every seat in the sheet is a 44px tap target', sh.minH >= 44, sh.minH);
+        await shot(page, 'menu-' + W);
+        await page.keyboard.press('Escape');
+        chk(W + ': Escape closes it and returns focus to Menu', await page.evaluate(() => !document.getElementById('edNav').classList.contains('open') && document.activeElement === document.getElementById('navMenuBtn')));
+      }
+      await seat(page, 'research');
       chk(W + ': no horizontal scroll on Research', await noHScroll(page));
-      if (W === 1440) chk('1440: the same seven destinations stand as a rail', nav.rect.h > nav.rect.w, nav.rect);
       const rs = await page.evaluate(() => { const n = document.querySelector('.research-sub'); const bs = [...n.querySelectorAll('button')];
         return { subs: bs.map((b) => b.dataset.sub), fits: n.scrollWidth <= n.clientWidth + 1, on: bs.filter((b) => b.classList.contains('on')).map((b) => b.dataset.sub) }; });
       chk(W + ': Research reads Football · Props · Edges · Other', rs.subs.join(',') === 'football,pprops,edges,other', rs.subs);
@@ -183,7 +213,7 @@ function seededLedger(now) {
       await shot(page, 'research-props-' + W);
 
       /* ------------------------------------------------ 2 empty Portfolio / Process */
-      await page.click('.bottomnav button[data-v="portfolio"]');
+      await seat(page, 'portfolio');
       st = await state(page);
       chk(W + ': Portfolio is a destination', st.views.join() === 'v-portfolio' && st.seat.join() === 'portfolio' && st.hash === '#portfolio', st);
       await page.waitForFunction(() => /Build your portfolio/.test((document.getElementById('pfoHost') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});
@@ -197,7 +227,7 @@ function seededLedger(now) {
       await page.waitForTimeout(200);
       chk(W + ': Connect accounts lands on Accounts, and the link says so', await page.evaluate(() => { const t = document.querySelector('#pfoHost .pfo-tab[data-v="accounts"]'); return !!t && t.getAttribute('aria-selected') === 'true' && location.hash === '#portfolio/accounts'; }));
       await shot(page, 'portfolio-accounts-' + W, true);
-      await page.click('.bottomnav button[data-v="process"]');
+      await seat(page, 'process');
       st = await state(page);
       chk(W + ': Process is a destination', st.views.join() === 'v-process' && st.seat.join() === 'process' && st.hash === '#process', st);
       /* the Process Coach leads; with no positions it says how to give it some */
@@ -216,7 +246,7 @@ function seededLedger(now) {
         && await page.evaluate(() => document.querySelector('#pfoHost .pfo-tab[data-v="accounts"]').getAttribute('aria-selected') === 'true'), st);
 
       /* ------------------------------------------------ 4 More */
-      await page.click('.bottomnav button[data-v="more"]');
+      await seat(page, 'more');
       const more = await page.evaluate(() => ({ hds: [...document.querySelectorAll('#moreList .morehd')].map((h) => h.textContent.trim()), rows: [...document.querySelectorAll('#moreList .moreitem b')].map((b) => b.firstChild.textContent.trim()) }));
       chk(W + ': More is sections', more.hds.join('|') === 'Community & tools|Transparency|System|Account|Legal', more.hds);
       chk(W + ': More has no Ledger (it merged into Portfolio)', more.rows.indexOf('Ledger') < 0, more.rows);
@@ -227,7 +257,7 @@ function seededLedger(now) {
       await page.keyboard.press('Escape');
       await page.click('#moreList .moreitem:has-text("Model performance")');
       st = await state(page);
-      chk(W + ': Model performance opens with More lit', st.views.join() === 'v-record' && st.seat.join() === 'more', st);
+      chk(W + ': Model performance opens with Performance lit (EdgeDesk\'s record, never the reader\'s)', st.views.join() === 'v-record' && st.seat.join() === 'performance', st);
       chk(W + ': and says whose record it is', /not your bets/.test(await page.textContent('#v-record h2')));
       await shot(page, 'model-performance-' + W);
       chk(W + ': no script errors (empty state)', S.errors.length === 0, S.errors);
@@ -250,7 +280,9 @@ function seededLedger(now) {
         ['#research/tennis', 'v-research', 'v-football', 'research'], ['#research/rdesk', 'v-research', 'v-rdesk', 'research'],
         ['#card', 'v-card', null, 'card'], ['#portfolio', 'v-portfolio', null, 'portfolio'], ['#portfolio/history', 'v-portfolio', null, 'portfolio'],
         ['#process', 'v-process', null, 'process'], ['#more', 'v-more', null, 'more'], ['#ledger', 'v-portfolio', null, 'portfolio'],
-        ['#record', 'v-record', null, 'more'], ['#pnl', 'v-record', null, 'more'], ['#receipt=abc123', 'v-record', null, 'more'],
+        ['#record', 'v-record', null, 'performance'], ['#pnl', 'v-record', null, 'performance'], ['#receipt=abc123', 'v-record', null, 'performance'],
+        ['#overview', 'v-overview', null, 'overview'], ['#performance', 'v-performance', null, 'performance'], ['#foresight', 'v-foresight', null, 'foresight'],
+        ['#foresight/game/nfl%3A2026_07_DAL_PHI', 'v-foresight', null, 'foresight'], ['#simulator/nfl', 'v-simulator', null, 'simulator'],
         ['#edges', 'v-research', 'v-edges', 'research'], ['#props', 'v-research', 'v-pprops', 'research'], ['#settings', 'v-settings', null, 'more'],
         ['#faults', 'v-faults', null, 'more'], ['#news', 'v-news', null, 'more'], ['#collective', 'v-collective', null, 'more'], ['#terms', 'v-terms', null, 'more']
       ];
@@ -278,7 +310,7 @@ function seededLedger(now) {
         await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('edgedesk_prefs') || '{}'); p.lastResearchSub = 'football'; localStorage.setItem('edgedesk_prefs', JSON.stringify(p)); });
         await page.goto(`http://127.0.0.1:${port}/app.html?h=4#process`, { waitUntil: 'domcontentloaded' });
         await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
-        await page.click('.bottomnav button[data-v="research"]');
+        await seat(page, 'research');
         st = await state(page);
         chk('after booting elsewhere, the Research seat opens Football, not Desk', st.panel.join() === 'v-football', st);
         /* "Other" folds away even while one of its modules is open */
@@ -289,7 +321,7 @@ function seededLedger(now) {
         chk('and opens again', await page.evaluate(() => !document.getElementById('rsOther').classList.contains('hide')));
         /* the router's old names, called the way existing links call them */
         const CALLS = [['pprops', 'v-research', 'v-pprops', 'research'], ['edges', 'v-research', 'v-edges', 'research'], ['ledger', 'v-portfolio', null, 'portfolio'],
-          ['record', 'v-record', null, 'more'], ['social', 'v-research', 'v-edges', 'research'], ['discipline', 'v-research', 'v-edges', 'research'],
+          ['record', 'v-record', null, 'performance'], ['performance', 'v-performance', null, 'performance'], ['overview', 'v-overview', null, 'overview'], ['social', 'v-research', 'v-edges', 'research'], ['discipline', 'v-research', 'v-edges', 'research'],
           ['boards', 'v-faults', null, 'more'], ['research', 'v-research', null, 'research'], ['nonsense', 'v-research', null, 'research']];
         for (const c of CALLS) {
           await page.evaluate((v) => window.show(v), c[0]);
@@ -328,7 +360,7 @@ function seededLedger(now) {
         await page.goto(`http://127.0.0.1:${port}/app.html?m=2`, { waitUntil: 'domcontentloaded' });
         await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
         st = await state(page);
-        chk('a remembered secondary view (Faults) is not where the day starts', st.views.join() === 'v-research', st);
+        chk('a remembered secondary view (Faults) is not where the day starts: the default, the Overview, is', st.views.join() === 'v-overview', st);
         chk(W + ': no script errors across the routes', S.errors.length === 0, S.errors);
         await S.ctx.close();
       }
@@ -344,7 +376,7 @@ function seededLedger(now) {
       chk(W + ': its summary counts them and their grades', /31 · 1 open · 23\/30 beat the close/.test(await page.textContent('#pfTrackedN')), await page.textContent('#pfTrackedN'));
       chk(W + ': no horizontal scroll on Portfolio', await noHScroll(page));
       await shot(page, 'portfolio-tracked-' + W, true);
-      await page.click('.bottomnav button[data-v="process"]');
+      await seat(page, 'process');
       await page.waitForTimeout(300);
       await page.evaluate(() => { document.getElementById('pcTracked').open = true; });
       const pr = await page.textContent('#processHost');
@@ -374,7 +406,7 @@ function seededLedger(now) {
       page = S.page;
       st = await state(page);
       chk(W + ': a new account starts at setup, not on a board', st.views.join() === 'v-setup', st);
-      chk(W + ': setup explains the seven destinations', await page.evaluate(() => document.querySelectorAll('#setupHost .su-dest li').length === 7));
+      chk(W + ': setup explains the navigation\'s places (the nine a reader picks from; Process sits under Performance)', await page.evaluate(() => document.querySelectorAll('#setupHost .su-dest li').length === 9));
       await shot(page, 'setup-1-' + W);
       await page.click('#setupHost [data-su="next"]');
       chk(W + ': step 2 builds the portfolio: connect or import', /Connect or import/.test(await page.textContent('#setupHost')) && !!(await page.$('#setupHost [data-su="import"]')) && !!(await page.$('#setupHost [data-su="accounts"]')));
@@ -384,7 +416,7 @@ function seededLedger(now) {
       await shot(page, 'setup-3-' + W);
       await page.click('#setupHost [data-su="enter"]');
       st = await state(page);
-      chk(W + ': Enter EdgeDesk lands on Research', st.views.join() === 'v-research', st);
+      chk(W + ': Enter EdgeDesk lands on the Overview', st.views.join() === 'v-overview', st);
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
       st = await state(page);
@@ -393,7 +425,7 @@ function seededLedger(now) {
       /* leaving setup by any seat still counts as having seen it */
       S = await open(vp, '', { created: Date.now() - 2 * DAY, setupDone: false });
       page = S.page;
-      await page.click('.bottomnav button[data-v="card"]');
+      await seat(page, 'card');
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
       st = await state(page);

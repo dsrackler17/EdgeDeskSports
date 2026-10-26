@@ -1,0 +1,33 @@
+/* ============================================================================
+   MARKET FORESIGHT IN THE TERMINAL (foresight/app.js). foresight.css draws the
+   record; it was written over /tools/tools.css, whose page-wide rules (body,
+   h1, inputs) the terminal must not take. These are the few tools.css pieces
+   the record uses, scoped to the terminal's view and on its tokens.
+   ========================================================================== */
+#v-foresight .mf-app{--border2:#3a3124;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;--sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:14.5px;line-height:1.55}
+#v-foresight .mf-app .mf-app-h{font-size:clamp(22px,4vw,30px);line-height:1.15;letter-spacing:-.02em;margin:6px 0 8px}
+/* app.html's global h2 is a small uppercase label; the record's sections are headings */
+#v-foresight .mf-app h2{font-size:18px;letter-spacing:-.01em;margin:26px 0 8px;line-height:1.25;text-transform:none;color:var(--text);font-weight:700}
+#v-foresight .mf-app h3{font-size:15px;margin:16px 0 6px}
+#v-foresight .crumbs{font-size:12.5px;color:var(--faint);margin:0 0 8px}
+#v-foresight .crumbs a{color:var(--dim)}
+#v-foresight .ey{font:600 10.5px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+#v-foresight .lede{color:var(--dim);font-size:15px;max-width:68ch;margin:0}
+#v-foresight .note{font-size:12.5px;color:var(--faint)}
+#v-foresight label.fl{display:block;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:5px}
+#v-foresight .mf-app input[type=text],#v-foresight .mf-app select,#v-foresight .mf-app textarea{width:100%;min-height:42px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:9px 11px;font-size:15px;font-family:var(--mono)}
+#v-foresight .mf-app input:focus,#v-foresight .mf-app select:focus,#v-foresight .mf-app textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+#v-foresight .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;background:var(--accent);color:var(--on-accent);border:0;border-radius:10px;padding:9px 16px;font:700 14px var(--sans);cursor:pointer}
+#v-foresight .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border2)}
+#v-foresight .btn:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+#v-foresight .tbl{width:100%;border-collapse:collapse;font-size:13px}
+#v-foresight .tbl th,#v-foresight .tbl td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+#v-foresight .tbl th{font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:var(--surface2)}
+#v-foresight .tbl tr:last-child td{border-bottom:0}
+#v-foresight .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+#v-foresight .filters>div{min-width:140px;flex:1}
+#v-foresight .mf-app-pub{margin-top:28px}
+#v-foresight .mf-tip{z-index:70}
+/* the public page hides sideways overflow at the body (tools.css); the terminal does not, so a long
+   status chip wraps here instead of pushing the page wider than a phone */
+#v-foresight .mf-chip{white-space:normal;max-width:100%;overflow-wrap:anywhere}

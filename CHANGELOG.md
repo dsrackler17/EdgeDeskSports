@@ -2,6 +2,29 @@
 
 
 
+## 2026-10-26 — The Research OS: one terminal, one game carried through it
+
+The terminal opens on an **Overview**, and a game now travels by its identifiers (the slate id and the research key, never a team name) from its research into Signals, Market Foresight, the Simulator, the AI desk, My Card and Portfolio. Nothing new is computed or collected. See `docs/research-os/DESIGN.md`, and `REPORT.md` for verified results and limitations.
+
+- **Navigation.** On desktop, a sidebar in three groups: Research (Overview, Research, Signals, Market Foresight, Simulator), Your workspace (My Card, Portfolio, Performance, with Process under it) and More. On phones, a five-seat bar plus Menu, which opens the same list as a sheet.
+  - Every old link still lands where it did.
+  - A seat tap is now a step in the browser's history, so Back and Forward work.
+  - Ctrl/⌘ K or `/` opens search over the slate, teams, saved items, places and the reader's own positions.
+- **Overview.** Today's games with what is researched, priced, saved and changed since the last visit (same book and two capture times, or "not comparable"), plus the real states of Signal Center, the Simulator and Market Foresight.
+  - Its queue is ordered by status, the reader's interest, research completeness and start time. Never by a model–market gap.
+- **Game workspace.** "Keep researching this game" opens Signals, Market Foresight's record, the Simulator, Ask AI, Add to Card and Record a position for the same game.
+- **Market Foresight, inside the app.** `#foresight`, `#foresight/game/…` and `#foresight/model/…` mount the public page's own controller, with the same doors under the reader's session. `/foresight/` is unchanged.
+  - It stays in **shadow**. The go-live checklist is `docs/market-foresight/GO_LIVE_CHECKLIST.md`, and nothing switches the mode.
+- **Performance.** EdgeDesk's model record (the public ledger's summary, nothing under `min_n`) and the reader's own record (`portfolio_summary`) on one page, never combined.
+- **Database.** `supabase/research_os.sql` only registers four `primary_nav_*` event names (+ rollback). It adds no table, policy or grant.
+- **Tests.**
+  - New: `tools/research_os/research_os.test.js` (unit) and `tools/research_os/journey.e2e.js` (the whole journey in Chromium on the shipped migrations, at a desktop and a phone).
+  - Navigation, Portfolio, Signal Center, slate and landing assertions about the old seven-seat bar were rewritten for the new IA, none removed.
+  - The shared PostgREST stand-in learns multi-column `order=`, `offset=` and `col::text`. Without them the Simulator's and Portfolio's real reads answered 400 in the test.
+- **Landing page.** The #desk section lists the terminal's nine places, with Market Foresight marked as in review.
+  - `index.html` loads `edgedesk_track.js` under a new stamp.
+  - The ten other public pages keep theirs: they never send the four new events.
+
 ## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
 
 No feed this repository reads lists a college basketball exhibition, so the forecasts priced none. Every school lists its own, and the collegiate collector now reads every Division I school's men's and women's basketball schedule each week, beside baseball.

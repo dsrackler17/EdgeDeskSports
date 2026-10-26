@@ -1,0 +1,104 @@
+# EdgeDesk — the Research OS checks (docs/research-os/DESIGN.md).
+#
+#   suites   the shared research context, the shell's navigation model, the
+#            Overview's lists and copy rules, search, the Performance hub's
+#            "never combined" rule, the wiring in app.html (script order,
+#            cache tokens, routes), and the existing navigation and Portfolio
+#            unit suites the new information architecture touches — offline.
+#   browser  one reader's journey through the terminal in Chromium against
+#            the SHIPPED migrations on a throwaway PostgreSQL: Overview →
+#            Research → Signals → Market Foresight → Simulator → My Card →
+#            Portfolio → Performance at a desktop and a phone, access as a
+#            subscriber, a free account and an operator, Back / Forward,
+#            search, listeners, widths; then the terminal's navigation suite.
+#
+# Nothing here deploys, writes to production or posts anywhere.
+name: Research OS tests
+
+on:
+  pull_request:
+    paths:
+      - 'app.html'
+      - 'lib/edgedesk_context.js'
+      - 'lib/edgedesk_shell.*'
+      - 'lib/edgedesk_overview.js'
+      - 'lib/edgedesk_search.js'
+      - 'lib/edgedesk_perf_hub.js'
+      - 'lib/edgedesk_game_view.js'
+      - 'lib/edgedesk_games.js'
+      - 'lib/edgedesk_games_ui.js'
+      - 'lib/edgedesk_track.js'
+      - 'lib/edgedesk_workspace_ui.js'
+      - 'lib/edgedesk_guide_content.js'
+      - 'lib/edgedesk_simulator*.js'
+      - 'lib/edgedesk_signal_center.js'
+      - 'lib/edgedesk_portfolio*.js'
+      - 'lib/edgedesk_personal_ui.js'
+      - 'foresight/**'
+      - 'supabase/research_os*.sql'
+      - 'supabase/migrations/20261026120000_research_os.sql'
+      - 'supabase/funnel.sql'
+      - 'supabase/personal_research.sql'
+      - 'supabase/portfolio*.sql'
+      - 'supabase/simulator.sql'
+      - 'supabase/signal_center.sql'
+      - 'tools/research_os/**'
+      - 'tools/app/**'
+      - 'tools/personal/_pg.js'
+      - 'tools/billing/_pgrest.js'
+      - '.github/workflows/research-os-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: research-os-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Context, shell, Overview, search, Performance hub and the app.html wiring
+        run: node tools/research_os/research_os.test.js
+      - name: The navigation model, the Portfolio seat and the public pages' links
+        run: |
+          node tools/app/navigation.test.js
+          node tools/portfolio/portfolio_ui.test.js
+          node tools/site/nav.test.js
+          node tools/site/free_access.test.js
+          node tools/app/app_update.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL
+        run: sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The whole journey, desktop and phone, on the shipped migrations
+        env:
+          ROS_SQL_REQUIRED: '1'
+          ROS_E2E_REQUIRED: '1'
+          JOURNEY_SHOTS: research-os-shots
+        run: node tools/research_os/journey.e2e.js
+      - name: The terminal's navigation in the browser
+        run: node tools/app/navigation.e2e.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research-os-shots
+          path: research-os-shots

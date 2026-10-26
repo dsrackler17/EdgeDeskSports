@@ -5,12 +5,13 @@
    The product hierarchy is a claim the app makes with its own chrome, and
    these hold it (docs/ia/NAVIGATION_AUDIT.md):
 
-     1  SEVEN destinations, one per question a reader brings — Signal
-        Center · Research · Card · Portfolio · Process · Simulator · More —
-        and no eighth one, including the one the AI drawer used to append at
-        runtime (the Simulator seat was added on the owner's request,
-        2026-10-23: docs/simulator/README.md; Signal Center on 2026-10-23:
-        docs/signal-center/README.md);
+     1  the Research OS navigation (docs/research-os/DESIGN.md §1): ten
+        destinations in three groups — Research: Overview · Research ·
+        Signals · Market Foresight · Simulator; Workspace: My Card ·
+        Portfolio · Performance (Process under it); More — and no eleventh,
+        including the one the AI drawer used to append at runtime; five of
+        them on a phone's bar, the rest one tap away in Menu, which is not a
+        seat (it carries no data-v);
      2  Props and Edges are Research panels, AI is contextual, the Ledger
         merged into Portfolio, and Record is EdgeDesk's MODEL performance in
         More — never the reader's own P&L;
@@ -56,7 +57,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 
 /* ======================================================================== */
-/* 1. THE BOTTOM NAV — SIX DESTINATIONS, NO SEVENTH                        */
+/* 1. THE NAVIGATION — TEN DESTINATIONS, NO ELEVENTH                       */
 /* ======================================================================== */
 const NAV_START = APP.indexOf('<nav class="bottomnav"');
 const NAV_END = APP.indexOf('</nav>', NAV_START);
@@ -67,13 +68,19 @@ const NAV = APP.slice(NAV_START, NAV_END);
 const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
 const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
 
-eq('the navigation is exactly the seven destinations, in order', order.join(','), 'signals,research,card,portfolio,process,simulator,more');
-eq('seven seats, not eight', order.length, 7);
+eq('the navigation is exactly the ten destinations, in order', order.join(','), 'overview,research,signals,foresight,simulator,card,portfolio,performance,process,more');
+eq('ten seats, not eleven', order.length, 10);
+/* on a phone the bar holds five; the rest are in Menu (class nav-x hides them from the bar) */
+const barSeats = (live.match(/<button data-v="[a-z]+"(?! class="nav-x)[^>]*>/g) || []).map(s => s.match(/data-v="([a-z]+)"/)[1]);
+eq('five seats on a phone\'s bar, in order', barSeats.join(','), 'overview,research,signals,card,portfolio');
+eq('and the other five are one tap away in Menu', (live.match(/<button data-v="[a-z]+" class="nav-x[^"]*"/g) || []).map(s => s.match(/data-v="([a-z]+)"/)[1]).join(','), 'foresight,simulator,performance,process,more');
+chk('Menu opens the same list, and is not a seat (no data-v)', /<button type="button" class="nav-menu" id="navMenuBtn" data-nav-menu aria-expanded="false" aria-controls="edNav"/.test(live) && !/class="nav-menu"[^>]*data-v=/.test(live));
+eq('three groups, each labelled', (live.match(/<span class="nav-gh" id="navGh[A-Z]">[^<]+<\/span>/g) || []).map(s => s.replace(/<[^>]+>/g, '')).join('|'), 'Research|Your workspace|More');
 ['pprops', 'edges', 'ai', 'record', 'ledger', 'faults', 'collective', 'news'].forEach(v =>
   chk(v + ' holds no seat in the bottom bar', order.indexOf(v) < 0));
 chk('Research is the tab the markup rests on', /data-v="research" class="on"/.test(NAV));
 chk('and no second button claims the active class', (live.match(/class="on"/g) || []).length === 1);
-['Signal Center', 'Research', 'EdgeDesk Card', 'Portfolio', 'Process', 'Simulator', 'More'].forEach(l =>
+['Overview', 'Research', 'Signal Center', 'Market Foresight', 'Simulator', 'My Card', 'Portfolio', 'Performance', 'Process', 'More'].forEach(l =>
   has(live, 'aria-label="' + l + '"', 'the ' + l + ' seat is named for screen readers'));
 has(APP, "b[j].setAttribute('aria-current','page')", 'the active seat is announced, not only coloured');
 /* the AI drawer used to append its own seat whenever none was there */
@@ -150,38 +157,38 @@ has(APP, "EdgeDesk\\u2019s own graded record, in More. Its record, never yours."
 chk('the P&L summary is still the first thing under the Model performance header',
     /<div class="row-between"><h2 style="margin:0">Model performance[\s\S]{0,700}?<\/div>\s*(<!--[\s\S]*?-->\s*)*<div id="recPnlWrap"><\/div>/.test(APP));
 /* destinations with no seat light the seat that owns them */
-has(APP, "var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more',games:'research'};", 'everything reached through More lights More');
+has(APP, "var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'performance',games:'research'};", 'everything reached through More lights More, and Model performance lights Performance');
 /* Today's Games (#games) is the full slate behind the Research strip: it is not
    a sixth seat, it lights Research, and #games routes through navHashRoute */
 has(APP, "games:'research'", 'the games page lights the Research seat, not a new one');
 has(APP, "if(/^#games(?:[\\/?]|$)/.test(h))", 'a #games link routes to the games page');
-has(APP, "var NAV_PRIMARY={signals:1,research:1,card:1,portfolio:1,process:1,simulator:1};", '"remember last tab" remembers destinations only');
+has(APP, "var NAV_PRIMARY={overview:1,signals:1,research:1,foresight:1,card:1,portfolio:1,performance:1,process:1,simulator:1};", '"remember last tab" remembers destinations only');
 
 /* ======================================================================== */
 /* 3. DEFAULT LANDING, DEEP LINKS AND ROUTE SAFETY                          */
 /* ======================================================================== */
-has(APP, "defaultTab:'research'", 'the default landing page is Research');
+has(APP, "defaultTab:'overview'", 'the default landing page is the Overview');
 has(APP, "lastResearchSub:'football'", 'and the default research module is Football');
-has(APP, "lastTab:'research'", 'and a user with no memory yet is remembered as being there');
+has(APP, "lastTab:'overview'", 'and a user with no memory yet is remembered as being there');
 chk('the Research shell is the view the markup paints first', /<section id="v-research" class="view">/.test(APP));
 chk('and the Football panel inside it is the one on show', /<div id="v-football" class="rpanel">/.test(APP));
 chk('and the Football sub-tab reads active', /<button data-sub="football" class="on"/.test(APP));
 has(APP, "var _lt=NAV_ALIAS[_p.lastTab]||_p.lastTab;", 'a remembered tab from before the five destinations is read through the aliases');
 has(APP, "else if(_t&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t);", 'every remembered tab is routed explicitly');
-has(APP, "else researchGo(_p.lastResearchSub||'football');", 'and an unusable memory falls back to the default destination');
+has(APP, "else show('overview');", 'and an unusable memory falls back to the default destination');
 has(APP, "if(_rh){", 'a research deep link still beats the remembered tab');
 has(APP, "else if(navHashRoute(location.hash)){}", 'destination links (#portfolio, #process, #ledger, #receipt=…) are routed at boot');
 has(APP, "else if(typeof window.edSetupDue==='function'&&window.edSetupDue())show('setup');", 'a new account starts at setup');
 chk('and setup never beats a deep link', APP.indexOf("else if(navHashRoute(location.hash)){}") < APP.indexOf("window.edSetupDue())show('setup')")
     && APP.indexOf("if((location.hash||'')==='#card')show('card');") < APP.indexOf("window.edSetupDue())show('setup')"));
 has(APP, "if(/^#receipt=/.test(h)){var rv=$('v-record');", 'a cold #receipt=… share link opens Model performance');
-['card', 'portfolio', 'process', 'more', 'ledger', 'record', 'pnl', 'edges', 'props', 'settings', 'faults', 'news', 'collective', 'terms'].forEach(h =>
+['overview', 'foresight', 'performance', 'card', 'portfolio', 'process', 'more', 'ledger', 'record', 'pnl', 'edges', 'props', 'settings', 'faults', 'news', 'collective', 'terms'].forEach(h =>
   chk('#' + h + ' is a link that lands', new RegExp('NAV_HASH_MAP=\\{[^}]*\\b' + h + ":'").test(APP)));
 has(APP, "if(/^#playerprops/.test(h)){if(RESEARCH_SUB!=='pprops'", '#playerprops links work inside a running app, not only at boot');
 /* nothing was renamed out of existence: every view id the app shipped with that
    is still a page still exists, and the two new ones joined them */
 ['v-edges','v-faults','v-record','v-research','v-terms','v-social','v-settings','v-discipline','v-football','v-cfb','v-ufc','v-stats','v-props','v-lab','v-rdesk','v-pprops','v-card','v-collective','v-news',
- 'v-portfolio','v-process','v-setup']
+ 'v-portfolio','v-process','v-setup','v-overview','v-foresight','v-performance']
   .forEach(id => has(APP, 'id="' + id + '"', 'the ' + id + ' route exists'));
 has(APP, 'id="v-more"', 'and More is a view like any other');
 /* Tennis was retired from the product: its old routes land on the Research default */
@@ -193,7 +200,7 @@ has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retire
     'and a #research/tennis/… deep link resolves there instead of being ignored');
 has(APP, "^#research\\/([a-z]+)(?:\\/(.+))?$", 'the research hash grammar is unchanged');
 has(APP, "window.addEventListener('hashchange'", 'back and forward still route');
-has(APP, "if(/^#research\\//.test(_h)||/^#playerprops/.test(_h)||/^#signals\\//.test(_h)||NAV_HASH_RE.test(_h))history.replaceState",
+has(APP, "if(/^#research\\//.test(_h)||/^#playerprops/.test(_h)||/^#signals\\//.test(_h)||/^#foresight\\//.test(_h)||NAV_HASH_RE.test(_h))history.replaceState",
     'leaving the Research shell clears the research hash');
 chk('and it clears ONLY a research or destination hash, never the record receipt link',
     APP.indexOf("'#receipt='") >= 0 && !/NAV_HASH_RE=\/[^/]*receipt/.test(APP));
@@ -405,7 +412,8 @@ has(APP, "var go=(id?'edNavTrack(\\'secondary\\',\\'more:'+id+'\\');':'')+call;"
 /* ======================================================================== */
 const TRACK = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_track.js'), 'utf8');
 const FSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'funnel.sql'), 'utf8');
-['primary_nav_signals', 'primary_nav_research', 'primary_nav_card', 'primary_nav_portfolio', 'primary_nav_process', 'primary_nav_more', 'secondary_nav_opened'].forEach(n => {
+['primary_nav_signals', 'primary_nav_research', 'primary_nav_card', 'primary_nav_portfolio', 'primary_nav_process', 'primary_nav_more',
+ 'primary_nav_overview', 'primary_nav_foresight', 'primary_nav_performance', 'primary_nav_simulator', 'secondary_nav_opened'].forEach(n => {
   has(TRACK, "'" + n + "'", n + ' is a name the tracker sends');
   chk(n + ' is in funnel.sql\'s client registry', new RegExp("\\('" + n + "',\\s*'client'").test(FSQL));
 });
@@ -413,8 +421,8 @@ has(APP, "var name=kind==='primary'?'primary_nav_'+dest:'secondary_nav_opened';"
 /* Signal Center: its own hash, its long-name alias, and a landing that never strands a reader */
 has(APP, "if(/^#signal-center(?:\\/|$)/.test(h)){h='#signals'+h.slice(14);", '#signal-center is rewritten to #signals');
 has(APP, "if(/^#signals(?:\\/|$)/.test(h)){", 'Signal Center routes its own #signals hashes');
-has(APP, "else if(_fresh){SC_LANDING=true;show('signals');}", 'a new reader lands on Signal Center');
-has(APP, "landing:landing,onHandoff:function(){if(!$('v-signals').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');}", '…and is handed on to Research when it has nothing to show them');
+has(APP, "else if(_fresh){show('overview');}", 'a new reader lands on the Overview (docs/research-os/DESIGN.md §3)');
+has(APP, "landing:landing,onHandoff:function(){if(!$('v-signals').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');}", 'Signal Center\'s landing hand-off to Research is kept for any caller that opens it as a landing');
 has(APP, "edNavTrack('secondary','research:'+b.dataset.sub)", 'Research tabs are recorded');
 
 /* ======================================================================== */

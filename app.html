@@ -2930,8 +2930,13 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261025pd1">
-<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261026ros1">
+<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261026ros1">
+<!-- THE APP SHELL (docs/research-os/DESIGN.md): the sidebar / Menu sheet, Overview, search, Performance,
+     the game page's workspace; Market Foresight's record drawn inside the terminal (foresight/app.js) -->
+<link rel="stylesheet" href="/lib/edgedesk_shell.css?v=20261026ros1">
+<link rel="stylesheet" href="/foresight/foresight.css?v=20261025mf1">
+<link rel="stylesheet" href="/foresight/app.css?v=20261026ros2">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -2954,6 +2959,10 @@ body.focus .dk-focusnote{display:block}
     <span class="pill" id="dbPill">DB …</span><span class="pill hpsum" id="sysHealthPill"><span class="hpk">System</span><i class="hpdot" aria-hidden="true"></i><span class="hpv">Checking</span><span class="hpc">…</span></span>
   </button>
   <div class="hppop" id="sysHealthPop" role="dialog" aria-label="System health" onclick="event.stopPropagation()"></div>
+  <!-- SEARCH and ASK, on every screen (lib/edgedesk_search.js, the AI drawer): one box for every
+       game, team, place and saved item the terminal holds (Ctrl/⌘ K or "/"), and the research desk -->
+  <button type="button" class="ed-hb" id="edSearchBtn" data-ed-search aria-haspopup="dialog" aria-label="Search EdgeDesk (Ctrl K or /)" title="Search · Ctrl K or /" aria-keyshortcuts="Control+K Meta+K /"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="ed-hb-l">Search</span><kbd>/</kbd></button>
+  <button type="button" class="ed-hb ed-ask" id="edAskBtn" onclick="edAsk(null,'header')" aria-label="Ask EdgeDesk AI" title="Ask EdgeDesk AI"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg><span class="ed-hb-l">Ask AI</span></button>
   <!-- HELP — Learn EdgeDesk (lib/edgedesk_guide.js): this page's walkthrough,
        the other tasks, every term explained, the introduction again. -->
   <button type="button" class="edg-hbtn" id="edHelpBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="edgHelp" aria-label="Help: learn EdgeDesk" title="Help · Learn EdgeDesk" onclick="window.EDGuide&&window.EDGuide.openHelp()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2v.1"/></svg><span class="edg-hbtn-l">Help</span></button>
@@ -3217,6 +3226,14 @@ body.focus .dk-focusnote{display:block}
   <!-- SIGNAL CENTER: what changed, why, and whether the evidence supports it (lib/edgedesk_signal_center.js, docs/signal-center/README.md) -->
   <section id="v-signals" class="view hide"><div id="scHost"><div class="empty">Loading&hellip;</div></div></section>
   <section id="v-simulator" class="view hide"><div id="simHost"><div class="empty">Loading&hellip;</div></div></section>
+  <!-- OVERVIEW: what deserves attention today, each row one tap from the feature that owns it
+       (lib/edgedesk_overview.js, docs/research-os/DESIGN.md §3) -->
+  <section id="v-overview" class="view hide"><div id="overviewHost"><div class="empty">Loading&hellip;</div></div></section>
+  <!-- MARKET FORESIGHT: the page's own record and controller, drawn inside the terminal under the reader's
+       session (foresight/app.js over foresight/foresight.js; /foresight/ is unchanged) -->
+  <section id="v-foresight" class="view hide"><div id="mfHost"><div class="empty">Loading&hellip;</div></div></section>
+  <!-- PERFORMANCE: EdgeDesk's model record and the reader's own record, never combined (lib/edgedesk_perf_hub.js) -->
+  <section id="v-performance" class="view hide"><div id="perfHost"><div class="empty">Loading&hellip;</div></div></section>
 
 
 
@@ -3950,37 +3967,53 @@ window.mcRefresh=function(){
   loadCollective(true);
 };
 </script>
-<nav class="bottomnav" role="navigation" aria-label="Primary">
-  <!-- FIVE DESTINATIONS, one per question a reader brings (docs/ia/NAVIGATION_AUDIT.md):
-         Research   what does EdgeDesk see?          (Football, Props, Edges, other sports, tools)
-         Card       what am I considering right now? (before and during a decision)
-         Portfolio  what did I do, am I up or down?  (after: the reader's own positions)
-         Process    what is my history teaching me?
-         More       everything secondary, in sections
-       Props and Edges are Research panels now; AI is contextual ("Ask EdgeDesk" where
-       the question is), not a seat; Record is EdgeDesk's model performance and lives
-       in More, so nobody reads it as their own P&L. Every old route still lands
-       (show() aliases, #playerprops, #research/…). A sixth seat needs evidence: the
-       primary_nav_* events (lib/edgedesk_track.js) are how that evidence is kept. -->
-  <!-- SIGNAL CENTER (owner request, 2026-10-23): the research-discovery seat, first because it
-       answers the first question a returning reader has, "what changed?" (lib/edgedesk_signal_center.js,
-       docs/signal-center/README.md). Research keeps the markup's resting state: a new reader lands
-       on Signal Center only once it is live (boot, below; scOpen hands off to Research until then). -->
-  <button data-v="signals" aria-label="Signal Center"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h3.5l2.5-6 4 12 2.5-6H21"/></svg>Signals</button>
-  <button data-v="research" class="on" aria-current="page" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
-  <button data-v="card" aria-label="EdgeDesk Card"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M14 15.5l2 2 3.5-4"/></svg>Card</button>
-  <button data-v="portfolio" aria-label="Portfolio"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12.5h18"/></svg>Portfolio</button>
-  <button data-v="process" aria-label="Process"><svg class="ic" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1.3"/></svg>Process</button>
-  <!-- SIMULATOR (owner request, 2026-10-23): correlated Monte Carlo seasons from EdgeDesk's own
-       game models beside Kalshi futures (lib/edgedesk_simulator.js, docs/simulator/README.md) -->
-  <button data-v="simulator" aria-label="Simulator"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="9" cy="15" r="1.2"/><circle cx="15" cy="15" r="1.2"/></svg>Simulator</button>
-  <button data-v="more" aria-label="More"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>More</button>
+<nav class="bottomnav" id="edNav" role="navigation" aria-label="Primary">
+  <!-- ONE NAVIGATION, TWO SHAPES (lib/edgedesk_shell.js, docs/research-os/DESIGN.md §1):
+         desktop (≥ 1024 px)  a persistent sidebar in three groups
+         phones and tablets   a bottom bar with the five seats a reader uses most, and Menu,
+                              which opens this same list as a sheet
+       THE GROUPS, one question each:
+         Research    Overview   what deserves my attention today?
+                     Research   why — the full research on a game, by sport
+                     Signals    what changed, and is the evidence still valid?
+                     Market Foresight  which forecasts preceded later market movement?
+                     Simulator  season, playoff and title probabilities
+         Workspace   My Card    what am I considering right now?
+                     Portfolio  what did I actually do, and am I up or down?
+                     Performance  how EdgeDesk's models have done, and how I have — apart
+                       Process  how I decide (the Process Coach), under Performance
+         More        everything secondary, in sections
+       Props and Edges are Research panels; AI is contextual ("Ask AI" in the header, on the
+       Overview, on game research); every old route still lands (show() aliases, #playerprops,
+       #research/…, #record). Each seat keeps its data-v, so show(v) stays the one router, and
+       every tap is navigation evidence (edNavTrack → lib/edgedesk_track.js). -->
+  <div class="nav-brand" aria-hidden="true"><span class="mk"></span>EdgeDesk<span class="tag">research</span></div>
+  <div class="nav-sheet-h"><b>EdgeDesk</b><button type="button" class="nav-close" data-nav-close aria-label="Close the menu">Close</button></div>
+  <div class="nav-grp" role="group" aria-labelledby="navGhR"><span class="nav-gh" id="navGhR">Research</span>
+    <button data-v="overview" aria-label="Overview"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="1.6"/><rect x="3" y="15" width="7.5" height="6" rx="1.6"/></svg><span class="nav-l">Overview</span><span class="nav-s">Overview</span></button>
+    <button data-v="research" class="on" aria-current="page" aria-label="Research"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg><span class="nav-l">Research</span><span class="nav-s">Research</span></button>
+    <button data-v="signals" aria-label="Signal Center"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3.5l2.5-6 4 12 2.5-6H21"/></svg><span class="nav-l">Signals</span><span class="nav-s">Signals</span></button>
+    <button data-v="foresight" class="nav-x" aria-label="Market Foresight" title="NFL and college football pregame markets"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 3 4-6 5 5"/><path d="M3 21h18"/><circle cx="16" cy="8" r="1.4"/></svg><span class="nav-l">Market Foresight</span><span class="nav-s">Foresight</span></button>
+    <button data-v="simulator" class="nav-x" aria-label="Simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="9" cy="15" r="1.2"/><circle cx="15" cy="15" r="1.2"/></svg><span class="nav-l">Simulator</span><span class="nav-s">Simulator</span></button>
+  </div>
+  <div class="nav-grp" role="group" aria-labelledby="navGhW"><span class="nav-gh" id="navGhW">Your workspace</span>
+    <button data-v="card" aria-label="My Card"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M14 15.5l2 2 3.5-4"/></svg><span class="nav-l">My Card</span><span class="nav-s">Card</span></button>
+    <button data-v="portfolio" aria-label="Portfolio"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12.5h18"/></svg><span class="nav-l">Portfolio</span><span class="nav-s">Portfolio</span></button>
+    <button data-v="performance" class="nav-x" aria-label="Performance"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg><span class="nav-l">Performance</span><span class="nav-s">Performance</span></button>
+    <button data-v="process" class="nav-x nav-sub" aria-label="Process" title="Your decision process: the Process Coach"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1.3"/></svg><span class="nav-l">Process</span><span class="nav-s">Process</span></button>
+  </div>
+  <div class="nav-grp" role="group" aria-labelledby="navGhM"><span class="nav-gh" id="navGhM">More</span>
+    <button data-v="more" class="nav-x" aria-label="More" title="Model Collective, methodology, data, account, help"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span class="nav-l">More</span><span class="nav-s">More</span></button>
+  </div>
+  <p class="nav-foot">Research, not picks. 21+ · 1-800-GAMBLER</p>
+  <button type="button" class="nav-menu" id="navMenuBtn" data-nav-menu aria-expanded="false" aria-controls="edNav" aria-label="Menu: every destination"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Menu</button>
   <!-- HIDDEN for now (owner request): Pulse and Discipline. Their views and loaders
        are intact but unreachable; neither has its tables in this repository.
   <button data-v="social">Pulse</button>
   <button data-v="discipline">Discipline</button>
   -->
 </nav>
+<div class="nav-scrim" id="navScrim" hidden></div>
 
 <script src="/lib/ufc_research.js?v=20260909a"></script>
 <!-- THE SIMULATOR: the sport registry (generated; public statuses and limitations) and the reader -->
@@ -4021,14 +4054,14 @@ window.mcRefresh=function(){
      tools/app/portfolio_process.test.js. -->
 <script src="/lib/edgedesk_positions.js?v=20261004b"></script>
 <script src="/lib/edgedesk_process.js?v=20261004b"></script>
-<script src="/lib/edgedesk_workspace_ui.js?v=20261024sc1"></script>
+<script src="/lib/edgedesk_workspace_ui.js?v=20261026ros1"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
 <script src="/lib/edgedesk_pricing.js?v=20261024a"></script>
 <!-- the one access decision (public.my_billing_access) and the server
      reconciliation the paywall asks for before it locks anybody out -->
 <script src="/lib/edgedesk_access.js?v=20261004a"></script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track); configured below with the session token -->
-<script src="/lib/edgedesk_track.js?v=20261024sc1"></script>
+<script src="/lib/edgedesk_track.js?v=20261026ros1"></script>
 <!-- The CFB research view: what a reader sees first on the college board
      (the fair line with its side, the market gap, the research label, the
      reasons, the best available line, the projection's own history), read off
@@ -4053,9 +4086,9 @@ window.mcRefresh=function(){
 <!-- the canonical team resolver (the one supabase/functions/kalshi_sync links games with):
      the graphic places each Kalshi price on this game's own home or away team with it -->
 <script src="/lib/football_identity.js?v=20261021ks1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261025pd1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261025pd1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261025pd1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261026ros1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -4117,8 +4150,18 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_nhl_market.js?v=20261026ts1"></script>
 <script src="/lib/edgedesk_nhl_compare.js?v=20261026ts1"></script>
 <script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_grade_ui.js?v=20261021inj1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261021inj1"></script>
+<script src="/lib/edgedesk_grade_ui.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261026ros1"></script>
+<!-- THE RESEARCH OS (docs/research-os/DESIGN.md): the research context carried between features, the
+     shell (navigation, quiet reads, services), the Overview, search and Performance; Market Foresight's
+     small service (its record and controller load on first use) -->
+<script src="/lib/edgedesk_context.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_shell.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_overview.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_search.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_perf_hub.js?v=20261026ros1"></script>
+<script src="/foresight/service.js?v=20261026ros1"></script>
+<script>try{if(window.EDShell)window.EDShell.install();}catch(e){try{console.error('shell',e);}catch(_){}}</script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -4229,8 +4272,24 @@ window.mcRefresh=function(){
     missing:function(league,gid){try{history.replaceState(null,'',location.pathname+location.search+'#research/football');}catch(_){}
       researchGo('football');setTimeout(function(){try{window.fbOpenGame(league==='cfb'?'p4':'nfl',gid);}catch(_){}},80);},
     back:function(){if(history.length>1)history.back();else researchGo('football');},
-    track:function(name,props){try{if(window.EDTrack&&EDTrack.event)EDTrack.event(name,props||{},{once:false});}catch(_){}}
+    track:function(name,props){try{if(window.EDTrack&&EDTrack.event)EDTrack.event(name,props||{},{once:false});}catch(_){}},
+    /* KEEP RESEARCHING (lib/edgedesk_context.js railHTML): Signals, Market Foresight, the Simulator, the
+       AI desk, the Card and Portfolio for this game, by its research key. Opening the page makes the game
+       the research context (the desk's screen, recently viewed), once per game. */
+    workspace:{
+      html:function(s){
+        var C=window.EDContext;if(!C||!s||!s.game_key)return '';
+        var ctx=gvCtx(s);
+        if(GVCTX!==s.game_key){GVCTX=s.game_key;try{C.set(ctx,{panel:'game'});}catch(_){}}
+        var sims={};try{((window.EDSimSports&&EDSimSports.sports)||[]).forEach(function(x){sims[x.key]=1;});}catch(_){}
+        var onCard=false;try{onCard=(window.EDDecisionUI&&EDDecisionUI.entries?EDDecisionUI.entries():[]).some(function(e){return e&&e.event_key===s.game_key&&e.status!=='removed';});}catch(_){}
+        return C.railHTML(ctx,{simSports:sims,onCard:onCard,started:!!s.started});
+      },
+      after:function(el,s){try{if(window.EDContext)window.EDContext.railFill(el,gvCtx(s));}catch(_){}}
+    }
   };}
+  var GVCTX=null;
+  function gvCtx(s){return window.EDContext.fromResearchKey(s.game_key,{home:s.home&&s.home.name,away:s.away&&s.away.name,start:s.kickoff_tbd?null:s.kickoff,season:s.season,researchTimestamp:s.generated_at||null});}
   var GVPEND=null;
   window.gvShowPage=function(h,o){var el=document.getElementById('gamePage');if(!el||!window.EDGameView)return;
     if(!el.getAttribute('data-mounted')){el.setAttribute('data-mounted','1');window.EDGameView.mount(el,gvOpts());}
@@ -5586,25 +5645,31 @@ function edSafeUrl(u){
 }
 
 /* ===== nav =====
-   FIVE DESTINATIONS — Research · Card · Portfolio · Process · More
-   (docs/ia/NAVIGATION_AUDIT.md). show(v) is still the one router every link
+   THE RESEARCH OS NAVIGATION (docs/research-os/DESIGN.md §1, after
+   docs/ia/NAVIGATION_AUDIT.md): Research — Overview · Research · Signals ·
+   Market Foresight · Simulator; Workspace — My Card · Portfolio · Performance
+   (Process under it); More. show(v) is still the one router every link
    calls, so every old name has to keep landing somewhere real:
      edges, pprops   Research panels (RESEARCH_MODULES) — routed into the shell
      ledger          merged into Portfolio
      ai              an overlay, opened over whatever is on screen
-     record          EdgeDesk's model performance, a More destination
+     record          EdgeDesk's model performance, under Performance
+     performance     the Performance page (it was an alias of Record; Record is one tap
+                     from it, and #record / #pnl / #receipt=… still open Record itself)
      social, discipline  hidden since before this change; land on Edges */
-var NAV_ALIAS={ledger:'portfolio',bets:'portfolio',records:'record',performance:'record',coach:'process'};
+var NAV_ALIAS={ledger:'portfolio',bets:'portfolio',records:'record',coach:'process',home:'overview',dashboard:'overview'};
 /* the destinations "remember last tab" may return a reader to */
-var NAV_PRIMARY={signals:1,research:1,card:1,portfolio:1,process:1,simulator:1};
+var NAV_PRIMARY={overview:1,signals:1,research:1,foresight:1,card:1,portfolio:1,performance:1,process:1,simulator:1};
 /* views with no seat light the seat that owns them, so a reader never loses
    their place: everything reached through More reads as More */
-var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more',games:'research'};
+var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'performance',games:'research'};
 /* a game's research page (#game/<league>/<id>) belongs to the Research seat too */
 NAV_OWNER.game='research';
 /* views that carry their own #hash, so a destination can be linked to */
-var NAV_HASH_RE=/^#(signals|card|portfolio|process|simulator|more)(\/[a-z_]+)?$/;
-function navPaint(on){var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){var x=b[j].dataset.v===on;b[j].classList.toggle('on',x);if(x)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}}
+var NAV_HASH_RE=/^#(overview|signals|foresight|card|portfolio|performance|process|simulator|more)(\/[a-z_]+)?$/;
+function navPaint(on){var b=document.querySelectorAll('.bottomnav button[data-v]');for(var j=0;j<b.length;j++){var x=b[j].dataset.v===on;b[j].classList.toggle('on',x);if(x)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}
+  /* a place with no seat on the phone's bar lights Menu (lib/edgedesk_shell.js) */
+  try{if(window.EDShell)window.EDShell.paint(on);}catch(_){}}
 /* NAVIGATION EVIDENCE. Which destinations people actually open is the only
    honest argument for giving one more room or less; these are the events that
    keep it (lib/edgedesk_track.js → supabase/funnel.sql, and gtag via edEvent).
@@ -5639,7 +5704,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
      #receipt=… and anything else belongs to another view and is left alone. */
   try{var _h=location.hash||'',_mine=NAV_HASH_RE.test('#'+v)?'#'+v:null;
     if(_mine){if(_h.split('/')[0]!==_mine)history.replaceState(null,'',location.pathname+location.search+_mine);}
-    else if(/^#research\//.test(_h)||/^#playerprops/.test(_h)||/^#signals\//.test(_h)||NAV_HASH_RE.test(_h))history.replaceState(null,'',location.pathname+location.search);
+    else if(/^#research\//.test(_h)||/^#playerprops/.test(_h)||/^#signals\//.test(_h)||/^#foresight\//.test(_h)||NAV_HASH_RE.test(_h))history.replaceState(null,'',location.pathname+location.search);
   }catch(_){}
   var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);
   navPaint(NAV_OWNER[v]||v);window.scrollTo(0,0);
@@ -5651,6 +5716,10 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
   if(v==='process'){try{if(window.pcOpen)window.pcOpen();}catch(_){}}
   if(v==='simulator'){try{if(window.EDSimUI)window.EDSimUI.open($('simHost'));}catch(_){}}   /* lib/edgedesk_simulator.js */
   if(v==='signals')scOpen(null);   /* lib/edgedesk_signal_center.js */
+  /* the Research OS views (docs/research-os/DESIGN.md): each opens on what it already holds and fills the rest */
+  if(v==='overview'){try{if(window.EDOverview)window.EDOverview.open($('overviewHost'));}catch(e){try{console.error('overview',e);}catch(_){}}}
+  if(v==='performance'){try{if(window.EDPerfHub)window.EDPerfHub.open($('perfHost'));}catch(e){try{console.error('performance',e);}catch(_){}}}
+  if(v==='foresight'){try{if(window.EDForesightService)window.EDForesightService.open($('mfHost'),location.hash);else $('mfHost').innerHTML='<div class="empty">Market Foresight did not load. The public page is <a href="/foresight/">/foresight/</a>.</div>';}catch(e){try{console.error('foresight',e);}catch(_){}}}
   if(v==='setup'){try{if(window.setupOpen)window.setupOpen();}catch(_){}}
   if(v==='games'){try{if(window.gmShowPage)window.gmShowPage(location.hash);}catch(_){}}
   plStop();}
@@ -5658,8 +5727,8 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
    the ones the five destinations add (#portfolio[/tab], #process, #more), plus
    the names readers and old emails use for places that moved (#ledger,
    #record, #pnl, #edges, #props, #settings …). Returns true when it routed. */
-var NAV_HASH_MAP={signals:'signals',card:'card',portfolio:'portfolio',process:'process',simulator:'simulator',more:'more',setup:'setup',ledger:'portfolio',bets:'portfolio',
-  record:'record',records:'record',pnl:'record',performance:'record',edges:'edges',props:'pprops',settings:'settings',faults:'faults',
+var NAV_HASH_MAP={overview:'overview',signals:'signals',foresight:'foresight',card:'card',portfolio:'portfolio',performance:'performance',process:'process',simulator:'simulator',more:'more',setup:'setup',ledger:'portfolio',bets:'portfolio',
+  record:'record',records:'record',pnl:'record',edges:'edges',props:'pprops',settings:'settings',faults:'faults',
   news:'news',collective:'collective',terms:'terms',ai:'ai'};
 function navHashRoute(h){
   h=h||'';
@@ -5671,6 +5740,8 @@ function navHashRoute(h){
   if(/^#signal-center(?:\/|$)/.test(h)){h='#signals'+h.slice(14);try{history.replaceState(null,'',location.pathname+location.search+h);}catch(_){}}
   if(/^#signals(?:\/|$)/.test(h)){var _sr=window.EDSignalCenter&&window.EDSignalCenter.parseHash(h);if(!_sr)return false;
     if($('v-signals').classList.contains('hide')){SC_ROUTE=_sr;show('signals');}else scOpen(_sr);return true;}
+  /* Market Foresight: #foresight[/game/<sport>:<event>|/model/<source>:<key>[/<version>]] (foresight/app.js) */
+  if(/^#foresight(?:\/|$)/.test(h)){if($('v-foresight').classList.contains('hide'))show('foresight');else{try{window.EDForesightService.open($('mfHost'),h);}catch(_){}}return true;}
   /* Game research: #game/<nfl|cfb>/<game_id>[?f=portrait] (lib/edgedesk_game_view.js) */
   if(/^#game\/(nfl|cfb)\//.test(h)){if($('v-game').classList.contains('hide'))show('game');try{window.gvShowPage(h);}catch(_){}return true;}
   var m=h.match(/^#([a-z]+)(?:\/([a-z_]+))?$/);if(!m||!NAV_HASH_MAP[m[1]])return false;
@@ -6015,7 +6086,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261026ts1';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261026ros1';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
@@ -6029,7 +6100,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261021inj1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261026ros1';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
@@ -7022,7 +7093,18 @@ function rsDatasetHTML(modId){
   };
 })();
 
-var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){edNavTrack('primary',b.dataset.v);show(b.dataset.v);};})(navs[n]);
+/* the seats only: Menu and Close belong to the shell (lib/edgedesk_shell.js) */
+/* A SEAT TAP IS A STEP IN THE BROWSER'S HISTORY (docs/research-os/DESIGN.md §1): show() and
+   researchGo() write their hash with replaceState (a programmatic show — the boot landing, a
+   redirect — must not leave a dead Back step), so a reader's own tap turns that write into a new
+   entry, and Back / Forward walk the places they visited. */
+function navSeatPush(fn){
+  var before=location.pathname+location.search+location.hash;
+  fn();
+  var after=location.pathname+location.search+location.hash;
+  if(after!==before){try{history.replaceState(null,'',before);history.pushState(null,'',after);}catch(_){}}
+}
+var navs=document.querySelectorAll('.bottomnav button[data-v]');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){navSeatPush(function(){edNavTrack('primary',b.dataset.v);show(b.dataset.v);});};})(navs[n]);
 
 /* ===== learned weights ===== */
 var WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};
@@ -19574,10 +19656,11 @@ var PREF_DEFAULTS={
   sports:{},                 /* {} = all. keyed by sport_title */
   minEdge:0, hideNoSharp:false, hideResearchOnly:false, onlyPositive:true,
   books:'trusted', window:'week',
-  /* RESEARCH is the default product experience: the deeper workspace is what
-     EdgeDesk is for, and Edges is the signal layer that sits beside it. A
-     user who navigates elsewhere still gets their last tab back. */
-  defaultTab:'research', rememberTab:true, lastTab:'research', lastResearchSub:'football', savedResearch:[],
+  /* OVERVIEW is where a reader starts (docs/research-os/DESIGN.md §3): what
+     deserves attention today, one tap from the research that explains it. A
+     reader who navigates elsewhere still gets their last tab back, and a
+     saved preference is never overwritten by this default. */
+  defaultTab:'overview', rememberTab:true, lastTab:'overview', lastResearchSub:'football', savedResearch:[],
   compact:false, reduceMotion:false, largeText:false,
   /* FAVOURITE TEAMS. Stored as team names exactly as `signals` spells them, so
      a favourite matches by the same string the board renders. */
@@ -20070,12 +20153,12 @@ function renderSetEdge(){
            one that is still honoured but no longer offered (Faults, Record…) is
            shown as itself, so the setting never misreports what boot will do */
         var cur={pprops:'research',edges:'research',ledger:'portfolio'}[p.defaultTab]||p.defaultTab;
-        var opts=[['signals','Signal Center'],['research','Research'],['card','Card'],['portfolio','Portfolio'],['process','Process'],['simulator','Simulator']];
+        var opts=[['overview','Overview'],['research','Research'],['signals','Signal Center'],['foresight','Market Foresight'],['simulator','Simulator'],['card','My Card'],['portfolio','Portfolio'],['performance','Performance'],['process','Process']];
         if(cur&&!opts.some(function(o){return o[0]===cur;}))opts.push([cur,({record:'Model performance'}[cur]||cur.charAt(0).toUpperCase()+cur.slice(1))+' (earlier choice)']);
         return opts;
       })().map(function(t){
         return '<option value="'+t[0]+'"'+(({pprops:'research',edges:'research',ledger:'portfolio'}[p.defaultTab]||p.defaultTab)===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('')+'</select>',
-      'Research is the default. Props and Edges open inside Research; everything else is in More')+
+      'Overview is the default. Props and Edges open inside Research; everything else is in More')+
     setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
 
   /* ODDS FORMAT. Was gated because ~50 sites each formatted their own display
@@ -21135,7 +21218,7 @@ function loadMore(){
     /* how the A–F research grades held up (/performance/grades/): research quality, never a pick */
     moreItem(IC.model,'Grade performance ↗','How EdgeDesk’s A–F research grades held up on completed games, locked before kickoff. Research quality, not picks.','moreGoGrades()','grade_performance'),
     /* Market Foresight (/foresight/): which recorded forecasts preceded later DraftKings and Kalshi movement, timing uncertainty kept; observational research, never a grade */
-    moreItem(IC.model,'Market Foresight ↗','Which forecasts preceded later market movement, with every timestamp’s uncertainty and every miss shown. Observational research, not picks.','moreGoForesight()','market_foresight'),
+    moreItem(IC.model,'Market Foresight','Which forecasts preceded later market movement, with every timestamp’s uncertainty and every miss shown. Observational research, not picks.','moreGoForesight()','market_foresight'),
     typeof window.hiwOpen==='function'?moreItem(IC.method,'Methodology','How EdgeDesk prices, grades and proves itself, screen by screen.','hiwOpen()','methodology'):'',
     (window.RESEARCH_MODULES&&RESEARCH_MODULES.lab)?moreItem(IC.sources,'Data sources','Where every model input came from, what transformed it, and how fresh it is.','moreGoProvenance()','data_sources'):'']);
   group('System',[
@@ -21175,10 +21258,9 @@ function moreGoGrades(){
   try{window.open('/performance/grades/','_blank','noopener');}
   catch(_){location.href='/performance/grades/';}
 }
-function moreGoForesight(){
-  try{window.open('/foresight/','_blank','noopener');}
-  catch(_){location.href='/foresight/';}
-}
+/* Market Foresight opens inside the terminal (#foresight, foresight/app.js),
+   under the reader's own session; /foresight/ stays the public page */
+function moreGoForesight(){location.hash='#foresight';}
 window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;window.moreGoGames=moreGoGames;window.moreGoPerformance=moreGoPerformance;window.moreGoGrades=moreGoGrades;window.moreGoForesight=moreGoForesight;
 
 /* settings boot: apply prefs, paint avatar, honour landing-page pref */
@@ -21210,17 +21292,17 @@ try{applyPrefs();renderAvatar();loadSubStatus();
       w.then(function(){if(rm&&rm.openEntity&&(!rm.entityOpen||!rm.entityOpen()))rm.openEntity(ent);}).catch(function(){});
     })(RESEARCH_MODULES[_rh.sub],_rh.entity);}
   }
-  /* a reader with no saved preferences at all is new here: Signal Center is
-     where research discovery starts, once it is live (scOpen hands off to
-     Research until then) */
-  else if(_fresh){SC_LANDING=true;show('signals');}
+  /* a reader with no saved preferences at all is new here: the Overview is
+     where research starts (what is on, what has research, what changed), and
+     it reads well with nothing saved and with any optional layer missing */
+  else if(_fresh){show('overview');}
   else if(_t==='research')researchGo(_p.lastResearchSub||'football');
   /* The markup now rests on Research -> Football, so EVERY other remembered tab
      has to be routed explicitly. Before this, 'edges' was the resting state and
      the branch below skipped it; leaving that skip in place would have stranded
      an Edges user on Research. */
   else if(_t&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t); /* legacy lastTab ('cfb'…) routes into the shell via show() */
-  else researchGo(_p.lastResearchSub||'football');          /* no usable memory: the default destination */
+  else show('overview');                                     /* no usable memory: the default destination */
 }catch(_e){}
 
 /* ================= ADDED: BET DISCIPLINE ENGINE (window.Discipline) ================= */
@@ -65370,7 +65452,7 @@ try{
 <script src="/lib/edgedesk_first_run.js?v=20261004a"></script>
 <!-- the introduction, walkthroughs, Help panel and term explainers: the words,
      then the engine that shows them -->
-<script src="/lib/edgedesk_guide_content.js?v=20261016rg1"></script>
+<script src="/lib/edgedesk_guide_content.js?v=20261026ros1"></script>
 <script src="/lib/edgedesk_guide.js?v=20261016g1"></script>
 <script>
 try{

@@ -28,6 +28,17 @@ The rules: [METHODOLOGY.md](METHODOLOGY.md), frozen as
 - This session could not reach the production database: the cloud environment's network policy
   refused `iattxbkbufslbauoumga.supabase.co`. So nothing was verified against production rows.
 
+## In the terminal
+
+The record also opens inside the terminal, at `app.html#foresight`,
+`#foresight/game/<sport>:<event id>` and `#foresight/model/<source>:<key>[/<version>]`.
+It is a seat in the Research group, and the game page shows a preview under "Keep researching
+this game". It is the same controller and renderers (`foresight/foresight.js`, booted with
+`inApp`), reading the same doors under the reader's own session. `foresight/service.js` is all
+the rest of the terminal can reach: status and per-game counts for display, through
+`EDShell.provide('foresight', …)`. `/foresight/` is unchanged. See
+[`docs/research-os/DESIGN.md` §5](../research-os/DESIGN.md).
+
 ## Sources, and what each can support
 
 | Source | Connected how | Collecting | Measurable historically |
@@ -153,7 +164,8 @@ intervals only; historical records keep the timing they were collected with.
    ```
    Then run the job again. A tie that settles NO rather than as a push is recorded as
    `"tie":"no"`; it stays a mismatch and is not compared with the DraftKings moneyline.
-5. **Go live:** `select public.mf_admin_set_mode('live', 'reason');`. Switch on the hourly job by
+5. **Go live** only after [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md) is ticked, by hand:
+   `select public.mf_admin_set_mode('live', 'reason');`. Switch on the hourly job by
    setting the repository variable `MARKET_FORESIGHT_WORKER` to `on`. Add `/foresight/` to
    `sitemap-pages.xml` and change the page's robots meta to `index,follow`.
 
