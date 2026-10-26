@@ -1,0 +1,100 @@
+# Deploy the Sharp-lag research pipeline (EXPERIMENTAL): its edge function(s)
+# and (optionally) its SQL. docs/sharp-lag/README.md.
+#
+# MANUAL ON PURPOSE, as every deploy-*.yml here: tests first, then the
+# functions, then the SQL in dependency order. A report row that says CHECK
+# THIS fails the job.
+#
+# SPEND. Deploying spends nothing. The free sharp_lag function never calls the
+# odds gateway or the provider.
+#
+# SECRETS:
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the functions
+#   SB_DB_URL                                     to apply the SQL (optional;
+#                                                 or paste the files into the SQL editor)
+# And once, on the Supabase side (each function and pg_cron share a secret):
+#   supabase secrets set SHARP_LAG_CRON_SECRET=<a long random value>
+#   select vault.create_secret('<the same value>', 'sharp_lag_cron_secret');
+name: Deploy Sharp lag research
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_functions:
+        description: 'Deploy the Sharp-lag edge functions (JWT verification OFF: pg_cron sends no JWT)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply sharp_lag.sql, then sharp_lag_cron.sql (needs pg_cron and pg_net)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-sharp-lag
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The core, the functions and the layer must pass before anything ships
+        env:
+          SHARP_LAG_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/sharp_lag/inline_core.js --check
+          node tools/sharp_lag/core.test.js
+          node tools/sharp_lag/sharp_lag_fn.test.js
+          node tools/sharp_lag/sharp_lag_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the functions cannot be deployed from CI."; fi
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — paste the SQL files into the SQL editor instead, in order."; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ inputs.deploy_functions && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt IS LOAD-BEARING: pg_cron sends the x-cron-secret header,
+      # not a JWT. A POST without the secret is refused by each function itself.
+      - name: Deploy the functions
+        if: ${{ inputs.deploy_functions && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          for fn in sharp_lag; do
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --no-verify-jwt
+          done
+
+      - name: Apply the SQL (layer, then cron)
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          for f in supabase/sharp_lag.sql supabase/sharp_lag_cron.sql; do
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f")
+            echo "== $f"; echo "$out" | tail -10
+            if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::$f: a report row says CHECK THIS"; exit 1; fi
+          done
