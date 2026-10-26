@@ -137,6 +137,11 @@ section('2. starter changes');
   chk('…and no change is no row', SYNC.starterChanges(prev, clone(prev)).length === 0);
   const lr = SYNC.ledgerRows(ch, '2026-10-25T12:00:00Z', 'starter inputs changed: G1 home', 2026)[0];
   chk('the ledger row carries its schema, time and trigger', lr.schema === SYNC.SCHEMA_LOG && lr.at && /G1 home/.test(lr.trigger) && lr.season === 2026);
+  const nx = clone(next); const nAnn = SYNC.annotate(nx, [lr]);
+  chk('the card carries the update, as the NHL card\u2019s goalie update does: "Updated: SEA starter changed from Sam Darnold to Drew Lock" with both versions\u2019 numbers',
+    nAnn === 1 && nx.games[0].starter_update.text === 'Updated: SEA starter changed from Sam Darnold to Drew Lock' && nx.games[0].starter_update.home_win_prob.before === 0.6583
+    && nx.games[0].starter_update.home_margin.after === 1.9, nx.games[0].starter_update);
+  chk('a row from another schema is not an update', SYNC.updateOf({ schema: 'other', game_id: 'G1' }) === null && SYNC.updateOf(null) === null);
 
   /* the Observed (T0) quarterback report */
   const qbLedger = [{ key: '2026|7|KC|00-0033873', designation: null, practice: 'Full Participation in Practice', observed_at: '2026-10-23T20:15:00Z' }];
@@ -271,7 +276,12 @@ const ins = Object.fromEntries((snap.insights || []).map((i) => [i.id, i]));
   const ctx = { console, Math, Date, JSON, Promise, setTimeout, clearTimeout, Intl, Number, String, Object, Array, isFinite, parseFloat, encodeURIComponent, decodeURIComponent };
   ctx.window = ctx; ctx.self = ctx; ctx.globalThis = ctx;
   ctx.document = { getElementById: () => null, createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), head: { appendChild() {} }, body: { appendChild() {} } };
-  const DATA = { generated_at: '2026-10-25T23:08:09Z', games: [snap] };
+  /* the same game after a logged starter change: the card says so, with both versions' win % */
+  const snapU = GS.fromNfl(Object.assign({}, slateRow, { game_id: D.FOCUS + '_UPD', starter_update: SYNC.updateOf({ schema: SYNC.SCHEMA_LOG, at: '2026-10-25T20:15:00Z', game_id: D.FOCUS, side: 'home', team: 'SEA',
+    trigger: 'starter inputs changed: 2026_07_KC_SEA home', from: { player_name: 'Sam Darnold', status: 'SCHEDULE_FEED' }, to: { player_name: 'Drew Lock', status: 'INJURY_REPORT_REPLACEMENT' },
+    home_win_prob: { before: 0.6583, after: 0.6436 }, home_margin: { before: 4.38, after: 4.16 } }) }), { teams: { SEA: { ranks: rankOf('SEA') }, KC: { ranks: rankOf('KC') } }, generated_at: '2026-10-25T21:53:59.162Z' });
+  chk('the snapshot carries the starter update only when the slate does', !snap.starter_update && snapU.starter_update && snapU.starter_update.text === 'Updated: SEA starter changed from Sam Darnold to Drew Lock');
+  const DATA = { generated_at: '2026-10-25T23:08:09Z', games: [snap, snapU] };
   ctx.fetch = async () => ({ ok: true, json: async () => DATA });
   vm.createContext(ctx);
   ['lib/edgedesk_calc.js', 'lib/edgedesk_football_lines.js', 'lib/football_identity.js', 'lib/edgedesk_game_snapshot.js', 'lib/edgedesk_game_graphic.js', 'lib/edgedesk_game_view.js']
@@ -282,8 +292,9 @@ const ins = Object.fromEntries((snap.insights || []).map((i) => [i.id, i]));
   ctx.EDGameView.mount(el, { dataUrl: '/x.json',
     market: () => ({ market: { home_line: -2.5, total: 42.5, ml_home: -148, ml_away: 124, book: 'draftkings', captured_at: new Date(Date.now() - 600000).toISOString() }, decision: { decision: 'LEAN', label: 'LEAN', reason: 'fixture' } }),
     kalshi: () => ({ state: 'ok', rows: [krow('Kansas City Chiefs', 'Seattle Seahawks', 0.415), krow('Seattle Seahawks', 'Kansas City Chiefs', 0.585)] }) });
-  const page = ctx.EDGameView.open('nfl', D.FOCUS).then(() => new Promise((r) => setTimeout(r, 30))).then(() => el.innerHTML);
-  module.exports.page = page;
+  const wait = () => new Promise((r) => setTimeout(r, 30));
+  const page = ctx.EDGameView.open('nfl', D.FOCUS).then(wait).then(() => el.innerHTML);
+  module.exports.page = page.then((html) => ctx.EDGameView.open('nfl', D.FOCUS + '_UPD').then(wait).then(() => ({ html, upd: el.innerHTML })));
 }
 
 /* ======================================================================== */
@@ -347,8 +358,10 @@ section('5. the research registration');
   }
 }
 
-module.exports.page.then((html) => {
+module.exports.page.then((pages) => {
+  const html = pages.html;
   section('3b. the research page');
+  chk('page: after a logged starter change it says so, with both versions\u2019 win %', pages.upd.indexOf('<b>Updated: SEA starter changed from Sam Darnold to Drew Lock</b> · SEA win 65.8% → 64.4%') > 0 && html.indexOf('Updated: SEA starter changed') < 0);
   chk('page: the "Large gap vs market" panel, with the top chip, its season split and window', /<b>Large gap vs market<\/b>/.test(html) && html.indexOf('Top contributing chip: Team Strength') > 0
     && html.indexOf('SEA +2.7: +3.7 carried from 2025, −1.0 from 2026') > 0 && html.indexOf('data window 2025: 70% / 2026: 30%') > 0);
   chk('page: each chip shows its data window', html.indexOf('<span class="gv-win"') > 0 && html.indexOf('Data window: 2025: 70% / 2026: 30%') > 0 && html.indexOf('Data window: 2025: 49% / 2026: 51%') > 0);

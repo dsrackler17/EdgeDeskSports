@@ -71,8 +71,12 @@ Full detail is in [`DIAGNOSIS.md`](DIAGNOSIS.md).
   - `starter-context.yml` logs the changes its own scheduled rebuild makes.
 - The game cards follow at the next hourly build of `football/game_research/` (`cfb-lab.yml` is that directory's only
   writer).
-- This mirrors the NHL board's goalie handling. That board uses a confirmed-starter override and a rebuild every
-  three hours (`hockey/build_slate.js`), with no change detector. The NFL sync adds the detector.
+- **The card says what changed.** It shows "Updated: SEA starter changed from Sam Darnold to Drew Lock" with both
+  versions' win %, as the NHL card shows a goalie change (#774: `public.nhl_game_cards`, `lib/edgedesk_nhl_goalies.js`).
+  - The slate carries the latest logged change per game (`starter_update`), and the research page shows it.
+  - The NHL sync runs as a Supabase function polled every 5 minutes to puck drop. The NFL sync runs whenever its
+    committed inputs refresh: the injury report every 6 h, and the depth chart with each starter-context build. The
+    NFL has no scraped inactives list.
 
 **QB injury designation and practice status, as Observed (T0).**
 

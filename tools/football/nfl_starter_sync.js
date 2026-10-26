@@ -84,8 +84,9 @@ async function main() {
   if (argv.includes('--record')) {
     const pi = argv.indexOf('--prev'), prev = pi >= 0 ? readJson(argv[pi + 1], null) : null, next = readJson(SLATE, null);
     if (!prev || !next) { console.log('starter sync --record: no earlier slate to compare'); return 0; }
-    const changes = SYNC.starterChanges(prev, next);
-    appendLedger(next.season, SYNC.ledgerRows(changes, at, 'scheduled slate build', next.season));
+    const changes = SYNC.starterChanges(prev, next), logged = SYNC.ledgerRows(changes, at, 'scheduled slate build', next.season);
+    appendLedger(next.season, logged);
+    if (SYNC.annotate(next, logged)) fs.writeFileSync(SLATE, JSON.stringify(next, null, 1) + '\n');
     console.log(`starter sync --record: ${changes.length} priced-starter change(s) between the two slates`); say(changes);
     return 0;
   }
@@ -103,8 +104,10 @@ async function main() {
   if (r.status !== 0) { console.error('starter sync: the slate rebuild failed (exit ' + r.status + '); the previous slate stands'); output('rebuilt', 'false'); return 3; }
   const next = readJson(SLATE, null);
   const trigger = 'starter inputs changed: ' + [...new Set(stale.map((x) => x.game_id + ' ' + x.side))].join(', ');
-  const changes = SYNC.starterChanges(slate, next);
-  appendLedger(season, SYNC.ledgerRows(changes, at, trigger, season));
+  const changes = SYNC.starterChanges(slate, next), logged = SYNC.ledgerRows(changes, at, trigger, season);
+  appendLedger(season, logged);
+  /* the card says what changed, with both versions' numbers (the slate was built before the row existed) */
+  if (SYNC.annotate(next, logged)) fs.writeFileSync(SLATE, JSON.stringify(next, null, 1) + '\n');
   console.log(`starter sync: slate rebuilt; ${changes.length} priced-starter change(s) logged to ${path.relative(ROOT, ledgerFile(season))}`); say(changes);
   output('rebuilt', 'true');
   return 0;

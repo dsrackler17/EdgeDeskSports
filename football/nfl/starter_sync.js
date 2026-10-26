@@ -156,6 +156,22 @@ function starterChanges(prev, next) {
 function ledgerRows(changes, at, trigger, season) {
   return changes.map((c) => Object.assign({ schema: SCHEMA_LOG, season, at, trigger }, c));
 }
+/* a logged change as the card carries it: "Updated: SEA starter changed from Sam Darnold to Drew Lock",
+   with both versions' numbers (null when there is none) */
+function updateOf(row) {
+  if (!row || row.schema !== SCHEMA_LOG) return null;
+  return { at: row.at, side: row.side, team: row.team, trigger: row.trigger || null,
+    from: row.from ? { player_name: row.from.player_name, status: row.from.status } : null, to: row.to ? { player_name: row.to.player_name, status: row.to.status } : null,
+    home_win_prob: row.home_win_prob || null, home_margin: row.home_margin || null,
+    text: 'Updated: ' + row.team + ' starter changed from ' + ((row.from && row.from.player_name) || 'none') + ' to ' + ((row.to && row.to.player_name) || 'none') };
+}
+/* the just-built slate, given the changes the sync logged after building it */
+function annotate(slate, rows) {
+  const by = {}; (rows || []).forEach((r) => { by[r.game_id] = r; });
+  let n = 0;
+  ((slate && slate.games) || []).forEach((g) => { if (by[g.game_id]) { g.starter_update = updateOf(by[g.game_id]); n++; } });
+  return n;
+}
 
-module.exports = { fingerprint, practiceShort, teamQbRows, starterInputs, sideInputs, qbReport, staleGames, starterChanges, ledgerRows, lastObservation,
+module.exports = { fingerprint, practiceShort, teamQbRows, starterInputs, sideInputs, qbReport, staleGames, starterChanges, ledgerRows, lastObservation, updateOf, annotate,
   SCHEMA_LOG, REPORT_SOURCE, TIME_NOTE };

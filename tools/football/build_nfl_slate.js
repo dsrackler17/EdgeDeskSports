@@ -278,6 +278,14 @@ async function build(opts) {
     try { qbLedger = fs.readFileSync(path.join(ROOT, 'football', 'injuries', 'history', 'nfl_' + season + '_qb.jsonl'), 'utf8').split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l)); }
     catch (_) { qbLedger = []; }
   }
+  /* the starter sync's change log (tools/football/nfl_starter_sync.js): the latest priced-starter
+     change of each game rides on the card ("Updated: starter changed from X to Y"), as the NHL
+     card's goalie update does */
+  const lastChange = {};
+  try {
+    fs.readFileSync(path.join(ROOT, 'football', 'nfl', 'starter_sync', 'nfl_' + season + '.jsonl'), 'utf8').split('\n').filter((l) => l.trim())
+      .forEach((l) => { const r = JSON.parse(l); if (r && r.game_id) lastChange[r.game_id] = r; });
+  } catch (_) { /* no change logged yet */ }
   /* the module already trimmed S.up to its window; widen from S.games when a
      longer lookahead was asked for */
   const pool = (S.games || []).filter((u) => !u.done && u.t >= now - 6 * 3600000 && u.t <= now + lookaheadDays * 86400000);
@@ -386,6 +394,7 @@ async function build(opts) {
          an OBSERVATION (T0) with its source and times, never a number */
       home_qb_report: (() => { const x = starterOf(g, 'home'); return x ? SYNC.qbReport(g.home_team, x.player_id, x.player_name, injuries, qbLedger) : null; })(),
       away_qb_report: (() => { const x = starterOf(g, 'away'); return x ? SYNC.qbReport(g.away_team, x.player_id, x.player_name, injuries, qbLedger) : null; })(),
+      starter_update: SYNC.updateOf(lastChange[String(g.game_id)]),
       /* the inputs that decided each starter, fingerprinted: tools/football/nfl_starter_sync.js
          rebuilds this slate when any upcoming game's fingerprint moves */
       starter_inputs: {
