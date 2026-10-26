@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_diagnostics_v1",
- "generated_at": "2026-10-26T12:02:51.536Z",
+ "generated_at": "2026-10-26T13:31:45.876Z",
  "model": "edgedesk_nhl_v1:xg_core (production)",
  "source": "out-of-sample predictions rebuilt by hockey/lab/base.js (reproduces hockey/validation/nhl_walkforward.json)",
  "windows": {
@@ -25,14 +25,14 @@
    "calibration_slope": 1.064
   },
   "live": {
-   "n": 179,
-   "log_loss": 0.66054,
-   "brier": 0.23405,
-   "auc": 0.6266,
-   "mean_p": 0.5303,
-   "mean_y": 0.5922,
-   "calibration_in_the_large": -0.0618,
-   "calibration_slope": 1.542
+   "n": 184,
+   "log_loss": 0.66106,
+   "brier": 0.23426,
+   "auc": 0.6326,
+   "mean_p": 0.5281,
+   "mean_y": 0.587,
+   "calibration_in_the_large": -0.0589,
+   "calibration_slope": 1.525
   }
  },
  "by_season": {
@@ -167,14 +167,14 @@
    "calibration_slope": 0.783
   },
   "2027": {
-   "n": 179,
-   "log_loss": 0.66054,
-   "brier": 0.23405,
-   "auc": 0.6266,
-   "mean_p": 0.5303,
-   "mean_y": 0.5922,
-   "calibration_in_the_large": -0.0618,
-   "calibration_slope": 1.542
+   "n": 184,
+   "log_loss": 0.66106,
+   "brier": 0.23426,
+   "auc": 0.6326,
+   "mean_p": 0.5281,
+   "mean_y": 0.587,
+   "calibration_in_the_large": -0.0589,
+   "calibration_slope": 1.525
   }
  },
  "season_phase": {
@@ -761,9 +761,9 @@
     "rate": 0.6596
    },
    "2027": {
-    "team_games": 358,
-    "projected_started": 224,
-    "rate": 0.6257
+    "team_games": 368,
+    "projected_started": 232,
+    "rate": 0.6304
    }
   },
   "note": "projected = the most likely starter from recent usage and the league's back-to-back rule (hockey/model/ratings.js); actual = the box score's starter",
@@ -826,20 +826,20 @@
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   },
   "live": {
-   "n": 179,
-   "coverage_80": 0.9162,
-   "mean_bias_goals": -0.058,
+   "n": 184,
+   "coverage_80": 0.9185,
+   "mean_bias_goals": -0.056,
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   }
  },
  "drift": {
-  "n": 179,
-  "live_mean_log_loss": 0.66054,
+  "n": 184,
+  "live_mean_log_loss": 0.66106,
   "reference_mean": 0.66286,
   "reference_sd_per_game": 0.232,
-  "z": -0.13,
-  "rolling_100": 0.667,
-  "cusum": 0,
+  "z": -0.11,
+  "rolling_100": 0.6624,
+  "cusum": 0.092,
   "cusum_max": 0.411,
   "decision_interval": 1.16,
   "status": "OK",
@@ -873,8 +873,8 @@
     "cusum": 0
    },
    {
-    "n": 179,
-    "cusum": 0
+    "n": 184,
+    "cusum": 0.092
    }
   ],
   "rule": "one-sided CUSUM on per-game log loss minus the confirmation mean, allowance half a per-game sd, alarm at 5 sd; WATCH when the season mean sits 2 standard errors above the reference. A monitor: it never retrains or reprices anything."
@@ -1139,37 +1139,37 @@
     ]
    },
    "live": {
-    "team_games": 358,
-    "games": 179,
+    "team_games": 368,
+    "games": 184,
     "sample_state": "EARLY_SIGNAL",
     "slope": {
-     "n": 358,
-     "slope": 1.61,
+     "n": 368,
+     "slope": 1.509,
      "ci95": [
-      0.947,
-      2.273
+      0.86,
+      2.158
      ],
      "mean_lambda": 3.019,
-     "mean_goals": 3.036
+     "mean_goals": 3.038
     },
     "reading": "OK",
     "total": {
-     "n": 179,
-     "slope": 3.555,
+     "n": 184,
+     "slope": 3.332,
      "ci95": [
-      1.034,
-      6.076
+      0.84,
+      5.824
      ],
      "mean_lambda": 6.038,
-     "mean_goals": 6.073,
-     "reading": "TOO_NARROW"
+     "mean_goals": 6.076,
+     "reading": "OK"
     },
     "split": {
-     "n": 176,
-     "slope": 1.503,
+     "n": 181,
+     "slope": 1.371,
      "ci95": [
-      0.776,
-      2.23
+      0.672,
+      2.071
      ],
      "reading": "OK"
     },
@@ -1177,47 +1177,47 @@
      {
       "group": 1,
       "of": 5,
-      "n": 71,
-      "forecast": 2.655,
-      "scored": 2.479,
-      "ratio": 0.934,
+      "n": 73,
+      "forecast": 2.652,
+      "scored": 2.534,
+      "ratio": 0.956,
       "se": 0.07
      },
      {
       "group": 2,
       "of": 5,
-      "n": 72,
-      "forecast": 2.858,
-      "scored": 2.792,
-      "ratio": 0.977,
-      "se": 0.069
+      "n": 74,
+      "forecast": 2.856,
+      "scored": 2.77,
+      "ratio": 0.97,
+      "se": 0.068
      },
      {
       "group": 3,
       "of": 5,
-      "n": 71,
+      "n": 73,
       "forecast": 3.007,
-      "scored": 3.141,
-      "ratio": 1.045,
-      "se": 0.07
+      "scored": 3.096,
+      "ratio": 1.029,
+      "se": 0.068
      },
      {
       "group": 4,
       "of": 5,
-      "n": 72,
-      "forecast": 3.154,
-      "scored": 3.083,
-      "ratio": 0.978,
-      "se": 0.066
+      "n": 74,
+      "forecast": 3.155,
+      "scored": 3.108,
+      "ratio": 0.985,
+      "se": 0.065
      },
      {
       "group": 5,
       "of": 5,
-      "n": 72,
-      "forecast": 3.416,
-      "scored": 3.681,
-      "ratio": 1.077,
-      "se": 0.066
+      "n": 74,
+      "forecast": 3.419,
+      "scored": 3.676,
+      "ratio": 1.075,
+      "se": 0.065
      }
     ]
    }
@@ -1269,14 +1269,14 @@
    },
    "live": {
     "first_20_games": {
-     "n": 358,
-     "slope": 1.61,
+     "n": 368,
+     "slope": 1.509,
      "ci95": [
-      0.947,
-      2.273
+      0.86,
+      2.158
      ],
      "mean_lambda": 3.019,
-     "mean_goals": 3.036
+     "mean_goals": 3.038
     },
     "rest": {
      "n": 0,
@@ -1310,7 +1310,7 @@
       "se": 0.028
      },
      "live": {
-      "n": 24
+      "n": 25
      }
     },
     {
@@ -1331,7 +1331,7 @@
       "se": 0.027
      },
      "live": {
-      "n": 20
+      "n": 23
      }
     },
     {
@@ -1373,7 +1373,7 @@
       "se": 0.025
      },
      "live": {
-      "n": 17
+      "n": 19
      }
     },
     {
@@ -1394,7 +1394,7 @@
       "se": 0.024
      },
      "live": {
-      "n": 23
+      "n": 24
      }
     },
     {
@@ -1415,7 +1415,7 @@
       "se": 0.024
      },
      "live": {
-      "n": 16
+      "n": 19
      }
     },
     {
@@ -1436,7 +1436,7 @@
       "se": 0.026
      },
      "live": {
-      "n": 19
+      "n": 21
      }
     },
     {
@@ -1457,7 +1457,11 @@
       "se": 0.02
      },
      "live": {
-      "n": 25
+      "n": 30,
+      "forecast": 2.975,
+      "scored": 3.433,
+      "ratio": 1.154,
+      "se": 0.114
      }
     },
     {
@@ -1478,7 +1482,7 @@
       "se": 0.035
      },
      "live": {
-      "n": 13
+      "n": 14
      }
     },
     {
@@ -1499,7 +1503,7 @@
       "se": 0.03
      },
      "live": {
-      "n": 14
+      "n": 16
      }
     },
     {
@@ -1520,7 +1524,7 @@
       "se": 0.027
      },
      "live": {
-      "n": 20
+      "n": 23
      }
     }
    ]
@@ -1528,7 +1532,7 @@
   "summary": [
    "selection (17088 team-games): slope 1.01 (95% 0.931–1.09), OK; the highest-λ tenth scored 1.008× its forecast, the lowest 1.011×.",
    "confirmation (14856 team-games): slope 0.889 (95% 0.823–0.956), TOO_WIDE; the highest-λ tenth scored 0.955× its forecast, the lowest 1.018×.",
-   "live (358 team-games): slope 1.61 (95% 0.947–2.273), OK; the highest-λ fifth scored 1.077× its forecast, the lowest 0.934×."
+   "live (368 team-games): slope 1.509 (95% 0.86–2.158), OK; the highest-λ fifth scored 1.075× its forecast, the lowest 0.956×."
   ]
  }
 }

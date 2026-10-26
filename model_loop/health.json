@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_model_loop_health_v1",
- "generated_at": "2026-10-26T04:29:06Z",
+ "generated_at": "2026-10-26T12:47:19Z",
  "status": "OK",
  "summary": {
   "OK": 8,
@@ -29,7 +29,7 @@
     "versions": 3
    },
    "refreshed_at": "2026-10-25T17:15:32Z",
-   "refreshed_age_h": 11.2,
+   "refreshed_age_h": 19.5,
    "research": {
     "file": "docs/model-loop/nfl/weekly/2026-w06.json",
     "at": "2026-10-21T01:44:52Z",
@@ -62,7 +62,7 @@
     "versions": 3
    },
    "refreshed_at": "2026-10-26T01:36:45Z",
-   "refreshed_age_h": 2.9,
+   "refreshed_age_h": 11.2,
    "research": {
     "file": "docs/model-loop/cfb/weekly/2026-w08.json",
     "at": "2026-10-25T00:38:12Z",
@@ -95,7 +95,7 @@
     "versions": 2
    },
    "refreshed_at": "2026-10-25T13:42:58Z",
-   "refreshed_age_h": 14.8,
+   "refreshed_age_h": 23.1,
    "research": {
     "file": "docs/model-loop/nba/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:15Z",
@@ -121,7 +121,7 @@
     "versions": 1
    },
    "refreshed_at": "2026-10-25T13:42:59Z",
-   "refreshed_age_h": 14.8,
+   "refreshed_age_h": 23.1,
    "research": {
     "file": "docs/model-loop/wnba/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:16Z",
@@ -147,7 +147,7 @@
     "versions": 2
    },
    "refreshed_at": "2026-10-25T13:43:23Z",
-   "refreshed_age_h": 14.8,
+   "refreshed_age_h": 23.1,
    "research": {
     "file": "docs/model-loop/ncaam/weekly/2026-10-21.json",
     "at": "2026-10-21T23:33:11Z",
@@ -173,7 +173,7 @@
     "versions": 2
    },
    "refreshed_at": "2026-10-25T13:43:45Z",
-   "refreshed_age_h": 14.8,
+   "refreshed_age_h": 23.1,
    "research": {
     "file": "docs/model-loop/ncaaw/weekly/2026-10-21.json",
     "at": "2026-10-21T23:34:52Z",
@@ -199,7 +199,7 @@
     "versions": 4
    },
    "refreshed_at": "2026-10-25T17:58:23Z",
-   "refreshed_age_h": 10.5,
+   "refreshed_age_h": 18.8,
    "research": {
     "file": "docs/model-loop/ufc/weekly/2026-10-25.json",
     "at": "2026-10-25T17:58:48Z",
@@ -280,8 +280,8 @@
     "since": "2026-10-20T15:19:46.910Z",
     "promoted_by": "its own protocol (hockey/model/walkforward.js)"
    },
-   "refreshed_at": "2026-10-26T00:27:30Z",
-   "refreshed_age_h": 4.0,
+   "refreshed_at": "2026-10-26T05:15:23Z",
+   "refreshed_age_h": 7.5,
    "research": {
     "file": "docs/model-loop/nhl/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:51Z",
@@ -308,8 +308,8 @@
     "since": "2026-10-21T18:14:51.980Z",
     "promoted_by": "its own protocol (nba/model/walkforward.js)"
    },
-   "refreshed_at": "2026-10-25T23:23:18Z",
-   "refreshed_age_h": 5.1,
+   "refreshed_at": "2026-10-26T05:03:08Z",
+   "refreshed_age_h": 7.7,
    "research": {
     "file": "docs/model-loop/nba_engine/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:51Z",
@@ -318,7 +318,7 @@
    },
    "data": {
     "graded": 36,
-    "games_priced": 60,
+    "games_priced": 68,
     "missing_results": 0,
     "unpriced": 0,
     "validated_at": "2026-10-21T18:14:51.980Z"
@@ -332,7 +332,7 @@
    "label": "Collegiate collector",
    "status": "OK",
    "reasons": [
-    "backfill baseball-boxscores-2013-2026: in progress (8345 read on 2026-10-25, 27860 left)",
+    "backfill baseball-boxscores-2013-2026: in progress (7350 read on 2026-10-26, 20510 left)",
     "6 host(s) refused automated reads and are left alone (collegiate/data/refusals.jsonl)"
    ],
    "last_run": "2026-10-26",
@@ -435,7 +435,7 @@
       "north-dakota": {
        "host": "fightinghawks.com",
        "registry_host": "https",
-       "named_by": 21,
+       "named_by": 42,
        "examples": [
         "creighton",
         "neb-omaha",
@@ -455,36 +455,37 @@
         "eastern-ill",
         "ohio"
        ]
+      },
+      "syracuse": {
+       "host": "cuse.com",
+       "registry_host": "suathletics.com",
+       "named_by": 42,
+       "examples": [
+        "binghamton",
+        "boston-college",
+        "california",
+        "delaware-st",
+        "drexel"
+       ]
       }
-     }
-    },
-    {
-     "step": "schedules",
-     "sport": "mens-basketball",
-     "ok": 598,
-     "misses_by_reason": {
-      "PLATFORM_NOT_READ": 44,
-      "SPORT_MISMATCH": 16,
-      "HTTP": 10,
-      "NO_SCHEDULE": 4
-     }
-    },
-    {
-     "step": "schedules",
-     "sport": "womens-basketball",
-     "ok": 597,
-     "misses_by_reason": {
-      "PLATFORM_NOT_READ": 44,
-      "SPORT_MISMATCH": 10,
-      "NO_SCHEDULE": 8,
-      "HTTP": 12,
-      "SEASON_MISMATCH": 1
      }
     },
     {
      "step": "team_ids",
      "schools": 42,
      "hosts": 93
+    },
+    {
+     "step": "boxscores",
+     "id": "baseball-boxscores-2013-2026",
+     "planned": 93616,
+     "unjoinable": 2978,
+     "ok": 7350,
+     "left": 20510,
+     "misses_by_reason": {
+      "NO_BOXSCORE": 138,
+      "HTTP": 4
+     }
     },
     {
      "step": "portal",

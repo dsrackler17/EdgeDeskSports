@@ -78,7 +78,7 @@ function hockey(asOf) {
 function basketball(asOf) {
   const s = readJson('basketball/slate.json');
   if (!s || !s.leagues) return { events: [], source: null };
-  const map = { nba: 'nba', ncaam: 'ncaam' };
+  const map = { nba: 'nba', ncaam: 'ncaam', ncaaw: 'ncaaw', wnba: 'wnba' };
   const events = [];
   Object.keys(map).forEach((lk) => {
     const L = s.leagues[lk];
@@ -94,7 +94,7 @@ function basketball(asOf) {
       }));
     });
   });
-  return { events, source: { file: 'basketball/slate.json', generated_at: s.generated_at || null, sports: ['nba', 'ncaam'] } };
+  return { events, source: { file: 'basketball/slate.json', generated_at: s.generated_at || null, sports: Object.keys(map) } };
 }
 
 /* every artifact's events, keyed by sport */

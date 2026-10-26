@@ -121,3 +121,21 @@
 .gv-gap{border-left-width:6px}
 .gv-win{font:500 10px 'JetBrains Mono',monospace;border:1px dashed var(--border);border-radius:6px;padding:1px 5px;color:var(--dim);margin-left:4px;white-space:nowrap}
 .gv-tier{font:600 10px 'JetBrains Mono',monospace;border:1px solid var(--accent);border-radius:6px;padding:1px 5px;color:var(--accent);margin-right:4px}
+/* the matchup graphic block on every other sport's game (lib/edgedesk_sport_graphic.js):
+   the MLB and college baseball briefs, Today's Games' matchup view, the UFC card */
+.sg-gfx{margin:0 0 12px}
+.sg-gfx .gv-fig,.sg-gfx .gv-fmt,.sg-gfx .gv-acts{max-width:560px}
+.sg-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 8px}
+.sg-hd b{font-size:15px;font-weight:800}
+.sg-hd span{font-size:12.5px;color:var(--dim)}
+.sg-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin}
+.sg-chip{flex:0 0 auto;min-height:36px;border:1px solid var(--border);background:var(--surface2);color:var(--dim);border-radius:999px;font:600 12.5px Inter,system-ui,sans-serif;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.sg-chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#042320)}
+.sg-chip.dis:not(.on){border-color:rgba(217,154,43,.6)}
+.sg-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sg-evt{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:4px 0 6px}
+.sg-note{font-size:13px;color:var(--dim);margin:6px 0}
+.mlbb-gfx{margin:0 0 12px}
+#briefGfx.mlbb-gfx{background:var(--surface,#191510);border:1px solid var(--border,#332a1b);border-radius:14px;padding:14px;color:var(--text,#f1ebdf)}
+#briefGfx.mlbb-gfx:empty{display:none}
+@media print{.sg-gfx .gv-fmt,.sg-gfx .gv-acts,.sg-gfx .gv-msg,.sg-chips{display:none}}

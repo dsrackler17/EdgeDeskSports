@@ -36,7 +36,7 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   /* ── THE ADAPTER ──────────────────────────────────────────────────── */
   eq('one plain day per request, the division for college', ESPN.scoreboardUrl({ path: 'football/college-football', groups: '80' }, '20261013'),
     'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261013&limit=500&groups=80');
-  eq('eight feeds across the eight sports (soccer removed)', [ESPN.feeds().length, Array.from(new Set(ESPN.feeds().map((f) => f.sport))).length], [8, 8]);
+  eq('ten feeds across the ten sports (soccer removed; women’s college basketball and the WNBA added)', [ESPN.feeds().length, Array.from(new Set(ESPN.feeds().map((f) => f.sport))).length], [10, 10]);
   chk('no feed reads a soccer scoreboard', !ESPN.feeds().some((f) => /soccer/.test(f.sport + f.path)));
 
   const rec = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_lab', 'fixtures', 'providers', 'espn_scoreboard_pregame.json'), 'utf8'));

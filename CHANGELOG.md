@@ -25,6 +25,70 @@ The terminal opens on an **Overview**, and a game now travels by its identifiers
   - `index.html` loads `edgedesk_track.js` under a new stamp.
   - The ten other public pages keep theirs: they never send the four new events.
 
+## 2026-10-26 — CFB: the EV plausibility check reads each game's width again
+
+`football/cfb_validation/tests.js` failed on main ("the audit finds no status that contradicts its checks — got 3, want 0"). Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas passed every integrity check, but the board held them at INVESTIGATE as "implausible EV".
+
+- **The cause.** The plausibility check measures a gap in widths (σ) of the game's own distribution, with a fitted bound of 0.96. `distributionSpread` searched for that width from −80 to +80 points. The board's stored curve (`football/cfb_terminal/build.js` `curveCover`) spans only the market ± 30 to 60 points and answers nothing outside it. So no width was ever read, and every college game on the board fell back to the flat 25% raw-EV bound. That bound flags about 20% of real games where the σ bound flags under 1% (`football/validation/ev_plausibility.json`). It flagged 7 of today's 61, including Army @ Memphis at a 6.1-point gap.
+- **The fix.** `lib/edgedesk_quote_ev.js` now searches inside the cover function's own span. A distribution defined across ±80, as NFL's is, reads exactly as before.
+- **On today's board** (rebuilt at its own 12:08 UTC time): σ reads 16 to 18 points, and no game is implausible (largest z 0.53). The three games become VERIFIED MAJOR and Army @ Memphis becomes WORTH RESEARCHING. Notre Dame @ Navy, Arizona State @ BYU and Tulane @ Charlotte stay INVESTIGATE for their own failed checks. Large-EV warnings still apply, and every decision is still PASS.
+- **Tests.** `quote_ev.test.js` goes from 244 to 248. A curve that answers only near the market reads the same width as the whole distribution, its 8.5-point gap is not implausible, and a 14.5-point gap still is. The three fail on the old code with the production symptom (`flat_fallback`, σ null). The CFB terminal, validation, EV, bettor, production, resilience and integrity suites all pass.
+
+## 2026-10-26 — The matchup graphic on every sport: college basketball, the WNBA, MLB, college baseball and UFC
+
+NFL, college football, the NHL and the NBA open a game with the matchup graphic. Every other sport EdgeDesk prices now does too, where a reader clicks the game (`lib/edgedesk_sport_graphic.js`, [`docs/game-research/SPORTS.md`](docs/game-research/SPORTS.md)).
+
+- **Where it is.**
+  - Men's and women's college basketball and the WNBA: Today's Games → the game's matchup view, from the lab slate (`basketball/slate.json`).
+  - MLB: the top of the game brief, from the run model (`mlb/engine.js`).
+  - College baseball: the top of the brief, drawn while the rest of the brief is still being read.
+  - UFC: Research → UFC shows the next card, a chip per bout with the main event first; the card's matchup view on Today's Games carries the same chips.
+- **The football picture, each sport's numbers.** The same template, square or portrait, with Download PNG, Share and Copy link. Each sport fills it with its own:
+  - three model panels;
+  - the captured market before the start, or EdgeDesk's own detail;
+  - What to watch for, which names what moves the number and what the model cannot see: availability in basketball, probable starters, park and weather in baseball, a fighter's camp in UFC.
+- **College baseball is projected, never priced.** Its brief has always said none of its numbers becomes a price. The graphic shows the board's projected runs, total and win probability, with the left panel as the projected margin ("not a run line"). The brief's Projection paragraph now says what is projected and that none of it is a price; it used to say there was no total or win probability, which the board already showed.
+- **No EDGE label on any of them.** Value claims are off for the lab basketball model and the run models (never graded against the close) and for the experimental UFC Elo, so a model–market gap is a sentence and nothing more.
+- **Today's Games lists women's college basketball and the WNBA** (ESPN `basketball/womens-college-basketball` with `groups=50`, and `basketball/wnba`), joined to the lab slate like men's games.
+  - Men's games had shown no fair line: the join read a spread field the lab slate does not carry. It now reads `fair_home_line`.
+  - The pill reads NCAAM, beside NCAAW.
+- **The renderer** gains a baseball diamond and an octagon surface, baseball and glove icons, outlined polygons, and an optional "VS" for a neutral site or a bout. Football's picture is unchanged.
+
+Tests: `npm run sport:graphic:test` (1,502: every committed lab-slate game as each league, every served UFC bout, MLB and college baseball through the real engine, layout in both formats; mutation-checked) and `npm run sport:graphic:e2e` (53, Chromium: the matchup views, a 390 px phone, the public page, the UFC panel, both briefs, keyboard focus). CI: `.github/workflows/sport-graphic-tests.yml`. Also run: `slate/games.test.js` (106), `slate/build.test.js` (67, now ten feeds), `slate/games_ui.e2e.js` (105), `cbb/cbb_ui.e2e.js` (59) and `mlb/baseball_ui.e2e.js` (245) against PostgreSQL 16, `mlb/game_brief.test.js` (152), the NBA (367), NHL (344), signal center (291) and football graphic suites, and navigation. The ESPN women's and WNBA scoreboards could not be read from the build environment (its network refuses `site.api.espn.com`).
+
+## 2026-10-26 — NHL: a nightly check on whether the model over- or under-rates clubs
+
+A reader asked whether the model under-rates Toronto. For TOR at CGY, the market implied 3.57 Toronto goals and the model 3.10 in regulation (about 3.2 with overtime). Toronto had scored 3.85 a game, with a strong power play and 18 goals in three games. The model's job is to be right for every club, so this checks that question for all of them, out of sample, every night.
+
+- **What the history says.**
+  - Clubs that start hot score what the model forecasts. Clubs 8 to 24 games in, scoring at least 1.20× the league, scored 0.994× (2014-20) and 0.997× (2021-26) their forecast. With hot finishing too, Toronto's profile: 0.995× and 0.994×. A run of goals over the last three games: 1.015× and 0.995×.
+  - High early power-play goal rates carry no stable correction (1.038× and 0.966×). Adding power-play features changes nothing measurable. A goals-only model, which trusts scoring alone, is measurably worse on team totals.
+- **Where the model does overrate.** In 2021-26 the highest-forecast tenth scored 4.5% under its forecast (club-goal slope 0.889, interval below 1). The cause is game totals forecast too far apart, the same issue that keeps the totals markets provisional. Three other calibration windows were tested again; none beats the production rule, so nothing in the price changes.
+- **The season so far leans the other way.** Totals are bunched too tightly (slope 3.56 over 179 games, interval above 1). This season's total calibration is the strongest since 2014. It is a watch item; the live season never chooses the model.
+- **The monitor.** `hockey/model/diagnostics.js` adds `team_strength`:
+  - the club-goal slope, with a reading of OK, TOO_WIDE, TOO_NARROW or TOO_EARLY;
+  - the game total and who scores more, separately;
+  - scored ÷ forecast by tenth of the forecast;
+  - eleven standout groups (hot or cold scoring, last three games, power-play goals, finishing, a leaky or stingy opponent).
+
+  The Record tab shows it as a table. It never retrains or reprices. `--check` requires a reading for every window.
+- **Tests.**
+  - `nhl_v2.test.js` gains 8 checks on synthetic data where the answer is known. A forecast at the truth reads OK. One spread 1.5× too far reads TOO_WIDE with slope ≈ 1/1.5. One bunched to half the spread reads TOO_NARROW with slope ≈ 2. A game's own score never reaches its season-to-date context.
+  - `engine_ui.e2e.js` checks the table on desktop and phone.
+
+Write-up: `docs/engine/NHL_LAB.md` §6.1.
+
+## 2026-10-26 — College basketball exhibitions: opponents found by name and nickname
+
+The first collector run held 299 men's and 300 women's schedules. Before the daily refreshes published them, a preview found three opponent mistakes, fixed here.
+
+- **A school that moved its website is found by name.** Southern Miss lists Houston Christian at `hcuhuskies.com`, a site the registry does not know (it has `hbuhuskies.com`). The game was priced as a non-D-I opponent and a second time from Houston Christian's own listing. A website the registry does not know now falls back to the registry name, so the game is priced once, D-I against D-I.
+- **A school's ESPN team, when the collector does not read it,** is the D-I team ESPN names exactly as the registry names the school and its nickname. For the 442 teams (229 men's, 213 women's) whose results also identify them, the two never disagree. Arkansas, Kentucky, Northwestern State and Utah State opponents, skipped before, are now priced.
+- **The same rule fixes a stale division.** Mercyhurst and New Haven are D-I on ESPN but D-II in the registry. Louisville vs Mercyhurst was priced as a non-D-I game (99.8%); it is now D-I against D-I.
+- **A game both schools list is priced from the listing whose start time reads.** Houston Christian lists no time for Southern Miss; Southern Miss lists 6 PM, which is now used instead of noon, flagged approximate.
+- **More of the schools' labels come off a name:** "(Ex.)", "(ex)", "(exhib.)", "(EXH)", and "Exhibition" in front ("Exhibition Cal State Monterey Bay").
+- Preview from the collected schedules, through 2026-11-09: men's 42 priced (was 40), women's 57 (was 56).
+
 ## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
 
 No feed this repository reads lists a college basketball exhibition, so the forecasts priced none. Every school lists its own, and the collegiate collector now reads every Division I school's men's and women's basketball schedule each week, beside baseball.

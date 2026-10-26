@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T02:30:00.000Z",
   "game_when_label": "2026-10-31 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-26T04:34:54.929Z",
-  "generated_at": "2026-10-26T04:34:54.929Z",
+  "updated_at": "2026-10-26T12:52:05.780Z",
+  "generated_at": "2026-10-26T12:52:05.780Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T17:00:00.000Z",
-        "retrieved_at": "2026-10-26T02:52:03.863Z"
+        "retrieved_at": "2026-10-26T12:43:56.273Z"
       },
       "home": {
         "team": "Sacramento State",
@@ -330,9 +330,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T19:30:00.000Z",
-        "retrieved_at": "2026-10-26T02:52:03.863Z"
+        "retrieved_at": "2026-10-26T12:43:56.273Z"
       },
-      "generated_at": "2026-10-26T02:52:36.070Z",
+      "generated_at": "2026-10-26T12:44:49.031Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1883,13 +1883,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "grsp7c1urmol6",
-    "status": "PARTIALLY_EXPLAINED",
+    "packet_hash": "f04a3uu0slmw",
+    "status": "EXPLAINED",
     "input_suspect": false,
     "question": "Can Kent State’s pass rush get to Jackson Sharman?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Sacramento State, and its own breakdown accounts for about 2.3 of the 3.7 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Most of the 3.2-point difference traces to home field (engine constant) (about 1.1 points), which the closing market has historically priced differently. That explains the gap; it does not make either number a bet.",
     "gap": {
-      "points": 3.7,
+      "points": 3.2,
       "toward": "Sacramento State",
       "other": "Kent State"
     },
@@ -1933,11 +1933,6 @@
         "key": "DATA_CONFLICT",
         "severity": "medium",
         "text": "EdgeDesk’s own sources disagree on sack rate allowed (Sacramento State), sack rate (Sacramento State) and sack rate (Kent State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 4.4 points from the middle of its own other models."
       }
     ],
     "sources": [
@@ -1945,7 +1940,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-26T02:53:28.107Z",
+        "observed_at": "2026-10-26T12:45:55.256Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1961,6 +1956,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-26T04:34:54.929Z"
+    "at": "2026-10-26T12:52:05.780Z"
   }
 }
