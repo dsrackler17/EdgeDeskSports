@@ -1,0 +1,148 @@
+// The NHL goalie sync as a GitHub job summary: what one run of the deployed
+// nhl_goalie_sync function wrote, whether pg_cron is calling it, and the
+// readiness KPIs (public.nhl_goalie_readiness), with the verdict the job exits
+// on. Read by .github/workflows/nhl-goalie-sync.yml and by the first run in
+// deploy-nhl-goalie.yml. docs/engine/NHL_GOALIES.md §9.
+//
+//   node tools/hockey/nhl_goalie_run_summary.js --title "NHL goalie sync"
+//        [--run run.json --http 200] [--cron cron.json] [--readiness readiness.json]
+//        [--cron-stale-min 15]
+//
+// Prints the markdown, appends it to $GITHUB_STEP_SUMMARY when that is set,
+// prints ::warning:: / ::error:: annotations, and exits 1 when an error stands.
+// An input that was asked for and is empty or unreadable is itself an error:
+// a check that could not be made is never reported as a pass.
+'use strict';
+const fs = require('fs');
+
+const cell = (v) => (v == null || v === '' ? '—' : String(v).replace(/\|/g, '\\|').replace(/\r?\n/g, ' '));
+const pct = (p) => (p == null ? '—' : (p * 100).toFixed(1) + '%');
+const yesNo = (b) => (b === true ? 'yes' : b === false ? 'no' : '—');
+const ageMin = (iso, nowMs) => (iso ? Math.round((nowMs - Date.parse(iso)) / 60000) : null);
+
+/** a JSON file: the value, null when empty, or { _unreadable } */
+function readJson(file) {
+  if (!file) return undefined;
+  try { const t = fs.readFileSync(file, 'utf8').trim(); return t ? JSON.parse(t) : null; } catch (e) { return { _unreadable: String((e && e.message) || e).slice(0, 200) }; }
+}
+
+// The one failure that is not EdgeDesk's: no outside starter source answered
+// (Daily Faceoff refused, and the NHL API was down or not yet in its window).
+// The function records that run as an error and keeps the starters on file;
+// the cards say so and stay gated, and System health shows it. The job warns.
+// Everything else that fails (the scheduler, the function, the cron secret,
+// the slate's inputs, a parser that no longer reads a source's page) fails it.
+const OUTSIDE = 'sources_down';
+const outsideOnly = (codes) => codes.length > 0 && codes.every((c) => c === OUTSIDE);
+
+/** what the job says: errors fail it, warnings annotate it */
+function verdict(o, nowMs) {
+  const errors = [], warnings = [];
+  const staleMin = o.cronStaleMin || 15;
+  if (o.run !== undefined) {
+    const r = o.run, code = String(o.http || '');
+    const failures = r && !r._unreadable ? (r.alerts || []).filter((a) => a.severity === 'FAILURE') : [];
+    const outside = outsideOnly(failures.map((a) => a.code));
+    if (!r || r._unreadable) errors.push('the sync gave no readable answer (HTTP ' + (code || '000') + ')' + (r && r._unreadable ? ': ' + r._unreadable : ''));
+    else if (code === '401') errors.push('the sync refused the cron secret (HTTP 401): run Deploy NHL goalie layer with set_cron_secret');
+    else if (code !== '200' && !(code === '500' && outside)) errors.push('the sync answered HTTP ' + code + (failures.length ? ': ' + failures.map((a) => a.code + ': ' + a.message).join('; ') : ''));
+    if (r && !r._unreadable) for (const a of r.alerts || []) {
+      if (a.severity === 'FAILURE') {
+        if (a.code === OUTSIDE) warnings.push('FAILURE ' + a.code + ' (an outside source, not EdgeDesk; the cards keep the starters on file and stay gated): ' + a.message);
+        else if (code === '200') errors.push(a.code + ': ' + a.message);
+      } else if (a.severity === 'DRIFT') errors.push('DRIFT ' + a.code + ' (a source\'s page no longer reads: the parser in hockey/goalies/core.js needs a fix): ' + a.message);
+      else if (a.severity !== 'WARNING' || a.code === 'unmatched_names' || a.code === 'source_conflict') warnings.push(a.severity + ' ' + a.code + ': ' + a.message);
+    }
+  }
+  if (o.cron !== undefined) {
+    const c = o.cron;
+    if (!c || c._unreadable) errors.push('pg_cron could not be read' + (c && c._unreadable ? ': ' + c._unreadable : '') + ' (is pg_cron enabled?)');
+    else if (!c.exists) errors.push('pg_cron has no nhl_goalie_sync job: run Deploy NHL goalie layer with apply_sql');
+    else if (c.active === false) errors.push('the pg_cron job nhl_goalie_sync is inactive');
+    else if (!c.last_start) errors.push('pg_cron has never called nhl_goalie_sync');
+    else {
+      const age = ageMin(c.last_start, nowMs);
+      if (age > staleMin) errors.push('pg_cron last called nhl_goalie_sync ' + age + ' minutes ago (' + c.last_start + '): it is meant to every five minutes');
+      else if (c.last_status === 'failed') errors.push('pg_cron\'s last call of nhl_goalie_sync failed: ' + (c.last_message || 'no message'));
+    }
+  }
+  if (o.readiness !== undefined) {
+    const R = o.readiness;
+    // last_check_alerts ("SEVERITY:code" of the last non-skipped run) is added by the workflows' query, beside the view's columns
+    const lastFailures = (Array.isArray(R && R.last_check_alerts) ? R.last_check_alerts : []).filter((s) => /^FAILURE:/.test(s)).map((s) => s.slice(8));
+    if (!R || R._unreadable) errors.push('public.nhl_goalie_readiness could not be read' + (R && R._unreadable ? ': ' + R._unreadable : ''));
+    else if (R.state === 'error' && R.last_check_status === 'error' && outsideOnly(lastFailures)) warnings.push('readiness: ' + (R.state_reason || 'error') + ' (an outside source, not EdgeDesk: see System health)');
+    else if (R.state === 'error') errors.push('readiness: ' + (R.state_reason || 'error'));
+    else if (R.state === 'warn') warnings.push('readiness: ' + (R.state_reason || 'warn (see nhl_goalie_alerts and System health)'));
+  }
+  return { errors, warnings };
+}
+
+function render(o, nowMs) {
+  const L = ['### ' + (o.title || 'NHL goalie sync'), ''];
+  const r = o.run;
+  if (r !== undefined) {
+    L.push('**The run**', '');
+    if (!r || r._unreadable) L.push('No readable answer (HTTP ' + cell(o.http) + ').', '');
+    else {
+      const R = r.run || {}, C = (r.cards && r.cards.versions) || [];
+      L.push('| | |', '|---|---|', '| Status | ' + cell(r.status) + (r.dry ? ' (dry: nothing written)' : '') + ' |', '| HTTP | ' + cell(o.http) + ' |');
+      if (r.skipped) L.push('| Not run | ' + cell(r.skipped) + ' |');
+      if (r.reason) L.push('| Reason | ' + cell(r.reason) + ' |');
+      L.push('| Due | ' + cell((R.due_kinds || []).join(', ')) + ' |',
+        '| Observations / consensus written | ' + cell(R.observations_written) + ' / ' + cell(R.consensus_written) + ' |',
+        '| Cards written / unchanged | ' + cell(R.cards_written) + ' / ' + cell(R.cards_unchanged) + ' |',
+        '| Edge events written | ' + cell(R.edge_events_written) + ' |',
+        '| Open conflicts | ' + cell(R.conflicts_open) + ' |', '| Next slot | ' + cell(R.next_due_at) + ' |',
+        '| Alerts | ' + ((r.alerts || []).map((a) => cell(a.severity + ' ' + a.code + ': ' + a.message)).join('<br>') || 'none') + ' |', '');
+      if (C.length) {
+        L.push('| Game | v | Trigger | Starters (home / away) | Status | Gate | Home win % | Change |', '|---|---|---|---|---|---|---|---|');
+        for (const c of C) L.push('| ' + [c.matchup, c.version, c.trigger, (c.pairing || []).join(' / '), (c.status || []).join(' / '), c.gate, pct(c.p_home_pairing), c.change].map(cell).join(' | ') + ' |');
+        L.push('');
+      }
+    }
+  }
+  const c = o.cron;
+  if (c !== undefined) {
+    L.push('**pg_cron** (the five-minute poke)', '');
+    if (!c || c._unreadable) L.push('Could not be read.', '');
+    else L.push('| | |', '|---|---|', '| Job | ' + (c.exists ? 'nhl_goalie_sync, ' + cell(c.schedule) + (c.active === false ? ', inactive' : '') : 'missing') + ' |',
+      '| Last call | ' + (c.last_start ? cell(c.last_start) + ' (' + ageMin(c.last_start, nowMs) + ' min ago), ' + cell(c.last_status) : 'never') + ' |',
+      '| Failed calls, last hour | ' + cell(c.failed_1h) + ' |', '');
+  }
+  const R = o.readiness;
+  if (R !== undefined) {
+    L.push('**Readiness** (public.nhl_goalie_readiness)', '');
+    if (!R || R._unreadable) L.push('Could not be read.', '');
+    else L.push('| | |', '|---|---|', '| State | ' + cell(R.state) + (R.state_reason ? ': ' + cell(R.state_reason) : '') + ' |',
+      '| Last check | ' + cell(R.last_check_status) + ' at ' + cell(R.last_check_at) + (Array.isArray(R.last_check_alerts) && R.last_check_alerts.length ? ' (' + cell(R.last_check_alerts.join(', ')) + ')' : '') + ' |',
+      '| Last success | ' + cell(R.last_success_at) + (R.minutes_since_success != null ? ' (' + R.minutes_since_success + ' min ago)' : '') + ' |',
+      '| Daily Faceoff / NHL API read | ' + yesNo(R.daily_faceoff_ok) + ' / ' + yesNo(R.nhl_api_ok) + ' |',
+      '| Upcoming cards / gated | ' + cell(R.cards_upcoming) + ' / ' + cell(R.cards_gated) + ' |',
+      '| Sides in the next 3h / not Confirmed | ' + cell(R.sides_next_3h) + ' / ' + cell(R.sides_unconfirmed_next_3h) + ' |',
+      '| Both starters Confirmed by T-30, last 7 days | ' + (R.pct_confirmed_by_t30_7d == null ? '— (no game yet)' : cell(R.pct_confirmed_by_t30_7d) + '% of ' + cell(R.games_7d)) + ' (target ' + cell(R.confirmed_by_t30_target_pct) + '%) |',
+      '| Source conflicts open / 24h / 7d | ' + cell(R.conflicts_open) + ' / ' + cell(R.conflicts_24h) + ' / ' + cell(R.conflicts_7d) + ' |',
+      '| Sync failures, last 24h | ' + cell(R.sync_failures_24h) + ' of ' + cell(R.runs_24h) + ' runs |',
+      '| Next slot | ' + cell(R.next_due_at) + ' |', '');
+  }
+  const v = verdict(o, nowMs);
+  L.push(v.errors.length ? '**Failed:** ' + v.errors.map(cell).join('; ') : v.warnings.length ? '**Passed with warnings.**' : '**Passed.**', '');
+  return { markdown: L.join('\n'), verdict: v };
+}
+
+const annotation = (s) => String(s).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+
+function main(argv) {
+  const a = {};
+  for (let i = 0; i < argv.length; i++) if (argv[i].startsWith('--')) { a[argv[i].slice(2)] = argv[i + 1] !== undefined && !argv[i + 1].startsWith('--') ? argv[++i] : true; }
+  const o = { title: a.title, http: a.http, run: readJson(a.run), cron: readJson(a.cron), readiness: readJson(a.readiness), cronStaleMin: a['cron-stale-min'] ? Number(a['cron-stale-min']) : undefined };
+  const out = render(o, Date.now());
+  console.log(out.markdown);
+  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.markdown + '\n');
+  for (const w of out.verdict.warnings) console.log('::warning::' + annotation(w));
+  for (const e of out.verdict.errors) console.log('::error::' + annotation(e));
+  return out.verdict.errors.length ? 1 : 0;
+}
+
+module.exports = { render, verdict, readJson };
+if (require.main === module) process.exit(main(process.argv.slice(2)));

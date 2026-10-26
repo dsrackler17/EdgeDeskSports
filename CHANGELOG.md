@@ -1,6 +1,35 @@
 # Changelog
 
+## 2026-10-26 — Market structure suites: one pinned clock for the browser test
 
+- **The failure (00:06 UTC).** `market_structure_ui.e2e.js:196` threw "Cannot set properties of null (setting 'open')".
+  - The suite stages a Week 7 board but ran it on the real clock and the live nflverse schedule.
+  - IND @ MIN went final on 2026-10-25 (10–16), and a finished game gets the graded card, which has no Market Structure section. DAL @ PHI would follow after Monday night.
+- **Four fixes for one cause.** #776, #777, #779 and #780 each pinned the clock and blanked later scores, each in its own way.
+  - Each was merged through a "Merge branch 'main'" conflict resolution that kept pieces of the others. One resolution left `csv is not defined`.
+  - After #782's restore was merged the same way, main's copy no longer parsed: a stray fragment of one scheme's `asOf()` sat after `pinLine()`, and `ST` and `pinned` were read before they existed.
+- **Restored, once.** The file is now #777's exactly, as it was green on main (ed901e89): every page reads 2026-10-25 13:00 UTC, and the schedule it is served blanks every 2026 score from then on.
+  - 25 of 25 pass on Playwright 1.63 and on 1.49.1 (CI's pin), and also against a schedule with every Week 7 and 8 game scored.
+
+## 2026-10-26 — Game research tests: two checks that broke after the NFL card's gate and data windows
+
+`tools/football/game_research.test.js` had failed on main since the NFL card commits added a large-gap gate and data windows to chips. The tests were wrong in both cases; the code is unchanged.
+
+- **The 5-point gate boundary.**
+  - The helper rounded the Kalshi mid to 0.1 pt, so its "5.0-point" case was really anywhere from 4.95 to 5.05.
+  - The gate fires above 5, so the check failed whenever the slate's first pregame NFL game landed above 5 (PIT @ NO: 5.03).
+  - The mid is now built at the model's own 4-decimal precision (the snapshot rounds win probability with `r4`), so the cases are exactly 5.0, 5.1 and −5.1.
+- **The chip spec.** The graphic spec now carries a chip's `window_label` when the chip has one; the alt text reads it ("Data 2025: 70% / 2026: 30%."). The check allows exactly that third key, and only when the snapshot's chip has a window.
+
+Tests: `game_research.test.js` passes 252 of 252 (it had 2 failures). `football_lines`, `game_context`, `build_game_research --check` and `nfl_prior_decay` (85) all pass.
+
+## 2026-10-26 — NHL starting goalies: deployed, and a GitHub job beside the other syncs
+
+- **Deployed.** Deploy NHL goalie layer now makes the cron secret exist and agree in Vault and on the function, schedules the five-minute poke, and runs the sync once. It ran from this branch. The first run wrote version 1 of the four cards inside the horizon (MIN @ VAN, LAK @ NYR, TOR @ CGY, DET @ EDM), all Projected and GATED.
+- **Daily Faceoff refuses the function (HTTP 403).** The NHL API read. Until a starter source answers, starters stay Projected until the NHL boxscore names them near puck drop, and runs more than three hours out record `sources_down` (`docs/engine/NHL_GOALIES.md` §10).
+- **NHL goalie sync** (`.github/workflows/nhl-goalie-sync.yml`). **Run workflow** calls the sync now: forced, dry, or with a simulated outage. On a schedule, every half hour from 8 AM ET, it is pg_cron's watchdog: it calls the sync only when pg_cron has stopped, and then fails. The job summary has the card versions written, pg_cron's last call and the readiness KPIs.
+- **The verdict** (`tools/hockey/nhl_goalie_run_summary.js`, shared with the deploy's first run). The job fails for anything EdgeDesk runs: the secret, the function, pg_cron, the inputs, a drifted parser. An outside source not answering is a warning. The two queries it reads are in `tools/hockey/sql/`, tested on real PostgreSQL.
+- **Tests.** Sync 49 → 61, SQL 66 → 71.
 
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 

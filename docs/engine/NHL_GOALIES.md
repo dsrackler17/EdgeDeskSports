@@ -227,8 +227,8 @@ evaluator has been written yet: the registration precedes it.
 | Suite | Checks |
 |---|---|
 | `node tools/hockey/nhl_goalie_core.test.js` | 83. Statuses, team identity, name matching, both parsers and their drift cases, the merge (agree, conflict, the lower status, projection fallback), exact re-pricing of the real MIN @ VAN scenarios, the card, change detection, the edge gate on all three markets, the cadence across the DST change, the inline copy |
-| `node tools/hockey/nhl_goalie_sync.test.js` | 49. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth |
-| `NHL_SQL_REQUIRED=1 node tools/hockey/nhl_goalie_sql.test.js` | 66. The layer on a real PostgreSQL: roles, append-only, the supersede, card versions, the confirmation and variant rules, edges attached to the version that existed, CLV, the KPIs (confirmed by T−30 with the grace, conflicts, failures, a silent scheduler), the card's freshness, the v2 registry, cron and rollback |
+| `node tools/hockey/nhl_goalie_sync.test.js` | 61. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth, and the GitHub jobs' summary and verdict (`tools/hockey/nhl_goalie_run_summary.js`) on the function's real answers |
+| `NHL_SQL_REQUIRED=1 node tools/hockey/nhl_goalie_sql.test.js` | 71. The layer on a real PostgreSQL: roles, append-only, the supersede, card versions, the confirmation and variant rules, edges attached to the version that existed, CLV, the KPIs (confirmed by T−30 with the grace, conflicts, failures, a silent scheduler), the card's freshness, the v2 registry, cron and rollback, and the two queries the GitHub job reads (`tools/hockey/sql/`) |
 | `node tools/hockey/nhl_goalie_ui.test.js` | 32. The block's badges, sources, times, range, limitations and change note; the slate fallback; the market gate; compare with and without the live card |
 | `node tools/engine/engine_ui.e2e.js` | +12, in Chromium on desktop and a 390 px phone: the block on the slate fallback, and a live card's version, change note and range |
 
@@ -266,21 +266,73 @@ captured. The goalie inputs fixture is the real build output for the
      and returns the cards without writing;
    - `POST {"simulate_outage":["daily_faceoff","nhl_api"],"force":true}`:
      System health shows a failure.
+4. **NHL goalie sync** (`.github/workflows/nhl-goalie-sync.yml`) is the sync's
+   GitHub job, beside the other syncs:
+   - **Run workflow** calls the sync now (forced by default; `dry` writes
+     nothing; `simulate_outage` treats one source as down);
+   - **on a schedule**, every half hour from 8 AM ET to about midnight ET
+     (September to June), it is the watchdog. It reads pg_cron's last call
+     (`tools/hockey/sql/nhl_goalie_cron_check.sql`). While pg_cron is calling,
+     it leaves the sync alone, since two callers in one minute would race each
+     other's writes. When pg_cron has not called for 15 minutes, the job calls
+     the sync itself, unforced so the function still decides what is due, and
+     fails so the miss is seen;
+   - either way, the job summary shows what the run wrote (each card version,
+     its starters, statuses, gate, home win % and change note), pg_cron's last
+     call and the readiness KPIs (`tools/hockey/sql/nhl_goalie_readiness_check.sql`,
+     the view plus the last check's alert codes).
+
+   `tools/hockey/nhl_goalie_run_summary.js` writes the summary and gives the
+   verdict, for this job and for the deploy's first run. **The job fails for
+   anything EdgeDesk runs:**
+   - the sync refusing the cron secret, or erroring;
+   - pg_cron not calling, or missing;
+   - the slate's inputs unreadable;
+   - a parser that no longer reads a source's page (DRIFT);
+   - readiness in error for any of those.
+
+   **It only warns when an outside source does not answer:** `sources_down`,
+   Daily Faceoff refused and the NHL API down or not yet in its window. The
+   function still records that run as an error, the cards keep the starters on
+   file and stay gated, and System health shows it. It needs the deploy's
+   secrets, `SUPABASE_PROJECT_REF` and `SB_DB_URL`. Like every workflow, it
+   appears under Actions, and its schedule runs, once it is on main.
 
 Rollback: `supabase/nhl_goalie_layer_rollback.sql`.
 
+**The first deploy (2026-10-26, from `claude/nhl-goalie-starter-sync-rp0xvl`).**
+The function, the layer, the registry, the cron secret and the five-minute poke
+are live. The first forced run (00:35 UTC) answered 200 with status `warn`. It
+wrote 8 observations, 8 consensus rows and version 1 of the four cards inside
+the horizon: MIN @ VAN, LAK @ NYR, TOR @ CGY and DET @ EDM. All four are
+Projected / Projected and GATED, with MIN @ VAN at 41.2% for Vancouver. The NHL
+API read. **Daily Faceoff answered HTTP 403** for both dates (§10).
+
 ## 10. Limits
 
-- **The live pages are untested here.** The parsers follow each source's
-  documented shape but were never run against the live pages. The first
-  deployed runs will show the result: a page that does not read is a DRIFT
-  alert and a degraded run, never an empty slate.
+- **Daily Faceoff refuses the function (HTTP 403).** On the first deployed
+  run (2026-10-26) Daily Faceoff refused the request from Supabase's network
+  for both dates, with a browser's headers. The block is on Daily Faceoff's
+  side, so its parser has still not read a live page. Until a starter source
+  answers:
+  - starters stay Projected, from the usage projection or the manual file
+    (`hockey/data/confirmed_starters.json`), until the NHL boxscore names
+    them near puck drop;
+  - cards stay GATED unless an edge holds under every pairing;
+  - "Confirmed by T−30" reads low;
+  - every run more than three hours out is a `sources_down` error, because
+    Daily Faceoff is its only source; System health shows it, and NHL goalie
+    sync warns.
+
+  The NHL API parser read live boxscores on that run. Routing requests around
+  the block is not a fix: a licensed starter feed is (see Daily Faceoff's
+  terms below), or manual entries until then.
 - **Daily Faceoff's terms.** Daily Faceoff is a third-party aggregator with
   its own terms. The owner should review them, or license a starter feed,
   before NHL output is sold in a paid tier (`hockey/sources/registry.js`).
 - **The NHL boxscore confirms late.** It usually names starters only near
-  puck drop, so for most games the confirmation before T−30 comes from Daily
-  Faceoff.
+  puck drop. For most games the confirmation before T−30 was meant to come
+  from Daily Faceoff, which is refusing the function for now (above).
 - **Edge events wait for NHL prices.** They need captured NHL prices
   (`NHL_PRICES`), which are off. Until then the gate shapes the price check
   and the market labels, and the event table stays empty. The CLV grade table
