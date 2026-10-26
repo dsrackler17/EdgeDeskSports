@@ -15,9 +15,14 @@
                the threshold and the progress; the public note when empty
      record    the Performance page: public display OFF (counts and progress
                only), ON (the record and the no-close line)
+     nba       the NBA game page (#research/nba/<game>): "Who absorbs the
+               minutes" switched on by OUT on the game's current report (the
+               build's scenario, nba/role_shift.json), not by QUESTIONABLE;
+               the game's role-shift flag with both models' progress
    No page error and no horizontal page scroll anywhere.
 
-   Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
+   Needs Playwright with Chromium; prints SKIPPED and exits 0 without one,
+   except under SHARP_LAG_E2E_REQUIRED=1 (CI), where a missing browser fails.
    Run:  node tools/sharp_lag/sharp_lag_ui.e2e.js [--shots <dir>]
    =========================================================================== */
 'use strict';
@@ -47,7 +52,7 @@ function flagRow(o) {
     gap_pp: 3.02, threshold_pp: 2.5, snapshot_resolution_s: 3600, close_status: null, clv_pp: null, access: 'subscriber' }, o);
 }
 /* what the stubs answer, per scenario */
-const M = { flags: [], progress: null, deployed: true, access: 'subscriber', publicDisplay: 'off' };
+const M = { flags: [], progress: null, deployed: true, access: 'subscriber', publicDisplay: 'off', roleFile: null, injCard: null };
 function progressBody() {
   return Object.assign({ threshold: 200, public_display: M.publicDisplay, access: M.access, as_of: new Date().toISOString(),
     models: [{ model_key: 'SHARP-LAG', flags: 7, graded: 3, no_close: 1, pending: 3, registered: true }, { model_key: 'NBA-ROLE-SHIFT', flags: 0, graded: 0, no_close: 0, pending: 0, registered: true }] }, M.progress || {});
@@ -65,7 +70,8 @@ function flagsBody(post, now) {
 (async function main() {
   let pw = null;
   for (const p of ['playwright', '/opt/node22/lib/node_modules/playwright', '/opt/node-tools/node_modules/playwright']) { try { pw = require(p); break; } catch (_) { /* next */ } }
-  if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
+  const REQUIRED = process.env.SHARP_LAG_E2E_REQUIRED === '1';
+  if (!pw) { console.log((REQUIRED ? 'FAILED: SHARP_LAG_E2E_REQUIRED is set and ' : 'SKIPPED: ') + 'playwright is not installed here'); process.exit(REQUIRED ? 1 : 0); }
   const built = await F.buildFixture({ now: F.NOW - 10 * 60000 });
   const SLATE = built.snap;
   const CUR = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'game_research', 'current.json'), 'utf8'));
@@ -77,6 +83,7 @@ function flagsBody(post, now) {
     if (p === '/today/') p = '/today/index.html';
     if (p === '/performance/') p = '/performance/index.html';
     if (p === '/today/slate.json') { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(JSON.stringify(SLATE)); return; }
+    if (p === '/nba/role_shift.json' && M.roleFile) { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(JSON.stringify(M.roleFile)); return; }
     const file = path.join(ROOT, path.normalize(p).replace(/^(\.\.[/\\])+/, ''));
     if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return; }
     res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
@@ -89,7 +96,7 @@ function flagsBody(post, now) {
   catch (e) {
     const exe = ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/opt/pw-browsers/chromium'].find((x) => fs.existsSync(x) && fs.statSync(x).isFile());
     if (exe) browser = await pw.chromium.launch({ headless: true, executablePath: exe });
-    else { console.log('SKIPPED: no Chromium'); srv.close(); process.exit(0); }
+    else { console.log((REQUIRED ? 'FAILED: SHARP_LAG_E2E_REQUIRED is set and there is ' : 'SKIPPED: ') + 'no Chromium'); srv.close(); process.exit(REQUIRED ? 1 : 0); }
   }
 
   async function open(viewport, url, o) {
@@ -118,6 +125,7 @@ function flagsBody(post, now) {
           return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fl ? flagsBody(route.request().postData(), o.time != null ? o.time : Date.now()) : progressBody()) });
         }
         if (/subscriptions/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]) });
+        if (/rpc\/nba_injury_card/.test(u) && M.injCard) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(M.injCard) });
         return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       }
       return route.fulfill({ status: 204, body: '' });
@@ -263,6 +271,48 @@ function flagsBody(post, now) {
         chk('performance ' + label + ' (' + pub + '): no page error', R.errors.length === 0, R.errors);
         await shot(R.page, 'performance-' + pub + '-' + label);
         await R.ctx.close();
+      }
+    }
+    /* ── NBA: the game page, a rotation player out ─────────────────────── */
+    {
+      const NS = JSON.parse(fs.readFileSync(path.join(ROOT, 'nba', 'slate.json'), 'utf8'));
+      const TN = Date.parse(NS.generated_at) + 60000;
+      const NG = NS.games.find((x) => Date.parse(x.start_utc) > TN + 3600e3);
+      if (!NG) console.log('  (no upcoming NBA game on nba/slate.json: the NBA page is covered by tools/sharp_lag/role_shift.test.js only)');
+      else {
+        const RF = require(path.join(ROOT, 'tools', 'sharp_lag', 'fixtures', 'role_shift_fixture.js')).file({ now: new Date(TN - 30 * 60000).toISOString(), props_generated_at: new Date(TN - 31 * 60000).toISOString() });
+        RF.games[0].game_id = String(NG.game_id);
+        M.roleFile = RF;
+        const card = (status) => ({ game_id: String(NG.game_id), state: 'AVAILABLE', reason: null, last_check_at: new Date(TN - 7 * 60000).toISOString(), last_check_status: 'ok', last_success_at: new Date(TN - 7 * 60000).toISOString(),
+          report: { id: 7, source: 'nba_official', published_at: new Date(TN - 15 * 60000).toISOString(), captured_at: new Date(TN - 8 * 60000).toISOString() },
+          statuses: [{ team_id: String(NG.home.id), team_abbr: NG.home.abbr, player_id: '1', player_name: 'Absent Star', status, source_status: status, reason: 'Injury/Illness', match_method: 'team_exact', row_id: 901 }],
+          not_submitted: [], rosters: {}, adjusted: null });
+        const fAt = new Date(TN - 20 * 60000).toISOString();
+        M.flags = [flagRow({ flag_id: 41, flagged_at: fAt, model_key: 'NBA-ROLE-SHIFT', trigger_type: 'role_shift', sport_key: 'basketball_nba', event_id: 'ev_nba', home_team: NG.home.name, away_team: NG.away.name,
+          commence_time: NG.start_utc, market: 'player_rebounds', side: 'Over', participant: 'Absorber', point: 6.5, target_price: 2.05, target_price_american: 105, target_cost_prob: 0.4878,
+          reference_kind: 'role_shift_model', reference_prob: 0.5214, gap_pp: 3.36, snapshot_resolution_s: 420, absent_player_id: '1', absent_player_name: 'Absent Star', minutes_delta: 4, fair_line: 6.5, posted_line: 6.5 })];
+        M.access = 'subscriber';
+        for (const [label, vp] of [['phone', PHONE], ['desktop', DESK]]) {
+          M.injCard = card('OUT');
+          const N = await open(vp, '/app.html#research/nba/' + NG.game_id, { time: TN });
+          await N.page.waitForFunction(() => /Absorber/.test((document.getElementById('nbRoleShift') || {}).innerText || '') && /Rebounds/.test((document.getElementById('nbSharp') || {}).innerText || ''), null, { timeout: 45000 }).catch(() => {});
+          const rs = await text(N.page, '#nbRoleShift'), sl = await text(N.page, '#nbSharp');
+          chk('nba ' + label + ': OUT on the current report switches "Who absorbs the minutes" on, tagged Experimental', /Who absorbs the minutes/i.test(rs) && /Experimental/i.test(rs) && /Absent Star \(HOM\) is out/.test(rs), rs.slice(0, 300));
+          chk('nba ' + label + ': the absorber: 24.0 -> 28.0 minutes, 10 / 20 games, the stint cross-check, the volume default -> regime', /24\.0 → 28\.0/.test(rs) && /10 \/ 20/.test(rs) && /\+5\.0 min/.test(rs) && /Rebounds 6\.0 → 7\.0/.test(rs), rs.slice(0, 900));
+          chk('nba ' + label + ': the game\'s role-shift flag: the player, the line, the book, EdgeDesk\'s fair', /Rebounds/.test(sl) && /Absorber Over 6\.5/.test(sl) && /DraftKings \+105/.test(sl) && /EdgeDesk fair 52\.1%/.test(sl), sl.slice(0, 600));
+          chk('nba ' + label + ': both models\' progress, each named', /Validation · Sharp lag:/.test(sl) && /Validation · NBA role shift:/.test(sl), sl.slice(-500));
+          chk('nba ' + label + ': no horizontal page scroll', await noHScroll(N.page));
+          chk('nba ' + label + ': no page error', N.errors.length === 0, N.errors);
+          await shot(N.page, 'nba-' + label);
+          await N.ctx.close();
+        }
+        M.injCard = card('QUESTIONABLE');
+        const Q = await open(PHONE, '/app.html#research/nba/' + NG.game_id, { time: TN });
+        await Q.page.waitForFunction(() => /default projections stand|Absorber/.test((document.getElementById('nbRoleShift') || {}).innerText || ''), null, { timeout: 45000 }).catch(() => {});
+        const q = await text(Q.page, '#nbRoleShift');
+        chk('nba: QUESTIONABLE switches nothing on: the default projections stand', /default projections stand/.test(q) && !/Absorber/.test(q), q.slice(0, 400));
+        await Q.ctx.close();
+        M.roleFile = null; M.injCard = null;
       }
     }
   } catch (e) {

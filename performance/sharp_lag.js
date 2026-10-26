@@ -25,7 +25,10 @@
     return fetch(SB_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify(body || {}) })
       .then(function (r) { if (r.status === 404) return { notDeployed: true }; if (!r.ok) throw new Error(name + ' answered ' + r.status); return r.json(); });
   }
-  var MODELS = [{ key: SL.MODELS.sharp_lag.key, title: 'Sharp-lag flags: Kalshi and DraftKings against Pinnacle' }];
+  var MODELS = [{ key: SL.MODELS.sharp_lag.key, title: 'Sharp-lag flags: Kalshi and DraftKings against Pinnacle',
+    note: 'Lag to converge is measured only to the snapshot cadence (hourly boards, 5-minute Kalshi snapshots); the resolution column says how coarse.' }];
+  MODELS.push({ key: SL.MODELS.role_shift.key, title: 'NBA role-shift flags: player props after a rotation absence',
+    note: 'Each flag is graded at its own book and line against that book\u2019s close, with the player\u2019s actual stat stored beside it. Its resolution is the time from the injury report to the one price check that followed it.' });
   el.innerHTML = SL.pendingSection({ text: 'Loading the Sharp-lag record…' });
   Promise.all([rpc('sharp_lag_progress'), rpc('sharp_lag_flags', { p_sport: null, p_from: null, p_to: null })]).then(function (x) {
     var pr = x[0], rows = x[1];
@@ -46,7 +49,7 @@
       /* the counts are the record's own (a flag before its game starts is not public) */
       rec.overall.flags = counts.flags; rec.overall.pending = counts.pending;
       rec.validation = SL.validationFrom(pr, mine, m.key);
-      return SL.recordSection({ title: m.title, record: rec, note: 'Lag to converge is measured only to the snapshot cadence (hourly boards, 5-minute Kalshi snapshots); the resolution column says how coarse.' });
+      return SL.recordSection({ title: m.title, record: rec, note: m.note });
     }).join('');
   }).catch(function () { el.innerHTML = SL.pendingSection({ text: 'The Sharp-lag research record could not be read just now.' }); });
 })();

@@ -20,6 +20,9 @@
                 the paid dispatcher hourly, woken only when live AND the
                 gateway's breaker is on
      config     every switch change is logged, append-only; the rules frozen
+     role       a role-shift grade stores the actual stat and its outcome
+                (over / under / push / void) beside CLV, under its own registry
+                version only, never edited
    Run: node tools/sharp_lag/sharp_lag_sql.test.js
    =========================================================================== */
 'use strict';
@@ -187,6 +190,17 @@ try {
   T.chk('registry: each registration is EXPERIMENTAL, T3, no result, and states the clustered bootstrap and the 2.5 pp threshold', ['registration_sharp_lag.json', 'registration_role_shift.json'].every((f) => {
     const R = regJ(f); return R.status === 'EXPERIMENTAL' && R.provenance === 'T3' && R.result === null && /clusters?/i.test(JSON.stringify(R.promotion_criteria)) && /2\.5 pp|2\.5 percentage points/.test(R.hypothesis + R.spec.flag + JSON.stringify(R.spec.rules || ''));
   }));
+  /* ── role shifts: graded with the player's actual stat ─────────────────── */
+  const started = { flagged_at: iso(-300), commence_time: iso(-60), target_observed_at: iso(-305), reference_observed_at: iso(-310) };
+  const rref = db.sql("select value from public.sharp_lag_config where key = 'registry_ref:NBA-ROLE-SHIFT'"), sref = db.sql("select value from public.sharp_lag_config where key = 'registry_ref:SHARP-LAG'");
+  const rg = (o) => Object.assign({ model_key: 'NBA-ROLE-SHIFT', registry_ref: rref, converged: false, converged_at: null, lag_to_converge_s: null, lag_censored: true }, o || {});
+  const rStarted = flag(Object.assign({}, role, started, { episode_key: 'role@1' }));
+  T.chk('role: a role-shift grade stores the actual stat and its outcome beside CLV', db.mustFail(() => grade(rStarted, rg({ actual_stat: 9, actual_outcome: 'over' }))) === null
+    && db.sql('select actual_stat || \':\' || actual_outcome || \':\' || clv_pp from public.sharp_lag_rows where flag_id = ' + rStarted) === '9:over:4.86');
+  T.chk('role: a player who sat is stored as void', db.mustFail(() => grade(flag(Object.assign({}, role, started, { episode_key: 'role@2' })), rg({ actual_outcome: 'void' }))) === null);
+  T.chk('role: never under the other model\'s registry version', refused(() => grade(flag(Object.assign({}, role, started, { episode_key: 'role@3' })), rg({ registry_ref: sref })), /registry_ref/));
+  T.chk('role: an outcome other than over, under, push or void is refused', refused(() => grade(flag(Object.assign({}, role, started, { episode_key: 'role@4' })), rg({ actual_outcome: 'win' }))));
+  T.chk('role: a role-shift grade is never edited', refused(() => db.sql('update public.sharp_flag_grades set actual_stat = 10 where flag_id = ' + rStarted + ';'), /append-only/));
   /* ── cron ────────────────────────────────────────────────────────────── */
   db.sql(`create schema if not exists cron;
     create table if not exists cron.job (jobid bigserial primary key, jobname text, schedule text, command text, active boolean default true);

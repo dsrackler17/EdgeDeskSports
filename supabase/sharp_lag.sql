@@ -446,7 +446,9 @@ $p$;
 do $g$ begin
   execute 'revoke all on function public.sharp_lag_flags(text, timestamptz, timestamptz) from public';
   execute 'revoke all on function public.sharp_lag_progress() from public';
-  execute 'grant execute on function public.sharp_lag_flags(text, timestamptz, timestamptz), public.sharp_lag_progress() to anon, authenticated';
+  -- anonymous doors (lib/edgedesk_plans.js DOORS.anon): the database decides what each reader gets
+  execute 'grant execute on function public.sharp_lag_flags(text, timestamptz, timestamptz) to anon, authenticated';
+  execute 'grant execute on function public.sharp_lag_progress() to anon, authenticated';
   execute 'revoke all on function public.sharp_lag_setting(text), public.sharp_lag_is_subscriber() from public, anon, authenticated';
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.sharp_lag_flags(text, timestamptz, timestamptz), public.sharp_lag_progress(), public.sharp_lag_setting(text) to service_role';

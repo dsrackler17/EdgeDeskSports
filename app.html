@@ -5806,7 +5806,10 @@ window.slData=(function(){
       rows=Array.isArray(rows)?rows:[];
       /* both clubs (or both swapped) and a start within 6 hours (EDSharpLag.flagsForGame) */
       var mine=SL.flagsForGame(rows,{sport_key:g.sport_key,home:g.home,away:g.away,start:g.start});
-      return {state:'ok',flags:mine,access:(pr&&pr.access)||(rows[0]&&rows[0].access)||'none',validation:SL.validationFrom(pr,rows,SL.MODELS.sharp_lag.key)};
+      /* an NBA game also carries the role-shift model's own progress (NBA-ROLE-SHIFT, registered on its own) */
+      var rsv=g.sport_key==='basketball_nba'&&SL.MODELS.role_shift?SL.validationFrom(pr,rows,SL.MODELS.role_shift.key):null;
+      return {state:'ok',flags:mine,access:(pr&&pr.access)||(rows[0]&&rows[0].access)||'none',validation:SL.validationFrom(pr,rows,SL.MODELS.sharp_lag.key),
+        roleShift:rsv?SL.progressLine(rsv):''};
     }).catch(function(e){return {state:'error',error:String(e&&e.message||e)};});
   }
   /* the Signals feed: today's flags (the reader's local day), newest first */
@@ -6164,7 +6167,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261026mi1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261027sl1';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,

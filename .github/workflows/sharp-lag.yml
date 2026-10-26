@@ -30,6 +30,12 @@ on:
       - 'app.html'
       - 'performance/**'
       - 'today/index.html'
+      - 'tools/slate/fixtures/**'
+      - 'tools/app/nav_helper.js'
+      - 'nba/props/**'
+      - 'nba/injury/core.js'
+      - 'lib/edgedesk_nba_ui.js'
+      - 'lib/edgedesk_plans.js'
       - 'lib/edgedesk_games.js'
       - 'supabase/odds_api_emergency_stop.sql'
       - 'tools/sharp_lag/**'
@@ -83,4 +89,7 @@ jobs:
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
       - name: Every surface in Chromium (matchup, game page, Signals, Performance; phone and desktop)
+        env: { SHARP_LAG_E2E_REQUIRED: '1' }
         run: node tools/sharp_lag/sharp_lag_ui.e2e.js
+      - name: NBA role shifts (the injury-conditioned regime, on fixtures)
+        run: node tools/sharp_lag/role_shift.test.js

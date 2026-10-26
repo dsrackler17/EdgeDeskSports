@@ -7,6 +7,7 @@
    the gateway (granted, cache_hit, denied_category_cap ...).
      shadow    nothing is asked while dispatch is shadow
      triggers  one ask per event per run, in the trigger type's category
+               (sharp_check, or nba_role_props for a role shift)
                , every trigger recorded once against that answer; unmapped
                and out-of-window triggers recorded as skipped, nothing spent
      shape     want_body false, allow_stale false, caller sharp_check, the
@@ -60,13 +61,13 @@ const trig = (id, type, ev, start, o) => Object.assign({ id, trigger_type: type,
   world({ sharp_lag_config: [{ key: 'dispatch', value: 'live' }],
     odds_api_events: [{ event_id: 'ev_nba2', sport_key: 'basketball_nba', commence_time: at(300), home_team: 'Charlotte Hornets', away_team: 'Washington Wizards' }],
     sharp_triggers: [trig(1, 'kalshi_move', 'ev_nfl', at(120)), trig(2, 'kalshi_move', 'ev_nfl', at(120)), trig(3, 'nhl_goalie', 'ev_nhl', at(90)),
-      trig(4, 'nba_injury', 'ev_nba', at(180)),
+      trig(4, 'role_shift', 'ev_nba', at(180), { detail: { teammates: [{ name: 'Miles Bridges' }] } }),
       trig(5, 'nba_injury', null, at(300)),
       trig(6, 'nba_injury', null, at(300), { home_team: 'Nowhere FC', away_team: 'Atlantis' }), trig(7, 'kalshi_move', 'ev_far', at(60 * 30)),
       trig(8, 'kalshi_move', 'ev_old', at(120), { detected_at: at(-200) }), trig(9, 'nba_injury', 'ev_shadow', at(100), { mode: 'shadow' })] });
   out = await run();
   const cats = asks.map((a) => a.body.category + ':' + a.body.event_id).sort();
-  chk('triggers: one ask per event per run, in the sharp_check category', JSON.stringify(cats) === JSON.stringify(['sharp_check:ev_nba', 'sharp_check:ev_nba2', 'sharp_check:ev_nfl', 'sharp_check:ev_nhl']), cats);
+  chk('triggers: one ask per event per run, in the trigger type\'s category (role shift -> nba_role_props)', JSON.stringify(cats) === JSON.stringify(['nba_role_props:ev_nba', 'sharp_check:ev_nba2', 'sharp_check:ev_nfl', 'sharp_check:ev_nhl']), cats);
   chk('triggers: an NBA trigger with no provider event yet is matched at dispatch time (both clubs, the start)', asks.some((a) => a.body.event_id === 'ev_nba2'));
   const reqs = R.DB.sharp_check_requests;
   chk('triggers: every live trigger is recorded exactly once', [1, 2, 3, 4, 5, 6, 7].every((id) => reqs.filter((r) => r.trigger_id === id).length === 1), reqs.map((r) => r.trigger_id));
@@ -95,11 +96,12 @@ const trig = (id, type, ev, start, o) => Object.assign({ id, trigger_type: type,
       { flag_id: 2, model_key: 'SHARP-LAG', sport_key: 'icehockey_nhl', event_id: 'ev_c2', commence_time: at(45) },
       { flag_id: 3, model_key: 'SHARP-LAG', sport_key: 'americanfootball_nfl', event_id: 'ev_c3', commence_time: at(30) },
       { flag_id: 4, model_key: 'SHARP-LAG', sport_key: 'basketball_nba', event_id: 'ev_c4', commence_time: at(120) },
+      { flag_id: 5, model_key: 'NBA-ROLE-SHIFT', sport_key: 'basketball_nba', event_id: 'ev_c5', commence_time: at(40) },
     ],
     sharp_check_requests: [{ id: 1, purpose: 'trigger', category: 'sharp_check', sport_key: 'icehockey_nhl', event_id: 'ev_c2', requested_at: at(-20), decision: 'granted' }] });
   out = await run();
   const closeAsks = asks.map((a) => a.body.trigger + ':' + a.body.category + ':' + a.body.event_id).sort();
-  chk('closes: an NBA game with an open flag inside the hour gets one close check', JSON.stringify(closeAsks) === JSON.stringify(['close:sharp_check:ev_c1']), closeAsks);
+  chk('closes: an NBA game with an open flag inside the hour gets one close check; a role shift its props close', JSON.stringify(closeAsks) === JSON.stringify(['close:sharp_check:ev_c1', 'role_shift_close:nba_role_props:ev_c5']), closeAsks);
   chk('closes: not the NHL game checked 20 minutes ago, not football (capture closes it), not a game 2 h out', !asks.some((a) => ['ev_c2', 'ev_c3', 'ev_c4'].includes(a.body.event_id)));
 
   /* ── run cap ─────────────────────────────────────────────────────────── */

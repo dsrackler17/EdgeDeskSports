@@ -16,6 +16,12 @@
 
    No prop prices are captured: these are fair lines, never value calls.
    Writes nba/props_slate.json (schema edgedesk_nba_props_slate_v1).
+
+   Then, from the same fitted model, the injury-conditioned scenarios of
+   research model NBA-ROLE-SHIFT (EXPERIMENTAL, nba/props/role_shift.js):
+   nba/role_shift.json, which the slate names under regimes. Every number in
+   the slate is the default (projected) regime's, unchanged; a failure there
+   never stops the slate.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -26,8 +32,10 @@ const PM = require('./model');
 const PW = require('./walkforward');
 const WF = require('../model/walkforward');
 const DIST = require('../model/distribution');
+const RS = require('./role_shift');
 
 const OUT = path.join(C.NBA, 'props_slate.json');
+const RS_OUT = path.join(C.NBA, 'role_shift.json');
 const r2 = (v) => (v == null || !isFinite(v) ? null : Math.round(v * 100) / 100);
 const r4 = (v) => (v == null || !isFinite(v) ? null : Math.round(v * 1e4) / 1e4);
 function readJson(p, d) { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } }
@@ -57,6 +65,7 @@ async function build() {
   for (const r of res.upcoming) {
     if (r.f.min_ew < 8) continue;
     const pred = PM.predict(model, r.f);
+    r.pred = pred;
     const stats = {};
     const one = (mu, d) => {
       const line = Math.floor(mu) + 0.5; const over = DIST.pGreater(d, line);
@@ -76,8 +85,25 @@ async function build() {
     note: 'Fair lines from the validated count distributions — expected minutes × per-minute production, opponent and pace adjusted, teammates\' absences redistributed — priced as if the player plays (a prop is void if he does not); P(plays) is the separately validated probability that he does. No prop prices are captured, so nothing here is a value call.',
     availability_model: availModel ? { n_train: availModel.n, base_rate: r4(availModel.base) } : null,
     value_claims: 'DISABLED', status, games };
+  out.regimes = { default: 'projected: the previous game\'s rotation. Every number in this file.', injury_conditioned: roleShift(model, res, season, players, out.generated_at) };
   fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
   return out;
+}
+
+/* NBA-ROLE-SHIFT (EXPERIMENTAL): one scenario per top-8 rotation player, written to nba/role_shift.json */
+function roleShift(model, res, season, players, generatedAt) {
+  try {
+    const seasons = [season - 1, season];
+    const rs = RS.build({ model, upcoming: res.upcoming, inputs: readJson(C.PATHS.rosterInputs, null), players, season, props_generated_at: generatedAt,
+      rows: seasons.flatMap((s) => D.playerGames(s)), games: D.games(seasons).map((g) => ({ game_id: g.game_id, start_ms: g.start_ms, home_id: g.home_id, away_id: g.away_id })),
+      stints: seasons.map((s) => D.stints(s)), shots: seasons.map((s) => D.shots(s)) });
+    fs.writeFileSync(RS_OUT, JSON.stringify(rs) + '\n');
+    return { model: rs.model.key, version: rs.model.version, status: rs.model.status, file: '/nba/role_shift.json', generated_at: rs.generated_at,
+      scenarios: rs.games.reduce((a, g) => a + g.scenarios.filter((x) => !x.skipped).length, 0) };
+  } catch (e) {
+    console.error('[nba props slate] the role-shift scenarios were not written: ' + (e && e.message));
+    return { model: RS.RULES.model_key, status: RS.RULES.status, file: null, error: String(e && e.message || e).slice(0, 300) };
+  }
 }
 
 module.exports = { build, OUT };

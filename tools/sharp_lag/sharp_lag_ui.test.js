@@ -130,6 +130,21 @@ const row = (o) => Object.assign({ flag_id: 1, flagged_at: at(-30), model_key: '
   P = await runPerf({ sharp_lag_progress: { status: 500, body: {} }, sharp_lag_flags: [] });
   chk('a failed read: it says so', /could not be read just now/.test(P.html), P.html);
 
+  /* ── the NBA game page and the role-shift record (F) ─────────────────── */
+  const nba = read('lib/edgedesk_nba_ui.js');
+  chk('nba: the panel reads the build\'s role-shift scenarios as an optional file', /roleShift: '\/nba\/role_shift\.json'/.test(nba) && /load\('roleShift'\)/.test(nba));
+  chk('nba: "Who absorbs the minutes" sits right after Who is playing, then the game\'s Sharp-lag flags', /out \+= injSection\(s, g, frozen\);[\s\S]{0,200}out \+= roleShiftBlock\(g, frozen\);\s*\n\s*out \+= sharpLagBlock\(g\);/.test(nba));
+  chk('nba: a scenario switches on only from the current report (live states), never on a started game', /if \(frozen \|\| !SL/.test(nba) && /statuses: live \? d\.statuses \|\| \[\] : \[\]/.test(nba));
+  chk('nba: the flags are read through window.slData (the reader\'s own token), never directly', /W\.slData\.forGame\(\{ sport_key: 'basketball_nba'/.test(nba) && !/sharp_lag_flags/.test(nba));
+  chk('nba: the panel script is cache-busted with this change', /var NB_SCRIPT='\/lib\/edgedesk_nba_ui\.js\?v=20261027sl1'/.test(app));
+  chk('nba: an NBA game carries the role-shift model\'s own progress line', /g\.sport_key==='basketball_nba'&&SL\.MODELS\.role_shift\?SL\.validationFrom\(pr,rows,SL\.MODELS\.role_shift\.key\)/.test(app) && /roleShift:rsv\?SL\.progressLine\(rsv\):''/.test(app));
+  const roleRows = [row({ flag_id: 51, model_key: 'NBA-ROLE-SHIFT', trigger_type: 'role_shift', sport_key: 'basketball_nba', event_id: 'n1', commence_time: at(-200), market: 'player_rebounds', participant: 'Absorber', side: 'Over', point: 6.5,
+    reference_kind: 'role_shift_model', close_status: 'graded', clv_pp: 1.4, actual_stat: 9, actual_outcome: 'over' })];
+  P = await runPerf({ sharp_lag_progress: progress('on', { models: [{ model_key: 'SHARP-LAG', flags: 4, graded: 3, no_close: 1, pending: 0, registered: true }, { model_key: 'NBA-ROLE-SHIFT', flags: 1, graded: 1, no_close: 0, pending: 0, registered: true }] }), sharp_lag_flags: started.concat(roleRows) });
+  chk('record: the role-shift model has its own record, its own progress and its actual results', /NBA role-shift flags/.test(P.html) && /Validation · NBA role shift:<\/b> 1 of 200 graded flags/.test(P.html) && /1 over, 0 under, 0 push, 0 void/.test(P.html), (P.html.match(/NBA role-shift[\s\S]{0,300}/) || [''])[0]);
+  chk('record: each model names itself on its progress line', /Validation · Sharp lag:<\/b> 3 of 200/.test(P.html));
+  chk('record: the role-shift flags never enter the sharp-lag record', /Sharp-lag flags[\s\S]*?<th scope="row">All flags<\/th><td data-l="Flags">4<\/td><td data-l="Graded">3<\/td>/.test(P.html));
+
   /* ── language ────────────────────────────────────────────────────────── */
   const perfSec = (/<section aria-labelledby="pf-sl-h"[\s\S]*?<\/section>/.exec(perf) || [''])[0];
   const surfaces = [slBlock, pjs, perfSec, gv.slice(gv.indexOf('function joinSharpLag'), gv.indexOf('function kalshiOf')), gu.slice(gu.indexOf('function fillSharpLag'), gu.indexOf('function gfxLink'))].join('\n');

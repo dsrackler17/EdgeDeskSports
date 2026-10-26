@@ -18,6 +18,11 @@
                while the switch is off
      grades    none before the registry link; then each started flag once,
                the close within 90 minutes
+     role      a top-8 rotation player to OUT switches his game to the
+               build's scenario (one trigger; a stale or missing scenario
+               switches nothing); the pull stores only the named teammates'
+               props, its close check too; flags at 2.5 pp from the trigger's
+               own pull; graded once there is a final ESPN box, with the stat
      spend     no call to odds_gateway or the provider, no PATCH, no DELETE
    Run: node tools/sharp_lag/sharp_lag_fn.test.js
    =========================================================================== */
@@ -47,6 +52,9 @@ const INPUTS = { games: [{ game_id: '401909868', start_utc: at(180), home: { id:
   reference: { home: [{ id: 'p1', name: 'LaMelo Ball', minutes: 33 }, { id: 'p2', name: 'Miles Bridges', minutes: 31 }, { id: 'p3', name: 'Brandon Miller', minutes: 30 }, { id: 'p4', name: 'Mark Williams', minutes: 26 }, { id: 'p5', name: 'Josh Green', minutes: 24 }, { id: 'p6', name: 'Bench Guy', minutes: 9 }],
     away: [{ id: 'w1', name: 'Jordan Poole', minutes: 32 }] } }] };
 
+const ROLE_URL = 'https://edgedesksports.com/nba/role_shift.json', SUMMARY = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=';
+const EMPTY_RS = { schema: 'edgedesk_nba_role_shift_v1', generated_at: at(-60), props_generated_at: at(-61), model: { key: 'NBA-ROLE-SHIFT', version: '0.1', regime: 'injury_conditioned', default_regime: 'projected' }, games: [] };
+let RSFILE = EMPTY_RS, BOX = null, espn = [];
 let R, extCalls;
 function world(seed) {
   R = M.create(seed); extCalls = [];
@@ -54,6 +62,8 @@ function world(seed) {
     u = String(u);
     if (u.startsWith(ENV.SUPABASE_URL + '/rest/v1/')) { const [s, b] = R.rest(u, init); return M.resp(s, b); }
     if (u === ENV.NBA_INPUTS_URL) return M.resp(200, INPUTS);
+    if (u === ROLE_URL) return M.resp(200, RSFILE);
+    if (u.startsWith(SUMMARY)) { espn.push(u); return BOX ? M.resp(200, BOX) : M.resp(404, 'no summary'); }
     extCalls.push(u);
     return M.resp(404, 'unmocked ' + u);
   };
@@ -161,8 +171,78 @@ const cfg = (dispatch, extra) => [{ key: 'dispatch', value: dispatch || 'shadow'
   await F.runOnce({ now: at(300), steps: ['grades'] });
   chk('grades: a flag is graded once, ever', R.DB.sharp_flag_grades.length === flagsMade);
 
+  /* ── role shifts ─────────────────────────────────────────────────────── */
+  {
+    const FX = require(path.join(__dirname, 'fixtures', 'role_shift_fixture.js'));
+    const built = FX.file({ now: at(-60), props_generated_at: at(-61) });
+    /* the fixture's game as the published inputs' game: LaMelo Ball (p1) is its absent star */
+    const g = built.games[0]; g.game_id = '401909868';
+    g.scenarios.forEach((sc) => { if (sc.absent.id === '1') { sc.absent.id = 'p1'; sc.absent.name = 'LaMelo Ball'; } });
+    const ROLE_FILE = built;
+    const reports = { nba_injury_reports: [{ id: 1, captured_at: at(-120), matchups: [{ game_id: '401909868' }] }, { id: 2, captured_at: at(-10), matchups: [{ game_id: '401909868' }] }],
+      nba_injury_report_snapshots: [{ report_id: 1, game_id: '401909868', player_id: 'p1', status: 'QUESTIONABLE' }, { report_id: 2, game_id: '401909868', player_id: 'p1', status: 'OUT' },
+        { report_id: 1, game_id: '401909868', player_id: 'p4', status: 'PROBABLE' }, { report_id: 2, game_id: '401909868', player_id: 'p4', status: 'QUESTIONABLE' },
+        { report_id: 2, game_id: '401909868', player_id: 'p6', status: 'DOUBTFUL' }] };
+    const evs = { odds_api_events: [{ event_id: NBA_EV.id, sport_key: 'basketball_nba', commence_time: NBA_EV.commence_time, home_team: NBA_EV.home_team, away_team: NBA_EV.away_team }] };
+    RSFILE = Object.assign({}, ROLE_FILE, { generated_at: at(-30 * 60) });
+    world(Object.assign({ sharp_lag_config: cfg('live') }, reports, evs));
+    out = await run({ steps: ['triggers'] });
+    chk('role: a scenario file over 24 hours old switches nothing on, and the run says so', !R.DB.sharp_triggers.some((t) => t.trigger_type === 'role_shift') && out.warnings.some((w) => w.code === 'role_shift_stale'));
+    RSFILE = ROLE_FILE;
+    world(Object.assign({ sharp_lag_config: cfg('live') }, reports, evs));
+    out = await run({ steps: ['triggers'] });
+    const rs = R.DB.sharp_triggers.filter((t) => t.trigger_type === 'role_shift');
+    chk('role: QUESTIONABLE -> OUT of a top-8 rotation player is one role-shift trigger on the provider event', rs.length === 1 && rs[0].event_id === NBA_EV.id && rs[0].dedupe_key === 'role_shift|401909868|p1' && rs[0].mode === 'live', rs);
+    const d = rs[0] && rs[0].detail;
+    chk('role: the trigger records the regime switch, the absent player\'s move and the 3 priced teammates', d && d.regime_switch.from === 'projected' && d.regime_switch.to === 'injury_conditioned' && d.regime_switch.scenario_built_at === at(-60)
+      && d.absent.id === 'p1' && d.absent.from === 'QUESTIONABLE' && d.absent.to === 'OUT' && d.report_id === 2 && d.teammates.map((t) => t.name).join() === 'Absorber,Newcomer,Small', d && d.absent);
+    chk('role: QUESTIONABLE switches nothing; a DOUBTFUL player with no scenario is counted, not triggered', !rs.some((t) => /p4|p6/.test(t.dedupe_key)) && out.triggers.role_shift_skipped.no_scenario === 1, out.triggers);
+    await run({ steps: ['triggers'] });
+    chk('role: one trigger per player per game, however many reports follow', R.DB.sharp_triggers.filter((t) => t.trigger_type === 'role_shift').length === 1);
+    /* the dispatcher's pull (tools/sharp_lag/sharp_check_fn.test.js): one nba_role_props request for the event */
+    const tid = rs[0].id;
+    R.DB.sharp_check_requests.push({ id: 41, purpose: 'role_shift', trigger_id: tid, category: 'nba_role_props', sport_key: 'basketball_nba', event_id: NBA_EV.id, decision: 'granted', gateway_request_id: 801, requested_at: at(-4) });
+    const prop = (bk, who, mk, pt, o, u) => ({ key: mk, outcomes: [{ name: 'Over', description: who, point: pt, price: o }, { name: 'Under', description: who, point: pt, price: u }] });
+    const propsBody = (rebO, rebU) => Object.assign({}, NBA_EV, { bookmakers: [
+      book('draftkings', [prop('draftkings', 'Absorber', 'player_rebounds', 6.5, rebO, rebU), prop('draftkings', 'LaMelo Ball', 'player_rebounds', 7.5, 1.9, 1.9), prop('draftkings', 'Somebody Else', 'player_assists', 4.5, 1.9, 1.9)]),
+      book('fanduel', [prop('fanduel', 'Absorber', 'player_assists', 2.5, 2.1, 1.75)]), book('pinnacle', [{ key: 'h2h', outcomes: [{ name: NBA_EV.home_team, price: 1.5 }, { name: NBA_EV.away_team, price: 2.7 }] }])] });
+    R.DB.odds_api_snapshots.push(snap({ category: 'nba_role_props', sport_key: 'basketball_nba', event_id: NBA_EV.id, last_request_id: 801, last_success_at: at(-3), body: propsBody(2.05, 1.8) }));
+    out = await run({ steps: ['ingest'] });
+    const PR = R.DB.sharp_price_snapshots.filter((r) => r.source_request_id === 801);
+    chk('role: the pull stores only the named teammates\' prop prices (not the absent player, not anyone else, not the main markets)', PR.length === 4 && PR.every((r) => r.participant === 'Absorber' && /^player_/.test(r.market)), PR.map((r) => r.participant + ' ' + r.market));
+    out = await run({ steps: ['flags'] });
+    const rf = R.DB.sharp_flags.filter((f) => f.model_key === 'NBA-ROLE-SHIFT');
+    const reb = rf.find((f) => f.market === 'player_rebounds');
+    chk('role: the trigger\'s own pull is flagged at 2.5 pp: Absorber rebounds Over 6.5 at DraftKings, assists at FanDuel', reb && reb.side === 'Over' && reb.target_venue === 'draftkings' && reb.trigger_id === tid && rf.some((f) => f.market === 'player_assists' && f.target_venue === 'fanduel'), rf);
+    chk('role: the flag names the absent player and states its resolution: the report (10 min ago) to the pull (3 min ago), 420 s', reb && reb.absent_player_id === 'p1' && reb.absent_player_name === 'LaMelo Ball' && reb.snapshot_resolution_s === 420 && reb.target_request_id === 801);
+    const nRole = rf.length;
+    await run({ steps: ['flags'] });
+    chk('role: a second run writes no second flag', R.DB.sharp_flags.filter((f) => f.model_key === 'NBA-ROLE-SHIFT').length === nRole);
+    /* the close check the dispatcher buys inside the last hour: no trigger of its own */
+    R.DB.sharp_check_requests.push({ id: 42, purpose: 'role_shift_close', trigger_id: null, category: 'nba_role_props', sport_key: 'basketball_nba', event_id: NBA_EV.id, decision: 'granted', gateway_request_id: 802, requested_at: at(160) });
+    R.DB.odds_api_snapshots.push(snap({ category: 'nba_role_props', sport_key: 'basketball_nba', event_id: NBA_EV.id, last_request_id: 802, last_success_at: at(160), body: propsBody(1.7, 2.2) }));
+    await F.runOnce({ now: at(161), steps: ['ingest'] });
+    chk('role: the close check stores the same teammates (named by the role shift on the event)', R.DB.sharp_price_snapshots.filter((r) => r.source_request_id === 802).length === 4);
+    out = await F.runOnce({ now: at(200), steps: ['grades'] });
+    chk('role: no grade before NBA-ROLE-SHIFT is in the research registry, and the run says so', !R.DB.sharp_flag_grades.length && out.warnings.some((w) => w.code === 'role_shift_not_registered'));
+    R.DB.sharp_lag_config.push({ key: 'registry_ref:NBA-ROLE-SHIFT', value: 'v-rs' });
+    BOX = { header: { competitions: [{ status: { type: { completed: false } } }] }, boxscore: { players: [] } };
+    out = await F.runOnce({ now: at(200), steps: ['grades'] });
+    chk('role: not graded while the game has no final box (inside a day)', !R.DB.sharp_flag_grades.length && out.role_shift_grades.waiting_for_box === nRole && espn.length >= 1 && /event=401909868$/.test(espn[0]), out.role_shift_grades);
+    BOX = { header: { competitions: [{ status: { type: { completed: true } } }] }, boxscore: { players: [{ team: { id: '30' }, statistics: [{ keys: ['minutes', 'threePointFieldGoalsMade-threePointFieldGoalsAttempted', 'rebounds', 'assists', 'points'],
+      athletes: [{ athlete: { id: '2', displayName: 'Absorber' }, stats: ['31', '3-7', '9', '2', '17'] }] }] }] } };
+    out = await F.runOnce({ now: at(400), steps: ['grades'] });
+    const gr = R.DB.sharp_flag_grades.find((x) => x.flag_id === reb.flag_id);
+    chk('role: graded once there is a final box: the close 20 minutes out at DraftKings, Shin CLV, the stat beside it', gr && gr.close_status === 'graded' && gr.close_lead_min === 20 && gr.registry_ref === 'v-rs' && gr.model_key === 'NBA-ROLE-SHIFT'
+      && gr.actual_stat === 9 && gr.actual_outcome === 'over' && gr.detail.league_game_id === '401909868', gr);
+    const ga = R.DB.sharp_flag_grades.find((x) => R.DB.sharp_flags.find((f) => f.flag_id === x.flag_id).market === 'player_assists');
+    chk('role: assists 2 under 2.5; every role-shift flag graded once', ga && ga.actual_stat === 2 && ga.actual_outcome === 'under' && R.DB.sharp_flag_grades.length === nRole);
+    await F.runOnce({ now: at(500), steps: ['grades'] });
+    chk('role: a flag is graded once, ever', R.DB.sharp_flag_grades.length === nRole);
+  }
+
   /* ── spend ───────────────────────────────────────────────────────────── */
-  chk('spend: no call outside the database and the published roster inputs (no gateway, no provider)', extCalls.length === 0, extCalls);
+  chk('spend: no call outside the database, the published NBA files and ESPN\'s box score (no gateway, no provider)', extCalls.length === 0, extCalls);
   chk('spend: no PATCH and no DELETE, ever (append-only)', !R.calls.some((c) => /^(PATCH|DELETE)/.test(c)));
   const src = require('fs').readFileSync(path.join(ROOT, 'supabase', 'functions', 'sharp_lag', 'index.ts'), 'utf8');
   chk('spend: the free job never names odds_gateway\'s URL or the provider', !/functions\/v1\/odds_gateway|the-odds-api\.com|ODDS_API_KEY|ODDS_GATEWAY_PROVIDER_KEY/.test(src));

@@ -24,6 +24,7 @@
 //   2 TRIGGERED CHECKS: every live trigger of the last 2 hours with no request
 //     yet, inside 24 h of its start, mapped to a provider event. ONE ask per
 //     event per run (sharp_check: Pinnacle + DraftKings main markets
+//     ; a role shift: nba_role_props
 //     ); every trigger it covers is recorded against that one answer, so
 //     each trigger is dispatched once, ever
 //   3 CLOSES: an NBA or NHL game with an ungraded flag, starting inside the
@@ -126,6 +127,8 @@ export const MAX_ASKS = 12;
   };
   L.KALSHI_FEE = { coefficient: 0.07, unverified_contracts: 1, verified_contracts: 100,
     basis: 'Kalshi taker fee = round_up_to_cent(coefficient × contracts × price × (1 − price)) per order' };
+  /* the books, in the order a role-shift flag takes its posted line from */
+  L.PROP_BOOKS = ['draftkings', 'fanduel', 'betmgm', 'williamhill_us', 'espnbet', 'betrivers', 'fanatics', 'hardrockbet', 'betonlineag', 'pinnacle'];
 
   /* ------------------------------------------------------------ numbers */
   function num(x) { if (x === null || x === undefined || x === '') return null; var n = Number(x); return isFinite(n) ? n : null; }
@@ -609,7 +612,8 @@ export const MAX_ASKS = 12;
   function progressLine(v) {
     if (!v) return '';
     var ci = v.ci && v.ci.lo != null ? ' · mean CLV ' + signed(v.ci.mean, 2) + ' pp (95% interval ' + signed(v.ci.lo, 2) + ' to ' + signed(v.ci.hi, 2) + ', clustered by game)' : '';
-    return '<p class="sl-progress"><b>Validation:</b> ' + esc(v.progress) + ci + '. Registered threshold: ' + v.threshold
+    var lab = v.model_key === L.MODELS.role_shift.key ? L.MODELS.role_shift.label : v.model_key === L.MODELS.sharp_lag.key ? L.MODELS.sharp_lag.label : null;
+    return '<p class="sl-progress"><b>Validation' + (lab ? ' · ' + esc(lab) : '') + ':</b> ' + esc(v.progress) + ci + '. Registered threshold: ' + v.threshold
       + ' graded flags and a 95% lower bound on mean CLV above zero, both. Status: ' + esc(v.status) + '.</p>';
   }
   L.progressLine = progressLine;
@@ -754,6 +758,238 @@ export const MAX_ASKS = 12;
   L.injectStyle = function (doc) {
     try { if (!doc || doc.getElementById('edgedesk-sharp-lag-css')) return; var st = doc.createElement('style'); st.id = 'edgedesk-sharp-lag-css'; st.textContent = L.STYLE; doc.head.appendChild(st); } catch (_) { /* unstyled is still readable */ }
   };
+
+  /* ------------------------------------------------------------ role shifts (NBA-ROLE-SHIFT) */
+  L.ROLE_SHIFT = {
+    statuses: ['OUT', 'DOUBTFUL'], rotation: 8,
+    max_age_h: 24,   /* the build's scenarios, older than this, switch nothing on (it runs every 3 hours) */
+    /* the pull's markets (nba_role_props) and the build's keys for them (nba/props/role_shift.js MARKETS) */
+    markets: { player_rebounds: 'reb', player_assists: 'ast', player_threes: 'fg3m', player_points_rebounds_assists: 'pra' },
+    labels: { reb: 'Rebounds', ast: 'Assists', fg3m: '3-pointers made', pra: 'Pts + reb + ast' }
+  };
+  /* a rotation player moving TO OUT or DOUBTFUL from anything else (not listed reads as available) */
+  L.roleShiftChanges = function (prev, cur, rotation) {
+    var bad = L.ROLE_SHIFT.statuses;
+    return L.statusChanges(prev, cur, rotation).filter(function (c) { return bad.indexOf(c.to) >= 0 && bad.indexOf(c.from) < 0; });
+  };
+  /* the build's scenario for one absent player of one game (nba/role_shift.json), or null */
+  L.roleShiftScenario = function (file, gameId, playerId) {
+    var g = ((file && file.games) || []).filter(function (x) { return String(x.game_id) === String(gameId); })[0];
+    return g ? (g.scenarios || []).filter(function (s) { return s.absent && String(s.absent.id) === String(playerId); })[0] || null : null;
+  };
+  /* the trigger's detail: the regime switch, the absent player, the priced teammates (the pull and the
+     flags read these) and the whole table (the page reads it) */
+  L.roleShiftDetail = function (file, scenario, change, report) {
+    var rows = scenario.teammates || [];
+    return {
+      regime_switch: { from: file.model.default_regime, to: file.model.regime, model: file.model.key, version: file.model.version,
+        scenario_built_at: file.generated_at, props_generated_at: file.props_generated_at || null },
+      absent: { id: String(change.player_id), name: change.player_name || scenario.absent.name, team_id: scenario.absent.team_id, team: scenario.absent.team,
+        reference_minutes: scenario.absent.reference_minutes, from: change.from, to: change.to },
+      report_id: report ? report.id : null, previous_report_id: report ? report.previous_id : null, report_captured_at: report ? report.captured_at : null,
+      teammates: rows.filter(function (t) { return t.priced; }),
+      table: rows.map(function (t) { var o = Object.assign({}, t); delete o.markets; return o; }),
+      short_of_three: !!scenario.short_of_three
+    };
+  };
+  /* a book's two-way lines for one player and market: point -> { over, under } */
+  function twoWay(rows) {
+    var by = {};
+    rows.forEach(function (r) { var k = String(num(r.point)), s = /^over$/i.test(r.side) ? 'over' : /^under$/i.test(r.side) ? 'under' : null; if (s) (by[k] = by[k] || {})[s] = r; });
+    return Object.keys(by).filter(function (k) { return by[k].over && by[k].under; }).map(function (k) { return { point: num(k), over: by[k].over, under: by[k].under }; });
+  }
+  /* the role-shift flags of the trigger's own prop pull. ctx: { now, event, trigger: { id, detail }, rows (that pull's
+     price rows), observed_at, request_id, resolution_s (the report to the pull), open(episode_key) }.
+     At the first book in PROP_BOOKS order posting a two-way half-point line for the teammate and the market
+     (its most even pair): the regime's P(side) at that line minus 1 / decimal, vig included. */
+  L.evaluateRoleShift = function (ctx) {
+    var R = L.RULES, out = { flags: [], considered: 0, skipped: {} };
+    var skip = function (why) { out.skipped[why] = (out.skipped[why] || 0) + 1; };
+    var ev = ctx.event || {}, d = (ctx.trigger && ctx.trigger.detail) || {}, abs = d.absent || {}, sw = d.regime_switch || {};
+    if (ms(ev.commence_time) == null || ms(ev.commence_time) <= ms(ctx.now)) { skip('not_pregame'); return out; }
+    /* the existing rule: a price older than 90 minutes is a past price, never flagged */
+    var age = ageMin(ctx.observed_at, ctx.now);
+    if (age == null || age > R.book_target_max_age_min) { skip('past_price'); return out; }
+    var built = ms(sw.scenario_built_at) != null && ms(sw.scenario_built_at) <= ms(ctx.now) ? sw.scenario_built_at : ctx.now;
+    (d.teammates || []).forEach(function (t) {
+      var name = L.normName(t.name);
+      Object.keys(L.ROLE_SHIFT.markets).forEach(function (mk) {
+        var m = (t.markets || {})[L.ROLE_SHIFT.markets[mk]]; if (!m) return;
+        var mine = (ctx.rows || []).filter(function (r) { return r.market === mk && L.normName(r.participant) === name; });
+        if (!mine.length) { skip('not_posted'); return; }
+        var pick = null;
+        for (var i = 0; i < L.PROP_BOOKS.length && !pick; i++) {
+          var bk = L.PROP_BOOKS[i], lines = twoWay(mine.filter(function (r) { return r.book === bk; }));
+          if (!lines.length) continue;
+          lines.sort(function (a, b) { return Math.abs(num(a.over.price_dec) - num(a.under.price_dec)) - Math.abs(num(b.over.price_dec) - num(b.under.price_dec)) || a.point - b.point; });
+          pick = Object.assign({ book: bk }, lines[0]);
+        }
+        if (!pick) { skip('no_two_way_line'); return; }
+        if (Math.abs(pick.point - Math.floor(pick.point) - 0.5) > 1e-9) { skip('whole_number_line'); return; }
+        var pOver = num((m.over || {})[pick.point.toFixed(1)]);
+        if (pOver == null) { skip('line_outside_the_ladder'); return; }
+        [['Over', pick.over, pick.under, pOver], ['Under', pick.under, pick.over, 1 - pOver]].forEach(function (s) {
+          out.considered++;
+          var side = s[0], row = s[1], p = s[3];
+          /* the absent player's own unders void if he sits: never flagged */
+          if (side === 'Under' && (String(t.id) === String(abs.id) || name === L.normName(abs.name))) { skip('absent_players_under'); return; }
+          if (!(p > 0 && p < 1)) { skip('no_probability'); return; }
+          var dec = num(row.price_dec), cost = 1 / dec, gap = (p - cost) * 100;
+          if (gap < R.role_shift_gap_pp) { skip('under_threshold'); return; }
+          var key = ['role_shift', ev.event_id, name, mk, side].join('|');
+          if (ctx.open && ctx.open(key)) { skip('episode_open'); return; }
+          out.flags.push({
+            flagged_at: ctx.now, model_key: L.MODELS.role_shift.key, model_version: L.MODELS.role_shift.version, trigger_type: 'role_shift', trigger_id: ctx.trigger.id,
+            sport_key: ev.sport_key, event_id: ev.event_id, home_team: ev.home_team, away_team: ev.away_team, commence_time: ev.commence_time,
+            market: mk, side: side, participant: row.participant, point: pick.point, target_venue: pick.book, target_ref: pick.book,
+            target_price: r4(dec), target_price_american: L.decToAm(dec), target_cost_prob: r4(cost), fee_per_contract: null, fee_basis: 'none', fee_unverified: false,
+            target_observed_at: ctx.observed_at, target_snapshot_id: null, target_request_id: ctx.request_id == null ? null : ctx.request_id,
+            reference_kind: 'role_shift_model', reference_prob: r4(p), devig_method: null, pinnacle_price_dec: null, pinnacle_opp_dec: null,
+            reference_observed_at: built, reference_request_id: null, reference_category: 'nba_role_shift_build',
+            gap_pp: r2(gap), threshold_pp: R.role_shift_gap_pp, seconds_since_reference: Math.max(0, Math.round((ms(ctx.now) - ms(built)) / 1000)),
+            reference_resolution_s: null, target_resolution_s: ctx.resolution_s == null ? null : ctx.resolution_s, snapshot_resolution_s: ctx.resolution_s == null ? null : ctx.resolution_s,
+            episode_key: key,
+            absent_player_id: String(abs.id), absent_player_name: abs.name || null, minutes_delta: num(t.minutes_delta), sample_games: num(t.games_without),
+            sample_stints: t.stints ? num(t.stints.sample) : null, fair_line: num(m.fair_line), posted_line: pick.point, fair_price_american: L.decToAm(1 / p),
+            detail: { participant_id: String(t.id), regime: sw.to || null, absent_status: abs.to || null, default_mean: num(m.default_mean), regime_mean: num(m.mean),
+              opposite_price_dec: num(s[2].price_dec), report_id: d.report_id == null ? null : d.report_id }
+          });
+        });
+      });
+    });
+    return out;
+  };
+  /* an ESPN game summary (site.api.espn.com .../nba/summary?event=) -> { final, players: id -> { played, min, pts, reb, ast, fg3m } } */
+  L.espnBox = function (json) {
+    var comp = json && json.header && (json.header.competitions || [])[0], st = comp && comp.status && comp.status.type;
+    var out = { final: !!(st && st.completed), players: {} };
+    ((json && json.boxscore && json.boxscore.players) || []).forEach(function (t) {
+      var s = (t.statistics || [])[0]; if (!s || !Array.isArray(s.athletes)) return;
+      var keys = (s.keys || []).map(function (k) { return String(k).toLowerCase(); }), labels = (s.labels || s.names || []).map(function (k) { return String(k).toUpperCase(); });
+      var col = function (key, label) { var i = keys.indexOf(key); return i >= 0 ? i : labels.indexOf(label); };
+      var iMin = col('minutes', 'MIN'), iPts = col('points', 'PTS'), iReb = col('rebounds', 'REB'), iAst = col('assists', 'AST'), i3 = col('threepointfieldgoalsmade-threepointfieldgoalsattempted', '3PT');
+      s.athletes.forEach(function (a) {
+        var id = a.athlete && a.athlete.id != null ? String(a.athlete.id) : null; if (!id) return;
+        var v = a.stats || [], cell = function (i) { return i >= 0 ? v[i] : null; };
+        var mins = a.didNotPlay ? 0 : (num(String(cell(iMin) == null ? '' : cell(iMin)).split(':')[0]) || 0);
+        out.players[id] = { name: a.athlete.displayName || a.athlete.fullName || id, played: !a.didNotPlay && mins > 0, min: mins,
+          pts: num(cell(iPts)), reb: num(cell(iReb)), ast: num(cell(iAst)), fg3m: num(String(cell(i3) == null ? '' : cell(i3)).split('-')[0]) };
+      });
+    });
+    return out;
+  };
+  /* the box's number for a prop market (P+R+A summed) */
+  L.boxValue = function (p, market) {
+    var k = L.ROLE_SHIFT.markets[market]; if (!p || !k) return null;
+    if (k === 'pra') return p.pts == null || p.reb == null || p.ast == null ? null : p.pts + p.reb + p.ast;
+    return num(p[k]);
+  };
+  /* the grade of one role-shift flag, written once. h: { observations: [{ observed_at, request_id, rows }] (the event's prop
+     rows), box (L.espnBox, or null when the game has no final box yet), now }.
+     Close: the flag's book, player, market and line, the last two-way pair at or before the start and no more
+     than 90 minutes before it; CLV = its Shin P(side) - the flag's cost. Converged: that close within 1.0 pp of
+     the regime's probability. The actual stat is stored (void if he did not play). */
+  L.gradeRoleShift = function (flag, h) {
+    var R = L.RULES, start = ms(flag.commence_time), det = flag.flag_detail || flag.detail || {};
+    var g = { flag_id: flag.flag_id == null ? null : flag.flag_id, model_key: flag.model_key, close_status: 'no_close', no_close_reason: null,
+      closing_reference_prob: null, closing_pinnacle_price_dec: null, closing_pinnacle_opp_dec: null, closing_reference_at: null, close_lead_min: null,
+      closing_target_price: null, closing_target_cost: null, closing_target_at: null, clv_pp: null, hit: null,
+      converged: false, converged_at: null, lag_to_converge_s: null, lag_censored: true, lag_resolution_s: flag.snapshot_resolution_s == null ? null : flag.snapshot_resolution_s,
+      actual_stat: null, actual_outcome: null, detail: {} };
+    var key = L.sideKey(flag), close = null;
+    (h.observations || []).forEach(function (o) {
+      var t = ms(o.observed_at); if (t == null || t > start) return;
+      var f = L.fairs((o.rows || []).filter(function (r) { return r.book === flag.target_venue; }))[key];
+      if (f && (!close || t > ms(close.observed_at))) close = { observed_at: o.observed_at, f: f };
+    });
+    if (!close) g.no_close_reason = 'no two-way ' + flag.target_venue + ' price at this player, market and line before the start';
+    else {
+      var lead = (start - ms(close.observed_at)) / 60000;
+      g.close_lead_min = r2(lead);
+      if (lead > R.close_max_lead_min) g.no_close_reason = 'the last ' + flag.target_venue + ' price at this line was ' + Math.round(lead) + ' minutes before the start (over ' + R.close_max_lead_min + ')';
+      else {
+        g.close_status = 'graded';
+        g.closing_reference_prob = close.f.fair; g.closing_reference_at = close.observed_at;
+        g.closing_target_price = close.f.dec; g.closing_target_cost = r4(1 / num(close.f.dec)); g.closing_target_at = close.observed_at;
+        g.clv_pp = r2((close.f.fair - num(flag.target_cost_prob)) * 100);
+        g.hit = g.clv_pp > 0;
+        g.detail.closing_opp_dec = close.f.opp_dec; g.detail.devig = close.f.method || 'shin';
+        if (Math.abs(close.f.fair - num(flag.reference_prob)) * 100 <= R.converge_pp) {
+          g.converged = true; g.converged_at = close.observed_at; g.lag_censored = false;
+          g.lag_to_converge_s = Math.max(0, Math.round((ms(close.observed_at) - ms(flag.flagged_at)) / 1000));
+          g.lag_resolution_s = g.lag_to_converge_s;
+        }
+      }
+    }
+    var box = h.box, pid = det.participant_id != null ? String(det.participant_id) : null;
+    var p = box && box.players ? (pid && box.players[pid]) || null : null;
+    if (box && box.players && !p) { var n = L.normName(flag.participant); Object.keys(box.players).forEach(function (k) { if (!p && L.normName(box.players[k].name) === n) p = box.players[k]; }); }
+    if (!box || !box.final) g.detail.actual_missing = 'no final box score was read for this game';
+    else if (!p || !p.played) { g.actual_outcome = 'void'; g.detail.actual_note = 'he did not play: the prop is void'; }
+    else {
+      var v = L.boxValue(p, flag.market), line = num(flag.point);
+      if (v == null) g.detail.actual_missing = 'the box score has no ' + flag.market + ' column';
+      else { g.actual_stat = v; g.actual_outcome = v > line ? 'over' : v < line ? 'under' : 'push'; }
+    }
+    return g;
+  };
+  /* the record carries the actual results beside CLV (role shifts store the player's stat) */
+  var baseRecord = L.record;
+  L.record = function (rows, o) {
+    var rec = baseRecord(rows, o), oc = { over: 0, under: 0, push: 0, void: 0 };
+    (rows || []).forEach(function (r) { if (r.actual_outcome && oc[r.actual_outcome] != null) oc[r.actual_outcome]++; });
+    rec.outcomes = oc;
+    return rec;
+  };
+  var baseRecordSection = L.recordSection;
+  L.recordSection = function (o) {
+    var h = baseRecordSection(o), oc = o.record && o.record.outcomes;
+    if (!oc || !(oc.over + oc.under + oc.push + oc.void)) return h;
+    var line = '<p class="sl-note">Actual results, stored beside CLV: ' + oc.over + ' over, ' + oc.under + ' under, ' + oc.push + ' push, ' + oc['void'] + ' void (the player did not play). CLV, not these, is the registered criterion.</p>';
+    return h.replace(/<\/section>$/, line + '</section>');
+  };
+  /* the page's "Who absorbs the minutes": one scenario (the build's or a trigger's table), its status, its source */
+  L.roleShiftTable = function (o) {
+    var sc = o.scenario || {}, abs = sc.absent || o.absent || {}, rows = sc.teammates || o.table || [];
+    var mk = ['reb', 'ast', 'fg3m', 'pra'];
+    var h = '<h3 class="sl-h3">' + esc(abs.name || 'A rotation player') + (abs.team ? ' (' + esc(abs.team) + ')' : '') + ' is ' + esc(String(o.status || 'out').toLowerCase()) + '</h3>';
+    var body = rows.map(function (t) {
+      if (t.skipped) return '<tr><th scope="row">' + esc(t.name) + '</th><td data-l="Minutes" colspan="4">' + esc(t.skipped) + '</td></tr>';
+      var st = t.stints || {};
+      var vol = t.markets ? mk.map(function (k) { var m = t.markets[k]; return m ? esc(L.ROLE_SHIFT.labels[k]) + ' ' + esc(fmtN(m.default_mean)) + ' → ' + esc(fmtN(m.mean)) + ' <small>(fair line ' + esc(m.fair_line) + ')</small>' : ''; }).filter(Boolean).join('<br>') : '<small>not priced</small>';
+      return '<tr><th scope="row">' + esc(t.name) + (t.priced ? ' ' + badge('priced', 'exp') : '') + '</th>'
+        + '<td data-l="Minutes">' + esc(fmtN(t.minutes_default)) + ' → ' + esc(fmtN(t.minutes_regime)) + ' <small>(' + esc(signed(t.minutes_delta, 1)) + ')</small></td>'
+        + '<td data-l="Usage per game">' + esc(signed(t.usage_delta, 1)) + '</td>'
+        + '<td data-l="Games without / with">' + esc(t.games_without) + ' / ' + esc(t.games_with) + '</td>'
+        + '<td data-l="Stints cross-check">' + (st.available ? esc(signed(st.minutes_delta, 1)) + ' min <small>(' + esc(st.sample) + ' stints' + (t.stints_agree === false ? ', disagrees' : '') + ')</small>' : '<small>no stints</small>') + '</td>'
+        + '<td data-l="Volume (default → regime mean)">' + vol + '</td></tr>';
+    }).join('');
+    return h + '<div class="sl-tblwrap"><table class="sl-tbl sl-flags"><thead><tr><th scope="col">Teammate</th><th scope="col">Minutes</th><th scope="col">Usage per game</th><th scope="col">Games without / with</th><th scope="col">Stints cross-check</th><th scope="col">Volume (default → regime mean)</th></tr></thead><tbody>'
+      + body + '</tbody></table></div>';
+  };
+  function fmtN(v) { v = num(v); return v == null ? '—' : (Math.round(v * 10) / 10).toFixed(1); }
+  /* the section: the scenarios switched on by the game's current report. o: { file (nba/role_shift.json), gameId, statuses
+     (the injury card's rows), live (the report is current), cls, id, h } */
+  L.roleShiftSection = function (o) {
+    o = o || {};
+    var hx = o.h || 'h2', file = o.file || {}, g = ((file.games) || []).filter(function (x) { return String(x.game_id) === String(o.gameId); })[0];
+    var head = '<section class="sl-sec' + (o.cls ? ' ' + esc(o.cls) : '') + '"' + (o.id ? ' id="' + esc(o.id) + '"' : '') + ' aria-label="Who absorbs the minutes, experimental">'
+      + '<' + hx + ' class="sl-h">Who absorbs the minutes ' + badge('Experimental', 'exp') + '</' + hx + '>';
+    var note = '<p class="sl-note">Experimental research (NBA-ROLE-SHIFT v' + esc(L.MODELS.role_shift.version) + '). When a top-' + L.ROLE_SHIFT.rotation
+      + ' rotation player is out or doubtful, EdgeDesk’s props model in its injury-conditioned regime: each teammate’s minutes and volume from his games without that player (this season and last, shrunk toward his games with him), with play-by-play stints as a cross-check. The default projections are unchanged. Fair lines, not prices, and not advice.</p>';
+    if (!g) return head + note + '<p class="sl-note">No role-shift scenarios were built for this game.</p></section>';
+    if (!o.live) return head + note + '<p class="sl-note">No current injury report for this game: no regime switch. Scenarios for ' + g.scenarios.filter(function (s) { return !s.skipped; }).length + ' rotation players are ready.</p></section>';
+    var st = o.statuses || [], bad = L.ROLE_SHIFT.statuses;
+    var on = g.scenarios.map(function (s) {
+      var r = st.filter(function (x) { return (x.player_id != null && String(x.player_id) === String(s.absent.id)) || L.normName(x.player_name) === L.normName(s.absent.name); })[0];
+      return r && bad.indexOf(r.status) >= 0 ? { s: s, status: r.status } : null;
+    }).filter(Boolean);
+    if (!on.length) return head + note + '<p class="sl-note">No top-' + L.ROLE_SHIFT.rotation + ' rotation player is out or doubtful on the current report: the default projections stand.</p></section>';
+    return head + note + on.map(function (x) {
+      return x.s.skipped ? '<h3 class="sl-h3">' + esc(x.s.absent.name) + ' is ' + esc(x.status.toLowerCase()) + '</h3><p class="sl-note">No regime switch: ' + esc(x.s.skipped) + '.</p>'
+        : L.roleShiftTable({ scenario: x.s, status: x.status });
+    }).join('') + '<p class="sl-note">Scenarios built ' + esc(L.agoText(file.generated_at)) + ' from the props model of ' + esc(L.agoText(file.props_generated_at)) + '.</p></section>';
+  };
   return L;
 }));
 // ── END SHARP LAG CORE ──
@@ -844,7 +1080,7 @@ export async function dispatchOnce(opts: Any = {}) {
           decision: !t.event_id ? "skipped_unmapped" : "skipped_window", cost: 0, detail: { reason: !t.event_id ? "no provider event matched both clubs and the start" : "outside 24 h of the start" } }]);
         out.recorded++; continue;
       }
-      const category = "sharp_check";
+      const category = t.trigger_type === "role_shift" ? "nba_role_props" : "sharp_check";
       const k = category + "|" + t.event_id;
       (groups[k] = groups[k] || { category, sport_key: t.sport_key, event_id: t.event_id, commence_time: t.commence_time, purpose: category === "nba_role_props" ? "role_shift" : "trigger", triggers: [] }).triggers.push(t);
     }
@@ -852,7 +1088,7 @@ export async function dispatchOnce(opts: Any = {}) {
     const soon = await db("sharp_lag_rows?select=flag_id,model_key,sport_key,event_id,commence_time&close_status=is.null&sport_key=in.(basketball_nba,icehockey_nhl)"
       + "&commence_time=gt." + enc(iso(nowMs)) + "&commence_time=lte." + enc(iso(nowMs + 60 * 60000))) || [];
     for (const f of soon) {
-      const category = "sharp_check";
+      const category = f.model_key === "NBA-ROLE-SHIFT" ? "nba_role_props" : "sharp_check";
       const k = category + "|" + f.event_id;
       if (groups[k]) continue;
       const recent = await db("sharp_check_requests?select=id&event_id=eq." + enc(f.event_id) + "&category=eq." + category + "&requested_at=gte." + enc(iso(nowMs - 50 * 60000)) + "&limit=1");
