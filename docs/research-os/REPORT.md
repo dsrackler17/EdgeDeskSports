@@ -1,7 +1,8 @@
 # Research OS — delivery report (2026-10-26)
 
-Branch `claude/edgedesk-sports-research-os-o6vqxg`, from `main` at
-`0536b76a8`. **Not merged, not deployed.** Production could not be reached
+Branch `claude/edgedesk-sports-research-os-o6vqxg`, started from `main` at
+`0536b76a8` and merged with `main` up to `1c3b5c07a`. **Not merged into `main`,
+not deployed.** Production could not be reached
 from the build environment, so every result below comes from this repository,
 a local PostgreSQL 16 and Chromium (§10).
 
@@ -143,11 +144,91 @@ Signal Center's modes are untouched, and both start in shadow.
 
 ## 7. Testing
 
-_Filled in from the final regression run, below._
+The pull request carries `npm run verify` (every workflow a pull request can
+start) for its final commit, with the SUMMARY line and the NOT VERIFIED list
+verbatim. This section records what was built and checked by hand.
+
+**New suites.**
+
+| Suite | What it holds |
+|---|---|
+| `tools/research_os/research_os.test.js` (142 checks, offline) | context ids and links per sport, the last-visit diff (same book, two capture times, else "not comparable"), the queue order (never by a model–market gap), the Overview's copy rules, the AI suggestions (only routes the desk answers), search, the Performance hub's "never combined" rule, and the `app.html` wiring: script order, routes, landing, the bare `#research` bookmark |
+| `tools/research_os/journey.e2e.js` (126 checks, Chromium + PostgreSQL 16) | the whole journey of §4 at 1440 px and 390 px; access as a subscriber, a free account, an operator and anon at the doors; Back / Forward; search; the AI desk's ids; listeners; widths; no door the journey serves answers an error; the System pill never names one; the SQL apply / rollback / apply |
+
+**Regression tests shown failing on the old code, then passing.**
+
+| Defect found while verifying | Test | Old code | Fixed |
+|---|---|---|---|
+| The PostgREST stand-in rejected the Simulator's `order=entity_id,outcome` and Portfolio's `col::text`, so the journey's Simulator showed "db 400" | the journey: "reads the published run through its own doors", "no door … answered with an error" | 122 passed, 4 failed (stand-in from `0536b76a8`) | 126 of 126 |
+| A bare `app.html#research` bookmark reached Research only because Research was the default landing page | `navigation.e2e.js`: "a bare #research opens Research for a reader with nothing saved" | lands on the Overview (`a4ed530e4`) | 188 of 188 |
+| The phone Menu sheet's Close button was 38 px | `navigation.e2e.js`: "every seat in the sheet is a 44px tap target" | 38 | passes |
+| The journey left its PostgreSQL cluster running after every run | checked by listing `postgres -D` processes after each run | 10 clusters left | none |
+
+**Tests changed with the IA (assertions rewritten, none removed):**
+`tools/app/navigation.test.js` / `.e2e.js`,
+`tools/portfolio/portfolio_ui.test.js` / `.e2e.js`,
+`tools/signal_center/ui.e2e.js`, `tools/slate/games_ui.e2e.js` and
+`tools/presentation/landing_positioning.test.js`. The last one now requires
+the landing page's list to be exactly `app.html`'s `NAV_PRIMARY`, not six.
+
+**Rendered-page audit** (Chromium; the final code against `main` at
+`1c3b5c07a`). Conditions:
+
+* the same committed slate (sha256 identical) and a pinned clock;
+* a signed-in subscriber;
+* every Supabase door answering 404 "not deployed";
+* 14 routes at 1440 × 900 and 390 × 844.
+
+| | This branch | `main` |
+|---|---|---|
+| Page errors | 0 | 0 |
+| Console errors other than the browser's "Failed to load resource: 404" | 0 | 0 |
+| Routes with horizontal scroll | 0 of 14 (both widths) | 0 of 14 |
+| Linked files that do not exist | 0 | 0 |
+| In-app hash links the router does not take | 0 of 29 | 0 |
+| Listeners added on a second and third loop of every seat | 0 | 0 |
+| Same-origin files that 404 | `football/injuries/nfl_0.json`, `football/nfl/qbs_0.csv` | the same two (pre-existing) |
+
+* **What the 404 lines are.** Every 404 console line is a browser network
+  log for a stubbed door, plus the two pre-existing files above.
+* **One extra read on the game page:** `rpc/mf_status`, the Foresight preview
+  on the "Keep researching" rail, memoized for a minute. Until Foresight is
+  deployed it answers 404 and the rail says "not deployed".
+* **The Overview landing makes fewer reads than main's Research landing.**
+
+**Pre-existing failures** (red on `main` too, not caused by this change) are
+listed in the pull request with the run that shows them on `main`.
 
 ## 8. Load cost
 
-_Filled in from the measurement, below._
+`app.html` against `main` at `1c3b5c07a`, same machine, idle, Chromium,
+1440 × 900. Conditions match the audit: a signed-in subscriber with nothing
+saved, every Supabase door 404 except the subscription. Each figure is the
+median of 9 loads. Times are the navigation timing entry's
+`domContentLoadedEventEnd` and `loadEventEnd`; the read count covers the
+first 5 seconds.
+
+| Landing for that reader | DOMContentLoaded | load | JS heap | DOM nodes | requests | JS | CSS | JSON | Supabase reads |
+|---|---|---|---|---|---|---|---|---|---|
+| `main`: Research → Football | 1168 ms | 1421 ms | 30 MB | 2040 | 138 | 98 files, 5,029 KB | 18, 284 KB | 21, 11,134 KB | 25 |
+| this branch: **Overview** | 1046 ms | 1049 ms | 18 MB | 1844 | 127 | 95, 4,571 KB | 21, 319 KB | 10, 1,463 KB | 21 |
+
+| The same view (`#research/football`) | DOMContentLoaded | load | JS heap | DOM nodes | requests | JS | CSS |
+|---|---|---|---|---|---|---|---|
+| `main` | 1101 ms | 1398 ms | 30 MB | 2024 | 138 | 98 files, 5,029 KB | 18, 284 KB |
+| this branch | 1121 ms | 1383 ms | 30 MB | 2107 | 147 | 104, 5,157 KB | 21, 319 KB |
+
+* **What the shell costs on every page:** six scripts and three stylesheets,
+  163 KB uncompressed and 52.7 KB gzipped. `app.html` itself grows 10 KB
+  (2.8 KB gzipped). The Foresight record's controller and renderers load only
+  when it is opened.
+* **The same view:** the timings differ by +20 ms and −15 ms, within the run
+  to run spread. The DOM gains 83 nodes (the sidebar's labels and groups).
+* **The Overview landing:** it reads the slate the Research strip loads and
+  the light status doors, not Football's boards. So a reader's first screen
+  costs less than `main`'s: 9.7 MB less JSON, a 12 MB smaller heap and 4
+  fewer database reads.
+* **Not measured:** a physical phone, a slow network and production's CDN.
 
 ## 9. Deployment states
 
