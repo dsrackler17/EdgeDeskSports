@@ -194,7 +194,9 @@ sensitivity checks.
   every challenger, the ablation, the promotion decision, the extended
   markets; the live challengers for the slate's model comparison.
 - `hockey/validation/nhl_diagnostics.json`: AUC, season phase, by club,
-  starters, totals coverage, drift.
+  starters, totals coverage, drift, team strength (whether clubs are rated
+  too far apart or too close together, and how standout clubs score against
+  their forecast).
 - `hockey/validation/nhl_props.json` + `hockey/props/slate.json`: the prop
   record and the research slate (`value_claims: DISABLED`).
 - `hockey/sources/registry.json` (`edgedesk_nhl_source_registry_v1`): each
