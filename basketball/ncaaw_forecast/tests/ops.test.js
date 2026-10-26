@@ -20,6 +20,9 @@ const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const T = require('./_kit').kit('ncaaw operations (failure injection)');
 const C = require('../config');
+const MD = require('../model');
+const RG = require('../registry');
+const W = require('../weekly');
 
 const HERE = path.join(__dirname, '..');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'ncaawops-'));
@@ -29,6 +32,19 @@ const history = (reg) => fs.readFileSync(path.join(reg, 'history.jsonl'), 'utf8'
 const pointer = (reg) => fs.readFileSync(path.join(reg, 'champion.json'), 'utf8');
 const tmpLeft = (dir) => { const out = []; const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) walk(p); else if (/\.tmp-/.test(f)) out.push(p); } }; walk(dir); return out; };
 const verify = (reg) => spawnSync(process.execPath, [path.join(HERE, 'registry.js'), 'verify'], { env: env(reg, path.join(TMP, 'unused')), encoding: 'utf8' });
+/* a fresh registry whose INIT champion is `cfg`, written the way registry.js init() writes the incumbent */
+function initWith(reg, cfg) {
+  const was = process.env.NCAAW_REGISTRY_DIR; process.env.NCAAW_REGISTRY_DIR = reg;
+  try {
+    const m = { schema: 'edgedesk_ncaaw_fc_model_v1', model_id: cfg.model_id, version: cfg.version, engine: cfg.engine, config: cfg, config_sha256: MD.configHash(cfg),
+      status: 'CHAMPION', recorded_at: new Date().toISOString(), evidence: 'tests/ops.test.js: a deliberately weak starting champion, in a throwaway registry' };
+    RG.recordModel(m);
+    RG.atomicWrite(RG.P.pointer(), JSON.stringify({ schema: 'edgedesk_ncaaw_fc_champion_v1', current: { key: RG.modelKey(m), model_id: m.model_id, version: m.version, engine: m.engine, config_sha256: m.config_sha256,
+      since: new Date().toISOString(), decision: 'INIT' }, previous: [] }, null, 1) + '\n');
+    RG.appendHistory({ decision: 'INIT', champion: RG.modelKey(m), note: 'test setup: a deliberately weak starting champion' });
+    return RG.modelKey(m);
+  } finally { if (was === undefined) delete process.env.NCAAW_REGISTRY_DIR; else process.env.NCAAW_REGISTRY_DIR = was; }
+}
 const run = (script, args, e) => new Promise((resolve) => {
   const p = spawn(process.execPath, [path.join(HERE, script)].concat(args), { env: e }); let out = '';
   p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
@@ -36,21 +52,34 @@ const run = (script, args, e) => new Promise((resolve) => {
 });
 
 (async () => {
-  /* the champion registry as committed (ncaaw_adjeff@1.0.0) for the first four,
-     with carry_lower (the women's champion's carry is already 1.0, so
-     carry_higher is not a change and is never a candidate);
-     a fresh registry (the incumbent as champion) for promote, whose first
-     candidate (the frozen selection) is known to pass every gate */
+  /* the champion registry as committed (ncaaw_adjeff@1.0.0) for ingest, train
+     and evaluate, with carry_lower (the women's champion's carry is already
+     1.0, so carry_higher is not a change and is never a candidate);
+     a fresh registry (the incumbent as champion) for store: the bootstrap run,
+     the served incumbent against the frozen selection, stopped after its
+     evaluation whatever it decides;
+     for promote, a fresh registry whose champion is the frozen selection with
+     a prior 64 times too strong, so that lambda_weaker_prior must PROMOTE.
+     It used to be the incumbent, against which the frozen selection was known
+     to pass every gate, until the weekly model loop promoted the served model
+     (1.1.0 -> 1.2.0 at cf8d09fb9) and the run returned RETAIN, so the promote
+     boundary was never reached. The weak champion needs no served model: on
+     2026-10-26 the candidate gained 0.029 log loss (95% CI 0.027 to 0.031)
+     against the 0.0002 the gate requires, and every gated cohort improved,
+     the D1-v-non-D1 regime included */
+  const sel = W.selectionConfig();
+  const weak = Object.assign({}, sel, { version: '0.1.0', params: Object.assign({}, sel.params, { lambda: sel.params.lambda * 64 }) });
   const cases = [
     { stage: 'ingest', fresh: false, only: 'carry_lower', wantStage: 'data' },
     { stage: 'train', fresh: false, only: 'carry_lower', wantStage: 'train' },
     { stage: 'evaluate', fresh: false, only: 'carry_lower', wantStage: 'evaluate' },
-    { stage: 'store', fresh: false, only: 'carry_lower', wantStage: 'store' },
-    { stage: 'promote', fresh: true, only: null, wantStage: 'promote' },
+    { stage: 'store', fresh: 'incumbent', only: null, wantStage: 'store' },
+    { stage: 'promote', fresh: weak, only: 'lambda_weaker_prior', wantStage: 'promote' },
   ];
   for (const c of cases) {
     c.reg = path.join(TMP, c.stage, 'registry'); c.rep = path.join(TMP, c.stage, 'reports');
-    if (c.fresh) { fs.mkdirSync(c.reg, { recursive: true }); spawnSync(process.execPath, [path.join(HERE, 'registry.js'), 'init'], { env: env(c.reg, c.rep) }); }
+    if (c.fresh === 'incumbent') { fs.mkdirSync(c.reg, { recursive: true }); spawnSync(process.execPath, [path.join(HERE, 'registry.js'), 'init'], { env: env(c.reg, c.rep) }); }
+    else if (c.fresh) { fs.mkdirSync(c.reg, { recursive: true }); c.champion = initWith(c.reg, c.fresh); }
     else copyDir(C.PATHS.registry, c.reg);
     c.before = pointer(c.reg); c.lines = history(c.reg).length;
   }
@@ -71,7 +100,8 @@ const run = (script, args, e) => new Promise((resolve) => {
   const pr = cases.find((c) => c.stage === 'promote'); const ph = history(pr.reg);
   T.chk('promote: the PROMOTE evaluation is kept as evidence (report and decision line) though nothing was promoted',
     fs.readdirSync(pr.rep).length === 1 && ph.some((x) => x.decision === 'PROMOTE' && x.candidate && !x.replaced) && !ph.some((x) => x.decision === 'PROMOTE' && x.replaced));
-  T.chk('promote: the incumbent is still the champion', /"key": "ncaaw_points@/.test(pointer(pr.reg)));
+  T.chk('promote: the starting champion is still the champion', JSON.parse(pointer(pr.reg)).current.key === pr.champion, JSON.parse(pointer(pr.reg)).current.key);
+  T.chk('store: the bootstrap run evaluated the frozen selection against the incumbent', /"key": "ncaaw_points@/.test(st.before) && history(st.reg).some((x) => x.decision === 'FAILED' && x.stage === 'store' && x.candidate === 'selection_v1'));
 
   /* a registry that disagrees with itself */
   const bad = path.join(TMP, 'inconsistent', 'registry'); copyDir(C.PATHS.registry, bad);
