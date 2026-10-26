@@ -598,6 +598,16 @@ section('14. audit 2026-09-30: the EV is priced from the displayed projection, a
     EVP.cfb.holdout.new_bound.false_positive_rate < 0.01 && EVP.cfb.holdout.new_bound.major_gaps_reachable > 0.9 && EVP.cfb.holdout.old_flat_25pct.false_positive_rate > 0.15
       && EVP.cfb.holdout.old_flat_25pct.major_gaps_reachable < 0.1 && EVP.nfl.holdout.new_bound.major_gaps_reachable > 0.9);
   chk('the fallback constant is still exported (25%)', Q.IMPLAUSIBLE_RAW_EV === 0.25);
+  /* the terminal board's stored curve (football/cfb_terminal/build.js curveCover) spans only the
+     market ± 30 to 60 points and answers null outside it: the width is read inside that span */
+  const full = normalCover(-2, 14), clipped = (t) => (t < -32 || t > 28 ? null : full(t));
+  chk('a cover that answers only near the market (−32…+28) reads the same width as the whole distribution', near(Q.distributionSpread(clipped), Q.distributionSpread(full), 1e-6), [Q.distributionSpread(clipped), Q.distributionSpread(full)]);
+  const clipModel = Object.assign(model({ fair: -2 }), { home_cover: clipped });
+  const wideClip = Q.evaluateGame(clipModel, [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
+  chk('…so its 8.5-pt gap is measured in σ and is NOT implausible (the flat 25% bound called it a data error)', wideClip.implausible_ev === null && wideClip.sides.away.quotes[0].expected_value > 0.25, wideClip.implausible_ev);
+  const bigClip = Q.evaluateGame(Object.assign(model({ fair: -8 }), { home_cover: (t) => (t < -38 || t > 22 ? null : normalCover(-8, 14)(t)) }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
+  chk('…and a 14.5-pt gap on such a curve is still IMPLAUSIBLE, σ-scaled', bigClip.implausible_ev && bigClip.implausible_ev.basis === 'sigma_scaled', bigClip.implausible_ev);
+  chk('a cover that answers nowhere has no width (the flat bound applies, and says so)', Q.distributionSpread(() => null) === null);
 
   /* VERIFIED MAJOR IS REACHABLE: a game that passes every gate with a 7+ gap on
      a stable roster, priced from the shipped college distribution at −110 */

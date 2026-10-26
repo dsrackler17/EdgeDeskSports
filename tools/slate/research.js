@@ -120,7 +120,7 @@ function nbaIndex(src, now) {
 function basketballIndex(src) {
   const by = {};
   const L = (src.basketball && src.basketball.leagues) || {};
-  [['nba', 'nba'], ['ncaam', 'ncaam']].forEach(([lk, sid]) => {
+  [['nba', 'nba'], ['ncaam', 'ncaam'], ['ncaaw', 'ncaaw'], ['wnba', 'wnba']].forEach(([lk, sid]) => {
     ((L[lk] && L[lk].games) || []).forEach((g) => { if (g.game_id != null) by[sid + ':' + g.game_id] = { g, L: L[lk] }; });
   });
   return by;
@@ -178,7 +178,7 @@ function modelFromLab(g, L, src) {
   return {
     status: 'PREDICTED', tier: st.moneyline || null, data_quality: L && L.data && L.data.state === 'STALE' ? 'LIMITED' : 'OK',
     home_line: num(ml ? ml.fair_home : null), source: src,
-    fair: { ml_home: num(ml && ml.fair_home), ml_away: num(ml && ml.fair_away), spread_home: num(sp && (sp.fair_line != null ? sp.fair_line : sp.home_line)), total: num(tot && (tot.fair_line != null ? tot.fair_line : tot.expected)) },
+    fair: { ml_home: num(ml && ml.fair_home), ml_away: num(ml && ml.fair_away), spread_home: num(sp && (sp.fair_home_line != null ? sp.fair_home_line : sp.fair_line != null ? sp.fair_line : sp.home_line)), total: num(tot && (tot.fair_line != null ? tot.fair_line : tot.expected)), home_win: num(ml && ml.home) },
     note: L && L.value_reason ? 'value claims are off: ' + L.value_reason : null
   };
 }
@@ -331,7 +331,7 @@ function join(events, src, o) {
       /* the same id with the sides the other way round keeps its link; EdgeDesk's numbers are not set against this event's prices */
       const ha = hit.g.home && hit.g.home.abbr, aa = hit.g.away && hit.g.away.abbr;
       if (ha && aa && e.home && e.away && (e.home.abbr !== ha || e.away.abbr !== aa)) { r.sides_swapped = true; r.model = null; }
-    } else if (e.sport === 'nba' || e.sport === 'ncaam') {
+    } else if (e.sport === 'nba' || e.sport === 'ncaam' || e.sport === 'ncaaw' || e.sport === 'wnba') {
       const hit = e.provider === 'espn' ? bb[e.sport + ':' + e.provider_id] : null;
       if (hit) { r.model = modelFromLab(hit.g, hit.L, 'basketball/slate.json'); r.metrics = true; }
     }
