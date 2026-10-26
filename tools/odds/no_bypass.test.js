@@ -91,7 +91,7 @@ chk('5 · the enrichment build never calls the provider (it reads captured quote
 
 /* ── 6 · the emergency stop covers every spender ────────────────────────── */
 const STOP = read('supabase/odds_api_emergency_stop.sql');
-['capture', 'close', 'collective_odds_ingest', 'props_cron'].forEach((fn) => chk('6 · the emergency stop pauses jobs that call ' + fn, STOP.indexOf("'%/functions/v1/" + fn) >= 0));
+['capture', 'close', 'collective_odds_ingest', 'props_cron', 'sharp_check'].forEach((fn) => chk('6 · the emergency stop pauses jobs that call ' + fn, STOP.indexOf("'%/functions/v1/" + fn) >= 0));
 const deployedOnly = (read('tools/supabase/download_functions.sh').match(/\b(odds|wta_odds|wta_close|cfb_close|close_backfill|capture_boards|model_conf_odds|ingest_multisport|run_slate|scores_diag)\b/g) || []);
 chk('6 · and every deployed-but-unexported odds function the repo knows of', [...new Set(deployedOnly)].every((fn) => STOP.indexOf('/functions/v1/' + fn) >= 0), [...new Set(deployedOnly)]);
 

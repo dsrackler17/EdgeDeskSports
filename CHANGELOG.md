@@ -4,6 +4,24 @@
 
 
 
+## 2026-10-26 — Odds gateway: per-category daily caps (methodology change)
+
+**Why.** The Sharp-lag research pipeline buys event-driven checks (an injury, a goalie change, a Kalshi move) and NBA role-shift props. A news trigger has no schedule, and the gateway had no limit per category: a category could spend until the shared daily allowance shed it. The owner's decision was a cap the gateway enforces itself, never one that lives only in the caller.
+
+**What.** `supabase/odds_api_gateway.sql`, its six parts regenerated:
+- `odds_api_categories.daily_cap_credits` (NULL = no cap, every existing category);
+- `odds_api_acquire` refuses `denied_category_cap` under the same config-row lock as the shared budget;
+- two categories, created **disabled** at priority 4: `sharp_check` (≤ 3 credits a request, 90/day) and `nba_role_props` (≤ 4 credits a request, 48/day), each inside 24 h of the start only, at most hourly;
+- `odds_api_spend_patterns()` covers `/functions/v1/sharp_check`. The emergency stop's list and the gateway's copy are kept identical by a test.
+
+Full write-up and operator steps: `docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-26-category-caps.md`.
+
+**Evidence.** `tools/odds/gateway_sql.test.js` section 14 on a real PostgreSQL:
+- before (`main`'s SQL): 70 passed, 5 failed;
+- after: 103 passed, 0 failed, including 12 concurrent sessions against a 12-credit cap (exactly 4 granted).
+
+`tools/odds/no_bypass.test.js` checks that the emergency stop names the new dispatcher.
+
 ## 2026-10-26 — All checks: one required check for every workflow a pull request starts
 
 **Why.** #807 merged 17 s after it was opened. Its three required checks (`Repository integrity`, `Odds gateway suites`, `audit`) passed within three minutes, and then eight of the 40 workflows it started failed. A ruleset can require only a check that reports on every pull request, and 64 of the 68 pull-request workflows are path-filtered.
