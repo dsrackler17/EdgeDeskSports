@@ -11,6 +11,15 @@
 - **Restored, once.** The file is now #777's exactly, as it was green on main (ed901e89): every page reads 2026-10-25 13:00 UTC, and the schedule it is served blanks every 2026 score from then on.
   - 25 of 25 pass on Playwright 1.63 and on 1.49.1 (CI's pin), and also against a schedule with every Week 7 and 8 game scored.
 
+## 2026-10-26 — Game research tests: the Kalshi fixture gives each side its own ticker
+
+Section 14 of `tools/football/game_research.test.js` names its two fake Kalshi markets by the first three letters of each team's name. For LAC @ LA both are "Los", so the two markets share a ticker, every quote lands on both teams, and the gate cases read a 57.2-point gap. The section reads the slate's first pregame NFL game, so it would have failed the day that game was LAC @ LA.
+
+- The tickers now end in `-AWAY` and `-HOME`. Nothing else reads them; the quotes still match teams by name.
+- The test changes only; the code is unchanged.
+
+Tests: `game_research.test.js` passes 252 of 252. The section 14 gate cases (5.0, 5.1, −5.1, 6.9, 7.0, −7.0) were also run against each of the 16 pregame NFL games on the committed slate: all pass (before: 15, with LAC @ LA failing).
+
 ## 2026-10-26 — Game research tests: two checks that broke after the NFL card's gate and data windows
 
 `tools/football/game_research.test.js` had failed on main since the NFL card commits added a large-gap gate and data windows to chips. The tests were wrong in both cases; the code is unchanged.

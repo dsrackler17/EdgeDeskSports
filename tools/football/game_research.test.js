@@ -652,9 +652,10 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
   const NE = proj.find((g) => g.game_key === 'nfl|2026_07_NE_CHI' && pre(g)) || proj.find(pre) || proj.find((g) => g.league === 'nfl');
   const spec = GS.graphicSpec(NE), mt = Date.parse(NE.model.built_at), iso = (ms) => new Date(mt + ms).toISOString(), MIN = 60000;
   delete spec.consensus; /* the Kalshi-only card: the snapshot's market line is tested in section 8 */
-  const link = (yes, opp) => ({ sport: NE.league, game_id: NE.game_id, game_key: NE.game_key, event_ticker: 'KXT-' + NE.game_id, market_ticker: 'KXT-' + NE.game_id + '-' + yes.slice(0, 3),
+  /* one ticker per side: a name's first letters are not unique (Los Angeles Chargers at Los Angeles Rams) */
+  const link = (yes, opp, side) => ({ sport: NE.league, game_id: NE.game_id, game_key: NE.game_key, event_ticker: 'KXT-' + NE.game_id, market_ticker: 'KXT-' + NE.game_id + '-' + side,
     kalshi_yes_name: yes, yes_team: yes, opponent: opp, kickoff_at: NE.kickoff, match_confidence: 'high', pregame: true, state: 'OK', yes_mid: 0.77, gap_pp: 12.3, book_fair_prob: 0.6 });
-  const links = [link(NE.away.name, NE.home.name), link(NE.home.name, NE.away.name)];
+  const links = [link(NE.away.name, NE.home.name, 'AWAY'), link(NE.home.name, NE.away.name, 'HOME')];
   const q = (i, ms, bid, ask) => ({ ticker: links[i].market_ticker, captured_at: iso(ms), yes_bid: bid, yes_ask: ask });
   /* the whole path a caller runs: the quotes nearest the model, placed on the teams, then the card */
   const card = (snaps, market) => {
