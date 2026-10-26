@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-26 — NHL: are projected totals bunched too tightly? An audit, a club monitor, and production kept
+
+Projected totals were audited against the totals played, out of sample. The test was whether the board is too compressed, and whether anything scores better. Nothing passed a rule written before scoring, so **no price moves**. The model, calibration, ratings, ledgers and historical records are unchanged ([docs/engine/NHL_LAB.md](docs/engine/NHL_LAB.md) §6.2).
+
+- **Findings.**
+  - Played-on-projected slope: 1.035 on 2014-20 (OK) and 0.76 on 2021-26 (too wide, not bunched). Live it is 3.6 on 184 games, driven by the top fifth (+1.02 ± 0.82 goals, n 36). The live window never chooses.
+  - This season's within-season sd (0.139) is close to 2025-26 at the same point (0.149).
+  - Each game's own distribution is about 5% too wide since 2021. This is monitored, not changed.
+- **Candidates.** Fourteen were scored on the full-game total RPS over four windows (SELECT 2014-20, CONFIRM 2021-25, HOLDOUT 2025-26, LIVE): goalie and special-teams variants, `goals_only`, pace, matchup interaction, three total-calibration variants, and rating prior and half-life. All fail. The near miss, `xg_core` plus confirmed-starter quality, is not significant on SELECT and needs a confirmed starter at pricing time.
+- **`hockey/model/diagnostics.js`** adds:
+  - `totals`: projected vs played by window, within-season fifths, by season; MAE, RMSE, RPS, Poisson deviance, last season's mean as a baseline; dispersion; home and away; goalie status.
+  - `clubs`: each club's goals scored and conceded against λ over this season, last season, the season before and its last 82 games. It needs 41 games, WATCH at |z| 2, FLAG past the Bonferroni bound (3.36), and PERSISTENT across two windows that share no game. Today: 0 flagged, 9 watch, 0 persistent. It never adjusts a rating.
+  - `--check` requires both.
+- **Record tab** (`lib/edgedesk_engine_ui.js`, `lib/edgedesk_engine.css`, tokens `20261026tt1`): the totals table, the calibration fifths, spread by season, and the club monitor. The record tables wrap to a phone's width instead of scrolling sideways.
+- **Tests.** `tools/hockey/nhl_v2.test.js` gains 31 deterministic checks (111 pass). They cover:
+  - expected goals, missing inputs and clamps;
+  - totals invariants (regulation mean λH + λA; full-game mean adds P(tie));
+  - low and high totals, and extreme matchups;
+  - calibration identity and recovery;
+  - shrinkage and the goalie variant;
+  - the Bonferroni bound, club status and persistence;
+  - the totals audit on synthetic seasons.
+
+  `tools/engine/engine_ui.e2e.js` checks both new sections at desktop and phone width (152 pass).
+
 ## 2026-10-26 — CI: a gate on every pull request, `npm run verify`, and the rules that would have stopped today's eighteen failed runs
 
 Eighteen failed runs between 12:03 and 12:54 UTC came from three root causes, all already fixed on `main` by #799, #800, #803 and #804 ([docs/ci/INCIDENT-2026-10-26.md](docs/ci/INCIDENT-2026-10-26.md)):
