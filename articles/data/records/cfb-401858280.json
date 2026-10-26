@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T23:00:00.000Z",
   "game_when_label": "2026-10-31 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-26T20:26:45.560Z",
-  "generated_at": "2026-10-26T20:26:45.560Z",
+  "updated_at": "2026-10-26T23:17:09.387Z",
+  "generated_at": "2026-10-26T23:17:09.387Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -258,7 +258,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T23:00:00.000Z",
-        "retrieved_at": "2026-10-26T19:09:07.722Z"
+        "retrieved_at": "2026-10-26T23:10:58.149Z"
       },
       "home": {
         "team": "Florida State",
@@ -348,9 +348,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T23:00:00.000Z",
-        "retrieved_at": "2026-10-26T19:09:07.722Z"
+        "retrieved_at": "2026-10-26T23:10:58.149Z"
       },
-      "generated_at": "2026-10-26T19:09:05.743Z",
+      "generated_at": "2026-10-26T23:10:56.259Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1466,7 +1466,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 1828h old",
+          "text": "odds is 1831h old",
           "widening": null
         },
         {
@@ -1591,7 +1591,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-08-11T16:00:03.625+00:00",
-      "capture_age": "1828 hours old",
+      "capture_age": "1831 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1655,11 +1655,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
+        "text": "88 · STRONG",
         "sub": "main deduction: Clemson’s availability report is not due yet",
-        "score": 89,
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1685,7 +1685,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1703,7 +1703,23 @@
         ],
         "main_deduction": "Clemson’s availability report is not due yet; the impact of Clemson’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
-        "next_actions": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Clemson)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Florida State)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
+          }
+        ],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 0.81,
@@ -1960,7 +1976,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "hpc1poioyx3i",
+    "packet_hash": "1g6hlu11pwm6y3",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": true,
     "question": "Can Clemson take away Florida State’s big plays?",
@@ -2022,7 +2038,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-26T19:09:27.959Z",
+        "observed_at": "2026-10-26T23:12:05.043Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2045,6 +2061,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-26T20:26:45.560Z"
+    "at": "2026-10-26T23:17:09.387Z"
   }
 }

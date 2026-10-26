@@ -21,8 +21,8 @@
   "game_time": "2026-11-01T00:00:00.000Z",
   "game_when_label": "2026-11-01 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-26T20:26:45.560Z",
-  "generated_at": "2026-10-26T20:26:45.560Z",
+  "updated_at": "2026-10-26T23:17:09.387Z",
+  "generated_at": "2026-10-26T23:17:09.387Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -246,7 +246,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T00:00:00.000Z",
-        "retrieved_at": "2026-10-26T19:09:07.722Z"
+        "retrieved_at": "2026-10-26T23:10:58.149Z"
       },
       "home": {
         "team": "Nebraska",
@@ -324,9 +324,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-18T03:00:00.000Z",
-        "retrieved_at": "2026-10-26T19:09:07.722Z"
+        "retrieved_at": "2026-10-26T23:10:58.149Z"
       },
-      "generated_at": "2026-10-26T19:09:05.743Z",
+      "generated_at": "2026-10-26T23:10:56.259Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1914,27 +1914,27 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1r0t9mjtm8909",
+    "packet_hash": "e6cw3cxtyd5m",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Washington get Nebraska off the field on third down?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.7 points.",
     "gap": {
-      "points": 0.3,
-      "toward": "Washington",
-      "other": "Nebraska"
+      "points": 0.7,
+      "toward": "Nebraska",
+      "other": "Washington"
     },
     "supporting": [
-      "When Nebraska has the ball (the line of scrimmage on running plays): Nebraska’s offense is stopped at or behind the line on 20.3% of its runs, and Washington’s defense stops 25.0% of opponent runs at or behind the line (FBS average 17.5%).",
-      "In his last two games (Indiana and Oregon), Colandrea averaged 5.4 yards per attempt, against 8.2 in his five games before that.",
-      "EdgeDesk’s position-group ratings put Washington’s receivers No. 11 nationally and Nebraska’s No. 56.",
-      "EdgeDesk’s position-group ratings put Washington’s linebackers No. 10 nationally and Nebraska’s No. 57."
-    ],
-    "contradicting": [
       "When Nebraska has the ball (pass protection against the pass rush): Nebraska’s offense has allowed a sack on 3.8% of its dropbacks, and Washington’s defense sacks the quarterback on 5.1% of opponent dropbacks (FBS average 5.7%).",
       "When Washington has the ball (pass protection against the pass rush): Washington’s offense has allowed a sack on 7.9% of its dropbacks, and Nebraska’s defense sacks the quarterback on 9.3% of opponent dropbacks (FBS average 5.7%).",
       "When Washington has the ball (third down): Washington’s offense converts 34.5% of its third downs, and Nebraska’s defense allows opponents to convert 16.3% of their third downs (FBS average 39.5%).",
       "When Washington has the ball (the red zone): Washington’s offense succeeds on 44.8% of its red-zone plays, and Nebraska’s defense allows success on 26.7% of opponent red-zone plays (FBS average 43.6%)."
+    ],
+    "contradicting": [
+      "When Nebraska has the ball (the line of scrimmage on running plays): Nebraska’s offense is stopped at or behind the line on 20.3% of its runs, and Washington’s defense stops 25.0% of opponent runs at or behind the line (FBS average 17.5%).",
+      "In his last two games (Indiana and Oregon), Colandrea averaged 5.4 yards per attempt, against 8.2 in his five games before that.",
+      "EdgeDesk’s position-group ratings put Washington’s receivers No. 11 nationally and Nebraska’s No. 56.",
+      "EdgeDesk’s position-group ratings put Washington’s linebackers No. 10 nationally and Nebraska’s No. 57."
     ],
     "quarterbacks": [
       "Anthony Colandrea has completed 137 of 223 passes (61.4%) for 1,601 yards, 7.2 yards per attempt, 14 touchdowns and 4 interceptions in seven games for Nebraska, and has been sacked on 13 of 236 dropbacks.",
@@ -1944,15 +1944,15 @@
     "availability": [],
     "script": {
       "model": [
-        "Washington’s defense has to come out ahead on third down: it allows opponents to convert 32.0% of their third downs, against an offense that converts 46.1% of its third downs.",
-        "Washington’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 9.3% of opponent dropbacks.",
-        "Washington’s offense has to hold its own on third down against a defense that allows opponents to convert 16.3% of their third downs.",
-        "Washington’s defense has to come out ahead at the line of scrimmage: it stops 25.0% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 20.3% of its runs."
+        "Nebraska’s offense has to keep winning on third down: it converts 46.1% of its third downs, and Washington’s defense allows opponents to convert 32.0% of their third downs.",
+        "Nebraska’s offense has to hold its own at the line of scrimmage against a defense that stops 25.0% of opponent runs at or behind the line.",
+        "Nebraska’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 8.8% of opponent pass plays.",
+        "Nebraska’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.3% of opponent dropbacks, against an offense that has allowed a sack on 7.9% of its dropbacks."
       ],
       "market": [
-        "Nebraska’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.3% of opponent dropbacks, against an offense that has allowed a sack on 7.9% of its dropbacks.",
-        "Nebraska’s defense has to come out ahead on third down: it allows opponents to convert 16.3% of their third downs, against an offense that converts 34.5% of its third downs.",
-        "Nebraska’s offense has to keep winning on third down: it converts 46.1% of its third downs, and Washington’s defense allows opponents to convert 32.0% of their third downs."
+        "Washington’s defense has to come out ahead at the line of scrimmage: it stops 25.0% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 20.3% of its runs.",
+        "Washington’s defense has to come out ahead on big pass plays: it gives up explosive gains on 8.8% of opponent pass plays, against an offense that turns 8.4% of its pass plays into explosive gains.",
+        "Washington’s defense has to come out ahead on third down: it allows opponents to convert 32.0% of their third downs, against an offense that converts 46.1% of its third downs."
       ]
     },
     "unknown": [
@@ -1968,10 +1968,10 @@
     ],
     "sources": [
       {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-26T19:09:27.959Z",
+        "observed_at": "2026-10-26T23:12:05.043Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1994,6 +1994,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-26T20:26:45.560Z"
+    "at": "2026-10-26T23:17:09.387Z"
   }
 }
