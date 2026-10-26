@@ -1,5 +1,43 @@
 # Changelog
 
+## 2026-10-25 — NFL card: the 2025 prior diagnosed, the stale-starter bug fixed, a starter sync, and the large-gap gate
+
+KC @ SEA, Week 7 SNF: the card had SEA −4.4 / 65.8% against Kalshi's SEA −3 / 58.5%. `docs/nfl-prior-decay/README.md` has the whole account. The served weights (`edgedesk_nfl_v2.1.0`) are unchanged, and the frozen CLV ranking protocol is untouched.
+
+- **Diagnosis, before any model change** (`docs/nfl-prior-decay/DIAGNOSIS.md`, `tools/football/nfl_prior_diagnosis.js`).
+  - The replay reproduces the card to the cent.
+  - Base team strength is SEA +2.71: +3.73 from the carried 2025 prior and −1.02 from 2026. Its inputs are 70% 2025 after 5–6 games.
+  - The "Seahawks #2 vs #7" efficiency ranks reverse on 2026 data alone (KC #3, SEA #8).
+  - The QB chip is per player, but it measures the starter against his club's own running level. The quarterback's quality sits in team ratings that decay slowly.
+  - 62 of 91 published Week 2–7 cards sit more than 5 pp from the close, and they earned no CLV (+0.05 pts spread, −0.03 pp moneyline).
+  - The 2026-only replay is worse on Brier (0.2519 vs 0.2344), so the prior stays.
+- **Bug: the board's start history read the schedule feed's stale QB pre-fill.** nflverse `games.csv` still names Drew Lock for Seattle's Weeks 3–6, which Sam Darnold played.
+  - The regime line on KC @ SEA therefore said "regular starter (Drew Lock) out". The injury-replacement "most starts" came from the same wrong history.
+  - `app.html` `fbNflQbStarts` now counts a played game's start for the passer the QB game log credits, the rule that already sets the model's own regular starter. KC @ SEA's number does not move (4.375884).
+- **Starter sync** (`football/nfl/starter_sync.js`, `tools/football/nfl_starter_sync.js`).
+  - Every upcoming slate game carries a fingerprint of the inputs that decide its starters: the feed id, depth-chart QB1, and the club's QB lines on the report.
+  - When one moves, the slate is rebuilt at once. Each priced-starter change is logged, with the number before and after, to `football/nfl/starter_sync/`.
+  - It runs after every injury fetch. `injury-sync.yml` now pushes through `push_generated.sh`.
+  - `starter-context.yml` logs the changes its own builds make.
+- **QB designation and practice status as Observed (T0).** Each priced starter carries `*_qb_report`, with its source and two times: the report's retrieval time, and EdgeDesk's first sight from the new `football/injuries/history/nfl_<season>_qb.jsonl`. nflverse's 2026 file has no per-row time. The research page shows it under Quarterbacks.
+- **The v2 prior-decay experiment** (`football/research/nfl_v2/prior_decay/`).
+  - Preregistered before any run: the schedule, three variants and the promotion criteria.
+  - Backtested once on 2010–2024, with the 2025 holdout never predicted. The selected variant moved Brier by −0.00004 and CLV by +0.007 pts, but was better in 8 of 15 seasons, below the 9 required.
+  - **Rejected.** It stays experimental, `passed = false`, and is never on a card.
+  - Registered in `supabase/nfl_prior_decay_registry.sql`, generated through the now-parametrized `build_prereg_sql.js`. The market-structure SQL is byte-identical.
+  - The shadow run shows the QB-anchored term moves KC @ SEA by 0.15 pts: the gap is in the team priors.
+- **Large-gap gate (display, NFL cards).** When EdgeDesk sits more than 5 points of win probability from any market on the card (Kalshi, the book, the consensus), no EDGE label is drawn.
+  - The graphic and the research page say "Large gap vs market". They name the top contributing chip with its 2025 / 2026 split and data window.
+  - The page withholds the decision layer's label.
+  - College cards keep the 7-point Kalshi note.
+- **Data windows and Known Limitations.**
+  - Every NFL chip in the number shows its data window ("2025: 70% / 2026: 30%"). `football/nfl_model.js` `cardWindows` reads the weights the ratings use; it is display only.
+  - A Known Limitations line appears when a chip leans more than half on the prior.
+- **Tests.**
+  - `tools/football/nfl_prior_decay.test.js` (81 checks, offline): prior weight by week; starter changes; the KC @ SEA replay through the snapshot, the graphic (an "EDGE: SEA −2.5" quote now reads LARGE GAP VS MARKET) and the rendered page; the gate's rules; the registration on PostgreSQL.
+  - `game_research.test.js` was updated for the NFL gate. Its Kalshi fixture now picks a pregame game, which fixes the 2 failures that predated this change: 252/252.
+  - e2e 57/57.
+
 ## 2026-10-25 — CI back to green: five failures, each fixed at its cause
 
 - **Football weekly build refused to publish week 8** (mean rank shift 11.46 against a bound of 6; every run since 2026-10-25 11:45 UTC).

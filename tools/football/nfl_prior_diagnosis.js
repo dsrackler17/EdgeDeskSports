@@ -53,6 +53,12 @@ const { parseCsv } = require(path.join(ROOT, 'football', 'nfl', 'build_team_week
 
 const SEASON = 2026, WEEKS = [1, 7], GAP_PP = 5, FOCUS = '2026_07_KC_SEA';
 const OUT = path.join(ROOT, 'football', 'validation', 'nfl_prior_diagnosis.json');
+/* THE REPLAY FIXTURE: the 2026 schedule rows through Week 7 with the columns the replay reads, so
+   the KC @ SEA replay test runs from committed files (games.csv itself is a gitignored cache) */
+const FIXTURE = path.join(__dirname, 'fixtures', 'nfl_2026_w7_schedule.json');
+const FIXTURE_COLS = ['game_id', 'season', 'game_type', 'week', 'gameday', 'gametime', 'away_team', 'away_score', 'home_team', 'home_score', 'location',
+  'away_rest', 'home_rest', 'away_moneyline', 'home_moneyline', 'spread_line', 'total_line', 'div_game', 'roof', 'surface', 'temp', 'wind',
+  'away_qb_id', 'home_qb_id', 'away_qb_name', 'home_qb_name', 'stadium'];
 const num = (x) => (x == null || x === '' || x === 'NA' ? null : (Number.isFinite(+x) ? +x : null));
 const r1 = (x) => (Number.isFinite(x) ? Math.round(x * 10) / 10 : null);
 const r2 = (x) => (Number.isFinite(x) ? Math.round(x * 100) / 100 : null);
@@ -85,8 +91,9 @@ function byGame(file) {
   return o;
 }
 function readJson(rel, dflt) { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch (_) { return dflt; } }
+/* csvText: games.csv as text, or its rows (the committed replay fixture, FIXTURE below) */
 function loadInputs(csvText) {
-  const all = parseCsv(csvText).rows;
+  const all = Array.isArray(csvText) ? csvText : parseCsv(csvText).rows;
   const games = all.filter((g) => num(g.season) === SEASON).map((g) => Object.assign({}, g, { _kick: String(g.gameday) + 'T' + String(g.gametime || '13:00') }))
     .sort((a, b) => a._kick.localeCompare(b._kick) || String(a.game_id).localeCompare(String(b.game_id)));
   const stadiums = V2.indexStadiums(readJson('football/venues/nfl_stadiums.json', { stadiums: [] }));
@@ -362,6 +369,18 @@ async function main() {
   fs.writeFileSync(OUT, JSON.stringify(doc, null, 1) + '\n');
   console.log(`wrote ${path.relative(ROOT, OUT)}: ${doc.games.length} games, ${doc.summary.published.flagged} published cards and ${doc.summary.replay.flagged} replayed cards beyond ${GAP_PP} pp`);
   if (argv.includes('--md')) console.log('\n' + markdown(doc));
+  if (argv.includes('--fixture')) {
+    /* every 2026 game through Week 7, as the feed carried it at KC @ SEA's kickoff: a game that kicked off
+       later carries no score, so a later run of the feed cannot change what the replay absorbs */
+    const kick = I.games.find((g) => g.game_id === FOCUS)._kick;
+    const rows = I.games.filter((g) => num(g.week) <= WEEKS[1]).map((g) => { const o = {}; FIXTURE_COLS.forEach((c) => { o[c] = g[c] == null ? null : g[c]; });
+      if (g._kick >= kick) { o.home_score = null; o.away_score = null; } return o; });
+    fs.mkdirSync(path.dirname(FIXTURE), { recursive: true });
+    fs.writeFileSync(FIXTURE, JSON.stringify({ schema: 'edgedesk_nfl_replay_fixture_v1', season: SEASON, through_week: WEEKS[1], focus: FOCUS, focus_kickoff_et: kick,
+      source: 'nflverse/nfldata games.csv (' + new Date().toISOString().slice(0, 10) + '), the columns tools/football/nfl_prior_diagnosis.js reads; scores of games kicking off at or after the focus game removed',
+      columns: FIXTURE_COLS, games: rows }) + '\n');
+    console.log('wrote ' + path.relative(ROOT, FIXTURE) + ': ' + rows.length + ' games');
+  }
 }
-module.exports = { noVigHome, servedState, currentOnlyState, replay, loadInputs, topChip, actualStarter, rowsOf, summarize, markdown, GAP_PP };
+module.exports = { noVigHome, servedState, currentOnlyState, replay, loadInputs, topChip, actualStarter, rowsOf, summarize, markdown, predict, gameReq, absorbInto, done, GAP_PP, FIXTURE, FOCUS };
 if (require.main === module) main().catch((e) => { console.error(e && e.stack || e); process.exit(1); });
