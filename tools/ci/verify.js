@@ -215,6 +215,7 @@ function main() {
   if (!flag('--list')) fs.mkdirSync(logDir, { recursive: true });
   const ctx = { root: ROOT, temp: tmp, base: 'main', head: git(['rev-parse', '--abbrev-ref', 'HEAD']).out || 'local' };
   const servicesUp = { postgres: null };
+  let shallow = null;
   const results = [];
   const seen = new Map();
   const tally = { pass: 0, fail: 0, unavailable: 0, skipped: 0, reused: 0 };
@@ -275,6 +276,10 @@ function main() {
       const gh = {};
       for (const k of ['env', 'path', 'output', 'summary']) { gh[k] = path.join(tmp, 'gh_' + wf.base.replace(/\W/g, '_') + '_' + J.id + '_' + k); fs.writeFileSync(gh[k], ''); }
       const jobPath = [], jobEnv = {};
+      /* a job that checks out full history (fetch-depth: 0) can fail on a shallow clone
+         for want of a commit, not of code: such a failure is NOT VERIFIED here, never passed */
+      const wantsHistory = (job.steps || []).some((st) => st && /^actions\/checkout@/.test(String(st.uses || '')) && st.with && String(st.with['fetch-depth']) === '0');
+      if (wantsHistory && shallow == null) shallow = git(['rev-parse', '--is-shallow-repository']).out === 'true';
       for (const S of J.steps) {
         if (S.status === 'run' && py.missing.length && /(^|[\s;&|(])python3?\b/.test(S.run)) {
           S.status = 'unavailable';
@@ -331,6 +336,12 @@ function main() {
         const born = Array.from(untracked()).filter((f) => !knownNew.has(f) && !f.startsWith(logRel + '/'));
         if (born.length) { born.forEach((f) => { knownNew.add(f); created.push({ file: f, by: wf.base + ' · ' + label }); }); rec.created = born; }
         if (ok) { tally.pass++; console.log('    PASS ' + secs.padStart(7) + '  ' + label); }
+        else if (wantsHistory && shallow) {
+          rec.status = 'unavailable'; rec.why = 'failed on a shallow clone, and its job checks out full history (fetch-depth: 0): git fetch --unshallow, then run it again';
+          seen.set(key, { status: 'fail', where: wf.base + ' step ' + S.n });
+          tally.unavailable++; notVerified.push(wf.base + ' · ' + label + ': ' + rec.why + (rec.log ? ' (' + rec.log + ')' : ''));
+          console.log('    N/A  ' + secs.padStart(7) + '  ' + label + ' — ' + rec.why + (rec.log ? ' · log ' + rec.log : ''));
+        }
         else {
           tally.fail++;
           const why = r.error && r.error.code === 'ETIMEDOUT' ? 'timed out after ' + limitMin + ' min' : r.signal ? 'killed by ' + r.signal : 'exit ' + r.status;

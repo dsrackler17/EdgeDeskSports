@@ -144,6 +144,17 @@ r = run(['--workflow', 'runner.yml']);
 chk('GITHUB_PATH, GITHUB_ENV (incl. a multi-line value), GITHUB_OUTPUT and the step summary work as on a runner', r.code === 0 && /SUMMARY  passed 4 · failed 0/.test(r.out), r.out.slice(-900));
 chk('verify never counts its own step logs as files a step created', !/CREATED untracked file \.cache\/verify/.test(r.out) && fs.existsSync(path.join(R, '.cache', 'verify')));
 
+/* a job that checks out full history, failing on a shallow clone, is NOT VERIFIED, never passed */
+{
+  const SH = R + '-shallow';
+  execFileSync('git', ['clone', '-q', '--depth', '1', 'file://' + R, SH], { env: ENV, stdio: ['ignore', 'pipe', 'pipe'] });
+  fs.mkdirSync(path.join(SH, '.github', 'workflows'), { recursive: true });
+  fs.writeFileSync(path.join(SH, 'hist.test.js'), 'process.exit(require("child_process").spawnSync("git", ["rev-parse", "HEAD~1"]).status === 0 ? 0 : 1);\n');
+  fs.writeFileSync(path.join(SH, '.github', 'workflows', 'hist.yml'), "name: History\non:\n  pull_request:\njobs:\n  t:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n        with:\n          fetch-depth: 0\n      - run: node hist.test.js\n      - run: node -e 'process.exit(0)'\n");
+  const rs = spawnSync(process.execPath, [VERIFY, '--root', SH, '--workflow', 'hist.yml'], { cwd: SH, env: ENV, encoding: 'utf8' });
+  chk('on a shallow clone, a failure in a fetch-depth: 0 job is NOT VERIFIED with the remedy, and a pass still passes', rs.status === 0 && /N\/A .*failed on a shallow clone.*git fetch --unshallow/.test(rs.stdout) && /SUMMARY  passed 1 · failed 0 · NOT VERIFIED here 1/.test(rs.stdout), rs.stdout.slice(-700));
+}
+
 /* the network audit names a step whose node process opened a connection beyond loopback */
 write('net.test.js', 'const s = require("net").connect(9, "example.invalid"); s.on("error", () => {}); setTimeout(() => process.exit(0), 200);\n');
 write('.github/workflows/net.yml', "name: Net\non:\n  pull_request:\njobs:\n  t:\n    runs-on: ubuntu-latest\n    steps:\n      - run: node net.test.js\n      - run: node ok.test.js\n");
