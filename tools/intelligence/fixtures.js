@@ -25,7 +25,14 @@ const AVAIL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/availability/
    NFL slate the browser's own projection wrote through Node, and the venue
    forecasts. Each is served as-is; a test that needs one absent passes null. */
 const METRICS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/matchup/metrics.json'), 'utf8'));
-const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/nfl/slate.json'), 'utf8'));
+/* THE NFL SLATE IS PINNED. The live artifact is rewritten several times a day and
+   drops each game as it kicks off, so the games the suite clock's "this weekend"
+   finds changed with every rebuild: 7 became 8 on 2026-10-16, none on 2026-10-19,
+   and four became three at the 2026-10-26 00:27 rebuild, failing quant_ui.e2e.js
+   from then on. The slate served here is the committed artifact as it stood at
+   2026-10-25 21:53 UTC (tools/fixtures/nfl_slate_2026-10-25.json), the last
+   rebuild every suite passed on; the move onto the clock below still applies. */
+const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/fixtures/nfl_slate_2026-10-25.json'), 'utf8'));
 const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/forecasts.json'), 'utf8'));
 /* The Slice 3 identity profiles: the REAL committed team files for the four
    clubs the suites name, so the interaction engine is exercised on the
