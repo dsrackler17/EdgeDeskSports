@@ -65,7 +65,7 @@ real dependency contract.
 | Matchup graphics (`tools/sport_graphic/sport_graphic.test.js:230`) | "loads the module after the renderer, with the renderer's version" | #807's merge moved `edgedesk_game_graphic.js` to `?v=20261026ros2` and left `edgedesk_sport_graphic.js` at `sg1`. The module fills the renderer's layout, so a cached module could meet a newer renderer. | `app.html`: the module joins the renderer's stamp. The browser suite now proves the contract from a real load (§1b). | 1501 passed, 1 failed → 1502 passed, 0 failed. Browser: 56 passed, 1 failed (red on the old stamps) → 57 passed, 0 failed |
 | Simulator suites (`simulator/tests/ui.e2e.ts`) | "a failed refresh keeps the last good results on screen" | The fixture failed the *second* `sim_public_status` call. The Overview landing makes the first, so the Simulator's own first load failed instead of its refresh. | The failure is armed once the Simulator has drawn its first results, whatever else read the door. | 144 passed, 1 failed → 145 passed, 0 failed |
 | Signal Center tests (`tools/signal_center/ui.e2e.js`, the landing cases #807 added) | "the Overview's Signals tile reads the server's own 24-hour count" | The tile's label is uppercased by CSS, and `innerText` reads what is drawn, so it saw "SIGNALS 53 published in 24 h" against `/Signals 53 …/` | Read each part of the tile as text, as `journey.e2e.js` already does; the expected count and wording are unchanged | 125 passed, 1 failed → 126 passed, 0 failed |
-| Market Foresight tests (`tools/foresight/isolation.test.js`) | "no file outside the allowlist references Market Foresight" | `docs/research-os/REPORT.md` named the `mf_*` status door | The sentence names "the Foresight service's status door", as DESIGN.md already does. The allowlist is unchanged: widening it would weaken an integrity guard. | 35 passed, 1 failed → 36 passed, 0 failed |
+| Market Foresight tests (its isolation suite) | "no file outside the allowlist references Market Foresight" | `docs/research-os/REPORT.md` named the Foresight status door by its database name, which only the layer's own files may use (this audit names neither the door nor that suite's path, for the same reason) | The sentence names "the Foresight service's status door", as DESIGN.md already does. The allowlist is unchanged: widening it would weaken an integrity guard. | 35 passed, 1 failed → 36 passed, 0 failed |
 
 ### 1a. First-time onboarding (Funnel)
 
@@ -88,11 +88,15 @@ unrendered `Buffalo BillsWATCHNFL`, which is what failed next.
 not hidden the panel lands on Research, where the panel is. Everyone else
 lands on the Overview, as designed.
 
-* **The rule:** `edFirstWeek()` in `lib/edgedesk_workspace_ui.js`.
-* **Where it applies:** Setup's hand-off and the boot's "nothing saved"
-  branch.
-* **What it reads:** the panel's own 14-day window and its own device record
-  (hidden, or every step done more than a day ago).
+* **The rule:** `EDShell.landing()` in `lib/edgedesk_shell.js`, asked by
+  `edLandDefault()` in `app.html`. It came from the parallel Research OS fix
+  branch; see §4.
+* **Where it applies:** the boot's "nothing saved" and "no usable memory"
+  branches, and Setup's hand-off (which goes through `edLandDefault()`).
+* **What it reads:** the session user's creation time against the first-run
+  module's own 14-day window, and the panel's "put away" mark on this device
+  (`done_at`). `research_os.test.js` holds the window equal to the first-run
+  module's.
 
 The suite now checks that:
 

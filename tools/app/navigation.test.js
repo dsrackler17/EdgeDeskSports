@@ -181,36 +181,9 @@ has(APP, "else if(navHashRoute(location.hash)){}", 'destination links (#portfoli
 has(APP, "else if(typeof window.edSetupDue==='function'&&window.edSetupDue())show('setup');", 'a new account starts at setup');
 chk('and setup never beats a deep link', APP.indexOf("else if(navHashRoute(location.hash)){}") < APP.indexOf("window.edSetupDue())show('setup')")
     && APP.indexOf("if((location.hash||'')==='#card')show('card');") < APP.indexOf("window.edSetupDue())show('setup')"));
-/* a NEW ACCOUNT'S FIRST WEEKS land on Research, where the first-run panel is the welcome
-   (lib/edgedesk_first_run.js); everyone else with nothing saved lands on the Overview */
-has(APP, "else if(_fresh){if(typeof window.edFirstWeek==='function'&&window.edFirstWeek())researchGo(_p.lastResearchSub||'football');else show('overview');}",
-  'a reader with nothing saved lands on the Overview, or on Research in an account\'s first weeks');
-has(WSUI, "if (research && W.edFirstWeek()) W.researchGo((W.prefs && W.prefs().lastResearchSub) || 'football');", 'and setup hands a first-week account to Research');
-chk('the boot reads edFirstWeek from a script that loads before it', APP.indexOf('/lib/edgedesk_workspace_ui.js?v=') > 0 && APP.indexOf('/lib/edgedesk_workspace_ui.js?v=') < APP.indexOf("window.edFirstWeek())researchGo("));
-{
-  /* the rule itself, run from the shipped file: the panel's own window and its own device record */
-  const store = {};
-  const W = { document: { addEventListener() {}, getElementById() { return null; }, querySelector() { return null; }, querySelectorAll() { return []; }, readyState: 'complete' },
-    addEventListener() {}, location: { hash: '', pathname: '/app.html', search: '' }, setTimeout, clearTimeout, console,
-    localStorage: { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); } } };
-  W.window = W; vm.createContext(W);
-  vm.runInContext(WSUI, W, { filename: 'lib/edgedesk_workspace_ui.js' });
-  const as = (createdDaysAgo, fr) => {
-    Object.keys(store).forEach((k) => delete store[k]);
-    if (createdDaysAgo != null) store.edgedesk_session = JSON.stringify({ user: { id: 'u', created_at: new Date(Date.now() - createdDaysAgo * 864e5).toISOString() } });
-    if (fr) store.edgedesk_first_run_v1 = JSON.stringify(fr);
-    return W.edFirstWeek();
-  };
-  eq('first week: an account two days old', as(2), true);
-  eq('first week: thirteen days old', as(13.9), true);
-  eq('first week: not after the panel\'s fourteen days', as(14.1), false);
-  eq('first week: not once the reader hid the panel', as(2, { steps: {}, done_at: '2026-01-01T00:00:00Z' }), false);
-  eq('first week: not once every step was done more than a day ago', as(2, { steps: {}, all_done_at: new Date(Date.now() - 2 * 864e5).toISOString() }), false);
-  eq('first week: still while every step was done within the day', as(2, { steps: {}, all_done_at: new Date(Date.now() - 3600e3).toISOString() }), true);
-  eq('first week: not when signed out', as(null), false);
-  store.edgedesk_session = '{not json';
-  eq('first week: not on a session it cannot read', W.edFirstWeek(), false);
-}
+/* Setup hands over by the same default landing as a load with nothing saved (app.html edLandDefault,
+   EDShell.landing; tools/research_os/research_os.test.js holds the rule itself) */
+has(WSUI, "if (typeof W.edLandDefault === 'function') W.edLandDefault();", 'setup hands over by the default landing rule');
 has(APP, "if(/^#receipt=/.test(h)){var rv=$('v-record');", 'a cold #receipt=… share link opens Model performance');
 ['overview', 'foresight', 'performance', 'card', 'portfolio', 'process', 'more', 'ledger', 'record', 'pnl', 'edges', 'props', 'settings', 'faults', 'news', 'collective', 'terms'].forEach(h =>
   chk('#' + h + ' is a link that lands', new RegExp('NAV_HASH_MAP=\\{[^}]*\\b' + h + ":'").test(APP)));
@@ -451,7 +424,8 @@ has(APP, "var name=kind==='primary'?'primary_nav_'+dest:'secondary_nav_opened';"
 /* Signal Center: its own hash, its long-name alias, and a landing that never strands a reader */
 has(APP, "if(/^#signal-center(?:\\/|$)/.test(h)){h='#signals'+h.slice(14);", '#signal-center is rewritten to #signals');
 has(APP, "if(/^#signals(?:\\/|$)/.test(h)){", 'Signal Center routes its own #signals hashes');
-has(APP, "else show('overview');}", 'a new reader lands on the Overview (docs/research-os/DESIGN.md §3), past an account\'s first weeks (above)');
+has(APP, "else if(_fresh){edLandDefault();}", 'a reader with nothing saved takes the default landing (docs/research-os/DESIGN.md §1)');
+has(APP, "if(to==='research')researchGo((prefs().lastResearchSub)||'football');else show('overview');", '…the Overview, or Research for a new account in its first-run window (EDShell.landing)');
 has(APP, "landing:landing,onHandoff:function(){if(!$('v-signals').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');}", 'Signal Center\'s landing hand-off to Research is kept for any caller that opens it as a landing');
 has(APP, "edNavTrack('secondary','research:'+b.dataset.sub)", 'Research tabs are recorded');
 

@@ -449,7 +449,7 @@ function seededLedger(now) {
       chk(W + ': "Import a CSV" in setup opens the book\'s Import', st.views.join() === 'v-portfolio' && await page.evaluate(() => { const t = document.querySelector('#pfoHost .pfo-tab[data-v="import"]'); return !!t && t.getAttribute('aria-selected') === 'true'; }), st);
       await S.ctx.close();
       /* in an account's first weeks, with the first-run panel still to see, Enter lands where that
-         panel is: Research (lib/edgedesk_workspace_ui.js edFirstWeek; tools/funnel/first_run.e2e.js
+         panel is: Research (EDShell.landing, through app.html edLandDefault; tools/funnel/first_run.e2e.js
          holds the panel itself) */
       S = await open(vp, '', { created: Date.now() - 2 * DAY, setupDone: false, firstRun: true });
       page = S.page;

@@ -193,7 +193,8 @@ function makeDb(createdAt) {
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
   const STAT = shiftedStat(BOARD);
 
-  /* o.setup: start before setup (a new account's very first screen) instead of after it */
+  /* o.setup: start before setup (a new account's very first screen) instead of after it;
+     o.firstRunDoneAt: the panel already put away on this device */
   async function open(viewport, createdDaysAgo, stat, o) {
     const created = new Date(Date.now() - createdDaysAgo * 864e5).toISOString();
     const db = makeDb(created);
@@ -206,13 +207,15 @@ function makeDb(createdAt) {
         /* a new account's very first screen is setup (welcome → activity →
            portfolio → first read), held by tools/app/navigation.e2e.js; this
            suite starts where setup hands over (unless a.setup): Research,
-           with the panel (lib/edgedesk_workspace_ui.js edFirstWeek) */
+           with the panel (EDShell.landing, lib/edgedesk_shell.js) */
         if (!a.setup) localStorage.setItem('edgedesk_setup_v1', String(Date.now()));
         /* …and after the first-visit introduction was answered, which
            tools/guide/guide_ui.e2e.js holds */
         localStorage.setItem('edgedesk_guide_v1', JSON.stringify({ v: 1, intro: 'dismissed' }));
+        /* the panel already put away on this device (lib/edgedesk_first_run.js local done_at), when a case asks */
+        if (a.frDone && !sessionStorage.getItem('__frSeeded')) { sessionStorage.setItem('__frSeeded', '1'); localStorage.setItem('edgedesk_first_run_v1', JSON.stringify({ steps: {}, done_at: a.frDone })); }
       } catch (e) { /* private mode */ }
-    }, { uid: UID, created, setup: !!(o && o.setup) });
+    }, { uid: UID, created, setup: !!(o && o.setup), frDone: (o && o.firstRunDoneAt) || null });
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) {
@@ -242,7 +245,7 @@ function makeDb(createdAt) {
     /* SEES: the panel is drawn in the view the reader lands on — a panel that is only in the
        page, inside a view that is not shown, is no welcome (and its innerText is not what a reader
        reads). Since the Overview became the default landing, a new account's first weeks land on
-       Research, where the panel is (lib/edgedesk_workspace_ui.js edFirstWeek). */
+       Research, where the panel is (EDShell.landing, lib/edgedesk_shell.js). */
     const shown = await eventually(() => page.evaluate(() => {
       const h = document.getElementById('edFirstRun'); if (!h || !/Here’s what EdgeDesk found today\./.test(h.textContent) || !h.querySelector('.edfr-grid')) return false;
       const b = h.getBoundingClientRect(); return h.getClientRects().length > 0 && b.height > 0 && b.width > 0;
@@ -258,6 +261,7 @@ function makeDb(createdAt) {
       const items = (t) => { const c = card(t); return c ? [...c.querySelectorAll('.edfr-item')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()) : null; };
       const research = document.getElementById('v-research');
       return {
+        onScreen: !!(research && !research.classList.contains('hide') && h.offsetParent !== null && h.getBoundingClientRect().height > 0),
         inResearch: !!(research && research.contains(h)), beforeSearch: !!(document.getElementById('rsSearchWrap') && (h.compareDocumentPosition(document.getElementById('rsSearchWrap')) & Node.DOCUMENT_POSITION_FOLLOWING)),
         sub: (h.querySelector('.edfr-sub') || {}).textContent || '',
         dis: items('Largest model'), games: items('Research-grade game'), props: items('Research-grade player'), inc: items('Games with incomplete'), chg: items('Recently changed'),
@@ -267,6 +271,7 @@ function makeDb(createdAt) {
       };
     });
     chk(w + ': the panel sits in Research, above the board search', r.inResearch && r.beforeSearch, [r.inResearch, r.beforeSearch]);
+    chk(w + ': a new account lands on Research with the panel on screen, not inside a hidden view (docs/research-os/DESIGN.md §1)', r.onScreen);
     chk(w + ': it counts the slate from the rows', /4 games analyzed/.test(r.sub) && /2 game-market/.test(r.sub), r.sub);
     chk(w + ': the NFL game the state did not grade is WATCH', r.dis.some((t) => /Kansas City Chiefs @ Buffalo Bills WATCH/.test(t)), r.dis);
     chk(w + ': largest disagreements, widest first, with market and capture time', r.dis && r.dis.length === 3 && /West Virginia @ Iowa State/.test(r.dis[0]) && /40 min ago/.test(r.dis[0]), r.dis);
@@ -350,6 +355,17 @@ function makeDb(createdAt) {
     const views = await S.page.evaluate(() => [...document.querySelectorAll('section.view')].filter((v) => !v.classList.contains('hide')).map((v) => v.id));
     chk('…and, with nothing saved, lands on the Overview (the default landing)', views.join() === 'v-overview', views);
     chk('older account: no script errors', S.errors.length === 0, S.errors);
+    await S.ctx.close();
+  }
+
+  /* 6b a new account that put the panel away on this device: the panel stays away, and the landing is the Overview */
+  {
+    const S = await open({ width: 1280, height: 900 }, 1, null, { firstRunDoneAt: new Date(Date.now() - 3600e3).toISOString() });
+    await eventually(() => S.db.events.some((e) => e.event === 'terminal_opened'), 20000);
+    await S.page.waitForTimeout(1500);
+    const v = await S.page.evaluate(() => ({ overview: !document.getElementById('v-overview').classList.contains('hide'), panel: !!((document.getElementById('edFirstRun') || {}).textContent || '').trim() }));
+    chk('a new account that put the panel away lands on the Overview, and the panel stays away', v.overview && !v.panel, v);
+    chk('put away: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
 

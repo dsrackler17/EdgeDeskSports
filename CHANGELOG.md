@@ -17,7 +17,7 @@ The full audit, file by file, is [docs/research-os/TEST_AUDIT.md](docs/research-
 
 **First-week onboarding.** This was a product regression.
 - **What a new trialing account saw.** It landed on the Overview. "Here's what EdgeDesk found today." sat in the hidden Research view, the welcome and onboarding modals stood aside for it, and `first_run_viewed` was still recorded.
-- **Owner decision.** An account in its first two weeks that has not hidden the panel lands on Research; everyone else on the Overview. The rule is `edFirstWeek()` (`lib/edgedesk_workspace_ui.js`), used by Setup's hand-off and the boot's nothing-saved branch.
+- **Owner decision.** An account in its first two weeks that has not hidden the panel lands on Research; everyone else on the Overview. The rule is `EDShell.landing()` (`lib/edgedesk_shell.js`), asked by `edLandDefault()` in `app.html` at the boot's nothing-saved branch and by Setup's hand-off. It came from the parallel fix branch's commits, merged here; this change adds the `edgedesk_shell.js` cache bump and routes Setup through the same rule.
 - **The test.** `first_run.e2e.js` now requires the panel drawn in the view the reader lands on. Against the old code: 9 passed, 7 failed. Now: 57 passed, 0 failed.
 
 **The Matchup graphic's version contract.**

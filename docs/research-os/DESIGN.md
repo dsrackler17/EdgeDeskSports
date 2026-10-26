@@ -70,16 +70,19 @@ Compatibility:
 * Record keeps its own view; Performance is now its owner in the navigation.
 * A seat tap pushes a history entry (it used to replace the current one), so
   Back and Forward walk the reader's own path.
-* Landing: a deep link wins; a new account still sees Setup; otherwise the
-  remembered tab, and Overview when there is none.
-* A new account's first two weeks are the exception: until the reader hides
-  the first-run panel ("Here's what EdgeDesk found today",
-  `lib/edgedesk_first_run.js`), Setup hands over to Research, and a load with
-  nothing saved opens Research, because that panel sits at the top of Research
-  and is the new reader's welcome. The welcome modal and the onboarding modal
-  stand aside for it, so an Overview landing left a new account with no
-  onboarding at all. `edFirstWeek()` in `lib/edgedesk_workspace_ui.js` is the
-  rule; `tools/funnel/first_run.e2e.js` holds it in a browser.
+* Landing, in order:
+  1. A deep link wins.
+  2. A new account sees Setup once. Setup hands over by rule 4.
+  3. Otherwise the remembered tab.
+  4. With none, `EDShell.landing()` decides. A new account (its first 14
+     days, before it puts the first-run panel away) starts on Research, where
+     `lib/edgedesk_first_run.js` puts "Here's what EdgeDesk found today" above
+     the board. Every other reader starts on the Overview. The window is the
+     first-run module's own, and `tools/research_os/research_os.test.js`
+     holds the two equal. The welcome modal and the six-step onboarding
+     modal stand aside for that panel, so an Overview landing left a new
+     account with no onboarding at all (#807; owner decision 2026-10-26).
+     `tools/funnel/first_run.e2e.js` holds it in a browser.
 
 Keyboard: Ctrl/⌘ K or `/` opens search. `/` is ignored while typing or while a
 visible dialog is open.
