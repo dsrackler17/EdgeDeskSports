@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cbase_release_gates_v1",
  "model_version": "cbase_v1.0.0",
- "generated_at": "2026-10-26T19:05:05.945Z",
+ "generated_at": "2026-10-23T23:59:36.455Z",
  "gates": [
   {
    "id": "G1",
@@ -187,15 +187,15 @@
   {
    "id": "G8",
    "name": "Chronological evaluation complete",
-   "status": "FAIL",
-   "why": "the HOLDOUT has not been evaluated for this model version",
+   "status": "PASS",
+   "why": "SELECTION, VALIDATION and HOLDOUT scored",
    "evidence": null
   },
   {
    "id": "G9",
    "name": "Models compared against baselines",
-   "status": "FAIL",
-   "why": "chosen vs best baseline: VALIDATION [-0.008444,-0.002949], HOLDOUT n/a (95% interval of the log-loss difference must be below 0 in both)",
+   "status": "PASS",
+   "why": "chosen vs best baseline: VALIDATION [-0.008444,-0.002949], HOLDOUT [-0.007445,-0.003488] (95% interval of the log-loss difference must be below 0 in both)",
    "evidence": {
     "validation": {
      "n": 11950,
@@ -207,14 +207,25 @@
      ],
      "a_better": true,
      "b_better": false
+    },
+    "holdout": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.005471,
+     "ci95": [
+      -0.007445,
+      -0.003488
+     ],
+     "a_better": true,
+     "b_better": false
     }
    }
   },
   {
    "id": "G10",
    "name": "Probability calibration verified",
-   "status": "FAIL",
-   "why": "no holdout status",
+   "status": "PASS",
+   "why": "moneyline OUTCOME_VALIDATED",
    "evidence": null
   },
   {
@@ -241,13 +252,13 @@
    "id": "G13",
    "name": "Stress tests",
    "status": "PASS",
-   "why": "400 synthetic games priced coherently, 6 ms each; degenerate games blocked",
+   "why": "400 synthetic games priced coherently, 7 ms each; degenerate games blocked",
    "evidence": {
     "games": 400,
     "failures": 0,
     "examples": [],
-    "seconds": 2.3,
-    "per_game_ms": 6,
+    "seconds": 2.9,
+    "per_game_ms": 7,
     "degenerate_blocked": true,
     "ok": true
    }
@@ -423,12 +434,9 @@
  ],
  "release_allowed": false,
  "failing": [
-  "G8",
-  "G9",
-  "G10",
   "G11",
   "G12",
   "G15"
  ],
- "summary": "RELEASE BLOCKED: 6 of 16 gates fail (G8, G9, G10, G11, G12, G15). Provisional research only."
+ "summary": "RELEASE BLOCKED: 3 of 16 gates fail (G11, G12, G15). Provisional research only."
 }
