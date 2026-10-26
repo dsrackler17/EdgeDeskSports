@@ -202,6 +202,13 @@ chk('paths-ignore: started unless every file is ignored', W.triggeredBy(wf({ on:
   const aliasGhost = [];
   for (const k of Object.keys(V.CHECKS.aliases)) { const g = V.groupWorkflows(k); if (!g) aliasGhost.push(k); else g.forEach((f) => { if (!all.find((y) => y.base === f)) aliasGhost.push(k + ':' + f); }); }
   chk('every alias names a category or existing workflows', aliasGhost.length === 0, aliasGhost);
+  /* a live_jobs entry that names no job would leave that job running as a deterministic one */
+  const liveGhost = [];
+  for (const [f, ids] of Object.entries(V.CHECKS.live_jobs || {})) {
+    const w = all.find((y) => y.base === f);
+    ids.forEach((id) => { if (!w || !w.doc.jobs || !w.doc.jobs[id]) liveGhost.push(f + '#' + id); });
+  }
+  chk('every live_jobs entry in checks.json names a real job of a real workflow', liveGhost.length === 0 && Object.keys(V.CHECKS.live_jobs || {}).length > 0, liveGhost);
 }
 
 /* 7. verify does not repeat an install, and keeps what runs beside it */

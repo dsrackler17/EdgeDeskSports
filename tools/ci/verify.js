@@ -30,6 +30,15 @@
    Chromium, or the step after says what is missing). A step that appears in
    several workflows runs once.
 
+   A step that runs and fails is NOT VERIFIED, never passed, when this
+   machine explains the failure: its log names a Python package its job's
+   skipped pip install would have added; it uses a directory whose declared
+   packages its job's skipped npm ci would have installed; it reads a file
+   that a step which did not run here writes; or an earlier step of its job
+   failed for one of these reasons. A pass is always a pass. A job listed in
+   checks.json live_jobs probes a live source, and runs only with
+   --include-live.
+
      --list          print the plan, run nothing
      --include-live  also run the integration workflows (live sources)
      --base <ref>    compare against <ref> (default origin/main)
@@ -45,9 +54,10 @@
      --net-audit     name every step whose node processes opened a connection
                      to a host that is not loopback (tools/ci/net_audit.js)
      --keep-writes   keep the committed files a step rewrote and the files it
-                     created (by default rewritten files are restored and new
-                     ones removed at the end, and every one is named: a test
-                     should write only to a temporary directory)
+                     created (by default rewritten files are restored, with
+                     a copy in .cache/verify/<run>/rewritten/, and new ones
+                     are moved to .cache/verify/<run>/created/; every one is
+                     named: a test should write only to a temporary directory)
 
    Exit 0: every step that ran passed. 1: a step failed. 2: verify itself
    could not run (no base ref, an unreadable workflow).
@@ -162,6 +172,50 @@ function missingPython(steps, cwdOf) {
   return { missing: mods.filter((m) => !pyCache[m]), how };
 }
 
+/* the directories whose declared packages a job's (skipped) `npm ci` / `npm install`
+   would have put in node_modules, and that have none here. A named package
+   (`npm install --no-save playwright@…`) is the machine's to provide, not the directory's. */
+function missingNode(steps, cwdOf) {
+  const out = [];
+  for (const S of steps) {
+    if (S.status !== 'setup' || !S.run) continue;
+    for (const line of S.run.split('\n')) {
+      const m = /\bnpm\s+(?:ci|install|i)\b(.*)$/.exec(line);
+      if (!m) continue;
+      const toks = m[1].replace(/[|&;].*$/, '').split(/\s+/).filter(Boolean);
+      let dir = cwdOf(S) || '', named = false;
+      for (let k = 0; k < toks.length; k++) {
+        if (toks[k] === '--prefix') dir = toks[++k] || '';
+        else if (toks[k].startsWith('--prefix=')) dir = toks[k].slice(9);
+        else if (!toks[k].startsWith('-')) named = true;
+      }
+      dir = dir.replace(/^["']|["']$/g, '').replace(/^\.\/|\/+$/g, '');
+      if (named || /\$/.test(dir)) continue;
+      let pkg;
+      try { pkg = JSON.parse(fs.readFileSync(path.join(ROOT, dir, 'package.json'), 'utf8')); } catch (e) { continue; }
+      const deps = Object.keys(Object.assign({}, pkg.dependencies, pkg.devDependencies));
+      if (deps.length && !fs.existsSync(path.join(ROOT, dir, 'node_modules'))) out.push({ dir, deps, how: line.trim() });
+    }
+  }
+  return out;
+}
+/* does a step work in (or name) a directory? */
+function usesDir(S, dir) {
+  if (!dir) return true;
+  const cwd = (S.cwd || '').replace(/^\.\/|\/+$/g, '');
+  return cwd === dir || cwd.startsWith(dir + '/') || new RegExp('(^|[\\s\'"=])' + reEsc(dir) + '(?=[\\s/\'"]|$)', 'm').test(S.run || '');
+}
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/* the files a script writes with tee or a redirection (not the runner's own files) */
+function writtenFiles(script) {
+  const out = new Set();
+  for (const m of String(script || '').matchAll(/\btee\s+(?:-a\s+|--append\s+)?([^\s|;&>]+)/g)) out.add(m[1]);
+  for (const m of String(script || '').matchAll(/(?:^|[^<\d&>])>>?\s*([^\s|;&>]+)/gm)) out.add(m[1]);
+  return Array.from(out).map((f) => f.replace(/^["']|["']$/g, '')).filter((f) => f && !/^&|^\/dev\/|GITHUB_(ENV|PATH|OUTPUT|STEP_SUMMARY)/.test(f));
+}
+const readsFile = (script, f) => new RegExp('(^|[^\\w./-])' + reEsc(f) + '(?![\\w.-])', 'm').test(String(script || ''));
+const logNames = (log, names) => { let t = ''; try { t = fs.readFileSync(log, 'utf8'); } catch (e) { return []; } return names.filter((n) => new RegExp('\\b' + reEsc(n) + '\\b', 'i').test(t)); };
+
 /* apply what a step appended to GITHUB_PATH (newest first) and GITHUB_ENV
    (NAME=value, or NAME<<DELIMITER … DELIMITER), then empty both, as a runner does */
 function readRunnerFiles(gh, jobPath, jobEnv) {
@@ -269,8 +323,21 @@ function main() {
         if (J.skipped.kind === 'condition') tally.skipped++; else { tally.unavailable++; notVerified.push(wf.base + ' job ' + J.id + ': ' + J.skipped.why); }
         continue;
       }
+      /* a job that probes a live source inside a deterministic workflow (checks.json live_jobs) */
+      if (!live && ((CHECKS.live_jobs || {})[wf.base] || []).indexOf(J.id) >= 0) {
+        console.log('    N/A  a live-source job: not run without --include-live (network); NOT VERIFIED here');
+        tally.unavailable++; notVerified.push(wf.base + ' job ' + J.id + ': live sources (--include-live)');
+        results.push({ workflow: wf.base, job: J.id, status: 'unavailable', why: 'live sources' });
+        continue;
+      }
       const limitMin = Number(opt('--timeout')) || Number(job['timeout-minutes']) || 30;
       const py = missingPython(J.steps, (S) => S.cwd);
+      const npmMissing = missingNode(J.steps, (S) => S.cwd);
+      /* steps of this job that did not run here, with the files they would have written,
+         and the first step whose failure was put down to this machine: a later failure
+         in the same job may only be its consequence */
+      const notRun = [];
+      let jobTaint = null;
       /* the files a runner gives every step: what one step appends to GITHUB_PATH or
          GITHUB_ENV, the job's later steps see (GITHUB_OUTPUT and the summary are only kept) */
       const gh = {};
@@ -289,11 +356,13 @@ function main() {
         const rec = { workflow: wf.base, job: J.id, step: S.n, name: S.name, status: S.status, why: S.why };
         results.push(rec);
         if (S.status === 'setup' || S.status === 'condition') { tally.skipped++; if (flag('--list')) console.log('    SKIP ' + label + ' — ' + S.why); continue; }
-        if (S.status === 'unavailable') { tally.unavailable++; notVerified.push(wf.base + ' · ' + label + ': ' + S.why); console.log('    N/A  ' + label + ' — ' + S.why); continue; }
+        /* a step the plan will not run keeps no script; its file names come from the workflow's own */
+        if (S.status === 'unavailable') { notRun.push({ name: S.name, files: writtenFiles(S.run || ((job.steps || [])[S.n - 1] || {}).run) }); tally.unavailable++; notVerified.push(wf.base + ' · ' + label + ': ' + S.why); console.log('    N/A  ' + label + ' — ' + S.why); continue; }
         if (S.services && S.services.length) {
           if (servicesUp.postgres == null) servicesUp.postgres = listening(5432);
           if (S.services.indexOf('postgres') >= 0 && !servicesUp.postgres && /(\bpsql\b|EDGD_PG|PGPASSWORD|127\.0\.0\.1|localhost|5432)/.test(S.run + JSON.stringify(S.env))) {
             rec.status = 'unavailable'; rec.why = 'needs the job\'s postgres service on 127.0.0.1:5432';
+            notRun.push({ name: S.name, files: writtenFiles(S.run) });
             tally.unavailable++; notVerified.push(wf.base + ' · ' + label + ': ' + rec.why); console.log('    N/A  ' + label + ' — ' + rec.why); continue;
           }
         }
@@ -301,8 +370,10 @@ function main() {
         if (seen.has(key)) {
           const prev = seen.get(key);
           rec.status = prev.status; rec.reused = prev.where; tally.reused++;
-          if (prev.status === 'pass') tally.pass++; else { tally.fail++; failures.push(wf.base + ' · ' + label + ' (same as ' + prev.where + ')'); }
-          console.log('    ' + (prev.status === 'pass' ? 'PASS' : 'FAIL') + ' ' + label + ' — same step as ' + prev.where + ', not run twice');
+          if (prev.status === 'pass') tally.pass++;
+          else if (prev.status === 'unavailable') { rec.why = prev.why; tally.unavailable++; notVerified.push(wf.base + ' · ' + label + ': ' + prev.why + ' (same as ' + prev.where + ')'); }
+          else { tally.fail++; failures.push(wf.base + ' · ' + label + ' (same as ' + prev.where + ')'); }
+          console.log('    ' + ({ pass: 'PASS', unavailable: 'N/A ' }[prev.status] || 'FAIL') + ' ' + label + ' — same step as ' + prev.where + ', not run twice');
           continue;
         }
         if (flag('--list')) { console.log('    RUN  ' + label); continue; }
@@ -335,10 +406,24 @@ function main() {
         if (fresh.length) { fresh.forEach((f) => { known.add(f); wrote.push({ file: f, by: wf.base + ' · ' + label }); }); rec.wrote = fresh; }
         const born = Array.from(untracked()).filter((f) => !knownNew.has(f) && !f.startsWith(logRel + '/'));
         if (born.length) { born.forEach((f) => { knownNew.add(f); created.push({ file: f, by: wf.base + ' · ' + label }); }); rec.created = born; }
+        /* a failure this machine explains is NOT VERIFIED here, never passed; a pass is a pass */
+        let envWhy = null, builds = false;
+        if (!ok) {
+          const pyNamed = py.missing.length && rec.log ? logNames(log, py.missing) : [];
+          const npm = npmMissing.find((m) => usesDir(S, m.dir));
+          const dep = notRun.map((u) => ({ u, f: u.files.find((f) => readsFile(S.run, f)) })).find((x) => x.f);
+          if (wantsHistory && shallow) envWhy = 'failed on a shallow clone, and its job checks out full history (fetch-depth: 0): git fetch --unshallow, then run it again';
+          else if (pyNamed.length) { builds = true; envWhy = 'failed for want of Python packages its job installs (' + pyNamed.join(', ') + '): ' + py.how[0]; }
+          else if (npm) { builds = true; envWhy = 'failed, and its job installs ' + (npm.dir || 'the repository') + '\'s packages (' + npm.deps.slice(0, 4).join(', ') + (npm.deps.length > 4 ? ' …' : '') + '), which are not installed here: ' + npm.how + ', then run it again'; }
+          else if (dep) envWhy = 'reads ' + dep.f + ', which "' + dep.u.name + '" writes, and that step did not run here';
+          else if (jobTaint) envWhy = 'failed after "' + jobTaint + '" could not run here, and may depend on what it builds';
+        }
         if (ok) { tally.pass++; console.log('    PASS ' + secs.padStart(7) + '  ' + label); }
-        else if (wantsHistory && shallow) {
-          rec.status = 'unavailable'; rec.why = 'failed on a shallow clone, and its job checks out full history (fetch-depth: 0): git fetch --unshallow, then run it again';
-          seen.set(key, { status: 'fail', where: wf.base + ' step ' + S.n });
+        else if (envWhy) {
+          rec.status = 'unavailable'; rec.why = envWhy;
+          seen.set(key, { status: 'unavailable', why: envWhy, where: wf.base + ' step ' + S.n });
+          /* only a step that failed for want of packages leaves the job without what it builds */
+          if (builds && !jobTaint) jobTaint = S.name.length > 80 ? S.name.slice(0, 77) + '…' : S.name;
           tally.unavailable++; notVerified.push(wf.base + ' · ' + label + ': ' + rec.why + (rec.log ? ' (' + rec.log + ')' : ''));
           console.log('    N/A  ' + secs.padStart(7) + '  ' + label + ' — ' + rec.why + (rec.log ? ' · log ' + rec.log : ''));
         }
@@ -381,17 +466,25 @@ function main() {
     wrote.forEach((w) => console.log('  - ' + w.file + ' ← ' + w.by));
     if (!flag('--keep-writes')) {
       const files = wrote.map((w) => w.file).filter((f) => !dirtyAtStart.has(f));
+      /* the rewritten copy is a diagnostic: keep it with the run's logs before HEAD's comes back */
+      for (const f of files) { try { const d = path.join(logDir, 'rewritten', f); fs.mkdirSync(path.dirname(d), { recursive: true }); fs.copyFileSync(path.join(ROOT, f), d); } catch (e) { /* deleted since */ } }
       const r = files.length ? spawnSync('git', ['checkout', '--'].concat(files), { cwd: ROOT }) : { status: 0 };
-      console.log(r.status === 0 ? '  restored ' + files.length + ' to HEAD, so none is committed by accident (--keep-writes keeps them)' : '  could not restore them: ' + String(r.stderr));
+      console.log(r.status === 0 ? '  restored ' + files.length + ' to HEAD, so none is committed by accident; the rewritten copies are in ' + logRel + '/rewritten/ (--keep-writes keeps them in place)' : '  could not restore them: ' + String(r.stderr));
     }
   }
   if (created.length) {
     console.log('STEPS THAT CREATED FILES IN THE CHECKOUT (git does not ignore them, so they could be committed by accident):');
     created.forEach((w) => console.log('  - ' + w.file + ' ← ' + w.by));
     if (!flag('--keep-writes')) {
+      /* moved, not deleted: a screenshot or a suite's log is the evidence of the run */
       let n = 0;
-      for (const w of created) { try { fs.rmSync(path.join(ROOT, w.file), { force: true }); n++; } catch (e) { console.log('  could not remove ' + w.file + ': ' + e.message); } }
-      console.log('  removed ' + n + ' (--keep-writes keeps them)');
+      for (const w of created) {
+        const src = path.join(ROOT, w.file), dst = path.join(logDir, 'created', w.file);
+        if (!fs.existsSync(src)) continue;
+        try { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.renameSync(src, dst); n++; } catch (e) { console.log('  could not move ' + w.file + ': ' + e.message); continue; }
+        for (let d = path.dirname(src); d.startsWith(ROOT + path.sep); d = path.dirname(d)) { try { fs.rmdirSync(d); } catch (e) { break; } }
+      }
+      console.log('  moved ' + n + ' out of the checkout, into ' + logRel + '/created/ (--keep-writes leaves them in place)');
     }
   }
   console.log(flag('--list') ? 'PLAN ONLY — nothing was run' : tally.fail ? 'VERIFY FAILED' : 'VERIFY PASSED' + (tally.unavailable ? ' (with ' + tally.unavailable + ' not verified here)' : ''));

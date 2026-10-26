@@ -71,5 +71,9 @@
     ],
     "odds": "market-odds",
     "research": "research-signals"
+  },
+  "live_jobs_note": "Jobs that probe a live source from inside a deterministic workflow. npm run verify reports them NOT VERIFIED and runs them only with --include-live, as it does integration workflows; CI runs them as the workflow says. tools/ci/workflows.test.js checks every one names a real job.",
+  "live_jobs": {
+    "simulator-tests.yml": ["mlb-live-probe"]
   }
 }
