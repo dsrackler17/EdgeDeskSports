@@ -128,7 +128,9 @@ function reconcileQb(g, side, starters) {
   const code = String(g[side + '_team'] || '').toLowerCase();
   const feed = { name: g[side + '_qb_name'] || null, id: g[side + '_qb_id'] || null };
   const e = starters && starters.teams ? starters.teams[code] : null;
-  if (g[side + '_qb_reconciled']) return { status: 'INJURY_REPORT', schedule_feed: feed, why: 'the injury report already substituted the starter' };
+  if (g[side + '_qb_reconciled']) return g[side + '_qb_reconciled'].source_kind === 'roster'
+    ? { status: 'ROSTER_STATUS', schedule_feed: feed, why: 'the roster\'s reserve list already substituted the starter' }
+    : { status: 'INJURY_REPORT', schedule_feed: feed, why: 'the injury report already substituted the starter' };
   if (!e || !e.player_id) return { status: 'NOT_CHECKED', schedule_feed: feed, why: starters ? 'no depth-chart record for ' + g[side + '_team'] : 'football/starters was not read' };
   const depth = { name: e.player_name, id: e.player_id, source: e.source || 'nflverse depth charts', published_at: e.published_at || null, week: e.week != null ? Number(e.week) : null };
   if (feed.id && String(feed.id) === String(e.player_id)) return { status: 'AGREES', schedule_feed: feed, depth_chart: depth };
@@ -154,9 +156,11 @@ function reconcileQb(g, side, starters) {
    and states that the starter is unknown beside the number. */
 function starterOf(g, side) {
   const rec = g[side + '_qb_reconciled'];
+  /* the roster's reserve list (app.html fbNflReconcileRoster: RES / CUT / RET / SUS on the nflverse roster) */
+  const roster = !!(rec && rec.source_kind === 'roster');
   if (rec) return { player_name: rec.replacement_name || null, player_id: rec.replacement_id || null,
-    source: 'injury report (football/injuries/nfl_<season>.json) over the nflverse schedule feed',
-    status: rec.replacement_id ? (rec.pending ? 'INJURY_REPORT_REPLACEMENT_PENDING' : 'INJURY_REPORT_REPLACEMENT') : 'STARTER_UNKNOWN',
+    source: roster ? 'nflverse roster status (football/nfl/qbs_<season>.csv) over the nflverse schedule feed' : 'injury report (football/injuries/nfl_<season>.json) over the nflverse schedule feed',
+    status: rec.replacement_id ? (roster ? (rec.pending ? 'ROSTER_RESERVE_REPLACEMENT_PENDING' : 'ROSTER_RESERVE_REPLACEMENT') : (rec.pending ? 'INJURY_REPORT_REPLACEMENT_PENDING' : 'INJURY_REPORT_REPLACEMENT')) : 'STARTER_UNKNOWN',
     scheduled: { player_name: rec.scheduled_name, player_id: rec.scheduled_id, status: rec.status, injury: rec.injury, report_week: rec.report_week },
     basis: rec.replacement_basis || null };
   const qc = g['_qb_check_' + side];

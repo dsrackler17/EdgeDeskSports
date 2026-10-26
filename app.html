@@ -50766,6 +50766,26 @@ function fbNflGameReq(g){
    rule for the same fact). A club with no other starter prices the
    unknown-starter path (its carried quarterback level). */
 var FB_QB_UNAVAILABLE=/^(out|doubtful)$/i;
+/* THE ROSTER'S RESERVE LIST (2026-10-26: Philadelphia was priced with Jalen Hurts, on the reserve
+   list — nflverse roster status RES, week 7 — and absent from the weekly injury report, which lists
+   active-roster players only; Tanner McKee had started week 6 and the market had moved ~7 points).
+   A named starter whose latest nflverse roster row (football/nfl/qbs_<season>.csv) is RES (injured
+   reserve, PUP, NFI), CUT, RET or SUS cannot play: he is replaced exactly as an OUT is, and a row from
+   an earlier week than the game's is PENDING (a reserve player can be activated). A later ACT row for
+   the same player supersedes it. INA (one game-day inactive) and DEV name nothing here. */
+var FB_QB_ROSTER_OUT=/^(RES|CUT|RET|SUS)$/;
+function fbNflRosterOut(S,team,id,name){
+  var res=S.qbReserve||[],act=S.qbByGsis||{},best=null;
+  res.forEach(function(q){
+    if(!q||!FB_QB_ROSTER_OUT.test(String(q.status||'')))return;
+    if(!((id&&q.gsisId&&String(q.gsisId)===String(id))||(!id&&name&&q.name===name&&q.team===team)))return;
+    if(!best||(fbNum(q.week)||0)>(fbNum(best.week)||0))best=q;
+  });
+  if(!best)return null;
+  var a=best.gsisId?act[String(best.gsisId)]:null;
+  if(a&&fbNum(a.week)!=null&&fbNum(best.week)!=null&&fbNum(a.week)>=fbNum(best.week))return null;   /* activated since */
+  return {status:best.status,week:fbNum(best.week),team:best.team};
+}
 /* WHO STARTED A PLAYED GAME (2026-10-25, docs/nfl-prior-decay/DIAGNOSIS.md §4): nflverse
    games.csv pre-fills each game's quarterback and does not correct it after kickoff. It still
    names Drew Lock for Seattle's weeks 3-6, which Sam Darnold played, so the start history said
@@ -50815,6 +50835,7 @@ function fbNflReplacementStarter(S,team,outId,rep){
       if(id===outId)return;
       var row=fbNflReportRow(rep,id,m[id].name);
       if(row&&FB_QB_UNAVAILABLE.test(String(row.status||'')))return;
+      if(fbNflRosterOut(S,team,id,m[id].name))return;
       if(!best||m[id].n>best.n)best={id:id,name:m[id].name,n:m[id].n,season:yr};
     });
     return best;
@@ -50849,6 +50870,33 @@ function fbNflReconcileStarters(S){
         +(pending?' and the week-'+wk+' report is not filed yet (pending)':'')+'; priced with '
         +(repl?repl.name+' ('+repl.n+' start'+(repl.n===1?'':'s')+' in '+repl.season+'), not the schedule feed’s pre-filled starter':'no named starter (the club’s carried quarterback level)')+'.';
       changed++;
+    });
+  });
+  return changed;
+}
+/* the reserve-list pass (FB_QB_ROSTER_OUT): run when the roster is in, after the injury report's.
+   A side the injury report already substituted is left as it is. */
+function fbNflReconcileRoster(S){
+  if(!S.qbReserve||!S.qbReserve.length)return [];
+  var changed=[];
+  fbNflOpenGames(S).forEach(function(u){
+    var g=u.g;
+    ['home','away'].forEach(function(side){
+      if(g[side+'_qb_reconciled'])return;
+      var team=g[side+'_team'],id=g[side+'_qb_id'],name=g[side+'_qb_name'];
+      if(!id&&!name)return;
+      var out=fbNflRosterOut(S,team,id,name);if(!out)return;
+      var wk=fbNum(g.week),pending=out.week==null||(wk!=null&&out.week<wk);
+      var rep=S.inj&&S.inj.teams?S.inj.teams[team]:null;
+      var repl=fbNflReplacementStarter(S,team,id,rep);
+      g[side+'_qb_reconciled']={scheduled_id:id||null,scheduled_name:name||null,status:out.status,injury:null,source_kind:'roster',
+        report_week:out.week,game_week:wk,pending:pending,replacement_id:repl?repl.id:null,replacement_name:repl?repl.name:null,
+        replacement_basis:repl?(repl.n+' start'+(repl.n===1?'':'s')+' in '+repl.season):null};
+      g[side+'_qb_id']=repl?repl.id:null;g[side+'_qb_name']=repl?repl.name:null;
+      g[side+'_qb_note']=team+' starter: '+(name||id)+' is on the reserve list ('+out.status+' on the week-'+(out.week==null?'?':out.week)+' roster) and on no injury report'
+        +(pending?'; the week-'+wk+' roster is not filed yet (pending)':'')+'; priced with '
+        +(repl?repl.name+' ('+repl.n+' start'+(repl.n===1?'':'s')+' in '+repl.season+'), not the schedule feed\u2019s pre-filled starter':'no named starter (the club\u2019s carried quarterback level)')+'.';
+      changed.push(g);
     });
   });
   return changed;
@@ -51051,7 +51099,7 @@ function fbQbFromRow(r,season){
   var name=r.full_name||((r.first_name||'')+' '+(r.last_name||'')).trim();if(!name)return null;
   return {season:fbNum(r.season)||season,team:code,name:name,position:String(r.position||'').toUpperCase(),status:String(r.status||'').toUpperCase(),
     jersey:fbNum(r.jersey_number),depthChartPosition:r.depth_chart_position||null,gsisId:r.gsis_id||null,espnId:r.espn_id||null,
-    yearsExp:fbNum(r.years_exp),headshotUrl:r.headshot_url||null,source:'nflverse'};
+    yearsExp:fbNum(r.years_exp),headshotUrl:r.headshot_url||null,week:fbNum(r.week),source:'nflverse'};
 }
 /* active = position QB AND status ACT, nothing else. Every other QB row
    (RES, PUP, DEV, CUT, ...) is kept aside in qbReserve for reference. A
@@ -51370,7 +51418,15 @@ function fbLoadNfl(signal){
       if(!Object.keys(sig).length&&!fbPricesDown('americanfootball_nfl'))S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');
       /* wait briefly for the roster; a slow roster host never holds the board */
       var settled=false;
-      qbP.then(function(){if(settled&&FB.at&&window.RESEARCH_SUB==='football'){try{window.renderFootball();}catch(_){}}});
+      qbP.then(function(){
+        /* the starter the model prices, against the roster's reserve list (fbNflReconcileRoster) */
+        var moved=fbNflReconcileRoster(S);
+        if(moved.length){
+          moved.forEach(function(g){try{g._regime=fbNflRegimeFor(S,g);}catch(_){g._regime=null;}});
+          S.notes.push(moved.length+' upcoming NFL starter'+(moved.length===1?' is':'s are')+' on the roster\u2019s reserve list and '+(moved.length===1?'is':'are')+' priced with the club\u2019s most recent other starter (each game says which).');
+        }
+        if(settled&&FB.at&&window.RESEARCH_SUB==='football'){try{window.renderFootball();}catch(_){}}
+      });
       return Promise.race([qbP,new Promise(function(res){setTimeout(res,12000);})]).then(function(){
         settled=true;
         if(S.qbs.length&&S.qbSource!=='nflverse')S.notes.push('The live NFL QB roster update could not load, so EdgeDesk is showing '+(S.qbSource==='cache'?('the last successful roster sync from '+ago(S.qbUpdatedAt)):('its saved '+fbQbSeedDate()+' roster snapshot'))+'. This only affects the roster display; EdgeDesk does not guess who is starting.');

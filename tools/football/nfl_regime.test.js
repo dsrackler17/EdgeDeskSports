@@ -235,6 +235,45 @@ const buildOpts = (inj) => ({ now: NOW, lookahead: 12, offline: true, fetchText:
     iw2 && iw2.home_starter && iw2.home_starter.status === 'SCHEDULE_FEED' && iw2.home_starter.player_name === 'Jayden Daniels'
       && art2.notes.some((n) => /injury report could not be read/.test(n)));
 
+  /* THE ROSTER'S RESERVE LIST (2026-10-26): Philadelphia was priced with Jalen Hurts, on the
+     reserve list (nflverse roster status RES, week 7) and absent from the weekly injury report,
+     which lists active-roster players only; Tanner McKee had started week 6. A starter whose
+     latest roster row is RES / CUT / RET / SUS cannot play and is replaced exactly as an OUT is;
+     INA (a single game-day inactive) and DEV name nothing. */
+  {
+    const MCK = ['00-0038400', 'Tanner McKee'];
+    const GAMES_R = GAMES + '\n' + row('2026_03_PHI_NYG', 2026, 3, '2026-09-27', 'PHI', 17, 'NYG', 20, 'Home', MCK, ['00-0000001', 'Giants QB'], SIRI, 'Harbaugh', 'MetLife Stadium');
+    const CLUBS = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC', 'LV', 'LAC', 'LA', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB', 'TEN', 'WAS'];
+    const HEADR = 'season,team,position,status,full_name,first_name,last_name,jersey_number,depth_chart_position,gsis_id,espn_id,years_exp,headshot_url,week';
+    const qrow = (team, st, q, wk) => ['2026', team, 'QB', st, q[1], q[1].split(' ')[0], q[1].split(' ').slice(1).join(' '), '1', 'QB', q[0], '', '3', '', wk].join(',');
+    /* two active quarterbacks per club: the module rejects a roster under 40 active QBs as a broken file (fbQbSane) */
+    const filler = CLUBS.map((t, i) => qrow(t, 'ACT', ['00-0090' + String(100 + i), t + ' Backup'], 7)).concat(CLUBS.map((t, i) => qrow(t, 'ACT', ['00-0091' + String(100 + i), t + ' Third'], 7)));
+    const roster = (rows) => [HEADR].concat(filler, rows).join('\n');
+    const fx = (ros) => async (u) => (/games\.csv/.test(u) ? GAMES_R : /injuries\/nfl_2026\.json/.test(u) ? INJ : /venues\/nfl_stadiums\.json/.test(u) ? VENUES : /qbs_2026\.csv/.test(u) ? ros : '');
+    /* an empty depth chart: the roster rule is tested alone, not against the committed (daily) starters file */
+    const opts = (ros) => Object.assign(buildOpts(INJ), { fetchText: fx(ros), starters: { schema: 'fixture', teams: {} } });
+    const away = async (ros) => { const a = await B.build(opts(ros)); const g = a.games.find((x) => x.game_id === '2026_05_PHI_JAX'); return { g, s: g && g.away_starter, w: (g && g.data_quality && g.data_quality.warnings) || [], notes: a.notes }; };
+
+    const r1 = await away(roster([qrow('PHI', 'RES', HUR, 4), qrow('PHI', 'ACT', MCK, 4), qrow('DAL', 'INA', DAK, 4)]));
+    chk('reserve list: Hurts (RES on the week-4 roster, on no injury report) is not priced; McKee, the club\'s other starter, is',
+      r1.s && r1.s.player_name === 'Tanner McKee' && r1.s.player_id === MCK[0] && r1.s.scheduled && r1.s.scheduled.player_name === 'Jalen Hurts' && r1.s.scheduled.status === 'RES', r1.s);
+    chk('…PENDING, because the roster row is an earlier week\'s than the game\'s (a reserve player can be activated)', r1.s && r1.s.status === 'ROSTER_RESERVE_REPLACEMENT_PENDING' && r1.s.scheduled.report_week === 4, r1.s && r1.s.status);
+    chk('…and the source is the roster, never called an injury report', r1.s && /roster/.test(r1.s.source) && !/injury report/.test(r1.s.source), r1.s && r1.s.source);
+    chk('…the substitution is stated beside the number', r1.w.some((x) => /^PHI starter: Jalen Hurts is on the reserve list \(RES on the week-4 roster\)/.test(x)), r1.w);
+    chk('…and counted on the slate', r1.notes.some((n) => /on the roster.s reserve list/.test(n)), r1.notes);
+    const dt1 = (await B.build(opts(roster([qrow('PHI', 'RES', HUR, 4), qrow('DAL', 'INA', DAK, 4)])))).games.find((x) => x.game_id === '2026_04_DAL_TEN');
+    chk('INA (one game-day inactive) is not a substitution: Dallas keeps the feed\'s starter', dt1 && dt1.away_starter && dt1.away_starter.player_name === 'Dak Prescott' && dt1.away_starter.status === 'SCHEDULE_FEED', dt1 && dt1.away_starter);
+    const r2 = await away(roster([qrow('PHI', 'RES', HUR, 5)]));
+    chk('a reserve row for the game\'s own week is not pending', r2.s && r2.s.status === 'ROSTER_RESERVE_REPLACEMENT' && r2.s.player_name === 'Tanner McKee', r2.s);
+    const r3 = await away(roster([qrow('PHI', 'RES', HUR, 3), qrow('PHI', 'ACT', HUR, 4)]));
+    chk('a later ACT row (activated from reserve) supersedes the earlier RES row: no substitution', r3.s && r3.s.player_name === 'Jalen Hurts' && r3.s.status === 'SCHEDULE_FEED', r3.s);
+    const r4 = await away(roster([qrow('PHI', 'RES', HUR, 5), qrow('PHI', 'CUT', MCK, 5)]));
+    chk('the replacement is never a quarterback who is himself off the active roster: with no one left, STARTER_UNKNOWN',
+      r4.s && r4.s.status === 'STARTER_UNKNOWN' && r4.s.player_id === null && r4.g.qb_known && r4.g.qb_known.away === false, r4.s);
+    const r5 = await away('');
+    chk('without the roster, nothing changes: the feed\'s starter is priced as before', r5.s && r5.s.player_name === 'Jalen Hurts' && r5.s.status === 'SCHEDULE_FEED', r5.s);
+  }
+
   /* ====================================================================== */
   section('5. the committed slate and the neutral-site report');
   const SL = JSON.parse(read('football/nfl/slate.json'));
@@ -242,7 +281,7 @@ const buildOpts = (inj) => ({ now: NOW, lookahead: 12, offline: true, fetchText:
   /* DEPTH_CHART_RECONCILED: the depth chart's QB1, corroborated by the last game's first dropback, replaced the
      schedule feed's name; SCHEDULE_FEED_CONFLICT: the feed's name is priced but disagrees with the depth chart
      (build_nfl_slate.js reconcileQb, starterOf) */
-  const STATUSES = ['SCHEDULE_FEED', 'INJURY_REPORT_REPLACEMENT', 'INJURY_REPORT_REPLACEMENT_PENDING', 'STARTER_UNKNOWN', 'DEPTH_CHART_RECONCILED', 'SCHEDULE_FEED_CONFLICT'];
+  const STATUSES = ['SCHEDULE_FEED', 'INJURY_REPORT_REPLACEMENT', 'INJURY_REPORT_REPLACEMENT_PENDING', 'ROSTER_RESERVE_REPLACEMENT', 'ROSTER_RESERVE_REPLACEMENT_PENDING', 'STARTER_UNKNOWN', 'DEPTH_CHART_RECONCILED', 'SCHEDULE_FEED_CONFLICT'];
   chk('every predicted game in the committed slate carries its regime state and the status of each priced starter (' + pred.length + ' games)',
     pred.length > 0 && pred.every((g) => g.regime && g.regime.version === R.version && g.regime.promoted === false
       && ['home_starter', 'away_starter'].every((s) => g[s] === null || STATUSES.indexOf(g[s].status) >= 0)), pred.filter((g) => !g.regime).map((g) => g.game_id));
