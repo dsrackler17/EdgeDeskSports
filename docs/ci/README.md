@@ -47,18 +47,40 @@ Every step ends in one of these states:
   - it is a matrix job;
   - it needs Python packages its job installs that this machine lacks
     (verify names the `pip install` line);
-  - it is a live-source workflow (without `--include-live`).
+  - it is a live-source workflow, or a live-source job listed under
+    `live_jobs` in `tools/ci/checks.json` (without `--include-live`).
 
-  These never count as passed. Report them as **not verified**.
+  A step can also run, fail, and still be NOT VERIFIED, when this machine
+  explains the failure:
+  - its log names a Python package that its job's skipped `pip install`
+    would have added;
+  - it uses a directory whose declared packages its job's skipped `npm ci`
+    would have installed. verify names the command; run it, then verify
+    again;
+  - it reads a file (a `tee` or `>` target) that a step which did not run
+    here writes, as games-sql's "Refuse a silent skip" does;
+  - an earlier step of its job failed for want of packages, so it may lack
+    what that step builds;
+  - its job checks out full history and this clone is shallow.
+
+  Any other failure stays FAIL, and a pass is always a pass. A step that is
+  repeated in another workflow keeps its first result, NOT VERIFIED
+  included. These never count as passed. Report them as **not verified**.
 - **skipped**: an install step (the machine provides Node, PostgreSQL and
   Chromium) or an `if:` that is false on a pull request.
 
 A step that appears in several workflows runs once.
 
 A suite should write only to a temporary directory. verify names every step
-that leaves a committed file different from `HEAD`. At the end it restores
-those files, unless you pass `--keep-writes`, so a test's side effect is
-never committed by accident.
+that leaves a committed file different from `HEAD`, or creates a file git
+does not ignore. At the end, unless you pass `--keep-writes`, it restores
+the rewritten files and moves the created ones out of the checkout, so a
+test's side effect is never committed by accident. Both are kept as
+evidence with the run's logs:
+
+- the rewritten copies go to `.cache/verify/<run>/rewritten/`;
+- the created files (screenshots, a suite's log) go to
+  `.cache/verify/<run>/created/`.
 
 Exit codes:
 
