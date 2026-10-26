@@ -1,0 +1,80 @@
+# EdgeDesk matchup graphic, every other sport — the checks that gate the
+# graphic men's and women's college basketball, the WNBA, MLB, college
+# baseball and UFC bouts draw (lib/edgedesk_sport_graphic.js,
+# docs/game-research/SPORTS.md).
+#
+#   suites    every committed lab-slate game and every served UFC bout
+#             builds; MLB and college baseball through the real engine;
+#             college baseball is never priced; the copy rule, the market's
+#             age, layout inside the canvas; Today's Games' new sports and
+#             the research join — offline
+#   browser   Today's Games' matchup view (men's, women's, the WNBA, a UFC
+#             card), the UFC panel and the two baseball briefs in Chromium,
+#             desktop and a 390 px phone, over the real builder's slate
+#
+# Nothing here deploys or writes anywhere.
+name: Matchup graphic tests (every other sport)
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_sport_graphic.js'
+      - 'lib/edgedesk_game_graphic.js'
+      - 'lib/edgedesk_game_view.css'
+      - 'lib/edgedesk_games*.js'
+      - 'mlb/engine.js'
+      - 'mlb/params.js'
+      - 'tools/sport_graphic/**'
+      - 'tools/slate/**'
+      - 'app.html'
+      - 'today/index.html'
+      - '.github/workflows/sport-graphic-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_sport_graphic.js'
+      - 'lib/edgedesk_game_graphic.js'
+      - 'mlb/engine.js'
+      - 'tools/sport_graphic/**'
+      # the data the graphics are drawn from: a new shape fails here, not on a reader's screen
+      - 'basketball/slate.json'
+      - 'model_loop/published/ufc/current.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sport-graphic-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Every sport's builder, the rules and the Today's Games join
+        run: node tools/sport_graphic/sport_graphic.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: npm install --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: The matchup view, the UFC panel and the baseball briefs in Chromium
+        run: node tools/sport_graphic/sport_graphic_ui.e2e.js --shots sport-graphic-shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sport-graphic-shots
+          path: sport-graphic-shots
+          if-no-files-found: ignore
