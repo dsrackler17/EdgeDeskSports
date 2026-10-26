@@ -275,6 +275,7 @@ function seededLedger(now) {
       const ROUTES = [
         ['#playerprops', 'v-research', 'v-pprops', 'research'], ['#playerprops/nfl', 'v-research', 'v-pprops', 'research'],
         ['#research/edges', 'v-research', 'v-edges', 'research'], ['#research/props', 'v-research', 'v-pprops', 'research'],
+        ['#research', 'v-research', 'v-football', 'research'],
         ['#research/football', 'v-research', 'v-football', 'research'], ['#research/ufc', 'v-research', 'v-ufc', 'research'],
         ['#research/lab', 'v-research', 'v-lab', 'research'], ['#research/cfb', 'v-research', 'v-football', 'research'],
         ['#research/tennis', 'v-research', 'v-football', 'research'], ['#research/rdesk', 'v-research', 'v-rdesk', 'research'],

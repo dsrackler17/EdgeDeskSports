@@ -5750,6 +5750,9 @@ function navHashRoute(h){
   if(/^#foresight(?:\/|$)/.test(h)){if($('v-foresight').classList.contains('hide'))show('foresight');else{try{window.EDForesightService.open($('mfHost'),h);}catch(_){}}return true;}
   /* Game research: #game/<nfl|cfb>/<game_id>[?f=portrait] (lib/edgedesk_game_view.js) */
   if(/^#game\/(nfl|cfb)\//.test(h)){if($('v-game').classList.contains('hide'))show('game');try{window.gvShowPage(h);}catch(_){}return true;}
+  /* a bare #research (typed, or bookmarked when Research was the landing page) opens Research on the
+     reader's last panel, as it did before the Overview became the default (docs/research-os/DESIGN.md §1) */
+  if(h==='#research'){researchGo((typeof prefs==='function'&&prefs().lastResearchSub)||'football');return true;}
   var m=h.match(/^#([a-z]+)(?:\/([a-z_]+))?$/);if(!m||!NAV_HASH_MAP[m[1]])return false;
   var t=NAV_HASH_MAP[m[1]];
   /* the coach was a Portfolio tab before it became the Process seat */

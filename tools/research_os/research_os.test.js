@@ -239,6 +239,7 @@ const ZONE = 'America/Chicago';
   has(APP, "var NAV_PRIMARY={overview:1,signals:1,research:1,foresight:1,card:1,portfolio:1,performance:1,process:1,simulator:1};", 'every destination may be the remembered tab');
   has(APP, "else if(_fresh){show('overview');}", 'a reader with nothing saved starts on the Overview');
   has(APP, "defaultTab:'overview'", 'and the default landing page is the Overview');
+  has(APP, "if(h==='#research'){researchGo(", 'a bare #research (a bookmark from when Research was the landing page) still opens Research');
   has(APP, "var navs=document.querySelectorAll('.bottomnav button[data-v]');", 'only seats are bound as seats (Menu and Close belong to the shell)');
   has(APP, "if(v==='overview'){try{if(window.EDOverview)window.EDOverview.open($('overviewHost'));}", 'show(\'overview\') opens the Overview');
   has(APP, 'record:\'performance\'', 'Record (EdgeDesk\'s model performance) lights Performance, never the reader\'s Portfolio');
