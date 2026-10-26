@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-26 — Research grade test: a board may take its own cache token
+
+`tools/performance/grade_ui.test.js` had failed on main since the NHL board (#797) and then Today's Games (#801) each bumped its own `?v=` token in `app.html`. The check wanted the grade module, its stylesheet and all three boards that call it (Today's Games, NHL, NBA) on one identical token, so any board-only change broke it unless all five files were bumped together.
+
+- **The rule now.** Two checks replace that one:
+  - The grade module and its stylesheet still share one token.
+  - No board loads under a token older than the module's. Every token starts with its `YYYYMMDD` date, and those eight digits are compared.
+
+  A grade-module change therefore still forces every board onto a fresh token, so a new module never runs against a board the browser has cached. A board can change on its own.
+- **Why that is enough.** Every board guards on `window.EDGradeUI` and calls its stable methods (`slot`, `breakdown`, `load`, `onChange`, `ready`, `entry`).
+- **Tests only; `app.html` is unchanged.** 30 of 30 pass (28 before, with the one failure). A grade module dated after the boards, or a stylesheet on a different token from the module, each fails its check.
+
 ## 2026-10-26 — CFB: the EV plausibility check reads each game's width again
 
 `football/cfb_validation/tests.js` failed on main ("the audit finds no status that contradicts its checks — got 3, want 0"). Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas passed every integrity check, but the board held them at INVESTIGATE as "implausible EV".
