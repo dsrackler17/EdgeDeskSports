@@ -1,0 +1,58 @@
+# CFB validation on what the hourly Model Lab just published to main.
+#
+# 2026-10-26 (docs/ci/INCIDENT-2026-10-26.md): the hourly CFB Model Lab
+# (cfb-lab.yml) rebuilt the board at 11:08 UTC and pushed it to main. On that
+# board three games passed every integrity check yet read INVESTIGATE, so
+# football/cfb_validation/tests.js failed ("the audit finds no status that
+# contradicts its checks — got 3, want 0"). Nothing said so: a push made by a
+# workflow starts no other workflow, so main stayed red unseen until the next
+# pull request to touch app.html (#797, an NHL change) failed CFB validation
+# four times, then #801 did too, each failure blamed on a change that had not
+# caused it.
+#
+# This runs the same suites the pull-request workflows run (read from those
+# workflow files by tools/ci/verify.js, so the two lists cannot drift) on main
+# right after each Model Lab run. A contradiction now fails HERE, within the
+# hour it is published, naming the suite. It changes nothing the Model Lab
+# publishes, or when; it writes nothing.
+name: CFB published-board validation
+
+on:
+  workflow_run:
+    workflows: ['CFB Model Lab']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# only the newest main matters; a newer Model Lab run replaces an older check
+concurrency:
+  group: cfb-published-validation
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    # a cancelled or skipped Model Lab run published nothing
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.conclusion != 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The CFB validation and research-terminal suites, as their pull-request workflows run them, on the board main now holds
+        run: node tools/ci/verify.js --workflow cfb-validation-tests.yml,cfb-terminal.yml --ci

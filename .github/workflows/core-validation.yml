@@ -1,0 +1,45 @@
+# EdgeDesk core validation — the repository still parses, on every pull request.
+#
+# 2026-10-26 12:47 UTC (docs/ci/INCIDENT-2026-10-26.md): a conflict resolved
+# in GitHub's web editor left lib/edgedesk_quote_ev.js unparseable and
+# football/cfb_validation/slate_audit.json not JSON, and the pull request was
+# merged ten seconds later. Eleven workflow runs on the pull request, on main
+# and on the next pull request then failed, each naming its own suite and none
+# naming the file. This job has no paths: filter, so it runs on every pull
+# request and every push to main, fails in seconds, and names the file and the
+# line. It is the check branch protection should require first
+# (docs/ci/BRANCH_PROTECTION.md); keep the workflow and job names stable.
+#
+# Offline: no network, no credentials, writes nothing.
+name: Core validation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request replaces its older run; each commit on main
+# keeps its own run, so main never loses a result to cancellation.
+concurrency:
+  group: core-validation-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  integrity:
+    # the status check branch protection requires by this name: keep it stable
+    name: Repository integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Every tracked file parses (JS, modules, TypeScript, JSON, JSONL, inline scripts, shell, Python), no conflict markers, every path a workflow or script runs exists
+        run: node tools/ci/integrity.js
+      - name: The gate, the workflow reader and npm run verify keep their own rules (synthetic repositories; the YAML reader held equal to PyYAML on every workflow)
+        run: node tools/ci/integrity.test.js && node tools/ci/workflows.test.js && node tools/ci/verify.test.js

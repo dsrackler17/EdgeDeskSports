@@ -8,6 +8,13 @@
     "node": ">=20"
   },
   "scripts": {
+    "verify": "node tools/ci/verify.js --all",
+    "verify:affected": "node tools/ci/verify.js --affected",
+    "verify:cfb": "node tools/ci/verify.js --group cfb",
+    "verify:odds": "node tools/ci/verify.js --group odds",
+    "verify:research": "node tools/ci/verify.js --group research",
+    "verify:core": "node tools/ci/integrity.js && node tools/ci/integrity.test.js && node tools/ci/workflows.test.js && node tools/ci/verify.test.js",
+    "verify:plan": "node tools/ci/verify.js --affected --list",
     "cfb:sync": "node football/rosters/fetch_rosters.js",
     "cfb:lab": "node football/cfb_lab/run.js",
     "cfb:terminal": "node football/cfb_terminal/build.js",

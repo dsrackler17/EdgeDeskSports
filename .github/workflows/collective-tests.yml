@@ -233,6 +233,13 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: collective-tests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   suites:
     runs-on: ubuntu-latest
@@ -582,14 +589,13 @@ jobs:
       #
       # The browser is installed because without it the suite skips, and a
       # step that runs, reports success and proves nothing is worse than no
-      # step. `continue-on-error` on the INSTALL only: a runner that cannot
-      # fetch Chromium still gets a loud SKIPPED from the suite, while a
-      # browser that loads the board and finds it broken still fails the job.
+      # step. So the install may not fail quietly either: a runner that cannot
+      # fetch Chromium fails here, at the install, rather than passing a
+      # SKIPPED suite as green (docs/ci/README.md).
       - name: Install Chromium for the board's browser suite
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
-        continue-on-error: true
 
       - name: The FBS board renders and filters at desktop and mobile widths
         run: node tools/football/fbs_board.e2e.js
@@ -902,12 +908,12 @@ jobs:
       # decision card from another sport. Nothing under test here can be
       # reached except through the DOM a subscriber uses.
       #
-      # The install is allowed to fail: the suite prints SKIPPED and exits 0
-      # without a browser, which is better than a red job that says nothing
-      # about the code.
+      # The install is not allowed to fail quietly: the suite prints SKIPPED and
+      # exits 0 without a browser, so a quiet install failure would pass this
+      # job having driven nothing. A red install step says plainly that the
+      # runner, not the code, is what failed.
       - name: Install Chromium for the browser suite
         run: npx --yes playwright@1.47.2 install --with-deps chromium
-        continue-on-error: true
 
       - name: A question that names a team is answered about that team, in the browser
         run: node tools/intelligence/chat.e2e.js

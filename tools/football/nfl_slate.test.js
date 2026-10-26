@@ -44,9 +44,18 @@ const STW = [STW_HEAD,
 ].join('\n');
 const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,full_name,gsis_id,espn_id\n2026,SF,QB,QB,13,ACT,Brock Purdy,00-0037834,4361741\n2026,LA,QB,QB,9,ACT,Matthew Stafford,00-0036355,12483';
 
+/* the committed forecast store, read before the build: a fixture build must
+   neither ask the weather provider nor write the store (2026-10-26: without
+   offline, fetchNflForecasts called open-meteo for the fixture games and
+   rewrote football/venues/forecasts.json in the working tree) */
+const STORE = path.join(__dirname, '..', '..', 'football', 'venues', 'forecasts.json');
+const storeBefore = (() => { try { return require('fs').readFileSync(STORE, 'utf8'); } catch (_) { return null; } })();
+
 (async () => {
   const art = await B.build({
     now: NOW,
+    /* the feeds come from fetchText below; offline keeps the forecast fetch off the network */
+    offline: true,
     fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER
       /* the committed stadium table, as the builder reads it from disk */
       : /nfl_stadiums\.json$/.test(u) ? require('fs').readFileSync(path.join(__dirname, '..', '..', 'football', 'venues', 'nfl_stadiums.json'), 'utf8') : ''),
@@ -64,6 +73,8 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
     }
   });
   chk('schema', art.schema === 'edgedesk_nfl_slate_v1');
+  chk('a fixture build asks no weather provider', art.forecasts && art.forecasts.error === 'offline' && art.forecasts.answered === 0, art.forecasts);
+  chk('...and leaves the committed forecast store byte for byte as it was', (() => { try { return require('fs').readFileSync(STORE, 'utf8') === storeBefore; } catch (_) { return storeBefore === null; } })());
   chk('the completed game was absorbed', art.absorbed_games === 1, art.absorbed_games);
   chk('three upcoming games are on the slate (one of them abroad)', art.counts.games === 3, art.counts);
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');

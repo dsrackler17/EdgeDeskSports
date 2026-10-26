@@ -25,6 +25,10 @@ concurrency:
 
 jobs:
   suites:
+    # A required status check is matched by this name, and 32 workflows have
+    # a job called "suites": this one is named so branch protection can
+    # require it unambiguously (docs/ci/BRANCH_PROTECTION.md). Keep it stable.
+    name: Odds gateway suites
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

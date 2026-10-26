@@ -216,6 +216,13 @@ on:
       - 'tools/mlb/**'
       - 'tools/intelligence/mlb_history.test.js'
 
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: games-sql-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   sql:
     runs-on: ubuntu-latest
@@ -309,12 +316,14 @@ jobs:
       # OFFLINE AND RETRY, IN A REAL BROWSER. Chromium loads the real pages and
       # every call it makes runs through psql against this database, so a
       # connection dropped BEFORE a request lands and one dropped AFTER it
-      # commits are two different tests. Skips loudly if the browser is absent.
+      # commits are two different tests. A failed browser install fails the job.
       - name: Install Chromium for the browser suite
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
-        continue-on-error: true
+        # no continue-on-error: a browser suite without a browser prints SKIPPED and
+        # exits 0, so a failed install would leave this job green having tested
+        # nothing. It fails here, at the install, instead (docs/ci/README.md).
 
       - name: Run the offline and retry suite
         env:
