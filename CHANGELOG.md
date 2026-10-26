@@ -1,6 +1,15 @@
 # Changelog
 
+## 2026-10-26 — Market structure suites: one pinned clock for the browser test
 
+- **The failure (00:06 UTC).** `market_structure_ui.e2e.js:196` threw "Cannot set properties of null (setting 'open')".
+  - The suite stages a Week 7 board but ran it on the real clock and the live nflverse schedule.
+  - IND @ MIN went final on 2026-10-25 (10–16), and a finished game gets the graded card, which has no Market Structure section. DAL @ PHI would follow after Monday night.
+- **Four fixes for one cause.** #776, #777, #779 and #780 each pinned the clock and blanked later scores, each in its own way.
+  - Each was merged through a "Merge branch 'main'" conflict resolution that kept pieces of the others. One resolution left `csv is not defined`.
+  - After #782's restore was merged the same way, main's copy no longer parsed: a stray fragment of one scheme's `asOf()` sat after `pinLine()`, and `ST` and `pinned` were read before they existed.
+- **Restored, once.** The file is now #777's exactly, as it was green on main (ed901e89): every page reads 2026-10-25 13:00 UTC, and the schedule it is served blanks every 2026 score from then on.
+  - 25 of 25 pass on Playwright 1.63 and on 1.49.1 (CI's pin), and also against a schedule with every Week 7 and 8 game scored.
 
 ## 2026-10-26 — Game research tests: the Kalshi fixture gives each side its own ticker
 
