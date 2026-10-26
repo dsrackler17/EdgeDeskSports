@@ -154,16 +154,22 @@ function build(now) {
      games built above and A1, which needs a card of at least three, failed
      everywhere research_host runs. Picking the games still ahead (above) cannot
      help when every one of them is a week or more out. So when the artifact's
-     next game is at least a week past the clock, its rows are moved back by
+     slate is at least a week past the clock, its rows are moved back by
      whole weeks: the weekday, the kickoff time and every other byte stay the
-     artifact's own, and its next slate lands on the clock's week. The clock's
+     artifact's own, and its slate lands on the clock's week. The clock's
      own day stays the scenarios' ("nothing tonight"), so a leftover Monday
      night game from the artifact's previous week, which the move would put on
-     that evening, is left off. */
+     that evening, is left off.
+     The weeks are counted to the artifact's MIDDLE kickoff, not its next one.
+     On a Sunday evening the next game is that week's leftover night game:
+     counted from it (25 October 2026, KC @ SEA), the coming Sunday landed a
+     week past the clock, "this weekend" held that one game beside the two
+     above, and the desk's every-game table, which lists at least four, failed. */
   const DAY = 86400000, WEEK = 7 * DAY;
   const onClock = (games) => {
-    const next = games.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b)[0];
-    const weeks = next == null ? 0 : Math.floor((next - now) / WEEK);
+    const ks = games.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b);
+    const mid = ks[Math.floor(ks.length / 2)];
+    const weeks = mid == null ? 0 : Math.floor((mid - now) / WEEK);
     if (weeks < 1) return games;
     const back = (ms) => new Date(ms - weeks * WEEK).toISOString();
     return games.map((g) => Object.assign({}, g, { kickoff: back(Date.parse(g.kickoff)) },

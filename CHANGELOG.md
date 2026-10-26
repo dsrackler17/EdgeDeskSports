@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-26 — Collective suites: the fixtures' NFL weekend counted from the card's middle kickoff
+
+- **The failure (00:28 UTC).** `quant_ui.e2e.js`: "the every-game table is open and lists the games", on desktop and phone.
+- **The cause.** The intelligence fixtures move the committed NFL card back by whole weeks onto the suites' fixed clock (Monday 2026-10-12), and the weeks were counted to the card's next kickoff.
+  - On Sunday evening the next kickoff is that week's leftover night game (KC @ SEA).
+  - Counted from it, the coming Sunday landed a week past the clock. "This weekend" held three games, and the table needs four.
+- **The fix.** The weeks are now counted to the card's middle kickoff, so the coming Sunday lands on the clock's weekend: seven games. Only `onClock` in `tools/intelligence/fixtures.js` changes. On the card as it stood before the Week 8 roll, at the roll, and now, the weekend holds eight games each time. Counted the old way it held 5, then 3, then 3.
+
+Tests: `quant_ui.e2e.js` passes 89 of 89 (it had 2 failures). `intel_ui`, `desk_ui` (71) and `chat` (50) also pass in the browser. Every suite that reads the fixtures passes with the same counts as before the change: acceptance 308, intelligence 574, evals 259, research_host 214, board 118, multisport 128, desk 108, quant_host 100, conversation 48, analyst_evals 41, providers 41, multisport_host 37, personnel_desk 36, desk_host 25, benchmark 24.
+
 ## 2026-10-26 — Market structure suites: one pinned clock for the browser test
 
 - **The failure (00:06 UTC).** `market_structure_ui.e2e.js:196` threw "Cannot set properties of null (setting 'open')".
