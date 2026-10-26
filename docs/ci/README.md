@@ -1,10 +1,11 @@
 # CI: what runs, and how to run it before you open a pull request
 
-The repository has 175 workflows. 66 of them run on pull requests: 63
-path-filtered, and three on every pull request (`core-validation.yml`,
-`odds-gateway-tests.yml`, `cfb-security.yml`). Each workflow names its own
-commands. `npm run verify` reads those files and runs what GitHub would run,
-so "run the tests" no longer means guessing which suites a change touches.
+The repository has 177 workflows. 68 of them run on pull requests: 64
+path-filtered, and four on every pull request (`core-validation.yml`,
+`odds-gateway-tests.yml`, `cfb-security.yml`, `all-checks.yml`). Each workflow
+names its own commands. `npm run verify` reads those files and runs what
+GitHub would run, so "run the tests" no longer means guessing which suites a
+change touches.
 
 ## Commands
 
@@ -101,6 +102,12 @@ keeps the name branch protection may require.
 - **`core-validation.yml`** (`Core validation / Repository integrity`): runs
   on every pull request and every push to `main`, with no path filter. It is
   the first check to require.
+- **`all-checks.yml`** (`All checks`): runs on every pull request. It waits
+  for every workflow the change started, and passes only when each one passed
+  ([BRANCH_PROTECTION.md](BRANCH_PROTECTION.md#all-checks-one-required-check-for-the-64-path-filtered-workflows)).
+  It is how a ruleset requires the 64 path-filtered workflows. `npm run verify`
+  lists it as NOT VERIFIED, because it needs the pull request's live runs.
+  Its rules are tested by `tools/ci/gate.test.js` (`npm run verify:core`).
 - **`cfb-published-validation.yml`**: after each hourly CFB Model Lab run, it
   runs the CFB validation and research-terminal suites on `main`. A push by a
   workflow starts no other workflow, so without it an hourly board that

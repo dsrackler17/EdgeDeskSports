@@ -2,6 +2,37 @@
 
 
 
+## 2026-10-26 — All checks: one required check for every workflow a pull request starts
+
+**Why.** #807 merged 17 s after it was opened. Its three required checks (`Repository integrity`, `Odds gateway suites`, `audit`) passed within three minutes, and then eight of the 40 workflows it started failed. A ruleset can require only a check that reports on every pull request, and 64 of the 68 pull-request workflows are path-filtered.
+
+**What.** `all-checks.yml` runs `tools/ci/gate.js` on every pull request. The gate:
+- reads the changed files from the API;
+- predicts the workflows the change starts from their own `on:` blocks (`tools/ci/workflows.js`);
+- waits for each run on the head commit;
+- passes only when every one finished success, skipped or neutral.
+
+It fails at the first failed, cancelled or timed-out run, and when a predicted workflow never starts. A run nobody predicted still counts. It only reads.
+- `docs/ci/main-ruleset.json` requires `All checks` as a fourth check.
+- `docs/ci/BRANCH_PROTECTION.md`: merge this before importing the ruleset.
+- `tools/ci/checks.json` puts the workflow in Core validation.
+- `Core validation` and `npm run verify:core` run its tests.
+
+**Evidence.** Replayed read-only against GitHub's real runs:
+- #807: ALL CHECKS FAILED, 32 of 40, naming the eight failed runs.
+- #806: ALL CHECKS PASSED, 8 of 8.
+
+In both, the predicted workflows were exactly the ones GitHub started.
+
+**Tests.** `tools/ci/gate.test.js`, 63 checks:
+- every run outcome;
+- the gate's own run is excluded;
+- re-runs, superseded runs, unpredicted runs, never-started runs and disabled workflows;
+- paging, a 502 retried, a hung request timed out and retried, a 404 refused, and the wait running out, all against a fake API;
+- every check the ruleset requires is exactly one job that reports on every pull request.
+
+Seven injected bugs each turn it red: cancelled counted as passing, its own run not excluded, the oldest run kept, a missing run passed, waiting on a failure, unpredicted runs ignored, and no request timeout.
+
 ## 2026-10-26 — CI: a gate on every pull request, `npm run verify`, and the rules that would have stopped today's eighteen failed runs
 
 Eighteen failed runs between 12:03 and 12:54 UTC came from three root causes, all already fixed on `main` by #799, #800, #803 and #804 ([docs/ci/INCIDENT-2026-10-26.md](docs/ci/INCIDENT-2026-10-26.md)):
