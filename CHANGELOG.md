@@ -2,18 +2,19 @@
 
 ## 2026-10-26 — College baseball: the weekly run keeps its registered holdout look
 
-**What broke.** The weekly validation run of 2026-10-26 (`fee3a2e0b`) dropped college baseball's registered HOLDOUT look: `OUTCOME_VALIDATED` on 16,696 games, taken on 2026-10-14. Moneyline readiness became `PROVISIONAL`, so two Lab checks failed on `main`:
+**What broke.** The weekly validation run of 2026-10-26 (`fee3a2e0b`, 19:05 UTC) dropped college baseball's registered HOLDOUT look: `OUTCOME_VALIDATED` on 16,696 games, taken on 2026-10-14. Moneyline became `PROVISIONAL`, and two Lab checks failed on `main`:
 
 - `engine/build_registry.js --check`: "the committed readiness state differs from the evidence";
 - the Lab test "college baseball is validated only by its own holdout record".
 
-The push came from `GITHUB_TOKEN`, so no workflow ran on it, and no check showed the failure.
+The push came from `GITHUB_TOKEN`, so no workflow ran on it, and no check showed the failure. At 20:45 the scheduled NHL job (`9beb24587`, "the cross-sport board") rebuilt `engine/registry.json` from that evidence. College baseball became `EXPERIMENTAL` (summary 8 validated, 2 experimental, 1 retired), and the checks passed again. The downgrade was now committed, and served.
 
 **Why.** Since 2026-10-21, `college_baseball/walkforward.js` carries a holdout look only to a report of the same configuration (`config_sha256`). A report made before configurations were hashed was carried only if `legacy_config` held, and `legacy_config` also required that **no loop version be served**. The loop's first run seeds `versions.json` with version 1.0.0, "selection-window tuning", served. That version is exactly team_tuning's configuration (`3252f395…` for team_tuning, version 1.0.0 and the weekly report alike). Being served at all made it look like another configuration, and the look was withheld.
 
 **The repair.**
 - `legacyConfig()` compares configurations only, as the 2026-10-21 protocol amendment states: "carried forward only to a report of that exact configuration".
 - The 2026-10-19 records are restored by reverting the bot's commit. They are the job's own outputs, and the look was stored nowhere else (`holdout_looks.json` did not exist yet).
+- `engine/registry.json` is rebuilt by its own build (`node engine/build_registry.js`). Only college baseball changes: `EXPERIMENTAL` → `OUTCOME_VALIDATED`, summary back to 9 / 1 / 1. `value_claims_enabled` stays empty.
 - The next weekly run, or Actions → College baseball research validate, rebuilds this week's records. It carries the look and stores it in `holdout_looks.json`.
 - `lab.yml` now also starts on `college_baseball/validation/**`, the records `engine/build_registry.js` reads. Before, no pull request that changed college baseball's evidence started the workflow that checks it.
 
