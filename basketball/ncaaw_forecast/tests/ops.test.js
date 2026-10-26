@@ -27,7 +27,7 @@ const W = require('../weekly');
 const HERE = path.join(__dirname, '..');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'ncaawops-'));
 const copyDir = (from, to) => { fs.mkdirSync(to, { recursive: true }); for (const f of fs.readdirSync(from)) { const s = path.join(from, f), d = path.join(to, f); if (fs.statSync(s).isDirectory()) copyDir(s, d); else fs.copyFileSync(s, d); } };
-const env = (reg, rep, failAt, incumbent) => Object.assign({}, process.env, { NCAAW_REGISTRY_DIR: reg, NCAAW_REPORTS_DIR: rep, NCAAW_FAIL_AT: failAt || '' }, incumbent ? { NCAAW_INCUMBENT_VERSION: incumbent } : {});
+const env = (reg, rep, failAt) => Object.assign({}, process.env, { NCAAW_REGISTRY_DIR: reg, NCAAW_REPORTS_DIR: rep, NCAAW_FAIL_AT: failAt || '' });
 const history = (reg) => fs.readFileSync(path.join(reg, 'history.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 const pointer = (reg) => fs.readFileSync(path.join(reg, 'champion.json'), 'utf8');
 const tmpLeft = (dir) => { const out = []; const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) walk(p); else if (/\.tmp-/.test(f)) out.push(p); } }; walk(dir); return out; };
@@ -52,17 +52,39 @@ const run = (script, args, e) => new Promise((resolve) => {
 });
 
 (async () => {
-
+  /* the champion registry as committed (ncaaw_adjeff@1.0.0) for ingest, train
+     and evaluate, with carry_lower (the women's champion's carry is already
+     1.0, so carry_higher is not a change and is never a candidate);
+     a fresh registry (the incumbent as champion) for store: the bootstrap run,
+     the served incumbent against the frozen selection, stopped after its
+     evaluation whatever it decides;
+     for promote, a fresh registry whose champion is the frozen selection with
+     a prior 64 times too strong, so that lambda_weaker_prior must PROMOTE.
+     It used to be the incumbent, against which the frozen selection was known
+     to pass every gate, until the weekly model loop promoted the served model
+     (1.1.0 -> 1.2.0 at cf8d09fb9) and the run returned RETAIN, so the promote
+     boundary was never reached. The weak champion needs no served model: on
+     2026-10-26 the candidate gained 0.029 log loss (95% CI 0.027 to 0.031)
+     against the 0.0002 the gate requires, and every gated cohort improved,
+     the D1-v-non-D1 regime included */
+  const sel = W.selectionConfig();
+  const weak = Object.assign({}, sel, { version: '0.1.0', params: Object.assign({}, sel.params, { lambda: sel.params.lambda * 64 }) });
   const cases = [
     { stage: 'ingest', fresh: false, only: 'carry_lower', wantStage: 'data' },
     { stage: 'train', fresh: false, only: 'carry_lower', wantStage: 'train' },
     { stage: 'evaluate', fresh: false, only: 'carry_lower', wantStage: 'evaluate' },
+    { stage: 'store', fresh: 'incumbent', only: null, wantStage: 'store' },
+    { stage: 'promote', fresh: weak, only: 'lambda_weaker_prior', wantStage: 'promote' },
+  ];
+  for (const c of cases) {
+    c.reg = path.join(TMP, c.stage, 'registry'); c.rep = path.join(TMP, c.stage, 'reports');
+    if (c.fresh === 'incumbent') { fs.mkdirSync(c.reg, { recursive: true }); spawnSync(process.execPath, [path.join(HERE, 'registry.js'), 'init'], { env: env(c.reg, c.rep) }); }
+    else if (c.fresh) { fs.mkdirSync(c.reg, { recursive: true }); c.champion = initWith(c.reg, c.fresh); }
     else copyDir(C.PATHS.registry, c.reg);
     c.before = pointer(c.reg); c.lines = history(c.reg).length;
   }
-  T.chk('promote: the fresh registry starts from the named incumbent (1.1.0), not the one the model loop serves today', /"key": "ncaaw_points@1\.1\.0"/.test(cases.find((c) => c.stage === 'promote').before));
   const t0 = Date.now();
-  const res = await Promise.all(cases.map((c) => run('weekly.js', c.only ? ['--only', c.only] : ['--max', '1'], env(c.reg, c.rep, c.stage, c.incumbent))));
+  const res = await Promise.all(cases.map((c) => run('weekly.js', c.only ? ['--only', c.only] : ['--max', '1'], env(c.reg, c.rep, c.stage))));
   console.log('NOTE | five injected runs in ' + ((Date.now() - t0) / 1000).toFixed(0) + ' s');
   cases.forEach((c, i) => {
     const r = res[i]; const h = history(c.reg); const last = h[h.length - 1];
