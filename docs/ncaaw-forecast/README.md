@@ -85,8 +85,13 @@ works as follows:
 - **Which ESPN team a school is.** The team with its results: last season's
   finals on the same local date, with the same score. At least 5 must match,
   and 60% of the school's finals.
-- **Who the opponent is.** By the website the listing names, else by its exact
-  registry name. A non-D-I or NAIA opponent is priced in the model's pooled
+- **Who the opponent is.** By the website the listing names, else (no
+  website, or one the registry does not know) by its exact registry name, once
+  the school's own labels ("(Ex.)", "Exhibition ...") come off. Its ESPN team
+  is the one its results match, else the D-I team ESPN names exactly as the
+  registry names the school and its nickname ("Mercyhurst" + "Lakers"). That
+  name also stands over a stale registry division: Mercyhurst and New Haven
+  are D-I on ESPN. A non-D-I or NAIA opponent is priced in the model's pooled
   non-D-I regime.
 - **What is priced.** Every exhibition still to play in the window, flagged
   `EXHIBITION`. A school may rest its regulars, and the model was never
