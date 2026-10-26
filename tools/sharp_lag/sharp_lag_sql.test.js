@@ -9,7 +9,12 @@
                 past Pinnacle price, a Kalshi flag without a verified fee is
                 marked fee_unverified, the absent player's own under is never
                 flagged, nothing after the start, one flag per episode
+     grades     REGISTERED BEFORE GRADED: no grade without the registry link;
+                none before the start; once per flag; never edited
      access     no client reads a table directly
+                sharp_lag_flags(): a subscriber sees every flag live; anyone
+                else only started games, and only once public_display is on;
+                sharp_lag_progress() is public and holds no price
      cron       the free job every 10 minutes and never a spend path; no secret,
                 no call
                 the paid dispatcher hourly, woken only when live AND the
@@ -53,7 +58,7 @@ try {
     grant execute on function public.has_active_sub() to authenticated;`);
   let out = db.applyFile(FILE);
   const rows = (o) => (o.match(/\|(ok|CHECK THIS[^\n]*)$/gm) || []);
-  const REPORT_ROWS = 4;
+  const REPORT_ROWS = 5;
   T.chk('apply: every report row ok', rows(out).length === REPORT_ROWS && rows(out).every((r) => /\|ok$/.test(r)), out.slice(-800));
   out = db.applyFile(FILE);
   T.chk('apply: and a second time, with the switches left as they were', rows(out).length === REPORT_ROWS && rows(out).every((r) => /\|ok$/.test(r))
@@ -65,7 +70,7 @@ try {
     on conflict (source_request_id, event_id, book, market, side, participant_key, point_key) do nothing;`;
   db.service(price(1, 'Philadelphia Eagles', 1.6) + price(1, 'Dallas Cowboys', 2.5) + price(1, 'Dallas Cowboys', 2.5));
   T.chk('append: a snapshot read twice is stored once (the unique key, null point included)', db.sql('select count(*) from public.sharp_price_snapshots') === '2');
-  const SEALED = ['sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log', 'sharp_triggers', 'sharp_check_requests', 'sharp_flags'];
+  const SEALED = ['sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log', 'sharp_triggers', 'sharp_check_requests', 'sharp_flags', 'sharp_flag_grades'];
   for (const t of ['sharp_price_snapshots', 'sharp_lag_config_log']) {
     const col = t === 'sharp_price_snapshots' ? 'book' : 'key';
     T.chk('append: ' + t + ' refuses UPDATE: the service role has no UPDATE grant, and the trigger refuses even the owner', refused(() => db.service('update public.' + t + ' set ' + col + ' = ' + col + ';'))
@@ -105,9 +110,48 @@ try {
   T.chk('flags: a flag is never edited or deleted (not even by the owner)', refused(() => db.service('update public.sharp_flags set gap_pp = 9 where flag_id = ' + f1 + ';'))
     && refused(() => db.sql('update public.sharp_flags set gap_pp = 9 where flag_id = ' + f1 + ';'), /append-only/) && refused(() => db.sql('delete from public.sharp_flags;'), /append-only/));
 
+  /* ── grades ──────────────────────────────────────────────────────────── */
+  const fStarted = flag({ flagged_at: iso(-300), commence_time: iso(-60), target_observed_at: iso(-305), reference_observed_at: iso(-310), episode_key: 'started@1' });
+  const grade = (id, o) => {
+    const g = Object.assign({ flag_id: id, model_key: 'SHARP-LAG', registry_ref: 'v-sharp-lag-0.1', close_status: 'graded', closing_reference_prob: 0.62, closing_reference_at: iso(-80), close_lead_min: 20,
+      clv_pp: 4.86, hit: true, converged: true, converged_at: iso(-200), lag_to_converge_s: 6000, lag_censored: false, lag_resolution_s: 3600 }, o || {});
+    const cols = Object.keys(g);
+    return db.service('insert into public.sharp_flag_grades (' + cols.join(', ') + ') values (' + cols.map((k) => PG.lit(g[k])).join(', ') + ');');
+  };
+  T.chk('grades: before the model is registered, no grade is accepted', refused(() => grade(fStarted), /not registered in the research registry/));
+  db.sql("insert into public.sharp_lag_config (key, value, note) values ('registry_ref:SHARP-LAG', 'v-sharp-lag-0.1', 'test registry link')");
+  T.chk('grades: once registered, the grade is written', db.mustFail(() => grade(fStarted)) === null);
+  T.chk('grades: once per flag', refused(() => grade(fStarted)));
+  T.chk('grades: never before the start', refused(() => grade(f1), /has not started/));
+  T.chk('grades: never under another model or another registry version', refused(() => grade(flag({ flagged_at: iso(-300), commence_time: iso(-60), episode_key: 's2' }), { registry_ref: 'other' }), /registry_ref/));
+  const fNc = flag({ flagged_at: iso(-300), commence_time: iso(-60), episode_key: 's3' });
+  T.chk('grades: a no-close grade needs its reason and carries no CLV', refused(() => grade(fNc, { close_status: 'no_close', clv_pp: null, hit: null }))
+    && db.mustFail(() => grade(fNc, { close_status: 'no_close', clv_pp: null, hit: null, no_close_reason: 'last Pinnacle observation 100 minutes before the start' })) === null);
+  T.chk('grades: hit must agree with CLV', refused(() => grade(flag({ flagged_at: iso(-300), commence_time: iso(-60), episode_key: 's4' }), { clv_pp: -1, hit: true })));
+  T.chk('grades: a grade is never edited (not even by the owner)', refused(() => db.service('update public.sharp_flag_grades set clv_pp = 9;')) && refused(() => db.sql('update public.sharp_flag_grades set clv_pp = 9;'), /append-only/));
+
   /* ── access ──────────────────────────────────────────────────────────── */
   const tables = SEALED.concat(['sharp_lag_config']);
   T.chk('access: anon reads no table directly', tables.every((t) => refused(() => db.anon('select count(*) from public.' + t + ';'), /permission denied/)));
+  T.chk('access: a subscriber reads no table directly either (only through the function)', tables.every((t) => refused(() => db.as(SUB, 'select count(*) from public.' + t + ';'), /permission denied/)));
+  T.chk('access: anon cannot write a flag', refused(() => db.anon("insert into public.sharp_flags (flagged_at) values (now());"), /permission denied/));
+  const flagsAs = (who) => {
+    const q = 'select count(*) || \':\' || count(*) filter (where (j->>\'commence_time\')::timestamptz > now()) from public.sharp_lag_flags() j;';
+    return who === 'anon' ? db.anon(q) : db.as(who, q);
+  };
+  const total = Number(db.sql('select count(*) from public.sharp_flags')), upcoming = Number(db.sql('select count(*) from public.sharp_flags where commence_time > now()'));
+  T.chk('access: a subscriber sees every flag, live ones included', flagsAs(SUB) === total + ':' + upcoming, [flagsAs(SUB), total, upcoming]);
+  T.chk('access: with public_display off, anyone else sees nothing', flagsAs('anon') === '0:0' && flagsAs(NOSUB) === '0:0');
+  db.sql("update public.sharp_lag_config set value = 'on', note = 'test: terms read' where key = 'public_display'");
+  T.chk('access: with public_display on, anyone else sees started games only, with their grades', flagsAs('anon') === (total - upcoming) + ':0'
+    && db.anon("select count(*) from public.sharp_lag_flags() j where j->>'close_status' = 'graded';") === '1');
+  T.chk('access: each row says which access it was served under', db.anon("select distinct j->>'access' from public.sharp_lag_flags() j;") === 'public' && db.as(SUB, "select distinct j->>'access' from public.sharp_lag_flags() j;") === 'subscriber');
+  const prog = J(db.anon('select public.sharp_lag_progress();'));
+  const sl = (prog.models || []).find((m) => m.model_key === 'SHARP-LAG');
+  T.chk('access: progress is public: counts, the threshold, registered or not, and no price', prog.threshold === 200 && sl && sl.graded === 2 - 1 && sl.no_close === 1 && sl.registered === true
+    && !/price|prob|clv/.test(JSON.stringify(prog)), prog);
+  T.chk('access: the role-shift model reads not registered until its registry SQL runs', (prog.models || []).find((m) => m.model_key === 'NBA-ROLE-SHIFT').registered === false);
+
   /* ── the research registry ───────────────────────────────────────────── */
   const REG = path.join(ROOT, 'supabase', 'sharp_lag_registry.sql');
   T.chk('registry: without the research registry the file refuses and registers nothing', refused(() => db.applyFile(REG), /research registry/));

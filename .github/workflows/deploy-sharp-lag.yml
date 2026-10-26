@@ -32,7 +32,7 @@ on:
         type: boolean
         default: true
       apply_sql:
-        description: 'Apply sharp_lag.sql, then sharp_lag_cron.sql (needs pg_cron and pg_net)'
+        description: 'Apply sharp_lag.sql, sharp_lag_registry.sql (needs the research registry), then sharp_lag_cron.sql (needs pg_cron and pg_net)'
         type: boolean
         default: false
 
@@ -101,7 +101,8 @@ jobs:
           PGURL: ${{ secrets.SB_DB_URL }}
         run: |
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
-          for f in supabase/sharp_lag.sql supabase/sharp_lag_cron.sql; do
+          # the registrations before anything can be graded (the grade guard refuses without them)
+          for f in supabase/sharp_lag.sql supabase/sharp_lag_registry.sql supabase/sharp_lag_cron.sql; do
             out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f")
             echo "== $f"; echo "$out" | tail -10
             if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::$f: a report row says CHECK THIS"; exit 1; fi

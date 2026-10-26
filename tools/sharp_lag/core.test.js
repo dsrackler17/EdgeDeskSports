@@ -11,6 +11,10 @@
      flags     the 2.5 pp rule after fees, same side and point only, past
                prices never flagged, an open episode never flagged twice,
                snapshot resolution recorded
+     grades    the close (<= 90 min before the start, else no close), CLV, hit,
+               lag to converge (censored at the start)
+     record    the game-clustered bootstrap, the BOTH-conditions validation,
+               the splits, the no-close rate
    Run: node tools/sharp_lag/core.test.js
    =========================================================================== */
 'use strict';
@@ -109,6 +113,26 @@ const PIN = (min, h, a, extra) => Object.assign({ observed_at: at(min), request_
   chk('flags: the trigger behind a triggered check is carried', r.flags[0].trigger_type === 'nba_injury' && r.flags[0].trigger_id === 77 && r.flags[0].reference_category === 'sharp_check');
   chk('flags: episode keys differ by venue and side, and by the observation that opened them', r.flags[0].episode_key !== evalDK(decAtGap(3)).flags[0].episode_key && /#kalshi#h2h\|Philadelphia Eagles/.test(r.flags[0].episode_key));
 
+  /* ── convergence and grades ─────────────────────────────────────────── */
+  const flag = Object.assign({}, evalDK(decAtGap(3)).flags[0], { flag_id: 1 });
+  const dkObs = (min, dec) => ({ observed_at: at(min), rows: [row('draftkings', 'h2h', 'Philadelphia Eagles', dec)] });
+  const refs = [PIN(-10), PIN(60), PIN(200)];
+  let cv = L.convergence(flag, { reference: refs, target: [dkObs(50, decAtGap(2)), dkObs(110, decAtGap(0.8))], until: KICK });
+  chk('converge: the first DraftKings price within 1.0 pp of the current Pinnacle fair ends the lag', cv.converged && cv.converged_at === at(110) && cv.lag_s === 110 * 60, cv);
+  cv = L.convergence(flag, { reference: refs, target: [dkObs(50, decAtGap(2)), dkObs(250, decAtGap(0))], until: KICK });
+  chk('converge: a price after the start does not count (censored at the start)', !cv.converged);
+  let g = L.grade(flag, { reference: refs, target: [dkObs(110, decAtGap(0.8)), dkObs(230, 1.7)] });
+  const fair200 = L.fairs(PIN(200).rows)['h2h|Philadelphia Eagles||'].fair;
+  chk('grade: the close is the last Pinnacle observation before the start (40 min before)', g.close_status === 'graded' && g.closing_reference_at === at(200) && g.close_lead_min === 40, g);
+  chk('grade: CLV = closing Pinnacle fair - the flag\'s all-in cost, in pp; a hit when positive', near(g.clv_pp, Math.round((fair200 - flag.target_cost_prob) * 10000) / 100, 0.011) && g.hit === (g.clv_pp > 0), g);
+  chk('grade: the target\'s closing price is attached', g.closing_target_price === 1.7 && g.closing_target_at === at(230));
+  chk('grade: the lag and its resolution are carried', g.converged && g.lag_to_converge_s === 6600 && g.lag_resolution_s === 3600 && g.lag_censored === false);
+  g = L.grade(flag, { reference: [PIN(-10), PIN(140)], target: [] });
+  chk('grade: a last Pinnacle observation 100 minutes before the start is NO CLOSE, with the reason, and no CLV', g.close_status === 'no_close' && g.clv_pp === null && g.hit === null && /100 minutes before the start/.test(g.no_close_reason), g);
+  const kflag = Object.assign({}, r.flags[0], { flag_id: 2 });
+  g = L.grade(kflag, { reference: refs, target: [{ id: 10, captured_at: at(200), yes_bid: 0.6, yes_ask: 0.62 }, { id: 11, captured_at: at(239), yes_bid: 0.6, yes_ask: 0.61 }] });
+  chk('grade: a Kalshi flag closes on the last two-sided snapshot before the start, on the flag\'s own fee basis', g.closing_target_price === 0.61 && g.closing_target_cost === 0.63 && g.closing_target_at === at(239), g);
+
   /* ── triggers ───────────────────────────────────────────────────────── */
   const snaps = [{ id: 1, ticker: 'K', captured_at: at(-15), yes_bid: 0.5, yes_ask: 0.52 }, { id: 2, ticker: 'K', captured_at: at(-10), yes_bid: 0.53, yes_ask: 0.55 },
     { id: 3, ticker: 'K', captured_at: at(-5), yes_bid: 0.53, yes_ask: 0.6 }, { id: 4, ticker: 'K', captured_at: at(-4), yes_bid: 0.49, yes_ask: 0.51 }, { id: 5, ticker: 'K', captured_at: at(20), yes_bid: 0.2, yes_ask: 0.22 }];
@@ -125,6 +149,33 @@ const PIN = (min, h, a, extra) => Object.assign({ observed_at: at(min), request_
   const m1 = L.matchEvent({ home: '12', away: '13', start: at(0) }, [{ id: 'x', home_team: 'Los Angeles Clippers', away_team: 'Los Angeles Lakers', commence_time: at(30) }, { id: 'y', home_team: 'Los Angeles Lakers', away_team: 'Los Angeles Clippers', commence_time: at(30) }], ix);
   chk('identity: a provider event matches on both clubs (aliases included) and a start within 6 h', m1 && m1.id === 'x');
   chk('identity: two candidates are no match, never a guess', L.matchEvent({ home: '12', away: '13', start: at(0) }, [{ id: 'x', home_team: 'LA Clippers', away_team: 'Los Angeles Lakers', commence_time: at(30) }, { id: 'z', home_team: 'Los Angeles Clippers', away_team: 'Los Angeles Lakers', commence_time: at(60) }], ix) === null);
+
+  /* ── record ─────────────────────────────────────────────────────────── */
+  const rows = [];
+  for (let gi = 0; gi < 60; gi++) for (let k = 0; k < (gi % 3) + 1; k++) rows.push({ model_key: 'SHARP-LAG', event_id: 'g' + gi, sport_key: gi % 2 ? 'basketball_nba' : 'americanfootball_nfl', market: k ? 'spreads' : 'h2h',
+    trigger_type: gi % 4 ? 'scheduled' : 'kalshi_move', target_venue: 'draftkings', close_status: 'graded', clv_pp: (gi % 5) - 1.5, converged: gi % 2 === 0, lag_to_converge_s: gi % 2 ? null : 1800, snapshot_resolution_s: 3600 });
+  rows.push({ model_key: 'SHARP-LAG', event_id: 'nc', sport_key: 'icehockey_nhl', market: 'h2h', trigger_type: 'nhl_goalie', close_status: 'no_close', clv_pp: null, converged: false });
+  rows.push({ model_key: 'SHARP-LAG', event_id: 'pend', sport_key: 'icehockey_nhl', market: 'h2h', trigger_type: 'nhl_goalie', close_status: null });
+  const b1 = L.clusterBootstrap(rows.filter((x) => x.close_status === 'graded').map((x) => ({ cluster: x.event_id, value: x.clv_pp })));
+  const b2 = L.clusterBootstrap(rows.filter((x) => x.close_status === 'graded').map((x) => ({ cluster: x.event_id, value: x.clv_pp })));
+  chk('bootstrap: seeded, so the published interval is reproducible', JSON.stringify(b1) === JSON.stringify(b2) && b1.lo < b1.mean && b1.mean < b1.hi && b1.clusters === 60);
+  const flat = L.clusterBootstrap(rows.filter((x) => x.close_status === 'graded').map((x, i) => ({ cluster: 'f' + i, value: x.clv_pp })));
+  const corr = [];
+  for (let gi = 0; gi < 40; gi++) { const v = (gi % 2 ? 1 : -1) * 3; for (let k = 0; k < 5; k++) corr.push({ cluster: 'c' + gi, value: v + k * 0.01 }); }
+  const cl = L.clusterBootstrap(corr), nc = L.clusterBootstrap(corr.map((x, i) => ({ cluster: 'n' + i, value: x.value })));
+  chk('bootstrap: correlated flags in one game widen the interval against treating each flag as independent', (cl.hi - cl.lo) > (nc.hi - nc.lo) * 1.5, [cl, nc]);
+  chk('bootstrap: the flat interval is a fallback the record never uses', flat.clusters > b1.clusters);
+  const v199 = L.validation(Array.from({ length: 199 }, (_, i) => ({ close_status: 'graded', clv_pp: 2, event_id: 'e' + i })));
+  const v200 = L.validation(Array.from({ length: 200 }, (_, i) => ({ close_status: 'graded', clv_pp: 2 + (i % 3) * 0.1, event_id: 'e' + i })));
+  const v200neg = L.validation(Array.from({ length: 200 }, (_, i) => ({ close_status: 'graded', clv_pp: ((i >> 3) % 2 ? 6.5 : -5.5), event_id: 'e' + (i >> 3) })));
+  chk('validation: 199 graded flags with a positive bound are NOT eligible', v199.eligible === false && v199.progress === '199 of 200 graded flags');
+  chk('validation: 200 graded flags with the lower bound above zero are eligible; the status stays EXPERIMENTAL (a person promotes)', v200.eligible === true && v200.status === 'EXPERIMENTAL');
+  chk('validation: 200 graded flags with a positive mean but a lower bound under zero are NOT eligible', v200neg.ci.mean > 0 && v200neg.ci.lo < 0 && v200neg.eligible === false, v200neg.ci);
+  const rec = L.record(rows, { model_key: 'SHARP-LAG' });
+  chk('record: every flag counts; no-close and pending are counted, not dropped', rec.overall.flags === rows.length && rec.overall.no_close === 1 && rec.overall.pending === 1 && rec.overall.graded === rows.length - 2);
+  chk('record: the no-close rate is of the closed flags', near(rec.overall.no_close_rate, 1 / (rows.length - 1), 1e-4));
+  chk('record: split by sport, market and trigger', rec.by_sport.length === 3 && rec.by_market.length === 2 && rec.by_trigger.map((x) => x.key).join() === 'kalshi_move,nhl_goalie,scheduled');
+  chk('record: lag to converge averages converged flags only, with the never-converged counted and the resolution beside it', rec.overall.avg_lag_s === 1800 && rec.overall.censored > 0 && rec.overall.median_resolution_s === 3600);
 
   /* ── the rules are the database's ───────────────────────────────────── */
   const sql = fs.readFileSync(path.join(ROOT, 'supabase', 'sharp_lag.sql'), 'utf8');

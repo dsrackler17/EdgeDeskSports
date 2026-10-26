@@ -30,11 +30,17 @@
 --                           change, a Kalshi move of 3c+, an NBA role shift
 --   sharp_check_requests    (B) every ask the dispatcher made, and the answer
 --   sharp_flags             (C) the flags, both registered models
+--   sharp_flag_grades       (D) the grade of each flag: close, CLV, lag
 -- sharp_lag_config holds the operator's switches (dispatch shadow / live,
 -- flags on / off, public_display off / on) and the registry links: the one
 -- table that changes, and every change of it is logged.
 --
 -- WHO READS. Prices, triggers, requests and runs: the service role only.
+-- Flags and grades: subscribers (has_active_sub(), as public.signals), every
+-- flag, live, through public.sharp_lag_flags(). Everyone: the counts in
+-- public.sharp_lag_progress() (no price), and, once an operator has read The
+-- Odds API's terms and switched public_display on, every flag and grade of a
+-- game that has STARTED.
 --
 -- THE RULES live in public.sharp_lag_rule(), frozen like kalshi_rule(): a
 -- change is a reviewed code change, and lib/edgedesk_sharp_lag.js RULES must
@@ -314,6 +320,138 @@ create trigger sharp_flags_guard before insert on public.sharp_flags for each ro
 select public.sharp_lag_seal(array['sharp_flags']);
 comment on table public.sharp_flags is 'Sharp lag (C, F): a measured gap between a slow market and its reference, at one moment. Experimental research, never a recommendation. Append-only.';
 
+-- ---------------------------------------------------------------- D. grades (append-only, once per flag)
+create table if not exists public.sharp_flag_grades (
+  flag_id                    bigint primary key references public.sharp_flags (flag_id),
+  graded_at                  timestamptz not null default now(),
+  model_key                  text not null,
+  registry_ref               text not null,           -- the research_model_versions row the grade counts toward
+  close_status               text not null check (close_status in ('graded', 'no_close')),
+  no_close_reason            text,
+  closing_reference_prob     numeric,
+  closing_pinnacle_price_dec numeric,
+  closing_pinnacle_opp_dec   numeric,
+  closing_reference_at       timestamptz,
+  close_lead_min             numeric,
+  closing_target_price       numeric,
+  closing_target_cost        numeric,
+  closing_target_at          timestamptz,
+  clv_pp                     numeric,
+  hit                        boolean,
+  converged                  boolean not null,
+  converged_at               timestamptz,
+  lag_to_converge_s          integer,
+  lag_censored               boolean not null,
+  lag_resolution_s           integer,
+  actual_stat                numeric,                 -- role shift: the player's stat in the game
+  actual_outcome             text check (actual_outcome is null or actual_outcome in ('over', 'under', 'push', 'void')),
+  detail                     jsonb not null default '{}'::jsonb,
+  check ((close_status = 'graded') = (clv_pp is not null)),
+  check (close_status = 'graded' or no_close_reason is not null),
+  check (hit is null or hit = (clv_pp > 0)),
+  check (converged = (converged_at is not null) and converged = not lag_censored)
+);
+create index if not exists sharp_flag_grades_model_idx on public.sharp_flag_grades (model_key, close_status);
+
+-- REGISTERED BEFORE GRADED. A grade names the registry version it counts
+-- toward, and the registry SQL (supabase/sharp_lag_registry.sql) is the only
+-- writer of those links: no link, no grade. A grade is refused before the
+-- game starts, and for any model but the flag's own.
+create or replace function public.sharp_flag_grades_guard()
+returns trigger language plpgsql as $g$
+declare f public.sharp_flags; ref text;
+begin
+  select * into f from public.sharp_flags where flag_id = new.flag_id;
+  if not found then raise exception 'sharp_flag_grades: no flag %', new.flag_id; end if;
+  if new.model_key <> f.model_key then raise exception 'sharp_flag_grades: flag % belongs to %, not %', new.flag_id, f.model_key, new.model_key; end if;
+  if f.commence_time > now() then raise exception 'sharp_flag_grades: flag %''s game has not started', new.flag_id; end if;
+  select value into ref from public.sharp_lag_config where key = 'registry_ref:' || f.model_key;
+  if ref is null then
+    raise exception 'sharp_flag_grades: % is not registered in the research registry (apply supabase/sharp_lag_registry.sql): no grade before registration', f.model_key;
+  end if;
+  if new.registry_ref is distinct from ref then raise exception 'sharp_flag_grades: registry_ref must be %', ref; end if;
+  return new;
+end $g$;
+drop trigger if exists sharp_flag_grades_guard on public.sharp_flag_grades;
+create trigger sharp_flag_grades_guard before insert on public.sharp_flag_grades for each row execute function public.sharp_flag_grades_guard();
+
+select public.sharp_lag_seal(array['sharp_flag_grades']);
+
+-- a subscriber is whoever public.signals admits (has_active_sub()); without
+-- that function nobody but the service role reads a live flag
+create or replace function public.sharp_lag_is_subscriber()
+returns boolean language plpgsql stable security definer set search_path = public, pg_temp as $s$
+declare v boolean := false;
+begin
+  if to_regprocedure('public.has_active_sub()') is null then return false; end if;
+  execute 'select public.has_active_sub()' into v;
+  return coalesce(v, false);
+exception when others then return false;
+end $s$;
+
+-- one flag and its grade, as every reader sees it
+create or replace view public.sharp_lag_rows with (security_invoker = true) as
+select f.flag_id, f.flagged_at, f.model_key, f.model_version, f.trigger_type, f.sport_key, f.event_id, f.home_team, f.away_team, f.commence_time,
+       f.market, f.side, f.participant, f.point, f.target_venue, f.target_ref, f.target_price, f.target_price_american, f.target_cost_prob,
+       f.fee_per_contract, f.fee_basis, f.fee_unverified, f.target_observed_at, f.reference_kind, f.reference_prob, f.devig_method,
+       f.pinnacle_price_dec, f.pinnacle_opp_dec, f.reference_observed_at, f.gap_pp, f.threshold_pp, f.seconds_since_reference,
+       f.reference_resolution_s, f.target_resolution_s, f.snapshot_resolution_s,
+       f.absent_player_id, f.absent_player_name, f.minutes_delta, f.sample_games, f.sample_stints, f.fair_line, f.posted_line, f.fair_price_american,
+       f.detail as flag_detail,
+       g.graded_at, g.close_status, g.no_close_reason, g.closing_reference_prob, g.closing_reference_at, g.close_lead_min,
+       g.closing_target_price, g.closing_target_cost, g.closing_target_at, g.clv_pp, g.hit, g.converged, g.converged_at,
+       g.lag_to_converge_s, g.lag_censored, g.lag_resolution_s, g.actual_stat, g.actual_outcome
+  from public.sharp_flags f
+  left join public.sharp_flag_grades g on g.flag_id = f.flag_id;
+revoke all on public.sharp_lag_rows from anon, authenticated;
+
+-- FLAGS FOR A READER. A subscriber: every flag in the window, live. Anyone
+-- else: only games that have started, and only once public_display is on.
+create or replace function public.sharp_lag_flags(p_sport text default null, p_from timestamptz default null, p_to timestamptz default null)
+returns setof jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
+declare sub boolean := public.sharp_lag_is_subscriber();
+        pub boolean := coalesce(public.sharp_lag_setting('public_display'), 'off') = 'on';
+begin
+  if not sub and not pub then return; end if;
+  return query
+    select to_jsonb(r) || jsonb_build_object('access', case when sub then 'subscriber' else 'public' end)
+      from public.sharp_lag_rows r
+     where (p_sport is null or r.sport_key = p_sport)
+       and r.commence_time >= coalesce(p_from, now() - interval '400 days') and r.commence_time <= coalesce(p_to, now() + interval '10 days')
+       and (sub or r.commence_time <= now())
+     order by r.flagged_at desc
+     limit 5000;
+end $f$;
+
+-- VALIDATION PROGRESS, for everyone: counts only, no price
+create or replace function public.sharp_lag_progress()
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $p$
+  select jsonb_build_object(
+    'threshold', public.sharp_lag_rule('validation_min_graded'),
+    'public_display', coalesce(public.sharp_lag_setting('public_display'), 'off'),
+    'models', coalesce((select jsonb_agg(jsonb_build_object('model_key', m.k, 'flags', coalesce(x.flags, 0), 'graded', coalesce(x.graded, 0),
+                                                       'no_close', coalesce(x.no_close, 0), 'pending', coalesce(x.pending, 0),
+                                                       'registered', exists (select 1 from public.sharp_lag_config c where c.key = 'registry_ref:' || m.k)) order by m.k)
+                          from (values ('SHARP-LAG'), ('NBA-ROLE-SHIFT')) m(k)
+                          left join (select model_key, count(*)::int as flags,
+                                            count(*) filter (where close_status = 'graded')::int as graded,
+                                            count(*) filter (where close_status = 'no_close')::int as no_close,
+                                            count(*) filter (where close_status is null)::int as pending
+                                       from public.sharp_lag_rows group by model_key) x on x.model_key = m.k), '[]'::jsonb),
+    'as_of', now())
+$p$;
+
+do $g$ begin
+  execute 'revoke all on function public.sharp_lag_flags(text, timestamptz, timestamptz) from public';
+  execute 'revoke all on function public.sharp_lag_progress() from public';
+  execute 'grant execute on function public.sharp_lag_flags(text, timestamptz, timestamptz), public.sharp_lag_progress() to anon, authenticated';
+  execute 'revoke all on function public.sharp_lag_setting(text), public.sharp_lag_is_subscriber() from public, anon, authenticated';
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant execute on function public.sharp_lag_flags(text, timestamptz, timestamptz), public.sharp_lag_progress(), public.sharp_lag_setting(text) to service_role';
+    execute 'grant select on public.sharp_lag_rows to service_role';
+  end if;
+end $g$;
+comment on table public.sharp_flag_grades is 'Sharp lag (D): the close, CLV and lag of one flag, written once after the start, only for a registered model. Append-only.';
 
 notify pgrst, 'reload schema';
 commit;
@@ -330,6 +468,8 @@ select piece, state from (
          case when not exists (select 1 from pg_class where relnamespace = 'public'::regnamespace and relkind = 'r'
                and relname in ('sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log', 'sharp_triggers', 'sharp_check_requests', 'sharp_flags', 'sharp_flag_grades', 'sharp_lag_config')
                and (has_table_privilege('anon', oid, 'select') or has_table_privilege('authenticated', oid, 'select'))) then 'ok' else 'CHECK THIS' end
+  union all select '3 subscribers are recognised (public.has_active_sub exists)',
+         case when to_regprocedure('public.has_active_sub()') is not null then 'ok' else 'CHECK THIS: without has_active_sub() no reader sees a live flag' end
   union all select '4 dispatch is shadow or live (nothing is bought until an operator says live)',
          case when public.sharp_lag_setting('dispatch') in ('shadow', 'live') then 'ok' else 'CHECK THIS' end
   union all select '5 public display is off until the terms are read, or on',

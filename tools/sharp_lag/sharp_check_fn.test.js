@@ -12,6 +12,8 @@
      shape     want_body false, allow_stale false, caller sharp_check, the
                commence time as the hint; never a provider host or a key
      refusals  a cap refusal is recorded and never retried
+     closes    an NBA/NHL game with an ungraded flag inside the hour gets one
+               close check, unless one ran in the last 50 minutes
      cap       at most MAX_ASKS asks a run
      mapping   an NBA trigger with no event is matched at dispatch time
    Run: node tools/sharp_lag/sharp_check_fn.test.js
@@ -86,6 +88,19 @@ const trig = (id, type, ev, start, o) => Object.assign({ id, trigger_type: type,
   chk('refusals: a cap refusal is recorded with the gateway\'s reason, at zero cost', R.DB.sharp_check_requests[0].decision === 'denied_category_cap' && R.DB.sharp_check_requests[0].cost === 0 && /capped/.test(R.DB.sharp_check_requests[0].detail.reason));
   await run();
   chk('refusals: and never retried', asks.length === 1);
+
+  /* ── closes ──────────────────────────────────────────────────────────── */
+  world({ sharp_lag_config: [{ key: 'dispatch', value: 'live' }],
+    sharp_flags: [{ flag_id: 1, model_key: 'SHARP-LAG', sport_key: 'basketball_nba', event_id: 'ev_c1', commence_time: at(30) },
+      { flag_id: 2, model_key: 'SHARP-LAG', sport_key: 'icehockey_nhl', event_id: 'ev_c2', commence_time: at(45) },
+      { flag_id: 3, model_key: 'SHARP-LAG', sport_key: 'americanfootball_nfl', event_id: 'ev_c3', commence_time: at(30) },
+      { flag_id: 4, model_key: 'SHARP-LAG', sport_key: 'basketball_nba', event_id: 'ev_c4', commence_time: at(120) },
+    ],
+    sharp_check_requests: [{ id: 1, purpose: 'trigger', category: 'sharp_check', sport_key: 'icehockey_nhl', event_id: 'ev_c2', requested_at: at(-20), decision: 'granted' }] });
+  out = await run();
+  const closeAsks = asks.map((a) => a.body.trigger + ':' + a.body.category + ':' + a.body.event_id).sort();
+  chk('closes: an NBA game with an open flag inside the hour gets one close check', JSON.stringify(closeAsks) === JSON.stringify(['close:sharp_check:ev_c1']), closeAsks);
+  chk('closes: not the NHL game checked 20 minutes ago, not football (capture closes it), not a game 2 h out', !asks.some((a) => ['ev_c2', 'ev_c3', 'ev_c4'].includes(a.body.event_id)));
 
   /* ── run cap ─────────────────────────────────────────────────────────── */
   world({ sharp_lag_config: [{ key: 'dispatch', value: 'live' }], sharp_triggers: Array.from({ length: 15 }, (_, i) => trig(i + 1, 'kalshi_move', 'ev' + i, at(60 + i))) });

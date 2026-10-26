@@ -148,6 +148,26 @@ a grade names its registry version, and none is accepted without it.
 Meeting both makes a model **eligible**. A person promotes it, through a
 validation report; no code does.
 
+## D. Grading
+
+After the start (10 minutes after, so the last board is in), each flag gets
+one grade (`sharp_flag_grades`, append-only, once):
+- **Close:** the last Pinnacle observation of the same side and point at or
+  before the start.
+  - If it is more than 90 minutes before the start, or absent, the flag is
+    **no close**: counted, with its reason, excluded from CLV.
+  - The no-close count and rate are a data-quality line on the record.
+- **Target close:** the target's last price before the start, attached.
+- **CLV (pp)** = closing Pinnacle fair − the flag's all-in cost. **Hit** =
+  CLV > 0.
+- **Lag to converge:** the first target observation after the flag whose gap
+  to the Pinnacle fair current at that moment is under **1.0 pp**. It is
+  censored at the start (never converged), and reported with the flag's
+  snapshot resolution.
+
+The record is computed straight from the append-only tables, with no edit
+step. It splits by sport, market and trigger: flags, graded, no close, average
+CLV, hit rate, average lag and resolution.
 
 
 

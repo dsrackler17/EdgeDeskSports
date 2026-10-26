@@ -16,6 +16,8 @@
      flags     DraftKings and Kalshi gaps of 2.5 pp+, the trigger behind a
                triggered check carried, fee_unverified, one per episode, none
                while the switch is off
+     grades    none before the registry link; then each started flag once,
+               the close within 90 minutes
      spend     no call to odds_gateway or the provider, no PATCH, no DELETE
    Run: node tools/sharp_lag/sharp_lag_fn.test.js
    =========================================================================== */
@@ -139,6 +141,25 @@ const cfg = (dispatch, extra) => [{ key: 'dispatch', value: dispatch || 'shadow'
   R.DB.kalshi_price_snapshots.push({ id: 13, ticker: 'KX-PHI', captured_at: at(-1), yes_bid: 0.62, yes_ask: 0.64 });
   out = await run({ steps: ['triggers'] });
   chk('triggers: with dispatch live, a new move is recorded live', R.DB.sharp_triggers.length === 4 && R.DB.sharp_triggers[3].mode === 'live');
+
+  /* ── grades ──────────────────────────────────────────────────────────── */
+  world({ sharp_lag_config: cfg(), odds_api_snapshots: [snap({ category: 'featured', sport_key: NFL.sport_key, last_request_id: 601, last_success_at: at(-10), body: nflBody([1.6, 2.5], [1.75, 2.15]) })] });
+  await run({ steps: ['ingest', 'flags'] });
+  const flagsMade = R.DB.sharp_flags.length;
+  /* the close: Pinnacle 40 minutes before the start, and DraftKings caught up */
+  R.DB.odds_api_snapshots.push(snap({ category: 'close', sport_key: NFL.sport_key, last_request_id: 602, last_success_at: at(200), body: nflBody([1.55, 2.6], [1.6, 2.4, 1.95]) }));
+  await F.runOnce({ now: at(201), steps: ['ingest'] });
+  out = await F.runOnce({ now: at(260), steps: ['grades'] });
+  chk('grades: none before SHARP-LAG is in the research registry, and the run says so', R.DB.sharp_flag_grades.length === 0 && out.grades.registered === false && out.warnings.some((w) => w.code === 'not_registered'));
+  R.DB.sharp_lag_config.push({ key: 'registry_ref:SHARP-LAG', value: 'v-1' });
+  out = await F.runOnce({ now: at(260), steps: ['grades'] });
+  const G = R.DB.sharp_flag_grades;
+  chk('grades: every started flag graded once, against the registry link', flagsMade > 0 && G.length === flagsMade && G.every((g) => g.registry_ref === 'v-1'), [flagsMade, G.length]);
+  const gdk = G.find((g) => R.DB.sharp_flags.find((f) => f.flag_id === g.flag_id).target_venue === 'draftkings' && R.DB.sharp_flags.find((f) => f.flag_id === g.flag_id).market === 'h2h');
+  chk('grades: the close is the Pinnacle observation 40 minutes before the start, and CLV is positive here', gdk && gdk.close_status === 'graded' && gdk.close_lead_min === 40 && gdk.clv_pp > 0 && gdk.hit === true, gdk);
+  chk('grades: DraftKings converged at the close snapshot (lag measured to the hourly resolution)', gdk && gdk.converged === true && gdk.lag_resolution_s != null);
+  await F.runOnce({ now: at(300), steps: ['grades'] });
+  chk('grades: a flag is graded once, ever', R.DB.sharp_flag_grades.length === flagsMade);
 
   /* ── spend ───────────────────────────────────────────────────────────── */
   chk('spend: no call outside the database and the published roster inputs (no gateway, no provider)', extCalls.length === 0, extCalls);
