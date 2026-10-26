@@ -275,7 +275,6 @@ function seededLedger(now) {
       const ROUTES = [
         ['#playerprops', 'v-research', 'v-pprops', 'research'], ['#playerprops/nfl', 'v-research', 'v-pprops', 'research'],
         ['#research/edges', 'v-research', 'v-edges', 'research'], ['#research/props', 'v-research', 'v-pprops', 'research'],
-        ['#research', 'v-research', 'v-football', 'research'],
         ['#research/football', 'v-research', 'v-football', 'research'], ['#research/ufc', 'v-research', 'v-ufc', 'research'],
         ['#research/lab', 'v-research', 'v-lab', 'research'], ['#research/cfb', 'v-research', 'v-football', 'research'],
         ['#research/tennis', 'v-research', 'v-football', 'research'], ['#research/rdesk', 'v-research', 'v-rdesk', 'research'],
@@ -297,6 +296,14 @@ function seededLedger(now) {
           st = await state(page);
           const ok = st.views.join() === r[1] && (!r[2] || st.panel.join() === r[2]) && st.seat.join() === r[3];
           chk('old route ' + r[0] + ' → ' + (r[2] || r[1]) + ' with ' + r[3] + ' lit', ok, st);
+        }
+        /* a bare #research (a bookmark from when Research was the landing page) opens Research for a reader with
+           nothing saved, whose landing would otherwise be the Overview (app.html navHashRoute) */
+        {
+          const F = await open(vp, '#research');
+          const fst = await state(F.page);
+          chk('a bare #research opens Research for a reader with nothing saved, not the Overview', fst.views.join() === 'v-research' && fst.seat.join() === 'research', fst);
+          await F.ctx.close();
         }
         chk('#portfolio/history opens the book\'s History tab', await (async () => { await page.goto(`http://127.0.0.1:${port}/app.html?h=1#portfolio/history`); await page.waitForFunction(() => typeof window.pfOpen === 'function'); await page.waitForTimeout(400); return page.evaluate(() => { const t = document.querySelector('#pfoHost .pfo-tab[data-v="history"]'); return !!t && t.getAttribute('aria-selected') === 'true'; }); })());
         chk('#portfolio/tracked opens what EdgeDesk tracked', await (async () => { await page.goto(`http://127.0.0.1:${port}/app.html?h=2#portfolio/tracked`); await page.waitForFunction(() => typeof window.pfOpen === 'function'); await page.waitForTimeout(400); return page.evaluate(() => document.getElementById('pfTracked').open && !document.getElementById('v-portfolio').classList.contains('hide')); })());
