@@ -29,6 +29,7 @@ on:
       - 'tools/foresight/**'
       - 'tools/personal/_pg.js'
       - 'tools/billing/_pgrest.js'
+      - 'tools/research_os/**'
       - 'tools/performance/ledger.js'
       - 'performance/ledger/forecasts/**'
       - 'performance/ledger/results/**'
@@ -98,3 +99,8 @@ jobs:
           MF_SQL_REQUIRED: '1'
           MF_E2E_REQUIRED: '1'
         run: node tools/foresight/pages.e2e.js
+      - name: The same record inside the terminal (the Research OS journey, tools/research_os/)
+        env:
+          ROS_SQL_REQUIRED: '1'
+          ROS_E2E_REQUIRED: '1'
+        run: node tools/research_os/journey.e2e.js

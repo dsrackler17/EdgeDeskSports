@@ -107,7 +107,10 @@ const NOW = F.NOW;
         localStorage.setItem('edgedesk_first_run_v1', JSON.stringify({ done: true }));
         localStorage.setItem('edgedesk_setup_v1', JSON.stringify({ done: true, at: '2026-01-01T00:00:00Z' }));
         localStorage.setItem('edgedesk_decision_onboarded_v1', JSON.stringify('2026-01-01T00:00:00Z'));
-        if (seed) Object.keys(seed).forEach((k) => localStorage.setItem(k, seed[k]));
+        /* a returning Research reader, so the terminal opens where the strip is (a reader with
+           nothing saved lands on the Overview: docs/research-os/DESIGN.md §3, held below) */
+        if (!seed || !seed.__fresh) { if (!localStorage.getItem('edgedesk_prefs')) localStorage.setItem('edgedesk_prefs', JSON.stringify({ lastTab: 'research', rememberTab: true, lastResearchSub: 'football' })); }
+        if (seed) Object.keys(seed).forEach((k) => { if (k !== '__fresh') localStorage.setItem(k, seed[k]); });
       } catch (e) { /* storage */ }
     }, o.seed || null);
     const seen = { live: 0, markets: 0, board: 0 };
@@ -126,6 +129,8 @@ const NOW = F.NOW;
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e && e.message || e)));
+    seen.slateFile = 0;
+    page.on('request', (r) => { if (/\/today\/slate\.json/.test(r.url())) seen.slateFile++; });
     await page.clock.install({ time: o.time != null ? o.time : NOW });
     await page.goto(base + url, { waitUntil: 'load' });
     return { ctx, page, errors, seen };
@@ -404,6 +409,30 @@ const NOW = F.NOW;
       await T.ctx.close();
     }
     M.board = 'none';
+
+    /* ── THE OVERVIEW: the same slate, one read ────────────────────── */
+    {
+      const O = await open(DESK, '/app.html', { seed: { __fresh: '1' } });
+      await O.page.waitForSelector('#ovQ .ovq-r[data-ov-row]', { timeout: 15000 });
+      chk('a reader with nothing saved lands on the Overview', await O.page.evaluate(() => !document.getElementById('v-overview').classList.contains('hide') && location.hash === '#overview'));
+      const ovIds = await O.page.$$eval('#ovQ > ol.ovq > .ovq-r[data-ov-row]', (els) => els.map((e) => e.getAttribute('data-ov-row')));
+      const stripIds = await O.page.$$eval('#gamesStrip .gm-card[data-id]', (els) => els.map((e) => e.getAttribute('data-id')));
+      chk('the Overview\'s Today lists the strip\'s games (the same slate, the reader\'s same day)', ovIds.length > 0 && ovIds.every((id) => stripIds.indexOf(id) >= 0), { ovIds, stripIds });
+      /* the Overview's documented order: live first, then, within live, the game with more of its research in place */
+      chk('live games first; within them, the one with research and a model first', ovIds[0] === 'nhl:espn:401802001' && ovIds[1] === 'ncaam:espn:401910003', ovIds.slice(0, 3));
+      chk('the 12:10 AM game is not today\'s on the Overview either', ovIds.indexOf('nhl:espn:401802005') < 0);
+      const ufc = await O.page.evaluate(() => (document.getElementById('ovLim') || {}).innerText || '');
+      chk('a sport whose schedule could not be read is a stated limitation, never an empty day', /Unable to load UFC/.test(ufc), ufc.slice(0, 300));
+      chk('no script errors on the Overview', O.errors.length === 0, O.errors);
+      await O.ctx.close();
+      /* the Overview reads the strip's load: it adds no request for the slate file (the terminal's free
+         price feed, lib/edgedesk_card_feed.js, reads it once more on its own, before and after this change) */
+      const Rr = await open(DESK, '/app.html');
+      await Rr.page.waitForSelector('#gamesStrip .gm-card[data-id]', { timeout: 15000 });
+      await Rr.page.waitForTimeout(500);
+      chk('the Overview adds no read of the slate file (' + O.seen.slateFile + ' with it, ' + Rr.seen.slateFile + ' on Research)', O.seen.slateFile === Rr.seen.slateFile, [O.seen.slateFile, Rr.seen.slateFile]);
+      await Rr.ctx.close();
+    }
 
     /* ── THE TERMINAL STILL WORKS ──────────────────────────────────── */
     const A = await open(DESK, '/app.html');

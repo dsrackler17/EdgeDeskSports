@@ -7,14 +7,17 @@
 
      node tools/signal_center/ui.e2e.js [--shots <dir>]   (SC_SQL_REQUIRED=1 in CI)
 
-     seat        Signals is the first of seven seats, labelled, unclipped, 44 px,
-                 at 1440 / 768 / 390 / 320; a tap is recorded as primary_nav_signals
+     seat        Signals is one of the navigation's seats (on a phone's bar and the
+                 desktop sidebar), labelled, unclipped, 44 px, at 1440 / 768 / 390 /
+                 320; a tap is recorded as primary_nav_signals
      routes      #signals, #signals/<sport>, #signals/s/<id>, #signals/dna,
                  #signals/coverage|alerts|method, and #signal-center (rewritten);
                  back and forward; leaving clears the hash; old routes still land
-     landing     a new reader lands on Signal Center when it is live; in shadow
-                 mode or when it is not deployed they are handed on to Research;
-                 a remembered tab still wins
+     landing     a new reader lands on the Overview (docs/research-os/DESIGN.md §3),
+                 whose Signals tile reads what these doors answer: the published
+                 count when live, "In review" in shadow mode, the operator's view
+                 for an operator, "Not live" when not deployed; a remembered tab
+                 still wins
      full        a Full Access reader sees the numbers that the database holds,
                  filters, sorts, pages, opens the evidence, the Model DNA, the
                  versions, and the graphic drawn from the stored payload (PNG
@@ -89,7 +92,7 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
   const noHScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
   const state = (page) => page.evaluate(() => {
     const views = [...document.querySelectorAll('section.view')].filter((v) => !v.classList.contains('hide')).map((v) => v.id);
-    const seat = [...document.querySelectorAll('.bottomnav button.on')].map((b) => b.dataset.v);
+    const seat = [...document.querySelectorAll('.bottomnav button.on[data-v]')].map((b) => b.dataset.v);
     const tab = [...document.querySelectorAll('#scHost .sc-tabs button.on')].map((b) => b.dataset.scView);
     return { views, seat, tab, hash: location.hash };
   });
@@ -110,13 +113,15 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       const W = vp.width;
       const { ctx, page, errors, tracked } = await open(vp, '', 'sub');
       const nav = await page.evaluate(() => {
-        const bs = [...document.querySelectorAll('.bottomnav button')].filter((b) => b.offsetParent !== null);
+        const bs = [...document.querySelectorAll('.bottomnav button[data-v], .bottomnav .nav-menu')].filter((b) => b.offsetParent !== null);
         const clipped = bs.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.dataset.v);
-        return { seats: bs.map((b) => b.dataset.v), labels: bs.map((b) => b.textContent.trim()), aria: bs.map((b) => b.getAttribute('aria-label')), on: bs.filter((b) => b.classList.contains('on')).map((b) => b.dataset.v),
+        return { seats: bs.map((b) => b.dataset.v), labels: bs.map((b) => b.innerText.trim()), aria: bs.map((b) => b.getAttribute('aria-label')), on: bs.filter((b) => b.classList.contains('on')).map((b) => b.dataset.v),
           clipped, minH: Math.min(...bs.map((b) => b.getBoundingClientRect().height)), minW: Math.min(...bs.map((b) => b.getBoundingClientRect().width)) };
       });
-      chk(W + ': seven seats, Signal Center first', nav.seats.join(',') === 'signals,research,card,portfolio,process,simulator,more', nav.seats);
-      chk(W + ': the seat reads Signals and is named Signal Center', nav.labels[0] === 'Signals' && nav.aria[0] === 'Signal Center', [nav.labels[0], nav.aria[0]]);
+      const want = W >= 1024 ? 'overview,research,signals,foresight,simulator,card,portfolio,performance,process,more' : 'overview,research,signals,card,portfolio,';
+      chk(W + ': Signals is a seat ' + (W >= 1024 ? 'in the sidebar' : 'on the bar') + ', third, after Overview and Research', nav.seats.join(',') === want, nav.seats);
+      const si = nav.seats.indexOf('signals');
+      chk(W + ': the seat reads Signals and is named Signal Center', si === 2 && nav.labels[si] === 'Signals' && nav.aria[si] === 'Signal Center', [nav.labels[si], nav.aria[si]]);
       chk(W + ': a returning reader still lands on their remembered Research', nav.on.join() === 'research', nav.on);
       chk(W + ': no seat label is clipped', nav.clipped.length === 0, nav.clipped);
       /* and with the wide fallback face a browser uses when web fonts are blocked (CI's runners) */
@@ -365,27 +370,40 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
 
     /* ============================================================ landing */
     {
+      /* the Overview's Signals tile, once its quiet read of sc_status / sc_pulse has answered */
+      const tile = async (page) => {
+        await page.waitForFunction(() => { const t = [...document.querySelectorAll('#ovSum .ov-tile')].filter((x) => /Signals/.test(x.textContent))[0]; return !!t && !/Checking/.test(t.textContent); }, null, { timeout: 15000 }).catch(() => null);
+        return page.evaluate(() => { const t = [...document.querySelectorAll('#ovSum .ov-tile')].filter((x) => /Signals/.test(x.textContent))[0]; return t ? t.innerText.replace(/\s+/g, ' ') : ''; });
+      };
+      const pulse24 = q("select count(*) from public.sc_signals where publication = 'PUBLISHED' and verification_state = 'VERIFIED' and not fixture and signal_at >= now() - interval '24 hours';");
       let o = await open({ width: 390, height: 844 }, '', 'sub', { fresh: true });
-      await waitCards(o.page); await o.page.waitForTimeout(600);
       let st = await state(o.page);
-      chk('landing: a new reader lands on Signal Center when it is live', st.views.join() === 'v-signals' && st.seat.join() === 'signals', st);
+      chk('landing: a new reader lands on the Overview', st.views.join() === 'v-overview' && st.seat.join() === 'overview' && st.hash === '#overview', st);
+      let t = await tile(o.page);
+      chk('landing: …whose Signals tile reads the server\'s own 24-hour count when live (' + pulse24 + ')', new RegExp('Signals ' + pulse24 + ' published in 24 h').test(t), t);
+      await o.page.click('#ovSum a.ov-tile[href="#signals"]');
+      await waitCards(o.page);
+      st = await state(o.page);
+      chk('landing: …and the tile opens Signal Center', st.views.join() === 'v-signals' && st.seat.join() === 'signals', st);
       await o.ctx.close();
       o = await open({ width: 390, height: 844 }, '', 'sub', { fresh: true, notDeployed: true });
-      await o.page.waitForTimeout(1500);
       st = await state(o.page);
-      chk('landing: with Signal Center not deployed, a new reader is handed on to Research', st.views.join() === 'v-research' && st.seat.join() === 'research', st);
+      t = await tile(o.page);
+      chk('landing: with Signal Center not deployed, the Overview says "not live", never a zero', st.views.join() === 'v-overview' && /Not live/.test(t) && /not deployed/.test(t), [st.views, t]);
       chk('landing: …without a script error', o.errors.length === 0, o.errors);
       await o.ctx.close();
       S.db.sql("update public.sc_config set value = '\"shadow\"' where key = 'mode';");
       o = await open({ width: 390, height: 844 }, '', 'free', { fresh: true });
-      await o.page.waitForTimeout(1500);
-      st = await state(o.page);
-      chk('landing: in shadow mode a reader is handed on to Research', st.views.join() === 'v-research', st);
+      t = await tile(o.page);
+      chk('landing: in shadow mode a reader is told it is in review, with no count', /In review/.test(t) && !/published in 24 h/.test(t), t);
       await o.ctx.close();
       o = await open({ width: 390, height: 844 }, '', 'admin', { fresh: true });
+      t = await tile(o.page);
+      chk('landing: in shadow mode an operator sees the count, marked as including shadow', /published in 24 h/.test(t) && /includes shadow/.test(t), t);
+      await o.page.click('#ovSum a.ov-tile[href="#signals"]');
       await waitCards(o.page); await o.page.waitForTimeout(600);
       st = await state(o.page);
-      chk('landing: in shadow mode an operator still lands on Signal Center', st.views.join() === 'v-signals', st);
+      chk('landing: …and Signal Center opens on the operator\'s shadow view', st.views.join() === 'v-signals', st);
       chk('landing: …and is told it is shadow mode', /Shadow mode/.test(await o.page.textContent('#sc-status')));
       await o.ctx.close();
       S.db.sql("update public.sc_config set value = '\"live\"' where key = 'mode';");

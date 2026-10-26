@@ -1752,6 +1752,37 @@ claims a model moved a market, a venue led the whole market, or a timing advanta
   - `npm run foresight:e2e`
   - `npm run foresight:dry-run` (no credentials).
 
+## The Research OS — one terminal, one game carried through it
+
+The terminal (`app.html`) opens on an **Overview**:
+- today's games, with what is researched, priced, saved and changed since the last visit;
+- the real states of Signal Center, the Simulator and Market Foresight;
+- the AI desk;
+- the reader's own workspace.
+
+From there, one game travels by its identifiers (the slate id and the research key, never a team
+name) into Research, Signals, Market Foresight (now inside the app, the same record as
+`/foresight/`), the Simulator, the AI desk, My Card and Portfolio. **Performance** puts
+EdgeDesk's model record and the reader's own record on one page, never combined.
+
+- **Navigation:** a sidebar on desktop (Research · Your workspace · More), and a five-seat bar
+  plus Menu on phones. Every old link still resolves. Ctrl/⌘ K or `/` opens search over the
+  slate, teams, saved items, places and the reader's own positions.
+- **Nothing new is computed or collected.** No pick table, simulation, scoring, AI backend or
+  Foresight calculation was added, and every read goes through an existing access door under the
+  reader's own token. Lists are never ordered by a model–market gap. Signal Center and Market
+  Foresight stay in whatever mode their databases hold (both start in shadow).
+- **Database:** `supabase/research_os.sql` only registers four navigation event names
+  (+ rollback).
+- **Where:** `lib/edgedesk_{context,shell,overview,search,perf_hub}.js`,
+  `lib/edgedesk_shell.css`, `foresight/{service,app}.js`, `tools/research_os/`,
+  `.github/workflows/research-os-tests.yml`.
+- **Docs:** [`docs/research-os/DESIGN.md`](docs/research-os/DESIGN.md) (design),
+  [`REPORT.md`](docs/research-os/REPORT.md) (verified results, limitations),
+  [`AUDIT.md`](docs/research-os/AUDIT.md) (the inventory it started from).
+- **Run it:** `npm run ros:test` (offline), then `npm run ros:e2e` (Chromium on a real
+  PostgreSQL: the whole journey at a desktop and a phone).
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means

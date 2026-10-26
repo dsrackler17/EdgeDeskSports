@@ -106,6 +106,13 @@ const CSV = [
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
   const tracked = [], fnCalls = [];
+  /* tap a seat the way a reader does: on a phone a seat that is not on the bar is in Menu's sheet
+     (docs/research-os/DESIGN.md §1) */
+  async function seat(page, v) {
+    const visible = await page.evaluate((x) => { const b = document.querySelector('.bottomnav button[data-v="' + x + '"]'); return !!b && b.offsetParent !== null && b.getBoundingClientRect().width > 0; }, v);
+    if (!visible) { await page.click('#navMenuBtn'); await page.waitForSelector('#edNav.open button[data-v="' + v + '"]', { state: 'visible', timeout: 5000 }); }
+    await page.click('.bottomnav button[data-v="' + v + '"]');
+  }
   async function open(viewport, opts) {
     opts = opts || {};
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, hasTouch: viewport.width < 700 });
@@ -539,12 +546,12 @@ const CSV = [
     await shot(page, 'desktop-coach');
     chk('what EdgeDesk tracked is folded under the coach', await page.evaluate(() => { const d = document.getElementById('pcTracked'); return !!d && !d.open && !!d.querySelector('#processHost'); }));
     /* an old #portfolio/coach link lands on the Process seat */
-    await page.click('.bottomnav button[data-v="portfolio"]');
+    await seat(page, 'portfolio');
     await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
     await page.evaluate(() => { location.hash = '#portfolio/coach'; });
     await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide') && /^#process(\/[a-z]+)?$/.test(location.hash), null, { timeout: 10000 });
     chk('an old #portfolio/coach link opens Process, and the link names the page shown', await page.evaluate(() => location.hash) === '#process/film' && /Film Room/i.test(await text(page, 'pcoHost')));
-    await page.click('.bottomnav button[data-v="portfolio"]');
+    await seat(page, 'portfolio');
     await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
 
     /* one combined book, filtered on request */
@@ -578,12 +585,12 @@ const CSV = [
       if (/SECRET-B/.test(await text(page))) { chk('reader B\'s position never appears (' + v + ')', false); }
     }
     chk('reader B\'s position never appears on any tab', !/SECRET-B/.test(await text(page)));
-    await page.click('.bottomnav button[data-v="process"]');
+    await seat(page, 'process');
     /* Process reopens on the coach page last read: the Film Room */
     await waitText(page, /Film Room[\s\S]*Week of Sep 7/i, 15000, 'pcoHost');
     chk('Process reopens on the page and week last read, and its link says so', await page.evaluate(() => location.hash) === '#process/film');
     chk('nor in Process', !/SECRET-B/.test(await text(page, 'pcoHost')));
-    await page.click('.bottomnav button[data-v="portfolio"]');
+    await seat(page, 'portfolio');
 
     /* "Add account" opens the grouped list; the ready card carries the server's all-time totals */
     await tab(page, 'accounts');
@@ -678,7 +685,7 @@ const CSV = [
       probability_source: 'calibrated', saved_at: SAVED, evaluated_at: SAVED,
       snapshot: { engine: 'opp_v3', decision_id: 'bd_e2e', model: { probability: 0.56, fair_american: -127, fair_line: -4.5, model_version: 'nfl_r2', calibration_version: 'cal_7' }, market_view: { consensus_line: -3, n_books: 6 } } };
     ({ ctx, page, errors } = await open({ width: 1280, height: 900 }, { card: CARD_ENTRY }));
-    await page.click('.bottomnav button[data-v="card"]');
+    await seat(page, 'card');
     await page.waitForSelector('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_1"]', { timeout: 20000 });
     t = await page.$eval('#eddCardHost [data-edd-entry="ce_e2e_1"]', (e) => e.innerText);
     chk('a saved Card entry is a workspace: View research · Before you enter · Record position · Remove', /View research/.test(t) && /Before you enter/.test(t) && /Record position/.test(t) && /Remove/.test(t), t);
@@ -711,7 +718,7 @@ const CSV = [
     chk('one tap stored the position, its immutable decision snapshot (the model\'s version, the saved price and how stale it was), the journal\'s researched price, and the Card\'s RECORDED event',
       recRow && recRow.src === 'EDGEDESK' && recRow.origin === 'CARD' && recRow.ref === 'ce_e2e_1' && recRow.model === 'nfl_r2' && recRow.fresh === 'STALE' && recRow.research === -110
       && +recRow.rec === 1 && +recRow.considered >= 1 && +recRow.path >= 2, recRow);
-    await page.click('.bottomnav button[data-v="card"]');
+    await seat(page, 'card');
     await page.waitForSelector('#eddCardHost [data-edd-act="card-open-record"]', { timeout: 15000 });
     chk('back on the Card, the entry reads Recorded in Portfolio and opens its record — no second record is offered',
       await page.$('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_1"]') === null
@@ -787,7 +794,7 @@ const CSV = [
     await noSideways(page, '390px calendar, September');
     await shot(page, 'phone-calendar-september');
     /* Process on a phone: the answer in the first screen, no chip explosion */
-    await page.click('.bottomnav button[data-v="process"]');
+    await seat(page, 'process');
     await waitText(page, /How is my process\?/i, 15000, 'pcoHost');
     const pp = await page.evaluate(() => {
       const segs = [...document.querySelectorAll('#pcoHost .pcx-nav .pcx-seg')], hero = document.querySelector('#pcoHost .pcx-hero');
@@ -805,7 +812,7 @@ const CSV = [
     await page.waitForSelector('#pcoHost .pcx-explore');
     await noSideways(page, '390px Explore');
     await shot(page, 'phone-explore');
-    await page.click('.bottomnav button[data-v="portfolio"]');
+    await seat(page, 'portfolio');
     await page.waitForSelector('#pfoHost .pfo-tab[data-v="history"]');
     await tab(page, 'history');
     chk('390px: history is cards, not a wide table', await page.evaluate(() => {
@@ -822,7 +829,7 @@ const CSV = [
     await shot(page, 'phone-form');
     await page.click('.pfo-sheet [data-act="close"]');
     /* the Card entry's actions and Record Position, on a phone */
-    await page.click('.bottomnav button[data-v="card"]');
+    await seat(page, 'card');
     await page.waitForSelector('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]', { timeout: 20000 });
     /* the Card repaints as its decisions, entries and health load, and a CI
        runner once measured 0×0 mid-repaint 300 ms after the first layout:

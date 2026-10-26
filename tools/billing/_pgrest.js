@@ -17,9 +17,11 @@
      a token from tokens{}      -> authenticated, with auth.uid() = that user
      anything else (anon key)   -> anon
 
-   Only the PostgREST features the functions use are implemented: select=,
-   eq./gt./lt./in.()/is.null/not.is.null filters, order=, limit=, on_conflict= with
-   merge-duplicates, PATCH and DELETE with filters, and /rpc with named arguments.
+   Only the PostgREST features the functions use are implemented: select=
+   (columns, col::text casts), eq./gt./lt./in.()/is.null/not.is.null filters,
+   order= (one or more columns), limit=, offset=, on_conflict= with
+   merge-duplicates, PATCH and DELETE with filters, and /rpc with named
+   arguments.
    =========================================================================== */
 const PG = require('../personal/_pg.js');
 const lit = PG.lit;
@@ -122,17 +124,22 @@ function make(db, opts) {
       const params = [...u.searchParams.entries()];
       if (method === 'GET') {
         const sel = u.searchParams.get('select') || '*';
-        const cols = sel === '*' ? '*' : sel.split(',').map(ident).join(', ');
+        const cols = sel === '*' ? '*' : sel.split(',').map((c) => {
+          const m = /^(.+)::text$/.exec(c);   /* col::text, as PostgREST casts it: the value as text, under its own name */
+          return m ? ident(m[1]) + '::text as ' + ident(m[1]) : ident(c);
+        }).join(', ');
         const where = typedFilters(params, t);
         const order = u.searchParams.get('order');
         let ord = '';
         if (order) {
-          const [c, d] = order.split('.');
-          ord = ' order by ' + ident(c) + (d === 'desc' ? ' desc' : ' asc');
+          ord = ' order by ' + order.split(',').map((o) => {
+            const [c, d] = o.split('.');
+            return ident(c) + (d === 'desc' ? ' desc' : ' asc');
+          }).join(', ');
         }
-        const lim = u.searchParams.get('limit');
+        const lim = u.searchParams.get('limit'), off = u.searchParams.get('offset');
         const sql = "select coalesce(json_agg(t), '[]'::json) from (select " + cols + ' from public.' + ident(table) +
-          (where.length ? ' where ' + where.join(' and ') : '') + ord + (lim ? ' limit ' + (+lim) : '') + ') t;';
+          (where.length ? ' where ' + where.join(' and ') : '') + ord + (lim ? ' limit ' + (+lim) : '') + (off ? ' offset ' + (+off) : '') + ') t;';
         return res(200, run(role, uid, sql));
       }
       if (method === 'POST') {
