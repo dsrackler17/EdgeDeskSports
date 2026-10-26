@@ -167,8 +167,11 @@ async function buildFixture() {
     console.log('desktop');
     let { ctx, page, errors } = await open({ width: 1440, height: 900 }, '');
     /* Props is a Research panel since the five-destination navigation
-       (docs/ia/NAVIGATION_AUDIT.md): Research › Props, with Research lit */
-    await page.waitForSelector('.research-sub button[data-sub="pprops"]');
+       (docs/ia/NAVIGATION_AUDIT.md): Research › Props, with Research lit. A reader with
+       nothing saved lands on the Overview (docs/research-os/DESIGN.md §1), so the path
+       starts at the Research seat, as a reader's does */
+    await page.click('.bottomnav button[data-v="research"]');
+    await page.waitForSelector('.research-sub button[data-sub="pprops"]', { state: 'visible' });
     await page.click('.research-sub button[data-sub="pprops"]');
     await page.waitForSelector('.pp-row', { timeout: 15000 });
     chk('Research › Props opens the Player Props panel', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide') && !document.getElementById('v-research').classList.contains('hide')
@@ -467,6 +470,16 @@ async function buildFixture() {
     chk('the phone drawer does not scroll sideways', await page.evaluate(() => { const d = document.getElementById('ppDrawer'); return d.scrollWidth <= d.clientWidth + 1; }));
     await shot(page, 'phone_drawer');
     chk('no page errors on the phone', errors.length === 0, errors);
+    await ctx.close();
+    /* …and a phone reader reaches it through the navigation, not only by link: the Research
+       seat on the bar, then Research › Props */
+    ({ ctx, page, errors } = await open({ width: 390, height: 844 }, ''));
+    await page.click('.bottomnav button[data-v="research"]');
+    await page.click('.research-sub button[data-sub="pprops"]');
+    await page.waitForSelector('.pp-card', { timeout: 15000 });
+    chk('a phone reader reaches Props from the bar: Research › Props, with Research lit', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide')
+      && document.querySelector('.research-sub button[data-sub="pprops"]').classList.contains('on') && document.querySelector('.bottomnav button[data-v="research"]').classList.contains('on')));
+    chk('no page errors reaching Props on the phone', errors.length === 0, errors);
     await ctx.close();
 
     /* a phone two hours on: cards stay decided on the latest capture, each

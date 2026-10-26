@@ -178,7 +178,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400 * 400, user: { id: 'e2e-reader', email: 'e2e@edgedesk.test', created_at: '2025-01-01T00:00:00Z' } }));
       } catch (_) { /* storage */ }
     });
-    let statusCalls = 0;
+    let failArmed = false;
     const status = { sport: 'nfl', competition: 'NFL', season: '2026', published_run_id: sc.published ? RUN_ID : null, published_at: sc.published ? run.published_at : null, input_snapshot_at: run.input_snapshot_at,
       n_sims: 3000, model_version: run.model_version, last_attempt_status: 'completed', last_attempt_at: run.completed_at, comparison_status: 'completed', comparison_at: run.completed_at };
     const nstatus = { ...status, sport: 'nhl', competition: 'NHL', season: '2026-27', published_run_id: sc.published ? NHL_RUN_ID : null, n_sims: 1000, model_version: nrun.model_version, comparison_status: null, comparison_at: null };
@@ -206,7 +206,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
         const gstatus = golf.map((g) => ({ ...status, sport: 'golf', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
         const tstatus = tennis.map((g) => ({ ...status, sport: 'tennis', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, cstatus, ...gstatus, ...tstatus]); }
+        if (/rpc\/sim_public_status/.test(u)) { if (sc.failSecond && failArmed) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, cstatus, ...gstatus, ...tstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
         const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : /sport=eq\.tennis|ffffffff-/.test(u) ? tennisOf(u) : null;
         /* the tennis reader first asks for every tennis run (its draw picker's names), then each competition's */
@@ -230,6 +230,10 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     await page.waitForFunction(() => typeof (window as any).show === 'function' && !!(window as any).EDSimUI, null, { timeout: 30000 });
     await page.evaluate(() => (window as any).show('simulator'));
     await page.waitForTimeout(700);
+    /* failSecond: once the Simulator's first results are on screen, every status read fails, as a refresh that
+       loses the database would. (Counting reads would also count the Overview's own status read at the landing,
+       docs/research-os/DESIGN.md §3, and fail the Simulator's first load instead of its refresh.) */
+    if (sc.failSecond) { await page.waitForFunction(() => document.querySelectorAll('#simHost .sm-club').length > 0, null, { timeout: 15000 }); failArmed = true; }
     return { ctx, page, errors };
   }
   const shot = async (page: any, name: string) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true }); } };
@@ -239,7 +243,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
       const { ctx, page, errors } = await open(vp, '', { entitled: true, published: true });
-      T.chk(W + ': the Simulator seat is in the bottom bar and active', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="simulator"]'); return !!b && b.classList.contains('on'); }));
+      T.chk(W + ': the Simulator seat is in the navigation and active', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="simulator"]'); return !!b && b.classList.contains('on'); }));
       const t = await text(page);
       T.chk(W + ': title view: EXPERIMENTAL, simulated seasons, inputs time and the ± legend', /EXPERIMENTAL/.test(t) && /3,000 simulated seasons/.test(t) && /95% Monte Carlo interval/.test(t));
       T.chk(W + ': 32 club cards with probability and fair odds', (await page.locator('#simHost .sm-club').count()) === 32 && /fair odds/.test(t));

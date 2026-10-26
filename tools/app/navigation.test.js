@@ -421,7 +421,8 @@ has(APP, "var name=kind==='primary'?'primary_nav_'+dest:'secondary_nav_opened';"
 /* Signal Center: its own hash, its long-name alias, and a landing that never strands a reader */
 has(APP, "if(/^#signal-center(?:\\/|$)/.test(h)){h='#signals'+h.slice(14);", '#signal-center is rewritten to #signals');
 has(APP, "if(/^#signals(?:\\/|$)/.test(h)){", 'Signal Center routes its own #signals hashes');
-has(APP, "else if(_fresh){show('overview');}", 'a new reader lands on the Overview (docs/research-os/DESIGN.md §3)');
+has(APP, "else if(_fresh){edLandDefault();}", 'a reader with nothing saved takes the default landing (docs/research-os/DESIGN.md §1)');
+has(APP, "if(to==='research')researchGo((prefs().lastResearchSub)||'football');else show('overview');", '…the Overview, or Research for a new account in its first-run window (EDShell.landing)');
 has(APP, "landing:landing,onHandoff:function(){if(!$('v-signals').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');}", 'Signal Center\'s landing hand-off to Research is kept for any caller that opens it as a landing');
 has(APP, "edNavTrack('secondary','research:'+b.dataset.sub)", 'Research tabs are recorded');
 

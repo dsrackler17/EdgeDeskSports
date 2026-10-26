@@ -70,8 +70,16 @@ Compatibility:
 * Record keeps its own view; Performance is now its owner in the navigation.
 * A seat tap pushes a history entry (it used to replace the current one), so
   Back and Forward walk the reader's own path.
-* Landing: a deep link wins; a new account still sees Setup; otherwise the
-  remembered tab, and Overview when there is none.
+* Landing, in order:
+  1. A deep link wins.
+  2. A new account sees Setup once. Setup hands over to Research.
+  3. Otherwise the remembered tab.
+  4. With none, `EDShell.landing()` decides. A new account (its first 14
+     days, before it puts the first-run panel away) starts on Research, where
+     `lib/edgedesk_first_run.js` puts "Here's what EdgeDesk found today" above
+     the board. Every other reader starts on the Overview. The window is the
+     first-run module's own, and `tools/research_os/research_os.test.js`
+     holds the two equal.
 
 Keyboard: Ctrl/⌘ K or `/` opens search. `/` is ignored while typing or while a
 visible dialog is open.

@@ -424,7 +424,7 @@ function seededLedger(now) {
       await shot(page, 'setup-3-' + W);
       await page.click('#setupHost [data-su="enter"]');
       st = await state(page);
-      chk(W + ': Enter EdgeDesk lands on the Overview', st.views.join() === 'v-overview', st);
+      chk(W + ': Enter EdgeDesk lands on Research', st.views.join() === 'v-research', st);
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
       st = await state(page);

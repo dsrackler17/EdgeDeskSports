@@ -1,10 +1,18 @@
 # Research OS — delivery report (2026-10-26)
 
 Branch `claude/edgedesk-sports-research-os-o6vqxg`, started from `main` at
-`0536b76a8` and merged with `main` up to `1c3b5c07a`. **Not merged into `main`,
-not deployed.** Production could not be reached
-from the build environment, so every result below comes from this repository,
-a local PostgreSQL 16 and Chromium (§10).
+`0536b76a8`.
+
+**How it reached `main`.** Pull request #807 merged the branch at `7192d098`
+(merge `afe9815a2`, 2026-10-26 14:56 UTC), 17 seconds after it was opened and
+before any check had run. That head still had the integration defects listed
+in §7: the first-run panel hidden from new trials, the graphic module's cache
+version, and four browser suites. The follow-up pull request rebases their
+fixes onto `main`.
+
+**What was not verified.** Production could not be reached from the build
+environment, so whether `main` is already published is not known. Every result
+below comes from this repository, a local PostgreSQL 16 and Chromium (§10).
 
 ## 1. Architecture audit
 
@@ -163,6 +171,10 @@ verbatim. This section records what was built and checked by hand.
 | A bare `app.html#research` bookmark reached Research only because Research was the default landing page | `navigation.e2e.js`: "a bare #research opens Research for a reader with nothing saved" | lands on the Overview (`a4ed530e4`) | 188 of 188 |
 | The phone Menu sheet's Close button was 38 px | `navigation.e2e.js`: "every seat in the sheet is a 44px tap target" | 38 | passes |
 | The journey left its PostgreSQL cluster running after every run | checked by listing `postgres -D` processes after each run | 10 clusters left | none |
+| A new trial reader landed on the Overview, so the first-run panel ("Here's what EdgeDesk found today", which lives on Research) was never seen; Setup also handed over to the Overview | `tools/funnel/first_run.e2e.js` (green on `main`); new checks: the panel is on screen on arrival, an older account lands on the Overview, and so does a new account that put the panel away | the new on-screen check fails, then the 30 s timeout. Its "WATCH" check failed only because the hidden panel's text lost its layout spaces ("Buffalo BillsWATCH"). The classification itself is unchanged | 56 of 56; `EDShell.landing()` unit checks, with parity against `lib/edgedesk_first_run.js` |
+| The first merge with `main` gave the matchup graphic's renderer (`edgedesk_game_graphic.js`) a new cache version but not the module drawn with it (`edgedesk_sport_graphic.js`) | `tools/sport_graphic/sport_graphic.test.js` ("with the renderer's version") | 1501 passed, 1 failed | 1502 of 1502 (and the game research one-version rule, 252 of 252) |
+| Player Props' browser suite waited for Research › Props on a landing that is no longer Research | `tools/props/props_ui.e2e.js:171` | timeout | 140 of 140: through the Research seat on desktop, and a new check of the phone bar's path |
+| The AI desk's browser suite tapped Process on the phone bar, where it no longer is | `tools/intelligence/intel_ui.e2e.js` | timeout after 62 checks | 158 of 158: through Menu, as a reader does |
 
 **Tests changed with the IA (assertions rewritten, none removed):**
 `tools/app/navigation.test.js` / `.e2e.js`,
@@ -191,7 +203,7 @@ the landing page's list to be exactly `app.html`'s `NAV_PRIMARY`, not six.
 
 * **What the 404 lines are.** Every 404 console line is a browser network
   log for a stubbed door, plus the two pre-existing files above.
-* **One extra read on the game page:** `rpc/mf_status`, the Foresight preview
+* **One extra read on the game page:** Market Foresight's status door, for the Foresight preview
   on the "Keep researching" rail, memoized for a minute. Until Foresight is
   deployed it answers 404 and the rail says "not deployed".
 * **The Overview landing makes fewer reads than main's Research landing.**
@@ -234,7 +246,7 @@ first 5 seconds.
 
 | Layer | State | What turns it on |
 |---|---|---|
-| The terminal changes (shell, Overview, search, Performance, game rail, in-app Foresight) | in this PR; **not merged** | merging to `main` publishes `app.html` and `lib/` (static site) |
+| The terminal changes (shell, Overview, search, Performance, game rail, in-app Foresight) | **on `main`** since #807 (`7192d098`), with the defects of §7; their fixes are in the follow-up pull request | `main` is the static site's source; publication not verified from here |
 | `supabase/research_os.sql` (four event names) | **not applied** | the SQL editor; optional, analytics only |
 | Market Foresight | built and tested, **not deployed**; starts in **shadow** | its own deploy steps, then [GO_LIVE_CHECKLIST.md](../market-foresight/GO_LIVE_CHECKLIST.md); **not switched live by this work** |
 | Signal Center | built and tested, **not deployed** (README, 2026-10-23); starts in shadow | its own deploy steps |

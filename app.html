@@ -4093,7 +4093,7 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_game_graphic.js?v=20261026ros2"></script>
 <!-- the matchup graphic for every other sport: college basketball, the WNBA, MLB, college
      baseball and UFC bouts, drawn by the football template (docs/game-research/SPORTS.md) -->
-<script src="/lib/edgedesk_sport_graphic.js?v=20261026sg1"></script>
+<script src="/lib/edgedesk_sport_graphic.js?v=20261026ros2"></script>
 <script src="/lib/edgedesk_game_view.js?v=20261026ros2"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
@@ -7107,6 +7107,15 @@ function rsDatasetHTML(modId){
    researchGo() write their hash with replaceState (a programmatic show — the boot landing, a
    redirect — must not leave a dead Back step), so a reader's own tap turns that write into a new
    entry, and Back / Forward walk the places they visited. */
+/* THE DEFAULT LANDING (lib/edgedesk_shell.js EDShell.landing): Research for a new account in its first-run
+   window, where lib/edgedesk_first_run.js puts "Here's what EdgeDesk found today" above the board; the
+   Overview for every other reader. Only asked when no deep link and no remembered tab decided. */
+function edLandDefault(){
+  var to='overview';
+  try{var fr=null;try{fr=JSON.parse(localStorage.getItem('edgedesk_first_run_v1')||'null');}catch(_){}
+    if(window.EDShell&&EDShell.landing)to=EDShell.landing(edUser(),fr,Date.now());}catch(_){}
+  if(to==='research')researchGo((prefs().lastResearchSub)||'football');else show('overview');
+}
 function navSeatPush(fn){
   var before=location.pathname+location.search+location.hash;
   fn();
@@ -21340,14 +21349,14 @@ try{applyPrefs();renderAvatar();loadSubStatus();
   /* a reader with no saved preferences at all is new here: the Overview is
      where research starts (what is on, what has research, what changed), and
      it reads well with nothing saved and with any optional layer missing */
-  else if(_fresh){show('overview');}
+  else if(_fresh){edLandDefault();}
   else if(_t==='research')researchGo(_p.lastResearchSub||'football');
   /* The markup now rests on Research -> Football, so EVERY other remembered tab
      has to be routed explicitly. Before this, 'edges' was the resting state and
      the branch below skipped it; leaving that skip in place would have stranded
      an Edges user on Research. */
   else if(_t&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t); /* legacy lastTab ('cfb'…) routes into the shell via show() */
-  else show('overview');                                     /* no usable memory: the default destination */
+  else edLandDefault();                                      /* no usable memory: the default destination */
 }catch(_e){}
 
 /* ================= ADDED: BET DISCIPLINE ENGINE (window.Discipline) ================= */
