@@ -1,0 +1,654 @@
+{
+"schema": "edgedesk_cfb_altitude_research_fixture_v1",
+"source": "football/game_research/current.json at 23282594a1faa4b7da4f8f5396be4d68e6702a2d, generated 2026-10-17T22:38:26.815Z: the last committed research snapshot before kickoff that carried Notre Dame at BYU. The game entry is copied unchanged; the envelope is not.",
+"envelope": {
+"schema": "edgedesk_game_research_current_v1",
+"version": "edgedesk_game_snapshot/1"
+},
+"game": {
+"schema": "edgedesk_game_research_v1",
+"version": "edgedesk_game_snapshot/1",
+"snapshot_id": "gr1-513f0619a9a868b3",
+"generated_at": "2026-10-17T22:38:26.815Z",
+"league": "cfb",
+"game_id": "401856809",
+"game_key": "cfb|401856809",
+"season": 2026,
+"week": 7,
+"week_label": "Week 7",
+"kickoff": "2026-10-17T23:30:00.000Z",
+"kickoff_tbd": false,
+"kickoff_text": {
+"date": "Sat, Oct 17",
+"time": "7:30 PM ET",
+"text": "Sat, Oct 17 · 7:30 PM ET",
+"zone": "ET"
+},
+"venue": "LaVell Edwards Stadium",
+"neutral_site": false,
+"context": "Independents vs Big 12",
+"home": {
+"name": "BYU",
+"short": "BYU",
+"key": "byu",
+"code": "byu",
+"abbr": "BYU",
+"color": "#0047ba",
+"alt_color": "#8aa0c8",
+"on_color": "#ffffff",
+"identity_source": "ESPN team identity (NCAAM data pack, team 252)",
+"record": {
+"text": "5-0",
+"as_of": "2026-10-17T22:13:50.445Z",
+"source": "ESPN scoreboard record"
+},
+"poll_rank": {
+"rank": 8,
+"source": "ESPN scoreboard (AP/CFP poll rank)",
+"as_of": "2026-10-17T22:13:50.445Z"
+}
+},
+"away": {
+"name": "Notre Dame",
+"short": "Notre Dame",
+"key": "notredame",
+"code": "notredame",
+"abbr": "ND",
+"color": "#062340",
+"alt_color": "#8aa0c8",
+"on_color": "#ffffff",
+"identity_source": "ESPN team identity (NCAAM data pack, team 87)",
+"record": {
+"text": "6-0",
+"as_of": "2026-10-17T22:13:50.445Z",
+"source": "ESPN scoreboard record"
+},
+"poll_rank": {
+"rank": 2,
+"source": "ESPN scoreboard (AP/CFP poll rank)",
+"as_of": "2026-10-17T22:13:50.445Z"
+}
+},
+"model": {
+"available": true,
+"status": "PREDICTED",
+"reason": null,
+"version": "edgedesk_cfb_p4_v1.0.0",
+"built_at": "2026-10-17T18:09:36.360Z",
+"source": "football/fbs/slate.json",
+"home_margin": -3.2,
+"fair": {
+"home_line": 3.2,
+"text": "Notre Dame -3.2",
+"favorite": "away",
+"favorite_team": "Notre Dame",
+"near_pickem": false,
+"display": -3.2
+},
+"total": 51.2,
+"total_exact": 51.2,
+"scores": {
+"home": 24,
+"away": 27.2,
+"decimals": 1,
+"text": "Notre Dame 27.2 — BYU 24.0",
+"note": null
+},
+"headline_scores": {
+"home": "24",
+"away": "27",
+"whole": true,
+"note": null
+},
+"display": {
+"policy": "football_half_point_v1",
+"spread": {
+"text": "Notre Dame −3.0",
+"line_text": "−3.0",
+"home_line": 3,
+"favorite": "away",
+"pk": false,
+"raw_text": "Notre Dame −3.2",
+"note": null
+},
+"total": {
+"text": "51.0",
+"value": 51,
+"raw_text": "51.2"
+},
+"score": {
+"label": "Projected score",
+"home": 24,
+"away": 27,
+"text": "Notre Dame 27, BYU 24",
+"expected": {
+"home": 24,
+"away": 27.2
+},
+"expected_text": "Notre Dame 27.20, BYU 24.00",
+"note": null
+},
+"rounding_note": "Fair spread and total are shown at the nearest half point; unrounded, the projection is Notre Dame by 3.20 with a total of 51.20."
+},
+"win_prob": {
+"home": 0.4135,
+"away": 0.5865
+},
+"win_display": {
+"home": "41%",
+"away": "59%",
+"home_pct": 41,
+"away_pct": 59
+},
+"fair_ml": {
+"home": 142,
+"away": -142,
+"label": "EdgeDesk model estimate · not a sportsbook price"
+},
+"range80": {
+"lo": -25.2,
+"hi": 16.8,
+"text": "Notre Dame by 25 to BYU by 17",
+"basis": "the champion’s empirical college margin PMF, conditioned on the current market spread as the engine conditions it, re-centred on EdgeDesk’s fair margin and stretched to this game’s sigma"
+},
+"sigma": 14.6,
+"distribution_basis": "the champion’s empirical college margin PMF, conditioned on the current market spread as the engine conditions it, re-centred on EdgeDesk’s fair margin and stretched to this game’s sigma"
+},
+"confidence": {
+"kind": "reliability",
+"score": 88,
+"grade": "STRONG",
+"label": "Reliability 88/100 · STRONG",
+"main_deduction": "every source that covers Notre Dame failed or held nothing current: espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Notre Dame’s absences cannot be assessed: no current availability read for this game"
+},
+"data": {
+"status": "OK",
+"warnings": [],
+"faults": []
+},
+"units": {
+"of": 138,
+"source": "football/rankings/current.json",
+"as_of": "2026-10-17T18:08:39.540Z",
+"label": "Week 7 ratings",
+"rows": [
+{
+"key": "overall",
+"home": {
+"rank": 21,
+"of": 138,
+"value": 6.78
+},
+"away": {
+"rank": 1,
+"of": 138,
+"value": 15.87
+}
+},
+{
+"key": "offense",
+"home": {
+"rank": 22,
+"of": 138,
+"value": 59.2
+},
+"away": {
+"rank": 11,
+"of": 138,
+"value": 63.2
+}
+},
+{
+"key": "defense",
+"home": {
+"rank": 18,
+"of": 138,
+"value": 59.2
+},
+"away": {
+"rank": 2,
+"of": 138,
+"value": 70.2
+}
+},
+{
+"key": "run_offense",
+"home": {
+"rank": 5,
+"of": 138,
+"value": 68.8
+},
+"away": {
+"rank": 38,
+"of": 138,
+"value": 55.5
+}
+},
+{
+"key": "pass_offense",
+"home": {
+"rank": 56,
+"of": 137,
+"value": 50.3
+},
+"away": {
+"rank": 6,
+"of": 137,
+"value": 66.5
+}
+},
+{
+"key": "run_defense",
+"home": {
+"rank": 27,
+"of": 138,
+"value": 63.4
+},
+"away": {
+"rank": 1,
+"of": 138,
+"value": 84.7
+}
+},
+{
+"key": "pass_defense",
+"home": {
+"rank": 17,
+"of": 138,
+"value": 62.4
+},
+"away": {
+"rank": 8,
+"of": 138,
+"value": 65.7
+}
+},
+{
+"key": "special_teams",
+"home": {
+"rank": 14,
+"of": 130,
+"value": 52.3
+},
+"away": {
+"rank": 27,
+"of": 130,
+"value": 51.7
+}
+},
+{
+"key": "qb",
+"home": {
+"rank": 26,
+"of": 138,
+"value": 60.9
+},
+"away": {
+"rank": 5,
+"of": 138,
+"value": 64.4
+}
+},
+{
+"key": "ol",
+"home": {
+"rank": 43,
+"of": 138,
+"value": 53.8
+},
+"away": {
+"rank": 35,
+"of": 138,
+"value": 54.7
+}
+},
+{
+"key": "dl",
+"home": {
+"rank": 23,
+"of": 138,
+"value": 57.8
+},
+"away": {
+"rank": 5,
+"of": 138,
+"value": 63.8
+}
+},
+{
+"key": "continuity",
+"home": {
+"rank": 20,
+"of": 138,
+"value": 55.3
+},
+"away": {
+"rank": 10,
+"of": 138,
+"value": 57.5
+}
+},
+{
+"key": "talent",
+"home": {
+"rank": 14,
+"of": 138,
+"value": 62.3
+},
+"away": {
+"rank": 4,
+"of": 138,
+"value": 68.9
+}
+}
+]
+},
+"strength": {
+"neutral_gap": 9.1,
+"home_rating": 6.78,
+"away_rating": 15.87,
+"basis": "EdgeDesk team strength ratings (ETSR): their difference is a neutral-field spread; home field is applied by the matchup layer, not the rating"
+},
+"drivers": {
+"rows": [
+{
+"key": "rating",
+"label": "Team-strength edge (opponent-adjusted results, neutral field)",
+"points": 6.44,
+"favors": "away",
+"favors_team": "Notre Dame"
+},
+{
+"key": "hfa",
+"label": "Home field",
+"points": 4.08,
+"favors": "home",
+"favors_team": "BYU"
+},
+{
+"key": "matchup",
+"label": "Stylistic matchup",
+"points": 0.84,
+"favors": "away",
+"favors_team": "Notre Dame"
+}
+],
+"reconciles": true,
+"basis": "cfb_engine_terms",
+"unpriced": [
+"Quarterback / personnel",
+"Reported availability",
+"Rest and schedule",
+"Travel",
+"Conference strength",
+"Rivalry situational effect"
+]
+},
+"qb": {
+"home": {
+"name": "Bear Bachmeier",
+"status": "PREVIOUS_GAME",
+"confirmed": false,
+"contested": false,
+"basis": "started the last game; no announcement for this one",
+"source": "cfbfastR-data player_stats — play attribution",
+"as_of": "2026-10-10T02:15:00.000Z"
+},
+"away": {
+"name": "CJ Carr",
+"status": "PREVIOUS_GAME",
+"confirmed": false,
+"contested": false,
+"basis": "started the last game; no announcement for this one",
+"source": "cfbfastR-data player_stats — play attribution",
+"as_of": "2026-10-10T19:30:00.000Z"
+}
+},
+"weather": null,
+"altitude_travel": {
+"neutral_site": false,
+"venue": {
+"name": "LaVell Edwards Stadium",
+"elev_ft": 4633,
+"confidence": "HIGH",
+"source": "cfbfastr_cfb_teams_2026",
+"located_by": "schedule venue id"
+},
+"home": {
+"team": "BYU",
+"usual_elev_ft": 4633,
+"usual_venue": "LaVell Edwards Stadium",
+"gain_ft": 0,
+"direction": "none",
+"distance_mi": 0,
+"tz_change_h": 0,
+"rest_days": 8,
+"resident_high": true,
+"recent_high_exposure": true,
+"ratio": 1,
+"ratio_ge6": false
+},
+"away": {
+"team": "Notre Dame",
+"usual_elev_ft": 731,
+"usual_venue": "Notre Dame Stadium",
+"gain_ft": 3902,
+"direction": "gain",
+"distance_mi": 1325,
+"tz_change_h": -2,
+"rest_days": 7,
+"resident_high": false,
+"recent_high_exposure": false,
+"ratio": 6.34,
+"ratio_ge6": true
+},
+"focus": "away",
+"exposure": {
+"class": "HIGH",
+"label": "High altitude exposure",
+"team": "Notre Dame",
+"gain_ft": 3902,
+"near_bucket_edge": false
+},
+"support": {
+"state": "NOT_ESTABLISHED",
+"text": "Not established: in 13,511 FBS home games 2006–2025, home teams hosting a visitor that climbed 3,000+ ft beat EdgeDesk’s pregame number by +1.03 pts more than other home teams (95% CI −0.18 to +2.23; 651 games at 14 venues). Out of sample the adjustment did not pass its validation gates, so it moves 0 points."
+},
+"adjustment": {
+"status": "SHADOW",
+"applied": false,
+"applied_points": 0,
+"shadow_points": 0.76,
+"model": "cat_3000",
+"model_version": "cfb_altitude_v1.0.0",
+"reason": "research only: the altitude adjustment has not passed its validation gates (REJECTED)"
+},
+"model_label": "Research only",
+"model_text": "0.0 pts applied to EdgeDesk’s number, pending validation.",
+"interpretation": [
+"Notre Dame normally plays at 731 ft and this game is at 4,633 ft — 3,902 ft higher.",
+"Historical studies of college football find a possible disadvantage for visitors climbing this far, but its size for any one game is uncertain.",
+"Notre Dame travels about 1,325 miles and crosses 2 time zones."
+],
+"provenance": [
+"LaVell Edwards Stadium: 4,633 ft (HIGH confidence; public provider value, 3 sources within 1 ft)",
+"Notre Dame normal venue Notre Dame Stadium: 731 ft (modal home venue of 6 scheduled home games in 2026)"
+],
+"not_claimed": "EdgeDesk does not claim altitude causes missed tackles, penalties, turnovers or late-game collapses; none of those has been validated.",
+"usable": true,
+"missing": []
+},
+"risks": [
+{
+"severity": "high",
+"text": "EdgeDesk’s own models disagree (SD 4.8 pts across 3 models)."
+},
+{
+"severity": "high",
+"text": "Integrity check failed: 1 book behind the consensus (at least 2 required at this size)."
+},
+{
+"severity": "high",
+"text": "Integrity check failed: Notre Dame: availability feed fetch failed — abnormal missing data."
+}
+],
+"scenarios": [],
+"distribution": {
+"basis": "lib/edgedesk_fairline.js on the same slate",
+"markets": {
+"spread": {
+"method": "ENGINE",
+"status": "PROVISIONAL",
+"tier": "RESEARCH"
+},
+"total": {
+"method": "KERNEL_JOINT",
+"status": "CALIBRATED",
+"tier": "RESEARCH"
+},
+"moneyline": {
+"method": "NORMAL_CAL",
+"status": "PROVISIONAL",
+"tier": "RESEARCH"
+},
+"team_total": {
+"method": "KERNEL_JOINT",
+"status": "PROVISIONAL",
+"tier": "RESEARCH"
+}
+},
+"total": {
+"fair": 48.9,
+"p10": 29.2,
+"p90": 71.6,
+"sd": 16.5
+},
+"home_points": {
+"fair": 21.2,
+"p10": 7.4,
+"p90": 37.7
+},
+"away_points": {
+"fair": 26.9,
+"p10": 12.8,
+"p90": 42.8
+}
+},
+"insights": [
+{
+"id": "strength",
+"family": "strength",
+"icon": "bars",
+"title": "TEAM STRENGTH",
+"team": "away",
+"short": "Notre Dame +6.4 pts on a neutral field",
+"text": "Notre Dame is the stronger team by 6.4 points on a neutral field (the projection’s opponent-adjusted team-strength term). EdgeDesk’s power rankings have them #1 and #21 of 138.",
+"strength": 0.874,
+"evidence": {
+"points": 6.44,
+"term": "rating"
+}
+},
+{
+"id": "run_clash_home",
+"family": "run",
+"icon": "run",
+"title": "STRENGTH ON STRENGTH",
+"team": null,
+"short": "BYU’s run offense (#5) vs Notre Dame’s run defense (#1)",
+"text": "Two of the best units in the country meet: BYU’s run offense (#5 of 138) against Notre Dame’s run defense (#1 of 138).",
+"strength": 0.4065,
+"evidence": {
+"ranks": [
+5,
+1
+],
+"of": [
+138,
+138
+],
+"units": [
+"run_offense",
+"run_defense"
+]
+}
+},
+{
+"id": "home_field",
+"family": "home",
+"icon": "home",
+"title": "HOME FIELD",
+"team": "home",
+"short": "BYU +4.1 pts for playing at home",
+"text": "Home field is worth 4.1 points to BYU in EdgeDesk’s projection (the engine’s home-field term).",
+"strength": 0.3497,
+"evidence": {
+"points": 4.08,
+"term": "hfa",
+"margin": -3.2
+}
+}
+],
+"checks": {
+"ok": true,
+"passed": [
+"scores_reconcile",
+"headline_scores_within_tolerance",
+"win_probabilities_sum",
+"win_display_sums_100",
+"winner_agrees",
+"model_moneyline_restates_probability",
+"total_plausible",
+"display_from_raw",
+"range_contains_projection",
+"ranks_in_range"
+],
+"failed": []
+},
+"history": [
+{
+"snapshot_id": "gr1-94228e62c882acc8",
+"at": "2026-10-17T17:32:12.940Z",
+"fair_home_line": 3.2,
+"total": 51.2,
+"home_win": 0.4135
+},
+{
+"snapshot_id": "gr1-673512fa2279de80",
+"at": "2026-10-17T18:08:45.643Z",
+"fair_home_line": 3.2,
+"total": 51.2,
+"home_win": 0.4135
+},
+{
+"snapshot_id": "gr1-d6b92f5242350dc8",
+"at": "2026-10-17T19:07:53.203Z",
+"fair_home_line": 3.2,
+"total": 51.2,
+"home_win": 0.4135
+},
+{
+"snapshot_id": "gr1-5b28637e0be12d43",
+"at": "2026-10-17T20:08:02.672Z",
+"fair_home_line": 3.2,
+"total": 51.2,
+"home_win": 0.4135
+},
+{
+"snapshot_id": "gr1-e703d349ed1c2f08",
+"at": "2026-10-17T22:07:49.089Z",
+"fair_home_line": 3.2,
+"total": 51.2,
+"home_win": 0.4135
+},
+{
+"snapshot_id": "gr1-513f0619a9a868b3",
+"at": "2026-10-17T22:38:26.815Z",
+"fair_home_line": 3.2,
+"total": 51.2,
+"home_win": 0.4135
+}
+],
+"probability_sheet": "MATCHED"
+}
+}
