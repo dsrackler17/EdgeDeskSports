@@ -50315,7 +50315,7 @@ function fbEnsureEngine(){
        board (without them the v1 engine prices, as before) */
     .then(function(){return fbScript('football/nfl_model.js').then(function(){return fbScript('football/nfl_params_v2.js');}).catch(function(){});})
     /* quote-level EV: optional, never gates the board */
-    .then(function(){return fbScript('lib/edgedesk_quote_ev.js?v=20261002a').catch(function(){});})
+    .then(function(){return fbScript('lib/edgedesk_quote_ev.js?v=20261026a').catch(function(){});})
     /* the NFL regime signal's fitted adjustment: display only while it is not
        promoted, so it never gates the board */
     .then(function(){return fbScript('football/nfl/regime_nfl.js').catch(function(){});});
@@ -52534,7 +52534,7 @@ function fbP4Ensure(){
     /* QUOTE-LEVEL EV (lib/edgedesk_quote_ev.js): optional in the same way — it
        prices captured quotes against the finished projection and moves no
        projected number, so a missing file never gates the board */
-    .then(function(){return fbScript('lib/edgedesk_quote_ev.js?v=20261002a').catch(function(){});})
+    .then(function(){return fbScript('lib/edgedesk_quote_ev.js?v=20261026a').catch(function(){});})
     .then(function(){return fbScript('football/matchup/qb_context.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/forecast.js').catch(function(){});})
     .then(function(){return fbScript('football/venues/descriptions.js').catch(function(){});})
