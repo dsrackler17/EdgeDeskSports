@@ -75,6 +75,10 @@ const sides = allBouts.flatMap((b) => [b.a, b.b]);
 const nRanked = sides.filter((x) => !x.champion && typeof x.rank === 'number').length, nDebut = sides.filter((x) => x.debut).length;
 T.chk('Fights: the ufc.com champion and ranks beside the names (' + nRanked + ' ranked), and debutants marked (' + nDebut + ')', (fights.match(/title="ufc\.com champion">Champion<\/span>/g) || []).length === sides.filter((x) => x.champion).length
   && (fights.match(/title="ufc\.com ranking">#\d+ [^<]+<\/span>/g) || []).length === nRanked && (fights.match(/>UFC debut<\/span>/g) || []).length === nDebut);
+T.chk('Fights: a debutant\'s tag says how the served model prices a debut (its starting rating, the pre-UFC record\'s prior since 1.2.0), not "an average fighter"', (() => {
+  const r2 = JSON.parse(JSON.stringify(run)); r2.validation_summary.sport_summary.cards[0].bouts[0].a.debut = true;
+  const x = paint(cache({ run: r2 }), 'fights');
+  return /title="no UFC bout in the data: priced from the served model’s starting rating \(since 1\.2\.0 a prior from the pro record before the UFC; 1500 under 1\.0 and 1\.1\)">UFC debut<\/span>/.test(x) && !/average fighter/.test(x); })());
 /* the loop lists only bouts that have not started, 14 days ahead (between cards, as in the December break, none):
    the published value beside the served price on every bout it lists, and on no other */
 const pubBouts = allBouts.filter((b) => b.published_p_a != null);
