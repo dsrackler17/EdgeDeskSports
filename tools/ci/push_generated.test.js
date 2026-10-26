@@ -253,7 +253,38 @@ function runRebuild(cwd, args, rebuild) {
   chk('and leaves the working tree clean', git(A, ['status', '--porcelain']) === '' && !fs.existsSync(path.join(A, 'articles/half-built.html')), git(A, ['status', '--porcelain']));
 }
 
-/* 10. bad usage is refused, not silently a no-op */
+/* 10. every workflow that pushes an aggregate rebuilds it on a rejected push. The
+       articles job carried a stale manifest (2026-10-25 20:47) and the weekly build a
+       stale football/matchup/metrics.json (2026-10-26 00:30, built from starters three
+       hours old), each over a newer tip: a job that names one of these paths and sets
+       no PUSH_REBUILD for it can do it again */
+{
+  const AGGREGATES = { 'football/matchup/metrics.json': 'build_matchup_metrics.js', 'articles/data/index.json': 'store.js --reindex' };
+  const WF = path.join(__dirname, '..', '..', '.github', 'workflows');
+  const missing = [];
+  let seen = 0;
+  fs.readdirSync(WF).filter((f) => /\.ya?ml$/.test(f)).forEach((f) => {
+    const lines = fs.readFileSync(path.join(WF, f), 'utf8').split('\n');
+    const starts = lines.map((l, i) => (/^\s*- name:/.test(l) ? i : -1)).filter((i) => i >= 0);
+    starts.forEach((s, k) => {
+      const step = lines.slice(s, k + 1 < starts.length ? starts[k + 1] : lines.length).join('\n');
+      const at = step.indexOf('push_generated.sh');
+      if (at < 0) return;
+      const dash = step.indexOf(' -- ', at);
+      if (dash < 0) return;
+      const paths = step.slice(dash + 4).split(/[\s\\]+/).filter((p) => p && !p.startsWith('#')).map((p) => p.replace(/^['"]|['"]$/g, '').replace(/\/$/, ''));
+      const rebuild = (/^\s*PUSH_REBUILD:\s*(.+)$/m.exec(step) || [])[1] || '';
+      Object.keys(AGGREGATES).forEach((agg) => {
+        if (!paths.some((p) => agg === p || agg.startsWith(p + '/'))) return;
+        seen++;
+        if (rebuild.indexOf(AGGREGATES[agg]) < 0) missing.push(f + ': ' + agg);
+      });
+    });
+  });
+  chk('every workflow that pushes an aggregate rebuilds it on the new tip (' + seen + ' steps)', seen > 0 && missing.length === 0, missing.join('; '));
+}
+
+/* 11. bad usage is refused, not silently a no-op */
 {
   const r = run(A, ['main', 'msg']);
   chk('missing paths are a usage error', r.code === 64, String(r.code));

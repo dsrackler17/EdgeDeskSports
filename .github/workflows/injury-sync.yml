@@ -109,6 +109,13 @@ jobs:
       # also publishes, and a `git pull --rebase` retry cannot survive that race.
       # The helper carries only the files this run changed onto the remote tip.
       - name: Commit the report
+        env:
+          # football/matchup/metrics.json is AN AGGREGATE of other jobs' files (the
+          # starters, injuries, rankings, coaching): on a rejected push it is rebuilt
+          # on the new tip, never carried from this run. Carried, the weekly build's
+          # copy (built from 21:53's starters) replaced starter-context's at
+          # 2026-10-26 00:30, and Intelligence CI's --check failed every pull request.
+          PUSH_REBUILD: node tools/football/build_matchup_metrics.js
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

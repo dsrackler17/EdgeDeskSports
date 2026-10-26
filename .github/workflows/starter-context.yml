@@ -295,6 +295,12 @@ jobs:
           # artifacts: on a rejected push they are merged onto the new tip,
           # never overwritten (tools/ci/push_generated.sh)
           PUSH_MERGE_PATHS: app.html tools/football/patch_nfl_live_paths.js
+          # football/matchup/metrics.json is AN AGGREGATE of other jobs' files (the
+          # starters, injuries, rankings, coaching): on a rejected push it is rebuilt
+          # on the new tip, never carried from this run. Carried, the weekly build's
+          # copy (built from 21:53's starters) replaced starter-context's at
+          # 2026-10-26 00:30, and Intelligence CI's --check failed every pull request.
+          PUSH_REBUILD: node tools/football/build_matchup_metrics.js
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
