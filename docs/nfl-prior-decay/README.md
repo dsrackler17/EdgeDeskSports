@@ -162,13 +162,13 @@ The rule: if |EdgeDesk win% − market no-vig win%| > 5 points on an NFL card, n
 
 ## 5. Tests
 
-`node tools/football/nfl_prior_decay.test.js` runs 81 checks, offline, from committed files plus
+`node tools/football/nfl_prior_decay.test.js` runs 85 checks, offline, from committed files plus
 `tools/football/fixtures/nfl_2026_w7_schedule.json`.
 
 | Area | What the checks cover |
 |---|---|
 | **Prior weight by week** | the served schedule is v1's; the windows move week by week; the PD formula reproduces its preregistered schedule |
-| **Starter changes** | fingerprints move only on a starter input; the sync marks the right side; starter changes are logged with before/after; the QB report is T0 with source and times; the QB ledger; the stale-feed start history is fixed (regime reads Darnold) |
+| **Starter changes** | fingerprints move only on a starter input; the sync marks the right side; starter changes are logged with before/after and the card carries "Updated: … starter changed from X to Y" with both win %; the QB report is T0 with source and times; the QB ledger; the stale-feed start history is fixed (regime reads Darnold) |
 | **KC @ SEA replay** | the published card to the cent; the snapshot's chip windows and splits; Known Limitations; the gate against Kalshi and the consensus; the graphic beside a quote that would otherwise read "EDGE: SEA −2.5" now reads LARGE GAP VS MARKET with no EDGE text; the research page rendered with the panel, windows, limitations, a withheld LEAN, and the T0 QB report |
 | **Gate rules** | 5.0 vs 5.1; the largest market wins; away-side Kalshi; the chip rule; NFL only |
 | **Registration** | preregistered before results; holdout untouched; 3 variants counted; experimental; `passed` false; SQL current and applied to PostgreSQL |

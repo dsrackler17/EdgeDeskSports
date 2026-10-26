@@ -34,7 +34,7 @@ KC @ SEA, Week 7 SNF: the card had SEA −4.4 / 65.8% against Kalshi's SEA −3 
   - Every NFL chip in the number shows its data window ("2025: 70% / 2026: 30%"). `football/nfl_model.js` `cardWindows` reads the weights the ratings use; it is display only.
   - A Known Limitations line appears when a chip leans more than half on the prior.
 - **Tests.**
-  - `tools/football/nfl_prior_decay.test.js` (81 checks, offline): prior weight by week; starter changes; the KC @ SEA replay through the snapshot, the graphic (an "EDGE: SEA −2.5" quote now reads LARGE GAP VS MARKET) and the rendered page; the gate's rules; the registration on PostgreSQL.
+  - `tools/football/nfl_prior_decay.test.js` (85 checks, offline): prior weight by week; starter changes; the KC @ SEA replay through the snapshot, the graphic (an "EDGE: SEA −2.5" quote now reads LARGE GAP VS MARKET) and the rendered page; the gate's rules; the registration on PostgreSQL.
   - `game_research.test.js` was updated for the NFL gate. Its Kalshi fixture now picks a pregame game, which fixes the 2 failures that predated this change: 252/252.
   - e2e 57/57.
 
