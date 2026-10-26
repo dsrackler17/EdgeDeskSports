@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-26T14:12:43.313Z",
+ "generated_at": "2026-10-26T14:24:18.158Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -135,8 +135,8 @@
    "sunbelt": 6,
    "big12": 7,
    "mac": 7,
-   "bigten": 9,
    "acc": 8,
+   "bigten": 9,
    "independents": 2,
    "sec": 5,
    "mwc": 5,
@@ -146,7 +146,7 @@
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 542,
+ "absorbed_games": 566,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.1",
   "home_field": {
@@ -173,9 +173,28 @@
    "artifact_team_game_rows": 1982,
    "games_absorbed_with_stats": 541,
    "team_rows_absorbed": 960,
-   "final_games_without_play_stats": 1,
+   "final_games_without_play_stats": 25,
    "missing_game_ids": [
-    "401858497"
+    "401856727",
+    "401856731",
+    "401856835",
+    "401858497",
+    "401858499",
+    "401856839",
+    "401866449",
+    "401871094",
+    "401864528",
+    "401869967",
+    "401871093",
+    "401860907",
+    "401860905",
+    "401856836",
+    "401858276",
+    "401869935",
+    "401856729",
+    "401856732",
+    "401856838",
+    "401858275"
    ],
    "measured_features": [
     "success_rate",
@@ -206,15 +225,17 @@
  },
  "weather": {
   "requested": 55,
-  "answered": 55,
+  "answered": 54,
   "dome": 3,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 1,
+  "carried": 1,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "fetch failed": 1
+  },
   "host": "api.open-meteo.com",
-  "summary": "55 of 55 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "54 of 55 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (fetch failed x1)"
  },
  "spread_recommendation": {
   "NO_MARKET": 61
@@ -223,9 +244,9 @@
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
   "games_in_artifact": 999,
-  "completed_games_replayed": 542,
+  "completed_games_replayed": 566,
   "completed_games_with_both_team_efficiency": 419,
-  "missing_count": 123,
+  "missing_count": 147,
   "problem": null
  },
  "checks": [
@@ -371,13 +392,13 @@
       "to": "Pac-12"
      },
      {
-      "team": "Texas State",
-      "from": "Sun Belt",
+      "team": "Boise State",
+      "from": "Mountain West",
       "to": "Pac-12"
      },
      {
-      "team": "Boise State",
-      "from": "Mountain West",
+      "team": "Texas State",
+      "from": "Sun Belt",
       "to": "Pac-12"
      },
      {
@@ -421,11 +442,11 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 123,
+   "count": 147,
    "detail": [
     {
-     "game_id": "401864425",
-     "game": "West Georgia @ Kennesaw State",
+     "game_id": "401864424",
+     "game": "Merrimack @ Delaware",
      "home": true,
      "away": false
     },
@@ -436,14 +457,14 @@
      "away": false
     },
     {
-     "game_id": "401864424",
-     "game": "Merrimack @ Delaware",
+     "game_id": "401856767",
+     "game": "Bethune-Cookman @ UCF",
      "home": true,
      "away": false
     },
     {
-     "game_id": "401856767",
-     "game": "Bethune-Cookman @ UCF",
+     "game_id": "401864425",
+     "game": "West Georgia @ Kennesaw State",
      "home": true,
      "away": false
     },
@@ -466,14 +487,14 @@
      "away": false
     },
     {
-     "game_id": "401866623",
-     "game": "North Carolina A&T @ Georgia State",
+     "game_id": "401858435",
+     "game": "Indiana State @ Purdue",
      "home": true,
      "away": false
     },
     {
-     "game_id": "401858435",
-     "game": "Indiana State @ Purdue",
+     "game_id": "401866623",
+     "game": "North Carolina A&T @ Georgia State",
      "home": true,
      "away": false
     },
@@ -503,13 +524,13 @@
     "to": "Pac-12"
    },
    {
-    "team": "Texas State",
-    "from": "Sun Belt",
+    "team": "Boise State",
+    "from": "Mountain West",
     "to": "Pac-12"
    },
    {
-    "team": "Boise State",
-    "from": "Mountain West",
+    "team": "Texas State",
+    "from": "Sun Belt",
     "to": "Pac-12"
    },
    {
