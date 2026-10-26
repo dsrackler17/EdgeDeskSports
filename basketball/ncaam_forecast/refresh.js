@@ -157,7 +157,7 @@ async function refresh(o) {
   const art = MD.buildArtifact(games, champ.config, nowMs, { season: C.currentSeason(nowMs) });
   const policyFile = C.PATHS.upsetPolicy; const policy = fs.existsSync(policyFile) ? JSON.parse(fs.readFileSync(policyFile, 'utf8')) : null;
   const win = forecastWindow(games, art.season, nowMs, o.hours);
-  const ex = EX.exhibitions('ncaam', games, { season: art.season, fromMs: nowMs, toMs: win.to, d1: d1Teams(games, art.season) });
+  const ex = EX.exhibitions('ncaam', games, { season: art.season, fromMs: nowMs, toMs: win.to, d1: d1Teams(games, art.season), teams: JSON.parse(fs.readFileSync(C.PATHS.teams, 'utf8')).teams });
   const fcs = buildForecasts(games.concat(ex.games), art, policy, { nowMs, toMs: win.to, preseason: win.phase === 'preseason' });
   const G = gates(games, art, fcs, nowMs);
   const publishable = G.every((g) => g.pass);
