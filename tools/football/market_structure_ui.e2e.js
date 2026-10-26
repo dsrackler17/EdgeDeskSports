@@ -106,6 +106,27 @@ function pinLine(csv, season, week, away, home, spreadLine) {
     return l;
   }).join('\n');
 }
+/* THE CLOCK IS STAGED TOO. The board shows the games ahead of the reader's
+   clock and nflverse fills in each score as the game ends, so on the real
+   clock the staged cards turn into graded finals with no Market Structure
+   section: IND @ MIN went final 2026-10-25 and failed this suite from then
+   on, DAL @ PHI goes on the Monday night, and then Week 7 leaves the board.
+   The browser runs at the moment the scenario describes (after the Thursday
+   freeze and Saturday's Circa fetch, before Sunday's kickoffs), on the
+   schedule as it stood then: no score for a game that had not kicked off. */
+const NOW = '2026-10-24T16:00:00Z';
+function asOf(csv, nowIso) {
+  const rows = csv.split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
+  const blank = ['away_score', 'home_score', 'result', 'total', 'overtime'].map(ix).filter((i) => i >= 0);
+  const now = Date.parse(nowIso);
+  return rows.map((l, i) => {
+    if (!i || !l) return l;
+    const c = l.split(',');
+    if (Date.parse(kickIso(c[ix('gameday')], c[ix('gametime')])) <= now) return l;
+    blank.forEach((k) => { c[k] = ''; });
+    return c.join(',');
+  }).join('\n');
+}
 function staged(csv) {
   const rows = csv.trim().split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
   const want = {};
