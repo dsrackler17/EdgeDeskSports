@@ -1,0 +1,49 @@
+# EdgeDesk all checks — one required check for every workflow a pull request starts.
+#
+# 2026-10-26 14:56 UTC: #807 merged 17 seconds after it was opened. Its three
+# required checks (Repository integrity, Odds gateway suites, audit) passed
+# within three minutes; eight of the 40 workflows it started then failed.
+# A ruleset can require only a check that reports on every pull request, and
+# 64 pull-request workflows are path-filtered, so none of those eight could
+# be required. This job runs on every pull request. It predicts the
+# workflows the change starts from their own on: blocks (tools/ci/workflows.js,
+# the reader npm run verify uses), waits for each run on the head commit, and
+# passes only when every one passed. It fails at the first failed, cancelled
+# or timed-out run, and when a predicted workflow never starts.
+# tools/ci/gate.js has the rules. Require this check by its job name
+# (docs/ci/BRANCH_PROTECTION.md); keep the workflow and job names stable.
+#
+# Read-only: it lists runs and changed files, and never re-runs, cancels or
+# writes anything. After you re-run a failed workflow, re-run this one too.
+name: All checks
+
+on:
+  pull_request:
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+# A newer push to the pull request replaces the older wait: its runs are
+# cancelled too, and the new head is the one a merge reads.
+concurrency:
+  group: all-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    # the status check branch protection requires by this name: keep it stable
+    name: All checks
+    runs-on: ubuntu-latest
+    # gate.js gives up after 85 minutes (GATE_WAIT_MINUTES), and says so
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Wait for every workflow this pull request started, and require each to pass
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/ci/gate.js

@@ -41,5 +41,5 @@ jobs:
           node-version: '22'
       - name: Every tracked file parses (JS, modules, TypeScript, JSON, JSONL, inline scripts, shell, Python), no conflict markers, every path a workflow or script runs exists
         run: node tools/ci/integrity.js
-      - name: The gate, the workflow reader and npm run verify keep their own rules (synthetic repositories; the YAML reader held equal to PyYAML on every workflow)
-        run: node tools/ci/integrity.test.js && node tools/ci/workflows.test.js && node tools/ci/verify.test.js
+      - name: The gate, the workflow reader, npm run verify and All checks keep their own rules (synthetic repositories and a fake GitHub API; the YAML reader held equal to PyYAML on every workflow)
+        run: node tools/ci/integrity.test.js && node tools/ci/workflows.test.js && node tools/ci/verify.test.js && node tools/ci/gate.test.js

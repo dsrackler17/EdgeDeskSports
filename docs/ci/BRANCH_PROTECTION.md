@@ -20,7 +20,7 @@ owner's account and the owner's decision. Agents must not change them.
 
 ## The constraint that shapes everything: the data bots push to `main`
 
-65 workflows (60 of them scheduled) commit generated data straight to
+64 workflows (60 of them scheduled) commit generated data straight to
 `main`: the editorial system, the Model Lab, ratings, settlement and the app
 version stamp. They authenticate with the workflow's `GITHUB_TOKEN`, as
 `github-actions[bot]`, through `tools/ci/push_generated.sh`.
@@ -30,14 +30,15 @@ those pushes too. Turn either on without a bypass and every data pipeline
 stops at its next push: `push_generated.sh` retries, fails, and turns every
 scheduled job red. No workflow pushes with a personal token or a deploy key
 (checked 2026-10-26), so one bypass, for the GitHub Actions app, covers all
-65. The bypass list below therefore contains that app and nothing else.
+64. The bypass list below therefore contains that app and nothing else.
 
 ## Applying it
 
-**1. Merge #805 first.** Two of the three required checks,
-`Repository integrity` and `Odds gateway suites`, exist only once #805 is on
-`main`. Applied before that, every other pull request would wait on them
-forever.
+**1. Merge the pull request that adds `All checks` first.** The four
+required checks exist only once their workflows are on `main`. `All checks`
+(`all-checks.yml`) is the last of them. Applied before that, every other pull
+request would wait on it forever. `Repository integrity` and `Odds gateway
+suites` arrived with #805, and `audit` was already there.
 
 **1a. Prove the bypass on scratch branches first.** GitHub's docs list
 "GitHub Apps" among eligible bypass actors. They do not say whether the
@@ -79,7 +80,8 @@ bypass list as *Deploy keys*. That is a change to the publishing workflows.
 
 - The next scheduled data push still lands. The Editorial system commits
   every few minutes: its run is green and its commit is on `main`.
-- A pull request's merge button waits for `Repository integrity`.
+- A pull request's merge button waits for `Repository integrity` and
+  `All checks`.
 - `GET /repos/dsrackler17/EdgeDeskSports/rules/branches/main` lists the
   ruleset.
 
@@ -96,6 +98,12 @@ three have `workflow_dispatch`. Confirm on the first occurrence that the
 dispatched runs satisfy the merge box. Having those two jobs dispatch the
 three themselves needs `actions: write` on them; that is a separate decision.
 
+Once `All checks` is required, dispatching those three is not enough. The
+bot's head has no pull-request runs for `All checks` to wait on. Press
+**Update branch** instead. The data jobs keep `main` moving, so it is almost
+always offered. The merge commit is yours, so every workflow the pull
+request starts, `All checks` among them, runs on the new head.
+
 Evaluate mode (log, do not block) is offered only on GitHub Enterprise. On
 this account a ruleset is Active or Disabled, which is why step 4 is a
 checklist rather than a trial period.
@@ -105,7 +113,7 @@ checklist rather than a trial period.
 | Field | Value | Why |
 |---|---|---|
 | Ruleset name | `main: verified merges` | |
-| Enforcement status | **Active** (after #805 merges) | this account has no Evaluate mode (Enterprise only); step 4 above is the check that the bots still push |
+| Enforcement status | **Active** (once `All checks` is on `main`) | this account has no Evaluate mode (Enterprise only); step 4 above is the check that the bots still push |
 | Bypass list | **GitHub Actions** (the app), mode *Always* | the data bots above. Do **not** add *Repository admin*: coding agents act through the owner's account, so an admin bypass is an agent bypass |
 | Target branches | *Include default branch* | |
 | Restrict deletions | on | |
@@ -117,45 +125,73 @@ checklist rather than a trial period.
 | · Allowed merge methods | Merge, Squash | |
 | Require status checks to pass | on | |
 | · Require branches to be up to date before merging | **off** (see below) | |
-| · Status checks | `Repository integrity`, `Odds gateway suites`, `audit` (all from *GitHub Actions*) | see the next section |
+| · Status checks | `Repository integrity`, `Odds gateway suites`, `audit`, `All checks` (all from *GitHub Actions*) | see the next section |
 
 Leave "Require deployments to succeed", "Require signed commits" and "Require
 linear history" off. Each would block the data bots or change how this
 repository merges, and nothing on 2026-10-26 needed them.
 
-### Why these three checks, and why not more
+### Why these four checks
 
 A required check must report on **every** pull request. A workflow with a
 `paths:` filter does not run on a pull request outside its paths. A required
 check that never reports stays "Expected — waiting" forever and blocks the
-merge. Today three checks run on every pull request:
+merge. These four run on every pull request:
 
-| Check (job name) | Workflow | What it would have caught on 2026-10-26 |
+| Check (job name) | Workflow | What it catches |
 |---|---|---|
 | `Repository integrity` | `core-validation.yml` | `2ad15afadd`: the unparseable `lib/edgedesk_quote_ev.js` and the invalid `slate_audit.json`, in about 20 s, with file and line |
 | `Odds gateway suites` | `odds-gateway-tests.yml` | the same breakage, through `football/props/factory/odds.test.js` (#800, #803) |
 | `audit` | `cfb-security.yml` | secrets and least-privilege audit |
+| `All checks` | `all-checks.yml` | every other workflow the pull request started: #807's eight failed workflows (below) |
 
 Check names are matched by job name. `Odds gateway suites` was renamed from
-`suites` in this change because 32 workflows have a job called `suites`, and
-a required `suites` would be satisfied by whichever one reported. Keep these
-three names stable. Renaming a job silently un-requires its check.
+`suites` because 32 workflows have a job called `suites`, and a required
+`suites` would be satisfied by whichever one reported. Keep these four names
+stable. Renaming a job silently un-requires its check.
+`tools/ci/gate.test.js` fails if a check the ruleset requires is not exactly
+one job, or if that job does not report on every pull request.
 
-The 63 path-filtered workflows still run, still report, and still block a
-careful human. They are not *required* until each can report on every
-pull request. The step that gets there, without running every suite on every
-change, is to move each workflow's path filter into the job:
+### All checks: one required check for the 64 path-filtered workflows
 
-- a small first job (`node tools/ci/verify.js --list`-style, reading the
-  workflow's own `paths:`) that outputs whether the change touches the
-  workflow;
-- the real job with `needs:` and `if:` on that output. A job skipped by
-  `if:` reports as *skipped*, which satisfies a required check.
+The first three checks would not have stopped #807. It merged 17 s after it
+was opened. Its three required checks passed within three minutes, and eight
+of the 40 workflows it started failed after that: Collective, Funnel, Market
+Foresight, Player props, Signal Center, Simulator, Today's Games and the
+matchup graphic. None of the eight could be required, because each is
+path-filtered.
 
-That is a change to each workflow. Make it one workflow at a time, starting
-with `cfb-validation-tests.yml`, `cfb-terminal.yml` and `decision-quality.yml`,
-and add each to the required list once it reports on a pull request that does
-not touch it.
+`All checks` (`tools/ci/gate.js`) stands for all of them. On every pull
+request it:
+
+1. reads the changed files from the API, which is GitHub's own list;
+2. predicts the workflows that change starts, from each workflow's own `on:`
+   block (`tools/ci/workflows.js`, the reader `npm run verify` uses; its
+   prediction matched GitHub's runs on #799, #800, #803, #804, #806 and #807);
+3. waits for each run on the head commit;
+4. passes only when every one passed (success, skipped or neutral).
+
+It fails:
+
+- at the first failed, cancelled or timed-out run;
+- when a predicted workflow never starts within 10 minutes. The reader and
+  GitHub then disagree, so fix the reader, never the check.
+- when the wait passes 85 minutes.
+
+A run nobody predicted still counts. A workflow disabled in the settings is
+named, not waited on. GitHub reads `paths:` filters on a pull request's first
+300 changed files only; past that, a missing run is named as such.
+
+It only reads (`actions`, `contents` and `pull-requests`, all read). It never
+re-runs, cancels or writes anything. **After you re-run a failed workflow,
+re-run `All checks` too.** It decided on the run as it was.
+
+Replayed read-only on real history with `node tools/ci/gate.js --repo
+dsrackler17/EdgeDeskSports --pr <n> --once --root <a checkout of the PR's
+merge commit>`:
+
+- **#807: ALL CHECKS FAILED**, 32 of 40 passed. It names the eight failed runs.
+- **#806: ALL CHECKS PASSED**, 8 of 8.
 
 ### Why required approvals is 0
 

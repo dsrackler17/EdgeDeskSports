@@ -135,6 +135,7 @@ finished.
 |---|---|
 | Pre-PR gate | `npm run verify` (full), `verify:affected`, `verify:plan`, `verify:core`, `verify:cfb`, `verify:odds`, `verify:research` ([docs/ci/README.md](docs/ci/README.md)) |
 | Integrity gate | `tools/ci/integrity.js`, run on every pull request by `Core validation` |
+| All checks | `tools/ci/gate.js`, run on every pull request by `all-checks.yml`: passes only when every workflow the change started has passed. After re-running a failed workflow, re-run it too |
 | Check categories | `tools/ci/checks.json` (every PR workflow must be in exactly one) |
 | Branch protection | [docs/ci/BRANCH_PROTECTION.md](docs/ci/BRANCH_PROTECTION.md) |
 | The 2026-10-26 incident | [docs/ci/INCIDENT-2026-10-26.md](docs/ci/INCIDENT-2026-10-26.md) |
