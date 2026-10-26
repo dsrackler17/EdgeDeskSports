@@ -2918,7 +2918,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261014cf1">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
-<link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261020nhl1">
+<link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261025gl1">
 <link rel="stylesheet" href="/lib/edgedesk_nba.css?v=20261021inj1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
@@ -4114,8 +4114,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_readiness.js?v=20261012ia2"></script>
 <!-- TODAY'S GAMES: the slate kernel (dates, statuses, markets, research links), then the strip and page -->
 <!-- EdgeDesk vs the market for NHL games (the matchup view and Research → NHL) -->
-<script src="/lib/edgedesk_nhl_market.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_nhl_compare.js?v=20261015sc1"></script>
+<script src="/lib/edgedesk_nhl_market.js?v=20261025gl1"></script>
+<script src="/lib/edgedesk_nhl_compare.js?v=20261025gl1"></script>
 <script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_grade_ui.js?v=20261021inj1"></script>
 <script src="/lib/edgedesk_games_ui.js?v=20261021inj1"></script>
@@ -6015,7 +6015,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261021inj1';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261025gl1';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
@@ -20781,10 +20781,24 @@ function sysHealthKalshiLoad(force){
     .then(function(){SH.ksAt=Date.now();SH.ksP=null;try{sysHealthPaint();}catch(_){}return SH.ks;});
   return SH.ksP;
 }
+/* public.nhl_goalie_readiness: the NHL starter sync's KPIs (supabase/nhl_goalie_layer.sql) — a failed check, a
+   silent scheduler, a source down or drifted, % of games with both starters Confirmed by T-30 over 7 days, and
+   source conflicts. Read as anon and kept apart from ED_DB, as the NBA and Kalshi layers' are. */
+function sysHealthNhlGoalieLoad(force){
+  if(SH.nglP)return SH.nglP;
+  if(SH.nglAt&&!force&&(Date.now()-SH.nglAt)<300000)return Promise.resolve(SH.ngl);
+  if(typeof SB_URL==='undefined'||typeof SB_KEY==='undefined')return Promise.resolve(null);
+  SH.nglP=fetch(SB_URL+'/rest/v1/nhl_goalie_readiness?select=*',{headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY}})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status+(r.status===404?' (the NHL goalie layer is not deployed)':''));return r.json();})
+    .then(function(rows){SH.ngl=(rows&&rows[0])||null;SH.nglErr=SH.ngl?null:'no readiness row';},function(e){SH.ngl=null;SH.nglErr=(e&&e.message)||'unreadable';})
+    .then(function(){SH.nglAt=Date.now();SH.nglP=null;try{sysHealthPaint();}catch(_){}return SH.ngl;});
+  return SH.nglP;
+}
 function sysHealthLoad(force){
   try{sysHealthLoopsLoad(force);}catch(_){}
   try{sysHealthNbaLoad(force);}catch(_){}
   try{sysHealthKalshiLoad(force);}catch(_){}
+  try{sysHealthNhlGoalieLoad(force);}catch(_){}
   if(window.FB&&FB.health&&!force){SH.health=FB.health;SH.healthErr=null;return Promise.resolve(SH.health);}
   if(SH.pending)return SH.pending;
   if(SH.health&&!force&&(Date.now()-SH.healthAt)<300000)return Promise.resolve(SH.health);
@@ -20826,6 +20840,8 @@ function sysHealthState(){
   var ni=SH.nbaInj;if(ni){if(ni.state==='error')fails++;else if(ni.state==='warn')warns++;}
   /* the Kalshi sync: the same rule — a failed snapshot or a silent scheduler fails, degradation is attention */
   var ksr=SH.ks;if(ksr){if(ksr.state==='error')fails++;else if(ksr.state==='warn')warns++;}
+  /* the NHL starter sync's state counts the same way */
+  var ngr=SH.ngl;if(ngr){if(ngr.state==='error')fails++;else if(ngr.state==='warn')warns++;}
   var faults=(window.FL&&FL.faults)?FL.faults.length:null;
   var st=dbErr||fails>0?'err':(warns>0||(faults!=null&&faults>0)||dbWarn||!dbOk?'warn':'ok');
   /* the count belongs to the state it is shown in: a red pill counts failed
@@ -20983,6 +20999,25 @@ function sysHealthHTML(){
       KS.unmapped_settling_soon?(KS.unmapped_settling_soon+' to check'):'clean',KS.unmapped_settling_soon?'warn':'ok');
     out+='<p class="hpn">Kalshi: 5-minute snapshots, not live; a market whose YES spread is wider than 6\u00a2 is excluded from the mid; Kalshi\u2019s trading fees are not reflected in the raw gap.</p>';
   } else out+=shRow('Kalshi snapshot sync',SH.ksErr?('public.kalshi_readiness '+SH.ksErr):'the Kalshi layer\u2019s readiness has not loaded','not loaded','mut');
+
+  /* 3e · NHL STARTING GOALIES — public.nhl_goalie_readiness. Every run is logged (a quiet morning as an hourly
+     skipped row), so a silent scheduler, a failed check, a source down or drifted, games whose starters were not
+     Confirmed by T-30 and open source conflicts each show here. */
+  var NG=SH.ngl;
+  if(NG){
+    var ngCls=NG.state==='error'?'err':(NG.state==='warn'?'warn':'ok');
+    out+=shRow('NHL goalie sync',(NG.state_reason||(NG.last_check_at?'last check '+shAgo(shStamp(NG.last_check_at)):'no check yet'))
+      +' \u00b7 '+(NG.sync_failures_24h||0)+' failed run'+(NG.sync_failures_24h===1?'':'s')+', '+(NG.degraded_24h||0)+' degraded, '+(NG.drift_24h||0)+' drift in 24 h'
+      +(NG.consecutive_failures?' \u00b7 '+NG.consecutive_failures+' failed in a row':'')
+      +' \u00b7 Daily Faceoff '+(NG.daily_faceoff_ok===false?'down':NG.daily_faceoff_ok?'read':'not read')+', NHL boxscore '+(NG.nhl_api_ok===false?'down':NG.nhl_api_ok?'read':'not needed'),
+      NG.state==='error'?'failing':(NG.state==='warn'?'degraded':'healthy'),ngCls);
+    var t30=NG.pct_confirmed_by_t30_7d;
+    out+=shRow('NHL starters confirmed by T-30',NG.games_7d?((NG.games_confirmed_by_t30_7d||0)+' of '+NG.games_7d+' games in 7 days had both starters Confirmed 30 minutes before puck drop ('+(NG.pct_sides_confirmed_by_t30_7d==null?'\u2014':NG.pct_sides_confirmed_by_t30_7d+'%')+' of starters)'):'no carded game has started in 7 days',
+      t30==null?'\u2014':t30+'%',t30==null?'mut':(NG.games_7d>=5&&t30<(NG.confirmed_by_t30_target_pct||90)?'warn':'ok'));
+    out+=shRow('NHL goalie source conflicts',(NG.conflicts_open||0)+' open on upcoming games \u00b7 '+(NG.conflicts_24h||0)+' in 24 h \u00b7 '+(NG.conflicts_7d||0)+' in 7 days'
+      +(NG.sides_next_3h?' \u00b7 '+(NG.sides_unconfirmed_next_3h||0)+' of '+NG.sides_next_3h+' starters inside 3 h not Confirmed':'')+(NG.unmatched_names?' \u00b7 '+NG.unmatched_names+' unmatched name'+(NG.unmatched_names===1?'':'s'):''),
+      NG.conflicts_open?(NG.conflicts_open+' open'):'clean',NG.conflicts_open||NG.unmatched_names?'warn':'ok');
+  } else out+=shRow('NHL goalie sync',SH.nglErr?('public.nhl_goalie_readiness '+SH.nglErr):'the NHL goalie layer\u2019s readiness has not loaded','not loaded','mut');
 
   /* 4 · FAULTS — the Faultline scan. Not loaded is not zero. */
   var fl=(window.FL&&FL.faults)?FL.faults:null;

@@ -1199,6 +1199,71 @@ All are in `.github/workflows/nba.yml`.
 
 Rollback: `supabase/nba_injury_layer_rollback.sql`.
 
+## NHL starting goalies — an Observed input, close to puck drop, and a card that changes with it
+
+The 2026-10-25 Minnesota at Vancouver card named Kevin Lankinen all day, from
+EdgeDesk's usage projection. Leevi Meriläinen started. The projection read
+completed games only, and a confirmation needed a hand entry.
+
+Starters are now an **Observed (T0)** input with a status and a source.
+`supabase/functions/nhl_goalie_sync` reads two sources:
+- Daily Faceoff's starting-goalies page (Confirmed / Likely / Unconfirmed);
+- the NHL's game boxscore, which flags the starter once lineups post.
+
+It runs on this cadence:
+- every two hours from 8 AM Eastern;
+- every 15 minutes in the final three hours before each puck drop;
+- a final pass at T-30.
+
+**The merge.** Sources that agree give the higher status. Sources that name
+different goalies are both kept: the **lower** status is shown, never
+Confirmed, and the conflict is flagged. When no source names anyone, the usage
+projection is shown, labelled Projected (T2).
+
+**The card.** Every change writes a new card version and keeps the old ones,
+in `public.nhl_game_cards`. Each version records:
+- the pairing used;
+- each side's status;
+- the generation time;
+- the range over every realistic pairing;
+- the edge gate.
+
+An edge seen against a price, and its CLV grade, attach to the version that
+existed when it was seen. A trigger enforces it.
+
+**On the page.** The NHL game page opens with **Starting goalies**:
+- each starter with a status badge, the source and "as of" time;
+- unless both are Confirmed, the full pairing range (win % and fair line)
+  and "Starter not confirmed. Numbers may change.";
+- "Updated: starter changed from X to Y" with both versions' win %.
+
+**The edge gate.** No EDGE is flagged on a moneyline, puck line or total
+unless both starters are Confirmed or the edge holds under every realistic
+pairing (`lib/edgedesk_nhl_market.js` `goalie_gate`).
+
+The goalie effect weights, the xG core and edge ranking are unchanged. The
+production price (`xg_core`) carries no goalie term, so a starter moves only
+the goalie-aware pairing numbers. A build with this change is byte-identical
+to one without it, apart from the new per-pairing fields.
+
+**Goalie quality.** v1 is a decayed career GSAx rate, and it is left as it
+is. A v2 rating (shrunk current-season GSAx blended with prior seasons) is
+registered EXPERIMENTAL, with its promotion criteria written before any
+backtest (`supabase/nhl_goalie_v2_registry.sql`). It cannot reach a live card.
+
+**Readiness.** System health has three rows: the sync, starters confirmed by
+T-30 (7 days), and source conflicts.
+
+**Tests:**
+- `tools/hockey/nhl_goalie_core.test.js` (83);
+- `nhl_goalie_sync.test.js` (49, the MIN @ VAN replay);
+- `nhl_goalie_sql.test.js` (66, real PostgreSQL);
+- `nhl_goalie_ui.test.js` (32);
+- `tools/engine/engine_ui.e2e.js` (+12).
+
+**Deploy:** `.github/workflows/deploy-nhl-goalie.yml`. Everything else, and
+the limits, is in `docs/engine/NHL_GOALIES.md`.
+
 ## CFB referee flags — the Officiating block on the Analyst pass
 
 The CFB Analyst pass card has an **Observed (T0)** section with an

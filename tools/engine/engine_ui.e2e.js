@@ -43,6 +43,20 @@ const startedCount = () => {
   return SLATE.games.filter((g) => Date.parse(g.start_utc) <= now).length + RECENT.games.filter((g) => !on.has(String(g.game_id)) && Date.parse(g.start_utc) <= now && now - Date.parse(g.start_utc) < 36 * 3600e3).length;
 };
 const BOARD = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json'), 'utf8'));
+/* the starter sync (rpc/nhl_goalie_card): a live card for the third game only (version 2, the home starter
+   changed after first posting, now Likely per Daily Faceoff); every other game answers NO_CARD, so its page
+   shows the slate's own goalie block */
+const GLIB = require(path.join(ROOT, 'lib', 'edgedesk_nhl_goalies.js'));
+function goalieLive(gameId) {
+  const g = SLATE.games[2];
+  if (!g || String(gameId) !== String(g.game_id) || g.goalies.home.length < 2) return { state: 'NO_CARD', freshness: 'FRESH', versions: 0 };
+  const res = GLIB.fromSlate(g, SLATE), c = res.card, alt = g.goalies.home[1], top = g.goalies.home[0];
+  c.version = 2; c.generated_at = new Date(Date.parse(NOW) - 30 * 60000).toISOString();
+  c.goalie_pairing_used.home = { goalie_id: String(alt.goalie), goalie_name: alt.name, status: 'likely', source: 'daily_faceoff', source_label: 'Daily Faceoff', as_of: new Date(Date.parse(NOW) - 45 * 60000).toISOString() };
+  c.goalie_status_home = 'likely';
+  c.change_note = { text: 'Updated: starter changed from ' + top.name + ' to ' + alt.name, first_version: 1, first_generated_at: SLATE.generated_at, first_p_home: g.goalies.scenarios[0].p_home, current_p_home: g.goalies.scenarios[2] ? g.goalies.scenarios[2].p_home : null };
+  return Object.assign(res, { state: 'CARD', freshness: 'FRESH', versions: 2 });
+}
 const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
 /* Today's Games as the NHL panel reads it: the committed slate with its NHL
    games replaced by the hockey slate's first two, each with a DraftKings price
@@ -124,6 +138,7 @@ const TODAY = (() => {
       if (u.startsWith('http://127.0.0.1')) return route.continue();
       if (/supabase\.co/.test(u)) {
         if (/subscriptions/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]) });
+        if (/rpc\/nhl_goalie_card/.test(u)) { let id = null; try { id = JSON.parse(route.request().postData() || '{}').p_game_id; } catch (_) { id = null; } return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(goalieLive(id)) }); }
         return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       }
       return route.fulfill({ status: 204, body: '' });
@@ -184,6 +199,14 @@ const TODAY = (() => {
         chk(label + ': the decomposition adds up exactly to the published probability', ex.check && ex.check.exact === true && /exact/.test(overview));
       }
       chk(label + ': Overview says whether a price is actionable and why not', /Is a price actionable\?/.test(overview) && /No\./.test(overview));
+      /* starting goalies: the starter sync has no card for this game, so the slate's own block, in the same shape */
+      await page.waitForFunction(() => /Starting goalies/.test(document.querySelector('#nhlHost .xe-tabp').textContent) && !/Loading the starting goalies/.test(document.querySelector('#nhlHost .xe-tabp').textContent), null, { timeout: 15000 }).catch(() => {});
+      const gov = await page.textContent('#nhlHost .xe-goalies').catch(() => '');
+      const unconf = g.goalies.certainty !== 'CONFIRMED';
+      chk(label + ': Overview shows the starting goalies, each with a status badge and its source', /Starting goalies/.test(gov) && new RegExp(g.goalies.home[0].name.replace('.', '\\.')).test(gov) && /Projected|Confirmed/.test(gov) && /EdgeDesk usage projection|Manual entry/.test(gov), gov.slice(0, 400));
+      if (unconf) chk(label + ': not Confirmed → every realistic pairing and "Starter not confirmed. Numbers may change."', /Every realistic pairing/.test(gov) && /Starter not confirmed\. Numbers may change\./.test(gov) && (await page.$$eval('#nhlHost .xe-goalies table.xe-t tr', (x) => x.length - 1)) === g.goalies.scenarios.length && /Edge flag: gated/.test(gov), gov.slice(0, 600));
+      chk(label + ': the slate fallback says the starter sync has no card for the game yet', /has no card for this game yet/.test(gov), gov.slice(0, 300));
+      chk(label + ': the headline is said to carry no goalie term', /carries no goalie term/.test(gov));
       chk(label + ': Overview sets EdgeDesk against the book: the favourite, the largest difference, the price that pays', /EdgeDesk vs the market/.test(overview) && /EdgeDesk makes \w+ the likelier winner/.test(overview) && /Largest difference/.test(overview) && /pays above EdgeDesk’s fair/.test(overview), overview.slice(0, 600));
       const vsRows = await page.$$eval('#nhlHost .xe-tabp table.xe-vs tr', (x) => x.length - 1);
       chk(label + ': the comparison table has both sides of the moneyline and the total', vsRows === 4, vsRows);
@@ -247,6 +270,13 @@ const TODAY = (() => {
         await page.waitForSelector('#nhlHost .xe-detail');
         const ov2 = await page.textContent('#nhlHost .xe-tabp');
         chk(label + ': the board opens a game; one without a price says there is none yet and still rates the clubs', await page.evaluate(() => location.hash) === '#research/nhl/' + g2.game_id && /No sportsbook price for this game yet/.test(ov2) && /Who is better where/.test(ov2), ov2.slice(0, 300));
+        if (g2.goalies.home.length >= 2) {
+          await page.waitForFunction(() => /card version 2/.test((document.querySelector('#nhlHost .xe-goalies') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});
+          const gl2 = await page.textContent('#nhlHost .xe-goalies').catch(() => '');
+          chk(label + ': the live card: its version, the changed starter Likely per Daily Faceoff, "Updated: starter changed from X to Y" with both versions\' win %', /card version 2/.test(gl2) && /Likely/.test(gl2) && /Daily Faceoff · as of/.test(gl2)
+            && new RegExp('Updated: starter changed from ' + g2.goalies.home[0].name.replace('.', '\\.') + ' to ' + g2.goalies.home[1].name.replace('.', '\\.')).test(gl2) && /under version 1/.test(gl2) && /now, each with the pairing it used/.test(gl2), gl2.slice(0, 600));
+          chk(label + ': a Likely starter is not shown as fact: the range and the limitation stay', /Every realistic pairing/.test(gl2) && /Starter not confirmed/.test(gl2));
+        }
         chk(label + ': no horizontal scroll on an unpriced game', await noHScroll(page), await overflowers(page));
         await page.click('[data-act="back"]');
         await page.waitForSelector('#nhlHost .xe-game');

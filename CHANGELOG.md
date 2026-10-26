@@ -38,6 +38,27 @@ KC @ SEA, Week 7 SNF: the card had SEA −4.4 / 65.8% against Kalshi's SEA −3 
   - `game_research.test.js` was updated for the NFL gate. Its Kalshi fixture now picks a pregame game, which fixes the 2 failures that predated this change: 252/252.
   - e2e 57/57.
 
+## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
+
+- **The problem.** The MIN @ VAN card of 2026-10-25 named Lankinen all day, from the usage projection; Merilainen started. The projection reads completed games only, and confirming a starter needed a hand entry.
+- **The starter sync.** `supabase/functions/nhl_goalie_sync` reads two sources:
+  - Daily Faceoff's starting-goalies page;
+  - the NHL's game boxscore, inside three hours of puck drop.
+
+  Each changed observation goes to `public.nhl_goalie_starters`, append-only; the older row stops being current. Agreeing sources give the higher status; disagreeing ones give the lower status (never Confirmed) and a conflict flag.
+- **The cadence.** pg_cron pokes every 5 minutes, and the function decides: every two hours from 8 AM ET, every 15 minutes in the final three hours, and a final pass at T-30.
+- **Versioned cards** (`public.nhl_game_cards`). A starter, status or conflict change writes a new version. Each version records the pairing used, both statuses, the generation time, the range over every realistic pairing, the edge gate, the Known Limitations and the change note. Old versions stay.
+- **Edges and CLV.** An edge and its CLV grade attach to the version current at detection, enforced by a trigger. Each hockey ledger record and CLV capture now also carries its goalie pairing.
+- **The card.** `lib/edgedesk_nhl_goalies.js` shows:
+  - a status badge, source and "as of" time per starter;
+  - the full pairing range and "Starter not confirmed. Numbers may change." unless both are Confirmed;
+  - "Updated: starter changed from X to Y" with both versions' win %.
+- **The edge gate** (`lib/edgedesk_nhl_market.js` `goalie_gate`, used by compare and the price check). No EDGE on a moneyline, puck line or total unless both starters are Confirmed or it holds under every pairing. The slate's goalie scenarios now carry their puck lines and totals.
+- **Unchanged.** The production price (`xg_core`, no goalie term), the goalie weights and the ranking. The slate built at the same instant is identical apart from the new scenario fields. The new `hockey/goalie_inputs.json` re-prices every scenario exactly (`build_slate.js --check`).
+- **Goalie v2.** `NHL-GOALIE-V2` v0.1 is registered EXPERIMENTAL with promotion criteria and no result. It cannot price a live card.
+- **Readiness.** System health has three rows: the sync, confirmed by T-30, and source conflicts.
+- **Tests.** Core 83, sync 49, SQL 66, UI 32, and engine UI +12. Deployed by `deploy-nhl-goalie.yml`. The live source pages were not reachable from the build environment, so the parsers are tested on constructed pages in each source's documented shape (`docs/engine/NHL_GOALIES.md` §10).
+
 ## 2026-10-25 — CI back to green: five failures, each fixed at its cause
 
 - **Football weekly build refused to publish week 8** (mean rank shift 11.46 against a bound of 6; every run since 2026-10-25 11:45 UTC).
