@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-26 — CI: `npm run verify` stops reporting this machine's gaps as failures
+
+A full `npm run verify` reported 19 failures, and 11 of them were this machine's, not the code's. `tools/ci/verify.js` now reports a failure the machine explains as **NOT VERIFIED**, with the reason and, where there is one, the command to run. A pass is always a pass, and any other failure stays FAIL.
+
+| Failure | Why it happened | Now |
+|---|---|---|
+| Data packs, NBA (3), NCAAM research (2) | `node` steps shell out to Python, but only a step whose own script says `python3` was checked against the job's skipped `pip install` | NOT VERIFIED when the log names a missing package, or an earlier step of the job already failed for one |
+| Simulator Typecheck (one step, counted 3 times) | the job's `npm ci --prefix simulator` is skipped, and `simulator/node_modules` is not here | NOT VERIFIED, naming `npm ci --prefix simulator`. A reused NOT VERIFIED step stays NOT VERIFIED; it was counted FAIL. |
+| games-sql "Refuse a silent skip" | it checks logs that its PostgreSQL steps write, and those did not run | NOT VERIFIED: it reads a file only a step that did not run writes |
+| MLB live probe | a live source inside a deterministic workflow | `tools/ci/checks.json` `live_jobs`; run only with `--include-live` |
+
+Files a step creates (screenshots, a suite's log) are no longer deleted. They move to `.cache/verify/<run>/created/`, and a rewritten committed file is copied to `.cache/verify/<run>/rewritten/` before it is restored.
+
+Tests: `tools/ci/verify.test.js` goes from 32 to 43; 11 of them fail on the previous `verify.js`. `tools/ci/workflows.test.js` adds 1 check: every `live_jobs` entry names a real job.
+
 
 
 
