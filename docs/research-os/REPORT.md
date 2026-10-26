@@ -163,6 +163,10 @@ verbatim. This section records what was built and checked by hand.
 | A bare `app.html#research` bookmark reached Research only because Research was the default landing page | `navigation.e2e.js`: "a bare #research opens Research for a reader with nothing saved" | lands on the Overview (`a4ed530e4`) | 188 of 188 |
 | The phone Menu sheet's Close button was 38 px | `navigation.e2e.js`: "every seat in the sheet is a 44px tap target" | 38 | passes |
 | The journey left its PostgreSQL cluster running after every run | checked by listing `postgres -D` processes after each run | 10 clusters left | none |
+| A new trial reader landed on the Overview, so the first-run panel ("Here's what EdgeDesk found today", which lives on Research) was never seen; Setup also handed over to the Overview | `tools/funnel/first_run.e2e.js` (green on `main`) | 30 s timeout: the panel's controls were not visible | 51 of 51; `EDShell.landing()` unit checks, with parity against `lib/edgedesk_first_run.js` |
+| The first merge with `main` gave the matchup graphic's renderer (`edgedesk_game_graphic.js`) a new cache version but not the module drawn with it (`edgedesk_sport_graphic.js`) | `tools/sport_graphic/sport_graphic.test.js` ("with the renderer's version") | 1501 passed, 1 failed | 1502 of 1502 (and the game research one-version rule, 252 of 252) |
+| Player Props' browser suite waited for Research › Props on a landing that is no longer Research | `tools/props/props_ui.e2e.js:171` | timeout | 140 of 140: through the Research seat on desktop, and a new check of the phone bar's path |
+| The AI desk's browser suite tapped Process on the phone bar, where it no longer is | `tools/intelligence/intel_ui.e2e.js` | timeout after 62 checks | 158 of 158: through Menu, as a reader does |
 
 **Tests changed with the IA (assertions rewritten, none removed):**
 `tools/app/navigation.test.js` / `.e2e.js`,
