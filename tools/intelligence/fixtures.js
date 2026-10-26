@@ -161,8 +161,16 @@ function build(now) {
      night game from the artifact's previous week, which the move would put on
      that evening, is left off. */
   const DAY = 86400000, WEEK = 7 * DAY;
+  /* …measured from the artifact's next SLATE, not its next game: once a Sunday's
+     afternoon games are played the artifact's next game is that night's, a week
+     short of the next full slate, and the clock's weekend got one real game (the
+     every-game table listed 3; quant_ui.e2e.js, 2026-10-26). The next slate is the
+     first day ahead with three or more kickoffs; failing that, the next game. */
   const onClock = (games) => {
-    const next = games.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b)[0];
+    const ahead0 = games.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b);
+    const perDay = {};
+    ahead0.forEach((t) => { const d = new Date(t).toISOString().slice(0, 10); perDay[d] = (perDay[d] || 0) + 1; });
+    const next = ahead0.find((t) => perDay[new Date(t).toISOString().slice(0, 10)] >= 3) || ahead0[0];
     const weeks = next == null ? 0 : Math.floor((next - now) / WEEK);
     if (weeks < 1) return games;
     const back = (ms) => new Date(ms - weeks * WEEK).toISOString();
