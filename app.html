@@ -34259,8 +34259,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       distribution_key: o.push_distribution_key
     });
     var marketP = fair && fair.fair_probability != null ? fair.fair_probability : null;
-    var marketEv = marketP != null && dec != null
-      ? ev({ dec: dec, p_win: marketP, p_push: push.p_push || 0 }) : null;
+    /* THE FAIR PROBABILITY IS A NO-PUSH NUMBER. A two-way de-vig makes the
+       sides sum to 1, so fair_probability is P(win | no push). With a push
+       mass q the bet wins p(1 - q) and loses (1 - p)(1 - q); reading p beside
+       q as if it were unconditional made every whole-number line richer than
+       it was (0.5 at 1.909 with q 0.06 read +1.45% instead of -4.27%). An
+       unknown q is computed as 0 and stays flagged in push_note: the sign is
+       right and the size is an upper bound. */
+    var q = push.p_push || 0;
+    var marketWin = marketP != null ? marketP * (1 - q) : null;
+    var marketEv = marketWin != null && dec != null
+      ? ev({ dec: dec, p_win: marketWin, p_push: q }) : null;
     var modelP = o.model && num(o.model.win_probability) != null ? num(o.model.win_probability) : null;
     var modelEv = null;
     if (modelP != null && v && v.may_produce_model_ev && dec != null) {
@@ -34274,6 +34283,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       selection: (o.quote && o.quote.selection) || null,
       handicap: handicap,
       fair_probability: marketP,
+      win_probability: r4(marketWin),
       fair_american: fair ? fair.fair_american : null,
       fair_method: fair ? fair.method : null,
       fair_label: fair ? fair.label : null,
@@ -34284,8 +34294,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       model_ev: modelEv ? modelEv.ev : null,
       /* Probability edge and expected return are DIFFERENT QUANTITIES and are
          reported in different units so they cannot be read as one number. */
-      probability_edge_pp: (marketP != null && dec != null)
-        ? r4(marketP - breakEvenProb(dec, push.p_push || 0)) : null,
+      probability_edge_pp: (marketWin != null && dec != null)
+        ? r4(marketWin - breakEvenProb(dec, q)) : null,
       expected_return_per_unit: marketEv ? marketEv.ev : null,
       price_limit_decimal: null,
       price_limit_american: null,
@@ -34293,7 +34303,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       price_needed_american: null
     };
     if (marketP != null) {
-      var lim = minPlayableDec(marketP, push.p_push || 0, CONFIG.ev_floor);
+      var lim = minPlayableDec(marketWin, q, CONFIG.ev_floor);
       price.price_limit_decimal = lim;
       price.price_limit_american = fmtAmerican(decToAmerican(lim));
       if (marketEv && marketEv.ev != null && marketEv.ev < CONFIG.ev_floor) {
