@@ -1,10 +1,18 @@
 # Research OS — delivery report (2026-10-26)
 
 Branch `claude/edgedesk-sports-research-os-o6vqxg`, started from `main` at
-`0536b76a8` and merged with `main` up to `1c3b5c07a`. **Not merged into `main`,
-not deployed.** Production could not be reached
-from the build environment, so every result below comes from this repository,
-a local PostgreSQL 16 and Chromium (§10).
+`0536b76a8`.
+
+**How it reached `main`.** Pull request #807 merged the branch at `7192d098`
+(merge `afe9815a2`, 2026-10-26 14:56 UTC), 17 seconds after it was opened and
+before any check had run. That head still had the integration defects listed
+in §7: the first-run panel hidden from new trials, the graphic module's cache
+version, and four browser suites. The follow-up pull request rebases their
+fixes onto `main`.
+
+**What was not verified.** Production could not be reached from the build
+environment, so whether `main` is already published is not known. Every result
+below comes from this repository, a local PostgreSQL 16 and Chromium (§10).
 
 ## 1. Architecture audit
 
@@ -238,7 +246,7 @@ first 5 seconds.
 
 | Layer | State | What turns it on |
 |---|---|---|
-| The terminal changes (shell, Overview, search, Performance, game rail, in-app Foresight) | in this PR; **not merged** | merging to `main` publishes `app.html` and `lib/` (static site) |
+| The terminal changes (shell, Overview, search, Performance, game rail, in-app Foresight) | **on `main`** since #807 (`7192d098`), with the defects of §7; their fixes are in the follow-up pull request | `main` is the static site's source; publication not verified from here |
 | `supabase/research_os.sql` (four event names) | **not applied** | the SQL editor; optional, analytics only |
 | Market Foresight | built and tested, **not deployed**; starts in **shadow** | its own deploy steps, then [GO_LIVE_CHECKLIST.md](../market-foresight/GO_LIVE_CHECKLIST.md); **not switched live by this work** |
 | Signal Center | built and tested, **not deployed** (README, 2026-10-23); starts in shadow | its own deploy steps |
