@@ -1,15 +1,10 @@
-# Men's college basketball weekly model report: 2026-10-21
+# Men's college basketball weekly model report: 2026-10-26
 
 Served version **1.1.0** (SERVED; promoted by weekly-loop on 2026-10-21). Outcome-graded only: no closing prices are archived for basketball, so nothing here is compared with the market.
 
 ## What changed
 
-**Promoted 1.0.0 → 1.1.0.** weekly loop 2026-10-21: candidate recency_slower (half_life_days ["mul",2]) cleared the full-window rule.
-
-- Full window 2012–2026: log loss 0.501276 → 0.500974, margin MAE 9.5058 → 9.49, total MAE 13.5534 → 13.5577 (95% interval of the log loss change [-0.000353,-0.000253])
-- 2026: log loss 0.497368 → 0.496946, margin MAE 10.0181 → 9.9957
-- **Cost on totals:** total-points MAE +0.0043 over the full window (+0.0037 in 2026). The side rule measures moneyline and margin only; a totals guard would be a rule change, made openly, not after the fact.
-- Roll back: point `current` in docs/model-loop/ncaam/versions.json at 1.0.0.
+**Nothing promoted.** 8 candidates were tested; none cleared the rule (over 2012–2026: log loss ≤ −0.0002 with its 95% interval below zero and margin MAE ≤ −0.005, or for a scoring-level change total MAE ≤ −0.005 with its interval below zero; no worse on 2026). v1.1.0 keeps serving.
 
 ## Accuracy (walk-forward, out of sample)
 
@@ -38,21 +33,13 @@ Outcome bias = result minus model. |t| ≥ 2 pulls the matching candidates forwa
 
 | Candidate | Change | Full Δlog loss | Full Δmargin MAE | Full Δtotal MAE | 95% interval | 2026 Δlog loss | 2026 Δmargin MAE | Decision |
 |---|---|---|---|---|---|---|---|---|
-| home_edge_looser | `k_h` ["mul",0.5] | 0.000388 | -0.0026 | 0 | log loss change [0.000275,0.000514] | 0.000684 | -0.0029 | FAIL: full log loss change 0.000388 does not clear -0.0002; log loss 95% interval [0.000275,0.000514] is not below zero; full margin MAE change -0.0026 does not clear -0.005; worse on 2026 log loss (0.000684) |
-| recency_faster | `half_life_days` ["mul",0.5] | 0.00078 | 0.0372 | -0.007 | log loss change [0.000679,0.000886] | 0.001053 | 0.0527 | FAIL: full log loss change 0.000780 does not clear -0.0002; log loss 95% interval [0.000679,0.000886] is not below zero; full margin MAE change 0.0372 does not clear -0.005; worse on 2026 log loss (0.001053); worse on 2026 margin MAE (0.0527) |
-| prior_weaker | `prior_games` ["mul",0.5] | 0.00022 | -0.0304 | 0.0631 | log loss change [-0.00014,0.000611] | -0.000973 | -0.047 | FAIL: full log loss change 0.000220 does not clear -0.0002; log loss 95% interval [-0.00014,0.000611] is not below zero |
-| scoring_level_looser | `k_mu` ["mul",0.5] | 0 | 0 | -0.0027 | total MAE change [-0.003717,-0.001799] | 0 | 0 | FAIL: full total MAE change -0.0027 does not clear -0.005 |
-| recency_slower | `half_life_days` ["mul",2] | -0.000302 | -0.0158 | 0.0043 | log loss change [-0.000353,-0.000253] | -0.000422 | -0.0224 | PASS: clears every condition |
-| scoring_level_tighter | `k_mu` ["mul",2] | 0 | 0 | 0.0041 | total MAE change [0.002918,0.005327] | 0 | 0 | FAIL: full total MAE change 0.0041 does not clear -0.005; total MAE 95% interval [0.002918,0.005327] is not below zero; worse on 2026 total MAE (0.0037) |
-| home_edge_tighter | `k_h` ["mul",2] | -0.000361 | 0.0036 | 0 | log loss change [-0.000497,-0.000233] | -0.000678 | 0.0048 | FAIL: full margin MAE change 0.0036 does not clear -0.005; worse on 2026 margin MAE (0.0048) |
-| prior_stronger | `prior_games` ["mul",2] | 0.002645 | 0.1178 | -0.0341 | log loss change [0.002187,0.003083] | 0.00479 | 0.1645 | FAIL: full log loss change 0.002645 does not clear -0.0002; log loss 95% interval [0.002187,0.003083] is not below zero; full margin MAE change 0.1178 does not clear -0.005; worse on 2026 log loss (0.004790); worse on 2026 margin MAE (0.1645) |
 | home_edge_looser | `k_h` ["mul",0.5] | 0.000366 | -0.0026 | 0 | log loss change [0.000257,0.000487] | 0.000645 | -0.0034 | FAIL: full log loss change 0.000366 does not clear -0.0002; log loss 95% interval [0.000257,0.000487] is not below zero; full margin MAE change -0.0026 does not clear -0.005; worse on 2026 log loss (0.000645) |
 | recency_faster | `half_life_days` ["mul",0.5] | 0.000302 | 0.0158 | -0.0043 | log loss change [0.000253,0.000353] | 0.000422 | 0.0224 | FAIL: full log loss change 0.000302 does not clear -0.0002; log loss 95% interval [0.000253,0.000353] is not below zero; full margin MAE change 0.0158 does not clear -0.005; worse on 2026 log loss (0.000422); worse on 2026 margin MAE (0.0224) |
 | prior_weaker | `prior_games` ["mul",0.5] | 0.000447 | -0.0217 | 0.0636 | log loss change [0.000094,0.000834] | -0.000678 | -0.0347 | FAIL: full log loss change 0.000447 does not clear -0.0002; log loss 95% interval [0.000094,0.000834] is not below zero |
 | scoring_level_looser | `k_mu` ["mul",0.5] | 0 | 0 | -0.0026 | total MAE change [-0.003661,-0.001758] | 0 | 0 | FAIL: full total MAE change -0.0026 does not clear -0.005 |
 | recency_slower | `half_life_days` ["mul",2] | -0.000129 | -0.0073 | 0.0023 | log loss change [-0.000154,-0.000106] | -0.000186 | -0.0101 | FAIL: full log loss change -0.000129 does not clear -0.0002 |
 | scoring_level_tighter | `k_mu` ["mul",2] | 0 | 0 | 0.004 | total MAE change [0.002887,0.005258] | 0 | 0 | FAIL: full total MAE change 0.0040 does not clear -0.005; total MAE 95% interval [0.002887,0.005258] is not below zero; worse on 2026 total MAE (0.0037) |
-| home_edge_tighter | `k_h` ["mul",2] | -0.00034 | 0.0036 | 0 | log loss change [-0.000473,-0.000216] | -0.000637 | 0.0049 | FAIL: full margin MAE change 0.0036 does not clear -0.005; worse on 2026 margin MAE (0.0049) |
 | prior_stronger | `prior_games` ["mul",2] | 0.002292 | 0.1059 | -0.0352 | log loss change [0.001843,0.002716] | 0.00431 | 0.1475 | FAIL: full log loss change 0.002292 does not clear -0.0002; log loss 95% interval [0.001843,0.002716] is not below zero; full margin MAE change 0.1059 does not clear -0.005; worse on 2026 log loss (0.004310); worse on 2026 margin MAE (0.1475) |
+| carry_lower | `carry` ["add",-0.1] | 0.004021 | 0.153 | 0.0103 | log loss change [0.003691,0.00436] | 0.004997 | 0.2178 | FAIL: full log loss change 0.004021 does not clear -0.0002; log loss 95% interval [0.003691,0.00436] is not below zero; full margin MAE change 0.1530 does not clear -0.005; worse on 2026 log loss (0.004997); worse on 2026 margin MAE (0.2178) |
 
 Every candidate ever tried: `docs/model-loop/ncaam/candidates.jsonl`. Versions: `docs/model-loop/ncaam/versions.json`. The ratings are refreshed daily with the served version (`basketball/walkforward.js`).
