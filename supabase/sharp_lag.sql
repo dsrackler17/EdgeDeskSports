@@ -29,6 +29,7 @@
 --   sharp_triggers          (B) an NBA starter's status change, an NHL goalie
 --                           change, a Kalshi move of 3c+, an NBA role shift
 --   sharp_check_requests    (B) every ask the dispatcher made, and the answer
+--   sharp_flags             (C) the flags, both registered models
 -- sharp_lag_config holds the operator's switches (dispatch shadow / live,
 -- flags on / off, public_display off / on) and the registry links: the one
 -- table that changes, and every change of it is logged.
@@ -224,6 +225,94 @@ create index if not exists sharp_check_requests_event_idx on public.sharp_check_
 select public.sharp_lag_seal(array['sharp_triggers', 'sharp_check_requests']);
 comment on table public.sharp_triggers is 'Sharp lag (B): what started a check: an NBA starter''s status change, an NHL goalie change, a Kalshi move of 3c+, an NBA role shift. Recorded in the dispatch mode of the moment. Append-only.';
 
+-- ---------------------------------------------------------------- C. flags (append-only)
+create table if not exists public.sharp_flags (
+  flag_id                bigint generated always as identity primary key,
+  flagged_at             timestamptz not null,
+  model_key              text not null check (model_key in ('SHARP-LAG', 'NBA-ROLE-SHIFT')),
+  model_version          text not null,
+  trigger_type           text not null check (trigger_type in ('scheduled', 'nba_injury', 'nhl_goalie', 'kalshi_move', 'role_shift')),
+  trigger_id             bigint references public.sharp_triggers (id),
+  sport_key              text not null,
+  event_id               text not null,
+  home_team              text,
+  away_team              text,
+  commence_time          timestamptz not null,
+  market                 text not null,
+  side                   text not null,
+  participant            text,
+  point                  numeric,
+  target_venue           text not null,               -- kalshi, draftkings, or the prop book
+  target_ref             text not null,               -- the Kalshi ticker, or the book key
+  target_price           numeric not null,            -- Kalshi YES ask (dollars) or the book's decimal price
+  target_price_american  integer,
+  target_cost_prob       numeric not null check (target_cost_prob > 0 and target_cost_prob < 1.5),
+  fee_per_contract       numeric,
+  fee_basis              text not null check (fee_basis in ('none', 'verified', 'highest_plausible')),
+  fee_unverified         boolean not null,
+  target_observed_at     timestamptz not null,
+  target_snapshot_id     bigint,
+  target_request_id      bigint,
+  reference_kind         text not null check (reference_kind in ('pinnacle_shin', 'role_shift_model')),
+  reference_prob         numeric not null check (reference_prob > 0 and reference_prob < 1),
+  devig_method           text,
+  pinnacle_price_dec     numeric,
+  pinnacle_opp_dec       numeric,
+  reference_observed_at  timestamptz not null,
+  reference_request_id   bigint,
+  reference_category     text,
+  gap_pp                 numeric not null,
+  threshold_pp           numeric not null,
+  seconds_since_reference integer not null check (seconds_since_reference >= 0),
+  reference_resolution_s integer,
+  target_resolution_s    integer,
+  snapshot_resolution_s  integer,                     -- lag is measured only to this cadence
+  episode_key            text not null,
+  -- role shift (F)
+  absent_player_id       text,
+  absent_player_name     text,
+  minutes_delta          numeric,
+  sample_games           integer,
+  sample_stints          integer,
+  fair_line              numeric,
+  posted_line            numeric,
+  fair_price_american    integer,
+  detail                 jsonb not null default '{}'::jsonb,
+  created_at             timestamptz not null default now(),
+  check (commence_time > flagged_at),
+  check (gap_pp >= threshold_pp),
+  check (fee_basis = 'verified' or target_venue <> 'kalshi' or fee_unverified),
+  check (reference_kind <> 'pinnacle_shin' or (pinnacle_price_dec is not null and pinnacle_opp_dec is not null)),
+  check (model_key <> 'NBA-ROLE-SHIFT' or (trigger_type = 'role_shift' and absent_player_id is not null and minutes_delta is not null))
+);
+create unique index if not exists sharp_flags_episode_idx on public.sharp_flags (episode_key);
+create index if not exists sharp_flags_event_idx on public.sharp_flags (event_id, flagged_at);
+create index if not exists sharp_flags_start_idx on public.sharp_flags (commence_time);
+create index if not exists sharp_flags_flagged_idx on public.sharp_flags (flagged_at desc);
+
+-- the rules the database holds, not only the function
+create or replace function public.sharp_flags_guard()
+returns trigger language plpgsql as $g$
+declare registered numeric := public.sharp_lag_rule(case when new.model_key = 'NBA-ROLE-SHIFT' then 'role_shift_gap_pp' else 'gap_pp' end);
+begin
+  if new.threshold_pp < registered then
+    raise exception 'sharp_flags: threshold % is below the registered threshold', new.threshold_pp;
+  end if;
+  if new.reference_kind = 'pinnacle_shin' and new.seconds_since_reference > public.sharp_lag_rule('reference_max_age_min') * 60 then
+    raise exception 'sharp_flags: the Pinnacle observation is % s old: a past price is never flagged', new.seconds_since_reference;
+  end if;
+  -- the absent player's own unders void if he sits: never flagged
+  if new.model_key = 'NBA-ROLE-SHIFT' and new.side ilike 'under'
+     and (lower(coalesce(new.participant, '')) = lower(coalesce(new.absent_player_name, '')) or coalesce(new.detail ->> 'participant_id', '') = new.absent_player_id) then
+    raise exception 'sharp_flags: the absent player''s own under is never flagged (it voids if he does not play)';
+  end if;
+  return new;
+end $g$;
+drop trigger if exists sharp_flags_guard on public.sharp_flags;
+create trigger sharp_flags_guard before insert on public.sharp_flags for each row execute function public.sharp_flags_guard();
+
+select public.sharp_lag_seal(array['sharp_flags']);
+comment on table public.sharp_flags is 'Sharp lag (C, F): a measured gap between a slow market and its reference, at one moment. Experimental research, never a recommendation. Append-only.';
 
 
 notify pgrst, 'reload schema';

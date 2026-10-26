@@ -5,6 +5,10 @@
      apply      twice, every report row ok; static file rules
      append     every table refuses update, delete and truncate (service role
                 and owner too); a price snapshot read twice is stored once
+     flags      the database holds the rules: the registered threshold, no
+                past Pinnacle price, a Kalshi flag without a verified fee is
+                marked fee_unverified, the absent player's own under is never
+                flagged, nothing after the start, one flag per episode
      access     no client reads a table directly
      cron       the free job every 10 minutes and never a spend path; no secret,
                 no call
@@ -61,7 +65,7 @@ try {
     on conflict (source_request_id, event_id, book, market, side, participant_key, point_key) do nothing;`;
   db.service(price(1, 'Philadelphia Eagles', 1.6) + price(1, 'Dallas Cowboys', 2.5) + price(1, 'Dallas Cowboys', 2.5));
   T.chk('append: a snapshot read twice is stored once (the unique key, null point included)', db.sql('select count(*) from public.sharp_price_snapshots') === '2');
-  const SEALED = ['sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log', 'sharp_triggers', 'sharp_check_requests'];
+  const SEALED = ['sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log', 'sharp_triggers', 'sharp_check_requests', 'sharp_flags'];
   for (const t of ['sharp_price_snapshots', 'sharp_lag_config_log']) {
     const col = t === 'sharp_price_snapshots' ? 'book' : 'key';
     T.chk('append: ' + t + ' refuses UPDATE: the service role has no UPDATE grant, and the trigger refuses even the owner', refused(() => db.service('update public.' + t + ' set ' + col + ' = ' + col + ';'))
@@ -72,6 +76,35 @@ try {
   T.chk('append: a price must be a real decimal price', refused(() => db.service(price(2, 'X', 1.0))));
 
   T.chk('append: every sealed table carries both guards', SEALED.every((t) => db.sql("select count(*) from pg_trigger where tgname in ('" + t + "_frozen', '" + t + "_no_truncate')") === '2'));
+  /* ── flags ───────────────────────────────────────────────────────────── */
+  const flag = (o) => {
+    const f = Object.assign({ flagged_at: iso(0), model_key: 'SHARP-LAG', model_version: '0.1', trigger_type: 'scheduled', sport_key: 'americanfootball_nfl', event_id: 'ev1',
+      home_team: 'Philadelphia Eagles', away_team: 'Dallas Cowboys', commence_time: iso(240), market: 'h2h', side: 'Philadelphia Eagles', target_venue: 'draftkings', target_ref: 'draftkings',
+      target_price: 1.75, target_cost_prob: 0.5714, fee_basis: 'none', fee_unverified: false, target_observed_at: iso(-5), reference_kind: 'pinnacle_shin', reference_prob: 0.605,
+      devig_method: 'shin', pinnacle_price_dec: 1.6, pinnacle_opp_dec: 2.5, reference_observed_at: iso(-10), gap_pp: 3.36, threshold_pp: 2.5, seconds_since_reference: 600,
+      snapshot_resolution_s: 3600, episode_key: 'ev1#draftkings#h2h|Philadelphia Eagles||@' + Math.random() }, o || {});
+    const cols = Object.keys(f);
+    return db.service('insert into public.sharp_flags (' + cols.join(', ') + ') values (' + cols.map((k) => PG.lit(typeof f[k] === 'object' && f[k] !== null ? JSON.stringify(f[k]) : f[k])).join(', ') + ') returning flag_id;').split('\n').pop();
+  };
+  const f1 = flag();
+  T.chk('flags: a DraftKings flag inside every rule is written', /^\d+$/.test(f1), f1);
+  T.chk('flags: a gap under the threshold is refused', refused(() => flag({ gap_pp: 2.4 })));
+  T.chk('flags: a threshold under the registered 2.5 is refused', refused(() => flag({ gap_pp: 2.0, threshold_pp: 2.0 }), /registered threshold/));
+  T.chk('flags: a Pinnacle observation over 90 minutes old is refused (a past price is never flagged)', refused(() => flag({ seconds_since_reference: 5401 }), /past price/));
+  T.chk('flags: a Kalshi flag on the highest plausible fee must be marked fee_unverified', refused(() => flag({ target_venue: 'kalshi', target_ref: 'K', fee_basis: 'highest_plausible', fee_unverified: false }))
+    && /^\d+$/.test(flag({ target_venue: 'kalshi', target_ref: 'K', fee_basis: 'highest_plausible', fee_unverified: true, fee_per_contract: 0.02 })));
+  T.chk('flags: nothing is flagged at or after the start', refused(() => flag({ commence_time: iso(-1) })));
+  const ek = 'ev1#draftkings#same@x';
+  flag({ episode_key: ek });
+  T.chk('flags: one flag per episode (the unique key)', refused(() => flag({ episode_key: ek })));
+  const role = { model_key: 'NBA-ROLE-SHIFT', trigger_type: 'role_shift', sport_key: 'basketball_nba', market: 'player_rebounds', reference_kind: 'role_shift_model', pinnacle_price_dec: null, pinnacle_opp_dec: null,
+    absent_player_id: '4432816', absent_player_name: 'LaMelo Ball', minutes_delta: 6.4, sample_games: 14, sample_stints: 230, fair_line: 7.5, posted_line: 6.5, participant: 'Miles Bridges', side: 'Over', point: 6.5 };
+  T.chk('flags: a role-shift flag on a teammate is written', /^\d+$/.test(flag(role)));
+  T.chk('flags: the absent player\'s own under is never flagged (it voids if he sits)', refused(() => flag(Object.assign({}, role, { participant: 'LaMelo Ball', side: 'Under' })), /absent player/));
+  T.chk('flags: a role-shift flag must name the absent player and the minutes delta', refused(() => flag(Object.assign({}, role, { absent_player_id: null }))));
+  T.chk('flags: a flag is never edited or deleted (not even by the owner)', refused(() => db.service('update public.sharp_flags set gap_pp = 9 where flag_id = ' + f1 + ';'))
+    && refused(() => db.sql('update public.sharp_flags set gap_pp = 9 where flag_id = ' + f1 + ';'), /append-only/) && refused(() => db.sql('delete from public.sharp_flags;'), /append-only/));
+
   /* ── access ──────────────────────────────────────────────────────────── */
   const tables = SEALED.concat(['sharp_lag_config']);
   T.chk('access: anon reads no table directly', tables.every((t) => refused(() => db.anon('select count(*) from public.' + t + ';'), /permission denied/)));

@@ -13,6 +13,9 @@
      triggers  a Kalshi move of 3c+, an NBA starter's status change, an NHL
                goalie change, each matched to its provider event, recorded in
                the dispatch switch's mode, once
+     flags     DraftKings and Kalshi gaps of 2.5 pp+, the trigger behind a
+               triggered check carried, fee_unverified, one per episode, none
+               while the switch is off
      spend     no call to odds_gateway or the provider, no PATCH, no DELETE
    Run: node tools/sharp_lag/sharp_lag_fn.test.js
    =========================================================================== */
@@ -83,6 +86,33 @@ const cfg = (dispatch, extra) => [{ key: 'dispatch', value: dispatch || 'shadow'
   const n1 = P.length;
   out = await run({ steps: ['ingest'] });
   chk('ingest: a second run reads nothing again', R.DB.sharp_price_snapshots.length === n1 && out.ingest.snapshots_read === 0);
+
+  /* ── flags ───────────────────────────────────────────────────────────── */
+  R.DB.kalshi_game_links.push({ market_ticker: 'KXNFLGAME-26NOV02DALPHI-PHI', yes_team: NFL.home_team, odds_event_id: NFL.id, odds_sport_key: NFL.sport_key, game_id: '2026_09_DAL_PHI', home_team: NFL.home_team, away_team: NFL.away_team, kickoff_at: NFL.commence_time });
+  R.DB.kalshi_price_snapshots.push({ id: 1, ticker: 'KXNFLGAME-26NOV02DALPHI-PHI', captured_at: at(-8), yes_bid: 0.54, yes_ask: 0.55 }, { id: 2, ticker: 'KXNFLGAME-26NOV02DALPHI-PHI', captured_at: at(-3), yes_bid: 0.54, yes_ask: 0.55 });
+  out = await run({ steps: ['flags'] });
+  const Fl = R.DB.sharp_flags;
+  chk('flags: DraftKings h2h 1.75 (57.1%) against the Pinnacle Shin fair (~61%) is flagged', Fl.some((f) => f.target_venue === 'draftkings' && f.market === 'h2h' && f.side === NFL.home_team && f.gap_pp >= 2.5), Fl);
+  const kf = Fl.find((f) => f.target_venue === 'kalshi');
+  chk('flags: Kalshi YES 55c + the highest plausible 2c fee (57%) under the ~61% fair is flagged, fee_unverified', kf && kf.fee_unverified === true && kf.target_cost_prob === 0.57 && kf.fee_basis === 'highest_plausible', kf);
+  chk('flags: the flag carries the trigger (scheduled: a featured board), both prices, the gap, the seconds since Pinnacle and the resolution', kf && kf.trigger_type === 'scheduled' && kf.pinnacle_price_dec === 1.6 && kf.seconds_since_reference === 600 && kf.target_resolution_s === 300);
+  chk('flags: the first Pinnacle observation of an event takes the gateway\'s nominal cadence as its resolution (60 min inside 24 h)', kf && kf.reference_resolution_s === 3600 && kf.snapshot_resolution_s === 3600);
+  chk('flags: a total at the same point is compared too (DraftKings Under 2.20 against the Pinnacle fair)', Fl.some((f) => f.market === 'totals' && f.side === 'Under' && f.point === 47.5));
+  const nf = Fl.length;
+  out = await run({ steps: ['flags'] });
+  chk('flags: the next run writes no second flag while the gap has not converged (one per episode)', R.DB.sharp_flags.length === nf, out.flags);
+  /* a triggered check: the snapshot bought for an NBA starter's change carries that trigger */
+  R.DB.sharp_triggers.push({ id: 77, trigger_type: 'nba_injury', sport_key: 'basketball_nba', event_id: NBA_EV.id, mode: 'live', dedupe_key: 'x', detected_at: at(-30) });
+  R.DB.sharp_check_requests.push({ id: 5, trigger_id: 77, gateway_request_id: 503, category: 'sharp_check', event_id: NBA_EV.id, decision: 'granted' });
+  R.DB.odds_api_snapshots.push(snap({ category: 'sharp_check', sport_key: 'basketball_nba', event_id: NBA_EV.id, last_request_id: 503, last_success_at: at(-2),
+    body: Object.assign({}, NBA_EV, { bookmakers: [book('pinnacle', [{ key: 'h2h', outcomes: [{ name: NBA_EV.home_team, price: 1.4 }, { name: NBA_EV.away_team, price: 3.2 }] }]),
+      book('draftkings', [{ key: 'h2h', outcomes: [{ name: NBA_EV.home_team, price: 1.62 }, { name: NBA_EV.away_team, price: 2.4 }] }])] }) }));
+  out = await run({ steps: ['ingest', 'flags'] });
+  const tf = R.DB.sharp_flags.find((f) => f.event_id === NBA_EV.id);
+  chk('flags: a flag from a triggered check names its trigger (nba_injury, id 77)', tf && tf.trigger_type === 'nba_injury' && tf.trigger_id === 77 && tf.reference_category === 'sharp_check', tf);
+  world({ sharp_lag_config: [{ key: 'flags', value: 'off' }], sharp_price_snapshots: P.slice() });
+  out = await run({ steps: ['flags'] });
+  chk('flags: with the switch off nothing is flagged, and the run says why', R.DB.sharp_flags.length === 0 && /switched off/.test(out.flags.skipped));
 
   /* ── triggers ────────────────────────────────────────────────────────── */
   world({ sharp_lag_config: cfg('shadow'),

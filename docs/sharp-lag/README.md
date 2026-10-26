@@ -95,6 +95,42 @@ The free job detects triggers every 10 minutes and records each once
   triggers are recorded and nothing is asked. The cron poke does not even wake
   the dispatcher unless dispatch is `live` and the gateway's breaker is on.
 
+## C. Flags
+
+A flag (`sharp_flags`, append-only, one per episode) is written when **all**
+of these hold:
+- the game has not started;
+- the latest Pinnacle observation of the event is **at most 90 minutes old**
+  (the existing past-price rule);
+- the target is on the **same side at the same point**. For spreads and
+  totals in v1, a target at another point is never compared;
+- the target price is fresh:
+  - DraftKings at most 90 minutes old;
+  - Kalshi at most 15 minutes old, two-sided and at most 6¢ wide;
+- **gap = Pinnacle Shin fair − the target's all-in cost ≥ 2.5 pp**. The
+  all-in cost is:
+  - **DraftKings:** 1 / decimal price. The vig is paid, so it stays in;
+  - **Kalshi:** the YES ask plus the taker fee (next bullet).
+- **The Kalshi fee.** Until an operator records Kalshi's **current published
+  fee schedule** as verified in `public.market_execution_costs`, the cost uses
+  the **highest plausible fee**:
+  - `round_up_to_cent(0.07 × price × (1 − price))` on a single-contract order,
+    the most rounding the schedule allows;
+  - every such flag is marked `fee_unverified` (the database refuses a Kalshi
+    flag without a verified schedule that is not so marked).
+
+  Kalshi's site was not reachable from the build environment, so the schedule
+  was **not verified here**.
+- **One flag per episode.** A new flag on the same event, venue and side waits
+  until the last one's gap has converged.
+
+Each flag stores:
+- the trigger type: `scheduled` for a `featured` / `close` board, or the
+  trigger behind the `sharp_check` request that bought the observation;
+- both prices (Pinnacle's pair and the target's price), the Pinnacle fair and
+  the gap;
+- the timestamps and the seconds since the Pinnacle observation;
+- the snapshot resolution.
 
 
 

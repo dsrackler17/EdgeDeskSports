@@ -21,6 +21,9 @@
 //   2 triggers NBA starter status changes, NHL goalie changes, Kalshi moves
 //              of 3c or more, recorded in the mode the dispatch switch is in
 //              (shadow: nothing will be bought for them)
+//   3 flags    every upcoming event with a Pinnacle observation under 90
+//              minutes old, against DraftKings (same side, same point) and
+//              the linked Kalshi markets (YES ask plus fee), 2.5 pp or more
 //
 // AUTH. pg_cron sends the Vault secret sharp_lag_cron_secret as
 // x-cron-secret; it must equal SHARP_LAG_CRON_SECRET. A GET is a health probe.
@@ -115,6 +118,8 @@ export const BUILD = "sharp_lag@2026-10-27.1";
     kalshi_move: 'Kalshi move of 3¢ or more',
     role_shift: 'NBA role shift'
   };
+  L.KALSHI_FEE = { coefficient: 0.07, unverified_contracts: 1, verified_contracts: 100,
+    basis: 'Kalshi taker fee = round_up_to_cent(coefficient × contracts × price × (1 − price)) per order' };
 
   /* ------------------------------------------------------------ numbers */
   function num(x) { if (x === null || x === undefined || x === '') return null; var n = Number(x); return isFinite(n) ? n : null; }
@@ -310,6 +315,119 @@ export const BUILD = "sharp_lag@2026-10-27.1";
     return hits.length === 1 ? hits[0] : null;
   };
 
+  /* ------------------------------------------------------------ costs (Kalshi fee, a book price) */
+  function ceilCent(x) { return Math.ceil(x * 100 - 1e-9) / 100; }
+  /* verified: an operator-verified public.market_execution_costs row
+     ({ taker_coefficient, verified_at, verified_by, source_url }) or null */
+  L.kalshiFee = function (price, verified) {
+    var p = num(price); if (p == null || p <= 0 || p >= 1) return null;
+    var c = verified ? num(verified.taker_coefficient) : null;
+    if (c != null && c >= 0 && verified.verified_at) {
+      var n = L.KALSHI_FEE.verified_contracts;
+      return { per_contract: r4(ceilCent(c * n * p * (1 - p)) / n), basis: 'verified', unverified: false, coefficient: c, contracts: n,
+        source: verified.source_url || null, verified_at: verified.verified_at, verified_by: verified.verified_by || null };
+    }
+    return { per_contract: ceilCent(L.KALSHI_FEE.coefficient * p * (1 - p)), basis: 'highest_plausible', unverified: true,
+      coefficient: L.KALSHI_FEE.coefficient, contracts: L.KALSHI_FEE.unverified_contracts, source: null, verified_at: null, verified_by: null };
+  };
+  /* the all-in cost of one YES contract, as a probability */
+  L.kalshiCost = function (s, verified) {
+    if (!L.kalshiTwoSided(s) || L.kalshiSpread(s) > L.RULES.kalshi_max_spread + 1e-9) return null;
+    var f = L.kalshiFee(s.yes_ask, verified); if (!f) return null;
+    return { cost: r4(num(s.yes_ask) + f.per_contract), price: num(s.yes_ask), fee: f };
+  };
+  L.bookCost = function (dec) { dec = num(dec); return dec != null && dec > 1 ? r4(1 / dec) : null; };
+
+  /* ------------------------------------------------------------ flags */
+  function ageMin(at, now) { var a = ms(at), n = ms(now); return a == null || n == null ? null : (n - a) / 60000; }
+  L.ageMin = ageMin;
+  /* the episode a flag opens: one per event, venue and side. A new flag on the
+     same key waits until the last one's gap has converged (L.convergence). */
+  L.baseKey = function (event_id, venue, sk) { return [event_id, venue, sk].join('#'); };
+
+  /* ctx: {
+       now, event: { event_id, sport_key, home_team, away_team, commence_time },
+       pinnacle: { observed_at, request_id, category, resolution_s, rows },
+       draftkings: { observed_at, request_id, resolution_s, rows } | null,
+       kalshi: [ { ticker, yes_team, snapshot: { id, captured_at, yes_bid, yes_ask }, resolution_s } ],
+       fee: verified market_execution_costs row | null,
+       trigger: { type, id } | null,
+       open: function (base_key) -> true when an earlier flag on it has not converged
+     }
+     returns { flags, considered, skipped: { reason: n } } */
+  L.evaluate = function (ctx) {
+    var R = L.RULES, out = { flags: [], considered: 0, skipped: {} };
+    var skip = function (why) { out.skipped[why] = (out.skipped[why] || 0) + 1; };
+    var ev = ctx.event || {}, now = ctx.now;
+    if (ms(ev.commence_time) == null || ms(ev.commence_time) <= ms(now)) { skip('not_pregame'); return out; }
+    var P = ctx.pinnacle;
+    if (!P || !P.rows || !P.rows.length) { skip('no_reference'); return out; }
+    var pAge = ageMin(P.observed_at, now);
+    if (pAge == null || pAge > R.reference_max_age_min) { skip('reference_past_price'); return out; }
+    var F = L.fairs(P.rows);
+    var trig = ctx.trigger || { type: 'scheduled', id: null };
+    var base = function (sk, f) {
+      return { model_key: L.MODELS.sharp_lag.key, model_version: L.MODELS.sharp_lag.version, flagged_at: new Date(ms(now)).toISOString(),
+        trigger_type: trig.type, trigger_id: trig.id == null ? null : trig.id,
+        sport_key: ev.sport_key, event_id: ev.event_id, home_team: ev.home_team, away_team: ev.away_team, commence_time: ev.commence_time,
+        market: f.row.market, side: f.row.side, participant: f.row.participant || null, point: f.row.point == null ? null : num(f.row.point),
+        reference_kind: 'pinnacle_shin', reference_prob: f.fair, devig_method: f.method,
+        pinnacle_price_dec: f.dec, pinnacle_opp_dec: f.opp_dec, reference_observed_at: P.observed_at,
+        reference_request_id: P.request_id == null ? null : P.request_id, reference_category: P.category || null,
+        seconds_since_reference: Math.max(0, Math.round((ms(now) - ms(P.observed_at)) / 1000)),
+        reference_resolution_s: P.resolution_s == null ? null : P.resolution_s, threshold_pp: R.gap_pp };
+    };
+    var finish = function (flag, targetRes) {
+      var rs = [flag.reference_resolution_s, targetRes].filter(function (x) { return x != null; });
+      flag.target_resolution_s = targetRes == null ? null : targetRes;
+      flag.snapshot_resolution_s = rs.length ? Math.max.apply(null, rs) : null;
+      flag.episode_key = L.baseKey(ev.event_id, flag.target_venue, L.sideKey(flag)) + '@' + flag.target_ref_at;
+      return flag;
+    };
+    /* DraftKings, on the same side at the same point */
+    var D = ctx.draftkings;
+    if (D && D.rows && D.rows.length) {
+      var dAge = ageMin(D.observed_at, now);
+      if (dAge == null || dAge > R.book_target_max_age_min) skip('target_past_price');
+      else D.rows.forEach(function (t) {
+        var sk = L.sideKey(t), f = F[sk];
+        if (!f) { skip('no_reference_for_side'); return; }
+        out.considered++;
+        var cost = L.bookCost(t.price_dec); if (cost == null) { skip('no_cost'); return; }
+        var gap = r2((f.fair - cost) * 100);
+        if (gap < R.gap_pp) { skip('under_threshold'); return; }
+        if (ctx.open && ctx.open(L.baseKey(ev.event_id, 'draftkings', sk))) { skip('episode_open'); return; }
+        var fl = base(sk, f);
+        fl.target_venue = 'draftkings'; fl.target_ref = 'draftkings'; fl.target_price = num(t.price_dec); fl.target_price_american = L.decToAm(t.price_dec);
+        fl.target_cost_prob = cost; fl.fee_per_contract = null; fl.fee_basis = 'none'; fl.fee_unverified = false;
+        fl.target_observed_at = D.observed_at; fl.target_ref_at = D.observed_at; fl.target_request_id = D.request_id == null ? null : D.request_id;
+        fl.gap_pp = gap;
+        out.flags.push(finish(fl, D.resolution_s == null ? null : D.resolution_s));
+      });
+    }
+    /* Kalshi game winners: YES on a team is the h2h side for that team */
+    (ctx.kalshi || []).forEach(function (k) {
+      var s = k.snapshot; if (!s) return;
+      var sk = L.sideKey({ market: 'h2h', side: k.yes_team, participant: null, point: null }), f = F[sk];
+      if (!f) { skip('no_reference_for_side'); return; }
+      out.considered++;
+      var kAge = ageMin(s.captured_at, now);
+      if (kAge == null || kAge > R.kalshi_max_age_min) { skip('target_past_price'); return; }
+      var c = L.kalshiCost(s, ctx.fee);
+      if (!c) { skip('kalshi_not_two_sided_or_wide'); return; }
+      var gap = r2((f.fair - c.cost) * 100);
+      if (gap < R.gap_pp) { skip('under_threshold'); return; }
+      if (ctx.open && ctx.open(L.baseKey(ev.event_id, 'kalshi', sk))) { skip('episode_open'); return; }
+      var fl = base(sk, f);
+      fl.target_venue = 'kalshi'; fl.target_ref = k.ticker; fl.target_price = c.price; fl.target_price_american = null;
+      fl.target_cost_prob = c.cost; fl.fee_per_contract = c.fee.per_contract; fl.fee_basis = c.fee.basis; fl.fee_unverified = c.fee.unverified;
+      fl.target_observed_at = s.captured_at; fl.target_ref_at = s.captured_at; fl.target_snapshot_id = s.id == null ? null : s.id;
+      fl.gap_pp = gap;
+      out.flags.push(finish(fl, k.resolution_s == null ? 300 : k.resolution_s));
+    });
+    return out;
+  };
+
   return L;
 }));
 // ── END SHARP LAG CORE ──
@@ -493,8 +611,106 @@ async function fetchJson(url: string): Promise<Any> {
   return await r.json();
 }
 
+/* ================================================================ 3 FLAGS */
+/* the observations of one event, one per gateway request: { observed_at, request_id, category, rows } */
+function observations(rows: Any[], book: string) {
+  const by: Any = {};
+  rows.filter((r) => r.book === book).forEach((r) => {
+    const k = String(r.source_request_id);
+    (by[k] = by[k] || { observed_at: r.captured_at, request_id: r.source_request_id, category: r.source_category, rows: [] }).rows.push(r);
+  });
+  return Object.values(by).sort((a: Any, b: Any) => Date.parse(a.observed_at) - Date.parse(b.observed_at));
+}
+function withResolution(list: Any[], startIso: string) {
+  return list.map((o: Any, i: number) => Object.assign({}, o, { resolution_s: i ? Math.round((Date.parse(o.observed_at) - Date.parse(list[i - 1].observed_at)) / 1000)
+    : SL.nominalResolution("board", (Date.parse(startIso) - Date.parse(o.observed_at)) / 3600e3) }));
+}
+async function feeRow(ctx: Any) {
+  if (ctx.fee !== undefined) return ctx.fee;
+  ctx.fee = null;
+  try {
+    const rows = await db("market_execution_costs?select=*&venue=eq.kalshi");
+    const now = ctx.nowMs;
+    ctx.fee = (rows || []).find((r: Any) => r.verified_at && r.taker_coefficient != null
+      && (!r.effective_from || Date.parse(r.effective_from) <= now) && (!r.effective_to || Date.parse(r.effective_to) > now)
+      && (!r.category || /sport/i.test(String(r.category)))) || null;
+  } catch { ctx.fee = null; }   // the table is absent: every Kalshi flag is fee_unverified
+  return ctx.fee;
+}
+async function eventHistory(eventId: string, sinceMs: number, ctx: Any) {
+  return await dbAll("sharp_price_snapshots?select=captured_at,source_request_id,source_category,sport_key,event_id,home_team,away_team,commence_time,book,market,side,participant,point,price_dec"
+    + "&event_id=eq." + enc(eventId) + "&book=in.(pinnacle,draftkings)&captured_at=gte." + enc(iso(sinceMs)) + "&order=captured_at.asc", 10);
+}
+async function kalshiFor(eventId: string, sinceMs: number) {
+  const links = await dbAll("kalshi_game_links?select=market_ticker,yes_team&odds_event_id=eq." + enc(eventId));
+  if (!links.length) return { links, snaps: {} };
+  const snaps = await dbAll("kalshi_price_snapshots?select=id,ticker,captured_at,yes_bid,yes_ask&ticker=in." + inList(links.map((l: Any) => l.market_ticker))
+    + "&captured_at=gte." + enc(iso(sinceMs)) + "&order=captured_at.asc");
+  const by: Any = {}; snaps.forEach((s: Any) => { (by[s.ticker] = by[s.ticker] || []).push(s); });
+  return { links, snaps: by };
+}
+async function triggerFor(requestId: Any, category: string, ctx: Any) {
+  if (category !== "sharp_check" || requestId == null) return { type: "scheduled", id: null };
+  const k = String(requestId);
+  if (k in ctx.trigCache) return ctx.trigCache[k];
+  const req = await db("sharp_check_requests?select=trigger_id&gateway_request_id=eq." + requestId + "&trigger_id=not.is.null&order=id.asc&limit=1");
+  let t: Any = { type: "scheduled", id: null };
+  if (req && req[0]) {
+    const tr = await db("sharp_triggers?select=id,trigger_type&id=eq." + req[0].trigger_id);
+    if (tr && tr[0]) t = { type: tr[0].trigger_type, id: tr[0].id };
+  }
+  return (ctx.trigCache[k] = t);
+}
+async function flags(ctx: Any) {
+  if ((await setting("flags")) === "off") { ctx.out.flags = { skipped: "flags are switched off (sharp_lag_config.flags)" }; return; }
+  const R = SL.RULES;
+  const fresh = await dbAll("sharp_price_snapshots?select=event_id&book=eq.pinnacle&source_category=in.(featured,close,sharp_check)"
+    + "&captured_at=gte." + enc(iso(ctx.nowMs - R.reference_max_age_min * 60000)) + "&commence_time=gt." + enc(iso(ctx.nowMs)));
+  const events = [...new Set(fresh.map((r: Any) => r.event_id))];
+  const fee = await feeRow(ctx);
+  const tally: Any = { events: events.length, considered: 0, written: 0, skipped: {} };
+  for (const eventId of events) {
+    try {
+      const hist = await eventHistory(eventId as string, ctx.nowMs - 26 * 3600e3, ctx);
+      if (!hist.length) continue;
+      const start = hist[0].commence_time;
+      const pin = withResolution(observations(hist, "pinnacle"), start), dk = withResolution(observations(hist, "draftkings"), start);
+      if (!pin.length) continue;
+      const P: Any = pin[pin.length - 1], D: Any = dk.length ? dk[dk.length - 1] : null;
+      const any = hist[0];
+      const event = { event_id: eventId, sport_key: any.sport_key, home_team: any.home_team, away_team: any.away_team, commence_time: any.commence_time };
+      /* the episodes still open on this event: a flag whose gap has not converged since */
+      const prior = await dbAll("sharp_flags?select=flag_id,flagged_at,event_id,market,side,participant,point,target_venue,target_ref,fee_unverified,commence_time,episode_key"
+        + "&event_id=eq." + enc(eventId as string) + "&model_key=eq.SHARP-LAG&order=flagged_at.asc");
+      const earliest = prior.length ? Date.parse(prior[0].flagged_at) : ctx.nowMs - 30 * 60000;
+      const K = await kalshiFor(eventId as string, Math.min(earliest, ctx.nowMs - 30 * 60000));
+      const lastBy: Any = {};
+      prior.forEach((f: Any) => { lastBy[SL.baseKey(f.event_id, f.target_venue, SL.sideKey(f))] = f; });
+      const open = (bk: string) => {
+        const f = lastBy[bk]; if (!f) return false;
+        const target = f.target_venue === "kalshi" ? (K.snaps[f.target_ref] || []).map((s: Any) => s) : dk;
+        return !SL.convergence(f, { reference: pin, target, fee, until: iso(ctx.nowMs) }).converged;
+      };
+      const kal = K.links.map((l: Any) => {
+        const s = K.snaps[l.market_ticker] || [];
+        const last = s[s.length - 1], prev = s[s.length - 2];
+        return { ticker: l.market_ticker, yes_team: l.yes_team, snapshot: last || null,
+          resolution_s: last && prev ? Math.round((Date.parse(last.captured_at) - Date.parse(prev.captured_at)) / 1000) : SL.nominalResolution("kalshi") };
+      });
+      const trig = await triggerFor(P.request_id, P.category, ctx);
+      const r = SL.evaluate({ now: iso(ctx.nowMs), event, pinnacle: P, draftkings: D, kalshi: kal, fee, trigger: trig, open });
+      tally.considered += r.considered;
+      Object.keys(r.skipped).forEach((k) => { tally.skipped[k] = (tally.skipped[k] || 0) + r.skipped[k]; });
+      const rows = r.flags.map((f: Any) => { const o = Object.assign({}, f); delete o.target_ref_at; return o; });
+      if (!ctx.dry && rows.length) await insertOnce("sharp_flags", rows, "episode_key");
+      tally.written += rows.length;
+    } catch (e) { ctx.warn("flags:" + eventId, msg(e)); }
+  }
+  ctx.out.flags = tally;
+}
+
 /* ================================================================ the run */
-const STEPS: Any = { ingest, triggers };
+const STEPS: Any = { ingest, triggers, flags };
 export async function runOnce(opts: Any = {}) {
   const nowMs = opts.now ? Date.parse(opts.now) : Date.now();
   const dry = !!opts.dry;
