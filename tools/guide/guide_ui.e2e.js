@@ -33,6 +33,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const NAV = require(path.join(__dirname, '..', 'app', 'nav_helper.js'));
 const http = require('http');
 const ROOT = path.join(__dirname, '..', '..');
 const args = process.argv.slice(2);
@@ -327,7 +328,7 @@ function siteHandler(req, res) {
     await page.evaluate(() => window.EDGuide.startTour('card'));
     let s = await step(page);
     chk('the Card walkthrough starts on the Card', s && s.page === 'card' && s.mode === 'target', s);
-    await click(page, '.bottomnav button[data-v="portfolio"]');
+    await NAV.go(page, 'portfolio');
     await page.waitForFunction(() => window.EDGuide._S.mode === 'left', null, { timeout: 8000 }).catch(() => {});
     s = await step(page);
     chk('leaving the screen is said plainly, with a way back', s && s.mode === 'left' && /moved to another screen/.test(s.body), s);

@@ -61,6 +61,8 @@ on:
       - 'app.html'
       - 'package.json'
       - '.github/workflows/portfolio-tests.yml'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   push:
     branches: [main]
     paths:
@@ -84,6 +86,8 @@ on:
       - 'supabase/functions/portfolio_connect/**'
       - 'supabase/functions/sharpsports-webhook/**'
       - 'oauth/**'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   workflow_dispatch:
 
 permissions:

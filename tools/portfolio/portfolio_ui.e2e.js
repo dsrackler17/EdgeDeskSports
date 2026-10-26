@@ -47,6 +47,7 @@ const path = require('path');
 const http = require('http');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const REST = require('./_pgrest.js');
+const NAV = require(path.join(__dirname, '..', 'app', 'nav_helper.js'));
 
 const ROOT = PG.ROOT;
 const E = require(path.join(ROOT, 'lib', 'edgedesk_portfolio.js'));
@@ -107,12 +108,8 @@ const CSV = [
 
   const tracked = [], fnCalls = [];
   /* tap a seat the way a reader does: on a phone a seat that is not on the bar is in Menu's sheet
-     (docs/research-os/DESIGN.md §1) */
-  async function seat(page, v) {
-    const visible = await page.evaluate((x) => { const b = document.querySelector('.bottomnav button[data-v="' + x + '"]'); return !!b && b.offsetParent !== null && b.getBoundingClientRect().width > 0; }, v);
-    if (!visible) { await page.click('#navMenuBtn'); await page.waitForSelector('#edNav.open button[data-v="' + v + '"]', { state: 'visible', timeout: 5000 }); }
-    await page.click('.bottomnav button[data-v="' + v + '"]');
-  }
+     (docs/research-os/DESIGN.md §1, tools/app/nav_helper.js) */
+  const seat = (page, v) => NAV.go(page, v);
   async function open(viewport, opts) {
     opts = opts || {};
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, hasTouch: viewport.width < 700 });
@@ -198,7 +195,7 @@ const CSV = [
     chk('a new reader sees an empty book, and no sample data', /Build your portfolio/.test(await text(page)) && !/\$/.test(await page.$eval('#pfoHost [data-r="body"]', (e) => e.innerText)));
     /* a seat of its own since the five-destination navigation (docs/ia/NAVIGATION_AUDIT.md) */
     chk('Portfolio is a primary destination', await page.evaluate(() => !!document.querySelector('.bottomnav button[data-v="portfolio"]')));
-    chk('and its own seat reads active while it is open', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="portfolio"]'); return !!b && b.classList.contains('on'); }));
+    chk('and its own seat reads active while it is open', await NAV.seatShown(page, 'portfolio'), await NAV.state(page));
     await shot(page, 'desktop-empty');
 
     /* setup: choose where you bet, add them, see the progress */
@@ -462,8 +459,7 @@ const CSV = [
     await waitText(page, /How you decide: open Process/);
     await page.click('#pfoHost [data-act="tab"][data-v="coach"]');   /* the overview's "How you decide: open Process" */
     await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide'));
-    chk('the overview\'s "open Process" lands on the Process seat', await page.evaluate(() => location.hash === '#process'
-      && document.querySelector('.bottomnav button[data-v="process"]').classList.contains('on')));
+    chk('the overview\'s "open Process" lands on the Process seat', await page.evaluate(() => location.hash === '#process') && await NAV.seatShown(page, 'process'), await NAV.state(page));
     /* Process opens on an answer, not on a menu of reports */
     await waitText(page, /How is my process\?/i, 15000, 'pcoHost');
     t = await text(page, 'pcoHost');

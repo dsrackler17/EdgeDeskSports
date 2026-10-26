@@ -48,6 +48,7 @@ const path = require('path');
 const http = require('http');
 const zlib = require('zlib');
 const ROOT = path.join(__dirname, '..', '..');
+const NAV = require(path.join(ROOT, 'tools', 'app', 'nav_helper.js'));
 const args = process.argv.slice(2);
 const SHOTS = args.indexOf('--shots') >= 0 ? args[args.indexOf('--shots') + 1] : null;
 global.window = global.window || global;
@@ -167,15 +168,14 @@ async function buildFixture() {
     console.log('desktop');
     let { ctx, page, errors } = await open({ width: 1440, height: 900 }, '');
     /* Props is a Research panel since the five-destination navigation
-       (docs/ia/NAVIGATION_AUDIT.md): Research › Props, with Research lit. A reader with
-       nothing saved lands on the Overview (docs/research-os/DESIGN.md §1), so the path
-       starts at the Research seat, as a reader's does */
-    await page.click('.bottomnav button[data-v="research"]');
-    await page.waitForSelector('.research-sub button[data-sub="pprops"]', { state: 'visible' });
-    await page.click('.research-sub button[data-sub="pprops"]');
+       (docs/ia/NAVIGATION_AUDIT.md): Research › Props, with Research lit. A
+       reader lands on the Overview (docs/research-os/DESIGN.md §1), so the
+       way there is the Research seat, then Props (tools/app/nav_helper.js) */
+    await page.waitForFunction(() => typeof window.researchGo === 'function' && !!window.EDShell, null, { timeout: 30000 });
+    await NAV.research(page, 'pprops');
     await page.waitForSelector('.pp-row', { timeout: 15000 });
     chk('Research › Props opens the Player Props panel', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide') && !document.getElementById('v-research').classList.contains('hide')
-      && document.querySelector('.research-sub button[data-sub="pprops"]').classList.contains('on') && document.querySelector('.bottomnav button[data-v="research"]').classList.contains('on')));
+      && document.querySelector('.research-sub button[data-sub="pprops"]').classList.contains('on')) && await NAV.seatShown(page, 'research'), await NAV.state(page));
     chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Sportsbook prices: current · updated \d+ min ago · \d+ books/.test(document.querySelector('.pp-strip').textContent) && !/current prices/.test(document.querySelector('.pp-strip').textContent)));
     chk('the header says the page keeps itself current (no refresh needed to see new prices)', await page.evaluate(() => /auto-updating/.test(document.querySelector('.pp-live').textContent)));
     chk('healthy: no banner at all (nothing to explain)', await page.evaluate(() => !document.querySelector('.pp-banner') && !document.querySelector('.pp-warnbox')));
@@ -471,15 +471,13 @@ async function buildFixture() {
     await shot(page, 'phone_drawer');
     chk('no page errors on the phone', errors.length === 0, errors);
     await ctx.close();
-    /* …and a phone reader reaches it through the navigation, not only by link: the Research
-       seat on the bar, then Research › Props */
+    /* …and reached the way a phone reader reaches it: Research on the bottom bar, then Props */
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }, ''));
-    await page.click('.bottomnav button[data-v="research"]');
-    await page.click('.research-sub button[data-sub="pprops"]');
+    await page.waitForFunction(() => typeof window.researchGo === 'function' && !!window.EDShell, null, { timeout: 30000 });
+    await NAV.research(page, 'pprops');
     await page.waitForSelector('.pp-card', { timeout: 15000 });
-    chk('a phone reader reaches Props from the bar: Research › Props, with Research lit', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide')
-      && document.querySelector('.research-sub button[data-sub="pprops"]').classList.contains('on') && document.querySelector('.bottomnav button[data-v="research"]').classList.contains('on')));
-    chk('no page errors reaching Props on the phone', errors.length === 0, errors);
+    chk('390: Research › Props, from the bottom bar, opens the terminal with Research lit', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide')) && await NAV.seatShown(page, 'research'), await NAV.state(page));
+    chk('no page errors on the phone (Research › Props)', errors.length === 0, errors);
     await ctx.close();
 
     /* a phone two hours on: cards stay decided on the latest capture, each

@@ -56,6 +56,8 @@ const CB = SLATE.games.find((x) => String(x.game_id) === String(FX.game.game_id)
 const ago = (min) => new Date(Date.parse(NOW) - min * 60000).toISOString();
 let injMode = 'ok';
 function injCard(gameId) {
+  /* a reply that names no state: what an empty PostgREST answer looks like */
+  if (injMode === 'nostate') return [];
   if (injMode === 'down') return { game_id: gameId, state: 'UNAVAILABLE', reason: 'the last check failed: the official report and the ESPN fallback both failed', last_check_at: ago(5), last_check_status: 'error', last_success_at: ago(125), report: null, statuses: [], not_submitted: [], rosters: {}, adjusted: null };
   if (!CB || String(gameId) !== String(CB.game_id)) return { game_id: gameId, state: 'NOT_ON_REPORT', reason: 'this game is not on the latest injury report yet', last_check_at: ago(7), last_check_status: 'ok', last_success_at: ago(7), report: null, statuses: [], not_submitted: [], rosters: {}, adjusted: null };
   const ids = { 'White, Coby': '4395651', 'Knueppel, Kon': '5061575', 'Williams, Grant': '4066218' };
@@ -226,6 +228,20 @@ function injReadiness() {
         const sh = await page.evaluate(() => (document.getElementById('sysHealthPop') || {}).textContent || '');
         chk(label + ': System health reports the failed sync, its failure alert and the report\'s age', /NBA injury sync/.test(sh) && /failing/.test(sh) && /1 failure/.test(sh) && /NBA injury report freshness/.test(sh), sh.slice(0, 600));
         await page.keyboard.press('Escape');
+        injMode = 'ok';
+      }
+      /* a reply with no state is the card's own error, said where the statuses would be, and is never
+         thrown past the panel: an unhandled rejection reached the page before 2026-10-26, on whichever
+         game was open (outside the Hornets @ Nets block, which runs only while its fixture game is on
+         the committed slate) */
+      {
+        injMode = 'nostate';
+        const errsBefore = errors.length;
+        await page.click('#nbaHost [data-act="refresh"]');
+        await page.waitForFunction(() => /answered without a state/.test((document.querySelector('#nbaHost .nb-inj') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => null);
+        const ns = await page.evaluate(() => (document.querySelector('#nbaHost .nb-inj') || {}).textContent || '');
+        await page.waitForTimeout(300);
+        chk(label + ': an injury reply with no state reads "not yet available" with its reason, and throws nothing on the page', /Injury report not yet available/.test(ns) && /answered without a state/.test(ns) && errors.length === errsBefore, { text: ns.slice(0, 200), errors: errors.slice(errsBefore) });
         injMode = 'ok';
       }
       await page.click('#nbaHost [data-act="back"]');

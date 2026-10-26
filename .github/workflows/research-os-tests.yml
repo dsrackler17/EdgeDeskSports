@@ -44,6 +44,10 @@ on:
       - 'supabase/signal_center.sql'
       - 'tools/research_os/**'
       - 'tools/app/**'
+      # any browser suite: tools/app/navigation.test.js refuses one that taps a seat, Menu or a
+      # Research tab by selector instead of through tools/app/nav_helper.js (2026-10-26, #807)
+      - '**/*.e2e.js'
+      - '**/*.e2e.ts'
       - 'tools/personal/_pg.js'
       - 'tools/billing/_pgrest.js'
       - '.github/workflows/research-os-tests.yml'

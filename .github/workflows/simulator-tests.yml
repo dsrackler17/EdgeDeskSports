@@ -75,6 +75,8 @@ on:
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   pull_request:
     paths:
       - 'simulator/**'
@@ -121,6 +123,8 @@ on:
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   workflow_dispatch:
 
 permissions:

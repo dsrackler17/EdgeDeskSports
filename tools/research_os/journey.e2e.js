@@ -41,6 +41,7 @@ const http = require('http');
 const ROOT = path.join(__dirname, '..', '..');
 const PG = require(path.join(ROOT, 'tools', 'personal', '_pg.js'));
 const REST = require(path.join(ROOT, 'tools', 'billing', '_pgrest.js'));
+const NAV = require(path.join(ROOT, 'tools', 'app', 'nav_helper.js'));
 const MF = require(path.join(ROOT, 'tools', 'foresight', '_terminal.js'));
 const G = require(path.join(ROOT, 'lib', 'edgedesk_games.js'));
 const T = PG.kit('Research OS journey (Chromium, real PostgreSQL)');
@@ -241,11 +242,8 @@ const SERVED = /\/rest\/v1\/(rpc\/(sc_[a-z_]+|sim_[a-z_]+|portfolio_[a-z_]+)|(my
     const wide = (page) => page.evaluate(() => { const W = document.documentElement.clientWidth, out = [];
       document.querySelectorAll('main *').forEach((e) => { const b = e.getBoundingClientRect(); if (b.width && b.right > W + 1 && e.offsetParent !== null && out.length < 6) out.push(e.tagName + '.' + String(e.className).slice(0, 30) + ' ' + Math.round(b.right)); }); return out; });
     const shot = (page, name) => page.screenshot({ path: path.join(SHOTS, name + '.png') }).catch(() => {});
-    async function seat(page, v) {
-      const visible = await page.evaluate((x) => { const b = document.querySelector('.bottomnav button[data-v="' + x + '"]'); return !!b && b.offsetParent !== null && b.getBoundingClientRect().width > 0; }, v);
-      if (!visible) { await page.click('#navMenuBtn'); await page.waitForSelector('#edNav.open button[data-v="' + v + '"]', { state: 'visible', timeout: 5000 }); }
-      await page.click('.bottomnav button[data-v="' + v + '"]');
-    }
+    /* a seat tapped where the reader sees it: the sidebar, the bar, or Menu (tools/app/nav_helper.js) */
+    const seat = (page, v) => NAV.go(page, v);
     /* a summary tile as words (its label is uppercased by CSS, so read the text, not what is drawn) */
     const tile = (page, k) => page.evaluate((x) => { const t = [...document.querySelectorAll('#ovSum .ov-tile')].filter((e) => e.querySelector('.ov-tk') && e.querySelector('.ov-tk').textContent.trim().toLowerCase() === x)[0];
       return t ? ['.ov-tk', '.ov-tv', '.ov-ts'].map((c) => (t.querySelector(c) || {}).textContent || '').join(' ').replace(/\s+/g, ' ').trim() : ''; }, k);

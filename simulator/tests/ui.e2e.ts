@@ -39,6 +39,7 @@ import { syntheticSnapshot } from './_college_baseball_fixture.ts';
 import os from 'node:os';
 
 const require = createRequire(import.meta.url);
+const NAV = require(path.join(REPO, 'tools', 'app', 'nav_helper.js'));
 const T = kit('Simulator seat (browser)');
 const SHOTS = (() => { const i = process.argv.indexOf('--shots'); return i > 0 ? process.argv[i + 1] : null; })();
 let pw: any = null;
@@ -166,7 +167,11 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
   catch (_) { const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'; if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe }); else { srv.close(); skip('no Chromium'); } }
 
   /* soon: a sport the served registry shows as COMING_SOON with one test blocker (every sport is ACTIVE or has views of its own) */
-  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean; soon?: string }
+  /* failRefresh: the status door fails from the moment the Simulator has drawn its first results, so
+     the reader's next refresh is the one that fails (the Overview, the landing, reads the same door
+     first: a count of calls is not the Simulator's own). nav: reach the seat as a reader does, through
+     the navigation drawn at this width (tools/app/nav_helper.js), instead of calling show(). */
+  interface Scenario { entitled: boolean; published: boolean; failRefresh?: boolean; nav?: boolean; evil?: boolean; soon?: string }
   async function open(viewport: { width: number; height: number }, hash: string, sc: Scenario) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript(() => {
@@ -178,7 +183,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400 * 400, user: { id: 'e2e-reader', email: 'e2e@edgedesk.test', created_at: '2025-01-01T00:00:00Z' } }));
       } catch (_) { /* storage */ }
     });
-    let failArmed = false;
+    let armed = false;
     const status = { sport: 'nfl', competition: 'NFL', season: '2026', published_run_id: sc.published ? RUN_ID : null, published_at: sc.published ? run.published_at : null, input_snapshot_at: run.input_snapshot_at,
       n_sims: 3000, model_version: run.model_version, last_attempt_status: 'completed', last_attempt_at: run.completed_at, comparison_status: 'completed', comparison_at: run.completed_at };
     const nstatus = { ...status, sport: 'nhl', competition: 'NHL', season: '2026-27', published_run_id: sc.published ? NHL_RUN_ID : null, n_sims: 1000, model_version: nrun.model_version, comparison_status: null, comparison_at: null };
@@ -206,7 +211,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
         const gstatus = golf.map((g) => ({ ...status, sport: 'golf', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
         const tstatus = tennis.map((g) => ({ ...status, sport: 'tennis', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
-        if (/rpc\/sim_public_status/.test(u)) { if (sc.failSecond && failArmed) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, cstatus, ...gstatus, ...tstatus]); }
+        if (/rpc\/sim_public_status/.test(u)) { if (sc.failRefresh && armed) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, cstatus, ...gstatus, ...tstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
         const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : /sport=eq\.tennis|ffffffff-/.test(u) ? tennisOf(u) : null;
         /* the tennis reader first asks for every tennis run (its draw picker's names), then each competition's */
@@ -228,13 +233,12 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     page.on('dialog', (d: any) => { errors.push('dialog: ' + d.message()); d.dismiss(); });
     await page.goto(`http://127.0.0.1:${port}/app.html${hash}`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => typeof (window as any).show === 'function' && !!(window as any).EDSimUI, null, { timeout: 30000 });
-    await page.evaluate(() => (window as any).show('simulator'));
+    let via: string | null = null;
+    if (sc.nav) via = await NAV.go(page, 'simulator');
+    else await page.evaluate(() => (window as any).show('simulator'));
     await page.waitForTimeout(700);
-    /* failSecond: once the Simulator's first results are on screen, every status read fails, as a refresh that
-       loses the database would. (Counting reads would also count the Overview's own status read at the landing,
-       docs/research-os/DESIGN.md §3, and fail the Simulator's first load instead of its refresh.) */
-    if (sc.failSecond) { await page.waitForFunction(() => document.querySelectorAll('#simHost .sm-club').length > 0, null, { timeout: 15000 }); failArmed = true; }
-    return { ctx, page, errors };
+    if (sc.failRefresh) { await page.waitForFunction(() => document.querySelectorAll('#simHost .sm-club').length > 0, null, { timeout: 15000 }); armed = true; }
+    return { ctx, page, errors, via };
   }
   const shot = async (page: any, name: string) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true }); } };
   const text = (page: any) => page.evaluate(() => (document.getElementById('simHost') as HTMLElement).innerText);
@@ -242,8 +246,9 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
   try {
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
-      const { ctx, page, errors } = await open(vp, '', { entitled: true, published: true });
-      T.chk(W + ': the Simulator seat is in the navigation and active', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="simulator"]'); return !!b && b.classList.contains('on'); }));
+      const { ctx, page, errors, via } = await open(vp, '', { entitled: true, published: true, nav: true });
+      /* the Simulator is a sidebar seat on a desktop; on a phone it is in Menu, which is lit while it is open */
+      T.chk(W + ': the Simulator seat is reached ' + (W < NAV.WIDE ? 'through Menu' : 'in the sidebar') + ' and lit where the reader sees it', via === (W < NAV.WIDE ? 'menu' : 'sidebar') && await NAV.seatShown(page, 'simulator'), { via, nav: await NAV.state(page) });
       const t = await text(page);
       T.chk(W + ': title view: EXPERIMENTAL, simulated seasons, inputs time and the ± legend', /EXPERIMENTAL/.test(t) && /3,000 simulated seasons/.test(t) && /95% Monte Carlo interval/.test(t));
       T.chk(W + ': 32 club cards with probability and fair odds', (await page.locator('#simHost .sm-club').count()) === 32 && /fair odds/.test(t));
@@ -484,7 +489,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });
+      const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failRefresh: true });
       await page.click('#simHost [data-sim-refresh]'); await page.waitForTimeout(500);
       const t = await text(page);
       T.chk('a failed refresh keeps the last good results on screen, marked stale', (await page.locator('#simHost .sm-club').count()) === 32 && /Refresh failed/.test(t) && (await page.locator('#simHost .sm-stalebar').count()) === 1);

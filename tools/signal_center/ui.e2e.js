@@ -34,6 +34,7 @@ const fs = require('fs');
 const path = require('path');
 const STAGE = require('./_stage.js');
 const { serve, loadPlaywright } = require('./render_graphics.js');
+const NAV = require(path.join(__dirname, '..', 'app', 'nav_helper.js'));
 
 const SHOTS = (() => { const i = process.argv.indexOf('--shots'); return i > 0 ? process.argv[i + 1] : null; })();
 let pass = 0, fail = 0;
@@ -132,7 +133,7 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       });
       chk(W + ': no seat label is clipped in a wide fallback face either', wide.length === 0, wide);
       chk(W + ': every seat is a 44px tap target', nav.minH >= 44 && nav.minW >= 44, [nav.minH, nav.minW]);
-      await page.click('.bottomnav button[data-v="signals"]');
+      await NAV.go(page, 'signals');
       await waitCards(page);
       let st = await state(page);
       chk(W + ': the seat opens Signal Center with its seat lit and its own hash', st.views.join() === 'v-signals' && st.seat.join() === 'signals' && st.hash === '#signals', st);
@@ -291,7 +292,7 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       st = await state(page);
       chk('#signal-center lands on Signal Center under #signals', st.views.join() === 'v-signals' && st.hash === '#signals', st);
       /* leaving clears the hash; old routes still land */
-      await page.click('.bottomnav button[data-v="portfolio"]');
+      await NAV.go(page, 'portfolio');
       await page.waitForTimeout(500);
       st = await state(page);
       chk('leaving for Portfolio writes #portfolio', st.views.join() === 'v-portfolio' && st.hash === '#portfolio', st);
@@ -370,10 +371,13 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
 
     /* ============================================================ landing */
     {
-      /* the Overview's Signals tile, once its quiet read of sc_status / sc_pulse has answered */
+      /* the Overview's Signals tile, once its quiet read of sc_status / sc_pulse has answered, as words:
+         its label is uppercased by CSS (lib/edgedesk_shell.css .ov-tk), and innerText reads what is
+         drawn ("SIGNALS"), so read each part's text (as tools/research_os/journey.e2e.js does) */
       const tile = async (page) => {
         await page.waitForFunction(() => { const t = [...document.querySelectorAll('#ovSum .ov-tile')].filter((x) => /Signals/.test(x.textContent))[0]; return !!t && !/Checking/.test(t.textContent); }, null, { timeout: 15000 }).catch(() => null);
-        return page.evaluate(() => { const t = [...document.querySelectorAll('#ovSum .ov-tile')].filter((x) => /Signals/.test(x.textContent))[0]; return t ? t.innerText.replace(/\s+/g, ' ') : ''; });
+        return page.evaluate(() => { const t = [...document.querySelectorAll('#ovSum .ov-tile')].filter((x) => /Signals/.test(x.textContent))[0];
+          return t ? ['.ov-tk', '.ov-tv', '.ov-ts'].map((c) => (t.querySelector(c) || {}).textContent || '').join(' ').replace(/\s+/g, ' ').trim() : ''; });
       };
       const pulse24 = q("select count(*) from public.sc_signals where publication = 'PUBLISHED' and verification_state = 'VERIFIED' and not fixture and signal_at >= now() - interval '24 hours';");
       let o = await open({ width: 390, height: 844 }, '', 'sub', { fresh: true });

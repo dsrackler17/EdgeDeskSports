@@ -181,6 +181,9 @@ has(APP, "else if(navHashRoute(location.hash)){}", 'destination links (#portfoli
 has(APP, "else if(typeof window.edSetupDue==='function'&&window.edSetupDue())show('setup');", 'a new account starts at setup');
 chk('and setup never beats a deep link', APP.indexOf("else if(navHashRoute(location.hash)){}") < APP.indexOf("window.edSetupDue())show('setup')")
     && APP.indexOf("if((location.hash||'')==='#card')show('card');") < APP.indexOf("window.edSetupDue())show('setup')"));
+/* Setup hands over by the same default landing as a load with nothing saved (app.html edLandDefault,
+   EDShell.landing; tools/research_os/research_os.test.js holds the rule itself) */
+has(WSUI, "if (typeof W.edLandDefault === 'function') W.edLandDefault();", 'setup hands over by the default landing rule');
 has(APP, "if(/^#receipt=/.test(h)){var rv=$('v-record');", 'a cold #receipt=… share link opens Model performance');
 ['overview', 'foresight', 'performance', 'card', 'portfolio', 'process', 'more', 'ledger', 'record', 'pnl', 'edges', 'props', 'settings', 'faults', 'news', 'collective', 'terms'].forEach(h =>
   chk('#' + h + ' is a link that lands', new RegExp('NAV_HASH_MAP=\\{[^}]*\\b' + h + ":'").test(APP)));
@@ -438,6 +441,35 @@ const FOOT = (APP.match(/<div class="foot" id="edFoot"[^\n]*<\/div>/) || [''])[0
 ['Research and decision-support tool.', 'Decision support.', 'Signals can be wrong.', '21+', 'Bet responsibly', '1-800-GAMBLER', "show('terms')"]
   .forEach(t => has(FOOT, t, 'the disclaimer keeps "' + t + '"'));
 has(FOOT, 'href="tel:18004262537"', 'and the helpline is a tap-to-call link');
+
+/* ======================================================================== */
+/* 9. NO BROWSER SUITE TAPS THE NAVIGATION BLIND                            */
+/* ======================================================================== */
+/* 2026-10-26, #807: the navigation became a sidebar on a desktop and a bar plus Menu on a phone,
+   and Research's row is drawn only on Research. Suites that clicked a seat or a Research tab by
+   selector timed out on a button that existed but was not drawn (Process on a phone, Props from
+   the Overview landing), in four workflows at once. A browser suite reaches a seat or a Research
+   panel through tools/app/nav_helper.js, which taps what is drawn at the page's width and opens
+   Menu or Other when it has to. Only the helper and the two suites that test the navigation's own
+   controls (Menu, Close, Other) may touch those elements directly. */
+{
+  const NAV_TOUCH = /(?:\.|\b)(?:click|dblclick|tap|hover|focus|check|waitForSelector|locator|\$\$?)\(\s*(?:[\w.]+\s*,\s*)?(['"`])[^'"`]*?(?:\.bottomnav\b|#edNav\b|(?<![\w.#-])nav (?:\[data-v|button)|#navMenuBtn\b|\.research-sub\b|#rsOther(?:Btn)?\b)/;
+  const NAV_OWNERS = new Set(['tools/app/nav_helper.js', 'tools/app/navigation.e2e.js', 'tools/research_os/journey.e2e.js']);
+  /* the pattern catches what broke CI on 2026-10-26, and not the helper's own calls */
+  ["await page.click('nav [data-v=\"process\"]');", "await page.waitForSelector('.research-sub button[data-sub=\"pprops\"]');",
+   "await page.click('.bottomnav button[data-v=\"portfolio\"]');", "await page.locator('#rsOther button[data-sub=\"nhl\"]').click();",
+   "await click(page, '.bottomnav button[data-v=\"portfolio\"]');" /* through a suite's own click(page, sel) */]
+    .forEach((x) => chk('the guard sees a blind tap: ' + x, NAV_TOUCH.test(x)));
+  ["await NAV.go(page, 'process');", "await NAV.research(page, 'pprops');", "page.evaluate(() => document.querySelector('.bottomnav button[data-v=\"research\"]').getAttribute('aria-current'))",
+   "await page.$('#pcoHost .pcx-nav [data-v=\"leaks\"]')" /* a view's own tab row, not the navigation */]
+    .forEach((x) => chk('the guard lets this through: ' + x, !NAV_TOUCH.test(x)));
+  const tracked = require('child_process').execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, maxBuffer: 1 << 28 }).toString().split('\0');
+  const suites = tracked.filter((f) => /\.(js|ts)$/.test(f) && !/node_modules\//.test(f) && !NAV_OWNERS.has(f) && f !== 'tools/app/navigation.test.js' /* this guard's own samples */)
+    .filter((f) => { try { return /playwright/.test(fs.readFileSync(path.join(ROOT, f), 'utf8')); } catch (_) { return false; } });
+  const blind = [];
+  suites.forEach((f) => fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n').forEach((line, i) => { if (NAV_TOUCH.test(line)) blind.push(f + ':' + (i + 1) + '  ' + line.trim().slice(0, 120)); }));
+  chk('no browser suite taps a seat, Menu or a Research tab by selector (' + suites.length + ' suites read); use tools/app/nav_helper.js', blind.length === 0, blind.slice(0, 10).join(' | '));
+}
 
 Promise.all(PENDING).then(() => {
   console.log('');

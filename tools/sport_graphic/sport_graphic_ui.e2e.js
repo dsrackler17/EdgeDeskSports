@@ -109,8 +109,20 @@ const UFC = Object.assign(clone(UFC0), { generated_at: new Date(NOW - 3600e3).to
     if (exe) browser = await pw.chromium.launch({ headless: true, executablePath: exe });
     else { console.log('SKIPPED: no Chromium'); srv.close(); process.exit(0); }
   }
-  async function open(viewport, url) {
+  /* o.loadOrder: also record, from the browser itself, the renderer and the
+     module as they load: each script's response (URL, status) and the order
+     their globals are defined in */
+  async function open(viewport, url, o) {
     const ctx = await browser.newContext({ viewport, timezoneId: 'America/Chicago', locale: 'en-US', acceptDownloads: true });
+    if (o && o.loadOrder) {
+      await ctx.addInitScript(() => {
+        window.__sgDefined = [];
+        ['EDGameGraphic', 'EDSportGraphic'].forEach((k) => {
+          let v;
+          Object.defineProperty(window, k, { configurable: true, enumerable: true, get() { return v; }, set(x) { if (v === undefined) window.__sgDefined.push(k); v = x; } });
+        });
+      });
+    }
     await ctx.addInitScript(() => {
       try {
         localStorage.setItem('edgedesk_welcome_seen', String(Date.now()));
@@ -128,11 +140,12 @@ const UFC = Object.assign(clone(UFC0), { generated_at: new Date(NOW - 3600e3).to
       return route.fulfill({ status: 204, body: '' });
     });
     const page = await ctx.newPage();
-    const errors = [];
+    const errors = [], scripts = [];
     page.on('pageerror', (e) => errors.push(String(e && e.message || e)));
+    if (o && o.loadOrder) page.on('response', (r) => { if (/\/lib\/edgedesk_(game|sport)_graphic\.js/.test(r.url())) scripts.push({ url: r.url().slice(base.length), status: r.status() }); });
     await page.clock.install({ time: NOW });
     await page.goto(base + url, { waitUntil: 'load' });
-    return { ctx, page, errors };
+    return { ctx, page, errors, scripts };
   }
   const shot = async (page, name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png') }); } };
   const drawn = (page, sel) => page.waitForSelector(sel + ' img[data-sg-img]:not([hidden])', { timeout: 20000 }).then(() => true, () => false);
@@ -148,8 +161,17 @@ const UFC = Object.assign(clone(UFC0), { generated_at: new Date(NOW - 3600e3).to
   try {
     /* ── TODAY'S GAMES: the pills and a men's game (tomorrow) ─────────── */
     {
-      const { ctx, page, errors } = await open(DESK, '/app.html#games/ncaam/2026-10-14');
-      chk('the NCAAW and WNBA pills are on the games page', !!(await page.waitForSelector('#gamesPage [data-gm-sport="ncaaw"]', { timeout: 15000 }).catch(() => null)) && !!(await page.$('#gamesPage [data-gm-sport="wnba"]')));
+      const { ctx, page, errors, scripts } = await open(DESK, '/app.html#games/ncaam/2026-10-14', { loadOrder: true });
+      /* THE SCRIPT CONTRACT, as the browser loads app.html: the module fills the renderer's layout
+         (EDGameGraphic.layout's shape), so it is fetched under the renderer's own version — a cached
+         module never meets a newer renderer, or the reverse — and runs after it */
+      const ver = (re) => { const s = scripts.find((x) => re.test(x.url)); return s ? (/[?&]v=([^&]+)/.exec(s.url) || [])[1] || null : null; };
+      const vGame = ver(/edgedesk_game_graphic\.js/), vSport = ver(/edgedesk_sport_graphic\.js/);
+      chk('the browser fetches the renderer and the module, once each, both found', scripts.length === 2 && scripts.every((s) => s.status === 200), scripts);
+      chk('…under one version stamp', !!vGame && vGame === vSport, scripts);
+      chk('…and the renderer is defined before the module', JSON.stringify(await page.evaluate(() => window.__sgDefined)) === '["EDGameGraphic","EDSportGraphic"]', await page.evaluate(() => window.__sgDefined));
+      chk('…and the module finds that renderer', await page.evaluate(() => !!window.EDSportGraphic && !!window.EDGameGraphic && typeof window.EDGameGraphic.layout === 'function'));
+      chk('the NCAAW and WNBA pills are on the games page',!!(await page.waitForSelector('#gamesPage [data-gm-sport="ncaaw"]', { timeout: 15000 }).catch(() => null)) && !!(await page.$('#gamesPage [data-gm-sport="wnba"]')));
       chk('the men’s game opens its matchup view', await detail(page, 'ncaam:espn:401910002'));
       chk('…which draws the graphic', await drawn(page, '#gmGfx'));
       const a = await alt(page, '#gmGfx');

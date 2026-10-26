@@ -38,6 +38,8 @@ on:
       - 'lib/edgedesk_plans.js'
       - '.github/workflows/market-foresight*.yml'
       - '.github/workflows/deploy-market-foresight.yml'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   push:
     branches: [main]
     paths:
@@ -45,6 +47,8 @@ on:
       - 'supabase/market_foresight*.sql'
       - 'tools/foresight/**'
       - 'research/foresight/**'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   workflow_dispatch:
 
 permissions:

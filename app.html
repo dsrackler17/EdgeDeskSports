@@ -4057,7 +4057,7 @@ window.mcRefresh=function(){
      tools/app/portfolio_process.test.js. -->
 <script src="/lib/edgedesk_positions.js?v=20261004b"></script>
 <script src="/lib/edgedesk_process.js?v=20261004b"></script>
-<script src="/lib/edgedesk_workspace_ui.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_workspace_ui.js?v=20261026nav1"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
 <script src="/lib/edgedesk_pricing.js?v=20261024a"></script>
 <!-- the one access decision (public.my_billing_access) and the server
@@ -4092,7 +4092,9 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_game_snapshot.js?v=20261026ros2"></script>
 <script src="/lib/edgedesk_game_graphic.js?v=20261026ros2"></script>
 <!-- the matchup graphic for every other sport: college basketball, the WNBA, MLB, college
-     baseball and UFC bouts, drawn by the football template (docs/game-research/SPORTS.md) -->
+     baseball and UFC bouts, drawn by the football template (docs/game-research/SPORTS.md).
+     It fills the renderer's layout, so it loads after it and under the renderer's version
+     (tools/sport_graphic/sport_graphic.test.js and sport_graphic_ui.e2e.js hold both) -->
 <script src="/lib/edgedesk_sport_graphic.js?v=20261026ros2"></script>
 <script src="/lib/edgedesk_game_view.js?v=20261026ros2"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
@@ -4162,7 +4164,7 @@ window.mcRefresh=function(){
      shell (navigation, quiet reads, services), the Overview, search and Performance; Market Foresight's
      small service (its record and controller load on first use) -->
 <script src="/lib/edgedesk_context.js?v=20261026ros1"></script>
-<script src="/lib/edgedesk_shell.js?v=20261026ros1"></script>
+<script src="/lib/edgedesk_shell.js?v=20261026nav1"></script>
 <script src="/lib/edgedesk_overview.js?v=20261026ros1"></script>
 <script src="/lib/edgedesk_search.js?v=20261026ros1"></script>
 <script src="/lib/edgedesk_perf_hub.js?v=20261026ros1"></script>
@@ -6109,7 +6111,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261021inj1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261026inj2';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
@@ -21348,7 +21350,9 @@ try{applyPrefs();renderAvatar();loadSubStatus();
   }
   /* a reader with no saved preferences at all is new here: the Overview is
      where research starts (what is on, what has research, what changed), and
-     it reads well with nothing saved and with any optional layer missing */
+     it reads well with nothing saved and with any optional layer missing.
+     edLandDefault (above) asks EDShell.landing: Research instead in a new account's
+     first-run window, where "Here's what EdgeDesk found today" is its welcome */
   else if(_fresh){edLandDefault();}
   else if(_t==='research')researchGo(_p.lastResearchSub||'football');
   /* The markup now rests on Research -> Football, so EVERY other remembered tab

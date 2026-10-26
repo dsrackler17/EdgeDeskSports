@@ -6,9 +6,11 @@
    speaking PostgREST (game_research_state with its state-> aliases,
    user_preferences, subscriptions, ed_first_run_state, ed_track):
 
-     1  the entitled terminal opens → terminal_opened; the inline panel
-        "Here's what EdgeDesk found today." appears in Research, above the
-        board, with the largest disagreements, research-grade games,
+     1  the entitled terminal opens → terminal_opened; a new account in its
+        first weeks lands on Research (the Overview is everyone else's
+        landing), and the inline panel "Here's what EdgeDesk found today."
+        is DRAWN there, above the board, with the largest
+        disagreements, research-grade games,
         research-grade props, incomplete games and changed markets — each
         from the rows, never invented — and first_run_viewed
      2  the six-step onboarding modal waits while the panel's preferences
@@ -19,8 +21,10 @@
      4  the five-step progress reflects what the reader did (opening a game
         ticks "Open a game")
      5  Hide is remembered on the account (first_run_done_at)
-     6  an account older than two weeks never sees it
+     6  an account older than two weeks never sees it, and lands on the
+        Overview
      7  at 390 px nothing is wider than the screen
+     7b setup's Enter hands a new account to Research, the panel drawn
      8  on a slate where no prop qualifies, the prop card says so and lists
         none
 
@@ -189,6 +193,8 @@ function makeDb(createdAt) {
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
   const STAT = shiftedStat(BOARD);
 
+  /* o.setup: start before setup (a new account's very first screen) instead of after it;
+     o.firstRunDoneAt: the panel already put away on this device */
   async function open(viewport, createdDaysAgo, stat, o) {
     const created = new Date(Date.now() - createdDaysAgo * 864e5).toISOString();
     const db = makeDb(created);
@@ -200,15 +206,16 @@ function makeDb(createdAt) {
         localStorage.setItem('edgedesk_visitor', 'visitorabcdefghijklmnop');
         /* a new account's very first screen is setup (welcome → activity →
            portfolio → first read), held by tools/app/navigation.e2e.js; this
-           suite starts where setup hands over: Research, with the panel */
-        localStorage.setItem('edgedesk_setup_v1', String(Date.now()));
+           suite starts where setup hands over (unless a.setup): Research,
+           with the panel (EDShell.landing, lib/edgedesk_shell.js) */
+        if (!a.setup) localStorage.setItem('edgedesk_setup_v1', String(Date.now()));
         /* …and after the first-visit introduction was answered, which
            tools/guide/guide_ui.e2e.js holds */
         localStorage.setItem('edgedesk_guide_v1', JSON.stringify({ v: 1, intro: 'dismissed' }));
         /* the panel already put away on this device (lib/edgedesk_first_run.js local done_at), when a case asks */
         if (a.frDone && !sessionStorage.getItem('__frSeeded')) { sessionStorage.setItem('__frSeeded', '1'); localStorage.setItem('edgedesk_first_run_v1', JSON.stringify({ steps: {}, done_at: a.frDone })); }
       } catch (e) { /* private mode */ }
-    }, { uid: UID, created, frDone: (o && o.firstRunDoneAt) || null });
+    }, { uid: UID, created, setup: !!(o && o.setup), frDone: (o && o.firstRunDoneAt) || null });
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) {
@@ -235,8 +242,18 @@ function makeDb(createdAt) {
     const w = vp.width;
     const S = await open(vp, 1);
     const { page, db } = S;
-    const shown = await eventually(() => page.evaluate(() => { const h = document.getElementById('edFirstRun'); return !!(h && /Here’s what EdgeDesk found today\./.test(h.textContent) && h.querySelector('.edfr-grid')); }), 30000);
-    chk(w + ': a new trialing account sees "Here’s what EdgeDesk found today."', shown);
+    /* SEES: the panel is drawn in the view the reader lands on — a panel that is only in the
+       page, inside a view that is not shown, is no welcome (and its innerText is not what a reader
+       reads). Since the Overview became the default landing, a new account's first weeks land on
+       Research, where the panel is (EDShell.landing, lib/edgedesk_shell.js). */
+    const shown = await eventually(() => page.evaluate(() => {
+      const h = document.getElementById('edFirstRun'); if (!h || !/Here’s what EdgeDesk found today\./.test(h.textContent) || !h.querySelector('.edfr-grid')) return false;
+      const b = h.getBoundingClientRect(); return h.getClientRects().length > 0 && b.height > 0 && b.width > 0;
+    }), 30000);
+    const landing = await page.evaluate(() => ({ views: [...document.querySelectorAll('section.view')].filter((v) => !v.classList.contains('hide')).map((v) => v.id),
+      seat: [...document.querySelectorAll('#edNav button.on[data-v]')].map((b) => b.dataset.v), hash: location.hash }));
+    chk(w + ': a new trialing account sees "Here’s what EdgeDesk found today." in the view it lands on', shown, landing);
+    chk(w + ': in its first weeks it lands on Research, its seat lit', landing.views.join() === 'v-research' && landing.seat.join() === 'research', landing);
     if (!shown) { chk(w + ': (script errors)', false, S.errors); await S.ctx.close(); continue; }
     const r = await page.evaluate(() => {
       const h = document.getElementById('edFirstRun');
@@ -335,7 +352,8 @@ function makeDb(createdAt) {
     await S.page.waitForTimeout(1500);
     const has = await S.page.evaluate(() => { const h = document.getElementById('edFirstRun'); return !!(h && h.textContent.trim()); });
     chk('an account older than two weeks goes straight to the terminal', !has && S.db.events.some((e) => e.event === 'terminal_opened') && !S.db.events.some((e) => e.event === 'first_run_viewed'));
-    chk('…and, with nothing saved, lands on the Overview (the default past the first-run window)', await S.page.evaluate(() => !document.getElementById('v-overview').classList.contains('hide')));
+    const views = await S.page.evaluate(() => [...document.querySelectorAll('section.view')].filter((v) => !v.classList.contains('hide')).map((v) => v.id));
+    chk('…and, with nothing saved, lands on the Overview (the default landing)', views.join() === 'v-overview', views);
     chk('older account: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
@@ -348,6 +366,27 @@ function makeDb(createdAt) {
     const v = await S.page.evaluate(() => ({ overview: !document.getElementById('v-overview').classList.contains('hide'), panel: !!((document.getElementById('edFirstRun') || {}).textContent || '').trim() }));
     chk('a new account that put the panel away lands on the Overview, and the panel stays away', v.overview && !v.panel, v);
     chk('put away: no script errors', S.errors.length === 0, S.errors);
+    await S.ctx.close();
+  }
+
+  /* 7b setup hands a new account to Research, where the panel is: welcome → portfolio → first
+     read → Enter, and the first screen after it shows the panel */
+  {
+    const S = await open({ width: 390, height: 844 }, 1, undefined, { setup: true });
+    const setupFirst = await eventually(() => S.page.evaluate(() => !document.getElementById('v-setup').classList.contains('hide') && !!document.querySelector('#setupHost [data-su="next"]')), 20000);
+    chk('setup: a new account\'s first screen is setup', setupFirst);
+    if (setupFirst) {
+      await S.page.click('#setupHost [data-su="next"]');
+      await S.page.click('#setupHost [data-su="next"]');
+      await S.page.click('#setupHost [data-su="enter"]');
+      const after = await eventually(() => S.page.evaluate(() => {
+        const h = document.getElementById('edFirstRun'), r = document.getElementById('v-research');
+        if (!h || !r || r.classList.contains('hide') || !h.querySelector('.edfr-grid')) return false;
+        const b = h.getBoundingClientRect(); return h.getClientRects().length > 0 && b.height > 0 && b.width > 0;
+      }), 30000);
+      chk('setup: Enter EdgeDesk opens Research with the panel drawn', after, await S.page.evaluate(() => [...document.querySelectorAll('section.view')].filter((v) => !v.classList.contains('hide')).map((v) => v.id)));
+    }
+    chk('setup: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
 

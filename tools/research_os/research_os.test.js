@@ -261,6 +261,7 @@ const ZONE = 'America/Chicago';
   has(APP, 'record:\'performance\'', 'Record (EdgeDesk\'s model performance) lights Performance, never the reader\'s Portfolio');
   /* script order: the shell's modules load before the boot block that shows the Overview */
   const iBoot = APP.indexOf("else if(_fresh){edLandDefault();}");
+  chk('the boot landing is found', iBoot > 0);
   ['edgedesk_games.js?', 'edgedesk_games_ui.js?', 'edgedesk_context.js?', 'edgedesk_shell.js?', 'edgedesk_overview.js?', 'edgedesk_search.js?', 'edgedesk_perf_hub.js?', '/foresight/service.js?'].forEach((f) => {
     const i = APP.indexOf(f); chk(f.replace('?', '') + ' loads before the boot landing runs', i > 0 && i < iBoot);
   });

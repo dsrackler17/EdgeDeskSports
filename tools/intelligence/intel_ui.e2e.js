@@ -61,6 +61,7 @@ Object.keys(R).filter((k) => /^b_/.test(k) && !/_feedfail$/.test(k)).forEach((k)
 
 /* ---- the board's world: the handler's fixture card, at the handler's clock ---- */
 const FX = require('./fixtures.js');
+const NAV = require('../app/nav_helper.js');
 const NOW = Date.parse('2026-10-12T16:00:00Z');
 const fx = FX.build(NOW);
 const ISO = (min) => new Date(NOW + min * 60000).toISOString();
@@ -176,13 +177,6 @@ function siteHandler(req, res) {
   }
   if (SHOT_DIR) fs.mkdirSync(SHOT_DIR, { recursive: true });
   const shot = async (page, name, o) => { if (!SHOT_DIR) return; try { await page.screenshot(Object.assign({ path: path.join(SHOT_DIR, name + '.png'), fullPage: false }, o || {})); } catch (e) { console.log('  (screenshot ' + name + ' failed: ' + e.message + ')'); } };
-  /* a seat as a reader reaches it: on the phone's bar, or through Menu when the bar does not hold it
-     (the sidebar on desktop shows every seat; docs/research-os/DESIGN.md §1) */
-  const seat = async (page, v) => {
-    const b = page.locator('nav [data-v="' + v + '"]');
-    if (!(await b.isVisible())) await page.click('#navMenuBtn');
-    await b.click();
-  };
 
   async function open(vp) {
     /* a reader in New York, as the handler's answers were written for (body.timezone) */
@@ -261,8 +255,9 @@ function siteHandler(req, res) {
       await page.waitForFunction(() => document.querySelectorAll('[id^="fbg-nfl-"]').length > 0 || /What can EdgeDesk research right now/.test((document.getElementById('fbOverview') || {}).textContent || ''), null, { timeout: 60000 }).catch(() => {});
       const clock = await page.evaluate(() => new Date().toISOString());
       chk(T + 'the browser clock is the handler\'s (2026-10-12, noon in New York)', /^2026-10-12T16:0/.test(clock), clock);
-      const onResearch = await page.evaluate(() => { const v = document.getElementById('v-research'); const b = document.querySelector('nav [data-v="research"]'); return { shown: v && getComputedStyle(v).display !== 'none' && v.getBoundingClientRect().height > 0, navOn: b && b.classList.contains('on') }; });
-      chk(T + '1 · Research is the open screen, its nav seat lit', onResearch.shown && onResearch.navOn, onResearch);
+      const onResearch = await page.evaluate(() => { const v = document.getElementById('v-research'); return { shown: v && getComputedStyle(v).display !== 'none' && v.getBoundingClientRect().height > 0 }; });
+      onResearch.navOn = await NAV.seatShown(page, 'research');
+      chk(T + '1 · Research is the open screen, its nav seat lit', onResearch.shown && onResearch.navOn, Object.assign(onResearch, { nav: await NAV.state(page) }));
 
       /* ── 2. FIND ASK EDGEDESK AI ── */
       const ask = await page.evaluate(() => {
@@ -469,10 +464,13 @@ function siteHandler(req, res) {
       const s8c = SENT[before8c], r8c = await lastRun(page);
       chk(T + '8 · typed in the Ask card, "this spread" is sent with the game, and answered for it', s8c && s8c.research_context && s8c.research_context.game && s8c.research_context.game.game_id === 'nfl-fx-det-buf' && r8c && /^GAME RESEARCH — Detroit Lions @ Buffalo Bills/m.test(r8c.answer), s8c && [s8c.question, s8c.research_context && s8c.research_context.game]);
 
-      /* ── 9. NAVIGATE AWAY AND BACK ── */
+      /* ── 9. NAVIGATE AWAY AND BACK ──
+         through the navigation drawn at this width (tools/app/nav_helper.js): the sidebar on a
+         desktop; on a phone, Card on the bottom bar and Process in Menu's sheet */
       await page.evaluate(() => window.EDAI.close());
       const logBefore = await page.evaluate(() => document.querySelectorAll('#edaiLog .ia-act').length);
-      await seat(page, 'card');
+      const viaCard = await NAV.go(page, 'card');
+      chk(T + '9 · Card is tapped where it is drawn (' + (vp.tag === 'phone' ? 'the bottom bar' : 'the sidebar') + ')', viaCard === (vp.tag === 'phone' ? 'bar' : 'sidebar'), viaCard);
       await page.waitForTimeout(500);
       const onCard = await page.evaluate(() => { const v = document.getElementById('v-card'); return v && getComputedStyle(v).display !== 'none'; });
       const cardRes = await page.evaluate(() => { const h = document.querySelector('#iaCardHost .ia-cardres'); if (!h) return null; const rows = [...h.querySelectorAll('.ia-g')].map((g) => ({ t: g.querySelector('.ia-g-t b').textContent, chip: (g.querySelector('.ia-chipcls') || {}).textContent, kv: [...g.querySelectorAll('.ia-kv-r')].map((r) => r.querySelector('dt').textContent + ': ' + r.querySelector('dd').innerText.replace(/\s+/g, ' ')) }));
@@ -482,14 +480,17 @@ function siteHandler(req, res) {
       chk(T + '9 · …below the Card\'s own decisions, which still render', cardRes && cardRes.card, cardRes && cardRes.card);
       await page.evaluate(() => { const h = document.getElementById('iaCardHost'); if (h) h.scrollIntoView({ block: 'start' }); });
       await shot(page, '09a-card-researched-' + vp.tag);
-      await seat(page, 'process');
+      /* Process sits under Performance: in the sidebar on a desktop, in Menu on a phone */
+      const viaProc = await NAV.go(page, 'process');
+      chk(T + '9 · Process is reached ' + (vp.tag === 'phone' ? 'through Menu' : 'in the sidebar') + ', and its seat is lit where the reader sees it', viaProc === (vp.tag === 'phone' ? 'menu' : 'sidebar') && await NAV.seatShown(page, 'process'), { via: viaProc, nav: await NAV.state(page) });
       await page.waitForTimeout(400);
-      const proc = await page.evaluate(() => { const m = document.querySelector('#iaMethodHost .ia-method'); return m ? { h: m.querySelector('h3').textContent, secs: [...m.querySelectorAll('details > summary')].map((x) => x.textContent), text: m.textContent } : null; });
+      const proc = await page.evaluate(() => { const m = document.querySelector('#iaMethodHost .ia-method'); const b = m && m.getBoundingClientRect(); return m ? { h: m.querySelector('h3').textContent, secs: [...m.querySelectorAll('details > summary')].map((x) => x.textContent), text: m.textContent, drawn: m.getClientRects().length > 0 && b.height > 0 && document.getElementById('v-process').contains(m) } : null; });
+      chk(T + '9 · …the method is drawn in the Process view the reader opened', proc && proc.drawn, proc && proc.drawn);
       chk(T + '9 · Process explains the method, model validation and research verification', proc && proc.h === 'How EdgeDesk researches' && ['The quantitative method', 'Model validation', 'Research verification', 'The adversarial audit and “verified candidate”', 'Readiness: five separate states', 'Limits and cost'].every((k) => proc.secs.includes(k)), proc && proc.secs);
       chk(T + '9 · …and calls nothing calibrated except a VALIDATED model, LEAN a break-even history', proc && /only then is it called calibrated/.test(proc.text) && /a break-even history, not a profit record/.test(proc.text), null);
       await page.evaluate(() => { const m = document.querySelector('#iaMethodHost .ia-method'); if (m) { m.querySelectorAll('details').forEach((d, i) => { d.open = i < 2; }); m.scrollIntoView({ block: 'start' }); } });
       await shot(page, '09b-process-method-' + vp.tag);
-      await seat(page, 'research');
+      await NAV.go(page, 'research');
       await page.waitForTimeout(500);
       const back = await page.evaluate(() => ({ ask: !!document.querySelector('#iaAskHost .ia-ask'), recent: [...document.querySelectorAll('#iaRecent .ia-chip')].map((c) => c.textContent), ctx: (document.getElementById('iaCtx') || {}).hidden === false, acts: document.querySelectorAll('#edaiLog .ia-act').length,
         rd: !!document.querySelector('#fbOverview .ia-readiness') }));
