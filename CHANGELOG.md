@@ -2,6 +2,53 @@
 
 
 
+## 2026-10-26 — Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market
+
+**Why.** Several of the day's NBA, NFL, CFB and NHL numbers sat far from the market. The question was whether any came from a wrong input or invalid math, as opposed to an honest disagreement. Two did: Philadelphia was priced with Jalen Hurts while he was on the reserve list, and EDINTEL's EV counted a push as a win.
+
+**What.** One commit per defect, each with a regression test that fails on the old code:
+- NFL (`app.html`, `tools/football/build_nfl_slate.js`): a QB whose roster status is `RES`/`CUT`/`RET`/`SUS` is replaced as an OUT QB is. That status is PENDING when it comes from an earlier week's roster, and the replacement search skips players off the active roster.
+- EDINTEL `decide()`: a two-way no-vig probability becomes p(1−q) before the push mass is added, and the edge is measured against (1−q)/d.
+- Game, NBA and NHL graphics: the gap between a mean and a line is a *reading*. "EDGE" needs the exact bet's probability, pushes counted, to clear its offered price's break-even, and the sport's value claims enabled.
+- NHL `startersFor()`: a game is CONFIRMED only when both goalies are. An operator-listed unavailable goalie leaves the projection.
+- NBA `splitAbsent()`: a regular now on another roster is "left the team", never an absent regular or a return.
+- Board: the NHL whole-number total's market reference carries its push.
+- New shared audit `lib/edgedesk_model_integrity.js` → `engine/model_integrity.json`:
+  - built every 3 h by `projections-build.yml`;
+  - classifies each game as INPUT_ERROR, STALE_DATA, MISSING_CRITICAL_INPUT, CALIBRATION_WARNING, LARGE_MARKET_DISAGREEMENT, INSUFFICIENT_EVIDENCE or VALIDATED_INDEPENDENT_SIGNAL;
+  - compares each projection only with a quote captured before it;
+  - reads its thresholds from `engine/model_integrity_config.json`;
+  - publishes how games beyond each threshold have actually gone;
+  - shows as chips and a matchup section in Today's Games, which holds the signal chip while an input is unresolved.
+- `tools/model_integrity/calibration_report.js` and `docs/system-integrity/MODEL_INTEGRITY.md`: the calibration evidence and the methodology changes it calls for.
+
+No model was moved toward the market. No ledger, fitted bound or methodology changed.
+
+**Evidence.**
+- Same feeds, same instant:
+  - DAL @ PHI moved from PHI −2.83 to −0.58 (Tanner McKee).
+  - PHI @ WAS moved from WAS −0.28 to −2.52.
+  - The other 14 games did not change.
+- EDINTEL: a 50% fair side at 1.909 with a 6% push read EV +1.45%; the correct figure is −4.27%.
+- The LAK @ NYR card read "EDGE: OVER 5.5" with P(6+) 52.67% against a 56.52% break-even.
+- College football out of sample, 2022–2025 (n = 3,120):
+  - Margins are too wide: slope 0.933, SE 0.022.
+  - Win probabilities are too extreme: recalibration slope 0.854, 95% CI 0.78–0.92.
+  - Disagreement with the opener carried no information about the result: slope 0.055 ± 0.057.
+  - Each fix is a methodology change for its own pull request (MODEL_INTEGRITY.md §7).
+
+**Tests.**
+- Model integrity: `tools/model_integrity/model_integrity.test.js`, 67 checks. Three injected bugs each turn it red.
+- NFL roster regime: 71 checks; 7 of them fail on the old code.
+- EDINTEL: 580 checks; 4 fail on the old code.
+- NBA engine: 101 checks.
+- NHL brain: 107 checks.
+- Board: 39 checks.
+- NBA graphic: 375 checks.
+- NHL graphic: 350 checks.
+- NFL prior decay: 85 checks.
+- Today's Games end-to-end: 118 checks, including an integrity scenario.
+
 ## 2026-10-26 — All checks: one required check for every workflow a pull request starts
 
 **Why.** #807 merged 17 s after it was opened. Its three required checks (`Repository integrity`, `Odds gateway suites`, `audit`) passed within three minutes, and then eight of the 40 workflows it started failed. A ruleset can require only a check that reports on every pull request, and 64 of the 68 pull-request workflows are path-filtered.
