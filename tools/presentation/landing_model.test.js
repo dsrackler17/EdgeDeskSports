@@ -229,7 +229,8 @@ chk('the result carries the user-entered label', HM.compare(L.games[0], L.models
   /* the graphic itself: the research page's own content, with no sportsbook quote */
   const ct = GG.content(GS.graphicSpec(s0), null, { now: modelAt + 3600e3, kalshi: k0 });
   const KC = ct.ok && ct.content.compare ? ct.content.compare : null;
-  chk('the graphic draws EDGEDESK vs KALSHI (or the edge it names), with no sportsbook column', KC && (KC.title === 'EDGEDESK vs KALSHI' || /^EDGE: /.test(KC.title)) && KC.cols.every((c) => c.win) && !KC.book_row, KC && { title: KC.title, cols: KC.cols.map((c) => c.head), book: KC.book_row });
+  /* an NFL card more than 5 points of win probability from Kalshi is held to the large-gap gate (docs/nfl-prior-decay) */
+  chk('the graphic draws EDGEDESK vs KALSHI (or the edge it names, or LARGE GAP VS MARKET with no edge), with no sportsbook column', KC && (KC.title === 'EDGEDESK vs KALSHI' || /^EDGE: /.test(KC.title) || (KC.title === 'LARGE GAP VS MARKET' && KC.gate && !KC.edge)) && KC.cols.every((c) => c.win) && !KC.book_row, KC && { title: KC.title, cols: KC.cols.map((c) => c.head), book: KC.book_row });
   chk('…each team\'s Kalshi mid as received', KC && KC.cols.length === 2 && /^41\.5% /.test(KC.cols[0].mk) && /^59\.0% /.test(KC.cols[1].mk), KC && KC.cols);
   chk('…both times on the card, and the difference a sentence naming the team', KC && KC.times === 'Model ' + GG.clock(s0.model.built_at) + ' · Kalshi ' + GG.clock(new Date(modelAt + 60000).toISOString())
     && /^EdgeDesk \d+\.\d pts (higher|lower) on [A-Z&]+ than Kalshi$|^EdgeDesk matches Kalshi on /.test(KC.kalshi.diff), KC && [KC.times, KC.kalshi]);

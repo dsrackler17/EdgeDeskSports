@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_source_registry_v1",
- "generated_at": "2026-10-25T23:32:37.480Z",
+ "generated_at": "2026-10-26T00:27:53.698Z",
  "counts": {
   "OPERATIONAL": 3,
   "RESEARCH_COPY": 1,
@@ -12,8 +12,8 @@
  "freshness": {
   "slate_data_state": "FRESH",
   "latest_completed_game": "2026-10-24",
-  "last_fetch": "2026-10-25T23:31:48.478Z",
-  "manifest_updated_at": "2026-10-25T23:31:49.740Z"
+  "last_fetch": "2026-10-26T00:27:06.159Z",
+  "manifest_updated_at": "2026-10-26T00:27:07.406Z"
  },
  "datasets_measured": {
   "sportsdataverse_nhl": {
@@ -84,7 +84,7 @@
    "use": "every production input: shots, xG, ratings, results, starters, lineups; box scores for reconciliation and player research",
    "status": "OPERATIONAL",
    "data_permission": null,
-   "last_sync": "2026-10-25T23:31:48.478Z",
+   "last_sync": "2026-10-26T00:27:06.159Z",
    "contribution": {
     "role": "PRODUCTION",
     "evidence": "the production model (expected-goals GLM, xg_core) beats Elo by -0.003687 log loss on 7945 held-out games (95% -0.005417 to -0.002134)",
@@ -331,25 +331,26 @@
   },
   {
    "id": "confirmed_starters",
-   "name": "Confirmed starting goalies (e.g. team announcements, Daily Faceoff)",
-   "url": "hockey/data/confirmed_starters.json",
-   "access": "manual entry with source and time (schema in docs/engine/DATA.md)",
+   "name": "Starting goalies: Daily Faceoff, the NHL game boxscore, and manual entries",
+   "url": "supabase/functions/nhl_goalie_sync (public.nhl_goalie_starters); hockey/data/confirmed_starters.json",
+   "access": "the nhl_goalie_sync edge function reads Daily Faceoff's starting-goalies page (Confirmed / Likely / Unconfirmed) and the NHL's gamecenter boxscore (the starter flag once lineups post) every two hours from 8 AM ET, every 15 minutes in the last three hours and at T-30; manual entries with source and time (schema in docs/engine/DATA.md) ride in hockey/goalie_inputs.json",
    "datasets": [
-    "the announced starter and when"
+    "who starts, the source's status and its update time, per game and team, append-only"
    ],
-   "coverage": "manual only",
+   "coverage": "every game in the 30 hours ahead, from the day the layer is deployed (docs/engine/NHL_GOALIES.md)",
    "terms": {
-    "summary": "team announcements are public; aggregator sites have their own terms — no automated feed is wired",
+    "summary": "team announcements and the NHL's boxscore are public; Daily Faceoff is a third-party aggregator with its own terms of use, which the owner must review before NHL output is sold",
     "verified": false,
     "url": null,
-    "owner_action": "choose a licensed starter feed, or keep manual entries"
+    "owner_action": "review Daily Faceoff's terms (or license a starter feed) before paid use"
    },
    "authorised_for": [
+    "research display",
     "manual entry"
    ],
-   "cost": "free (manual)",
+   "cost": "free",
    "wired": true,
-   "use": "replaces the projected starter; diagnostics show projections are right ~66% of the time",
+   "use": "the card's starter, its status badge and the goalie pairing range; replaces the usage projection (right ~66% of the time) when a source names a starter; never moves the production price (xg_core carries no goalie term)",
    "status": "OPERATIONAL",
    "data_permission": null,
    "last_sync": null,

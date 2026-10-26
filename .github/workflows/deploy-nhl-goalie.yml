@@ -15,11 +15,20 @@
 #   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
 #   SB_DB_URL                                     to apply the SQL (optional;
 #                                                 or paste the files into the SQL editor)
-# And once, on the Supabase side (the function and pg_cron share one secret):
+# THE CRON SECRET (set_cron_secret, on by default). The function and pg_cron
+# share one secret: the function's NHL_GOALIE_CRON_SECRET and the Vault
+# secret nhl_goalie_cron_secret. This run makes them exist and agree, as
+# juicereel-setup.yml does for its key: generated on this runner when Vault
+# has none, masked, sent only to Supabase, never printed or stored in GitHub.
+# When Vault has one, the function is given that value (it is what pg_cron
+# sends). The step then proves the function accepts it with a dry run.
+# By hand instead:
 #   supabase secrets set NHL_GOALIE_CRON_SECRET=<a long random value>
 #   select vault.create_secret('<the same value>', 'nhl_goalie_cron_secret');
-# The function reads hockey/goalie_inputs.json from the site: let NHL engine
-# build run once on main after the merge so the file exists.
+# FIRST RUN (first_run, on by default): once the site serves
+# hockey/goalie_inputs.json (the NHL engine build writes it), the sync runs
+# once, forced, and the run's cards and the readiness KPIs go to the job
+# summary. pg_cron takes over from there.
 name: Deploy NHL goalie layer
 
 on:
@@ -33,6 +42,14 @@ on:
         description: 'Apply nhl_goalie_layer.sql, nhl_goalie_v2_registry.sql and nhl_goalie_cron.sql (needs pg_cron, pg_net and the research registry)'
         type: boolean
         default: false
+      set_cron_secret:
+        description: 'Make the function secret NHL_GOALIE_CRON_SECRET and Vault nhl_goalie_cron_secret exist and agree (generated here when absent, never printed)'
+        type: boolean
+        default: true
+      first_run:
+        description: 'Run the sync once, forced, when the site serves hockey/goalie_inputs.json, and summarise what it wrote'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -79,7 +96,7 @@ jobs:
           if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — paste the three SQL files into the SQL editor instead, in order."; fi
 
       - name: Install the Supabase CLI
-        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        if: ${{ (inputs.deploy_function || inputs.set_cron_secret) && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
         uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -96,14 +113,105 @@ jobs:
             --project-ref "$PROJECT_REF" \
             --no-verify-jwt
 
-      - name: Apply the SQL (layer, registry, cron — in that order)
+      - name: Apply the SQL (the layer, then the registry)
         if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
         env:
           PGURL: ${{ secrets.SB_DB_URL }}
         run: |
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
-          for f in supabase/nhl_goalie_layer.sql supabase/nhl_goalie_v2_registry.sql supabase/nhl_goalie_cron.sql; do
+          for f in supabase/nhl_goalie_layer.sql supabase/nhl_goalie_v2_registry.sql; do
             out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f")
             echo "== $f"; echo "$out" | tail -8
             if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::$f: a report row says CHECK THIS"; exit 1; fi
           done
+
+      # Before the cron: the poke sends the Vault value, so it must exist and the function must accept it.
+      - name: The cron secret exists in Vault and on the function, and they agree
+        if: ${{ inputs.set_cron_secret && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -eu
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          FN="https://$PROJECT_REF.supabase.co/functions/v1/nhl_goalie_sync"
+          supabase secrets list --project-ref "$PROJECT_REF" > "$RUNNER_TEMP/names.txt" 2>"$RUNNER_TEMP/err.txt" || { cat "$RUNNER_TEMP/err.txt"; echo "::error::supabase secrets list failed: is SUPABASE_ACCESS_TOKEN still valid?"; exit 1; }
+          fn_has=no; grep -qw NHL_GOALIE_CRON_SECRET "$RUNNER_TEMP/names.txt" && fn_has=yes; rm -f "$RUNNER_TEMP/names.txt"
+          vault=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select decrypted_secret from vault.decrypted_secrets where name = 'nhl_goalie_cron_secret' limit 1")
+          if [ -n "$vault" ]; then echo "::add-mask::$vault"; fi
+          setfn() { umask 077; f="$RUNNER_TEMP/nhlg.env"; printf 'NHL_GOALIE_CRON_SECRET=%s\n' "$1" > "$f"; supabase secrets set --project-ref "$PROJECT_REF" --env-file "$f" >/dev/null || { rm -f "$f"; echo "::error::supabase secrets set failed"; exit 1; }; rm -f "$f"; }
+          if [ -z "$vault" ]; then
+            vault=$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))")
+            echo "::add-mask::$vault"
+            echo "select vault.create_secret(:'sec', 'nhl_goalie_cron_secret');" | psql "$PGURL" -q -v ON_ERROR_STOP=1 -v sec="$vault" >/dev/null
+            setfn "$vault"
+            echo "Vault had no nhl_goalie_cron_secret: a new one was generated on this runner and set in Vault and on the function (never printed)."
+          elif [ "$fn_has" = no ]; then
+            setfn "$vault"
+            echo "The function had no NHL_GOALIE_CRON_SECRET: it was set to the Vault value."
+          else
+            echo "Vault and the function both hold a cron secret: checking that they agree."
+          fi
+          # a dry, forced run with the Vault value: 401 means the two disagree; any other answer carrying a run is authenticated
+          probe() { curl -sS -o "$RUNNER_TEMP/probe.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $vault" -d '{"dry":true,"force":true}' || true; }
+          ok=no; code=000
+          for i in $(seq 1 15); do
+            code=$(probe)
+            if [ "$code" != 401 ] && [ "$code" != 000 ] && grep -q '"run_id"' "$RUNNER_TEMP/probe.json"; then ok=yes; break; fi
+            if [ "$code" = 401 ] && [ "$i" = 4 ]; then setfn "$vault"; echo "The function refused the Vault value: its secret was set to it."; fi
+            sleep 6
+          done
+          vault=""
+          if [ "$ok" != yes ]; then echo "::error::nhl_goalie_sync did not accept the cron secret (last answer HTTP $code)"; head -c 400 "$RUNNER_TEMP/probe.json"; echo; exit 1; fi
+          node -e "const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));console.log('nhl_goalie_sync accepts the cron secret: a dry run answered '+process.argv[2]+' (status '+r.status+', build '+r.build+')');" "$RUNNER_TEMP/probe.json" "$code"
+          rm -f "$RUNNER_TEMP/probe.json"
+
+      - name: Apply the cron (the five-minute poke)
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/nhl_goalie_cron.sql)
+          echo "== supabase/nhl_goalie_cron.sql"; echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/nhl_goalie_cron.sql: a report row says CHECK THIS (is the Vault secret set? run with set_cron_secret)"; exit 1; fi
+
+      - name: First run — the sync once, forced, and what it wrote
+        if: ${{ inputs.first_run && steps.creds.outputs.have_ref == 'yes' && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -eu
+          FN="https://$PROJECT_REF.supabase.co/functions/v1/nhl_goalie_sync"
+          # the inputs the function reads: wait for the site to serve them (the NHL engine build writes them)
+          have=no
+          for i in $(seq 1 20); do
+            if curl -sS -m 20 "https://edgedesksports.com/hockey/goalie_inputs.json?v=$(date +%s)" -o "$RUNNER_TEMP/inputs.json" && node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));process.exit(j.schema==='edgedesk_nhl_goalie_inputs_v1'?0:1)" "$RUNNER_TEMP/inputs.json"; then have=yes; break; fi
+            sleep 30
+          done
+          if [ "$have" != yes ]; then echo "::warning::the site does not serve hockey/goalie_inputs.json yet (run NHL engine build on main); pg_cron will run the sync once it does"; exit 0; fi
+          node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));console.log('inputs: slate '+j.slate_generated_at+', '+j.games.length+' games')" "$RUNNER_TEMP/inputs.json"
+          vault=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select decrypted_secret from vault.decrypted_secrets where name = 'nhl_goalie_cron_secret' limit 1")
+          if [ -z "$vault" ]; then echo "::error::Vault has no nhl_goalie_cron_secret (run with set_cron_secret)"; exit 1; fi
+          echo "::add-mask::$vault"
+          code=$(curl -sS -m 120 -o "$RUNNER_TEMP/run.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $vault" -d '{"force":true,"source":"manual"}' || true)
+          vault=""
+          echo "the sync answered HTTP $code"
+          node -e "
+            const fs = require('fs'), r = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')), R = r.run || {}, C = (r.cards && r.cards.versions) || [];
+            const lines = ['### NHL goalie sync — first run', '', '| | |', '|---|---|',
+              '| Status | ' + r.status + ' |', '| Due | ' + (R.due_kinds || []).join(', ') + ' |',
+              '| Observations / consensus written | ' + R.observations_written + ' / ' + R.consensus_written + ' |',
+              '| Cards written / unchanged | ' + R.cards_written + ' / ' + R.cards_unchanged + ' |',
+              '| Open conflicts | ' + R.conflicts_open + ' |', '| Next slot | ' + (R.next_due_at || '—') + ' |',
+              '| Alerts | ' + ((r.alerts || []).map((a) => a.severity + ' ' + a.code + ': ' + a.message).join('<br>') || 'none') + ' |', '',
+              '| Game | v | Trigger | Starters | Status | Gate | Pairing win % | Change |', '|---|---|---|---|---|---|---|---|']
+              .concat(C.map((c) => '| ' + c.matchup + ' | ' + c.version + ' | ' + c.trigger + ' | ' + (c.pairing || []).join(' / ') + ' | ' + (c.status || []).join(' / ') + ' | ' + c.gate + ' | ' + (c.p_home_pairing == null ? '—' : (c.p_home_pairing * 100).toFixed(1) + '%') + ' | ' + (c.change || '') + ' |'));
+            const NL = String.fromCharCode(10);
+            console.log(lines.join(NL)); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join(NL) + NL);
+          " "$RUNNER_TEMP/run.json" || head -c 600 "$RUNNER_TEMP/run.json"
+          rm -f "$RUNNER_TEMP/run.json" "$RUNNER_TEMP/inputs.json"
+          echo "== readiness"
+          psql "$PGURL" -At -F ' | ' -c "select state, coalesce(state_reason, '—'), last_check_status, daily_faceoff_ok, nhl_api_ok, cards_upcoming, cards_gated, conflicts_open, sync_failures_24h, next_due_at from public.nhl_goalie_readiness"
+          if [ "$code" != 200 ]; then echo "::warning::the first run did not answer 200 (HTTP $code): see its alerts above and System health"; fi

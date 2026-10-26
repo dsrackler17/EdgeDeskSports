@@ -25,13 +25,13 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const PRE = path.join(ROOT, 'football', 'market_structure', 'preregistration.json');
 const OUT = path.join(ROOT, 'supabase', 'nfl_market_structure_studies.sql');
 
-function build() {
-  const J = JSON.parse(fs.readFileSync(PRE, 'utf8'));
-  const sha = crypto.createHash('sha256').update(JSON.stringify(J.studies)).digest('hex');
-  if (sha !== J.content_sha256) throw new Error('preregistration.json content_sha256 does not match its studies: an edit was made without a new version');
-  const payload = JSON.stringify({ content_sha256: sha, registered_at: J.registered_at, frozen_protocol: J.frozen_protocol, family_correction: J.family_correction, studies: J.studies });
-  if (payload.indexOf('$prereg$') >= 0) throw new Error('the payload contains the dollar-quote tag');
-  const ids = J.studies.map((s) => "('" + s.id + "')").join(', ');
+/* opts (every one optional; the defaults are the market-structure file exactly):
+     pre, out    the preregistration document and the SQL it generates
+     family      research_models.family / category value
+     header      (J, sha) => the comment block that opens the file
+     results     [{ study_id, version, passed, metrics, notes }]: research_model_results
+                 rows to write beside the versions (a validation report's verdict) */
+function marketStructureHeader(J, sha) {
   return `-- =============================================================================
 -- nfl_market_structure_studies.sql — register the four NFL Market Structure
 -- studies as EXPERIMENTAL in the research registry. docs/market-structure/README.md
@@ -52,7 +52,21 @@ function build() {
 -- Experimental. It changes no existing registry row: a study already
 -- registered is left exactly as it is and reported. Nothing here touches a
 -- projection, spread, probability, EV, ranking or grade.
---
+--`;
+}
+function build(opts) {
+  opts = opts || {};
+  const preFile = opts.pre || PRE, family = opts.family || 'nfl_market_structure';
+  const J = JSON.parse(fs.readFileSync(preFile, 'utf8'));
+  const sha = crypto.createHash('sha256').update(JSON.stringify(J.studies)).digest('hex');
+  if (sha !== J.content_sha256) throw new Error(path.basename(preFile) + ' content_sha256 does not match its studies: an edit was made without a new version');
+  const results = opts.results || null;
+  const payload = JSON.stringify(Object.assign({ content_sha256: sha, registered_at: J.registered_at, frozen_protocol: J.frozen_protocol, family_correction: J.family_correction, studies: J.studies },
+    results ? { results } : {}));
+  if (payload.indexOf('$prereg$') >= 0) throw new Error('the payload contains the dollar-quote tag');
+  const docRel = path.relative(ROOT, preFile).split(path.sep).join('/');
+  const ids = J.studies.map((s) => "('" + s.id + "')").join(', ');
+  return `${(opts.header || marketStructureHeader)(J, sha)}
 -- THE SCHEMA IS READ, NOT ASSUMED. The registry DDL is not in this repository.
 -- The file reads the live columns and enum labels (pg_attribute, pg_enum) and
 -- maps onto the names the app already reads; a NOT NULL column with no default
@@ -177,7 +191,7 @@ begin
       c := pg_temp.edr_has(m, array['objective', 'goal']); if c is not null then mv := mv || jsonb_build_object(c, st ->> 'objective'); end if;
       c := pg_temp.edr_has(m, array['hypothesis']); if c is not null then mv := mv || jsonb_build_object(c, st ->> 'hypothesis'); end if;
       c := pg_temp.edr_has(m, array['description', 'summary']); if c is not null then mv := mv || jsonb_build_object(c, st ->> 'hypothesis'); end if;
-      c := pg_temp.edr_has(m, array['family', 'category', 'module', 'domain']); if c is not null then mv := mv || jsonb_build_object(c, 'nfl_market_structure'); end if;
+      c := pg_temp.edr_has(m, array['family', 'category', 'module', 'domain']); if c is not null then mv := mv || jsonb_build_object(c, '${family}'); end if;
       c := pg_temp.edr_has(m, array['owner', 'created_by', 'registered_by']); if c is not null then mv := mv || jsonb_build_object(c, S ->> 'registered_at' || ' preregistration'); end if;
       c := pg_temp.edr_has(m, array['metadata', 'meta', 'spec', 'details', 'config']);
       if c is not null then mv := mv || jsonb_build_object(c, pg_temp.edr_val(m, c, null, st || jsonb_build_object('content_sha256', S ->> 'content_sha256'), null)); end if;
@@ -218,11 +232,11 @@ begin
     if c is not null then vv := vv || jsonb_build_object(c, pg_temp.edr_val(v, c, null, st || jsonb_build_object('content_sha256', S ->> 'content_sha256'), null)); end if;
     c := pg_temp.edr_has(v, array['notes', 'description']);
     if c is not null then vv := vv || jsonb_build_object(c, pg_temp.edr_val(v, c,
-      'Preregistered ' || (S ->> 'registered_at') || ': football/market_structure/preregistration.json sha256 ' || (S ->> 'content_sha256') || '. No result until a validation report writes one.', null, null)); end if;
+      'Preregistered ' || (S ->> 'registered_at') || ': ${docRel} sha256 ' || (S ->> 'content_sha256') || '. No result until a validation report writes one.', null, null)); end if;
     perform pg_temp.edr_insert(v, vv, fkcol);
     n_versions := n_versions + 1;
   end loop;
-  raise notice 'research registry: % model row(s) and % version row(s) written; % study(ies) were already registered and left as they are', n_models, n_versions, kept;
+  raise notice 'research registry: % model row(s) and % version row(s) written; % study(ies) were already registered and left as they are', n_models, n_versions, kept;${results ? resultsBlock() : ''}
 end $reg$;
 
 commit;
@@ -253,6 +267,54 @@ select * from pg_temp.edr_report();
 `;
 }
 
+/* THE RESULT ROWS (opts.results): one research_model_results row per study
+   version, linked the way the live table links (a foreign key to the version,
+   else model key + version), written once: a row already there is left as it is */
+function resultsBlock() {
+  return `
+  declare
+    rs regclass := to_regclass('public.research_model_results');
+    rfk text; rref text; rmcol text; rvcol text; pcol text; mcol text; vid text; ref2 text; rv jsonb; e jsonb; have2 boolean; n_results int := 0;
+  begin
+    if rs is null then raise notice 'research registry: no research_model_results table; no result row written'; return; end if;
+    select a.attname::text, ra.attname::text into rfk, rref
+      from pg_constraint k
+      join pg_attribute a on a.attrelid = k.conrelid and a.attnum = k.conkey[1]
+      join pg_attribute ra on ra.attrelid = k.confrelid and ra.attnum = k.confkey[1]
+     where k.contype = 'f' and k.conrelid = rs and k.confrelid = v limit 1;
+    if rfk is null then
+      rfk := pg_temp.edr_has(rs, array['version_id', 'model_version_id', 'research_model_version_id']);
+      if rfk is not null then rref := pg_temp.edr_has(v, array['id', 'version_id']); end if;
+    end if;
+    if rfk is null then
+      rmcol := pg_temp.edr_has(rs, array['model_key', 'model', 'key', 'model_name']);
+      rvcol := pg_temp.edr_has(rs, array['model_version', 'version', 'version_label']);
+      if rmcol is null or rvcol is null then raise exception 'research registry: cannot tell how research_model_results points at a version — nothing was registered'; end if;
+    end if;
+    pcol := pg_temp.edr_has(rs, array['passed', 'pass', 'is_passed', 'success']);
+    mcol := pg_temp.edr_has(rs, array['metrics', 'results', 'result', 'holdout_result', 'details', 'payload', 'data']);
+    for e in select * from jsonb_array_elements(S -> 'results') loop
+      execute format('select %I::text from %s where %I::text = $1 limit 1', refcol, m, kcol) into ref2 using e ->> 'study_id';
+      if rfk is not null then
+        execute format('select %I::text from %s where %I::text = $1 and %I::text = $2 limit 1', rref, v, fkcol, vcol) into vid using ref2, e ->> 'version';
+        if vid is null then raise exception 'research registry: no version % for % to attach a result to', e ->> 'version', e ->> 'study_id'; end if;
+        execute format('select exists (select 1 from %s where %I::text = $1)', rs, rfk) into have2 using vid;
+        rv := jsonb_build_object(rfk, vid);
+      else
+        execute format('select exists (select 1 from %s where %I::text = $1 and %I::text = $2)', rs, rmcol, rvcol) into have2 using ref2, e ->> 'version';
+        rv := jsonb_build_object(rmcol, ref2, rvcol, e ->> 'version');
+      end if;
+      continue when have2;
+      if pcol is not null then rv := rv || jsonb_build_object(pcol, pg_temp.edr_val(rs, pcol, null, e -> 'passed', null)); end if;
+      if mcol is not null then rv := rv || jsonb_build_object(mcol, pg_temp.edr_val(rs, mcol, null, e -> 'metrics', null)); end if;
+      c := pg_temp.edr_has(rs, array['notes', 'summary', 'verdict', 'reason']); if c is not null then rv := rv || jsonb_build_object(c, pg_temp.edr_val(rs, c, e ->> 'notes', null, null)); end if;
+      perform pg_temp.edr_insert(rs, rv, coalesce(rfk, rmcol));
+      n_results := n_results + 1;
+    end loop;
+    raise notice 'research registry: % result row(s) written (passed is false until a holdout passes)', n_results;
+  end;`;
+}
+
 if (require.main === module) {
   const sql = build();
   const cur = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : null;
@@ -260,4 +322,4 @@ if (require.main === module) {
   if (cur === sql) console.log('unchanged ' + path.relative(ROOT, OUT));
   else { fs.writeFileSync(OUT, sql); console.log('wrote ' + path.relative(ROOT, OUT)); }
 }
-module.exports = { build, OUT, PRE };
+module.exports = { build, OUT, PRE, marketStructureHeader };
