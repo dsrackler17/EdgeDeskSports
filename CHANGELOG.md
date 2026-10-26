@@ -1,6 +1,7 @@
 # Changelog
 
 
+
 ## 2026-10-26 — CI: a gate on every pull request, `npm run verify`, and the rules that would have stopped today's eighteen failed runs
 
 Eighteen failed runs between 12:03 and 12:54 UTC came from three root causes, all already fixed on `main` by #799, #800, #803 and #804 ([docs/ci/INCIDENT-2026-10-26.md](docs/ci/INCIDENT-2026-10-26.md)):

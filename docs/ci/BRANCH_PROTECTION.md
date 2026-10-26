@@ -39,6 +39,23 @@ scheduled job red. No workflow pushes with a personal token or a deploy key
 `main`. Applied before that, every other pull request would wait on them
 forever.
 
+**1a. Prove the bypass on scratch branches first.** GitHub's docs list
+"GitHub Apps" among eligible bypass actors. They do not say whether the
+built-in GitHub Actions app, and with it the data jobs' `GITHUB_TOKEN`
+pushes, is honoured in a personal account's repository. Step 3 only shows
+that the page accepted the actor.
+
+1. Import this same file twice, each time targeting a scratch branch
+   pattern. The second copy, the control, gets an empty bypass list.
+2. From a workflow, push one commit to each scratch branch with the default
+   `GITHUB_TOKEN`. The control must be refused, which proves the rules bind
+   those pushes; the other copy must be accepted.
+3. Delete both copies.
+
+Status, 2026-10-26: prepared and **not yet run**, because the agents' token
+may not write rulesets. Do not activate step 2 on `main` until the probe has
+passed.
+
 **2. Import the ruleset.** [`main-ruleset.json`](main-ruleset.json) holds
 exactly the table below.
 
@@ -65,6 +82,19 @@ bypass list as *Deploy keys*. That is a change to the publishing workflows.
 - A pull request's merge button waits for `Repository integrity`.
 - `GET /repos/dsrackler17/EdgeDeskSports/rules/branches/main` lists the
   ruleset.
+
+**A bot commit into a pull request branch reports no checks.** Two jobs push
+generated files into the pull request that triggered them:
+`simulator-sports-data.yml` and `nfl-coaching-staff-validation.yml`. A
+`GITHUB_TOKEN` push starts no workflow, so with this ruleset the pull
+request's new head never reports the three required checks. It waits as
+"Expected" until someone pushes again.
+
+To unblock one, run *Core validation*, *Odds gateway tests* and *CFB security*
+on the pull request's branch (Actions → the workflow → Run workflow). All
+three have `workflow_dispatch`. Confirm on the first occurrence that the
+dispatched runs satisfy the merge box. Having those two jobs dispatch the
+three themselves needs `actions: write` on them; that is a separate decision.
 
 Evaluate mode (log, do not block) is offered only on GitHub Enterprise. On
 this account a ruleset is Active or Disabled, which is why step 4 is a
