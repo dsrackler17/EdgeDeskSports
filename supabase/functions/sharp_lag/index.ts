@@ -564,6 +564,192 @@ export const BUILD = "sharp_lag@2026-10-27.1";
       by_venue: split('target_venue'), validation: L.validation(rows, o.model_key) };
   };
 
+  /* ------------------------------------------------------------ display */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  L.esc = esc;
+  L.agoText = function (at, now) {
+    var m = ageMin(at, now == null ? Date.now() : now); if (m == null) return '—';
+    m = Math.max(0, Math.round(m));
+    if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; if (m < 48 * 60) return Math.round(m / 60) + ' h ago';
+    return Math.round(m / 1440) + ' days ago';
+  };
+  /* the existing rule (lib/edgedesk_games.js market_limit_min): a price older
+     than 90 minutes is a PAST price, never a current one */
+  L.isPast = function (at, now) { var m = ageMin(at, now == null ? Date.now() : now); return m == null || m > L.RULES.past_price_min; };
+  L.priceAge = function (at, now) { return (L.isPast(at, now) ? 'past price, ' : 'seen ') + L.agoText(at, now); };
+  function pct(p) { p = num(p); return p == null ? '—' : (Math.round(p * 1000) / 10).toFixed(1) + '%'; }
+  function am(a) { a = num(a); return a == null ? '—' : (a > 0 ? '+' : '') + Math.round(a); }
+  function signed(v, d) { v = num(v); return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(d == null ? 1 : d); }
+  L.fmt = { pct: pct, am: am, signed: signed };
+  var VENUE = { kalshi: 'Kalshi', draftkings: 'DraftKings', fanduel: 'FanDuel', betmgm: 'BetMGM', williamhill_us: 'Caesars', espnbet: 'ESPN BET', betrivers: 'BetRivers', fanatics: 'Fanatics', hardrockbet: 'Hard Rock', betonlineag: 'BetOnline', pinnacle: 'Pinnacle' };
+  L.venueLabel = function (v) { return VENUE[v] || v || '—'; };
+  var MARKET = { h2h: 'Moneyline', spreads: 'Spread', totals: 'Total', player_rebounds: 'Rebounds', player_assists: 'Assists', player_threes: '3-pointers made', player_points_rebounds_assists: 'Pts + reb + ast' };
+  L.marketLabel = function (m) { return MARKET[m] || m; };
+  var SPORT = { americanfootball_nfl: 'NFL', americanfootball_ncaaf: 'College football', basketball_nba: 'NBA', icehockey_nhl: 'NHL' };
+  L.sportLabel = function (k) { return SPORT[k] || k; };
+  L.sideLabel = function (f) {
+    var p = num(f.point), who = f.participant ? f.participant + ' ' : '';
+    if (f.market === 'spreads') return f.side + ' ' + (p > 0 ? '+' : '') + p;
+    if (f.market === 'totals' || f.participant) return who + f.side + ' ' + p;
+    return f.side;
+  };
+  L.targetText = function (f) {
+    if (f.target_venue === 'kalshi') return 'Kalshi YES ' + Math.round(num(f.target_price) * 100) + '¢ + fee ' + Math.round(num(f.fee_per_contract) * 100) + '¢';
+    return L.venueLabel(f.target_venue) + ' ' + am(f.target_price_american != null ? f.target_price_american : L.decToAm(f.target_price));
+  };
+  L.progressText = function (v) { return v ? v.graded + ' of ' + v.threshold + ' graded flags' : ''; };
+  L.EXPERIMENTAL_NOTE = 'Experimental research. A flag records a measured gap between two markets at one moment; it is graded against the closing line whatever happens. It is not advice and not a recommendation.';
+  L.FEE_NOTE = 'Kalshi fee not yet verified against Kalshi’s current published schedule: the cost uses the highest plausible fee (0.07 coefficient, rounded up on one contract).';
+
+  function badge(t, cls) { return '<span class="sl-badge' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>'; }
+  function progressLine(v) {
+    if (!v) return '';
+    var ci = v.ci && v.ci.lo != null ? ' · mean CLV ' + signed(v.ci.mean, 2) + ' pp (95% interval ' + signed(v.ci.lo, 2) + ' to ' + signed(v.ci.hi, 2) + ', clustered by game)' : '';
+    return '<p class="sl-progress"><b>Validation:</b> ' + esc(v.progress) + ci + '. Registered threshold: ' + v.threshold
+      + ' graded flags and a 95% lower bound on mean CLV above zero, both. Status: ' + esc(v.status) + '.</p>';
+  }
+  L.progressLine = progressLine;
+  function flagRow(f, now) {
+    var tgtAt = f.target_observed_at, refAt = f.reference_observed_at;
+    return '<tr>'
+      + '<td data-l="Market">' + esc(L.marketLabel(f.market)) + '<br><small>' + esc(L.sideLabel(f)) + '</small></td>'
+      + '<td data-l="Target price">' + esc(L.targetText(f)) + (f.fee_unverified ? ' ' + badge('fee unverified', 'warn') : '') + '<br><small class="' + (L.isPast(tgtAt, now) ? 'sl-past' : '') + '">' + esc(L.priceAge(tgtAt, now)) + '</small></td>'
+      + '<td data-l="Reference">' + (f.reference_kind === 'pinnacle_shin' ? 'Pinnacle fair ' : 'EdgeDesk fair ') + esc(pct(f.reference_prob)) + '<br><small class="' + (L.isPast(refAt, now) ? 'sl-past' : '') + '">' + esc(L.priceAge(refAt, now)) + '</small></td>'
+      + '<td data-l="Gap">' + esc(signed(f.gap_pp, 1)) + ' pp<br><small>cost ' + esc(pct(f.target_cost_prob)) + '</small></td>'
+      + '<td data-l="Trigger">' + esc(L.TRIGGERS[f.trigger_type] || f.trigger_type) + '<br><small>flagged ' + esc(L.agoText(f.flagged_at, now)) + '</small></td>'
+      + '<td data-l="Graded">' + (f.close_status === 'graded' ? esc(signed(f.clv_pp, 2)) + ' pp CLV' : f.close_status === 'no_close' ? 'no close' : 'not graded yet') + '</td>'
+      + '</tr>';
+  }
+  var HEAD = '<thead><tr><th scope="col">Market</th><th scope="col">Target price</th><th scope="col">Reference</th><th scope="col">Gap</th><th scope="col">Trigger</th><th scope="col">Graded</th></tr></thead>';
+  /* the game page's section. o: { now, flags, validation, access: 'subscriber' | 'public' | 'none',
+     started, roleShift, cls, id, h (heading tag, default h2) } */
+  L.gameSection = function (o) {
+    o = o || {};
+    var now = o.now == null ? Date.now() : o.now, flags = o.flags || [], hx = o.h || 'h2';
+    var h = '<section class="sl-sec' + (o.cls ? ' ' + esc(o.cls) : '') + '"' + (o.id ? ' id="' + esc(o.id) + '"' : '') + ' aria-label="Sharp lag, experimental">'
+      + '<' + hx + ' class="sl-h">Sharp lag · Experimental ' + badge('Experimental', 'exp') + '</' + hx + '>'
+      + '<p class="sl-note">' + esc(L.EXPERIMENTAL_NOTE) + '</p>';
+    if (o.access !== 'subscriber' && !o.started) {
+      h += '<p class="sl-note">Live flag details are for subscribers until the game starts; every flag is published here once it does.</p>';
+    } else if (!flags.length) {
+      h += '<p class="sl-note">No flag for this game. A flag needs a Pinnacle observation under ' + L.RULES.reference_max_age_min
+        + ' minutes old and a target at least ' + L.RULES.gap_pp + ' percentage points below its fair after fees.</p>';
+    } else {
+      h += '<div class="sl-tblwrap"><table class="sl-tbl sl-flags">' + HEAD + '<tbody>' + flags.map(function (f) { return flagRow(f, now); }).join('') + '</tbody></table></div>';
+      if (flags.some(function (f) { return f.fee_unverified; })) h += '<p class="sl-note">' + esc(L.FEE_NOTE) + '</p>';
+      h += '<p class="sl-note">Lag is measured only to the snapshot cadence: '
+        + esc(flags.map(function (f) { return f.snapshot_resolution_s; }).filter(function (x) { return x != null; }).map(function (x) { return Math.round(x / 60) + ' min'; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(', ') || 'unknown')
+        + ' between observations.</p>';
+    }
+    if (o.roleShift) h += o.roleShift;
+    return h + progressLine(o.validation) + '</section>';
+  };
+  /* a section still loading, or one whose read failed: never an empty box */
+  L.pendingSection = function (o) {
+    o = o || {};
+    var hx = o.h || 'h2';
+    return '<section class="sl-sec' + (o.cls ? ' ' + esc(o.cls) : '') + '"' + (o.id ? ' id="' + esc(o.id) + '"' : '') + ' aria-label="Sharp lag, experimental">'
+      + '<' + hx + ' class="sl-h">Sharp lag · Experimental ' + badge('Experimental', 'exp') + '</' + hx + '>'
+      + '<p class="sl-note">' + esc(o.text || 'Checking the research record…') + '</p></section>';
+  };
+  /* a time in the reader's own zone, named ("11:20 AM CST"); UTC where the runtime has no zone data */
+  function clock(iso) {
+    var d = new Date(ms(iso));
+    try { return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }); }
+    catch (_) { return d.toISOString().slice(11, 16) + ' UTC'; }
+  }
+  /* the Signals feed: today's flags, newest first */
+  L.feed = function (o) {
+    o = o || {};
+    var now = o.now == null ? Date.now() : o.now, flags = (o.flags || []).slice().sort(function (a, b) { return ms(b.flagged_at) - ms(a.flagged_at); });
+    var h = '<section class="sl-sec" aria-label="Sharp lag flags, experimental"><h2 class="sl-h">Sharp lag · today’s flags ' + badge('Experimental', 'exp') + '</h2>'
+      + '<p class="sl-note">' + esc(L.EXPERIMENTAL_NOTE) + '</p>';
+    if (!flags.length) h += '<p class="sl-note">' + esc(o.empty || 'No flag today yet.') + '</p>';
+    else h += '<ul class="sl-feed">' + flags.map(function (f) {
+      return '<li>' + badge('Experimental', 'exp') + ' <time datetime="' + esc(f.flagged_at) + '">' + esc(clock(f.flagged_at)) + '</time> · '
+        + esc((f.away_team || '') + ' @ ' + (f.home_team || '')) + ' · ' + esc(L.marketLabel(f.market) + ' ' + L.sideLabel(f)) + ' · '
+        + esc(L.targetText(f)) + ' vs ' + (f.reference_kind === 'pinnacle_shin' ? 'Pinnacle fair ' : 'EdgeDesk fair ') + esc(pct(f.reference_prob))
+        + ' · gap ' + esc(signed(f.gap_pp, 1)) + ' pp · ' + esc(L.TRIGGERS[f.trigger_type] || f.trigger_type)
+        + (f.fee_unverified ? ' ' + badge('fee unverified', 'warn') : '') + '</li>';
+    }).join('') + '</ul>';
+    return h + (o.validation || []).map(progressLine).join('') + '</section>';
+  };
+  function recTable(title, rows) {
+    return '<h3 class="sl-h3">' + esc(title) + '</h3><div class="sl-tblwrap"><table class="sl-tbl sl-rec"><thead><tr><th scope="col"></th><th scope="col">Flags</th><th scope="col">Graded</th><th scope="col">No close</th><th scope="col">Avg CLV</th><th scope="col">Hit rate</th><th scope="col">Avg lag to converge</th><th scope="col">Snapshot resolution</th></tr></thead><tbody>'
+      + rows.map(function (r) {
+        return '<tr><th scope="row">' + esc(r.label || r.key) + '</th><td data-l="Flags">' + r.flags + '</td><td data-l="Graded">' + r.graded + '</td><td data-l="No close">' + r.no_close + (r.no_close_rate != null ? ' (' + esc(pct(r.no_close_rate)) + ')' : '') + '</td>'
+          + '<td data-l="Avg CLV">' + (r.avg_clv_pp == null ? '—' : esc(signed(r.avg_clv_pp, 2)) + ' pp') + '</td><td data-l="Hit rate">' + esc(pct(r.hit_rate)) + '</td>'
+          + '<td data-l="Avg lag to converge">' + (r.avg_lag_s == null ? '—' : esc(Math.round(r.avg_lag_s / 60) + ' min')) + (r.censored ? ' <small>(' + r.censored + ' never converged)</small>' : '') + '</td>'
+          + '<td data-l="Snapshot resolution">' + (r.median_resolution_s == null ? '—' : '±' + esc(Math.round(r.median_resolution_s / 60) + ' min')) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  /* the Performance record for one model. o: { title, record, note } */
+  L.recordSection = function (o) {
+    var rec = o.record, ov = Object.assign({ key: 'All flags', label: 'All flags' }, rec.overall);
+    var lab = function (rows, f) { return rows.map(function (r) { return Object.assign({}, r, { label: f(r.key) }); }); };
+    return '<section class="sl-sec" aria-label="' + esc(o.title) + '"><h2 class="sl-h">' + esc(o.title) + ' ' + badge('Experimental', 'exp') + '</h2>'
+      + '<p class="sl-note">' + esc(L.EXPERIMENTAL_NOTE) + ' Every flag counts, losses included; the record is computed straight from the append-only flag and grade tables, with no edit step.</p>'
+      + progressLine(rec.validation)
+      + '<p class="sl-note">Data quality: ' + rec.overall.no_close + ' flag' + (rec.overall.no_close === 1 ? '' : 's') + ' had no usable close'
+      + (rec.overall.no_close_rate != null ? ' (' + esc(pct(rec.overall.no_close_rate)) + ' of closed flags)' : '') + (rec.overall.no_close === 1 ? ' and is' : ' and are') + ' excluded from CLV, counted here. '
+      + rec.overall.pending + ' flag' + (rec.overall.pending === 1 ? ' is' : 's are') + ' waiting for the game to start.</p>'
+      + recTable('Overall', [ov])
+      + recTable('By sport', lab(rec.by_sport, L.sportLabel))
+      + recTable('By market', lab(rec.by_market, L.marketLabel))
+      + recTable('By trigger', lab(rec.by_trigger, function (k) { return L.TRIGGERS[k] || k; }))
+      + (o.note ? '<p class="sl-note">' + esc(o.note) + '</p>' : '') + '</section>';
+  };
+
+  /* ------------------------------------------------------------ the hosts' helpers */
+  /* the same club across two feeds: the same name, one a whole-word prefix of
+     the other ("Ohio State" / "Ohio State Buckeyes"), or the same last word
+     of two multi-word names ("LA Clippers" / "Los Angeles Clippers"). Loose on
+     its own, so it is only ever used with the OTHER club matched too and a
+     start within 6 hours (flagsForGame); a host with a resolver passes it */
+  L.sameTeam = function (a, b) {
+    var x = L.normName(a), y = L.normName(b);
+    if (!x || !y) return false;
+    if (x === y) return true;
+    var s = x.length < y.length ? x : y, l = s === x ? y : x;
+    if (l.indexOf(s + ' ') === 0) return true;
+    var xs = x.split(' '), ys = y.split(' ');
+    return xs.length > 1 && ys.length > 1 && xs[xs.length - 1] === ys[ys.length - 1];
+  };
+  /* a game's flags among a sport's: both clubs (or both swapped, a neutral
+     listing) and a start within 6 hours. g: { sport_key, home, away, start }, o.sameTeam */
+  L.flagsForGame = function (flags, g, o) {
+    var same = (o && o.sameTeam) || L.sameTeam, t = ms(g.start);
+    return (flags || []).filter(function (f) {
+      if (g.sport_key && f.sport_key !== g.sport_key) return false;
+      if (t != null && Math.abs(ms(f.commence_time) - t) > 6 * 3600e3) return false;
+      return (same(f.home_team, g.home) && same(f.away_team, g.away)) || (same(f.home_team, g.away) && same(f.away_team, g.home));
+    });
+  };
+  /* the validation line from the public counts (public.sharp_lag_progress)
+     and whichever graded rows the reader may see: the counts are the
+     record's own; the interval needs the CLVs */
+  L.validationFrom = function (progress, rows, modelKey) {
+    modelKey = modelKey || L.MODELS.sharp_lag.key;
+    var m = ((progress && progress.models) || []).filter(function (x) { return x.model_key === modelKey; })[0] || null;
+    var v = L.validation((rows || []).filter(function (r) { return r.model_key === modelKey; }), modelKey);
+    if (m && num(m.graded) != null && num(m.graded) > v.graded) {
+      v.graded = num(m.graded); v.progress = v.graded + ' of ' + v.threshold + ' graded flags'; v.ci = null; v.eligible = false;
+    }
+    v.registered = m ? !!m.registered : null;
+    return v;
+  };
+  L.STYLE = '.sl-sec{margin:18px 0;padding:14px 16px;border:1px solid rgba(127,127,127,.35);border-radius:10px}'
+    + '.sl-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 6px}.sl-h3{margin:12px 0 4px;font-size:15px}'
+    + '.sl-note,.sl-progress{font-size:13px;opacity:.85;margin:6px 0}.sl-badge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.02em;padding:2px 7px;border-radius:999px;border:1px solid currentColor;opacity:.9}'
+    + '.sl-badge.exp{color:#8a5cf6}.sl-badge.warn{color:#b45309}.sl-tblwrap{overflow-x:auto;max-width:100%}'
+    + '.sl-tbl{border-collapse:collapse;width:100%;font-size:13px}.sl-tbl th,.sl-tbl td{text-align:left;padding:6px 8px;border-top:1px solid rgba(127,127,127,.25);vertical-align:top}'
+    + '@media (max-width:560px){.sl-flags thead,.sl-rec thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.sl-flags tr,.sl-rec tr{display:block;padding:6px 0;border-top:1px solid rgba(127,127,127,.25)}'
+    + '.sl-rec th[scope=row]{display:block;border:0;padding:4px 0}'
+    + '.sl-flags td,.sl-rec td{display:inline-block;vertical-align:top;border:0;padding:4px 14px 4px 0;min-width:40%}.sl-flags td::before,.sl-rec td::before{content:attr(data-l);display:block;font-size:11px;opacity:.7}}'
+    + '.sl-tbl small{opacity:.75}.sl-past{color:#b45309}.sl-feed{list-style:none;margin:6px 0;padding:0;font-size:13px}.sl-feed li{padding:6px 0;border-top:1px solid rgba(127,127,127,.25)}';
+  L.injectStyle = function (doc) {
+    try { if (!doc || doc.getElementById('edgedesk-sharp-lag-css')) return; var st = doc.createElement('style'); st.id = 'edgedesk-sharp-lag-css'; st.textContent = L.STYLE; doc.head.appendChild(st); } catch (_) { /* unstyled is still readable */ }
+  };
   return L;
 }));
 // ── END SHARP LAG CORE ──

@@ -6,6 +6,8 @@
 #          the clustered bootstrap); the deployed edge functions imported as
 #          they ship, against an in-memory PostgREST; the SQL on a real
 #          PostgreSQL (append-only, the guards, who reads what, the cron).
+#          The pages: the Experimental sections as they ship, and in
+#          Chromium at a phone and a desktop width, with the database stubbed.
 # Deploying is .github/workflows/deploy-sharp-lag.yml (manual), which runs the
 # same tests first.
 name: Sharp lag research
@@ -23,6 +25,11 @@ on:
       - 'hockey/data/teams.json'
       - 'research/sharp_lag/**'
       - 'supabase/sharp_lag_registry.sql'
+      - 'lib/edgedesk_game_view.js'
+      - 'lib/edgedesk_games_ui.js'
+      - 'app.html'
+      - 'performance/**'
+      - 'today/index.html'
       - 'lib/edgedesk_games.js'
       - 'supabase/odds_api_emergency_stop.sql'
       - 'tools/sharp_lag/**'
@@ -69,3 +76,11 @@ jobs:
         run: |
           sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
           node tools/sharp_lag/sharp_lag_sql.test.js
+      - name: The Experimental sections as the pages ship them
+        run: node tools/sharp_lag/sharp_lag_ui.test.js
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Every surface in Chromium (matchup, game page, Signals, Performance; phone and desktop)
+        run: node tools/sharp_lag/sharp_lag_ui.e2e.js

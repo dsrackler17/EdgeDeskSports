@@ -169,6 +169,38 @@ The record is computed straight from the append-only tables, with no edit
 step. It splits by sport, market and trigger: flags, graded, no close, average
 CLV, hit rate, average lag and resolution.
 
+## E. Where it shows (all tagged Experimental)
+
+- **Game research page.** The NFL and CFB research page (`#game/...`) and
+  the terminal's matchup view (the games page, every sport) each get a
+  "Sharp lag · Experimental" section with the game's flags:
+  - target price, Pinnacle fair, gap and trigger;
+  - each price's age, where an observation older than 90 minutes reads as a
+    **past price**, never a current one.
+- **Signals.** A feed of today's flags, each tagged Experimental with its
+  time.
+- **Performance.** The public "Sharp lag (Experimental)" record.
+- **Every surface** shows the registered threshold and the progress ("47 of
+  200 graded flags").
+- **Who sees what.**
+  - Live Pinnacle fairs and live flag details are **subscriber-only**,
+    consistent with `signals`.
+  - The public gets the validation progress (counts only) always. It gets
+    the graded record and every flag's details once its game has **started**,
+    and only after an operator has read The Odds API's terms and switched
+    `public_display` on. `the-odds-api.com` was not reachable from the build
+    environment, so the terms were **not checked here**.
+  - The public `/today/` page has no Sharp-lag section and makes no
+    Sharp-lag read.
+- **How it reads.** Every page reads through `public.sharp_lag_flags()` and
+  `public.sharp_lag_progress()` only: the terminal under the reader's own
+  token (`window.slData` in `app.html`), the Performance page with the public
+  anon key (`performance/sharp_lag.js`). The database decides what each reader
+  sees; the pages never filter access themselves.
+- **Tests.** `tools/sharp_lag/sharp_lag_ui.test.js` checks the helpers, the
+  wiring and the Performance script against a stubbed database.
+  `tools/sharp_lag/sharp_lag_ui.e2e.js` draws every surface in Chromium at
+  390 px and 1280 px: no page error, no sideways scroll.
 
 
 ## Budget

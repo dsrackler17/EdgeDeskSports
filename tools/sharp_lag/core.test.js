@@ -15,6 +15,8 @@
                lag to converge (censored at the start)
      record    the game-clustered bootstrap, the BOTH-conditions validation,
                the splits, the no-close rate
+     display   the 90-minute past-price rule, Experimental on every surface,
+               the progress line, research language only
    Run: node tools/sharp_lag/core.test.js
    =========================================================================== */
 'use strict';
@@ -176,6 +178,25 @@ const PIN = (min, h, a, extra) => Object.assign({ observed_at: at(min), request_
   chk('record: the no-close rate is of the closed flags', near(rec.overall.no_close_rate, 1 / (rows.length - 1), 1e-4));
   chk('record: split by sport, market and trigger', rec.by_sport.length === 3 && rec.by_market.length === 2 && rec.by_trigger.map((x) => x.key).join() === 'kalshi_move,nhl_goalie,scheduled');
   chk('record: lag to converge averages converged flags only, with the never-converged counted and the resolution beside it', rec.overall.avg_lag_s === 1800 && rec.overall.censored > 0 && rec.overall.median_resolution_s === 3600);
+
+  /* ── display ────────────────────────────────────────────────────────── */
+  chk('display: 90 minutes is current, 91 is a past price (lib/edgedesk_games.js market_limit_min)', !L.isPast(at(-90), T) && L.isPast(at(-91), T) && /^past price/.test(L.priceAge(at(-91), T)));
+  const gameHtml = L.gameSection({ now: T, flags: [flag, kflag].map((x) => Object.assign({}, x, { close_status: null })), validation: rec.validation, access: 'subscriber' });
+  chk('display: the game section is tagged Experimental and shows target, fair, gap, trigger and each price\'s age', /Sharp lag · Experimental/.test(gameHtml) && /Pinnacle fair/.test(gameHtml) && /pp/.test(gameHtml)
+    && /Scheduled check/.test(gameHtml) && /seen 10 min ago/.test(gameHtml) && /fee unverified/.test(gameHtml));
+  chk('display: the registered threshold and the progress are on the section', /of 200 graded flags/.test(gameHtml) && /95% lower bound on mean CLV above zero, both/.test(gameHtml));
+  const oldHtml = L.gameSection({ now: T + 3 * 3600e3, flags: [flag], validation: rec.validation, access: 'subscriber' });
+  chk('display: three hours on, the same prices read as past prices, never current', /past price, 3 h ago/.test(oldHtml) && !/seen 3 h ago/.test(oldHtml));
+  chk('display: a non-subscriber before the start gets no live detail, only the note and the progress', !/<table/.test(L.gameSection({ now: T, flags: [flag], validation: rec.validation, access: 'public', started: false })));
+  chk('display: the snapshot resolution is stated with the lag', /measured only to the snapshot cadence: 60 min/.test(gameHtml));
+  const feedHtml = L.feed({ now: T, flags: [flag, kflag], validation: [rec.validation] });
+  chk('display: every feed item is tagged Experimental with its time', (feedHtml.match(/<li>/g) || []).length === 2 && (feedHtml.match(/sl-badge exp/g) || []).length >= 3 && /<time datetime=/.test(feedHtml));
+  const recHtml = L.recordSection({ title: 'Sharp lag (Experimental)', record: rec });
+  chk('display: the record shows count, CLV, hit rate, lag and the no-close data-quality line', /No close/.test(recHtml) && /Avg CLV/.test(recHtml) && /Hit rate/.test(recHtml) && /Avg lag to converge/.test(recHtml) && /had no usable close/.test(recHtml));
+  const all = gameHtml + oldHtml + feedHtml + recHtml + L.EXPERIMENTAL_NOTE + L.FEE_NOTE;
+  chk('display: research language only (no bet / pick / play / lock / wager / take / hammer / sharp action)', !/\b(bet|bets|betting|pick|picks|play this|lock|wager|take the|hammer|best bet|sharp action|units?)\b/i.test(all.replace(/not advice and not a recommendation/, '')),
+    (all.match(/\b(bet|bets|betting|pick|picks|play this|lock|wager|take the|hammer|best bet|sharp action|units?)\b/ig) || []).slice(0, 5));
+  chk('display: HTML is escaped', !/<script/.test(L.gameSection({ now: T, flags: [Object.assign({}, flag, { side: '<script>x</script>' })], access: 'subscriber' })));
 
   /* ── the rules are the database's ───────────────────────────────────── */
   const sql = fs.readFileSync(path.join(ROOT, 'supabase', 'sharp_lag.sql'), 'utf8');

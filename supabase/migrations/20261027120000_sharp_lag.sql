@@ -438,6 +438,8 @@ returns jsonb language sql stable security definer set search_path = public, pg_
                                             count(*) filter (where close_status = 'no_close')::int as no_close,
                                             count(*) filter (where close_status is null)::int as pending
                                        from public.sharp_lag_rows group by model_key) x on x.model_key = m.k), '[]'::jsonb),
+    'access', case when public.sharp_lag_is_subscriber() then 'subscriber'
+                   when coalesce(public.sharp_lag_setting('public_display'), 'off') = 'on' then 'public' else 'none' end,
     'as_of', now())
 $p$;
 

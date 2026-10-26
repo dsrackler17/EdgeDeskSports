@@ -152,6 +152,13 @@ try {
     && !/price|prob|clv/.test(JSON.stringify(prog)), prog);
   T.chk('access: the role-shift model reads not registered until its registry SQL runs', (prog.models || []).find((m) => m.model_key === 'NBA-ROLE-SHIFT').registered === false);
 
+  /* the pages draw from progress which note a reader gets (lib/edgedesk_sharp_lag.js gameSection) */
+  const accessAs = (who) => J(who === 'anon' ? db.anon('select public.sharp_lag_progress();') : db.as(who, 'select public.sharp_lag_progress();')).access;
+  T.chk('access: progress names the reader\'s access: a subscriber, or the public with public_display on', accessAs(SUB) === 'subscriber' && accessAs('anon') === 'public' && accessAs(NOSUB) === 'public', [accessAs(SUB), accessAs('anon'), accessAs(NOSUB)]);
+  db.sql("update public.sharp_lag_config set value = 'off', note = 'test: terms not read' where key = 'public_display'");
+  T.chk('access: with public_display off, anyone but a subscriber reads none', accessAs('anon') === 'none' && accessAs(NOSUB) === 'none' && accessAs(SUB) === 'subscriber');
+  db.sql("update public.sharp_lag_config set value = 'on', note = 'test: terms read' where key = 'public_display'");
+
   /* ── the research registry ───────────────────────────────────────────── */
   const REG = path.join(ROOT, 'supabase', 'sharp_lag_registry.sql');
   T.chk('registry: without the research registry the file refuses and registers nothing', refused(() => db.applyFile(REG), /research registry/));
