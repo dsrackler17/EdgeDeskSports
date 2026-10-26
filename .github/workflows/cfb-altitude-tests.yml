@@ -69,4 +69,6 @@ jobs:
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
       - name: The research page section in a real browser (390 px and 1280 px)
+        env:
+          CFB_ALTITUDE_E2E_REQUIRED: '1'
         run: node football/altitude/ui.e2e.js

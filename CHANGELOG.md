@@ -2,22 +2,7 @@
 
 
 
-## 2026-10-26 — NCAAW forecast tests: no longer tied to the served model's version
 
-**The failure on `main`.** At `cf8d09fb9` (17:22 UTC) the weekly model loop promoted the served NCAAW model, moving `docs/model-loop/ncaaw/versions.json` from 1.1.0 to 1.2.0. A push by a workflow starts no other workflow, so nothing ran, but two `NCAAW forecast suites` jobs fail from that commit on. Their tests assumed the old version.
-- **`tests/sql.test.js`** (`sql` job), 68/0 → 67/1. "A ROLLBACK needs a reason" named `ncaaw_points@1.1.0`. The registry now records the incumbent as `@1.2.0`, so `ncaaw_fc_set_champion` refused an unrecorded model and the check never reached the reason rule.
-- **`tests/ops.test.js`** (`ops` job), 37/0 → 34/3. The promote injection ran the frozen selection against the served incumbent and relied on its PROMOTE. Against 1.2.0 it is RETAIN, so the promote boundary was never reached.
-
-**The fix (tests only).**
-- **SQL test.** It takes the incumbent's key from the registry it initialized.
-- **Promote case.** It starts from a throwaway registry whose champion is the frozen selection with a prior 64 times too strong, and runs `--only lambda_weaker_prior`. The gain on 2026-10-26 was 0.029 log loss (95% CI 0.027 to 0.031) against the 0.0002 required, and every gated cohort improved.
-- **Store case.** The bootstrap run, served incumbent against the frozen selection, moves to the store case. It stops after evaluation whatever the decision, so it keeps that coverage without depending on the decision. A new check confirms it evaluated `selection_v1` against the incumbent.
-
-**Not touched.** No assertion is loosened. No model, version file, gate, policy or record changes.
-
-**Tests.** Both suites pass at the incumbent's old and new versions:
-- at `ed0691fda`, 1.1.0: SQL 68/0, operations 38/0;
-- at `main`, 1.2.0: SQL 68/0, operations 38/0.
 
 ## 2026-10-26 — All checks: one required check for every workflow a pull request starts
 

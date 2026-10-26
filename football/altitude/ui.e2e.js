@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 /* ===========================================================================
    ALTITUDE & TRAVEL, IN A REAL BROWSER — app.html in Chromium at a 390 px
-   phone and a 1280 px desktop, on the committed Notre Dame at BYU research
-   snapshot (football/game_research/current.json, game 401856809) with the
-   altitude block the module builds for it added the way
-   lib/edgedesk_game_snapshot.js fromCfb adds it.
+   phone and a 1280 px desktop, on the Notre Dame at BYU research snapshot
+   (game 401856809) with the altitude block the module builds for it added
+   the way lib/edgedesk_game_snapshot.js fromCfb adds it.
+
+   The snapshot is frozen in fixtures/byu_notredame_research.json: the game's
+   last pregame entry in football/game_research/current.json, copied
+   unchanged. The hourly build drops a game once it is played, and this suite
+   used to read the live file, so from 2026-10-19 (1d57b3cd, the first
+   build without the game) it printed SKIPPED and exited 0 on every run while
+   testing nothing. The frozen entry is served inside the committed file's
+   envelope; a snapshot version the committed file no longer carries fails
+   here, so the fixture is refreshed rather than silently stale.
 
    Checks the section is there, says Research only, prints the sourced
    elevations, the climb, the trip and 0.0 pts, keeps the shadow estimate
@@ -13,7 +21,9 @@
    moves nothing). Fonts and every third-party host are stubbed, so the run is
    offline and deterministic.
 
-   Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
+   Needs Playwright with Chromium. Without one it prints SKIPPED (not
+   verified) and exits 0, except under CFB_ALTITUDE_E2E_REQUIRED=1 (CI),
+   where a missing browser fails.
    Run:  node football/altitude/ui.e2e.js [--shots <dir>]
    =========================================================================== */
 'use strict';
@@ -37,18 +47,28 @@ function chk(name, ok, detail) { if (ok) { pass++; console.log('  ok   ' + name)
 function finish(code) { console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | altitude section (browser) | ' + pass + ' passed, ' + fail + ' failed'); process.exit(code != null ? code : (fail ? 1 : 0)); }
 
 const GID = '401856809';
+const REQUIRED = process.env.CFB_ALTITUDE_E2E_REQUIRED === '1';
 const CUR = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'game_research', 'current.json'), 'utf8'));
-const snap = CUR.games.find((g) => g.league === 'cfb' && String(g.game_id) === GID);
+const RES = require('./fixtures/byu_notredame_research.json');
+const snap = RES.game;
 const rows = FIX.games.filter((r) => r.season === 2026 || r.season === 2025);
 const ctx = A.context(FIX.games.find((r) => String(r.game_id) === GID), { registry: REG, normKey: FBS.normKey, index: A.teamIndex(rows, FBS.normKey) });
 const adj = A.adjustment(ctx, PARAMS, { flag_enabled: false });
 const block = GS.altitudeBlock(Object.assign(A.publish(ctx, adj, PARAMS), { engine_contribution: { points: 0, available: false, reason: adj.reason } }));
 function staged() {
   const c = JSON.parse(JSON.stringify(CUR));
-  const s = c.games.find((g) => g.league === 'cfb' && String(g.game_id) === GID);
+  const s = JSON.parse(JSON.stringify(snap));
   s.altitude_travel = block;
   s.started = false;
+  c.games = c.games.filter((g) => !(g.league === 'cfb' && String(g.game_id) === GID)).concat([s]);
   return c;
+}
+/* no browser: not verified here, a failure where CI requires the browser */
+function unavailable(check, why) {
+  if (REQUIRED) { chk(check + ' (required in CI)', false, why); finish(1); }
+  console.log('SKIPPED (not verified): ' + why);
+  if (fail) finish(1);
+  process.exit(0);
 }
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 function siteHandler(req, res) {
@@ -62,10 +82,11 @@ function siteHandler(req, res) {
 }
 
 (async function main() {
-  if (!snap) { console.log('SKIPPED: the committed research snapshots no longer carry Notre Dame at BYU'); process.exit(0); }
+  chk('the frozen snapshot is the version the committed research file carries (' + CUR.version + ')', RES.envelope.schema === CUR.schema && RES.envelope.version === CUR.version && snap.version === CUR.version,
+    { fixture: RES.envelope, committed: { schema: CUR.schema, version: CUR.version } });
   let pw = null;
   for (const p of ['playwright', '/opt/node22/lib/node_modules/playwright', '/opt/node-tools/node_modules/playwright']) { try { pw = require(p); break; } catch (_) { /* next */ } }
-  if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
+  if (!pw) unavailable('playwright is installed', 'playwright is not installed here');
   const srv = await new Promise((resolve) => { const s = http.createServer(siteHandler); s.listen(0, '127.0.0.1', () => resolve(s)); });
   const port = srv.address().port;
   let browser;
@@ -73,7 +94,7 @@ function siteHandler(req, res) {
   catch (e) {
     const exe = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((x) => fs.existsSync(x) && fs.statSync(x).isFile());
     if (exe) browser = await pw.chromium.launch({ headless: true, executablePath: exe });
-    else { console.log('SKIPPED: no Chromium'); srv.close(); process.exit(0); }
+    else { srv.close(); unavailable('Chromium launches', 'no Chromium'); }
   }
   try {
     for (const vp of [{ width: 390, height: 844, tag: 'phone' }, { width: 1280, height: 900, tag: 'desktop' }]) {
