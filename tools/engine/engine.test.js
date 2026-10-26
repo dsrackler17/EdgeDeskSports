@@ -104,6 +104,27 @@ chk('artifacts: the committed board has a verdict and, if PASS, its reasons', bo
 chk('artifacts: nothing qualified without passing the value gate', board.candidates.filter((x) => x.status === 'QUALIFIED').every((x) => x.gates.some((g) => g.gate === 'VALUE' && g.ok)));
 chk('artifacts: coverage names all 11 sports with their state, and no soccer', board.coverage.length === 11 && board.coverage.every((x) => x.state && x.note) && !board.coverage.some((x) => x.id === 'soccer'));
 
+/* THE NHL TOTAL'S MARKET REFERENCE ON A WHOLE NUMBER. The model's over / under
+   probabilities are unconditional (a 6-goal game pushes at 6), but a two-way
+   de-vig sums to 1 with no push. Shrinking the one toward the other moved every
+   whole-number total toward the market's no-push number, upward; the football
+   board already scales its reference by (1 - push). */
+{
+  const BB = require(path.join(ROOT, 'engine', 'build_board.js'));
+  const slate = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'slate.json'), 'utf8'));
+  const g = slate.games.find((x) => x.prices && x.prices.total && x.prices.total.lines['6'] && x.prices.total.lines['6'].push > 0);
+  if (g) {
+    const now = new Date().toISOString();
+    const one = Object.assign({}, slate, { games: [Object.assign({}, g, { start_utc: new Date(Date.now() + 6 * 3600e3).toISOString(), state: 'FUT' })] });
+    const quotes = { status: 'LIVE', events: [{ game_id: g.game_id, books: [{ book: 'draftkings', last_update: now, h2h: null, spreads: [], totals: [{ line: 6, over: -110, under: -110 }] }] }] };
+    const cands = BB.nhlCandidates(one, quotes);
+    const over = cands.find((c) => c.market.kind === 'total' && c.market.side === 'over' && c.market.line === 6);
+    const push = g.prices.total.lines['6'].push;
+    chk('nhl total: a whole-number total\'s reference is the no-vig price times (1 - push), the same basis as the model\'s', over && over.market_ref && near(over.market_ref.p_novig, 0.5 * (1 - push), 1e-4), over && [over.market_ref, push]);
+    chk('nhl total: …and the model side carries the push it is compared on', over && near(over.model.p_push, push, 1e-9));
+  } else chk('nhl total: the committed slate prices a 6-goal total with a push', false);
+}
+
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 400) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'multi-sport engine — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);
