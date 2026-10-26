@@ -176,6 +176,13 @@ function siteHandler(req, res) {
   }
   if (SHOT_DIR) fs.mkdirSync(SHOT_DIR, { recursive: true });
   const shot = async (page, name, o) => { if (!SHOT_DIR) return; try { await page.screenshot(Object.assign({ path: path.join(SHOT_DIR, name + '.png'), fullPage: false }, o || {})); } catch (e) { console.log('  (screenshot ' + name + ' failed: ' + e.message + ')'); } };
+  /* a seat as a reader reaches it: on the phone's bar, or through Menu when the bar does not hold it
+     (the sidebar on desktop shows every seat; docs/research-os/DESIGN.md §1) */
+  const seat = async (page, v) => {
+    const b = page.locator('nav [data-v="' + v + '"]');
+    if (!(await b.isVisible())) await page.click('#navMenuBtn');
+    await b.click();
+  };
 
   async function open(vp) {
     /* a reader in New York, as the handler's answers were written for (body.timezone) */
@@ -465,7 +472,7 @@ function siteHandler(req, res) {
       /* ── 9. NAVIGATE AWAY AND BACK ── */
       await page.evaluate(() => window.EDAI.close());
       const logBefore = await page.evaluate(() => document.querySelectorAll('#edaiLog .ia-act').length);
-      await page.click('nav [data-v="card"]');
+      await seat(page, 'card');
       await page.waitForTimeout(500);
       const onCard = await page.evaluate(() => { const v = document.getElementById('v-card'); return v && getComputedStyle(v).display !== 'none'; });
       const cardRes = await page.evaluate(() => { const h = document.querySelector('#iaCardHost .ia-cardres'); if (!h) return null; const rows = [...h.querySelectorAll('.ia-g')].map((g) => ({ t: g.querySelector('.ia-g-t b').textContent, chip: (g.querySelector('.ia-chipcls') || {}).textContent, kv: [...g.querySelectorAll('.ia-kv-r')].map((r) => r.querySelector('dt').textContent + ': ' + r.querySelector('dd').innerText.replace(/\s+/g, ' ')) }));
@@ -475,14 +482,14 @@ function siteHandler(req, res) {
       chk(T + '9 · …below the Card\'s own decisions, which still render', cardRes && cardRes.card, cardRes && cardRes.card);
       await page.evaluate(() => { const h = document.getElementById('iaCardHost'); if (h) h.scrollIntoView({ block: 'start' }); });
       await shot(page, '09a-card-researched-' + vp.tag);
-      await page.click('nav [data-v="process"]');
+      await seat(page, 'process');
       await page.waitForTimeout(400);
       const proc = await page.evaluate(() => { const m = document.querySelector('#iaMethodHost .ia-method'); return m ? { h: m.querySelector('h3').textContent, secs: [...m.querySelectorAll('details > summary')].map((x) => x.textContent), text: m.textContent } : null; });
       chk(T + '9 · Process explains the method, model validation and research verification', proc && proc.h === 'How EdgeDesk researches' && ['The quantitative method', 'Model validation', 'Research verification', 'The adversarial audit and “verified candidate”', 'Readiness: five separate states', 'Limits and cost'].every((k) => proc.secs.includes(k)), proc && proc.secs);
       chk(T + '9 · …and calls nothing calibrated except a VALIDATED model, LEAN a break-even history', proc && /only then is it called calibrated/.test(proc.text) && /a break-even history, not a profit record/.test(proc.text), null);
       await page.evaluate(() => { const m = document.querySelector('#iaMethodHost .ia-method'); if (m) { m.querySelectorAll('details').forEach((d, i) => { d.open = i < 2; }); m.scrollIntoView({ block: 'start' }); } });
       await shot(page, '09b-process-method-' + vp.tag);
-      await page.click('nav [data-v="research"]');
+      await seat(page, 'research');
       await page.waitForTimeout(500);
       const back = await page.evaluate(() => ({ ask: !!document.querySelector('#iaAskHost .ia-ask'), recent: [...document.querySelectorAll('#iaRecent .ia-chip')].map((c) => c.textContent), ctx: (document.getElementById('iaCtx') || {}).hidden === false, acts: document.querySelectorAll('#edaiLog .ia-act').length,
         rd: !!document.querySelector('#fbOverview .ia-readiness') }));
