@@ -4090,12 +4090,12 @@ window.mcRefresh=function(){
      the graphic places each Kalshi price on this game's own home or away team with it -->
 <script src="/lib/football_identity.js?v=20261021ks1"></script>
 <script src="/lib/edgedesk_game_snapshot.js?v=20261026ros2"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261026ros2"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261026mi1"></script>
 <!-- the matchup graphic for every other sport: college basketball, the WNBA, MLB, college
      baseball and UFC bouts, drawn by the football template (docs/game-research/SPORTS.md).
      It fills the renderer's layout, so it loads after it and under the renderer's version
      (tools/sport_graphic/sport_graphic.test.js and sport_graphic_ui.e2e.js hold both) -->
-<script src="/lib/edgedesk_sport_graphic.js?v=20261026ros2"></script>
+<script src="/lib/edgedesk_sport_graphic.js?v=20261026mi1"></script>
 <script src="/lib/edgedesk_game_view.js?v=20261026ros2"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
@@ -4159,7 +4159,9 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_nhl_compare.js?v=20261026tt1"></script>
 <script src="/lib/edgedesk_games.js?v=20261026sg1"></script>
 <script src="/lib/edgedesk_grade_ui.js?v=20261021inj1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261026ros2"></script>
+<!-- the model integrity audit's warnings on each game (engine/model_integrity.json), read by the games board -->
+<script src="/lib/edgedesk_model_integrity_ui.js?v=20261026mi1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261026mi1"></script>
 <!-- THE RESEARCH OS (docs/research-os/DESIGN.md): the research context carried between features, the
      shell (navigation, quiet reads, services), the Overview, search and Performance; Market Foresight's
      small service (its record and controller load on first use) -->
@@ -6111,7 +6113,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261026inj2';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261026mi1';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,

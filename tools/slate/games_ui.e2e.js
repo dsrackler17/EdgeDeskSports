@@ -47,7 +47,21 @@ const NOW = F.NOW;
   const SLATE = built.snap;
 
   /* what the stubs answer, changed per scenario */
-  const M = { slate: 'ok', live: 'none', markets: 'none', board: 'none' };
+  const M = { slate: 'ok', live: 'none', markets: 'none', board: 'none', integrity: 'none' };
+  /* the model integrity audit (engine/model_integrity.json) for one fixture game, served only when a scenario asks */
+  function integrityBody() {
+    const at = new Date(NOW - 5 * 60000).toISOString(), q = new Date(NOW - 3 * 3600e3).toISOString();
+    return JSON.stringify({ schema: 'edgedesk_model_integrity_v1', generated_at: at, games: [{
+      sport: 'nhl', event_key: 'NHL|2026020091', slate_id: 'nhl:espn:401802002', home: 'CBJ', away: 'FLA', status: 'MISSING_CRITICAL_INPUT', codes: ['MISSING_CRITICAL_INPUT', 'LARGE_MARKET_DISAGREEMENT', 'INSUFFICIENT_EVIDENCE'],
+      chips: [{ code: 'MISSING_CRITICAL_INPUT', label: 'Starting goalie unconfirmed', severity: 'medium' }, { code: 'LARGE_MARKET_DISAGREEMENT', label: 'Major model-market disagreement', severity: 'medium' }],
+      classifications: [
+        { code: 'MISSING_CRITICAL_INPUT', severity: 'medium', component: 'hockey/model/ratings.js projectStarters', chip: 'Starting goalie unconfirmed', message: 'Starting goalie unconfirmed: CBJ E. Merzlikins 70%; FLA S. Bobrovsky 62% / V. Tarasov 38%. A usage projection; no NHL injury feed says who is available.' },
+        { code: 'LARGE_MARKET_DISAGREEMENT', severity: 'medium', component: 'model vs market (moneyline)', chip: 'Major model-market disagreement', message: 'EdgeDesk is 5.2 percentage points against the no-vig price from the market on the moneyline (review threshold 5). An investigation trigger, not proof that either number is wrong.' }],
+      model: { id: 'edgedesk_nhl_v1:xg_core', predicted_at: at, data_cutoff: '2026-10-12' },
+      assumptions: { goalies: { away: [{ name: 'S. Bobrovsky', p_start: 0.62, confirmed: false }, { name: 'V. Tarasov', p_start: 0.38, confirmed: false }], home: [{ name: 'E. Merzlikins', p_start: 0.7, confirmed: false }] } },
+      market: { compared: { book: 'DraftKings', captured_at: q, novig_home: 0.58 }, latest: null, basis: 'the latest quote captured at or before the projection' },
+      disagreement: { spread_pts: null, total_pts: 0.1, win_prob_pp: -5.2 } }] });
+  }
   function slateBody() {
     if (M.slate === 'stale') return JSON.stringify(Object.assign({}, SLATE, { generated_at: new Date(NOW - 8 * 36e5).toISOString() }));
     return JSON.stringify(SLATE);
@@ -79,6 +93,10 @@ const NOW = F.NOW;
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/') p = '/app.html';
     if (p === '/today/') p = '/today/index.html';
+    if (p === '/engine/model_integrity.json') {
+      if (M.integrity !== 'fixture') { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return; }
+      res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(integrityBody()); return;
+    }
     if (p === '/today/slate.json') {
       if (M.slate === 'down') { res.writeHead(503, { 'content-type': 'text/plain' }); res.end('unavailable'); return; }
       res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(slateBody()); return;
@@ -229,6 +247,30 @@ const NOW = F.NOW;
     chk('focus moves into the dialog', await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-gm-close')));
     await page.keyboard.press('Escape');
     chk('Escape closes it and returns focus to Details', await page.evaluate(() => document.getElementById('gmDetail').hidden && document.activeElement && document.activeElement.classList.contains('gm-more')));
+
+    /* ── MODEL INTEGRITY: the audit's warnings on the card and in the matchup view, never on the public page ── */
+    {
+      M.integrity = 'fixture';
+      const I = await open(DESK, '/app.html#games/nhl/2026-10-13');
+      await I.page.waitForSelector('#v-games .gm-card[data-id="nhl:espn:401802002"]', { timeout: 15000 });
+      await I.page.waitForFunction(() => !!document.querySelector('#v-games .gm-card[data-id="nhl:espn:401802002"] [data-mi-code]'), null, { timeout: 8000 }).catch(() => {});
+      const card = await text(I.page, '#v-games .gm-card[data-id="nhl:espn:401802002"]');
+      chk('integrity: the audit\'s warnings are chips on the card, in its order', /Starting goalie unconfirmed[\s\S]*Major model-market disagreement/.test(card), card);
+      chk('integrity: each chip says why when hovered', /no NHL injury feed/.test(await I.page.$eval('#v-games .gm-card[data-id="nhl:espn:401802002"] [data-mi-code]', (x) => x.getAttribute('title')).catch(() => '')));
+      chk('integrity: a game the audit does not cover carries none', !(await I.page.$('#v-games .gm-card[data-id="nhl:espn:401802001"] [data-mi-code]')));
+      await I.page.click('#v-games .gm-card[data-id="nhl:espn:401802002"] .gm-more');
+      await I.page.waitForSelector('#gmDetail:not([hidden])');
+      const dlg2 = await text(I.page, '#gmDetail');
+      chk('integrity: the matchup view names the goalie the number assumed, the market it was compared with and when, and the component that raised each warning',
+        /Model integrity/i.test(dlg2) && /FLA goalie: S\. Bobrovsky 62%/.test(dlg2) && /DraftKings, captured/.test(dlg2) && /hockey\/model\/ratings\.js projectStarters/.test(dlg2) && /not proof/.test(dlg2), dlg2.slice(0, 1200));
+      chk('integrity: no page error, no horizontal scroll', I.errors.length === 0 && await noHScroll(I.page), I.errors);
+      await I.ctx.close();
+      const Pub = await open(DESK, '/today/');
+      await Pub.page.waitForSelector('.gm-card[data-id]', { timeout: 15000 });
+      chk('integrity: the public page shows no audit chip (it shows no EdgeDesk number)', !(await Pub.page.$('[data-mi-code]')));
+      await Pub.ctx.close();
+      M.integrity = 'none';
+    }
 
     /* ── THE FULL PAGE ─────────────────────────────────────────────── */
     await page.click('#gamesStrip a.gm-all');
