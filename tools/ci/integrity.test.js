@@ -79,6 +79,23 @@ const kinds = (res) => res.problems.map((p) => p.kind + ' ' + p.file + (p.line ?
   chk('a dropped JSON line that kept its comma fails, named with its line', !!json && json.kind === 'json-syntax' && json.line === 6, json);
 }
 
+/* the same damage, byte for byte: the two files' damaged regions exactly as
+   2ad15afadd left them (tools/ci/fixtures/2ad15afadd/, .txt so the scan never
+   reads them as repository files), and each one repaired */
+{
+  const F = (f) => fs.readFileSync(path.join(__dirname, 'fixtures', '2ad15afadd', f), 'utf8');
+  const js = F('edgedesk_quote_ev.js.txt');
+  const e = I.checkScript(js, 'lib/edgedesk_quote_ev.js');
+  chk('2ad15afadd: lib/edgedesk_quote_ev.js as merged fails with the error main showed', !!e && /missing \) after argument list/.test(e.message) && e.line === 37, e);
+  const repaired = js.replace(/(\n {4}\}\n)\n( {6}if \(a == null)/, '$1    function q(p) {\n      var lo = -80, hi = 80, a = gt(lo), b = gt(hi), i;\n$2');
+  chk('2ad15afadd: restoring the two deleted lines makes it parse', repaired !== js && I.checkScript(repaired, 'lib/edgedesk_quote_ev.js') === null);
+  const audit = F('slate_audit.json.txt');
+  const j = I.checkJson(audit);
+  chk('2ad15afadd: slate_audit.json as merged fails at the dropped verdict', !!j && !j.dialect && j.line === 69, j);
+  const fixed = audit.replace(/"consistent": true,\n\n {2}\}/, '"consistent": true,\n   "verdict": "VERIFIED holds: every required check passed."\n  }');
+  chk('2ad15afadd: with the verdict back it parses', fixed !== audit && I.checkJson(fixed) === null);
+}
+
 /* one way each to break a file */
 const broken = {
   'an unresolved conflict in code': ['lib/c.js', 'var a = 1;\n<<<<<<< HEAD\nvar b = 2;\n=======\nvar b = 3;\n>>>>>>> main\n', 'conflict-marker'],

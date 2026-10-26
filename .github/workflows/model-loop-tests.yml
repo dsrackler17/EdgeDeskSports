@@ -26,8 +26,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
 concurrency:
-  group: model-loop-tests-${{ github.ref }}
+  group: model-loop-tests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
