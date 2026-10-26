@@ -19,6 +19,7 @@ value (CLV) against Pinnacle's close.
 | The schedules | `supabase/sharp_lag_cron.sql` |
 | The free job (never spends) | `supabase/functions/sharp_lag` |
 | The paid dispatcher (through `odds_gateway` only) | `supabase/functions/sharp_check` |
+| The research registrations | `research/sharp_lag/registration_sharp_lag.json`, `registration_role_shift.json`, generated into `supabase/sharp_lag_registry.sql` |
 | Tests (all offline, the provider mocked) | `tools/sharp_lag/*.test.js`, run by `.github/workflows/sharp-lag.yml` |
 | Deploy (manual, tests first) | `.github/workflows/deploy-sharp-lag.yml` |
 
@@ -132,6 +133,20 @@ Each flag stores:
 - the timestamps and the seconds since the Pinnacle observation;
 - the snapshot resolution.
 
+## Registered validation
+
+Both models are registered EXPERIMENTAL in the research registry
+(`supabase/sharp_lag_registry.sql`, generated from the JSON, never edited by
+hand) **before the first flag is graded**. The database enforces the order:
+a grade names its registry version, and none is accepted without it.
+
+| Model | Promotion rule |
+|---|---|
+| `SHARP-LAG` v0.1 | **200+ graded flags AND** the lower end of the two-sided 95% percentile interval of the mean CLV above zero. The interval is a game-clustered bootstrap: 2,000 resamples of whole games, seed 20261026. |
+| `NBA-ROLE-SHIFT` v0.1 | The same rule, on its own flags; flag threshold 2.5 pp. |
+
+Meeting both makes a model **eligible**. A person promotes it, through a
+validation report; no code does.
 
 
 
@@ -161,6 +176,8 @@ In order. Each SQL file ends in a report whose rows should read `ok`.
    It creates the two capped categories **disabled**.
 2. Apply `supabase/sharp_lag.sql`, then set the secrets and apply
    `supabase/sharp_lag_cron.sql` (or run **Deploy Sharp lag research**).
+3. Apply `supabase/sharp_lag_registry.sql`: the registrations, before any
+   grade.
 4. On or after 2026-11-01, once the base spend tracks its estimate, enable the
    sports and categories:
 

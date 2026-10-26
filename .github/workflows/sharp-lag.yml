@@ -21,6 +21,8 @@ on:
       - 'supabase/functions/sharp_check/**'
       - 'nba/data/teams.json'
       - 'hockey/data/teams.json'
+      - 'research/sharp_lag/**'
+      - 'supabase/sharp_lag_registry.sql'
       - 'lib/edgedesk_games.js'
       - 'supabase/odds_api_emergency_stop.sql'
       - 'tools/sharp_lag/**'
@@ -60,6 +62,8 @@ jobs:
         run: node tools/sharp_lag/sharp_lag_fn.test.js
       - name: The paid sharp_check dispatcher, as deployed, against a mocked odds gateway
         run: node tools/sharp_lag/sharp_check_fn.test.js
+      - name: The research registrations are registered as written (generated SQL is current)
+        run: node tools/sharp_lag/build_registry_sql.js --check
       - name: The layer on a real PostgreSQL (append-only, the guards, who reads what, the cron)
         env: { SHARP_LAG_SQL_REQUIRED: '1' }
         run: |

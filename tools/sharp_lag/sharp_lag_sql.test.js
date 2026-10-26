@@ -108,6 +108,34 @@ try {
   /* ── access ──────────────────────────────────────────────────────────── */
   const tables = SEALED.concat(['sharp_lag_config']);
   T.chk('access: anon reads no table directly', tables.every((t) => refused(() => db.anon('select count(*) from public.' + t + ';'), /permission denied/)));
+  /* ── the research registry ───────────────────────────────────────────── */
+  const REG = path.join(ROOT, 'supabase', 'sharp_lag_registry.sql');
+  T.chk('registry: without the research registry the file refuses and registers nothing', refused(() => db.applyFile(REG), /research registry/));
+  db.sql(`create type public.evidence_provenance as enum ('T0', 'T1', 'T2', 'T3');
+    create type public.model_status as enum ('experimental', 'validating', 'validated', 'retired');
+    create table public.research_models (id uuid primary key default gen_random_uuid(), model_key text unique not null, name text not null, sport text, provenance public.evidence_provenance not null, objective text, created_at timestamptz not null default now());
+    create table public.research_model_versions (id bigserial primary key, model_id uuid not null references public.research_models (id), version text not null, status public.model_status not null default 'experimental', training_window daterange, validation_window daterange, holdout_window daterange, objective text, min_sample integer, success_metric text, forking_paths jsonb, promotion_criteria jsonb, spec jsonb, created_at timestamptz not null default now());
+    create table public.research_model_results (id bigserial primary key, version_id bigint references public.research_model_versions (id), passed boolean, metrics jsonb, computed_at timestamptz not null default now());
+    create view public.research_model_current as select m.model_key, m.name, m.provenance, v.version, v.status, v.training_window, v.validation_window, v.objective, r.passed, r.metrics as holdout_result, v.created_at as updated_at
+      from public.research_models m join lateral (select * from public.research_model_versions x where x.model_id = m.id order by x.created_at desc limit 1) v on true
+      left join lateral (select * from public.research_model_results y where y.version_id = v.id order by y.computed_at desc limit 1) r on true;`);
+  out = db.applyFile(REG);
+  const regRows = (out.match(/\|(ok|CHECK THIS[^\n]*)$/gm) || []);
+  T.chk('registry: both models register and every report row is ok', regRows.length === 4 && regRows.every((r) => /\|ok$/.test(r)), out.slice(-600));
+  out = db.applyFile(REG);
+  T.chk('registry: registering twice changes nothing', db.sql('select count(*) from public.research_models') === '2' && db.sql('select count(*) from public.research_model_versions') === '2');
+  const vrow = (k) => JSON.parse(db.sql("select to_jsonb(x) from (select m.provenance, v.status, v.version, v.min_sample, v.id, v.promotion_criteria -> 'criteria' -> 0 ->> 'id' as c1, v.promotion_criteria -> 'criteria' -> 1 ->> 'id' as c2 from public.research_models m join public.research_model_versions v on v.model_id = m.id where m.model_key = '" + k + "') x"));
+  const vs = vrow('SHARP-LAG'), vr = vrow('NBA-ROLE-SHIFT');
+  T.chk('registry: SHARP-LAG v0.1 is T3 / experimental, 200 graded flags, both criteria', vs.provenance === 'T3' && vs.status === 'experimental' && vs.version === '0.1' && vs.min_sample === 200 && vs.c1 === 'C1_SAMPLE' && vs.c2 === 'C2_CLV_LOWER_BOUND', vs);
+  T.chk('registry: NBA-ROLE-SHIFT v0.1 is registered the same way, on its own', vr.provenance === 'T3' && vr.status === 'experimental' && vr.min_sample === 200 && vr.c2 === 'C2_CLV_LOWER_BOUND', vr);
+  T.chk('registry: each version row is the link the grader requires', db.sql("select value from public.sharp_lag_config where key = 'registry_ref:SHARP-LAG'") === String(vs.id)
+    && db.sql("select value from public.sharp_lag_config where key = 'registry_ref:NBA-ROLE-SHIFT'") === String(vr.id));
+  T.chk('registry: no result row is written (nothing is promoted)', db.sql('select count(*) from public.research_model_results') === '0');
+  T.chk('registry: the registrations are the generated file\'s (node tools/sharp_lag/build_registry_sql.js --check)', require(path.join(ROOT, 'tools', 'sharp_lag', 'build_registry_sql.js')).build() === fs.readFileSync(REG, 'utf8'));
+  const regJ = (f) => JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'sharp_lag', f), 'utf8'));
+  T.chk('registry: each registration is EXPERIMENTAL, T3, no result, and states the clustered bootstrap and the 2.5 pp threshold', ['registration_sharp_lag.json', 'registration_role_shift.json'].every((f) => {
+    const R = regJ(f); return R.status === 'EXPERIMENTAL' && R.provenance === 'T3' && R.result === null && /clusters?/i.test(JSON.stringify(R.promotion_criteria)) && /2\.5 pp|2\.5 percentage points/.test(R.hypothesis + R.spec.flag + JSON.stringify(R.spec.rules || ''));
+  }));
   /* ── cron ────────────────────────────────────────────────────────────── */
   db.sql(`create schema if not exists cron;
     create table if not exists cron.job (jobid bigserial primary key, jobname text, schedule text, command text, active boolean default true);
