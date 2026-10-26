@@ -121,6 +121,41 @@ const out = CMP.compare(CMP.view(sg, SLATE, { goalies: live(c1, 1) }), mk, { now
 const allSides = out.markets.reduce((a, m) => a.concat(m.sides), []);
 chk('compare: every side of the moneyline, puck line and total carries the goalie gate', out.markets.length === 3 && allSides.every((x) => x.gates.some((y) => y.gate === 'goalie_gate')), out.markets.map((m) => m.kind));
 
-failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 700) : '')));
-console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'NHL goalie block and gate — ' + pass + ' passed, ' + fail + ' failed');
-process.exit(fail === 0 ? 0 : 1);
+/* ================================================ the live read: load() and its errors
+   Every answer becomes the card's state or its error, never a rejection. Before 2026-10-26 an answer
+   with no state was thrown inside .then(ok, fail)'s ok, where fail never sees it: load() rejected, the
+   engine panel's GL.load(id).then(render) left it unhandled on the page, and the cache kept the
+   rejected promise as "loading", so the block spun until the page was reloaded. */
+(async () => {
+  const unhandled = [];
+  const onUnhandled = (e) => unhandled.push(String((e && e.message) || e));
+  process.on('unhandledRejection', onUnhandled);
+  const realFetch = globalThis.fetch, prev = { url: globalThis.SB_URL, key: globalThis.SB_KEY };
+  globalThis.SB_URL = 'https://stub.supabase.co'; globalThis.SB_KEY = 'anon-stub';
+  const answer = (body, status) => { globalThis.fetch = () => Promise.resolve({ ok: (status || 200) < 300, status: status || 200, json: () => Promise.resolve(body) }); };
+  const settle = () => new Promise((r) => setImmediate(r));
+  const read = async (id) => { let threw = null, out; try { out = await GL.load(id, true); } catch (e) { threw = String((e && e.message) || e); } await settle(); await settle(); return { out, threw, st: GL.state(id) }; };
+  try {
+    answer([]);   /* an empty PostgREST answer: no state */
+    let r = await read('g-nostate');
+    chk('load: an answer with no state resolves (null), it does not reject', r.threw === null && r.out === null, r.threw);
+    chk('load: …it is the card\'s error, said in words', r.st.err === 'the starter sync answered without a state', r.st);
+    chk('load: …and the card is no longer loading', r.st.loading === false, r.st);
+    answer({ state: 'NO_CARD', freshness: 'FRESH', versions: 0 });
+    r = await read('g-nostate');
+    chk('load: the next answer with a state is read (nothing stuck on the failed one)', r.threw === null && r.out && r.out.state === 'NO_CARD' && r.st.err === null && r.st.loading === false, r.st);
+    answer({ message: 'not found' }, 404);
+    r = await read('g-404');
+    chk('load: an HTTP failure is the card\'s error too, and names a missing layer', r.threw === null && r.out === null && /HTTP 404 \(the NHL goalie layer is not deployed\)/.test(r.st.err || ''), r.st);
+    chk('load: no unhandled rejection reached the process', unhandled.length === 0, unhandled);
+  } catch (e) {
+    chk('load: the live-read checks ran', false, String((e && e.stack) || e).slice(0, 400));
+  } finally {
+    globalThis.fetch = realFetch; globalThis.SB_URL = prev.url; globalThis.SB_KEY = prev.key;
+    process.removeListener('unhandledRejection', onUnhandled);
+  }
+
+  failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 700) : '')));
+  console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'NHL goalie block and gate — ' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail === 0 ? 0 : 1);
+})();
