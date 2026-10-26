@@ -276,6 +276,39 @@ chk('G without the evidence module the gate fails closed', (() => {
 })());
 
 /* ── V generalises ────────────────────────────────────────────────────── */
+section('N a player is not a team');
+/* 2026-10-26: the Week 9 upset watch was BLOCKED, on main and in the live check
+   below, for "53.6 (in a sentence about Marshall)". The sentence was Kansas'
+   quarterback line, "Isaiah Marshall: 53.6% completions, 7.9 yards per
+   attempt", and Marshall at Old Dominion was another game in the article.
+   numbers_per_game and conference_claims read "Marshall" in the player's name
+   as the team. A named player now ties a sentence to the player's own game and
+   team; numbers and conferences that are wrong for that game still fail. */
+{
+  const pg = (id, away, home, conf, extra) => Object.assign({ game_id: id, away, home, away_conference: conf, home_conference: conf, kickoff: '2026-10-31T19:00:00Z', publishable: true, fair_home_line: -3, win_prob_home: 0.6 }, extra || {});
+  const KU = pg('n1', 'Kansas', 'TCU', 'Big 12', { qb: { away: { player: 'Isaiah Marshall' }, home: { player: 'Jaden Craig' } },
+    evidence: { claims: [{ id: 'cn1', topic: 'qb', team: 'Kansas', side: 'away', subject: 'Isaiah Marshall', text: 'Isaiah Marshall has completed 53.6% of his passes, 7.9 yards per attempt.',
+      short: 'Isaiah Marshall: 53.6% completions, 7.9 yards per attempt', cite: { nums: ['7.9'], words: ['Marshall'] }, values: { completions: 105, attempts: 196 } }] } });
+  const MU = pg('n2', 'Marshall', 'Old Dominion', 'Sun Belt', { qb: { away: { player: 'Braylon Braxton' } } });
+  const NO = { key: 'cfb:2026:w9:player-not-team', kind: 'upset_watch', league: 'cfb', season: 2026, week: 9, formats: ['cfb_weekly_preview'],
+    research: { as_of: '2026-10-27T11:00:00Z', games: [KU, MU], upsets: [], matchups: [], context: {} } };
+  const gate = (body, id) => {
+    const r = CE.validate({ format: 'cfb_weekly_preview', title: 'Week 9', sections: [{ key: 'game_1', heading: 'Kansas at TCU', body }] }, NO,
+      { now: Date.parse('2026-10-27T12:00:00Z'), teamLists: { cfb: ['Kansas', 'TCU', 'Marshall', 'Old Dominion'], nfl: [] } });
+    return r.checks.find((c) => c.id === id) || { status: 'absent' };
+  };
+  const a = gate('**Quarterbacks:** Isaiah Marshall: 53.6% completions, 7.9 yards per attempt.', 'numbers_per_game');
+  chk('N a quarterback line with his own game’s numbers passes, though his surname is another team in the article', a.status === 'pass', a);
+  const b = gate('**Quarterbacks:** Isaiah Marshall: 61.2% completions.', 'numbers_per_game');
+  chk('N a number his game’s research does not hold still fails, named against the player', b.status === 'fail' && /61\.2 \(in a sentence about Isaiah Marshall\)/.test(b.detail), b);
+  const c = gate('Marshall’s offense completes 53.6% of its passes.', 'numbers_per_game');
+  chk('N the team Marshall with a Kansas number still fails', c.status === 'fail' && /53\.6 \(in a sentence about Marshall\)/.test(c.detail), c);
+  const d = gate('Isaiah Marshall is the most efficient passer in the SEC.', 'conference_claims');
+  chk('N a conference claim is judged on the player’s own team: Kansas is not in the SEC', d.status === 'fail' && /SEC with Kansas/.test(d.detail), d);
+  const e = gate('Isaiah Marshall is among the most efficient passers in the Big 12.', 'conference_claims');
+  chk('N ...and Kansas is in the Big 12', e.status === 'pass', e);
+}
+
 section('V generalises');
 [[GA, 'Georgia at Alabama'], [TX, 'Texas at Oklahoma'], [MZ, 'Texas A&M at Missouri'], [UC, 'UCLA at Oregon'], [NF, 'Bengals at Dolphins (NFL)']].forEach(([p, name]) => {
   ['matchup_analysis', 'edgedesk_analysis'].forEach((fmt) => {
