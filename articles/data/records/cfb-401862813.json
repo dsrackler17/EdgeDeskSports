@@ -21,8 +21,8 @@
   "game_time": "2026-10-30T23:00:00.000Z",
   "game_when_label": "2026-10-30 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-26T04:34:54.929Z",
-  "generated_at": "2026-10-26T04:34:54.929Z",
+  "updated_at": "2026-10-26T12:52:05.780Z",
+  "generated_at": "2026-10-26T12:52:05.780Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-16T23:30:00.000Z",
-        "retrieved_at": "2026-10-26T02:52:03.863Z"
+        "retrieved_at": "2026-10-26T12:43:56.273Z"
       },
       "home": {
         "team": "Charlotte",
@@ -342,9 +342,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T17:00:00.000Z",
-        "retrieved_at": "2026-10-26T02:52:03.863Z"
+        "retrieved_at": "2026-10-26T12:43:56.273Z"
       },
-      "generated_at": "2026-10-26T02:52:36.070Z",
+      "generated_at": "2026-10-26T12:44:49.031Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1903,11 +1903,11 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1cz51m314ybrgp",
+    "packet_hash": "1beticm19duuf8",
     "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
+    "input_suspect": true,
     "question": "Can Charlotte’s pass rush get to Tulane’s quarterback?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Tulane, and its own breakdown accounts for about 0.0 of the 8.2 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Tulane, and its own breakdown accounts for about 0.0 of the 8.2 points, but not the full gap. Input warning: EdgeDesk’s published number sits 7.5 points from the middle of its own other models. It is a research question, not a bet.",
     "gap": {
       "points": 8.2,
       "toward": "Tulane",
@@ -1956,6 +1956,11 @@
         "text": "EdgeDesk’s own sources disagree on sack rate allowed (Charlotte), sack rate (Charlotte), sack rate allowed (Tulane) and sack rate (Tulane); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
       },
       {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "high",
+        "text": "EdgeDesk’s published number sits 7.5 points from the middle of its own other models."
+      },
+      {
         "key": "REGIME_CHANGE",
         "severity": "medium",
         "text": "Tulane: new head coach; returning production at the 25th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
@@ -1966,7 +1971,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-26T02:53:28.107Z",
+        "observed_at": "2026-10-26T12:45:55.256Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1980,7 +1985,7 @@
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-26T02:52:18.908Z",
+        "observed_at": "2026-10-26T12:44:20.286Z",
         "verification": "RATING"
       }
     ],
@@ -1989,6 +1994,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-26T04:34:54.929Z"
+    "at": "2026-10-26T12:52:05.780Z"
   }
 }
