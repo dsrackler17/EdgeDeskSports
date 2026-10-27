@@ -148,8 +148,7 @@ function calibrateCausal(rows, calCfg) {
 function incumbentRows(eg) {
   const BW = require('../walkforward');
   const tuning = JSON.parse(fs.readFileSync(path.join(C.ROOT, 'basketball', 'params', 'ncaaw_tuning.json'), 'utf8'));
-  const pin = pinnedIncumbent();
-  const served = pin ? Object.assign({}, pin.config) : BW.servedParams('ncaaw');
+  const served = BW.servedParams('ncaaw');
   const { games } = BW.load('ncaaw');
   const { rows } = BW.pass(games, served, tuning.elo);
   const { scored } = BW.score(rows);
@@ -164,18 +163,7 @@ function incumbentRows(eg) {
   }
   return { asServed, raw, served, version: currentIncumbentVersion() };
 }
-/* the served version is the weekly model loop's current one, which that loop moves when it promotes
-   (cf8d09fb9: 1.1.0 -> 1.2.0). A test whose premise holds against one incumbent names it in
-   NCAAW_INCUMBENT_VERSION (tests/ops.test.js), read from the same append-only versions.json;
-   unset, nothing changes. A version the file does not hold is an error, never a silent fallback. */
-function pinnedIncumbent() {
-  const pin = process.env.NCAAW_INCUMBENT_VERSION; if (!pin) return null;
-  const v = JSON.parse(fs.readFileSync(path.join(C.ROOT, 'docs', 'model-loop', 'ncaaw', 'versions.json'), 'utf8')).versions.find((x) => x.version === pin);
-  if (!v) throw new Error('NCAAW_INCUMBENT_VERSION ' + pin + ' is not a version in docs/model-loop/ncaaw/versions.json');
-  return v;
-}
 function currentIncumbentVersion() {
-  const pin = pinnedIncumbent(); if (pin) return 'edgedesk_bb_points_v1@' + pin.version;
   try { const v = JSON.parse(fs.readFileSync(path.join(C.ROOT, 'docs', 'model-loop', 'ncaaw', 'versions.json'), 'utf8')); return 'edgedesk_bb_points_v1@' + v.current; } catch (_) { return 'edgedesk_bb_points_v1'; }
 }
 

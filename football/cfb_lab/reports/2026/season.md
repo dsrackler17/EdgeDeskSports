@@ -1,6 +1,6 @@
 # CFB Model Lab — 2026 season to date
 
-Generated 2026-10-26T22:07:54.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
+Generated 2026-10-27T00:07:56.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
 
 ## Comparison on the common official set (n = 52, provisional)
 

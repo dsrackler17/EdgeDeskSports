@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-10-26 — Changelog: the last entry the #819 merge dropped is back
+
+The web-editor merge `c1081ebf7` (#819) dropped two `CHANGELOG.md` entries. #826 restored #819's own. The other, "Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market" (#818), is back, verbatim from `c7de08986`, where it stood: just before "All checks". Every heading from both sides of that merge is present again.
+
+## 2026-10-26 — College baseball: the weekly run keeps its registered holdout look
+
+**What broke.** The weekly validation run of 2026-10-26 (`fee3a2e0b`, 19:05 UTC) dropped college baseball's registered HOLDOUT look: `OUTCOME_VALIDATED` on 16,696 games, taken on 2026-10-14. Moneyline became `PROVISIONAL`, and two Lab checks failed on `main`:
+
+- `engine/build_registry.js --check`: "the committed readiness state differs from the evidence";
+- the Lab test "college baseball is validated only by its own holdout record".
+
+The push came from `GITHUB_TOKEN`, so no workflow ran on it, and no check showed the failure. At 20:45 the scheduled NHL job (`9beb24587`, "the cross-sport board") rebuilt `engine/registry.json` from that evidence. College baseball became `EXPERIMENTAL` (summary 8 validated, 2 experimental, 1 retired), and the checks passed again. The downgrade was now committed, and served.
+
+**Why.** Since 2026-10-21, `college_baseball/walkforward.js` carries a holdout look only to a report of the same configuration (`config_sha256`). A report made before configurations were hashed was carried only if `legacy_config` held, and `legacy_config` also required that **no loop version be served**. The loop's first run seeds `versions.json` with version 1.0.0, "selection-window tuning", served. That version is exactly team_tuning's configuration (`3252f395…` for team_tuning, version 1.0.0 and the weekly report alike). Being served at all made it look like another configuration, and the look was withheld.
+
+**The repair.**
+- `legacyConfig()` compares configurations only, as the 2026-10-21 protocol amendment states: "carried forward only to a report of that exact configuration".
+- The 2026-10-19 records are restored by reverting the bot's commit. They are the job's own outputs, and the look was stored nowhere else (`holdout_looks.json` did not exist yet).
+- `engine/registry.json` is rebuilt by its own build (`node engine/build_registry.js`). Only college baseball changes: `EXPERIMENTAL` → `OUTCOME_VALIDATED`, summary back to 9 / 1 / 1. `value_claims_enabled` stays empty.
+- The next weekly run, or Actions → College baseball research validate, rebuilds this week's records. It carries the look and stores it in `holdout_looks.json`.
+- `lab.yml` now also starts on `college_baseball/validation/**`, the records `engine/build_registry.js` reads. Before, no pull request that changed college baseball's evidence started the workflow that checks it.
+
+**Before and after.** `walkforward.js`, run as the job runs it, on the restored records:
+
+| Code | Moneyline | n | Holdout |
+|---|---|---|---|
+| old | `PROVISIONAL` | 11,950 | withheld; no `holdout_looks.json` |
+| fixed | `OUTCOME_VALIDATED` | 16,696 | carried from 2026-10-14; stored in `holdout_looks.json` |
+
+On this branch:
+- Lab: 76 passed, 0 failed (it was 75 and 1);
+- `build_registry.js --check`: ok;
+- `tools/college_baseball/loop.test.js`: 32 passed, 0 failed (+3). On the old `walkforward.js` it throws.
+
 ## 2026-10-26 — CI: `npm run verify` stops reporting this machine's gaps as failures
 
 A full `npm run verify` reported 19 failures, and 11 of them were this machine's, not the code's. `tools/ci/verify.js` now reports a failure the machine explains as **NOT VERIFIED**, with the reason and, where there is one, the command to run. A pass is always a pass, and any other failure stays FAIL.
@@ -14,6 +48,7 @@ A full `npm run verify` reported 19 failures, and 11 of them were this machine's
 Files a step creates (screenshots, a suite's log) are no longer deleted. They move to `.cache/verify/<run>/created/`, and a rewritten committed file is copied to `.cache/verify/<run>/rewritten/` before it is restored.
 
 Tests: `tools/ci/verify.test.js` goes from 32 to 43; 11 of them fail on the previous `verify.js`. `tools/ci/workflows.test.js` adds 1 check: every `live_jobs` entry names a real job.
+
 
 
 
@@ -65,6 +100,53 @@ No assertion changed, and no committed snapshot, parameter or record was touched
 **Depends on** the methodology change "Odds gateway: per-category daily caps", which creates the `sharp_check` and `nba_role_props` categories, disabled. It must merge first.
 
 **Not verified here.** Kalshi's current fee schedule and The Odds API's terms (neither site is reachable from the build environment). The production database's state is also not verified.
+
+## 2026-10-26 — Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market
+
+**Why.** Several of the day's NBA, NFL, CFB and NHL numbers sat far from the market. The question was whether any came from a wrong input or invalid math, as opposed to an honest disagreement. Two did: Philadelphia was priced with Jalen Hurts while he was on the reserve list, and EDINTEL's EV counted a push as a win.
+
+**What.** One commit per defect, each with a regression test that fails on the old code:
+- NFL (`app.html`, `tools/football/build_nfl_slate.js`): a QB whose roster status is `RES`/`CUT`/`RET`/`SUS` is replaced as an OUT QB is. That status is PENDING when it comes from an earlier week's roster, and the replacement search skips players off the active roster.
+- EDINTEL `decide()`: a two-way no-vig probability becomes p(1−q) before the push mass is added, and the edge is measured against (1−q)/d.
+- Game, NBA and NHL graphics: the gap between a mean and a line is a *reading*. "EDGE" needs the exact bet's probability, pushes counted, to clear its offered price's break-even, and the sport's value claims enabled.
+- NHL `startersFor()`: a game is CONFIRMED only when both goalies are. An operator-listed unavailable goalie leaves the projection.
+- NBA `splitAbsent()`: a regular now on another roster is "left the team", never an absent regular or a return.
+- Board: the NHL whole-number total's market reference carries its push.
+- New shared audit `lib/edgedesk_model_integrity.js` → `engine/model_integrity.json`:
+  - built every 3 h by `projections-build.yml`;
+  - classifies each game as INPUT_ERROR, STALE_DATA, MISSING_CRITICAL_INPUT, CALIBRATION_WARNING, LARGE_MARKET_DISAGREEMENT, INSUFFICIENT_EVIDENCE or VALIDATED_INDEPENDENT_SIGNAL;
+  - compares each projection only with a quote captured before it;
+  - reads its thresholds from `engine/model_integrity_config.json`;
+  - publishes how games beyond each threshold have actually gone;
+  - shows as chips and a matchup section in Today's Games, which holds the signal chip while an input is unresolved.
+- `tools/model_integrity/calibration_report.js` and `docs/system-integrity/MODEL_INTEGRITY.md`: the calibration evidence and the methodology changes it calls for.
+
+No model was moved toward the market. No ledger, fitted bound or methodology changed.
+
+**Evidence.**
+- Same feeds, same instant:
+  - DAL @ PHI moved from PHI −2.83 to −0.58 (Tanner McKee).
+  - PHI @ WAS moved from WAS −0.28 to −2.52.
+  - The other 14 games did not change.
+- EDINTEL: a 50% fair side at 1.909 with a 6% push read EV +1.45%; the correct figure is −4.27%.
+- The LAK @ NYR card read "EDGE: OVER 5.5" with P(6+) 52.67% against a 56.52% break-even.
+- College football out of sample, 2022–2025 (n = 3,120):
+  - Margins are too wide: slope 0.933, SE 0.022.
+  - Win probabilities are too extreme: recalibration slope 0.854, 95% CI 0.78–0.92.
+  - Disagreement with the opener carried no information about the result: slope 0.055 ± 0.057.
+  - Each fix is a methodology change for its own pull request (MODEL_INTEGRITY.md §7).
+
+**Tests.**
+- Model integrity: `tools/model_integrity/model_integrity.test.js`, 67 checks. Three injected bugs each turn it red.
+- NFL roster regime: 71 checks; 7 of them fail on the old code.
+- EDINTEL: 580 checks; 4 fail on the old code.
+- NBA engine: 101 checks.
+- NHL brain: 107 checks.
+- Board: 39 checks.
+- NBA graphic: 375 checks.
+- NHL graphic: 350 checks.
+- NFL prior decay: 85 checks.
+- Today's Games end-to-end: 118 checks, including an integrity scenario.
 
 ## 2026-10-26 — All checks: one required check for every workflow a pull request starts
 
