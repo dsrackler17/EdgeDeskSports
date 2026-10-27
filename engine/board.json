@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-27T16:07:14.471Z",
+ "evaluated_at": "2026-10-27T20:14:56.855Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 438 without a price, 0 stale."
+  "No market had a fresh executable price: 444 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0114
  },
  "counts": {
-  "RESEARCH": 438
+  "RESEARCH": 444
  },
  "gate_failures": {
-  "NO_PRICE": 438,
-  "NEEDS_PRICE": 438
+  "NO_PRICE": 444,
+  "NEEDS_PRICE": 444
  },
- "n_candidates": 438,
+ "n_candidates": 444,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -5757,9 +5757,9 @@
    "label": "NHL",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 234,
+   "candidates": 240,
    "priced": 0,
-   "note": "39 upcoming games priced by the model; book prices: DISABLED",
+   "note": "40 upcoming games priced by the model; book prices: DISABLED",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -6150,19 +6150,19 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-27T16:07:14.446Z",
-  "nhl_slate_generated_at": "2026-10-27T16:06:53.284Z",
+  "registry_generated_at": "2026-10-27T20:14:56.827Z",
+  "nhl_slate_generated_at": "2026-10-27T20:14:48.047Z",
   "basketball_slate_generated_at": "2026-10-27T15:21:43.177Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-10-27T15:33:29.996Z",
+   "generated_at": "2026-10-27T20:14:47.986Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
   "football_sheets_generated_at": "2026-10-27T15:23:09.420Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 438,
+  "research_total": 444,
   "research_kept": 78,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
