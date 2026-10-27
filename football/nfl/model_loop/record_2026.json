@@ -1,7 +1,683 @@
 {
  "schema": "edgedesk_model_loop_nfl_record_v1",
  "season": 2026,
- "generated_at": "2026-10-21T01:38:54Z",
+ "generated_at": "2026-10-27T19:27:01Z",
  "rules": "Pregame only: each game is graded on the last number published before kickoff (model_loop/ledger/nfl/cards_<season>.jsonl). Close is the nflverse consensus; CLV is points the market moved toward the model's side from EdgeDesk's own opener capture.",
- "games": []
+ "games": [
+  {
+   "game_id": "2026_07_NE_CHI",
+   "week": 7,
+   "home": "CHI",
+   "away": "NE",
+   "version": "2.0.0",
+   "published_at": "2026-10-21T01:29:31Z",
+   "model_home_margin": 1.92,
+   "open_home_margin": 1.5,
+   "close_home_margin": 3.0,
+   "result": 6.0,
+   "gap_vs_close": -1.08,
+   "clv_points": 1.5,
+   "ats_vs_close": "loss",
+   "model_abs_err": 4.08,
+   "close_abs_err": 3.0,
+   "home_win_prob": 0.5573,
+   "brier": 0.19598328999999998,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "rush_def",
+     "points": -0.76
+    },
+    {
+     "key": "qb",
+     "points": -0.1546
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": 0.094,
+    "home_win_prob": 0.5002,
+    "abs_err": 5.906,
+    "brier": 0.24980004000000003
+   }
+  },
+  {
+   "game_id": "2026_07_PIT_NO",
+   "week": 7,
+   "home": "NO",
+   "away": "PIT",
+   "version": "2.0.0",
+   "published_at": "2026-10-23T17:59:40Z",
+   "model_home_margin": -1.59,
+   "open_home_margin": -2.5,
+   "close_home_margin": -3.0,
+   "result": -6.0,
+   "gap_vs_close": 1.41,
+   "clv_points": -0.5,
+   "ats_vs_close": "loss",
+   "model_abs_err": 4.41,
+   "close_abs_err": 3.0,
+   "home_win_prob": 0.4525,
+   "brier": 0.20475625,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "timezone",
+     "points": 0.7831
+    },
+    {
+     "key": "qb",
+     "points": 0.6386
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-22T18:00:35.315Z",
+    "home_margin": -3.6436,
+    "home_win_prob": 0.3587,
+    "abs_err": 2.3564,
+    "brier": 0.12866569000000003
+   }
+  },
+  {
+   "game_id": "2026_07_CIN_BAL",
+   "week": 7,
+   "home": "BAL",
+   "away": "CIN",
+   "version": "2.0.0",
+   "published_at": "2026-10-24T17:01:14Z",
+   "model_home_margin": -0.08,
+   "open_home_margin": 3.5,
+   "close_home_margin": -3.0,
+   "result": -22.0,
+   "gap_vs_close": 2.92,
+   "clv_points": 6.5,
+   "ats_vs_close": "loss",
+   "model_abs_err": 21.92,
+   "close_abs_err": 19.0,
+   "home_win_prob": 0.4975,
+   "brier": 0.24750625,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "rush_off",
+     "points": 0.7675
+    },
+    {
+     "key": "timezone",
+     "points": 0.7569
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": -1.8703,
+    "home_win_prob": 0.4693,
+    "abs_err": 20.1297,
+    "brier": 0.22024248999999999
+   }
+  },
+  {
+   "game_id": "2026_07_CLE_TEN",
+   "week": 7,
+   "home": "TEN",
+   "away": "CLE",
+   "version": "2.0.0",
+   "published_at": "2026-10-24T17:01:14Z",
+   "model_home_margin": -2.77,
+   "open_home_margin": -1.5,
+   "close_home_margin": -1.5,
+   "result": -3.0,
+   "gap_vs_close": -1.27,
+   "clv_points": -0.0,
+   "ats_vs_close": "win",
+   "model_abs_err": 0.22999999999999998,
+   "close_abs_err": 1.5,
+   "home_win_prob": 0.4176,
+   "brier": 0.17438976000000003,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "qb",
+     "points": -2.2525
+    },
+    {
+     "key": "pass_def",
+     "points": -1.1117
+    },
+    {
+     "key": "travel",
+     "points": -0.2808
+    },
+    {
+     "key": "rush_def",
+     "points": -0.2156
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": -1.0223,
+    "home_win_prob": 0.4879,
+    "abs_err": 1.9777,
+    "brier": 0.23804641
+   }
+  },
+  {
+   "game_id": "2026_07_IND_MIN",
+   "week": 7,
+   "home": "MIN",
+   "away": "IND",
+   "version": "2.0.0",
+   "published_at": "2026-10-21T01:29:31Z",
+   "model_home_margin": 5.65,
+   "open_home_margin": 5.5,
+   "close_home_margin": 6.5,
+   "result": 6.0,
+   "gap_vs_close": -0.8499999999999996,
+   "clv_points": 1.0,
+   "ats_vs_close": "win",
+   "model_abs_err": 0.34999999999999964,
+   "close_abs_err": 0.5,
+   "home_win_prob": 0.6635,
+   "brier": 0.11323225000000002,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "rush_off",
+     "points": -1.5451
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": 9.1251,
+    "home_win_prob": 0.795,
+    "abs_err": 3.1250999999999998,
+    "brier": 0.042024999999999986
+   }
+  },
+  {
+   "game_id": "2026_07_MIA_NYJ",
+   "week": 7,
+   "home": "NYJ",
+   "away": "MIA",
+   "version": "2.0.0",
+   "published_at": "2026-10-21T01:29:31Z",
+   "model_home_margin": 3.82,
+   "open_home_margin": 4.5,
+   "close_home_margin": 3.5,
+   "result": -3.0,
+   "gap_vs_close": 0.31999999999999984,
+   "clv_points": 1.0,
+   "ats_vs_close": "loss",
+   "model_abs_err": 6.82,
+   "close_abs_err": 6.5,
+   "home_win_prob": 0.6125,
+   "brier": 0.3751562500000001,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "timezone",
+     "points": 0.7569
+    },
+    {
+     "key": "rush_def",
+     "points": 0.7005
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": 1.2324,
+    "home_win_prob": 0.5178,
+    "abs_err": 4.2324,
+    "brier": 0.26811684
+   }
+  },
+  {
+   "game_id": "2026_07_NYG_HOU",
+   "week": 7,
+   "home": "HOU",
+   "away": "NYG",
+   "version": "2.0.0",
+   "published_at": "2026-10-24T17:01:14Z",
+   "model_home_margin": 10.67,
+   "open_home_margin": 7,
+   "close_home_margin": 10.0,
+   "result": -6.0,
+   "gap_vs_close": 0.6699999999999999,
+   "clv_points": 3.0,
+   "ats_vs_close": "loss",
+   "model_abs_err": 16.67,
+   "close_abs_err": 16.0,
+   "home_win_prob": 0.7838,
+   "brier": 0.61434244,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "qb",
+     "points": 2.579
+    },
+    {
+     "key": "rush_def",
+     "points": 1.5163
+    },
+    {
+     "key": "travel",
+     "points": 0.264
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-22T18:00:35.315Z",
+    "home_margin": 11.3985,
+    "home_win_prob": 0.8413,
+    "abs_err": 17.3985,
+    "brier": 0.7077856900000001
+   }
+  },
+  {
+   "game_id": "2026_07_SF_ATL",
+   "week": 7,
+   "home": "ATL",
+   "away": "SF",
+   "version": "2.0.0",
+   "published_at": "2026-10-22T18:11:50Z",
+   "model_home_margin": -4.23,
+   "open_home_margin": -4.5,
+   "close_home_margin": -2.5,
+   "result": 9.0,
+   "gap_vs_close": -1.7300000000000004,
+   "clv_points": 2.0,
+   "ats_vs_close": "loss",
+   "model_abs_err": 13.23,
+   "close_abs_err": 11.5,
+   "home_win_prob": 0.3758,
+   "brier": 0.38962564,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "qb",
+     "points": -2.8438
+    },
+    {
+     "key": "timezone",
+     "points": -1.5923
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": -2.0407,
+    "home_win_prob": 0.4654,
+    "abs_err": 11.040700000000001,
+    "brier": 0.28579715999999994
+   }
+  },
+  {
+   "game_id": "2026_07_TB_CAR",
+   "week": 7,
+   "home": "CAR",
+   "away": "TB",
+   "version": "2.0.0",
+   "published_at": "2026-10-22T18:11:50Z",
+   "model_home_margin": 7.62,
+   "open_home_margin": 3,
+   "close_home_margin": 3.0,
+   "result": -30.0,
+   "gap_vs_close": 4.62,
+   "clv_points": 0.0,
+   "ats_vs_close": "loss",
+   "model_abs_err": 37.62,
+   "close_abs_err": 33.0,
+   "home_win_prob": 0.7142,
+   "brier": 0.5100816399999999,
+   "flag": true,
+   "drivers": [
+    {
+     "key": "qb",
+     "points": 3.8978
+    },
+    {
+     "key": "timezone",
+     "points": 0.7569
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": 5.3066,
+    "home_win_prob": 0.6779,
+    "abs_err": 35.3066,
+    "brier": 0.4595484099999999
+   }
+  },
+  {
+   "game_id": "2026_07_DEN_ARI",
+   "week": 7,
+   "home": "ARI",
+   "away": "DEN",
+   "version": "2.0.0",
+   "published_at": "2026-10-21T01:29:31Z",
+   "model_home_margin": -3.58,
+   "open_home_margin": -5.5,
+   "close_home_margin": -4.5,
+   "result": -14.0,
+   "gap_vs_close": 0.9199999999999999,
+   "clv_points": 1.0,
+   "ats_vs_close": "loss",
+   "model_abs_err": 10.42,
+   "close_abs_err": 9.5,
+   "home_win_prob": 0.3941,
+   "brier": 0.15531481,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "rush_def",
+     "points": 0.6963
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": -4.0036,
+    "home_win_prob": 0.3447,
+    "abs_err": 9.996400000000001,
+    "brier": 0.11881809
+   }
+  },
+  {
+   "game_id": "2026_07_GB_DET",
+   "week": 7,
+   "home": "DET",
+   "away": "GB",
+   "version": "2.0.0",
+   "published_at": "2026-10-25T17:15:32Z",
+   "model_home_margin": 5.77,
+   "open_home_margin": 3.5,
+   "close_home_margin": 3.5,
+   "result": 3.0,
+   "gap_vs_close": 2.2699999999999996,
+   "clv_points": 0.0,
+   "ats_vs_close": "loss",
+   "model_abs_err": 2.7699999999999996,
+   "close_abs_err": 0.5,
+   "home_win_prob": 0.6666,
+   "brier": 0.11115556000000001,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "rest",
+     "points": 1.804
+    },
+    {
+     "key": "rush_off",
+     "points": 0.8044
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": 5.4761,
+    "home_win_prob": 0.6813,
+    "abs_err": 2.4760999999999997,
+    "brier": 0.10156968999999999
+   }
+  },
+  {
+   "game_id": "2026_07_LA_LV",
+   "week": 7,
+   "home": "LV",
+   "away": "LA",
+   "version": "2.0.0",
+   "published_at": "2026-10-25T17:15:32Z",
+   "model_home_margin": -5.94,
+   "open_home_margin": -6.5,
+   "close_home_margin": -3.5,
+   "result": -14.0,
+   "gap_vs_close": -2.4400000000000004,
+   "clv_points": 3.0,
+   "ats_vs_close": "win",
+   "model_abs_err": 8.059999999999999,
+   "close_abs_err": 10.5,
+   "home_win_prob": 0.329,
+   "brier": 0.108241,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "rush_off",
+     "points": -2.1931
+    },
+    {
+     "key": "rush_def",
+     "points": -0.4922
+    },
+    {
+     "key": "travel",
+     "points": -0.4091
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": -3.0353,
+    "home_win_prob": 0.4091,
+    "abs_err": 10.9647,
+    "brier": 0.16736281000000003
+   }
+  },
+  {
+   "game_id": "2026_07_KC_SEA",
+   "week": 7,
+   "home": "SEA",
+   "away": "KC",
+   "version": "2.0.0",
+   "published_at": "2026-10-22T18:11:50Z",
+   "model_home_margin": -0.32,
+   "open_home_margin": 2.5,
+   "close_home_margin": 3.0,
+   "result": 17.0,
+   "gap_vs_close": -3.32,
+   "clv_points": -0.5,
+   "ats_vs_close": "loss",
+   "model_abs_err": 17.32,
+   "close_abs_err": 14.0,
+   "home_win_prob": 0.4904,
+   "brier": 0.25969216000000006,
+   "flag": true,
+   "drivers": [
+    {
+     "key": "qb",
+     "points": -3.5533
+    },
+    {
+     "key": "rush_off",
+     "points": -1.6828
+    },
+    {
+     "key": "timezone",
+     "points": -0.8093
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-21T18:04:28.522Z",
+    "home_margin": 4.3759,
+    "home_win_prob": 0.6583,
+    "abs_err": 12.6241,
+    "brier": 0.11675889
+   }
+  },
+  {
+   "game_id": "2026_07_DAL_PHI",
+   "week": 7,
+   "home": "PHI",
+   "away": "DAL",
+   "version": "2.0.0",
+   "published_at": "2026-10-26T19:36:30Z",
+   "model_home_margin": -2.13,
+   "open_home_margin": -1.5,
+   "close_home_margin": -4.5,
+   "result": -17.0,
+   "gap_vs_close": 2.37,
+   "clv_points": 3.0,
+   "ats_vs_close": "loss",
+   "model_abs_err": 14.870000000000001,
+   "close_abs_err": 12.5,
+   "home_win_prob": 0.4366,
+   "brier": 0.19061956,
+   "flag": false,
+   "drivers": [
+    {
+     "key": "pass_def",
+     "points": 1.1254
+    },
+    {
+     "key": "rush_def",
+     "points": 0.6917
+    },
+    {
+     "key": "travel",
+     "points": 0.2018
+    }
+   ],
+   "board": {
+    "version": "edgedesk_nfl_v2.1.0",
+    "published_at": "2026-10-26T19:09:30.455Z",
+    "home_margin": 0.5841,
+    "home_win_prob": 0.5028,
+    "abs_err": 17.5841,
+    "brier": 0.25280784
+   }
+  }
+ ],
+ "season_to_date": {
+  "n": 14,
+  "model_mae": 11.341,
+  "close_mae": 10.071,
+  "mean_abs_vs_close": 1.871,
+  "brier": 0.2607,
+  "logloss": 0.7235,
+  "clv_mean_pts": 1.5,
+  "clv_n": 14,
+  "clv_positive": 9,
+  "ats_vs_close": {
+   "loss": 11,
+   "win": 3
+  },
+  "flags": 2,
+  "calibration": {
+   "bins": [
+    {
+     "bin": "0.2-0.4",
+     "n": 3,
+     "mean_pred": 0.3663,
+     "observed": 0.3333
+    },
+    {
+     "bin": "0.4-0.6",
+     "n": 6,
+     "mean_pred": 0.4753,
+     "observed": 0.3333
+    },
+    {
+     "bin": "0.6-0.8",
+     "n": 5,
+     "mean_pred": 0.6881,
+     "observed": 0.4
+    }
+   ],
+   "ece": 0.1708
+  }
+ },
+ "last_week": {
+  "n": 14,
+  "model_mae": 11.341,
+  "close_mae": 10.071,
+  "mean_abs_vs_close": 1.871,
+  "brier": 0.2607,
+  "logloss": 0.7235,
+  "clv_mean_pts": 1.5,
+  "clv_n": 14,
+  "clv_positive": 9,
+  "ats_vs_close": {
+   "loss": 11,
+   "win": 3
+  },
+  "flags": 2,
+  "calibration": {
+   "bins": [
+    {
+     "bin": "0.2-0.4",
+     "n": 3,
+     "mean_pred": 0.3663,
+     "observed": 0.3333
+    },
+    {
+     "bin": "0.4-0.6",
+     "n": 6,
+     "mean_pred": 0.4753,
+     "observed": 0.3333
+    },
+    {
+     "bin": "0.6-0.8",
+     "n": 5,
+     "mean_pred": 0.6881,
+     "observed": 0.4
+    }
+   ],
+   "ece": 0.1708
+  },
+  "week": 7
+ },
+ "head_to_head": {
+  "rule": "same games, each side's last number published before kickoff; the board's number is captured from football/nfl/slate.json at each refresh",
+  "season_to_date": {
+   "n": 14,
+   "model_loop": {
+    "version": [
+     "2.0.0"
+    ],
+    "mae": 11.341,
+    "brier": 0.2607,
+    "logloss": 0.7235,
+    "mean_abs_vs_close": 1.871
+   },
+   "board": {
+    "version": [
+     "edgedesk_nfl_v2.1.0"
+    ],
+    "mae": 11.08,
+    "brier": 0.2398,
+    "logloss": 0.6847,
+    "mean_abs_vs_close": 1.687
+   },
+   "close_mae": 10.071
+  },
+  "last_week": {
+   "n": 14,
+   "model_loop": {
+    "version": [
+     "2.0.0"
+    ],
+    "mae": 11.341,
+    "brier": 0.2607,
+    "logloss": 0.7235,
+    "mean_abs_vs_close": 1.871
+   },
+   "board": {
+    "version": [
+     "edgedesk_nfl_v2.1.0"
+    ],
+    "mae": 11.08,
+    "brier": 0.2398,
+    "logloss": 0.6847,
+    "mean_abs_vs_close": 1.687
+   },
+   "close_mae": 10.071,
+   "week": 7
+  }
+ }
 }
