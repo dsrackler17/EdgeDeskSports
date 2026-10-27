@@ -196,6 +196,18 @@ chk('D … and an NFL story score says its reliability was unmeasured instead of
   })());
   chk('D … and every other matchup analysis is still offered', JSON.stringify(maKeys(after)) === JSON.stringify(maKeys(opps).filter((k) => k !== ma.key)), [maKeys(opps), maKeys(after)]);
 }
+/* an NFL matchup claim reads "When X have the ball: their …"; lifted into the
+   thesis or the counterargument without its clause, "Their passing game ranks
+   No. 29" under "The football that does point toward Cincinnati Bengals" read
+   as Cincinnati's, and it was Tennessee's */
+{
+  const nflMa = all.filter((o) => o.league === 'nfl' && o.kind === 'matchup_analysis').map((o) => CE.draft(o, { publisher: SR, format: 'matchup_analysis', now: NOW }));
+  const paras = (a) => [].concat(...a.sections.map((s) => String(s.body || '').split(/\n\n/)));
+  const atX = (p) => /^\*\*When .+ the ball\.\*\*/.test(p);
+  const bare = nflMa.map((a) => paras(a).filter((p) => !atX(p) && /(?:^|\n|[.!?:]\s)(?:- )?Their\s/.test(p))).filter((x) => x.length);
+  chk('D a stat lifted out of “When X have the ball” names X, never a bare “Their”', nflMa.length > 0 && bare.length === 0, bare.slice(0, 2));
+  chk('D … and under the heading that names X the pronoun stays', nflMa.some((a) => paras(a).some((p) => atX(p) && /the ball\.\*\* Their /.test(p))));
+}
 const a0 = CE.draft(cfbPrev, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
 chk('D the preview has every required section, in order', JSON.stringify(a0.sections.map((s) => s.key)) === JSON.stringify(CE.FORMATS.cfb_weekly_preview.sections.filter((k) => a0.sections.some((s) => s.key === k))));
 chk('D it explains that a projection is not a bet', /A projection is not a bet/.test(a0.sections.find((s) => s.key === 'how_to_read').body));
