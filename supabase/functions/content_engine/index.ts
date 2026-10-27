@@ -7007,13 +7007,18 @@
       /* 4b · matchup analysis: one game, researched in full — the week's
          headliners and every game where EdgeDesk and the line are far apart.
          A stale line does not disqualify it (the piece says how old the line
-         is); a missing evidence packet does. */
+         is); a missing evidence packet does, and so does evidence on one side
+         only: the counterargument cites the football that cuts against
+         EdgeDesk's side (sidesOf().con), and the gate refuses a single-game
+         piece without it (contrary_evidence). Tennessee at Cincinnati
+         (2026_08_TEN_CIN, 2026-10-27) had 18 claims for Cincinnati and none
+         for Tennessee: no honest analysis to offer. */
       var bigGap = league === 'cfb' ? 7 : 4;
       var maGames = ranked.slice(0, 2).map(function (x) { return x.p; });
       upcoming.filter(function (p) { return p.gap && p.gap.points >= bigGap && p.market.status !== 'none'; })
         .sort(function (a, b) { return b.gap.points - a.gap.points; }).slice(0, 3)
         .forEach(function (p) { if (maGames.indexOf(p) < 0) maGames.push(p); });
-      maGames.filter(function (p) { return p.evidence && p.evidence.explanation; }).forEach(function (p) {
+      maGames.filter(function (p) { return p.evidence && p.evidence.explanation && sidesOf(p).con.length; }).forEach(function (p) {
         var X = p.evidence.explanation;
         var big = p.gap && p.gap.points >= bigGap;
         var kw8 = slugify(p.away + ' vs ' + p.home).replace(/-/g, ' ') + ' prediction';
