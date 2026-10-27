@@ -1,31 +1,30 @@
 # Changelog
 
-## 2026-10-26 — Football decision test: the NFL hold rule is checked on a pinned slate, not only on today's market
+## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
-**What broke.** Since the scheduled data push at 23:12 UTC (`e0205970`, "starter context, quarterback EPA, team profiles and the published card"), `tools/bettor/football_decision.test.js` has failed on `main` with 180 passed and 1 failed:
+**What broke, twice.**
+1. At 23:12 UTC on 2026-10-26, the scheduled push `e0205970` moved ARI @ DAL from DAL −6.5 to −6. That left no game on the live NFL slate whose pricing blend is held at the market line. `tools/bettor/football_decision.test.js` required one ("real NFL: the board holds some real games"), so it failed 180 / 1. The engines were right: the board held 0 and the kernel held 0.
+2. #836 and #837 fixed that in parallel, each green on its own. Both pinned the hold-rule checks to `tools/fixtures/nfl_slate_2026-10-25.json`, where both engines hold DEN @ ARI.
+   - #837 merged at 02:00:00 UTC.
+   - "Update branch" on #836 merged `main` into it at 02:01:15 (`04f23a4e`). Git took hunks from both versions without a conflict, and the result kept neither function header around the per-game body.
+   - #836 merged 19 seconds later, before that commit's checks reported.
+   - From then on the file threw `ReferenceError: g is not defined` at line 514, in CFB research terminal, Decision quality and Personal research CI.
 
-```
-FAIL | real NFL: the board holds some real games (the rule is exercised, not vacuous)  0
-```
+**The repair.** #836's merge is reverted (`git revert -m 1 2016a238`). The test is again exactly #837's (`3f9fb966`):
+- the held-rule checks run on the live slate plus the pinned slate;
+- the guard is met by DEN @ ARI whatever the live lines are.
 
-It turns CFB research terminal (`rules`), Decision quality (`suites`), Personal research CI (`suites`) and All checks red on every pull request that starts them. A `GITHUB_TOKEN` push starts no workflow, so `main` did not report the failure itself.
+No assertion, threshold or fixture changed.
 
-**Why.** The check needs at least one game on the live NFL slate whose pricing blend is held at the market line. Before the push, only ARI @ DAL qualified: model DAL by 5.76, market DAL −6.5, raw blend 6.96. The push moved that line to −6, so |model − market| fell to 0.24, inside the 0.5-pt tolerance. Neither engine holds anything now: the board holds 0 and the kernel holds 0, and they agree. The rule is right. The check just read the market's hour, not the code.
+**Before and after.** `node tools/bettor/football_decision.test.js`:
 
-**The repair.** The hold-rule checks also read the slate pinned at 2026-10-25 21:53 UTC (`tools/fixtures/nfl_slate_2026-10-25.json`, the slate `tools/intelligence/fixtures.js` already serves). Both engines hold DEN @ ARI on it.
-- The non-vacuity guard reads the pinned slate: DEN @ ARI must be held on every run.
-- The "just far enough" check runs on held games from both slates.
-- So do the kernel's "held exactly when the blend crosses" check and the side invariant.
-- Every live-slate check is unchanged.
-- No engine code, record, fixture or threshold changed.
+| `main` | result |
+|---|---|
+| at `e0205970` | 180 / 1 |
+| `d3267217` | `ReferenceError` |
+| this revert | 181 / 0 |
 
-**Before and after.**
-
-| `node tools/bettor/football_decision.test.js` | old test | this test |
-|---|---|---|
-| slate at `1028c428` (before the push) | 181 / 0 | 181 / 0 |
-| slate at `e0205970` (= `main`) | 180 / 1 | 181 / 0 |
-| `main`, with the board's hold rule switched off (mutation, not committed) | 180 / 1 (already red) | 180 / 1: the guard fails, `{"live":[],"pinned":[]}` |
+**The lesson is §5's:** after "Update branch", wait for that new commit's checks. They are the only checks that have seen the merged code.
 
 ## 2026-10-26 — Changelog: the last entry the #819 merge dropped is back
 
