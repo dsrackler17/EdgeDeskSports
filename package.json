@@ -54,6 +54,8 @@
     "cfb:validation": "node football/cfb_validation/build.js",
     "cfb:validation:check": "node football/cfb_validation/build.js --check",
     "cfb:validation:test": "node tools/validation/canon.test.js && node football/cfb_validation/tests.js && node tools/validation/ui.test.js",
+    "cfb:trust": "node football/cfb_validation/trust.js",
+    "cfb:trust:test": "node football/cfb_validation/trust.test.js",
     "cfb:validation:backtest": "node football/cfb_validation/divergence_backtest.js --replay .cache/cfbdata/out/disagreement_replay.jsonl",
     "cfb:freeze:status": "node football/cfb_validation/freeze.js --status",
     "cfb:hfa": "node football/cfb_p4/research/hfa_unify.js",

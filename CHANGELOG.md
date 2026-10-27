@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-27 — Research OS journey and changelog: what this morning's "Update branch" merges deleted is back
+
+**What was lost.** Between 12:51 and 12:59 UTC, #844, #841, #840, #842 and #843 merged. Three of them merged on an "Update branch" merge commit, two of them within ten seconds of it. Those three merges dropped work that no check had seen:
+
+| "Update branch" merge | Merged | What it dropped |
+|---|---|---|
+| `6f51155e8` on #841 | 1 min 51 s later | #844's entry and #841's own |
+| `70440b1fe` on #842 | 9 s later | #842's entry, and the journey check itself |
+| `a3e2dd729` on #843 | 10 s later | #843's own entry |
+
+#841 and #842 had fixed the same journey check in parallel. #841 merged first. The conflict on #842 was resolved by deleting both versions: `SNAP_HOME`/`SNAP_AWAY` and the "the game is the research context" check, on desktop and phone. `tools/research_os/journey.e2e.js` stayed green, with two checks fewer, and it stopped noticing a game page that carries the wrong team.
+
+**The repair.**
+- `tools/research_os/journey.e2e.js` is again exactly #841's version (`d57ddc4c4`). It is the stronger of the two fixes: it checks the home and away names against the research snapshot, and requires both to exist.
+- The four entries are back, verbatim from their own commits, in merge order (`a3e2dd729^1`, `10145b2cd`, `6f51155e8^1`, `e68bdbfda`).
+- #842's entry describes #842's version of the check. That version never reached `main`, because the merge deleted it along with #841's. The code that stands is #841's.
+- #840 added no entry. Its change to `discover()` reached `main` first through #844, which carried it byte for byte.
+
+No other file changed.
+
+**Before and after.** `ROS_SQL_REQUIRED=1 ROS_E2E_REQUIRED=1 node tools/research_os/journey.e2e.js` on `main` (`43e1d8ea4`, Delaware at Western Kentucky):
+
+| | today's data | `gvCtx` handed the away team's name (local mutation, not committed) |
+|---|---|---|
+| `main` | 124 / 0 | **124 / 0**: the wrong name passes |
+| this branch | 126 / 0 | **124 / 2**: "the game is the research context" fails |
+
+The lesson is §5's, again: after "Update branch", wait for that new commit's checks, and resolve conflicts locally, keeping both sides' changelog entries.
+
 ## 2026-10-27 — NHL engine browser suite: read the goalie block after the starter sync answers
 
 **The intermittent failure.** `NHL engine › The NHL and Engine panels in Chromium` sometimes failed "the slate fallback says the starter sync has no card for the game yet" (`tools/engine/engine_ui.e2e.js`). It failed once on a fully loaded machine. It passed six reruns at the same commits.
@@ -12,6 +41,7 @@
 - **Unchanged suite, sync reply held 2 s:** 150 passed, 2 failed (desktop and phone), the same failure as the loaded machine.
 - **Fixed suite:** 152/0, and still 152/0 with the reply held 2 s.
 - **Mutation:** with the note removed from `lib/edgedesk_nhl_goalies.js`, it still fails 150/2, so the wait masks nothing.
+
 
 ## 2026-10-27 — Research OS journey: the research context is checked against the names the game page shows
 
@@ -56,6 +86,7 @@ The game page builds the research context from its snapshot (`gvCtx` in `app.htm
 |---|---|
 | without this change | 334 / 1: "- Their run game ranks No. 3, and Atlanta Falcons' run defense ranks No. 25." (BAL @ ATL) |
 | with it | 335 / 0 |
+
 
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 

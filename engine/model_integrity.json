@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_model_integrity_v1",
  "version": "edgedesk_model_integrity/1",
- "generated_at": "2026-10-27T12:45:39.463Z",
+ "generated_at": "2026-10-27T18:23:30.396Z",
  "note": "Every published NBA, NFL, college football and NHL projection checked against its own inputs and the market captured before it. A classification is a reason to look, never a change to the number; a disagreement with the market is not an error. Research, not picks.",
  "config": {
   "file": "engine/model_integrity_config.json",
@@ -45,7 +45,7 @@
    "contract": "lib/edgedesk_projections.js (in memory, from the committed artifacts)",
    "count": 136
   },
-  "quotes": "performance/ledger/quotes/<sport>-2026.jsonl and today/slate.json markets (2026-10-27T10:55:18.563Z)",
+  "quotes": "performance/ledger/quotes/<sport>-2026.jsonl and today/slate.json markets (2026-10-27T16:30:44.593Z)",
   "artifacts": [
    "nba/slate.json",
    "nba/roster_inputs.json",
@@ -89,7 +89,7 @@
     "by_code": {
      "MISSING_CRITICAL_INPUT": 39,
      "CALIBRATION_WARNING": 18,
-     "LARGE_MARKET_DISAGREEMENT": 4
+     "LARGE_MARKET_DISAGREEMENT": 5
     }
    },
    "nba": {
@@ -370,7 +370,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-20T23:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -394,7 +394,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -411,7 +411,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -458,19 +458,19 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401871071",
-     "spread_home": 1.5,
+     "spread_home": -1.5,
      "total": 57.5,
-     "ml_home": -105,
-     "ml_away": -115,
-     "implied_home": 0.5122,
-     "implied_away": 0.5349,
-     "novig_home": 0.4892,
-     "novig_away": 0.5108,
-     "overround": 0.0471
+     "ml_home": -122,
+     "ml_away": 102,
+     "implied_home": 0.5495,
+     "implied_away": 0.495,
+     "novig_home": 0.5261,
+     "novig_away": 0.4739,
+     "overround": 0.0446
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": -4.77,
@@ -487,7 +487,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -601,9 +601,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -618,7 +618,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -690,7 +690,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020188",
      "spread_home": null,
      "total": 5.5,
@@ -702,7 +702,7 @@
      "novig_away": 0.5325,
      "overround": 0.0434
     },
-    "basis": "the latest quote captured at or before the projection (3.8 h before it)"
+    "basis": "the latest quote captured at or before the projection (10.6 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -746,7 +746,7 @@
      "the inputs are not clean (MISSING_CRITICAL_INPUT)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -804,16 +804,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -14.79,
-    "display_home_line": -14.5,
-    "total": 219.02,
-    "p_home": 0.868018,
+    "home_line": -12.8,
+    "display_home_line": -12.5,
+    "total": 218.01,
+    "p_home": 0.834092,
     "uncertainty": {
-     "model_sd": 0.0829,
+     "model_sd": 0.083,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 13.91
@@ -821,11 +821,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -862,8 +862,10 @@
       "Baylor Scheierman",
       "Mitchell Robinson",
       "Jordan Walsh",
+      "Mike Conley",
       "Luka Garza",
-      "Hugo Gonzalez"
+      "Hugo Gonzalez",
+      "Ron Harper Jr."
      ],
      "away": [
       "Julius Randle",
@@ -904,21 +906,6 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T05:32:32.031Z",
-     "event_key": "NBA|401909877",
-     "spread_home": -12.5,
-     "total": 222.5,
-     "ml_home": -575,
-     "ml_away": 425,
-     "implied_home": 0.8519,
-     "implied_away": 0.1905,
-     "novig_home": 0.8173,
-     "novig_away": 0.1827,
-     "overround": 0.0423
-    },
-    "latest": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
      "captured_at": "2026-10-27T10:55:18.563Z",
      "event_key": "NBA|401909877",
      "spread_home": -11.5,
@@ -931,12 +918,27 @@
      "novig_away": 0.1827,
      "overround": 0.0423
     },
-    "basis": "the latest quote captured at or before the projection (3.7 h before it)"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NBA|401909877",
+     "spread_home": -11.5,
+     "total": 223.5,
+     "ml_home": -575,
+     "ml_away": 425,
+     "implied_home": 0.8519,
+     "implied_away": 0.1905,
+     "novig_home": 0.8173,
+     "novig_away": 0.1827,
+     "overround": 0.0423
+    },
+    "basis": "the latest quote captured at or before the projection (4.6 h before it)"
    },
    "disagreement": {
-    "spread_pts": -2.29,
-    "total_pts": -3.48,
-    "win_prob_pp": 5.1,
+    "spread_pts": -1.3,
+    "total_pts": -4.49,
+    "win_prob_pp": 1.7,
     "over_threshold": []
    },
    "calibration": [
@@ -960,7 +962,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -977,7 +979,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -994,7 +996,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -1041,19 +1043,19 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401871072",
-     "spread_home": -4.5,
-     "total": 50.5,
-     "ml_home": -218,
-     "ml_away": 180,
-     "implied_home": 0.6855,
-     "implied_away": 0.3571,
-     "novig_home": 0.6575,
-     "novig_away": 0.3425,
-     "overround": 0.0427
+     "spread_home": -5.5,
+     "total": 51.5,
+     "ml_home": -225,
+     "ml_away": 185,
+     "implied_home": 0.6923,
+     "implied_away": 0.3509,
+     "novig_home": 0.6636,
+     "novig_away": 0.3364,
+     "overround": 0.0432
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": -2.15,
@@ -1070,7 +1072,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -1128,16 +1130,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -2.32,
+    "home_line": -2.33,
     "display_home_line": -3.5,
-    "total": 218.15,
-    "p_home": 0.571268,
+    "total": 218.02,
+    "p_home": 0.571627,
     "uncertainty": {
-     "model_sd": 0.0416,
+     "model_sd": 0.0407,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 14.69
@@ -1145,11 +1147,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -1222,21 +1224,6 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T05:32:32.031Z",
-     "event_key": "NBA|401909878",
-     "spread_home": -3.5,
-     "total": 218.5,
-     "ml_home": -155,
-     "ml_away": 130,
-     "implied_home": 0.6078,
-     "implied_away": 0.4348,
-     "novig_home": 0.583,
-     "novig_away": 0.417,
-     "overround": 0.0426
-    },
-    "latest": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
      "captured_at": "2026-10-27T10:55:18.563Z",
      "event_key": "NBA|401909878",
      "spread_home": -3.5,
@@ -1249,12 +1236,27 @@
      "novig_away": 0.417,
      "overround": 0.0426
     },
-    "basis": "the latest quote captured at or before the projection (3.7 h before it)"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NBA|401909878",
+     "spread_home": -3.5,
+     "total": 219.5,
+     "ml_home": -155,
+     "ml_away": 130,
+     "implied_home": 0.6078,
+     "implied_away": 0.4348,
+     "novig_home": 0.583,
+     "novig_away": 0.417,
+     "overround": 0.0426
+    },
+    "basis": "the latest quote captured at or before the projection (4.6 h before it)"
    },
    "disagreement": {
-    "spread_pts": 1.18,
-    "total_pts": -0.35,
-    "win_prob_pp": -1.2,
+    "spread_pts": 1.17,
+    "total_pts": -1.48,
+    "win_prob_pp": -1.1,
     "over_threshold": []
    },
    "calibration": [
@@ -1278,7 +1280,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -1336,16 +1338,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
     "home_line": -16.72,
     "display_home_line": -16.5,
-    "total": 228.89,
-    "p_home": 0.895956,
+    "total": 228.79,
+    "p_home": 0.895966,
     "uncertainty": {
-     "model_sd": 0.0878,
+     "model_sd": 0.0877,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 13.91
@@ -1353,11 +1355,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -1428,21 +1430,6 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T05:32:32.031Z",
-     "event_key": "NBA|401909879",
-     "spread_home": -18.5,
-     "total": 230.5,
-     "ml_home": -1800,
-     "ml_away": 1000,
-     "implied_home": 0.9474,
-     "implied_away": 0.0909,
-     "novig_home": 0.9124,
-     "novig_away": 0.0876,
-     "overround": 0.0383
-    },
-    "latest": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
      "captured_at": "2026-10-27T10:55:18.563Z",
      "event_key": "NBA|401909879",
      "spread_home": -17.5,
@@ -1455,11 +1442,26 @@
      "novig_away": 0.0876,
      "overround": 0.0383
     },
-    "basis": "the latest quote captured at or before the projection (3.7 h before it)"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NBA|401909879",
+     "spread_home": -18.5,
+     "total": 232.5,
+     "ml_home": -1650,
+     "ml_away": 950,
+     "implied_home": 0.9429,
+     "implied_away": 0.0952,
+     "novig_home": 0.9083,
+     "novig_away": 0.0917,
+     "overround": 0.0381
+    },
+    "basis": "the latest quote captured at or before the projection (4.6 h before it)"
    },
    "disagreement": {
-    "spread_pts": 1.78,
-    "total_pts": -1.61,
+    "spread_pts": 0.78,
+    "total_pts": -1.71,
     "win_prob_pp": -1.6,
     "over_threshold": []
    },
@@ -1484,7 +1486,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -1552,9 +1554,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -1569,7 +1571,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -1641,7 +1643,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020189",
      "spread_home": null,
      "total": 6.5,
@@ -1653,7 +1655,7 @@
      "novig_away": 0.3691,
      "overround": 0.0421
     },
-    "basis": "the latest quote captured at or before the projection (9 h before it)"
+    "basis": "the latest quote captured at or before the projection (15.7 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -1682,7 +1684,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -1769,9 +1771,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -1786,7 +1788,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -1858,19 +1860,19 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020190",
      "spread_home": null,
      "total": 5.5,
-     "ml_home": 102,
-     "ml_away": -122,
-     "implied_home": 0.495,
-     "implied_away": 0.5495,
-     "novig_home": 0.4739,
-     "novig_away": 0.5261,
-     "overround": 0.0446
+     "ml_home": -102,
+     "ml_away": -118,
+     "implied_home": 0.505,
+     "implied_away": 0.5413,
+     "novig_home": 0.4826,
+     "novig_away": 0.5174,
+     "overround": 0.0462
     },
-    "basis": "the latest quote captured at or before the projection (3.8 h before it)"
+    "basis": "the latest quote captured at or before the projection (10.6 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -1914,7 +1916,7 @@
      "the inputs are not clean (MISSING_CRITICAL_INPUT)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -2009,9 +2011,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -2026,7 +2028,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -2098,19 +2100,19 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020191",
      "spread_home": null,
      "total": 6.5,
-     "ml_home": -122,
-     "ml_away": 102,
-     "implied_home": 0.5495,
-     "implied_away": 0.495,
-     "novig_home": 0.5261,
-     "novig_away": 0.4739,
-     "overround": 0.0446
+     "ml_home": -118,
+     "ml_away": -102,
+     "implied_home": 0.5413,
+     "implied_away": 0.505,
+     "novig_home": 0.5174,
+     "novig_away": 0.4826,
+     "overround": 0.0462
     },
-    "basis": "the latest quote captured at or before the projection (3.8 h before it)"
+    "basis": "the latest quote captured at or before the projection (10.6 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -2139,7 +2141,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -2253,9 +2255,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -2270,7 +2272,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -2342,7 +2344,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020192",
      "spread_home": null,
      "total": 5.5,
@@ -2354,7 +2356,7 @@
      "novig_away": 0.4739,
      "overround": 0.0446
     },
-    "basis": "the latest quote captured at or before the projection (9 h before it)"
+    "basis": "the latest quote captured at or before the projection (15.7 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -2398,7 +2400,7 @@
      "the inputs are not clean (MISSING_CRITICAL_INPUT)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -2512,9 +2514,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -2529,7 +2531,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -2601,19 +2603,19 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020193",
      "spread_home": null,
      "total": 5.5,
-     "ml_home": -125,
-     "ml_away": 105,
-     "implied_home": 0.5556,
-     "implied_away": 0.4878,
-     "novig_home": 0.5325,
-     "novig_away": 0.4675,
-     "overround": 0.0434
+     "ml_home": -120,
+     "ml_away": 100,
+     "implied_home": 0.5455,
+     "implied_away": 0.5,
+     "novig_home": 0.5217,
+     "novig_away": 0.4783,
+     "overround": 0.0455
     },
-    "basis": "the latest quote captured at or before the projection (9 h before it)"
+    "basis": "the latest quote captured at or before the projection (15.7 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -2657,7 +2659,7 @@
      "the inputs are not clean (MISSING_CRITICAL_INPUT)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -2668,7 +2670,8 @@
    "away": "FLA",
    "status": "MISSING_CRITICAL_INPUT",
    "codes": [
-    "MISSING_CRITICAL_INPUT"
+    "MISSING_CRITICAL_INPUT",
+    "LARGE_MARKET_DISAGREEMENT"
    ],
    "classifications": [
     {
@@ -2712,6 +2715,19 @@
        }
       ]
      }
+    },
+    {
+     "code": "LARGE_MARKET_DISAGREEMENT",
+     "severity": "medium",
+     "component": "model vs market (total)",
+     "message": "EdgeDesk is 0.59 goals from the market on the total (review threshold 0.5). An investigation trigger, not proof that either number is wrong.",
+     "evidence": {
+      "gap": 0.59,
+      "threshold": 0.5,
+      "market_captured_at": "2026-10-27T10:55:18.563Z",
+      "book": "DraftKings"
+     },
+     "chip": "Major model-market disagreement"
     }
    ],
    "chips": [
@@ -2719,15 +2735,20 @@
      "code": "MISSING_CRITICAL_INPUT",
      "label": "Starting goalie unconfirmed",
      "severity": "medium"
+    },
+    {
+     "code": "LARGE_MARKET_DISAGREEMENT",
+     "label": "Major model-market disagreement",
+     "severity": "medium"
     }
    ],
    "model": {
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -2742,7 +2763,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -2799,21 +2820,6 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T05:32:32.031Z",
-     "event_key": "NHL|2026020194",
-     "spread_home": null,
-     "total": 6.5,
-     "ml_home": 110,
-     "ml_away": -130,
-     "implied_home": 0.4762,
-     "implied_away": 0.5652,
-     "novig_home": 0.4573,
-     "novig_away": 0.5427,
-     "overround": 0.0414
-    },
-    "latest": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
      "captured_at": "2026-10-27T10:55:18.563Z",
      "event_key": "NHL|2026020194",
      "spread_home": null,
@@ -2826,13 +2832,35 @@
      "novig_away": 0.5427,
      "overround": 0.0414
     },
-    "basis": "the latest quote captured at or before the projection (3.8 h before it)"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NHL|2026020194",
+     "spread_home": null,
+     "total": 6.5,
+     "ml_home": 110,
+     "ml_away": -130,
+     "implied_home": 0.4762,
+     "implied_away": 0.5652,
+     "novig_home": 0.4573,
+     "novig_away": 0.5427,
+     "overround": 0.0414
+    },
+    "basis": "the latest quote captured at or before the projection (5.2 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
-    "total_pts": -0.41,
+    "total_pts": 0.59,
     "win_prob_pp": 3.8,
-    "over_threshold": []
+    "over_threshold": [
+     {
+      "market": "total",
+      "gap": 0.59,
+      "threshold": 0.5,
+      "unit": "goals"
+     }
+    ]
    },
    "calibration": [
     {
@@ -2854,8 +2882,16 @@
      "value_claims": false
     }
    ],
-   "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "signal_rule": {
+    "ok": false,
+    "reasons": [
+     "the market is EXPERIMENTAL, not MARKET_VALIDATED",
+     "its test against the close is NOT_TESTED, not TESTED_AHEAD",
+     "the disagreement record above the threshold has 5 games (needs 200)",
+     "the inputs are not clean (MISSING_CRITICAL_INPUT)"
+    ]
+   },
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -2950,9 +2986,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -2967,7 +3003,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -3039,19 +3075,19 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020195",
      "spread_home": -1.5,
      "total": 6.5,
-     "ml_home": -130,
-     "ml_away": 110,
-     "implied_home": 0.5652,
-     "implied_away": 0.4762,
-     "novig_home": 0.5427,
-     "novig_away": 0.4573,
-     "overround": 0.0414
+     "ml_home": -125,
+     "ml_away": 105,
+     "implied_home": 0.5556,
+     "implied_away": 0.4878,
+     "novig_home": 0.5325,
+     "novig_away": 0.4675,
+     "overround": 0.0434
     },
-    "basis": "the latest quote captured at or before the projection (3.8 h before it)"
+    "basis": "the latest quote captured at or before the projection (10.6 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -3080,7 +3116,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -3175,9 +3211,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -3192,7 +3228,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -3264,19 +3300,19 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020196",
      "spread_home": null,
      "total": 6.5,
-     "ml_home": -155,
-     "ml_away": 130,
-     "implied_home": 0.6078,
-     "implied_away": 0.4348,
-     "novig_home": 0.583,
-     "novig_away": 0.417,
-     "overround": 0.0426
+     "ml_home": -162,
+     "ml_away": 136,
+     "implied_home": 0.6183,
+     "implied_away": 0.4237,
+     "novig_home": 0.5934,
+     "novig_away": 0.4066,
+     "overround": 0.042
     },
-    "basis": "the latest quote captured at or before the projection (3.8 h before it)"
+    "basis": "the latest quote captured at or before the projection (10.6 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -3305,7 +3341,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -3373,9 +3409,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -3390,7 +3426,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -3447,21 +3483,6 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T00:22:36.602Z",
-     "event_key": "NHL|2026020197",
-     "spread_home": null,
-     "total": 6.5,
-     "ml_home": -198,
-     "ml_away": 164,
-     "implied_home": 0.6644,
-     "implied_away": 0.3788,
-     "novig_home": 0.6369,
-     "novig_away": 0.3631,
-     "overround": 0.0432
-    },
-    "latest": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
      "captured_at": "2026-10-27T10:55:18.563Z",
      "event_key": "NHL|2026020197",
      "spread_home": null,
@@ -3474,12 +3495,27 @@
      "novig_away": 0.3553,
      "overround": 0.0425
     },
-    "basis": "the latest quote captured at or before the projection (9 h before it)"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NHL|2026020197",
+     "spread_home": null,
+     "total": 6.5,
+     "ml_home": -218,
+     "ml_away": 180,
+     "implied_home": 0.6855,
+     "implied_away": 0.3571,
+     "novig_home": 0.6575,
+     "novig_away": 0.3425,
+     "overround": 0.0427
+    },
+    "basis": "the latest quote captured at or before the projection (5.2 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
     "total_pts": 0.08,
-    "win_prob_pp": -2.5,
+    "win_prob_pp": -3.3,
     "over_threshold": []
    },
    "calibration": [
@@ -3503,7 +3539,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -3571,9 +3607,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -3588,7 +3624,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -3660,7 +3696,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NHL|2026020198",
      "spread_home": null,
      "total": 6.5,
@@ -3672,7 +3708,7 @@
      "novig_away": 0.5635,
      "overround": 0.0413
     },
-    "basis": "the latest quote captured at or before the projection (9 h before it)"
+    "basis": "the latest quote captured at or before the projection (15.7 h before it)"
    },
    "disagreement": {
     "spread_pts": null,
@@ -3701,7 +3737,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -3747,11 +3783,11 @@
      "code": "LARGE_MARKET_DISAGREEMENT",
      "severity": "medium",
      "component": "model vs market (spread)",
-     "message": "EdgeDesk is 3.34 points from the market on the spread (review threshold 3). An investigation trigger, not proof that either number is wrong.",
+     "message": "EdgeDesk is 3.32 points from the market on the spread (review threshold 3). An investigation trigger, not proof that either number is wrong.",
      "evidence": {
-      "gap": 3.34,
+      "gap": 3.32,
       "threshold": 3,
-      "market_captured_at": "2026-10-27T05:32:32.031Z",
+      "market_captured_at": "2026-10-27T10:55:18.563Z",
       "book": "DraftKings"
      },
      "chip": "Major model-market disagreement"
@@ -3778,16 +3814,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": 0.84,
+    "home_line": 0.82,
     "display_home_line": 1.5,
-    "total": 227.04,
-    "p_home": 0.473799,
+    "total": 226.86,
+    "p_home": 0.474521,
     "uncertainty": {
-     "model_sd": 0.035,
+     "model_sd": 0.0347,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 14.83
@@ -3795,11 +3831,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -3875,21 +3911,6 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T05:32:32.031Z",
-     "event_key": "NBA|401909880",
-     "spread_home": -2.5,
-     "total": 236.5,
-     "ml_home": -135,
-     "ml_away": 114,
-     "implied_home": 0.5745,
-     "implied_away": 0.4673,
-     "novig_home": 0.5514,
-     "novig_away": 0.4486,
-     "overround": 0.0418
-    },
-    "latest": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
      "captured_at": "2026-10-27T10:55:18.563Z",
      "event_key": "NBA|401909880",
      "spread_home": -2.5,
@@ -3902,16 +3923,31 @@
      "novig_away": 0.4365,
      "overround": 0.0413
     },
-    "basis": "the latest quote captured at or before the projection (3.7 h before it)"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NBA|401909880",
+     "spread_home": -2.5,
+     "total": 233.5,
+     "ml_home": -135,
+     "ml_away": 114,
+     "implied_home": 0.5745,
+     "implied_away": 0.4673,
+     "novig_home": 0.5514,
+     "novig_away": 0.4486,
+     "overround": 0.0418
+    },
+    "basis": "the latest quote captured at or before the projection (4.6 h before it)"
    },
    "disagreement": {
-    "spread_pts": 3.34,
-    "total_pts": -9.46,
-    "win_prob_pp": -7.8,
+    "spread_pts": 3.32,
+    "total_pts": -8.64,
+    "win_prob_pp": -8.9,
     "over_threshold": [
      {
       "market": "spread",
-      "gap": 3.34,
+      "gap": 3.32,
       "threshold": 3,
       "unit": "points"
      }
@@ -3946,7 +3982,7 @@
      "the inputs are not clean (MISSING_CRITICAL_INPUT)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -3963,7 +3999,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -3980,7 +4016,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -4012,7 +4048,7 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T00:22:36.602Z",
      "event_key": "CFB|401871058",
      "spread_home": -2.5,
      "total": 51.5,
@@ -4027,10 +4063,10 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401871058",
      "spread_home": -2.5,
-     "total": 51.5,
+     "total": 50.5,
      "ml_home": -142,
      "ml_away": 120,
      "implied_home": 0.5868,
@@ -4039,7 +4075,7 @@
      "novig_away": 0.4365,
      "overround": 0.0413
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (15.2 h before it)"
    },
    "disagreement": {
     "spread_pts": -2.02,
@@ -4056,7 +4092,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -4076,15 +4112,15 @@
      "severity": "high",
      "component": "nba/build_slate.js scenarios",
      "chip": "Key player status unresolved",
-     "message": "Scenario-sensitive, status unresolved: Giannis Antetokounmpo (MIA, if he sits +5.2 pts).",
+     "message": "Scenario-sensitive, status unresolved: Giannis Antetokounmpo (MIA, if he sits +5.7 pts).",
      "evidence": {
       "unresolved": [
        {
         "player": "Giannis Antetokounmpo",
         "team": "MIA",
         "kind": "sits",
-        "delta_p_home_pp": 5.2,
-        "delta_margin": 1.84
+        "delta_p_home_pp": 5.7,
+        "delta_margin": 1.96
        }
       ]
      }
@@ -4137,28 +4173,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -3.12,
+    "home_line": -2.27,
     "display_home_line": -3.5,
-    "total": 239.18,
-    "p_home": 0.594921,
+    "total": 236.05,
+    "p_home": 0.570021,
     "uncertainty": {
-     "model_sd": 0.0671,
+     "model_sd": 0.0779,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.61
+     "margin_sd": 14.69
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -4194,7 +4230,11 @@
       "Luguentz Dort",
       "Jock Landale",
       "Kingston Flemings",
-      "Aaron Wiggins"
+      "Aaron Wiggins",
+      "Dorian Finney-Smith",
+      "Corey Kispert",
+      "Asa Newell",
+      "Zuby Ejiofor"
      ],
      "away": [
       "Bam Adebayo",
@@ -4205,8 +4245,7 @@
       "Bobby Portis",
       "Tim Hardaway Jr.",
       "Klay Thompson",
-      "Nikola Jovic",
-      "Ryan Conwell"
+      "Dru Smith"
      ]
     },
     "left_team": {
@@ -4215,7 +4254,6 @@
       "Zaccharie Risacher",
       "Gabe Vincent",
       "Buddy Hield",
-      "Christian Koloko",
       "Tony Bradley"
      ],
      "away": [
@@ -4231,8 +4269,8 @@
       "player": "Giannis Antetokounmpo",
       "team": "MIA",
       "kind": "sits",
-      "delta_p_home_pp": 5.2,
-      "delta_margin": 1.84
+      "delta_p_home_pp": 5.7,
+      "delta_margin": 1.96
      }
     ]
    },
@@ -4263,7 +4301,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -4321,16 +4359,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -14.2,
+    "home_line": -14.18,
     "display_home_line": -13.5,
-    "total": 236.58,
-    "p_home": 0.858496,
+    "total": 234.08,
+    "p_home": 0.85824,
     "uncertainty": {
-     "model_sd": 0.0788,
+     "model_sd": 0.0781,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 13.91
@@ -4338,11 +4376,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -4376,22 +4414,22 @@
       "Peyton Watson",
       "Jarrett Allen",
       "Sam Merrill",
+      "Meleek Thomas",
       "Jaylon Tyson",
-      "Mario Hezonja",
-      "Craig Porter Jr.",
-      "Tyrese Proctor"
+      "Mario Hezonja"
      ],
      "away": [
       "Anthony Davis",
       "Trae Young",
-      "Will Riley",
       "Kyshawn George",
-      "Bub Carrington",
       "Bilal Coulibaly",
+      "Bub Carrington",
+      "Will Riley",
       "Alex Sarr",
-      "Deandre Ayton",
       "Tre Johnson",
-      "Justin Champagnie"
+      "Deandre Ayton",
+      "Justin Champagnie",
+      "Khris Middleton"
      ]
     },
     "left_team": {
@@ -4438,7 +4476,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -4496,28 +4534,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -4.32,
+    "home_line": -4.6,
     "display_home_line": -5.5,
-    "total": 219.86,
-    "p_home": 0.629144,
+    "total": 218.14,
+    "p_home": 0.637235,
     "uncertainty": {
      "model_sd": 0.053,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.49
+     "margin_sd": 14.46
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -4538,9 +4576,9 @@
      "away": [
       "Brandon Miller",
       "Moussa Diabate",
-      "Royce O'Neale",
       "Naz Reid",
-      "Dennis Schroder"
+      "Dennis Schroder",
+      "Sion James"
      ]
     },
     "assumed_active": {
@@ -4562,9 +4600,9 @@
       "Naz Reid",
       "Moussa Diabate",
       "Grayson Allen",
-      "Royce O'Neale",
-      "Sion James",
       "Dennis Schroder",
+      "Sion James",
+      "Royce O'Neale",
       "Ryan Kalkbrenner",
       "Tidjane Salaun",
       "Christian Anderson"
@@ -4612,7 +4650,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -4627,24 +4665,6 @@
     "CALIBRATION_WARNING"
    ],
    "classifications": [
-    {
-     "code": "MISSING_CRITICAL_INPUT",
-     "severity": "high",
-     "component": "nba/build_slate.js scenarios",
-     "chip": "Key player status unresolved",
-     "message": "Scenario-sensitive, status unresolved: Dean Wade (PHI, if he sits +5 pts).",
-     "evidence": {
-      "unresolved": [
-       {
-        "player": "Dean Wade",
-        "team": "PHI",
-        "kind": "sits",
-        "delta_p_home_pp": 5,
-        "delta_margin": 1.62
-       }
-      ]
-     }
-    },
     {
      "code": "MISSING_CRITICAL_INPUT",
      "severity": "medium",
@@ -4675,11 +4695,6 @@
    "chips": [
     {
      "code": "MISSING_CRITICAL_INPUT",
-     "label": "Key player status unresolved",
-     "severity": "high"
-    },
-    {
-     "code": "MISSING_CRITICAL_INPUT",
      "label": "Missing injury inputs",
      "severity": "medium"
     },
@@ -4693,28 +4708,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": 0.17,
-    "display_home_line": 0.5,
-    "total": 230.52,
-    "p_home": 0.494796,
+    "home_line": 2.14,
+    "display_home_line": 2.5,
+    "total": 229.03,
+    "p_home": 0.433863,
     "uncertainty": {
-     "model_sd": 0.0594,
+     "model_sd": 0.0573,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.89
+     "margin_sd": 14.71
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -4728,9 +4743,9 @@
      "home": [
       "Tyrese Haliburton",
       "Pascal Siakam",
-      "Andrew Nembhard",
-      "Ivica Zubac",
-      "Aaron Nesmith"
+      "Aaron Nesmith",
+      "Kelly Oubre Jr.",
+      "Jarace Walker"
      ],
      "away": [
       "LeBron James",
@@ -4744,16 +4759,16 @@
      "home": [
       "Tyrese Haliburton",
       "Pascal Siakam",
-      "Andrew Nembhard",
       "Kelly Oubre Jr.",
       "Aaron Nesmith",
-      "Ivica Zubac",
       "Jarace Walker",
       "Jay Huff",
       "Quenton Jackson",
+      "Kobe Brown",
       "Obi Toppin",
       "Jalen Slawson",
-      "Larry Nance Jr."
+      "Larry Nance Jr.",
+      "Braden Smith"
      ],
      "away": [
       "LeBron James",
@@ -4783,33 +4798,10 @@
       "Dalen Terry"
      ]
     },
-    "unresolved": [
-     {
-      "player": "Dean Wade",
-      "team": "PHI",
-      "kind": "sits",
-      "delta_p_home_pp": 5,
-      "delta_margin": 1.62
-     }
-    ]
+    "unresolved": []
    },
    "market": {
     "compared": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
-     "captured_at": "2026-10-27T00:22:36.602Z",
-     "event_key": "NBA|401909884",
-     "spread_home": 1.5,
-     "total": 238.5,
-     "ml_home": 105,
-     "ml_away": -125,
-     "implied_home": 0.4878,
-     "implied_away": 0.5556,
-     "novig_home": 0.4675,
-     "novig_away": 0.5325,
-     "overround": 0.0434
-    },
-    "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
      "captured_at": "2026-10-27T10:55:18.563Z",
@@ -4824,12 +4816,27 @@
      "novig_away": 0.5427,
      "overround": 0.0414
     },
-    "basis": "the latest quote captured at or before the projection (8.8 h before it)"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NBA|401909884",
+     "spread_home": 1.5,
+     "total": 240.5,
+     "ml_home": 110,
+     "ml_away": -130,
+     "implied_home": 0.4762,
+     "implied_away": 0.5652,
+     "novig_home": 0.4573,
+     "novig_away": 0.5427,
+     "overround": 0.0414
+    },
+    "basis": "the latest quote captured at or before the projection (4.6 h before it)"
    },
    "disagreement": {
-    "spread_pts": -1.33,
-    "total_pts": -7.98,
-    "win_prob_pp": 2.7,
+    "spread_pts": 0.64,
+    "total_pts": -11.47,
+    "win_prob_pp": -2.3,
     "over_threshold": []
    },
    "calibration": [
@@ -4853,7 +4860,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -4934,16 +4941,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -0.66,
+    "home_line": -0.63,
     "display_home_line": -1.5,
-    "total": 220.69,
-    "p_home": 0.520564,
+    "total": 220.56,
+    "p_home": 0.519747,
     "uncertainty": {
-     "model_sd": 0.0408,
+     "model_sd": 0.0405,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 14.85
@@ -4951,11 +4958,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -5058,7 +5065,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -5126,9 +5133,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -5143,7 +5150,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -5198,8 +5205,22 @@
    },
    "market": {
     "compared": null,
-    "latest": null,
-    "basis": "no quote on file"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NHL|2026020199",
+     "spread_home": null,
+     "total": 6.5,
+     "ml_home": -238,
+     "ml_away": 195,
+     "implied_home": 0.7041,
+     "implied_away": 0.339,
+     "novig_home": 0.675,
+     "novig_away": 0.325,
+     "overround": 0.0431
+    },
+    "basis": "no quote within 24 h before the projection; the latest quote is shown, not compared"
    },
    "disagreement": null,
    "calibration": [
@@ -5223,7 +5244,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -5240,7 +5261,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -5257,7 +5278,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -5289,7 +5310,7 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T05:32:32.031Z",
      "event_key": "CFB|401871057",
      "spread_home": 3.5,
      "total": 49.5,
@@ -5304,7 +5325,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401871057",
      "spread_home": 3.5,
      "total": 49.5,
@@ -5316,7 +5337,7 @@
      "novig_away": 0.5934,
      "overround": 0.042
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (10 h before it)"
    },
    "disagreement": {
     "spread_pts": 0.85,
@@ -5333,7 +5354,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -5391,28 +5412,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": 5.06,
-    "display_home_line": 5.5,
-    "total": 230.2,
-    "p_home": 0.350102,
+    "home_line": 7.09,
+    "display_home_line": 7.5,
+    "total": 228.52,
+    "p_home": 0.295505,
     "uncertainty": {
-     "model_sd": 0.0854,
+     "model_sd": 0.0893,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.41
+     "margin_sd": 14.21
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -5428,7 +5449,7 @@
       "Matas Buzelis",
       "Josh Giddey",
       "Jalen Smith",
-      "Isaac Okoro"
+      "Norman Powell"
      ],
      "away": [
       "Jalen Brunson",
@@ -5449,7 +5470,10 @@
       "Leonard Miller",
       "Jalen Smith",
       "Zach Collins",
-      "Buddy Hield"
+      "Jordan Hawkins",
+      "Buddy Hield",
+      "Tobe Awaka",
+      "Jaylin Sellers"
      ],
      "away": [
       "Jalen Brunson",
@@ -5510,7 +5534,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -5525,24 +5549,6 @@
     "CALIBRATION_WARNING"
    ],
    "classifications": [
-    {
-     "code": "MISSING_CRITICAL_INPUT",
-     "severity": "high",
-     "component": "nba/build_slate.js scenarios",
-     "chip": "Key player status unresolved",
-     "message": "Scenario-sensitive, status unresolved: Amen Thompson (HOU, if he sits +5.4 pts).",
-     "evidence": {
-      "unresolved": [
-       {
-        "player": "Amen Thompson",
-        "team": "HOU",
-        "kind": "sits",
-        "delta_p_home_pp": 5.4,
-        "delta_margin": 1.97
-       }
-      ]
-     }
-    },
     {
      "code": "MISSING_CRITICAL_INPUT",
      "severity": "medium",
@@ -5573,11 +5579,6 @@
    "chips": [
     {
      "code": "MISSING_CRITICAL_INPUT",
-     "label": "Key player status unresolved",
-     "severity": "high"
-    },
-    {
-     "code": "MISSING_CRITICAL_INPUT",
      "label": "Missing injury inputs",
      "severity": "medium"
     },
@@ -5591,28 +5592,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": 6.48,
-    "display_home_line": 6.5,
-    "total": 225.67,
-    "p_home": 0.311664,
+    "home_line": 7.89,
+    "display_home_line": 7.5,
+    "total": 223.63,
+    "p_home": 0.274674,
     "uncertainty": {
-     "model_sd": 0.0834,
+     "model_sd": 0.0832,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.27
+     "margin_sd": 14.13
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -5625,17 +5626,17 @@
     "likely_starters": {
      "home": [
       "Myles Turner",
-      "Tyler Herro",
       "Ryan Rollins",
+      "Tyler Herro",
       "Kyle Kuzma",
-      "AJ Green"
+      "Ousmane Dieng"
      ],
      "away": [
       "Amen Thompson",
       "Jabari Smith Jr.",
       "Kevin Durant",
-      "Alperen Sengun",
-      "Reed Sheppard"
+      "Fred VanVleet",
+      "Alperen Sengun"
      ]
     },
     "assumed_active": {
@@ -5645,6 +5646,7 @@
       "Jaime Jaquez Jr.",
       "AJ Green",
       "Kyle Kuzma",
+      "Ousmane Dieng",
       "Myles Turner",
       "Kel'el Ware",
       "Kasparas Jakucionis",
@@ -5655,6 +5657,7 @@
       "Amen Thompson",
       "Jabari Smith Jr.",
       "Kevin Durant",
+      "Fred VanVleet",
       "Alperen Sengun",
       "Reed Sheppard",
       "Tari Eason",
@@ -5672,20 +5675,12 @@
       "Andre Jackson Jr."
      ],
      "away": [
-      "Dorian Finney-Smith",
       "Josh Okogie",
+      "Dorian Finney-Smith",
       "Aaron Holiday"
      ]
     },
-    "unresolved": [
-     {
-      "player": "Amen Thompson",
-      "team": "HOU",
-      "kind": "sits",
-      "delta_p_home_pp": 5.4,
-      "delta_margin": 1.97
-     }
-    ]
+    "unresolved": []
    },
    "market": {
     "compared": null,
@@ -5714,7 +5709,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -5772,28 +5767,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -5.21,
+    "home_line": -4.34,
     "display_home_line": -5.5,
-    "total": 226.45,
-    "p_home": 0.653887,
+    "total": 224.92,
+    "p_home": 0.629837,
     "uncertainty": {
-     "model_sd": 0.0742,
+     "model_sd": 0.0585,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.4
+     "margin_sd": 14.49
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -5809,14 +5804,14 @@
       "Rudy Gobert",
       "LaMelo Ball",
       "Anthony Edwards",
-      "Cody Williams"
+      "Ayo Dosunmu"
      ],
      "away": [
       "Yaxel Lendeborg",
-      "Gui Santos",
-      "Graham Ike",
-      "De'Anthony Melton",
-      "Will Richard"
+      "Draymond Green",
+      "Brandin Podziemski",
+      "Stephen Curry",
+      "Gui Santos"
      ]
     },
     "assumed_active": {
@@ -5824,29 +5819,28 @@
       "Anthony Edwards",
       "Jaden McDaniels",
       "Rudy Gobert",
-      "Ayo Dosunmu",
       "LaMelo Ball",
-      "Cody Williams",
+      "Ayo Dosunmu",
       "Jonathan Kuminga",
       "Trey Lyles",
       "Terrence Shannon Jr.",
       "Bones Hyland",
-      "Jaylen Clark",
-      "Joan Beringer",
-      "Zyon Pullin"
+      "Joan Beringer"
      ],
      "away": [
       "Yaxel Lendeborg",
+      "Brandin Podziemski",
+      "Stephen Curry",
+      "Draymond Green",
       "Gui Santos",
       "De'Anthony Melton",
+      "Al Horford",
       "Brandon Williams",
       "Georges Niang",
       "Gary Payton II",
       "Will Richard",
-      "Graham Ike",
       "LJ Cryer",
-      "Malevy Leons",
-      "Charles Bassey"
+      "Graham Ike"
      ]
     },
     "left_team": {
@@ -5891,7 +5885,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -5911,15 +5905,15 @@
      "severity": "high",
      "component": "nba/build_slate.js scenarios",
      "chip": "Key player status unresolved",
-     "message": "Scenario-sensitive, status unresolved: Nikola Jokic (DEN, if he sits +6.5 pts).",
+     "message": "Scenario-sensitive, status unresolved: Nikola Jokic (DEN, if he sits +6 pts).",
      "evidence": {
       "unresolved": [
        {
         "player": "Nikola Jokic",
         "team": "DEN",
         "kind": "sits",
-        "delta_p_home_pp": 6.5,
-        "delta_margin": 2.35
+        "delta_p_home_pp": 6,
+        "delta_margin": 2.09
        }
       ]
      }
@@ -5972,28 +5966,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": 6.12,
-    "display_home_line": 6.5,
-    "total": 234.32,
-    "p_home": 0.321231,
+    "home_line": 4.51,
+    "display_home_line": 5.5,
+    "total": 233.91,
+    "p_home": 0.365531,
     "uncertainty": {
-     "model_sd": 0.0646,
+     "model_sd": 0.0578,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.31
+     "margin_sd": 14.47
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -6040,10 +6034,13 @@
       "Aaron Gordon",
       "DeMar DeRozan",
       "Trevon Brazile",
+      "Ryan Nembhard",
+      "Bryce Hopkins",
       "Marvin Bagley III",
       "Cam Whitmore",
       "Tyus Jones",
-      "Bryce Hopkins"
+      "Zeke Nnaji",
+      "DaRon Holmes II"
      ]
     },
     "left_team": {
@@ -6058,7 +6055,6 @@
      "away": [
       "Tim Hardaway Jr.",
       "Bruce Brown",
-      "KJ Simpson",
       "David Roddy",
       "Jalen Pickett",
       "Jonas Valanciunas",
@@ -6070,8 +6066,8 @@
       "player": "Nikola Jokic",
       "team": "DEN",
       "kind": "sits",
-      "delta_p_home_pp": 6.5,
-      "delta_margin": 2.35
+      "delta_p_home_pp": 6,
+      "delta_margin": 2.09
      }
     ]
    },
@@ -6102,7 +6098,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -6170,9 +6166,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -6187,7 +6183,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -6242,8 +6238,22 @@
    },
    "market": {
     "compared": null,
-    "latest": null,
-    "basis": "no quote on file"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NHL|2026020200",
+     "spread_home": null,
+     "total": 6.5,
+     "ml_home": -218,
+     "ml_away": 180,
+     "implied_home": 0.6855,
+     "implied_away": 0.3571,
+     "novig_home": 0.6575,
+     "novig_away": 0.3425,
+     "overround": 0.0427
+    },
+    "basis": "no quote within 24 h before the projection; the latest quote is shown, not compared"
    },
    "disagreement": null,
    "calibration": [
@@ -6267,7 +6277,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -6287,14 +6297,14 @@
      "severity": "high",
      "component": "nba/build_slate.js scenarios",
      "chip": "Key player status unresolved",
-     "message": "Scenario-sensitive, status unresolved: Victor Wembanyama (SA, if he sits +6.7 pts).",
+     "message": "Scenario-sensitive, status unresolved: Victor Wembanyama (SA, if he sits +6.6 pts).",
      "evidence": {
       "unresolved": [
        {
         "player": "Victor Wembanyama",
         "team": "SA",
         "kind": "sits",
-        "delta_p_home_pp": 6.7,
+        "delta_p_home_pp": 6.6,
         "delta_margin": 2.61
        }
       ]
@@ -6348,28 +6358,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": 9.12,
-    "display_home_line": 8.5,
-    "total": 236.35,
-    "p_home": 0.24364,
+    "home_line": 9.83,
+    "display_home_line": 9.5,
+    "total": 234.4,
+    "p_home": 0.226532,
     "uncertainty": {
-     "model_sd": 0.0968,
+     "model_sd": 0.0985,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14
+     "margin_sd": 13.93
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -6382,9 +6392,9 @@
     "likely_starters": {
      "home": [
       "Lauri Markkanen",
-      "Jaren Jackson Jr.",
-      "Darryn Peterson",
       "Keyonte George",
+      "Darryn Peterson",
+      "Jaren Jackson Jr.",
       "Ace Bailey"
      ],
      "away": [
@@ -6398,16 +6408,18 @@
     "assumed_active": {
      "home": [
       "Lauri Markkanen",
-      "Jaren Jackson Jr.",
-      "Darryn Peterson",
       "Keyonte George",
       "Ace Bailey",
+      "Darryn Peterson",
+      "Jaren Jackson Jr.",
       "Isaiah Collier",
       "Brice Sensabaugh",
+      "Kyle Filipowski",
       "Svi Mykhailiuk",
-      "Jaxson Hayes",
       "Josh Okogie",
-      "Josh Green"
+      "Mo Bamba",
+      "Josh Green",
+      "Tony Bradley"
      ],
      "away": [
       "Devin Vassell",
@@ -6441,7 +6453,7 @@
       "player": "Victor Wembanyama",
       "team": "SA",
       "kind": "sits",
-      "delta_p_home_pp": 6.7,
+      "delta_p_home_pp": 6.6,
       "delta_margin": 2.61
      }
     ]
@@ -6473,7 +6485,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -6541,9 +6553,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -6558,7 +6570,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -6613,8 +6625,22 @@
    },
    "market": {
     "compared": null,
-    "latest": null,
-    "basis": "no quote on file"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NHL|2026020201",
+     "spread_home": null,
+     "total": 6.5,
+     "ml_home": -192,
+     "ml_away": 160,
+     "implied_home": 0.6575,
+     "implied_away": 0.3846,
+     "novig_home": 0.6309,
+     "novig_away": 0.3691,
+     "overround": 0.0421
+    },
+    "basis": "no quote within 24 h before the projection; the latest quote is shown, not compared"
    },
    "disagreement": null,
    "calibration": [
@@ -6638,7 +6664,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -6653,6 +6679,24 @@
     "CALIBRATION_WARNING"
    ],
    "classifications": [
+    {
+     "code": "MISSING_CRITICAL_INPUT",
+     "severity": "high",
+     "component": "nba/build_slate.js scenarios",
+     "chip": "Key player status unresolved",
+     "message": "Scenario-sensitive, status unresolved: Shai Gilgeous-Alexander (OKC, if he sits +5.4 pts).",
+     "evidence": {
+      "unresolved": [
+       {
+        "player": "Shai Gilgeous-Alexander",
+        "team": "OKC",
+        "kind": "sits",
+        "delta_p_home_pp": 5.4,
+        "delta_margin": 2.36
+       }
+      ]
+     }
+    },
     {
      "code": "MISSING_CRITICAL_INPUT",
      "severity": "medium",
@@ -6683,6 +6727,11 @@
    "chips": [
     {
      "code": "MISSING_CRITICAL_INPUT",
+     "label": "Key player status unresolved",
+     "severity": "high"
+    },
+    {
+     "code": "MISSING_CRITICAL_INPUT",
      "label": "Missing injury inputs",
      "severity": "medium"
     },
@@ -6696,16 +6745,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": 14.09,
-    "display_home_line": 13.5,
-    "total": 225.44,
-    "p_home": 0.14334,
+    "home_line": 11.09,
+    "display_home_line": 10.5,
+    "total": 223.89,
+    "p_home": 0.199097,
     "uncertainty": {
-     "model_sd": 0.1055,
+     "model_sd": 0.0945,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 13.91
@@ -6713,11 +6762,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -6729,48 +6778,45 @@
     "rotation_source": "the team's previous game",
     "likely_starters": {
      "home": [
+      "Kyrie Irving",
+      "Cooper Flagg",
       "Max Christie",
       "P.J. Washington",
-      "Daniel Gafford",
-      "Naji Marshall",
-      "Zaccharie Risacher"
+      "Daniel Gafford"
      ],
      "away": [
       "Shai Gilgeous-Alexander",
-      "Chet Holmgren",
       "Isaiah Hartenstein",
-      "Jalen Williams",
-      "Cason Wallace"
+      "Ajay Mitchell",
+      "Jared McCain",
+      "Kenrich Williams"
      ]
     },
     "assumed_active": {
      "home": [
+      "Kyrie Irving",
       "P.J. Washington",
-      "Naji Marshall",
+      "Cooper Flagg",
       "Max Christie",
       "Daniel Gafford",
       "Walter Clayton Jr.",
       "Zaccharie Risacher",
       "Marcus Sasser",
-      "Moussa Cisse",
-      "Sergio de Larrea",
       "Morez Johnson Jr.",
-      "Jett Howard",
-      "Tobi Lawal"
+      "Sergio de Larrea"
      ],
      "away": [
       "Shai Gilgeous-Alexander",
-      "Chet Holmgren",
-      "Jalen Williams",
       "Ajay Mitchell",
-      "Cason Wallace",
       "Isaiah Hartenstein",
+      "Josh Dix",
       "Alex Caruso",
       "Jared McCain",
       "Jaylin Williams",
       "Aday Mara",
       "Kenrich Williams",
-      "Bennett Stirtz"
+      "Bennett Stirtz",
+      "Brooks Barnhizer"
      ]
     },
     "left_team": {
@@ -6791,7 +6837,15 @@
       "Isaiah Joe"
      ]
     },
-    "unresolved": []
+    "unresolved": [
+     {
+      "player": "Shai Gilgeous-Alexander",
+      "team": "OKC",
+      "kind": "sits",
+      "delta_p_home_pp": 5.4,
+      "delta_margin": 2.36
+     }
+    ]
    },
    "market": {
     "compared": null,
@@ -6820,7 +6874,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -6915,9 +6969,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -6932,7 +6986,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -6987,8 +7041,22 @@
    },
    "market": {
     "compared": null,
-    "latest": null,
-    "basis": "no quote on file"
+    "latest": {
+     "source": "espn_scoreboard",
+     "book": "DraftKings",
+     "captured_at": "2026-10-27T16:30:44.593Z",
+     "event_key": "NHL|2026020202",
+     "spread_home": null,
+     "total": 6.5,
+     "ml_home": -105,
+     "ml_away": -115,
+     "implied_home": 0.5122,
+     "implied_away": 0.5349,
+     "novig_home": 0.4892,
+     "novig_away": 0.5108,
+     "overround": 0.0471
+    },
+    "basis": "no quote within 24 h before the projection; the latest quote is shown, not compared"
    },
    "disagreement": null,
    "calibration": [
@@ -7012,7 +7080,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -7070,14 +7138,14 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -2.39,
+    "home_line": -2.37,
     "display_home_line": -3.5,
-    "total": 222.28,
-    "p_home": 0.573604,
+    "total": 222.12,
+    "p_home": 0.572996,
     "uncertainty": {
      "model_sd": 0.0346,
      "calibration_sd": 0.015,
@@ -7087,11 +7155,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -7191,214 +7259,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
-  },
-  {
-   "sport": "nba",
-   "event_key": "NBA|401909893",
-   "slate_id": "nba:espn:401909893",
-   "start_utc": "2026-10-29T23:00:00.000Z",
-   "home": "ATL",
-   "away": "CLE",
-   "status": "MISSING_CRITICAL_INPUT",
-   "codes": [
-    "MISSING_CRITICAL_INPUT",
-    "CALIBRATION_WARNING"
-   ],
-   "classifications": [
-    {
-     "code": "MISSING_CRITICAL_INPUT",
-     "severity": "high",
-     "component": "nba/build_slate.js scenarios",
-     "chip": "Key player status unresolved",
-     "message": "Scenario-sensitive, status unresolved: Dyson Daniels (ATL, if he sits -5 pts).",
-     "evidence": {
-      "unresolved": [
-       {
-        "player": "Dyson Daniels",
-        "team": "ATL",
-        "kind": "sits",
-        "delta_p_home_pp": -5,
-        "delta_margin": -1.62
-       }
-      ]
-     }
-    },
-    {
-     "code": "MISSING_CRITICAL_INPUT",
-     "severity": "medium",
-     "component": "nba/build_slate.js availability",
-     "chip": "Missing injury inputs",
-     "message": "No injury report or confirmed lineup is in the price: each team’s rotation is its last game’s (the team's previous game). A player listed questionable or out since is not reflected.",
-     "evidence": {
-      "gate": {
-       "gate": "confirmed availability",
-       "pass": false,
-       "why": "no injury report or confirmed lineup feed: the price uses the projected rotation"
-      }
-     }
-    },
-    {
-     "code": "CALIBRATION_WARNING",
-     "severity": "low",
-     "component": "nba ratings (prior-season carryover)",
-     "chip": "Historical sample insufficient",
-     "message": "Early season: a team has fewer than 10 games, so its ratings lean on last season, regressed. The record is thinnest here.",
-     "evidence": {
-      "notes": [
-       "Early season: each team has fewer than 10 games this season; ratings lean on last season, regressed."
-      ]
-     }
-    }
-   ],
-   "chips": [
-    {
-     "code": "MISSING_CRITICAL_INPUT",
-     "label": "Key player status unresolved",
-     "severity": "high"
-    },
-    {
-     "code": "MISSING_CRITICAL_INPUT",
-     "label": "Missing injury inputs",
-     "severity": "medium"
-    },
-    {
-     "code": "CALIBRATION_WARNING",
-     "label": "Historical sample insufficient",
-     "severity": "low"
-    }
-   ],
-   "model": {
-    "id": "edgedesk_nba_v1:E_ridge_P",
-    "version": "edgedesk_nba_dist_v1",
-    "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
-    "params_generated_at": "2026-10-21T18:20:12.909Z",
-    "market_inputs": [],
-    "home_line": -1.65,
-    "display_home_line": -2.5,
-    "total": 233.2,
-    "p_home": 0.551114,
-    "uncertainty": {
-     "model_sd": 0.0502,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02,
-     "margin_sd": 14.75
-    }
-   },
-   "freshness": {
-    "state": "FRESH",
-    "age_hours": 3.5,
-    "max_age_hours": 8,
-    "roster": {
-     "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
-     "age_hours_at_prediction": -0.1
-    },
-    "injury_feed": {
-     "state": "NOT_IN_PRICE",
-     "note": "the baseline reads no injury report; the experimental roster-adjusted projection (nba/injury/core.js) does"
-    }
-   },
-   "assumptions": {
-    "rotation_source": "the team's previous game",
-    "likely_starters": {
-     "home": [
-      "Jalen Johnson",
-      "Nickeil Alexander-Walker",
-      "Onyeka Okongwu",
-      "Dyson Daniels",
-      "CJ McCollum"
-     ],
-     "away": [
-      "James Harden",
-      "Donovan Mitchell",
-      "Evan Mobley",
-      "Jarrett Allen",
-      "Peyton Watson"
-     ]
-    },
-    "assumed_active": {
-     "home": [
-      "Jalen Johnson",
-      "Nickeil Alexander-Walker",
-      "Onyeka Okongwu",
-      "Dyson Daniels",
-      "CJ McCollum",
-      "Luguentz Dort",
-      "Jock Landale",
-      "Kingston Flemings",
-      "Aaron Wiggins"
-     ],
-     "away": [
-      "James Harden",
-      "Donovan Mitchell",
-      "Evan Mobley",
-      "Peyton Watson",
-      "Jarrett Allen",
-      "Sam Merrill",
-      "Jaylon Tyson",
-      "Mario Hezonja",
-      "Craig Porter Jr.",
-      "Tyrese Proctor"
-     ]
-    },
-    "left_team": {
-     "home": [
-      "Jonathan Kuminga",
-      "Zaccharie Risacher",
-      "Gabe Vincent",
-      "Buddy Hield",
-      "Christian Koloko",
-      "Tony Bradley"
-     ],
-     "away": [
-      "Max Strus",
-      "Dean Wade",
-      "Dennis Schroder",
-      "Keon Ellis",
-      "Nae'Qwan Tomlin"
-     ]
-    },
-    "unresolved": [
-     {
-      "player": "Dyson Daniels",
-      "team": "ATL",
-      "kind": "sits",
-      "delta_p_home_pp": -5,
-      "delta_margin": -1.62
-     }
-    ]
-   },
-   "market": {
-    "compared": null,
-    "latest": null,
-    "basis": "no quote on file"
-   },
-   "disagreement": null,
-   "calibration": [
-    {
-     "market": "moneyline",
-     "state": "OUTCOME_VALIDATED",
-     "market_test": "NOT_TESTED",
-     "value_claims": false
-    },
-    {
-     "market": "spread",
-     "state": "OUTCOME_VALIDATED",
-     "market_test": "NOT_TESTED",
-     "value_claims": false
-    },
-    {
-     "market": "total",
-     "state": "OUTCOME_VALIDATED",
-     "market_test": "NOT_TESTED",
-     "value_claims": false
-    }
-   ],
-   "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -7466,9 +7327,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -7483,7 +7344,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -7563,7 +7424,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -7658,9 +7519,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -7675,7 +7536,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -7755,7 +7616,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -7823,9 +7684,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -7840,7 +7701,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -7920,7 +7781,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -7937,7 +7798,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -7954,7 +7815,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -7986,7 +7847,7 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T05:32:32.031Z",
      "event_key": "CFB|401862812",
      "spread_home": -13.5,
      "total": 77.5,
@@ -8001,7 +7862,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401862812",
      "spread_home": -13.5,
      "total": 77.5,
@@ -8013,7 +7874,7 @@
      "novig_away": 0.1957,
      "overround": 0.0428
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (10 h before it)"
    },
    "disagreement": {
     "spread_pts": -2.79,
@@ -8030,7 +7891,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -8096,7 +7957,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -8113,7 +7974,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -8145,7 +8006,7 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T00:22:36.602Z",
      "event_key": "CFB|401869963",
      "spread_home": -21,
      "total": 49.5,
@@ -8160,7 +8021,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401869963",
      "spread_home": -21,
      "total": 49.5,
@@ -8172,7 +8033,7 @@
      "novig_away": 0.096,
      "overround": 0.0412
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (15.2 h before it)"
    },
    "disagreement": {
     "spread_pts": -3.97,
@@ -8189,7 +8050,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -8257,9 +8118,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -8274,7 +8135,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -8354,7 +8215,185 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
+  },
+  {
+   "sport": "nba",
+   "event_key": "NBA|401909893",
+   "slate_id": "nba:espn:401909893",
+   "start_utc": "2026-10-30T00:00:00.000Z",
+   "home": "ATL",
+   "away": "CLE",
+   "status": "MISSING_CRITICAL_INPUT",
+   "codes": [
+    "MISSING_CRITICAL_INPUT",
+    "CALIBRATION_WARNING"
+   ],
+   "classifications": [
+    {
+     "code": "MISSING_CRITICAL_INPUT",
+     "severity": "medium",
+     "component": "nba/build_slate.js availability",
+     "chip": "Missing injury inputs",
+     "message": "No injury report or confirmed lineup is in the price: each team’s rotation is its last game’s (the team's previous game). A player listed questionable or out since is not reflected.",
+     "evidence": {
+      "gate": {
+       "gate": "confirmed availability",
+       "pass": false,
+       "why": "no injury report or confirmed lineup feed: the price uses the projected rotation"
+      }
+     }
+    },
+    {
+     "code": "CALIBRATION_WARNING",
+     "severity": "low",
+     "component": "nba ratings (prior-season carryover)",
+     "chip": "Historical sample insufficient",
+     "message": "Early season: a team has fewer than 10 games, so its ratings lean on last season, regressed. The record is thinnest here.",
+     "evidence": {
+      "notes": [
+       "Early season: each team has fewer than 10 games this season; ratings lean on last season, regressed."
+      ]
+     }
+    }
+   ],
+   "chips": [
+    {
+     "code": "MISSING_CRITICAL_INPUT",
+     "label": "Missing injury inputs",
+     "severity": "medium"
+    },
+    {
+     "code": "CALIBRATION_WARNING",
+     "label": "Historical sample insufficient",
+     "severity": "low"
+    }
+   ],
+   "model": {
+    "id": "edgedesk_nba_v1:E_ridge_P",
+    "version": "edgedesk_nba_dist_v1",
+    "artifact": "nba/slate.json",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
+    "params_generated_at": "2026-10-21T18:20:12.909Z",
+    "market_inputs": [],
+    "home_line": -0.26,
+    "display_home_line": 0.5,
+    "total": 233.28,
+    "p_home": 0.508227,
+    "uncertainty": {
+     "model_sd": 0.0548,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02,
+     "margin_sd": 14.88
+    }
+   },
+   "freshness": {
+    "state": "FRESH",
+    "age_hours": 2.9,
+    "max_age_hours": 8,
+    "roster": {
+     "source": "hoopR ESPN rosters",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
+     "age_hours_at_prediction": -0.1
+    },
+    "injury_feed": {
+     "state": "NOT_IN_PRICE",
+     "note": "the baseline reads no injury report; the experimental roster-adjusted projection (nba/injury/core.js) does"
+    }
+   },
+   "assumptions": {
+    "rotation_source": "the team's previous game",
+    "likely_starters": {
+     "home": [
+      "Jalen Johnson",
+      "Nickeil Alexander-Walker",
+      "Onyeka Okongwu",
+      "Dyson Daniels",
+      "CJ McCollum"
+     ],
+     "away": [
+      "James Harden",
+      "Donovan Mitchell",
+      "Evan Mobley",
+      "Jarrett Allen",
+      "Peyton Watson"
+     ]
+    },
+    "assumed_active": {
+     "home": [
+      "Jalen Johnson",
+      "Nickeil Alexander-Walker",
+      "Onyeka Okongwu",
+      "Dyson Daniels",
+      "CJ McCollum",
+      "Luguentz Dort",
+      "Jock Landale",
+      "Kingston Flemings",
+      "Aaron Wiggins",
+      "Dorian Finney-Smith",
+      "Corey Kispert",
+      "Asa Newell",
+      "Zuby Ejiofor"
+     ],
+     "away": [
+      "James Harden",
+      "Donovan Mitchell",
+      "Evan Mobley",
+      "Peyton Watson",
+      "Jarrett Allen",
+      "Sam Merrill",
+      "Meleek Thomas",
+      "Jaylon Tyson",
+      "Mario Hezonja"
+     ]
+    },
+    "left_team": {
+     "home": [
+      "Jonathan Kuminga",
+      "Zaccharie Risacher",
+      "Gabe Vincent",
+      "Buddy Hield",
+      "Tony Bradley"
+     ],
+     "away": [
+      "Max Strus",
+      "Dean Wade",
+      "Dennis Schroder",
+      "Keon Ellis",
+      "Nae'Qwan Tomlin"
+     ]
+    },
+    "unresolved": []
+   },
+   "market": {
+    "compared": null,
+    "latest": null,
+    "basis": "no quote on file"
+   },
+   "disagreement": null,
+   "calibration": [
+    {
+     "market": "moneyline",
+     "state": "OUTCOME_VALIDATED",
+     "market_test": "NOT_TESTED",
+     "value_claims": false
+    },
+    {
+     "market": "spread",
+     "state": "OUTCOME_VALIDATED",
+     "market_test": "NOT_TESTED",
+     "value_claims": false
+    },
+    {
+     "market": "total",
+     "state": "OUTCOME_VALIDATED",
+     "market_test": "NOT_TESTED",
+     "value_claims": false
+    }
+   ],
+   "signal_rule": null,
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -8412,16 +8451,16 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -2.64,
+    "home_line": -2.6,
     "display_home_line": -3.5,
-    "total": 233.59,
-    "p_home": 0.580949,
+    "total": 233.56,
+    "p_home": 0.57983,
     "uncertainty": {
-     "model_sd": 0.0386,
+     "model_sd": 0.0375,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
      "margin_sd": 14.66
@@ -8429,11 +8468,11 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -8532,7 +8571,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -8627,9 +8666,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -8644,7 +8683,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -8724,7 +8763,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -8819,9 +8858,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -8836,7 +8875,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -8916,7 +8955,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -9011,9 +9050,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -9028,7 +9067,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -9108,7 +9147,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -9203,9 +9242,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -9220,7 +9259,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -9300,7 +9339,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -9334,7 +9373,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -9344,7 +9383,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -9381,10 +9420,10 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "NFL|2026_08_CAR_GB",
      "spread_home": -3.5,
-     "total": 47.5,
+     "total": 48.5,
      "ml_home": -185,
      "ml_away": 154,
      "implied_home": 0.6491,
@@ -9416,7 +9455,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nba",
@@ -9474,28 +9513,28 @@
     "id": "edgedesk_nba_v1:E_ridge_P",
     "version": "edgedesk_nba_dist_v1",
     "artifact": "nba/slate.json",
-    "predicted_at": "2026-10-27T09:13:07.371Z",
-    "data_cutoff": "2026-10-26T05:00:00.000Z",
+    "predicted_at": "2026-10-27T15:29:50.747Z",
+    "data_cutoff": "2026-10-27T06:00:00.000Z",
     "params_generated_at": "2026-10-21T18:20:12.909Z",
     "market_inputs": [],
-    "home_line": -6.86,
-    "display_home_line": -7.5,
-    "total": 230.54,
-    "p_home": 0.69835,
+    "home_line": -6.23,
+    "display_home_line": -6.5,
+    "total": 229.03,
+    "p_home": 0.681808,
     "uncertainty": {
-     "model_sd": 0.0418,
+     "model_sd": 0.041,
      "calibration_sd": 0.015,
      "lineup_sd": 0.02,
-     "margin_sd": 14.23
+     "margin_sd": 14.29
     }
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.5,
+    "age_hours": 2.9,
     "max_age_hours": 8,
     "roster": {
      "source": "hoopR ESPN rosters",
-     "fetched_at": "2026-10-27T09:18:45.913Z",
+     "fetched_at": "2026-10-27T15:35:40.048Z",
      "age_hours_at_prediction": -0.1
     },
     "injury_feed": {
@@ -9516,9 +9555,9 @@
      "away": [
       "Cameron Boozer",
       "Jaylen Wells",
+      "Zach Edey",
       "Cedric Coward",
-      "Ty Jerome",
-      "GG Jackson"
+      "Ty Jerome"
      ]
     },
     "assumed_active": {
@@ -9536,14 +9575,14 @@
      ],
      "away": [
       "Cameron Boozer",
-      "Jerami Grant",
       "Jaylen Wells",
+      "Jerami Grant",
       "Cedric Coward",
       "Ty Jerome",
-      "Scotty Pippen Jr.",
+      "Zach Edey",
       "GG Jackson",
+      "Scotty Pippen Jr.",
       "Cam Spencer",
-      "Taylor Hendricks",
       "Quinten Post",
       "Isaiah Stewart"
      ]
@@ -9560,10 +9599,8 @@
       "Lucas Williamson",
       "Adama Bal",
       "Rayan Rupert",
-      "Tyler Burton",
       "Dariq Whitehead",
       "Walter Clayton Jr.",
-      "DeJon Jarreau",
       "Taj Gibson"
      ]
     },
@@ -9596,7 +9633,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -9664,9 +9701,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -9681,7 +9718,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -9761,7 +9798,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -9829,9 +9866,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -9846,7 +9883,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -9926,7 +9963,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -10021,9 +10058,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -10038,7 +10075,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -10118,7 +10155,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -10213,9 +10250,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -10230,7 +10267,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -10310,7 +10347,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -10327,7 +10364,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -10344,7 +10381,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -10373,25 +10410,11 @@
     ]
    },
    "market": {
-    "compared": {
-     "source": "espn_scoreboard",
-     "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
-     "event_key": "CFB|401862813",
-     "spread_home": 10,
-     "total": 46.5,
-     "ml_home": 310,
-     "ml_away": -395,
-     "implied_home": 0.2439,
-     "implied_away": 0.798,
-     "novig_home": 0.2341,
-     "novig_away": 0.7659,
-     "overround": 0.0419
-    },
+    "compared": null,
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401862813",
      "spread_home": 10,
      "total": 46.5,
@@ -10403,14 +10426,9 @@
      "novig_away": 0.7659,
      "overround": 0.0419
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "no quote within 24 h before the projection; the latest quote is shown, not compared"
    },
-   "disagreement": {
-    "spread_pts": 3.46,
-    "total_pts": 4.9,
-    "win_prob_pp": -5.5,
-    "over_threshold": []
-   },
+   "disagreement": null,
    "calibration": [
     {
      "market": "moneyline",
@@ -10420,7 +10438,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -10488,9 +10506,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -10505,7 +10523,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -10585,7 +10603,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -10602,7 +10620,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -10619,7 +10637,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -10651,7 +10669,7 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T00:22:36.602Z",
      "event_key": "CFB|401856844",
      "spread_home": -1.5,
      "total": 47.5,
@@ -10666,7 +10684,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401856844",
      "spread_home": -1.5,
      "total": 47.5,
@@ -10678,7 +10696,7 @@
      "novig_away": 0.4826,
      "overround": 0.0462
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (15.2 h before it)"
    },
    "disagreement": {
     "spread_pts": -0.81,
@@ -10695,7 +10713,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -10790,9 +10808,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -10807,7 +10825,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -10887,7 +10905,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -10904,7 +10922,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -10921,7 +10939,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -10953,7 +10971,7 @@
     "compared": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T05:32:32.031Z",
      "event_key": "CFB|401866451",
      "spread_home": 10,
      "total": 46.5,
@@ -10968,7 +10986,7 @@
     "latest": {
      "source": "espn_scoreboard",
      "book": "DraftKings",
-     "captured_at": "2026-10-27T10:55:18.563Z",
+     "captured_at": "2026-10-27T16:30:44.593Z",
      "event_key": "CFB|401866451",
      "spread_home": 10,
      "total": 46.5,
@@ -10980,7 +10998,7 @@
      "novig_away": 0.7659,
      "overround": 0.0419
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (10 h before it)"
    },
    "disagreement": {
     "spread_pts": -2.91,
@@ -10997,7 +11015,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11056,7 +11074,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -11073,7 +11091,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -11132,7 +11150,7 @@
      "novig_away": 0.4004,
      "overround": 0.0407
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": 7.3,
@@ -11163,7 +11181,7 @@
      "the model side won 49.9% above the threshold, lower 95% bound not above 52.38%"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11180,7 +11198,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -11197,7 +11215,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -11256,7 +11274,7 @@
      "novig_away": 0.295,
      "overround": 0.0431
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": -4.95,
@@ -11273,7 +11291,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11302,7 +11320,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T23:30:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -11326,7 +11344,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -11343,7 +11361,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -11402,7 +11420,7 @@
      "novig_away": 0.7508,
      "overround": 0.0423
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": -1.93,
@@ -11419,7 +11437,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11436,7 +11454,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -11453,7 +11471,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -11512,7 +11530,7 @@
      "novig_away": 0.295,
      "overround": 0.0431
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": 1.44,
@@ -11529,7 +11547,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11546,7 +11564,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -11563,7 +11581,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -11622,7 +11640,7 @@
      "novig_away": 0.3962,
      "overround": 0.0429
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": 1.72,
@@ -11639,7 +11657,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11669,7 +11687,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T19:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -11711,7 +11729,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -11728,7 +11746,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -11787,7 +11805,7 @@
      "novig_away": 0.5635,
      "overround": 0.0413
     },
-    "basis": "the latest quote captured at or before the projection (1.6 h before it)"
+    "basis": "the latest quote captured at or before the projection (4.7 h before it)"
    },
    "disagreement": {
     "spread_pts": 7.38,
@@ -11819,7 +11837,7 @@
      "the inputs are not clean (MISSING_CRITICAL_INPUT)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11885,7 +11903,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -11902,7 +11920,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -11945,7 +11963,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -11998,7 +12016,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -12015,7 +12033,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -12058,7 +12076,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -12075,7 +12093,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -12092,7 +12110,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -12135,7 +12153,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -12152,7 +12170,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -12169,7 +12187,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -12212,7 +12230,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -12229,7 +12247,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -12246,7 +12264,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -12289,7 +12307,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -12306,7 +12324,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -12323,7 +12341,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -12366,7 +12384,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -12434,9 +12452,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -12451,7 +12469,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -12531,7 +12549,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -12599,9 +12617,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -12616,7 +12634,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -12696,7 +12714,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -12725,7 +12743,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T19:45:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -12749,7 +12767,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -12766,7 +12784,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -12809,7 +12827,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -12838,7 +12856,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T23:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -12862,7 +12880,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -12879,7 +12897,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -12922,7 +12940,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -12990,9 +13008,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -13007,7 +13025,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -13087,7 +13105,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -13155,9 +13173,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -13172,7 +13190,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -13252,7 +13270,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -13269,7 +13287,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -13286,7 +13304,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -13329,7 +13347,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -13358,7 +13376,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-22T23:30:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -13409,7 +13427,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -13426,7 +13444,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -13469,7 +13487,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -13486,7 +13504,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -13503,7 +13521,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -13546,7 +13564,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -13591,7 +13609,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -13608,7 +13626,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -13651,7 +13669,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -13707,7 +13725,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-17T16:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -13731,7 +13749,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -13748,7 +13766,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -13791,7 +13809,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -13808,7 +13826,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -13825,7 +13843,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -13868,7 +13886,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -13885,7 +13903,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -13902,7 +13920,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -13945,7 +13963,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14011,7 +14029,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14028,7 +14046,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14071,7 +14089,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14088,7 +14106,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14105,7 +14123,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14148,7 +14166,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14177,7 +14195,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T22:30:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -14201,7 +14219,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14218,7 +14236,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14261,7 +14279,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14360,7 +14378,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14377,7 +14395,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14420,7 +14438,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14465,7 +14483,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14482,7 +14500,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14525,7 +14543,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14542,7 +14560,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14559,7 +14577,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14602,7 +14620,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14619,7 +14637,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14636,7 +14654,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14679,7 +14697,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14724,7 +14742,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14741,7 +14759,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14784,7 +14802,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -14837,7 +14855,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -14854,7 +14872,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -14897,7 +14915,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -14992,9 +15010,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -15009,7 +15027,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -15089,7 +15107,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -15157,9 +15175,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -15174,7 +15192,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -15254,7 +15272,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -15271,7 +15289,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -15288,7 +15306,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -15331,7 +15349,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -15348,7 +15366,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -15365,7 +15383,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -15408,7 +15426,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -15438,7 +15456,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T21:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -15507,7 +15525,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -15524,7 +15542,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -15567,7 +15585,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -15620,7 +15638,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -15637,7 +15655,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -15680,7 +15698,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -15697,7 +15715,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -15714,7 +15732,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -15757,7 +15775,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -15774,7 +15792,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -15791,7 +15809,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -15834,7 +15852,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -15851,7 +15869,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -15868,7 +15886,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -15911,7 +15929,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -16006,9 +16024,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -16023,7 +16041,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -16103,7 +16121,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -16171,9 +16189,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -16188,7 +16206,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -16268,7 +16286,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -16285,7 +16303,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -16302,7 +16320,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -16345,7 +16363,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -16374,7 +16392,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T16:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -16398,7 +16416,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -16415,7 +16433,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -16458,7 +16476,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -16475,7 +16493,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -16492,7 +16510,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -16535,7 +16553,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -16552,7 +16570,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -16569,7 +16587,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -16612,7 +16630,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -16629,7 +16647,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -16646,7 +16664,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -16689,7 +16707,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -16706,7 +16724,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -16723,7 +16741,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -16766,7 +16784,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -16783,7 +16801,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -16800,7 +16818,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -16843,7 +16861,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -16938,9 +16956,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -16955,7 +16973,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -17035,7 +17053,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -17052,7 +17070,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -17069,7 +17087,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -17112,7 +17130,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nhl",
@@ -17180,9 +17198,9 @@
     "id": "edgedesk_nhl_v1:xg_core",
     "version": "xg_core",
     "artifact": "hockey/slate.json",
-    "predicted_at": "2026-10-27T09:20:13.106Z",
+    "predicted_at": "2026-10-27T16:06:53.284Z",
     "data_cutoff": "2026-10-26",
-    "params_generated_at": "2026-10-20T15:19:46.910Z",
+    "params_generated_at": "2026-10-27T16:00:46.326Z",
     "market_inputs": [],
     "home_line": null,
     "display_home_line": null,
@@ -17197,7 +17215,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 3.4,
+    "age_hours": 2.3,
     "max_age_hours": 8,
     "roster": {
      "source": "NHL box scores (last game’s lineups)",
@@ -17277,7 +17295,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -17343,7 +17361,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -17360,7 +17378,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -17403,7 +17421,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -17420,7 +17438,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -17437,7 +17455,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -17480,7 +17498,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -17514,7 +17532,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -17524,7 +17542,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -17596,7 +17614,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -17630,7 +17648,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -17640,7 +17658,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -17712,7 +17730,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -17802,7 +17820,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -17812,7 +17830,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -17899,7 +17917,7 @@
      "the inputs are not clean (MISSING_CRITICAL_INPUT)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -17933,7 +17951,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -17943,7 +17961,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18015,7 +18033,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18091,7 +18109,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18101,7 +18119,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18187,7 +18205,7 @@
      "the disagreement record above the threshold has 36 games (needs 200)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18263,7 +18281,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18273,7 +18291,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18359,7 +18377,7 @@
      "the disagreement record above the threshold has 36 games (needs 200)"
     ]
    },
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18393,7 +18411,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18403,7 +18421,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18442,7 +18460,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18476,7 +18494,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18486,7 +18504,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18525,7 +18543,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18559,7 +18577,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18569,7 +18587,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18608,7 +18626,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18642,7 +18660,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18652,7 +18670,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18691,7 +18709,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18725,7 +18743,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18735,7 +18753,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18774,7 +18792,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18838,7 +18856,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18848,7 +18866,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18887,7 +18905,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -18921,7 +18939,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -18931,7 +18949,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -18970,7 +18988,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -18987,7 +19005,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -19004,7 +19022,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -19047,7 +19065,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -19064,7 +19082,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -19081,7 +19099,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -19124,7 +19142,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -19153,7 +19171,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-23T23:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -19177,7 +19195,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -19194,7 +19212,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -19237,7 +19255,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -19266,7 +19284,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T20:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -19293,7 +19311,7 @@
       "source": "cfbfastR-data player_stats — play attribution",
       "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
       "published_at": "2026-10-24T17:00:00.000Z",
-      "retrieved_at": "2026-10-26T23:10:58.149Z",
+      "retrieved_at": "2026-10-27T15:33:09.043Z",
       "availability": {
        "state": "UNKNOWN",
        "evidence": "NONE",
@@ -19317,7 +19335,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -19334,7 +19352,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -19377,7 +19395,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -19443,7 +19461,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -19460,7 +19478,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -19503,7 +19521,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -19520,7 +19538,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -19537,7 +19555,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -19580,7 +19598,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "cfb",
@@ -19625,7 +19643,7 @@
     "id": "edgedesk_cfb_p4_v1.0.1",
     "version": "edgedesk_fbs_universe_v1.0.0",
     "artifact": "football/fbs/slate.json",
-    "predicted_at": "2026-10-27T12:31:13.344Z",
+    "predicted_at": "2026-10-27T15:34:47.707Z",
     "data_cutoff": null,
     "params_generated_at": null,
     "market_inputs": [],
@@ -19642,7 +19660,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 0.2,
+    "age_hours": 2.8,
     "max_age_hours": 30,
     "roster": {
      "source": "cfbfastR rosters and the starter context",
@@ -19685,7 +19703,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   },
   {
    "sport": "nfl",
@@ -19744,7 +19762,7 @@
    },
    "freshness": {
     "state": "FRESH",
-    "age_hours": 13.6,
+    "age_hours": 19.2,
     "max_age_hours": 30,
     "roster": {
      "source": "nflverse roster (football/nfl/qbs_2026.csv) and depth chart (football/starters)",
@@ -19754,7 +19772,7 @@
      "state": "ON_FILE",
      "retrieved_at": "2026-10-25T11:36:24.722Z",
      "latest_week": 7,
-     "age_hours": 49.2
+     "age_hours": 54.8
     }
    },
    "assumptions": {
@@ -19785,7 +19803,7 @@
     }
    ],
    "signal_rule": null,
-   "audited_at": "2026-10-27T12:45:39.463Z"
+   "audited_at": "2026-10-27T18:23:30.396Z"
   }
  ]
 }
