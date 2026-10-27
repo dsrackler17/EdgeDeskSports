@@ -1,28 +1,6 @@
 # Changelog
 
-## 2026-10-27 — The jobs that refit a model record publish the registry rebuilt from it
 
-**Why.** `engine/registry.json` reads each sport's state from its committed record. On 2026-10-26 the college baseball weekly validation pushed a record whose state had changed, but not the registry. For 100 minutes `main` disagreed with itself, and Multi-sport lab failed on every pull request (#828 fixed that job). Three more jobs publish a record the registry reads without the registry:
-- the UFC model loop (`model_loop/published/ufc/validation.json`);
-- the basketball model loop (`basketball/validation/<league>_walkforward.json` on a promotion);
-- the college baseball model loop's `release` mode (`college_baseball/validation/walkforward.json`).
-
-The four jobs that do publish the registry (`lab-build`, `lab-validate`, `nhl-build`, `nhl-validate`) carried their own copy over a newer tip when a push was rejected. That copy drops whatever record another job had just published.
-
-**What.**
-- `model-loop-ufc.yml`, `model-loop-basketball.yml` and `model-loop-college-baseball.yml` (release only) rebuild the registry and board after the record, `--check` both, and push them with the record.
-- Every job that publishes the registry sets `PUSH_REBUILD: node engine/build_registry.js && node engine/build_board.js`, so on a rejected push both are rebuilt on the new tip (`tools/ci/push_generated.sh`).
-- `lab.yml` also runs on pull requests that change the record-refitting workflows.
-
-**Evidence.** A local race through the real `tools/ci/push_generated.sh`: one job published an NBA record change and the registry, and a UFC loop that had started from the same commit lost the push.
-- Before: the UFC loop's carried registry still said NBA moneyline `OUTCOME_VALIDATED` over a record that said `PROVISIONAL`, and `engine/build_registry.js --check` FAILED on the result.
-- After: the registry on the new tip held both changes, and `--check` passed.
-
-**Tests.**
-- `tools/lab/lab.test.js`: each of the seven jobs that refit a record the registry reads rebuilds, checks, pushes and `PUSH_REBUILD`s the registry and board. 15 checks fail on the old workflows.
-- `tools/ci/push_generated.test.js` §11 lists the registry and board as aggregates. It fails on the four jobs that carried them.
-
-**Not here.** The football records (`football/validation/linemaker_*.json`, `pricing_*.json`) are rewritten by `linemaker-calibrate.yml`, `learning-loop.yml` and `football-weekly-build.yml`. Their registry is rebuilt only by the next lab or NHL build. `linemaker-calibrate.yml` pushes with `git pull --rebase`, which conflicts on a file another job rewrote, so it needs `tools/ci/push_generated.sh` before it can carry the registry. That is a separate change.
 
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
