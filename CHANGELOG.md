@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-27 — Content engine: an NFL stat lifted out of its "When X have the ball" heading names X
+
+**What was wrong.** An NFL matchup claim reads "When Tennessee Titans have the ball: their passing game ranks No. 29, and Cincinnati Bengals' pass defense ranks No. 17." The matchup analysis lifts such claims into its thesis ("The football that does point toward Cincinnati Bengals:") and its counterargument ("The case for …"). It dropped the clause and kept "their", so the bullet read "Their passing game ranks No. 29": Cincinnati's by every reading, and it was Tennessee's. The frozen Week 6 / NFL Week 5 drafts held 20 such sentences, at least one in every NFL matchup analysis.
+
+**The repair.** `stripWhen()` puts the team back where "their" stood ("Tennessee Titans' passing game ranks No. 29"). Under the evidence section's "**When X have the ball.**" heading, which names X, the pronoun stays. College claims carry no "their" and are unchanged. The Edge Function's copy is regenerated with `node tools/content/inline.js`; it reaches production only on a manual deploy.
+
+**Also on this branch.** #840's `discover()` change (a matchup analysis only where the evidence argues both sides), ported byte-for-byte so this branch's Content engine check passes while `main` fails it on Tennessee at Cincinnati. It is a no-op once #840 merges, and its record is #840's.
+
+| `node tools/content/content.test.js` | result |
+|---|---|
+| without this change | 334 / 1: "- Their run game ranks No. 3, and Atlanta Falcons' run defense ranks No. 25." (BAL @ ATL) |
+| with it | 335 / 0 |
+
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
 **What broke, twice.**
