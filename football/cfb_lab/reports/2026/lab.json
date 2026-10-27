@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-27T18:57:09.000Z",
+ "generated_at": "2026-10-27T19:07:48.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -53,9 +53,9 @@
     "model_version": "edgedesk_cfb_loop_v2.0.0",
     "label": "Loop v2.0.0",
     "role": "challenger",
-    "snapshots": 464,
-    "latest_snapshot_at": "2026-10-27T18:03:06.000Z",
-    "upcoming_games": 61,
+    "snapshots": 466,
+    "latest_snapshot_at": "2026-10-27T19:07:48.000Z",
+    "upcoming_games": 63,
     "avg_confidence_upcoming": null
    },
    {
@@ -843,8 +843,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-27T18:57:09.000Z",
-    "quotes_total": 27031,
+    "last_quote_at": "2026-10-27T19:07:48.000Z",
+    "quotes_total": 27033,
     "last_result_at": "2026-10-25T06:07:40.000Z"
    }
   },
@@ -878,9 +878,9 @@
    }
   ],
   "ledger": {
-   "predictions": 7542,
-   "live_predictions": 7032,
-   "quotes": 27031,
+   "predictions": 7544,
+   "live_predictions": 7034,
+   "quotes": 27033,
    "lines": 4289,
    "results": 517,
    "evaluations": 7108,
@@ -13528,6 +13528,40 @@
       "feature_version": "edgedesk_model_loop_cfb_current_v1",
       "calibration_version": "model_loop:2.0.0:af284333f16a",
       "ensemble_version": "model_loop:2.0.0:af284333f16a",
+      "params_hash": "62f77dd6ee1fce9b01558bd738fa1f66435359b6395602b659703e6ca4d1dd85",
+      "engine_id": "edgedesk_model_loop_cfb",
+      "source": "football/cfb/model_loop/current.json"
+     },
+     "changed": [
+      "params_hash"
+     ]
+    },
+    "after": {
+     "facts": {
+      "feature_version": "edgedesk_model_loop_cfb_current_v1",
+      "calibration_version": "model_loop:2.0.0:af284333f16a",
+      "ensemble_version": "model_loop:2.0.0:af284333f16a",
+      "params_hash": "2a87df5fda46b4e9a696ffdf0d6d32a2ae35748660a37ba809e1b3373b68b1f0",
+      "engine_id": "edgedesk_model_loop_cfb",
+      "source": "football/cfb/model_loop/current.json"
+     },
+     "changed": [
+      "params_hash"
+     ]
+    },
+    "reason": "detected by the hourly lab run (params_hash)",
+    "actor": "automation",
+    "created_at": "2026-10-27T19:07:48.000Z",
+    "event_id": "cfbg_c6c0e7c3b6f96e0e9831e78e"
+   },
+   {
+    "event_type": "THRESHOLD_CHANGED",
+    "subject": "edgedesk_cfb_loop_v2.0.0",
+    "before": {
+     "facts": {
+      "feature_version": "edgedesk_model_loop_cfb_current_v1",
+      "calibration_version": "model_loop:2.0.0:af284333f16a",
+      "ensemble_version": "model_loop:2.0.0:af284333f16a",
       "params_hash": "a1e221d4a13522ae4c10aa7945c07d555940b32af169ca8cc8b65f1c26e3e4a2",
       "engine_id": "edgedesk_model_loop_cfb",
       "source": "football/cfb/model_loop/current.json"
@@ -14072,20 +14106,6 @@
     "actor": "cfb_lab seed",
     "created_at": "2026-09-27T12:00:00.000Z",
     "event_id": "cfbg_ab2e288da402aad97d9cfb91"
-   },
-   {
-    "event_type": "EXPERIMENT_CREATED",
-    "subject": "EXP-002",
-    "before": null,
-    "after": {
-     "name": "V2.1 hardened vs candidate 001",
-     "scope": "BUNDLE",
-     "status": "RUNNING"
-    },
-    "reason": "The pre-registered hardening (two components, equal weights, havoc removed, QB level overlay) costs no accuracy live, as on the holdout (-0.012 MAE).",
-    "actor": "cfb_lab seed",
-    "created_at": "2026-09-27T12:00:00.000Z",
-    "event_id": "cfbg_b69c93bf45b768431c07794a"
    }
   ],
   "partitions": [
