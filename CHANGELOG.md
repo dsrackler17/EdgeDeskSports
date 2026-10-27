@@ -225,6 +225,20 @@ In both, the predicted workflows were exactly the ones GitHub started.
 
 Seven injected bugs each turn it red: cancelled counted as passing, its own run not excluded, the oldest run kept, a missing run passed, waiting on a failure, unpredicted runs ignored, and no request timeout.
 
+## 2026-10-26 — CI: no run on `main` cancels another, the 2ad15afadd damage pinned byte for byte, and a bypass probe before protecting `main`
+
+These follow up #805 and #806.
+
+- **Concurrency.** 30 test workflows grouped by `github.ref` with `cancel-in-progress`, so each merge into `main` cancelled the previous merge's run. 27 of the last 100 runs on `main` were cancelled. They now use #805's pattern: a pull request's newer push replaces its older run, and every run on `main` keeps its own group.
+- **A guard on it.** `tools/ci/workflows.test.js` §8 evaluates every concurrency block a push to `main` reaches, with the workflow reader's own expression evaluator, and fails if two pushes would share a cancelling group. It fails on the previous `main`, naming all 30.
+- **The #800 damage, byte for byte.** `tools/ci/fixtures/2ad15afadd/` holds the damaged regions of `lib/edgedesk_quote_ev.js` and `slate_audit.json` exactly as that merge left them. `tools/ci/integrity.test.js` checks the gate fails each one with main's own error (line 37, `missing ) after argument list`; line 69) and passes it once repaired.
+- **`docs/ci/BRANCH_PROTECTION.md`.**
+  - Step 1a: prove the GitHub Actions bypass on two scratch-branch copies of `main-ruleset.json`, one of them a control with no bypass, before activating it on `main`. GitHub's docs do not say whether the app's bypass covers `GITHUB_TOKEN` pushes on a personal account's repository, and the page accepting the actor does not show that it does.
+  - A bot commit into a pull request branch reports no checks, so the pull request waits as "Expected"; how to unblock one.
+- **[`docs/ci/GENERATED_FILES.md`](docs/ci/GENERATED_FILES.md).** 18,600 of 23,161 tracked files are written by scheduled jobs. It records the rule that separates #800's legitimate `slate_audit.json` from its accidental `forecasts.json`, and 21 owned paths no served page reads.
+
+Tests: `tools/ci/integrity.test.js` 38/38 (+4), `tools/ci/workflows.test.js` 61/61 (+4), `tools/ci/verify.test.js` 32/32, and `node tools/ci/integrity.js` 0 problems.
+
 ## 2026-10-26 — Content Engine: a player's name is not a team; and the two #805 commits that did not merge
 
 **The failure on `main`.** `tools/content/evidence.test.js` failed on clean `main` (`1c3b5c07a`): "every article generated from today's research passes the gate", 197 of 198.
@@ -252,6 +266,31 @@ Seven injected bugs each turn it red: cancelled counted as passing, its own run 
 - **New:** a failure in a job that checks out full history (`fetch-depth: 0`) is NOT VERIFIED on a shallow clone, never a pass. `desk-tests`' pinned-commit check failed here for that reason alone: 159 of 159 once the commit is present.
 - `verify.test.js`: 32 of 32.
 
+
+## 2026-10-26 — NHL: are projected totals bunched too tightly? An audit, a club monitor, and production kept
+
+Projected totals were audited against the totals played, out of sample. The test was whether the board is too compressed, and whether anything scores better. Nothing passed a rule written before scoring, so **no price moves**. The model, calibration, ratings, ledgers and historical records are unchanged ([docs/engine/NHL_LAB.md](docs/engine/NHL_LAB.md) §6.2).
+
+- **Findings.**
+  - Played-on-projected slope: 1.035 on 2014-20 (OK) and 0.76 on 2021-26 (too wide, not bunched). Live it is 3.6 on 184 games, driven by the top fifth (+1.02 ± 0.82 goals, n 36). The live window never chooses.
+  - This season's within-season sd (0.139) is close to 2025-26 at the same point (0.149).
+  - Each game's own distribution is about 5% too wide since 2021. This is monitored, not changed.
+- **Candidates.** Fourteen were scored on the full-game total RPS over four windows (SELECT 2014-20, CONFIRM 2021-25, HOLDOUT 2025-26, LIVE): goalie and special-teams variants, `goals_only`, pace, matchup interaction, three total-calibration variants, and rating prior and half-life. All fail. The near miss, `xg_core` plus confirmed-starter quality, is not significant on SELECT and needs a confirmed starter at pricing time.
+- **`hockey/model/diagnostics.js`** adds:
+  - `totals`: projected vs played by window, within-season fifths, by season; MAE, RMSE, RPS, Poisson deviance, last season's mean as a baseline; dispersion; home and away; goalie status.
+  - `clubs`: each club's goals scored and conceded against λ over this season, last season, the season before and its last 82 games. It needs 41 games, WATCH at |z| 2, FLAG past the Bonferroni bound (3.36), and PERSISTENT across two windows that share no game. Today: 0 flagged, 9 watch, 0 persistent. It never adjusts a rating.
+  - `--check` requires both.
+- **Record tab** (`lib/edgedesk_engine_ui.js`, `lib/edgedesk_engine.css`, tokens `20261026tt1`): the totals table, the calibration fifths, spread by season, and the club monitor. The record tables wrap to a phone's width instead of scrolling sideways.
+- **Tests.** `tools/hockey/nhl_v2.test.js` gains 31 deterministic checks (111 pass). They cover:
+  - expected goals, missing inputs and clamps;
+  - totals invariants (regulation mean λH + λA; full-game mean adds P(tie));
+  - low and high totals, and extreme matchups;
+  - calibration identity and recovery;
+  - shrinkage and the goalie variant;
+  - the Bonferroni bound, club status and persistence;
+  - the totals audit on synthetic seasons.
+
+  `tools/engine/engine_ui.e2e.js` checks both new sections at desktop and phone width (152 pass).
 
 ## 2026-10-26 — CI: a gate on every pull request, `npm run verify`, and the rules that would have stopped today's eighteen failed runs
 
