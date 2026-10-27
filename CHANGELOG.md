@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
+
+**What broke, twice.**
+1. At 23:12 UTC on 2026-10-26, the scheduled push `e0205970` moved ARI @ DAL from DAL −6.5 to −6. That left no game on the live NFL slate whose pricing blend is held at the market line. `tools/bettor/football_decision.test.js` required one ("real NFL: the board holds some real games"), so it failed 180 / 1. The engines were right: the board held 0 and the kernel held 0.
+2. #836 and #837 fixed that in parallel, each green on its own. Both pinned the hold-rule checks to `tools/fixtures/nfl_slate_2026-10-25.json`, where both engines hold DEN @ ARI.
+   - #837 merged at 02:00:00 UTC.
+   - "Update branch" on #836 merged `main` into it at 02:01:15 (`04f23a4e`). Git took hunks from both versions without a conflict, and the result kept neither function header around the per-game body.
+   - #836 merged 19 seconds later, before that commit's checks reported.
+   - From then on the file threw `ReferenceError: g is not defined` at line 514, in CFB research terminal, Decision quality and Personal research CI.
+
+**The repair.** #836's merge is reverted (`git revert -m 1 2016a238`). The test is again exactly #837's (`3f9fb966`):
+- the held-rule checks run on the live slate plus the pinned slate;
+- the guard is met by DEN @ ARI whatever the live lines are.
+
+No assertion, threshold or fixture changed.
+
+**Before and after.** `node tools/bettor/football_decision.test.js`:
+
+| `main` | result |
+|---|---|
+| at `e0205970` | 180 / 1 |
+| `d3267217` | `ReferenceError` |
+| this revert | 181 / 0 |
+
+**The lesson is §5's:** after "Update branch", wait for that new commit's checks. They are the only checks that have seen the merged code.
+
 ## 2026-10-26 — Changelog: the last entry the #819 merge dropped is back
 
 The web-editor merge `c1081ebf7` (#819) dropped two `CHANGELOG.md` entries. #826 restored #819's own. The other, "Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market" (#818), is back, verbatim from `c7de08986`, where it stood: just before "All checks". Every heading from both sides of that merge is present again.
