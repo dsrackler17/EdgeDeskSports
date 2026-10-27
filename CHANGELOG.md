@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-27 — Research OS journey and changelog: what this morning's "Update branch" merges deleted is back
+
+**What was lost.** Between 12:51 and 12:59 UTC, #844, #841, #840, #842 and #843 merged. Three of them merged on an "Update branch" merge commit, two of them within ten seconds of it. Those three merges dropped work that no check had seen:
+
+| "Update branch" merge | Merged | What it dropped |
+|---|---|---|
+| `6f51155e8` on #841 | 1 min 51 s later | #844's entry and #841's own |
+| `70440b1fe` on #842 | 9 s later | #842's entry, and the journey check itself |
+| `a3e2dd729` on #843 | 10 s later | #843's own entry |
+
+#841 and #842 had fixed the same journey check in parallel. #841 merged first. The conflict on #842 was resolved by deleting both versions: `SNAP_HOME`/`SNAP_AWAY` and the "the game is the research context" check, on desktop and phone. `tools/research_os/journey.e2e.js` stayed green, with two checks fewer, and it stopped noticing a game page that carries the wrong team.
+
+**The repair.**
+- `tools/research_os/journey.e2e.js` is again exactly #841's version (`d57ddc4c4`). It is the stronger of the two fixes: it checks the home and away names against the research snapshot, and requires both to exist.
+- The four entries are back, verbatim from their own commits, in merge order (`a3e2dd729^1`, `10145b2cd`, `6f51155e8^1`, `e68bdbfda`).
+- #842's entry describes #842's version of the check. That version never reached `main`, because the merge deleted it along with #841's. The code that stands is #841's.
+- #840 added no entry. Its change to `discover()` reached `main` first through #844, which carried it byte for byte.
+
+No other file changed.
+
+**Before and after.** `ROS_SQL_REQUIRED=1 ROS_E2E_REQUIRED=1 node tools/research_os/journey.e2e.js` on `main` (`43e1d8ea4`, Delaware at Western Kentucky):
+
+| | today's data | `gvCtx` handed the away team's name (local mutation, not committed) |
+|---|---|---|
+| `main` | 124 / 0 | **124 / 0**: the wrong name passes |
+| this branch | 126 / 0 | **124 / 2**: "the game is the research context" fails |
+
+The lesson is §5's, again: after "Update branch", wait for that new commit's checks, and resolve conflicts locally, keeping both sides' changelog entries.
+
 ## 2026-10-27 — NHL engine browser suite: read the goalie block after the starter sync answers
 
 **The intermittent failure.** `NHL engine › The NHL and Engine panels in Chromium` sometimes failed "the slate fallback says the starter sync has no card for the game yet" (`tools/engine/engine_ui.e2e.js`). It failed once on a fully loaded machine. It passed six reruns at the same commits.
@@ -12,6 +41,100 @@
 - **Unchanged suite, sync reply held 2 s:** 150 passed, 2 failed (desktop and phone), the same failure as the loaded machine.
 - **Fixed suite:** 152/0, and still 152/0 with the reply held 2 s.
 - **Mutation:** with the note removed from `lib/edgedesk_nhl_goalies.js`, it still fails 150/2, so the wait masks nothing.
+
+## 2026-10-27 — The jobs that refit a model record publish the registry rebuilt from it
+
+**Why.** `engine/registry.json` reads each sport's state from its committed record. On 2026-10-26 the college baseball weekly validation pushed a record whose state had changed, but not the registry. For 100 minutes `main` disagreed with itself, and Multi-sport lab failed on every pull request (#828 fixed that job). Three more jobs publish a record the registry reads without the registry:
+- the UFC model loop (`model_loop/published/ufc/validation.json`);
+- the basketball model loop (`basketball/validation/<league>_walkforward.json` on a promotion);
+- the college baseball model loop's `release` mode (`college_baseball/validation/walkforward.json`).
+
+The four jobs that do publish the registry (`lab-build`, `lab-validate`, `nhl-build`, `nhl-validate`) carried their own copy over a newer tip when a push was rejected. That copy drops whatever record another job had just published.
+
+**What.**
+- `model-loop-ufc.yml`, `model-loop-basketball.yml` and `model-loop-college-baseball.yml` (release only) rebuild the registry and board after the record, `--check` both, and push them with the record.
+- Every job that publishes the registry sets `PUSH_REBUILD: node engine/build_registry.js && node engine/build_board.js`, so on a rejected push both are rebuilt on the new tip (`tools/ci/push_generated.sh`).
+- `lab.yml` also runs on pull requests that change the record-refitting workflows.
+
+**Evidence.** A local race through the real `tools/ci/push_generated.sh`: one job published an NBA record change and the registry, and a UFC loop that had started from the same commit lost the push.
+- Before: the UFC loop's carried registry still said NBA moneyline `OUTCOME_VALIDATED` over a record that said `PROVISIONAL`, and `engine/build_registry.js --check` FAILED on the result.
+- After: the registry on the new tip held both changes, and `--check` passed.
+
+**Tests.**
+- `tools/lab/lab.test.js`: each of the seven jobs that refit a record the registry reads rebuilds, checks, pushes and `PUSH_REBUILD`s the registry and board. 15 checks fail on the old workflows.
+- `tools/ci/push_generated.test.js` §11 lists the registry and board as aggregates. It fails on the four jobs that carried them.
+
+**Not here.** The football records (`football/validation/linemaker_*.json`, `pricing_*.json`) are rewritten by `linemaker-calibrate.yml`, `learning-loop.yml` and `football-weekly-build.yml`. Their registry is rebuilt only by the next lab or NHL build. `linemaker-calibrate.yml` pushes with `git pull --rebase`, which conflicts on a file another job rewrote, so it needs `tools/ci/push_generated.sh` before it can carry the registry. That is a separate change.
+
+## 2026-10-27 — Research OS journey: the game page's context is checked against the label the game page carries
+
+**What broke.** Since the scheduled slate push at 00:22 UTC (`f213b5eb`, "slate: today's games"), `tools/research_os/journey.e2e.js` has failed on `main` with 124 passed and 2 failed:
+
+```
+FAIL | desktop: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky",...}
+FAIL | phone: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky",...}
+```
+
+It turns Research OS tests (`browser`) and All checks red on every pull request that starts them. #835 was the first, and it merged with this check red. Research OS tests runs only on pull requests, so `main` did not report the failure itself.
+
+**Why.** The journey takes the earliest upcoming NFL or FBS game on the committed slate. Before the push that was Dallas at Philadelphia (`nfl|2026_07_DAL_PHI`); after it, Delaware at Western Kentucky (`cfb|401871071`). The game page builds the research context from the game research snapshot (`gvCtx` in `app.html`, through `EDContext.fromResearchKey`), so its `home` is the snapshot's label, "Western Kentucky". The check compared it with the slate's label, "Western Kentucky Hilltoppers". NFL snapshots and the slate use the same names, so the check passed only while the first game was an NFL game. `home` and `away` are display labels only (DESIGN.md §2), and the code is right. The check depended on which sport the day's first game was.
+
+**The repair.** The check compares the context's `home` with the research snapshot's `home.name`, the label the game page is built from. It is still an exact match, together with the research key. Every other check is unchanged. No app code, data or fixture changed.
+
+**Before and after.** `ROS_SQL_REQUIRED=1 ROS_E2E_REQUIRED=1 node tools/research_os/journey.e2e.js`:
+
+| Data | old test | this test |
+|---|---|---|
+| `main` before the slate push (`f213b5eb~1`, DAL @ PHI) | 126 / 0 | 126 / 0 |
+| `main` after it (`1b8a82be`, DEL @ WKU) | **124 / 2** | 126 / 0 |
+| `main` after #835 and #839 (`b48f627d`, DEL @ WKU) | **124 / 2** | 126 / 0 |
+| `1b8a82be`, with `gvCtx` handed the away team's label (local mutation, not committed) | 124 / 2 | **124 / 2** |
+
+The last row shows the check still fails when the game page carries the wrong label.
+
+## 2026-10-27 — Research OS journey: the research context is checked against the names the game page shows
+
+**What broke.** Since the scheduled slate push at 00:22 UTC (`f213b5eb6`, "slate: today's games"), `tools/research_os/journey.e2e.js` has failed on `main` with 124 passed and 2 failed:
+
+```
+FAIL | desktop: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky","away":"Delaware",...}
+FAIL | phone: the game is the research context  (the same)
+```
+
+It turns Research OS tests (`browser`), Market Foresight tests (`database`) and All checks red on every pull request that starts them.
+
+**Why.** The journey takes the earliest upcoming NFL or CFB game on `today/slate.json` that has a research snapshot. Before the push, that was Dallas at Philadelphia, which the slate and the snapshot both call "Philadelphia Eagles". After it, the game was Delaware at Western Kentucky:
+- the slate calls the home side "Western Kentucky Hilltoppers";
+- the research snapshot calls it "Western Kentucky".
+
+The game page builds the research context from its snapshot (`gvCtx` in `app.html`, through `EDContext.fromResearchKey`, "the labels the caller saw"). So the context carries the name the page shows. The test compared that name with the slate's. The app is right; the test's expectation was wrong.
+
+**The repair.** The test only.
+- The check now compares `ctx.home` and `ctx.away` with the snapshot's names, and requires both to exist.
+- The research-key check is unchanged.
+- The search check and the seeded watchlist rows still use the slate's names, which is what they read.
+- No app code, data or threshold changed.
+
+**Before and after.** `node tools/research_os/journey.e2e.js`, run locally with `ROS_SQL_REQUIRED=1 ROS_E2E_REQUIRED=1`:
+
+| Data | Old test | This test |
+|---|---|---|
+| `main` (`c91cc05ab`): Delaware at Western Kentucky | 124 / 2 | 126 / 0 |
+| slate and snapshot at `4630c7685` (before the push): Dallas at Philadelphia | 126 / 0 | 126 / 0 |
+| `main`, with the game page's home and away swapped in `gvCtx` (mutation, not committed) | not run (already red on this data) | 124 / 2: the context check fails |
+
+## 2026-10-27 — Content engine: an NFL stat lifted out of its "When X have the ball" heading names X
+
+**What was wrong.** An NFL matchup claim reads "When Tennessee Titans have the ball: their passing game ranks No. 29, and Cincinnati Bengals' pass defense ranks No. 17." The matchup analysis lifts such claims into its thesis ("The football that does point toward Cincinnati Bengals:") and its counterargument ("The case for …"). It dropped the clause and kept "their", so the bullet read "Their passing game ranks No. 29": Cincinnati's by every reading, and it was Tennessee's. The frozen Week 6 / NFL Week 5 drafts held 20 such sentences, at least one in every NFL matchup analysis.
+
+**The repair.** `stripWhen()` puts the team back where "their" stood ("Tennessee Titans' passing game ranks No. 29"). Under the evidence section's "**When X have the ball.**" heading, which names X, the pronoun stays. College claims carry no "their" and are unchanged. The Edge Function's copy is regenerated with `node tools/content/inline.js`; it reaches production only on a manual deploy.
+
+**Also on this branch.** #840's `discover()` change (a matchup analysis only where the evidence argues both sides), ported byte-for-byte so this branch's Content engine check passes while `main` fails it on Tennessee at Cincinnati. It is a no-op once #840 merges, and its record is #840's.
+
+| `node tools/content/content.test.js` | result |
+|---|---|
+| without this change | 334 / 1: "- Their run game ranks No. 3, and Atlanta Falcons' run defense ranks No. 25." (BAL @ ATL) |
+| with it | 335 / 0 |
 
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
