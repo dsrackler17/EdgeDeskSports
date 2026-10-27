@@ -3,6 +3,38 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
+-- ── 13. WHO MAY CALL WHAT ───────────────────────────────────────────────────
+do $g$
+declare f text;
+begin
+  foreach f in array array[
+    'public.odds_api_acquire(jsonb)', 'public.odds_api_settle(jsonb)', 'public.odds_api_snapshot(text)',
+    'public.odds_api_consume(text,text,bigint)',
+    'public.odds_api_set_budget(integer,integer,integer)', 'public.odds_api_apply_recovery_budget()',
+    'public.odds_api_set_enabled(boolean,text,text)', 'public.odds_api_confirm_quota(integer,integer,text)',
+    'public.odds_api_set_category(text,boolean)', 'public.odds_api_set_sport(text,boolean)',
+    'public.odds_api_job_lock(text,text,integer)', 'public.odds_api_job_unlock(text,text)',
+    'public.odds_api_prune()', 'public.odds_api_budget_state(timestamptz)', 'public.odds_api_enabled()',
+    'public.odds_api_trip(text,text)', 'public.odds_api_alert(text,text,text,jsonb)',
+    'public.odds_api_dashboard(integer)', 'public.odds_api_admin_pause(text)', 'public.odds_api_ack_alert(bigint)',
+    'public.odds_feed_status()', 'public.odds_api_is_admin()'] loop
+    execute format('revoke all on function %s from public, anon, authenticated', f);
+    if exists (select 1 from pg_roles where rolname = 'service_role') then
+      execute format('grant execute on function %s to service_role', f);
+    end if;
+  end loop;
+  -- signed-in operators: the dashboard, pause and acknowledge (each checks the operator list itself)
+  execute 'grant execute on function public.odds_api_dashboard(integer), public.odds_api_admin_pause(text), public.odds_api_ack_alert(bigint), public.odds_api_is_admin() to authenticated';
+  -- everyone: whether prices are refreshing, and when each sport was last verified
+  execute 'grant execute on function public.odds_feed_status() to anon, authenticated';
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant select on public.odds_api_config, public.odds_api_requests, public.odds_api_snapshots, public.odds_api_events,
+             public.odds_api_alerts, public.odds_api_categories, public.odds_api_sports, public.odds_api_cadence to service_role';
+  end if;
+end $g$;
+alter table public.odds_api_categories enable row level security;
+alter table public.odds_api_sports enable row level security;
+alter table public.odds_api_cadence enable row level security;
 revoke all on public.odds_api_categories, public.odds_api_sports, public.odds_api_cadence from anon, authenticated;
 
 -- Daily retention, where pg_cron exists. It calls no provider.
@@ -47,6 +79,13 @@ with checks as (
   union all select 10, 'nothing refreshes more often than hourly (no band under 60 min; the floor constraint is on)',
          (case when not exists (select 1 from public.odds_api_cadence where interval_minutes < 60)
                 and exists (select 1 from pg_constraint where conname = 'odds_api_cadence_hourly_floor') then 1 else 0 end), 1
+  union all select 11, 'the Sharp-lag categories exist with their own daily caps (90 and 48 credits)',
+         (select count(*) from public.odds_api_categories
+           where (category = 'sharp_check' and daily_cap_credits is not null)
+              or (category = 'nba_role_props' and daily_cap_credits is not null))::int, 2
+  union all select 12, 'the emergency stop covers the sharp_check dispatcher (its URL and its cron poke)',
+         (case when 'select public.sharp_check_poke();' ilike any (public.odds_api_spend_patterns())
+                and 'https://x.supabase.co/functions/v1/sharp_check' ilike any (public.odds_api_spend_patterns()) then 1 else 0 end), 1
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;

@@ -201,6 +201,50 @@ do $$ begin
   end if;
 end $$;
 
+-- 2026-10-26 (METHODOLOGY CHANGE): PER-CATEGORY DAILY CAPS. Until now the only
+-- daily limit was the shared allowance and its shedding, which a category
+-- crosses with everything else. The Sharp-lag research pipeline buys
+-- single-event checks on a trigger (an injury, a goalie change, a Kalshi move)
+-- and NBA role-shift props; each needs a hard daily ceiling of its own that no
+-- trigger storm can cross. daily_cap_credits is that ceiling: credits this
+-- category may spend per UTC day, counted from the ledger (settled at
+-- x-requests-last, reservations at their upper bound) inside odds_api_acquire,
+-- under the same config-row lock as the shared budget, so concurrent workers
+-- cannot both take the last credits under it. NULL = no cap of its own (every
+-- existing category, unchanged). A cap only ever refuses: the monthly ceiling,
+-- the reserve and the shedding still apply on top of it.
+alter table public.odds_api_categories add column if not exists daily_cap_credits integer;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'odds_api_categories_daily_cap_chk') then
+    alter table public.odds_api_categories add constraint odds_api_categories_daily_cap_chk
+      check (daily_cap_credits is null or daily_cap_credits >= 0);
+  end if;
+end $$;
+-- The two capped categories, created DISABLED: turning either on is an
+-- operator act (odds_api_set_category), taken only after this file is applied.
+-- Priority 4 sheds them first, with the alternate ladders, at 60% of the day.
+--   sharp_check     ONE event, h2h/spreads/totals, Pinnacle (the sharp anchor)
+--                   and DraftKings (a target); two books bill as one
+--                   region-equivalent, so <= 3 credits a request. 90/day =
+--                   30 requests.
+--   nba_role_props  ONE NBA event, four volume markets at the props book list
+--                   (ten books, one region-equivalent): <= 4 credits a request.
+--                   48/day = 12 requests.
+insert into public.odds_api_categories (category, endpoint, enabled, priority, markets, bookmakers, default_format, cost_multiplier, daily_cap_credits, description) values
+  ('sharp_check', 'event_odds', false, 4, array['h2h','spreads','totals'], array['pinnacle','draftkings'], 'decimal', 1, 90,
+   'Sharp-lag research: one event''s Pinnacle and DraftKings main markets after a trigger, and NBA/NHL pre-tip closes. Capped at 90 credits a day.'),
+  ('nba_role_props', 'event_odds', false, 4, array['player_rebounds','player_assists','player_threes','player_points_rebounds_assists'],
+   array['draftkings','fanduel','betmgm','williamhill_us','espnbet','betrivers','hardrockbet','fanatics','pinnacle','betonlineag'], 'decimal', 1, 48,
+   'NBA role-shift research: one event''s volume player markets after a rotation player is ruled out. Capped at 48 credits a day.')
+on conflict (category) do nothing;
+-- Both inside 24 h of the start only; nothing faster than hourly (the floor
+-- above refuses it). nba_role_props is never polled for another sport.
+insert into public.odds_api_cadence (category, sport_group, max_hours_to_start, interval_minutes) values
+  ('sharp_check', '*', 3, 60), ('sharp_check', '*', 24, 60), ('sharp_check', '*', 1000000, null),
+  ('nba_role_props', 'nba', 3, 60), ('nba_role_props', 'nba', 24, 60), ('nba_role_props', 'nba', 1000000, null),
+  ('nba_role_props', '*', 1000000, null)
+on conflict (category, sport_group, max_hours_to_start) do nothing;
+
 -- ── 2. THE LEDGER: one row per gateway decision ─────────────────────────────
 create table if not exists public.odds_api_requests (
   id                 bigserial primary key,
@@ -523,6 +567,7 @@ declare
   st jsonb; v_level smallint; v_level_now smallint := 0; v_stretch numeric := 1;
   v_spent_today bigint; v_allow integer; v_spent bigint; v_rem bigint; v_confirmed boolean; v_pct numeric;
   v_open_id bigint; v_id bigint; v_decision text; v_reason text; v_tripped boolean := false;
+  v_cat_today bigint;
 begin
   begin
     v_max_age := greatest(0, coalesce(nullif(p->>'max_age_seconds', '')::numeric, 0));
@@ -686,6 +731,19 @@ begin
         perform public.odds_api_alert('warning', 'reserve_floor', 'A request was refused to protect the provider reserve.',
           jsonb_build_object('provider_remaining_effective', v_rem, 'reserve', c.monthly_reserve));
         v_decision := 'denied_reserve'; v_reason := 'provider reserve would be crossed'; exit decide;
+      end if;
+      -- THE CATEGORY'S OWN DAILY CAP (2026-10-26, §1). Today's spend in this
+      -- category, settled or still reserved, plus this request's upper bound.
+      if cat.daily_cap_credits is not null then
+        select coalesce(sum(coalesce(actual_credits, reserved_credits)), 0) into v_cat_today
+          from public.odds_api_requests
+         where dispatched and category = v_category and usage_day = (v_now at time zone 'utc')::date;
+        if v_cat_today + v_est > cat.daily_cap_credits then
+          v_decision := 'denied_category_cap';
+          v_reason := format('category %s is capped at %s credits a day: %s spent or reserved today, this request needs up to %s',
+                             v_category, cat.daily_cap_credits, v_cat_today, v_est);
+          exit decide;
+        end if;
       end if;
       v_level := public.odds_api_shed_level(v_spent_today, v_est, v_allow, c.daily_overdraft_pct, v_pct, c.critical_pct);
       if not public.odds_api_level_admits(v_level, v_priority, v_hours) then
@@ -1222,6 +1280,22 @@ begin
   return jsonb_build_object('snapshots', a, 'decisions', b, 'ledger', d, 'events', e);
 end $$;
 
+-- The pg_cron command patterns that reach a paid path: the emergency stop
+-- pauses them and odds_api_hourly_limits.sql holds them to hourly. The same
+-- list as supabase/odds_api_emergency_stop.sql, re-created here so a new
+-- spender (sharp_check, 2026-10-26) is covered without re-running the stop.
+create or replace function public.odds_api_spend_patterns()
+returns text[] language sql immutable as $$
+  select array[
+    '%/functions/v1/capture%', '%capture_poke%', '%/functions/v1/close%',
+    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
+    '%/functions/v1/odds?%', '%/functions/v1/odds''%', '%/functions/v1/odds"%',
+    '%/functions/v1/wta_odds%', '%/functions/v1/wta_close%', '%/functions/v1/cfb_close%',
+    '%/functions/v1/close_backfill%', '%/functions/v1/capture_boards%', '%/functions/v1/model_conf_odds%',
+    '%/functions/v1/ingest_multisport%', '%/functions/v1/run_slate%', '%/functions/v1/scores_diag%'
+  ]::text[]
+$$;
+
 -- ── 13. WHO MAY CALL WHAT ───────────────────────────────────────────────────
 do $g$
 declare f text;
@@ -1298,6 +1372,13 @@ with checks as (
   union all select 10, 'nothing refreshes more often than hourly (no band under 60 min; the floor constraint is on)',
          (case when not exists (select 1 from public.odds_api_cadence where interval_minutes < 60)
                 and exists (select 1 from pg_constraint where conname = 'odds_api_cadence_hourly_floor') then 1 else 0 end), 1
+  union all select 11, 'the Sharp-lag categories exist with their own daily caps (90 and 48 credits)',
+         (select count(*) from public.odds_api_categories
+           where (category = 'sharp_check' and daily_cap_credits is not null)
+              or (category = 'nba_role_props' and daily_cap_credits is not null))::int, 2
+  union all select 12, 'the emergency stop covers the sharp_check dispatcher (its URL and its cron poke)',
+         (case when 'select public.sharp_check_poke();' ilike any (public.odds_api_spend_patterns())
+                and 'https://x.supabase.co/functions/v1/sharp_check' ilike any (public.odds_api_spend_patterns()) then 1 else 0 end), 1
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;
