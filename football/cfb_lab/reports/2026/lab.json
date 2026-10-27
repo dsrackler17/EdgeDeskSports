@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-27T05:07:47.000Z",
+ "generated_at": "2026-10-27T06:07:48.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -62,9 +62,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1908,
-    "latest_snapshot_at": "2026-10-27T00:07:56.000Z",
-    "upcoming_games": 61,
+    "snapshots": 1910,
+    "latest_snapshot_at": "2026-10-27T06:07:48.000Z",
+    "upcoming_games": 63,
     "avg_confidence_upcoming": 75.4
    },
    {
@@ -87,15 +87,15 @@
    }
   ],
   "data_quality": {
-   "games": 61,
+   "games": 63,
    "counts": {
     "GREEN": 6,
-    "YELLOW": 55,
+    "YELLOW": 57,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 55,
+     "YELLOW": 57,
      "RED": 0
     }
    },
@@ -814,6 +814,32 @@
      ],
      "kickoff": "2026-11-04T05:00:00.000Z",
      "matchup": "Toledo @ Sacramento State"
+    },
+    {
+     "game_id": "401862817",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-06T00:30:00.000Z",
+     "matchup": "UTSA @ Florida Atlantic"
+    },
+    {
+     "game_id": "401869964",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-06T01:00:00.000Z",
+     "matchup": "James Madison @ Southern Miss"
     }
    ],
    "feeds": {
@@ -852,8 +878,8 @@
    }
   ],
   "ledger": {
-   "predictions": 7408,
-   "live_predictions": 6898,
+   "predictions": 7410,
+   "live_predictions": 6900,
    "quotes": 26567,
    "lines": 4289,
    "results": 517,
