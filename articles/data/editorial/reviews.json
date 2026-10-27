@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-27T02:10:55.366Z",
+  "generated_at": "2026-10-27T12:50:51.047Z",
   "open": 16,
   "count": 16,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -335,7 +335,7 @@
       "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-25T03:20:23.133Z",
-      "updated_at": "2026-10-09T03:20:31.654Z",
+      "updated_at": "2026-10-27T03:20:59.542Z",
       "evidence": [
         {
           "lesson_id": "2026_03_ATL_GB:contradicted:market",
@@ -369,16 +369,27 @@
           "result": "Dallas Cowboys lost by 8 where EdgeDesk projected a 5.8-point edge. Dallas Cowboys lost by 8.",
           "severity": "high",
           "at": "2026-10-09T03:20:31.654Z"
+        },
+        {
+          "lesson_id": "2026_07_DAL_PHI:contradicted:market",
+          "game_id": "2026_07_DAL_PHI",
+          "season": 2026,
+          "week": 7,
+          "team": "Philadelphia Eagles",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Philadelphia Eagles −3.0 with a fair total of 45.5, which makes Philadelphia Eagles the better team here by that margin on this field. EdgeDesk makes it Philadelphia Eagles −3.0 where the market has Philadelphia Eagles −3.0 at DraftKings — a 0.2 points disagreement.",
+          "result": "Philadelphia Eagles lost by 17 where EdgeDesk projected a 2.8-point edge. Philadelphia Eagles lost by 17.",
+          "severity": "high",
+          "at": "2026-10-27T03:20:59.542Z"
         }
       ],
-      "occurrences": 3,
+      "occurrences": 4,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 4 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -388,7 +399,7 @@
       "question": "Does EdgeDesk’s defence handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-10-06T23:51:04.490Z",
-      "updated_at": "2026-10-12T03:50:33.685Z",
+      "updated_at": "2026-10-27T03:20:59.542Z",
       "evidence": [
         {
           "lesson_id": "2026_04_ATL_NO:contradicted:defence",
@@ -422,16 +433,27 @@
           "result": "Baltimore Ravens 5.51 yards per play against Atlanta Falcons 5.73.",
           "severity": "high",
           "at": "2026-10-12T03:50:33.685Z"
+        },
+        {
+          "lesson_id": "2026_07_DAL_PHI:contradicted:defence",
+          "game_id": "2026_07_DAL_PHI",
+          "season": 2026,
+          "week": 7,
+          "team": "Philadelphia Eagles",
+          "expectation": "Philadelphia Eagles holds the largest measured edge in this matchup: Philadelphia Eagles −0.059 (#6 of 32) vs Dallas Cowboys +0.245 (#32 of 32) — 26 places on the league board.",
+          "result": "Philadelphia Eagles 5.18 yards per play against Dallas Cowboys 6.4.",
+          "severity": "high",
+          "at": "2026-10-27T03:20:59.542Z"
         }
       ],
-      "occurrences": 3,
+      "occurrences": 4,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 4 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
