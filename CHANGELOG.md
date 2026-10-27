@@ -1,6 +1,48 @@
 # Changelog
 
+## 2026-10-27 — Research OS journey: the research context is checked against the names the game page shows
 
+**What broke.** Since the scheduled slate push at 00:22 UTC (`f213b5eb6`, "slate: today's games"), `tools/research_os/journey.e2e.js` has failed on `main` with 124 passed and 2 failed:
+
+```
+FAIL | desktop: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky","away":"Delaware",...}
+FAIL | phone: the game is the research context  (the same)
+```
+
+It turns Research OS tests (`browser`), Market Foresight tests (`database`) and All checks red on every pull request that starts them.
+
+**Why.** The journey takes the earliest upcoming NFL or CFB game on `today/slate.json` that has a research snapshot. Before the push, that was Dallas at Philadelphia, which the slate and the snapshot both call "Philadelphia Eagles". After it, the game was Delaware at Western Kentucky:
+- the slate calls the home side "Western Kentucky Hilltoppers";
+- the research snapshot calls it "Western Kentucky".
+
+The game page builds the research context from its snapshot (`gvCtx` in `app.html`, through `EDContext.fromResearchKey`, "the labels the caller saw"). So the context carries the name the page shows. The test compared that name with the slate's. The app is right; the test's expectation was wrong.
+
+**The repair.** The test only.
+- The check now compares `ctx.home` and `ctx.away` with the snapshot's names, and requires both to exist.
+- The research-key check is unchanged.
+- The search check and the seeded watchlist rows still use the slate's names, which is what they read.
+- No app code, data or threshold changed.
+
+**Before and after.** `node tools/research_os/journey.e2e.js`, run locally with `ROS_SQL_REQUIRED=1 ROS_E2E_REQUIRED=1`:
+
+| Data | Old test | This test |
+|---|---|---|
+| `main` (`c91cc05ab`): Delaware at Western Kentucky | 124 / 2 | 126 / 0 |
+| slate and snapshot at `4630c7685` (before the push): Dallas at Philadelphia | 126 / 0 | 126 / 0 |
+| `main`, with the game page's home and away swapped in `gvCtx` (mutation, not committed) | not run (already red on this data) | 124 / 2: the context check fails |
+
+## 2026-10-27 — Content engine: an NFL stat lifted out of its "When X have the ball" heading names X
+
+**What was wrong.** An NFL matchup claim reads "When Tennessee Titans have the ball: their passing game ranks No. 29, and Cincinnati Bengals' pass defense ranks No. 17." The matchup analysis lifts such claims into its thesis ("The football that does point toward Cincinnati Bengals:") and its counterargument ("The case for …"). It dropped the clause and kept "their", so the bullet read "Their passing game ranks No. 29": Cincinnati's by every reading, and it was Tennessee's. The frozen Week 6 / NFL Week 5 drafts held 20 such sentences, at least one in every NFL matchup analysis.
+
+**The repair.** `stripWhen()` puts the team back where "their" stood ("Tennessee Titans' passing game ranks No. 29"). Under the evidence section's "**When X have the ball.**" heading, which names X, the pronoun stays. College claims carry no "their" and are unchanged. The Edge Function's copy is regenerated with `node tools/content/inline.js`; it reaches production only on a manual deploy.
+
+**Also on this branch.** #840's `discover()` change (a matchup analysis only where the evidence argues both sides), ported byte-for-byte so this branch's Content engine check passes while `main` fails it on Tennessee at Cincinnati. It is a no-op once #840 merges, and its record is #840's.
+
+| `node tools/content/content.test.js` | result |
+|---|---|
+| without this change | 334 / 1: "- Their run game ranks No. 3, and Atlanta Falcons' run defense ranks No. 25." (BAL @ ATL) |
+| with it | 335 / 0 |
 
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
