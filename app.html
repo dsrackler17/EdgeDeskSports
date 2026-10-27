@@ -2930,7 +2930,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261026mi1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261027sl1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
 <!-- THE APP SHELL (docs/research-os/DESIGN.md): the sidebar / Menu sheet, Overview, search, Performance,
      the game page's workspace; Market Foresight's record drawn inside the terminal (foresight/app.js) -->
@@ -3224,7 +3224,7 @@ body.focus .dk-focusnote{display:block}
   <!-- SIMULATOR — the published season simulations (lib/edgedesk_simulator.js). Premium
        numbers are read through supabase/simulator.sql's row-level security only. -->
   <!-- SIGNAL CENTER: what changed, why, and whether the evidence supports it (lib/edgedesk_signal_center.js, docs/signal-center/README.md) -->
-  <section id="v-signals" class="view hide"><div id="scHost"><div class="empty">Loading&hellip;</div></div></section>
+  <section id="v-signals" class="view hide"><div id="slFeed"></div><div id="scHost"><div class="empty">Loading&hellip;</div></div></section>
   <section id="v-simulator" class="view hide"><div id="simHost"><div class="empty">Loading&hellip;</div></div></section>
   <!-- OVERVIEW: what deserves attention today, each row one tap from the feature that owns it
        (lib/edgedesk_overview.js, docs/research-os/DESIGN.md §3) -->
@@ -4089,14 +4089,17 @@ window.mcRefresh=function(){
 <!-- the canonical team resolver (the one supabase/functions/kalshi_sync links games with):
      the graphic places each Kalshi price on this game's own home or away team with it -->
 <script src="/lib/football_identity.js?v=20261021ks1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261026mi1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261026mi1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261027sl1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261027sl1"></script>
 <!-- the matchup graphic for every other sport: college basketball, the WNBA, MLB, college
      baseball and UFC bouts, drawn by the football template (docs/game-research/SPORTS.md).
      It fills the renderer's layout, so it loads after it and under the renderer's version
      (tools/sport_graphic/sport_graphic.test.js and sport_graphic_ui.e2e.js hold both) -->
-<script src="/lib/edgedesk_sport_graphic.js?v=20261026mi1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261026mi1"></script>
+<script src="/lib/edgedesk_sport_graphic.js?v=20261027sl1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261027sl1"></script>
+<!-- Sharp lag (Experimental, docs/sharp-lag/README.md): the shared research core the game page,
+     the matchup view and the Signals feed draw the flags with; window.slData reads them -->
+<script src="/lib/edgedesk_sharp_lag.js?v=20261027sl1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -4161,7 +4164,7 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_grade_ui.js?v=20261021inj1"></script>
 <!-- the model integrity audit's warnings on each game (engine/model_integrity.json), read by the games board -->
 <script src="/lib/edgedesk_model_integrity_ui.js?v=20261026mi1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261026mi1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261027sl1"></script>
 <!-- THE RESEARCH OS (docs/research-os/DESIGN.md): the research context carried between features, the
      shell (navigation, quiet reads, services), the Overview, search and Performance; Market Foresight's
      small service (its record and controller load on first use) -->
@@ -4197,7 +4200,9 @@ window.mcRefresh=function(){
     loadMarkets:function(from,to){return edToken().then(function(t){
       return fetch(SB_URL+'/rest/v1/rpc/slate_markets?p_from='+encodeURIComponent(from)+'&p_to='+encodeURIComponent(to),{headers:{apikey:SB_KEY,authorization:'Bearer '+t}});
     }).then(function(r){if(r.status===404)return {entitled:false,available:false,events:[]};if(!r.ok)throw new Error('prices answered '+r.status);return r.json();});},
-    allHref:function(st){return window.EDGames.stateHash({sport:st.sport,date:st.date});}
+    allHref:function(st){return window.EDGames.stateHash({sport:st.sport,date:st.date});},
+    /* Sharp lag (Experimental) in the matchup view: the game's flags under the reader's own token */
+    sharpLag:function(q){return window.slData?window.slData.forGame(q):Promise.resolve({state:'error'});}
   };}
   window.gmMountStrip=function(){var el=document.getElementById('gamesStrip');if(!el||!window.EDGamesUI||el.getAttribute('data-mounted'))return;el.setAttribute('data-mounted','1');window.EDGamesUI.mountStrip(el,gmOpts());};
   window.gmShowPage=function(h){var el=document.getElementById('gamesPage');if(!el||!window.EDGamesUI)return;
@@ -4267,6 +4272,8 @@ window.mcRefresh=function(){
   }
   function gvOpts(){return {
     market:function(league,gid){return league==='cfb'?gvCfb(gid):gvNfl(gid);},
+    /* Sharp lag (Experimental): this game's research flags, read under the reader's own token */
+    sharpLag:function(league,gid,g){return window.slData?window.slData.forGame({sport_key:league==='cfb'?'americanfootball_ncaaf':'americanfootball_nfl',home:g.home,away:g.away,start:g.kickoff}):Promise.resolve({state:'error'});},
     /* a #game link opens this page while the document is still parsing: the Kalshi section's
        script sits near its end, so wait for the parse before deciding it is absent */
     /* at the snapshot's model time when the page names it (EDGameGraphic compares Kalshi only there) */
@@ -5778,9 +5785,56 @@ window.navHashRoute=navHashRoute;
    Research when Signal Center has nothing to show them yet: its database is
    not deployed, it cannot be read, or it is still in shadow mode for anyone
    who is not an operator. It never strands anyone on an empty page. */
+/* SHARP LAG (Experimental, docs/sharp-lag/README.md). Every read goes through
+   public.sharp_lag_flags() under the reader's own token (edToken): the database
+   decides what each reader sees (a subscriber: every flag, live; anyone else:
+   only games that have started, and only once public display is on). The
+   counts (public.sharp_lag_progress) are public and carry no price. A function
+   not yet installed is "not deployed", never a database fault. */
+window.slData=(function(){
+  var P={at:0,p:null};
+  function rpc(name,body){return edToken().then(function(t){return fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+t,'content-type':'application/json'},body:JSON.stringify(body||{})});})
+    .then(function(r){if(r.status===404)return {notDeployed:true};if(!r.ok)throw new Error(name+' answered '+r.status);return r.json();});}
+  function progress(){if(P.p&&Date.now()-P.at<300000)return P.p;P.at=Date.now();P.p=rpc('sharp_lag_progress',{}).catch(function(){P.at=0;return null;});return P.p;}
+  function flags(sport,from,to){return rpc('sharp_lag_flags',{p_sport:sport||null,p_from:from||null,p_to:to||null});}
+  function forGame(g){
+    var SL=window.EDSharpLag;if(!SL)return Promise.resolve({state:'error'});
+    var t=Date.parse(g.start),iso=function(ms){return new Date(ms).toISOString();};
+    return Promise.all([flags(g.sport_key,isFinite(t)?iso(t-864e5):null,isFinite(t)?iso(t+864e5):null),progress()]).then(function(x){
+      var rows=x[0],pr=x[1];
+      if(rows&&rows.notDeployed)return {state:'not_deployed'};
+      rows=Array.isArray(rows)?rows:[];
+      /* both clubs (or both swapped) and a start within 6 hours (EDSharpLag.flagsForGame) */
+      var mine=SL.flagsForGame(rows,{sport_key:g.sport_key,home:g.home,away:g.away,start:g.start});
+      /* an NBA game also carries the role-shift model's own progress (NBA-ROLE-SHIFT, registered on its own) */
+      var rsv=g.sport_key==='basketball_nba'&&SL.MODELS.role_shift?SL.validationFrom(pr,rows,SL.MODELS.role_shift.key):null;
+      return {state:'ok',flags:mine,access:(pr&&pr.access)||(rows[0]&&rows[0].access)||'none',validation:SL.validationFrom(pr,rows,SL.MODELS.sharp_lag.key),
+        roleShift:rsv?SL.progressLine(rsv):''};
+    }).catch(function(e){return {state:'error',error:String(e&&e.message||e)};});
+  }
+  /* the Signals feed: today's flags (the reader's local day), newest first */
+  function feed(el){
+    var SL=window.EDSharpLag;if(!el||!SL)return;
+    SL.injectStyle(document);
+    if(!el.innerHTML)el.innerHTML=SL.pendingSection({id:'slFeedSec'});
+    var now=Date.now(),day=new Date();day.setHours(0,0,0,0);
+    Promise.all([flags(null,new Date(now-36*3600e3).toISOString(),null),progress()]).then(function(x){
+      var rows=x[0],pr=x[1];
+      if(rows&&rows.notDeployed){el.innerHTML='';return;}
+      rows=Array.isArray(rows)?rows:[];
+      var today=rows.filter(function(f){return Date.parse(f.flagged_at)>=day.getTime();});
+      var acc=(pr&&pr.access)||'none';
+      el.innerHTML=SL.feed({now:now,flags:today,validation:[SL.validationFrom(pr,rows,SL.MODELS.sharp_lag.key)],
+        empty:acc==='subscriber'?'No flag today yet.':'Live flags are for subscribers. Every flag is published once its game has started; the full graded record is on the Performance page.'});
+    }).catch(function(){el.innerHTML='';});
+  }
+  if(window.EDSharpLag)window.EDSharpLag.injectStyle(document);
+  return {forGame:forGame,feed:feed,progress:progress,flags:flags};
+})();
 var SC_ROUTE=null,SC_LANDING=false;
 function scOpen(route){
   var r=route||SC_ROUTE;SC_ROUTE=null;var landing=SC_LANDING;SC_LANDING=false;
+  try{if(window.slData)window.slData.feed($('slFeed'));}catch(_){/* the feed is optional; Signal Center opens regardless */}
   try{if(window.EDSignalCenter)window.EDSignalCenter.open($('scHost'),{route:r||window.EDSignalCenter.parseHash(location.hash)||{view:'feed'},
     landing:landing,onHandoff:function(){if(!$('v-signals').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');}});
     else if(landing)researchGo(prefs().lastResearchSub||'football');}
@@ -6113,7 +6167,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261026mi1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261027sl1';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
