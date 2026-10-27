@@ -407,7 +407,9 @@ const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const at = (s) => APP.indexOf(s);
 chk('the snapshot loads after the calculation layer it reads', at('/lib/edgedesk_calc.js') > 0 && at('/lib/edgedesk_game_snapshot.js') > at('/lib/edgedesk_calc.js'));
 chk('the graphic and the page load after the snapshot', at('/lib/edgedesk_game_graphic.js') > at('/lib/edgedesk_game_snapshot.js') && at('/lib/edgedesk_game_view.js') > at('/lib/edgedesk_game_graphic.js'));
-chk('every new file is cache-busted with one version', (APP.match(/edgedesk_game_(snapshot|graphic|view)\.(js|css)\?v=(\d{8}[a-z0-9]*)/g) || []).map((x) => x.split('?v=')[1]).every((v, i, a) => v === a[0]));
+/* all four, found: a renamed or reformatted token would otherwise drop out of the comparison and pass it */
+const gameTokens = APP.match(/edgedesk_game_(snapshot|graphic|view)\.(js|css)\?v=(\d{8}[a-z0-9]*)/g) || [];
+chk('every new file is cache-busted with one version', ['snapshot.js', 'graphic.js', 'view.js', 'view.css'].every((f) => gameTokens.some((x) => x.indexOf('edgedesk_game_' + f + '?v=') === 0)) && gameTokens.map((x) => x.split('?v=')[1]).every((v, i, a) => v === a[0]), gameTokens);
 chk('the stylesheet and the display face are linked', at('/lib/edgedesk_game_view.css') > 0 && /family=Barlow\+Condensed/.test(APP));
 chk('the page has its view, owned by the Research seat', at('<section id="v-game" class="view hide">') > 0 && /NAV_OWNER\.game='research';/.test(APP));
 chk('#game/<league>/<id> routes to the page', /if\(\/\^#game\\\/\(nfl\|cfb\)\\\/\/\.test\(h\)\)/.test(APP));

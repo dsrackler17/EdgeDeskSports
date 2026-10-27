@@ -23,8 +23,8 @@
   "game_time": "2026-11-02T01:20:00.000Z",
   "game_when_label": "2026-11-02 01:20 UTC",
   "published_at": null,
-  "updated_at": "2026-10-26T19:17:02.637Z",
-  "generated_at": "2026-10-26T23:17:09.387Z",
+  "updated_at": "2026-10-27T08:53:29.281Z",
+  "generated_at": "2026-10-27T08:53:29.281Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.8-point gap is context only and the game is excluded from research ranking.",
@@ -1177,7 +1177,7 @@
       "total_rounding_note": null,
       "total_difference": "4.5 points",
       "book": "DraftKings",
-      "capture_age": "1035 hours old",
+      "capture_age": "1049 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.8-point gap is context only and the game is excluded from research ranking.",
@@ -1326,9 +1326,70 @@
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
     "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 106 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "g9smee1jkpbno",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Eagles’ pass defense slow the Commanders’ passing game?",
+    "assessment": "EdgeDesk’s number is 4.0 points closer to Washington Commanders than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Philadelphia Eagles, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 4,
+      "toward": "Washington Commanders",
+      "other": "Philadelphia Eagles"
+    },
+    "supporting": [
+      "Philadelphia Eagles’ explosive passing ranks No. 32 of 32 in explosive pass rate this season.",
+      "When Philadelphia Eagles have the ball: their pass protection ranks No. 21, and Washington Commanders’ pass rush ranks No. 13.",
+      "Philadelphia Eagles’ offense ranks No. 28 of 32 in efficiency per play this season.",
+      "Philadelphia Eagles’ passing offense ranks No. 28 of 32 in passing efficiency this season."
+    ],
+    "contradicting": [
+      "Washington Commanders’ defense ranks No. 29 of 32 in efficiency allowed per play this season.",
+      "Washington Commanders’ run defense ranks No. 31 of 32 in run defense this season.",
+      "Washington Commanders’ scoring defense ranks No. 29 of 32 in points allowed this season.",
+      "When Washington Commanders have the ball: their passing game ranks No. 16, and Philadelphia Eagles’ pass defense ranks No. 6."
+    ],
+    "quarterbacks": [
+      "Washington Commanders’ passers have completed 124 of 202 (61.4%) for 1,285 yards, 6.4 yards per attempt, with 10 touchdowns, 1 interceptions and 14 sacks taken in six games.",
+      "Philadelphia Eagles’ passers have completed 115 of 200 (57.5%) for 1,148 yards, 5.7 yards per attempt, with 9 touchdowns, 4 interceptions and 16 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Washington Commanders have to win through the air (Washington Commanders’ No. 16 passing game against Philadelphia Eagles’ No. 6 pass defense).",
+        "The Washington Commanders have to win in the pass-rush matchup (Philadelphia Eagles’ No. 21 pass protection against Washington Commanders’ No. 13 pass rush)."
+      ],
+      "market": [
+        "The Philadelphia Eagles have to win through the air (Washington Commanders’ No. 16 passing game against Philadelphia Eagles’ No. 6 pass defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "The line on file was captured Sept. 13 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-26T23:11:24.541Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-27T08:53:18.887Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-26T23:17:09.387Z"
+    "at": "2026-10-27T08:53:29.281Z"
   }
 }

@@ -205,78 +205,39 @@ do $$ begin
   end if;
 end $$;
 
--- ── 2. THE LEDGER: one row per gateway decision ─────────────────────────────
-create table if not exists public.odds_api_requests (
-  id                 bigserial primary key,
-  created_at         timestamptz not null default now(),
-  cycle_start        date not null,
-  usage_day          date not null,
-  caller             text not null,
-  trigger            text,
-  category           text,
-  sport_key          text,
-  event_id           text,
-  endpoint           text,
-  markets            text[],
-  selection          text,
-  odds_format        text,
-  region_equivalents integer,
-  fingerprint        text,
-  decision           text not null,
-  reason             text,
-  dispatched         boolean not null default false,
-  status             text not null,
-  priority           smallint,
-  shed_level         smallint,
-  hours_to_start     numeric,
-  interval_minutes   numeric,
-  reserved_credits   integer not null default 0,
-  actual_credits     integer,
-  cost_is_exact      boolean,
-  http_status        integer,
-  requests_used      integer,
-  requests_remaining integer,
-  requests_last      integer,
-  attempt            smallint not null default 1,
-  parent_request_id  bigint,
-  served_request_id  bigint,
-  duration_ms        integer,
-  error              text,
-  lease_expires_at   timestamptz,
-  settled_at         timestamptz
-);
-create index if not exists odds_api_requests_cycle_idx on public.odds_api_requests (cycle_start) where dispatched;
-create index if not exists odds_api_requests_day_idx on public.odds_api_requests (usage_day, caller);
-create index if not exists odds_api_requests_open_idx on public.odds_api_requests (fingerprint, lease_expires_at) where status = 'reserved';
-create index if not exists odds_api_requests_recent_idx on public.odds_api_requests (created_at desc);
+-- 2026-10-26 (METHODOLOGY CHANGE): PER-CATEGORY DAILY CAPS. Until now the only
+-- daily limit was the shared allowance and its shedding, which a category
+-- crosses with everything else. The Sharp-lag research pipeline buys
+-- single-event checks on a trigger (an injury, a goalie change, a Kalshi move)
+-- and NBA role-shift props; each needs a hard daily ceiling of its own that no
+-- trigger storm can cross. daily_cap_credits is that ceiling: credits this
+-- category may spend per UTC day, counted from the ledger (settled at
+-- x-requests-last, reservations at their upper bound) inside odds_api_acquire,
+-- under the same config-row lock as the shared budget, so concurrent workers
+-- cannot both take the last credits under it. NULL = no cap of its own (every
+-- existing category, unchanged). A cap only ever refuses: the monthly ceiling,
+-- the reserve and the shedding still apply on top of it.
+alter table public.odds_api_categories add column if not exists daily_cap_credits integer;
 do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'odds_api_requests_status_chk') then
-    alter table public.odds_api_requests add constraint odds_api_requests_status_chk
-      check (status in ('reserved', 'settled', 'failed', 'expired', 'not_dispatched'));
+  if not exists (select 1 from pg_constraint where conname = 'odds_api_categories_daily_cap_chk') then
+    alter table public.odds_api_categories add constraint odds_api_categories_daily_cap_chk
+      check (daily_cap_credits is null or daily_cap_credits >= 0);
   end if;
 end $$;
-alter table public.odds_api_requests enable row level security;
-revoke all on public.odds_api_requests from anon, authenticated;
-
--- ── 3. THE SNAPSHOT STORE: the latest successful answer per fingerprint ─────
-create table if not exists public.odds_api_snapshots (
-  fingerprint         text primary key,
-  category            text,
-  sport_key           text,
-  event_id            text,
-  endpoint            text,
-  markets             text[],
-  selection           text,
-  odds_format         text,
-  last_request_id     bigint,
-  last_attempt_at     timestamptz,
-  last_status         text,
-  last_http_status    integer,
-  last_success_at     timestamptz,
-  body                jsonb,
-  events_count        integer,
-  markets_returned    integer,
-  bookmakers_returned integer,
-  cost_last           integer,
-  updated_at          timestamptz not null default now()
-);
+-- The two capped categories, created DISABLED: turning either on is an
+-- operator act (odds_api_set_category), taken only after this file is applied.
+-- Priority 4 sheds them first, with the alternate ladders, at 60% of the day.
+--   sharp_check     ONE event, h2h/spreads/totals, Pinnacle (the sharp anchor)
+--                   and DraftKings (a target); two books bill as one
+--                   region-equivalent, so <= 3 credits a request. 90/day =
+--                   30 requests.
+--   nba_role_props  ONE NBA event, four volume markets at the props book list
+--                   (ten books, one region-equivalent): <= 4 credits a request.
+--                   48/day = 12 requests.
+insert into public.odds_api_categories (category, endpoint, enabled, priority, markets, bookmakers, default_format, cost_multiplier, daily_cap_credits, description) values
+  ('sharp_check', 'event_odds', false, 4, array['h2h','spreads','totals'], array['pinnacle','draftkings'], 'decimal', 1, 90,
+   'Sharp-lag research: one event''s Pinnacle and DraftKings main markets after a trigger, and NBA/NHL pre-tip closes. Capped at 90 credits a day.'),
+  ('nba_role_props', 'event_odds', false, 4, array['player_rebounds','player_assists','player_threes','player_points_rebounds_assists'],
+   array['draftkings','fanduel','betmgm','williamhill_us','espnbet','betrivers','hardrockbet','fanatics','pinnacle','betonlineag'], 'decimal', 1, 48,
+   'NBA role-shift research: one event''s volume player markets after a rotation player is ruled out. Capped at 48 credits a day.')
+on conflict (category) do nothing;

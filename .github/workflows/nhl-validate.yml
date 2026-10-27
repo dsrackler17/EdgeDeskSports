@@ -65,6 +65,10 @@ jobs:
       - name: The suites pass on the new record before anything commits
         run: node hockey/model/walkforward.js --check && node tools/hockey/hockey.test.js && node tools/hockey/nhl_v2.test.js && node tools/engine/engine.test.js && node engine/build_registry.js --check && node engine/build_board.js --check
       - name: Commit (tools/ci/push_generated.sh)
+        env:
+          # the registry and board are computed from every sport's record: on a rejected push they are
+          # rebuilt on the new tip, never carried from this run (the same step in editorial.yml says why)
+          PUSH_REBUILD: node engine/build_registry.js && node engine/build_board.js
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

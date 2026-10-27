@@ -113,7 +113,8 @@ function synthetic() {
      site-wide tracker, and only through an anonymous door (lib/edgedesk_plans.js DOORS.anon) */
   const PLANS = require('../../lib/edgedesk_plans.js');
   const anonRpc = (r) => { const m = /supabase\.co\/rest\/v1\/rpc\/([a-z_]+)/.exec(r); return !!m && PLANS.DOORS.anon.rpc.indexOf(m[1]) >= 0; };
-  const publicOnly = (rec) => rec.requests.every((r) => /^\/(performance\/|lib\/edgedesk_(calibration|performance|track|public)\.js|tools\/tools\.css)/.test(r) || /^https:\/\/fonts\./.test(r) || /googletagmanager|google-analytics/.test(r) || anonRpc(r));
+  /* lib/edgedesk_sharp_lag.js draws the Sharp-lag record (Experimental), read through its two anonymous doors */
+  const publicOnly = (rec) => rec.requests.every((r) => /^\/(performance\/|lib\/edgedesk_(calibration|performance|track|public|sharp_lag)\.js|tools\/tools\.css)/.test(r) || /^https:\/\/fonts\./.test(r) || /googletagmanager|google-analytics/.test(r) || anonRpc(r));
 
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 860 }]) {
     const tag = vp.width + 'px';

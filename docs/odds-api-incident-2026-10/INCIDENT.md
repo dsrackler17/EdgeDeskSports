@@ -5,6 +5,10 @@
 Every caller now goes through one gateway. It re-enables on 2026-11-01 under a
 60,000-credit operational budget, using the runbook in §9.
 
+**Amended 2026-10-26:** the gateway enforces a per-category daily cap, and two
+capped research categories exist, disabled
+([METHODOLOGY-2026-10-26-category-caps.md](METHODOLOGY-2026-10-26-category-caps.md)).
+
 **Plan:** $59/month, 100,000 credits. On 2026-10-10 at 12:24Z the provider
 reported **99,336 used and 664 remaining**. By 13:55Z it reported **100,000
 used and 0 remaining** (the CFB props capture's own `capture_state.json`): the

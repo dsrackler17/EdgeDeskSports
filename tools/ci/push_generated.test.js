@@ -282,9 +282,11 @@ function runRebuild(cwd, args, rebuild) {
        articles job carried a stale manifest (2026-10-25 20:47) and the weekly build a
        stale football/matchup/metrics.json (2026-10-26 00:30, built from starters three
        hours old), each over a newer tip: a job that names one of these paths and sets
-       no PUSH_REBUILD for it can do it again */
+       no PUSH_REBUILD for it can do it again. The cross-sport registry and board are built
+       from every sport's record: a carried copy drops the record another job just published */
 {
-  const AGGREGATES = { 'football/matchup/metrics.json': 'build_matchup_metrics.js', 'articles/data/index.json': 'store.js --reindex' };
+  const AGGREGATES = { 'football/matchup/metrics.json': 'build_matchup_metrics.js', 'articles/data/index.json': 'store.js --reindex',
+    'engine/registry.json': 'build_registry.js', 'engine/board.json': 'build_board.js' };
   const WF = path.join(__dirname, '..', '..', '.github', 'workflows');
   const missing = [];
   let seen = 0;

@@ -1,0 +1,95 @@
+# EdgeDesk — Sharp lag research (EXPERIMENTAL). docs/sharp-lag/README.md.
+#
+#   tests  on every pull request and push that touches this work, all
+#          offline: the provider is mocked everywhere, and nothing here holds
+#          an odds key. The shared core (Shin de-vig, fees, flags, grades,
+#          the clustered bootstrap); the deployed edge functions imported as
+#          they ship, against an in-memory PostgREST; the SQL on a real
+#          PostgreSQL (append-only, the guards, who reads what, the cron).
+#          The pages: the Experimental sections as they ship, and in
+#          Chromium at a phone and a desktop width, with the database stubbed.
+# Deploying is .github/workflows/deploy-sharp-lag.yml (manual), which runs the
+# same tests first.
+name: Sharp lag research
+run-name: Sharp lag research · ${{ github.event_name }}
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_sharp_lag.js'
+      - 'supabase/sharp_lag.sql'
+      - 'supabase/sharp_lag_cron.sql'
+      - 'supabase/migrations/20261027120000_sharp_lag.sql'
+      - 'supabase/functions/sharp_lag/**'
+      - 'supabase/functions/sharp_check/**'
+      - 'nba/data/teams.json'
+      - 'hockey/data/teams.json'
+      - 'research/sharp_lag/**'
+      - 'supabase/sharp_lag_registry.sql'
+      - 'lib/edgedesk_game_view.js'
+      - 'lib/edgedesk_games_ui.js'
+      - 'app.html'
+      - 'performance/**'
+      - 'today/index.html'
+      - 'tools/slate/fixtures/**'
+      - 'tools/app/nav_helper.js'
+      - 'nba/props/**'
+      - 'nba/injury/core.js'
+      - 'lib/edgedesk_nba_ui.js'
+      - 'lib/edgedesk_plans.js'
+      - 'lib/edgedesk_games.js'
+      - 'supabase/odds_api_emergency_stop.sql'
+      - 'tools/sharp_lag/**'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/sharp-lag.yml'
+      - '.github/workflows/deploy-sharp-lag.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_sharp_lag.js'
+      - 'supabase/sharp_lag*.sql'
+      - 'supabase/functions/sharp_lag/**'
+      - 'supabase/functions/sharp_check/**'
+      - 'tools/sharp_lag/**'
+permissions:
+  contents: read
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: sharp-lag-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The edge functions carry lib/edgedesk_sharp_lag.js byte for byte
+        run: node tools/sharp_lag/inline_core.js --check
+      - name: The core (de-vig, fees, flags, grades, the clustered bootstrap, the display rules)
+        run: node tools/sharp_lag/core.test.js
+      - name: The free sharp_lag function, as deployed, against an in-memory PostgREST (no gateway, no provider)
+        run: node tools/sharp_lag/sharp_lag_fn.test.js
+      - name: The paid sharp_check dispatcher, as deployed, against a mocked odds gateway
+        run: node tools/sharp_lag/sharp_check_fn.test.js
+      - name: The research registrations are registered as written (generated SQL is current)
+        run: node tools/sharp_lag/build_registry_sql.js --check
+      - name: The layer on a real PostgreSQL (append-only, the guards, who reads what, the cron)
+        env: { SHARP_LAG_SQL_REQUIRED: '1' }
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/sharp_lag/sharp_lag_sql.test.js
+      - name: The Experimental sections as the pages ship them
+        run: node tools/sharp_lag/sharp_lag_ui.test.js
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Every surface in Chromium (matchup, game page, Signals, Performance; phone and desktop)
+        env: { SHARP_LAG_E2E_REQUIRED: '1' }
+        run: node tools/sharp_lag/sharp_lag_ui.e2e.js
+      - name: NBA role shifts (the injury-conditioned regime, on fixtures)
+        run: node tools/sharp_lag/role_shift.test.js

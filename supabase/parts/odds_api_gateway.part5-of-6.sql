@@ -210,35 +210,18 @@ begin
   return jsonb_build_object('snapshots', a, 'decisions', b, 'ledger', d, 'events', e);
 end $$;
 
--- ── 13. WHO MAY CALL WHAT ───────────────────────────────────────────────────
-do $g$
-declare f text;
-begin
-  foreach f in array array[
-    'public.odds_api_acquire(jsonb)', 'public.odds_api_settle(jsonb)', 'public.odds_api_snapshot(text)',
-    'public.odds_api_consume(text,text,bigint)',
-    'public.odds_api_set_budget(integer,integer,integer)', 'public.odds_api_apply_recovery_budget()',
-    'public.odds_api_set_enabled(boolean,text,text)', 'public.odds_api_confirm_quota(integer,integer,text)',
-    'public.odds_api_set_category(text,boolean)', 'public.odds_api_set_sport(text,boolean)',
-    'public.odds_api_job_lock(text,text,integer)', 'public.odds_api_job_unlock(text,text)',
-    'public.odds_api_prune()', 'public.odds_api_budget_state(timestamptz)', 'public.odds_api_enabled()',
-    'public.odds_api_trip(text,text)', 'public.odds_api_alert(text,text,text,jsonb)',
-    'public.odds_api_dashboard(integer)', 'public.odds_api_admin_pause(text)', 'public.odds_api_ack_alert(bigint)',
-    'public.odds_feed_status()', 'public.odds_api_is_admin()'] loop
-    execute format('revoke all on function %s from public, anon, authenticated', f);
-    if exists (select 1 from pg_roles where rolname = 'service_role') then
-      execute format('grant execute on function %s to service_role', f);
-    end if;
-  end loop;
-  -- signed-in operators: the dashboard, pause and acknowledge (each checks the operator list itself)
-  execute 'grant execute on function public.odds_api_dashboard(integer), public.odds_api_admin_pause(text), public.odds_api_ack_alert(bigint), public.odds_api_is_admin() to authenticated';
-  -- everyone: whether prices are refreshing, and when each sport was last verified
-  execute 'grant execute on function public.odds_feed_status() to anon, authenticated';
-  if exists (select 1 from pg_roles where rolname = 'service_role') then
-    execute 'grant select on public.odds_api_config, public.odds_api_requests, public.odds_api_snapshots, public.odds_api_events,
-             public.odds_api_alerts, public.odds_api_categories, public.odds_api_sports, public.odds_api_cadence to service_role';
-  end if;
-end $g$;
-alter table public.odds_api_categories enable row level security;
-alter table public.odds_api_sports enable row level security;
-alter table public.odds_api_cadence enable row level security;
+-- The pg_cron command patterns that reach a paid path: the emergency stop
+-- pauses them and odds_api_hourly_limits.sql holds them to hourly. The same
+-- list as supabase/odds_api_emergency_stop.sql, re-created here so a new
+-- spender (sharp_check, 2026-10-26) is covered without re-running the stop.
+create or replace function public.odds_api_spend_patterns()
+returns text[] language sql immutable as $$
+  select array[
+    '%/functions/v1/capture%', '%capture_poke%', '%/functions/v1/close%',
+    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
+    '%/functions/v1/odds?%', '%/functions/v1/odds''%', '%/functions/v1/odds"%',
+    '%/functions/v1/wta_odds%', '%/functions/v1/wta_close%', '%/functions/v1/cfb_close%',
+    '%/functions/v1/close_backfill%', '%/functions/v1/capture_boards%', '%/functions/v1/model_conf_odds%',
+    '%/functions/v1/ingest_multisport%', '%/functions/v1/run_slate%', '%/functions/v1/scores_diag%'
+  ]::text[]
+$$;
