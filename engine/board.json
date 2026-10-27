@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-27T09:20:22.043Z",
+ "evaluated_at": "2026-10-27T15:21:50.325Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 414 without a price, 0 stale."
+  "No market had a fresh executable price: 438 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0114
  },
  "counts": {
-  "RESEARCH": 414
+  "RESEARCH": 438
  },
  "gate_failures": {
-  "NO_PRICE": 414,
-  "NEEDS_PRICE": 414
+  "NO_PRICE": 438,
+  "NEEDS_PRICE": 438
  },
- "n_candidates": 414,
+ "n_candidates": 438,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -150,16 +150,16 @@
    },
    "label": "Brooklyn Nets @ Boston Celtics — Boston Celtics moneyline",
    "quote": null,
-   "fair_american": -663,
+   "fair_american": -863,
    "break_even": null,
    "prob": {
-    "model": 0.8689,
+    "model": 0.8962,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.8689,
+    "posterior": 0.8962,
     "sd": 0.0354,
-    "conservative": 0.8236,
+    "conservative": 0.8509,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -169,7 +169,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -419,
+   "min_acceptable_american": -503,
    "disagreement": null,
    "gates": [
     {
@@ -182,13 +182,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -419 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -503 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 14.5 (home), total 219",
+    "projected margin 16.6 (home), total 219.1",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -203,7 +203,7 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "66cd25b8",
+   "id": "6a0eb95a",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
@@ -217,21 +217,21 @@
    "market": {
     "kind": "spread",
     "side": "Boston Celtics",
-    "line": -14.5,
+    "line": -16.5,
     "settles": "including overtime; a whole-number line can push"
    },
-   "label": "Brooklyn Nets @ Boston Celtics — Boston Celtics -14.5",
+   "label": "Brooklyn Nets @ Boston Celtics — Boston Celtics -16.5",
    "quote": null,
-   "fair_american": -100,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.5006,
+    "model": 0.5015,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5006,
+    "posterior": 0.5015,
     "sd": 0.0354,
-    "conservative": 0.4553,
+    "conservative": 0.4562,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -260,7 +260,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 14.5 (home), total 219",
+    "projected margin 16.6 (home), total 219.1",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -275,7 +275,7 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "0b8079e3",
+   "id": "036ba5d1",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
@@ -289,21 +289,21 @@
    "market": {
     "kind": "spread",
     "side": "Brooklyn Nets",
-    "line": 14.5,
+    "line": 16.5,
     "settles": "including overtime; a whole-number line can push"
    },
-   "label": "Brooklyn Nets @ Boston Celtics — Brooklyn Nets +14.5",
+   "label": "Brooklyn Nets @ Boston Celtics — Brooklyn Nets +16.5",
    "quote": null,
-   "fair_american": 100,
+   "fair_american": 101,
    "break_even": null,
    "prob": {
-    "model": 0.4994,
+    "model": 0.4985,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4994,
+    "posterior": 0.4985,
     "sd": 0.0354,
-    "conservative": 0.4541,
+    "conservative": 0.4532,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -332,79 +332,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 14.5 (home), total 219",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "922602ea",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909877",
-   "event": {
-    "home": "Boston Celtics",
-    "away": "Brooklyn Nets",
-    "start_utc": "2026-10-27T23:30:00Z",
-    "label": "Brooklyn Nets @ Boston Celtics"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 219,
-    "settles": "including overtime"
-   },
-   "label": "Brooklyn Nets @ Boston Celtics — under 219",
-   "quote": null,
-   "fair_american": -100,
-   "break_even": null,
-   "prob": {
-    "model": 0.4896,
-    "push": 0.0209,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4896,
-    "sd": 0.0354,
-    "conservative": 0.4443,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 125,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 14.5 (home), total 219",
+    "projected margin 16.6 (home), total 219.1",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -438,16 +366,16 @@
    },
    "label": "Brooklyn Nets @ Boston Celtics — over 219",
    "quote": null,
-   "fair_american": 100,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4895,
+    "model": 0.4919,
     "push": 0.0209,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4895,
+    "posterior": 0.4919,
     "sd": 0.0354,
-    "conservative": 0.4442,
+    "conservative": 0.4466,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -457,7 +385,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 125,
+   "min_acceptable_american": 124,
    "disagreement": null,
    "gates": [
     {
@@ -470,13 +398,85 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 14.5 (home), total 219",
+    "projected margin 16.6 (home), total 219.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "922602ea",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909877",
+   "event": {
+    "home": "Boston Celtics",
+    "away": "Brooklyn Nets",
+    "start_utc": "2026-10-27T23:30:00Z",
+    "label": "Brooklyn Nets @ Boston Celtics"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 219,
+    "settles": "including overtime"
+   },
+   "label": "Brooklyn Nets @ Boston Celtics — under 219",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4872,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4872,
+    "sd": 0.0354,
+    "conservative": 0.4419,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 16.6 (home), total 219.1",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -510,16 +510,16 @@
    },
    "label": "Brooklyn Nets @ Boston Celtics — Brooklyn Nets moneyline",
    "quote": null,
-   "fair_american": 663,
+   "fair_american": 863,
    "break_even": null,
    "prob": {
-    "model": 0.1311,
+    "model": 0.1038,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.1311,
+    "posterior": 0.1038,
     "sd": 0.0354,
-    "conservative": 0.0858,
+    "conservative": 0.0585,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -529,7 +529,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 1089,
+   "min_acceptable_american": 1644,
    "disagreement": null,
    "gates": [
     {
@@ -542,13 +542,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +1089 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +1644 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 14.5 (home), total 219",
+    "projected margin 16.6 (home), total 219.1",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -582,16 +582,16 @@
    },
    "label": "Sacramento Kings @ San Antonio Spurs — San Antonio Spurs moneyline",
    "quote": null,
-   "fair_american": -782,
+   "fair_american": -791,
    "break_even": null,
    "prob": {
-    "model": 0.8866,
+    "model": 0.8878,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.8866,
+    "posterior": 0.8878,
     "sd": 0.0354,
-    "conservative": 0.8413,
+    "conservative": 0.8425,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -601,7 +601,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -471,
+   "min_acceptable_american": -475,
    "disagreement": null,
    "gates": [
     {
@@ -614,13 +614,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -471 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -475 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16 (home), total 229.6",
+    "projected margin 16.1 (home), total 229.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -653,16 +653,16 @@
    },
    "label": "Detroit Pistons @ New York Knicks — Detroit Pistons moneyline",
    "quote": null,
-   "fair_american": -121,
+   "fair_american": -119,
    "break_even": null,
    "prob": {
-    "model": 0.5478,
+    "model": 0.5436,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5478,
+    "posterior": 0.5436,
     "sd": 0.0354,
-    "conservative": 0.5025,
+    "conservative": 0.4983,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -672,7 +672,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 103,
+   "min_acceptable_american": 105,
    "disagreement": null,
    "gates": [
     {
@@ -685,13 +685,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +105 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -1.2 (home), total 215",
+    "projected margin -1.1 (home), total 215",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -724,16 +724,16 @@
    },
    "label": "Sacramento Kings @ San Antonio Spurs — over 229.5",
    "quote": null,
-   "fair_american": -101,
+   "fair_american": -102,
    "break_even": null,
    "prob": {
-    "model": 0.503,
+    "model": 0.5048,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.503,
+    "posterior": 0.5048,
     "sd": 0.0354,
-    "conservative": 0.4577,
+    "conservative": 0.4595,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -743,7 +743,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 123,
+   "min_acceptable_american": 122,
    "disagreement": null,
    "gates": [
     {
@@ -756,13 +756,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16 (home), total 229.6",
+    "projected margin 16.1 (home), total 229.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -795,16 +795,16 @@
    },
    "label": "Sacramento Kings @ San Antonio Spurs — under 229.5",
    "quote": null,
-   "fair_american": 101,
+   "fair_american": 102,
    "break_even": null,
    "prob": {
-    "model": 0.497,
+    "model": 0.4952,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.497,
+    "posterior": 0.4952,
     "sd": 0.0354,
-    "conservative": 0.4517,
+    "conservative": 0.4499,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -814,7 +814,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 126,
+   "min_acceptable_american": 127,
    "disagreement": null,
    "gates": [
     {
@@ -827,155 +827,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16 (home), total 229.6",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "9d75a2b1",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909878",
-   "event": {
-    "home": "New York Knicks",
-    "away": "Detroit Pistons",
-    "start_utc": "2026-10-28T00:00:00Z",
-    "label": "Detroit Pistons @ New York Knicks"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Detroit Pistons",
-    "line": -1,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Detroit Pistons @ New York Knicks — Detroit Pistons -1",
-   "quote": null,
-   "fair_american": -103,
-   "break_even": null,
-   "prob": {
-    "model": 0.493,
-    "push": 0.0277,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.493,
-    "sd": 0.0354,
-    "conservative": 0.4477,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin -1.2 (home), total 215",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "66fe1259",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909878",
-   "event": {
-    "home": "New York Knicks",
-    "away": "Detroit Pistons",
-    "start_utc": "2026-10-28T00:00:00Z",
-    "label": "Detroit Pistons @ New York Knicks"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 215,
-    "settles": "including overtime"
-   },
-   "label": "Detroit Pistons @ New York Knicks — under 215",
-   "quote": null,
-   "fair_american": -100,
-   "break_even": null,
-   "prob": {
-    "model": 0.4898,
-    "push": 0.0209,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4898,
-    "sd": 0.0354,
-    "conservative": 0.4445,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 125,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin -1.2 (home), total 215",
+    "projected margin 16.1 (home), total 229.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1008,16 +866,16 @@
    },
    "label": "Detroit Pistons @ New York Knicks — over 215",
    "quote": null,
-   "fair_american": 100,
+   "fair_american": -100,
    "break_even": null,
    "prob": {
-    "model": 0.4893,
+    "model": 0.4904,
     "push": 0.0209,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4893,
+    "posterior": 0.4904,
     "sd": 0.0354,
-    "conservative": 0.444,
+    "conservative": 0.4451,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1027,7 +885,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 125,
+   "min_acceptable_american": 124,
    "disagreement": null,
    "gates": [
     {
@@ -1040,13 +898,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -1.2 (home), total 215",
+    "projected margin -1.1 (home), total 215",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1060,35 +918,106 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "87089655",
+   "id": "9d75a2b1",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
-   "event_key": "NBA|401909879",
+   "event_key": "NBA|401909878",
    "event": {
-    "home": "San Antonio Spurs",
-    "away": "Sacramento Kings",
+    "home": "New York Knicks",
+    "away": "Detroit Pistons",
     "start_utc": "2026-10-28T00:00:00Z",
-    "label": "Sacramento Kings @ San Antonio Spurs"
+    "label": "Detroit Pistons @ New York Knicks"
    },
    "market": {
     "kind": "spread",
-    "side": "Sacramento Kings",
-    "line": 16,
+    "side": "Detroit Pistons",
+    "line": -1,
     "settles": "including overtime; a whole-number line can push"
    },
-   "label": "Sacramento Kings @ San Antonio Spurs — Sacramento Kings +16",
+   "label": "Detroit Pistons @ New York Knicks — Detroit Pistons -1",
    "quote": null,
-   "fair_american": -100,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4865,
+    "model": 0.4894,
     "push": 0.0277,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4865,
+    "posterior": 0.4894,
     "sd": 0.0354,
-    "conservative": 0.4412,
+    "conservative": 0.4441,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 123,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin -1.1 (home), total 215",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "66fe1259",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909878",
+   "event": {
+    "home": "New York Knicks",
+    "away": "Detroit Pistons",
+    "start_utc": "2026-10-28T00:00:00Z",
+    "label": "Detroit Pistons @ New York Knicks"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 215,
+    "settles": "including overtime"
+   },
+   "label": "Detroit Pistons @ New York Knicks — under 215",
+   "quote": null,
+   "fair_american": 100,
+   "break_even": null,
+   "prob": {
+    "model": 0.4887,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4887,
+    "sd": 0.0354,
+    "conservative": 0.4434,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1117,7 +1046,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16 (home), total 229.6",
+    "projected margin -1.1 (home), total 215",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1150,16 +1079,16 @@
    },
    "label": "Sacramento Kings @ San Antonio Spurs — San Antonio Spurs -16",
    "quote": null,
-   "fair_american": 100,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4858,
+    "model": 0.4884,
     "push": 0.0277,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4858,
+    "posterior": 0.4884,
     "sd": 0.0354,
-    "conservative": 0.4405,
+    "conservative": 0.4431,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1169,7 +1098,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 125,
+   "min_acceptable_american": 124,
    "disagreement": null,
    "gates": [
     {
@@ -1182,13 +1111,84 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16 (home), total 229.6",
+    "projected margin 16.1 (home), total 229.7",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "87089655",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909879",
+   "event": {
+    "home": "San Antonio Spurs",
+    "away": "Sacramento Kings",
+    "start_utc": "2026-10-28T00:00:00Z",
+    "label": "Sacramento Kings @ San Antonio Spurs"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Sacramento Kings",
+    "line": 16,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Sacramento Kings @ San Antonio Spurs — Sacramento Kings +16",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4839,
+    "push": 0.0277,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4839,
+    "sd": 0.0354,
+    "conservative": 0.4386,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 16.1 (home), total 229.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1221,16 +1221,16 @@
    },
    "label": "Detroit Pistons @ New York Knicks — New York Knicks +1",
    "quote": null,
-   "fair_american": 103,
+   "fair_american": 101,
    "break_even": null,
    "prob": {
-    "model": 0.4793,
+    "model": 0.4829,
     "push": 0.0277,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4793,
+    "posterior": 0.4829,
     "sd": 0.0354,
-    "conservative": 0.434,
+    "conservative": 0.4376,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1240,7 +1240,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 129,
+   "min_acceptable_american": 127,
    "disagreement": null,
    "gates": [
     {
@@ -1253,13 +1253,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +129 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -1.2 (home), total 215",
+    "projected margin -1.1 (home), total 215",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1292,16 +1292,16 @@
    },
    "label": "Detroit Pistons @ New York Knicks — New York Knicks moneyline",
    "quote": null,
-   "fair_american": 121,
+   "fair_american": 119,
    "break_even": null,
    "prob": {
-    "model": 0.4522,
+    "model": 0.4564,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4522,
+    "posterior": 0.4564,
     "sd": 0.0354,
-    "conservative": 0.4069,
+    "conservative": 0.4111,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1311,7 +1311,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 151,
+   "min_acceptable_american": 148,
    "disagreement": null,
    "gates": [
     {
@@ -1324,13 +1324,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +151 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +148 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -1.2 (home), total 215",
+    "projected margin -1.1 (home), total 215",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1363,16 +1363,16 @@
    },
    "label": "Sacramento Kings @ San Antonio Spurs — Sacramento Kings moneyline",
    "quote": null,
-   "fair_american": 782,
+   "fair_american": 791,
    "break_even": null,
    "prob": {
-    "model": 0.1134,
+    "model": 0.1122,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.1134,
+    "posterior": 0.1122,
     "sd": 0.0354,
-    "conservative": 0.0681,
+    "conservative": 0.0669,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1382,7 +1382,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 1398,
+   "min_acceptable_american": 1425,
    "disagreement": null,
    "gates": [
     {
@@ -1395,13 +1395,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +1398 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +1425 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16 (home), total 229.6",
+    "projected margin 16.1 (home), total 229.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1434,16 +1434,16 @@
    },
    "label": "Portland Trail Blazers @ Los Angeles Lakers — Los Angeles Lakers moneyline",
    "quote": null,
-   "fair_american": -121,
+   "fair_american": -125,
    "break_even": null,
    "prob": {
-    "model": 0.5476,
+    "model": 0.5546,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5476,
+    "posterior": 0.5546,
     "sd": 0.0354,
-    "conservative": 0.5023,
+    "conservative": 0.5093,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1453,7 +1453,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 103,
+   "min_acceptable_american": 100,
    "disagreement": null,
    "gates": [
     {
@@ -1466,226 +1466,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +100 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 1.7 (home), total 227.1",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "3ea70261",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909880",
-   "event": {
-    "home": "Los Angeles Lakers",
-    "away": "Portland Trail Blazers",
-    "start_utc": "2026-10-28T03:00:00Z",
-    "label": "Portland Trail Blazers @ Los Angeles Lakers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Los Angeles Lakers",
-    "line": -1.5,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Portland Trail Blazers @ Los Angeles Lakers — Los Angeles Lakers -1.5",
-   "quote": null,
-   "fair_american": -102,
-   "break_even": null,
-   "prob": {
-    "model": 0.5052,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5052,
-    "sd": 0.0354,
-    "conservative": 0.4599,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.7 (home), total 227.1",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "265f2e7a",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909880",
-   "event": {
-    "home": "Los Angeles Lakers",
-    "away": "Portland Trail Blazers",
-    "start_utc": "2026-10-28T03:00:00Z",
-    "label": "Portland Trail Blazers @ Los Angeles Lakers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Portland Trail Blazers",
-    "line": 1.5,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Portland Trail Blazers @ Los Angeles Lakers — Portland Trail Blazers +1.5",
-   "quote": null,
-   "fair_american": 102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4948,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4948,
-    "sd": 0.0354,
-    "conservative": 0.4495,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 127,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.7 (home), total 227.1",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "58095d8b",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909880",
-   "event": {
-    "home": "Los Angeles Lakers",
-    "away": "Portland Trail Blazers",
-    "start_utc": "2026-10-28T03:00:00Z",
-    "label": "Portland Trail Blazers @ Los Angeles Lakers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 227,
-    "settles": "including overtime"
-   },
-   "label": "Portland Trail Blazers @ Los Angeles Lakers — over 227",
-   "quote": null,
-   "fair_american": -101,
-   "break_even": null,
-   "prob": {
-    "model": 0.4918,
-    "push": 0.0209,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4918,
-    "sd": 0.0354,
-    "conservative": 0.4465,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 124,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.7 (home), total 227.1",
+    "projected margin 1.9 (home), total 226.9",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1718,16 +1505,158 @@
    },
    "label": "Portland Trail Blazers @ Los Angeles Lakers — under 227",
    "quote": null,
-   "fair_american": 101,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4873,
+    "model": 0.4913,
     "push": 0.0209,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4873,
+    "posterior": 0.4913,
     "sd": 0.0354,
-    "conservative": 0.442,
+    "conservative": 0.446,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 1.9 (home), total 226.9",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "9bc247aa",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909880",
+   "event": {
+    "home": "Los Angeles Lakers",
+    "away": "Portland Trail Blazers",
+    "start_utc": "2026-10-28T03:00:00Z",
+    "label": "Portland Trail Blazers @ Los Angeles Lakers"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Portland Trail Blazers",
+    "line": 2,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Portland Trail Blazers @ Los Angeles Lakers — Portland Trail Blazers +2",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4888,
+    "push": 0.0277,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4888,
+    "sd": 0.0354,
+    "conservative": 0.4435,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 1.9 (home), total 226.9",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "58095d8b",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909880",
+   "event": {
+    "home": "Los Angeles Lakers",
+    "away": "Portland Trail Blazers",
+    "start_utc": "2026-10-28T03:00:00Z",
+    "label": "Portland Trail Blazers @ Los Angeles Lakers"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 227,
+    "settles": "including overtime"
+   },
+   "label": "Portland Trail Blazers @ Los Angeles Lakers — over 227",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4878,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4878,
+    "sd": 0.0354,
+    "conservative": 0.4425,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1756,7 +1685,78 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 1.7 (home), total 227.1",
+    "projected margin 1.9 (home), total 226.9",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "3ca7a7ed",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909880",
+   "event": {
+    "home": "Los Angeles Lakers",
+    "away": "Portland Trail Blazers",
+    "start_utc": "2026-10-28T03:00:00Z",
+    "label": "Portland Trail Blazers @ Los Angeles Lakers"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Los Angeles Lakers",
+    "line": -2,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Portland Trail Blazers @ Los Angeles Lakers — Los Angeles Lakers -2",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4835,
+    "push": 0.0277,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4835,
+    "sd": 0.0354,
+    "conservative": 0.4382,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 1.9 (home), total 226.9",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1789,16 +1789,16 @@
    },
    "label": "Portland Trail Blazers @ Los Angeles Lakers — Portland Trail Blazers moneyline",
    "quote": null,
-   "fair_american": 121,
+   "fair_american": 125,
    "break_even": null,
    "prob": {
-    "model": 0.4524,
+    "model": 0.4454,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4524,
+    "posterior": 0.4454,
     "sd": 0.0354,
-    "conservative": 0.4071,
+    "conservative": 0.4001,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1808,7 +1808,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 151,
+   "min_acceptable_american": 155,
    "disagreement": null,
    "gates": [
     {
@@ -1821,13 +1821,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +151 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +155 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 1.7 (home), total 227.1",
+    "projected margin 1.9 (home), total 226.9",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -5322,6 +5322,432 @@
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "1d4b5ab4",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918310",
+   "event": {
+    "home": "Atlanta Dream",
+    "away": "Golden State Valkyries",
+    "start_utc": "2026-10-29T16:30:00Z",
+    "label": "Golden State Valkyries @ Atlanta Dream"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Atlanta Dream",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Golden State Valkyries @ Atlanta Dream — Atlanta Dream moneyline",
+   "quote": null,
+   "fair_american": -149,
+   "break_even": null,
+   "prob": {
+    "model": 0.599,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.599,
+    "sd": 0.0354,
+    "conservative": 0.5537,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -119,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -119 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.3 (home), total 158.1",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "1d40227b",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918310",
+   "event": {
+    "home": "Atlanta Dream",
+    "away": "Golden State Valkyries",
+    "start_utc": "2026-10-29T16:30:00Z",
+    "label": "Golden State Valkyries @ Atlanta Dream"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Golden State Valkyries",
+    "line": 3.5,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Golden State Valkyries @ Atlanta Dream — Golden State Valkyries +3.5",
+   "quote": null,
+   "fair_american": -103,
+   "break_even": null,
+   "prob": {
+    "model": 0.5078,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5078,
+    "sd": 0.0354,
+    "conservative": 0.4625,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 121,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +121 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.3 (home), total 158.1",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "88e6c242",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918310",
+   "event": {
+    "home": "Atlanta Dream",
+    "away": "Golden State Valkyries",
+    "start_utc": "2026-10-29T16:30:00Z",
+    "label": "Golden State Valkyries @ Atlanta Dream"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Atlanta Dream",
+    "line": -3.5,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Golden State Valkyries @ Atlanta Dream — Atlanta Dream -3.5",
+   "quote": null,
+   "fair_american": 103,
+   "break_even": null,
+   "prob": {
+    "model": 0.4922,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4922,
+    "sd": 0.0354,
+    "conservative": 0.4469,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 128,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +128 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.3 (home), total 158.1",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "3306129c",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918310",
+   "event": {
+    "home": "Atlanta Dream",
+    "away": "Golden State Valkyries",
+    "start_utc": "2026-10-29T16:30:00Z",
+    "label": "Golden State Valkyries @ Atlanta Dream"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 158,
+    "settles": "including overtime"
+   },
+   "label": "Golden State Valkyries @ Atlanta Dream — over 158",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4893,
+    "push": 0.0239,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4893,
+    "sd": 0.0354,
+    "conservative": 0.444,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.3 (home), total 158.1",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "fe696f48",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918310",
+   "event": {
+    "home": "Atlanta Dream",
+    "away": "Golden State Valkyries",
+    "start_utc": "2026-10-29T16:30:00Z",
+    "label": "Golden State Valkyries @ Atlanta Dream"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 158,
+    "settles": "including overtime"
+   },
+   "label": "Golden State Valkyries @ Atlanta Dream — under 158",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4867,
+    "push": 0.0239,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4867,
+    "sd": 0.0354,
+    "conservative": 0.4414,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.3 (home), total 158.1",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "9dddccc2",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918310",
+   "event": {
+    "home": "Atlanta Dream",
+    "away": "Golden State Valkyries",
+    "start_utc": "2026-10-29T16:30:00Z",
+    "label": "Golden State Valkyries @ Atlanta Dream"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Golden State Valkyries",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Golden State Valkyries @ Atlanta Dream — Golden State Valkyries moneyline",
+   "quote": null,
+   "fair_american": 149,
+   "break_even": null,
+   "prob": {
+    "model": 0.401,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.401,
+    "sd": 0.0354,
+    "conservative": 0.3557,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 187,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +187 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.3 (home), total 158.1",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
   }
  ],
  "disclaimer": "Research, not picks. A qualified opportunity is a price that cleared EdgeDesk's published rules at the time shown; it is not a prediction that it will win, and nothing here is a recommendation to bet.",
@@ -5511,13 +5937,13 @@
    "label": "NBA",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 96,
+   "candidates": 114,
    "priced": 0,
-   "note": "96 fair prices in the window; no book price is captured for this sport",
+   "note": "114 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
-     "detail": "24486 games (2008-2027), retrospective"
+     "detail": "24495 games (2008-2027), retrospective"
     },
     "model_trained": {
      "done": true,
@@ -5547,13 +5973,13 @@
    "label": "WNBA",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 0,
+   "candidates": 6,
    "priced": 0,
-   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "note": "6 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
-     "detail": "4499 games (2008-2026), retrospective"
+     "detail": "4500 games (2008-2026), retrospective"
     },
     "model_trained": {
      "done": true,
@@ -5724,9 +6150,9 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-27T09:20:22.016Z",
+  "registry_generated_at": "2026-10-27T15:21:50.301Z",
   "nhl_slate_generated_at": "2026-10-27T09:20:13.106Z",
-  "basketball_slate_generated_at": "2026-10-26T17:22:25.483Z",
+  "basketball_slate_generated_at": "2026-10-27T15:21:43.177Z",
   "nhl_quotes": {
    "status": "DISABLED",
    "generated_at": "2026-10-27T09:20:13.056Z",
@@ -5736,8 +6162,8 @@
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 414,
-  "research_kept": 72,
+  "research_total": 438,
+  "research_kept": 78,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
 }
