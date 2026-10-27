@@ -91,9 +91,18 @@ jobs:
           print(len(c.get('bouts', [])), 'bouts; served:', (c.get('served') or {}).get('version'), '; bad:', bad)
           sys.exit(1 if bad else 0)
           EOF
+      # engine/registry.json reads UFC's state from model_loop/published/ufc/validation.json, which the
+      # Sunday cycle rewrites: the registry and board go out with it, so main never carries a record and
+      # a registry that disagree (college baseball's did on 2026-10-26, and every pull request failed)
+      - name: The cross-sport registry and board, rebuilt from the record this run wrote, and checked
+        run: node engine/build_registry.js && node engine/build_board.js && node engine/build_registry.js --check && node engine/build_board.js --check
       - name: Publish (tools/ci/push_generated.sh)
+        env:
+          # the registry and board are computed from every sport's record: on a rejected push they are
+          # rebuilt on the new tip, never carried from this run (the same step in editorial.yml says why)
+          PUSH_REBUILD: node engine/build_registry.js && node engine/build_board.js
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "model loop: UFC ${{ steps.mode.outputs.mode }} — bouts, record and ledgers" -- \
-            model_loop/data/ufc model_loop/published/ufc model_loop/ledger/ufc docs/model-loop/ufc
+            model_loop/data/ufc model_loop/published/ufc model_loop/ledger/ufc docs/model-loop/ufc engine/registry.json engine/board.json

@@ -1312,7 +1312,8 @@
       try {
         var r = await rpc('content_engine_publisher_save', { p: body });
         say('pbMsg', r.ok ? 'ok' : 'err', r.ok ? 'Saved.' : 'Not saved: ' + (r.detail || r.reason));
-        if (r.ok) { await loadPublishers(); editPublisher(publisherById(r.id)); }
+        /* the editor is drawn again from the saved row, which empties #pbMsg: say it again there */
+        if (r.ok) { await loadPublishers(); editPublisher(publisherById(r.id)); say('pbMsg', 'ok', 'Saved.'); }
       } catch (er) { fail('pbMsg', er); }
     };
     if (!isNew) wireBenchmarks(p);
