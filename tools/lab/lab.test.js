@@ -226,6 +226,31 @@ ok('registry: a validated headline names the markets it covers', reg2.sports.fil
   const held = wfCb && wfCb.status && wfCb.status.moneyline.status === 'OUTCOME_VALIDATED';
   ok('registry: college baseball is validated only by its own holdout record, and never claims value', (held || cb.readiness.state !== 'OUTCOME_VALIDATED') && !cb.readiness.value_claims_any, cb.readiness.state);
 }
+{
+  /* a job that refits a record the registry reads publishes the registry and board rebuilt from it, in the
+     same push, checked first, and rebuilt again on the new tip if the push is rejected. On 2026-10-26 the
+     college baseball weekly validation pushed its record alone, and this suite failed on main's own data
+     until another job happened to rebuild the registry 100 minutes later (#828). */
+  const REFITS = { // workflow -> the registry evidence it rewrites
+    'lab-build.yml': 'basketball/validation', 'lab-validate.yml': 'basketball/validation', 'nhl-validate.yml': 'hockey/validation',
+    'college-baseball-research-validate.yml': 'college_baseball/validation', 'model-loop-college-baseball.yml': 'college_baseball/validation',
+    'model-loop-basketball.yml': 'basketball/validation', 'model-loop-ufc.yml': 'model_loop/published/ufc',
+  };
+  const evidence = reg2.sports.flatMap((s) => s.evidence_files || []);
+  for (const [f, dir] of Object.entries(REFITS)) {
+    const y = fs.readFileSync(path.join(ROOT, '.github', 'workflows', f), 'utf8');
+    const at = y.indexOf('push_generated.sh'); const push = at < 0 ? '' : y.slice(at);
+    const rebuild = /^\s*run: [^\n]*node engine\/build_registry\.js && node engine\/build_board\.js/m.exec(y);
+    const named = push.split(/[\s\\"]+/).map((p) => p.replace(/\/$/, ''));
+    ok('registry: ' + f + ' publishes the registry\'s evidence (' + dir + ')', evidence.some((e) => e.startsWith(dir + '/')) && named.some((p) => dir === p || dir.startsWith(p + '/')));
+    ok('registry: ' + f + ' rebuilds the registry and board before it publishes', !!rebuild && rebuild.index < at);
+    ok('registry: ' + f + ' checks the rebuilt registry and board before it publishes',
+      [/node engine\/build_registry\.js --check/, /node engine\/build_board\.js --check/].every((r) => { const m = r.exec(y); return m && m.index < at; }));
+    ok('registry: ' + f + ' pushes the registry and board with its record', /\sengine\/registry\.json(\s|"|$)/.test(push) && /\sengine\/board\.json(\s|"|$)/.test(push));
+    ok('registry: ' + f + ' rebuilds the registry and board on the new tip of a rejected push',
+      /PUSH_REBUILD(:\s*|=['"]?)node engine\/build_registry\.js && node engine\/build_board\.js/.test(y));
+  }
+}
 const board = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json'), 'utf8'));
 ok('board: PASS with no fresh price, and no soccer row', board.verdict === 'PASS' && !board.candidates.some((c) => c.sport_id === 'soccer') && !(board.coverage || []).some((c) => c.id === 'soccer'));
 
