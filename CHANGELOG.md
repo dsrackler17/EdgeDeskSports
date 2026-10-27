@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-27 — Football decision test: the #836 merge's conflict resolution left it unrunnable; both fixes are back
+
+**What broke.** #836 and #837 fixed the same failure (the NFL hold-rule guard reading only the live slate) in parallel, in `tools/bettor/football_decision.test.js`. #837 merged first. #836's "Merge branch 'main'" commit `04f23a4e` resolved the conflict by deleting both sides of every conflicting hunk, and #836 merged 19 seconds later, before that commit's checks reported. The file still parsed, so the integrity gate passed, but it no longer ran:
+
+```
+tools/bettor/football_decision.test.js:514
+  const r = g.reference_market || {};
+ReferenceError: g is not defined
+```
+
+The resolution removed the per-game function's header and closing lines, the `nflReal` and `nflPinned` lists, the pinned-slate loader, the kernel's "held exactly when the blend crosses" check and the non-vacuity guard, while later lines still read `withRowAll`, `heldB` and `nflPinned`. CFB research terminal (`rules`), Decision quality (`suites`), Personal research CI (`suites`) and All checks fail on every pull request that starts them. On `main`, CFB research terminal failed on the merge itself, and CFB published-board validation fails after every hourly Model Lab run.
+
+**The repair.** The file is the union of the two pull requests, resolved locally from a three-way merge of their versions:
+- #837's `nflEval` returns a row or null; the live and the pinned slate both map through it.
+- The board reproduces the kernel's fair line wherever neither engine holds, on both slates (#837).
+- The kernel holds exactly the games whose blend crosses, on both slates (both).
+- The non-vacuity guard requires DEN @ ARI held on the pinned slate on every run (#836, the stricter of the two).
+- "Just far enough" runs on held games from both slates (both). The side invariant runs on every live and pinned game (#836).
+- No engine code, record, fixture or threshold changed. No check from either pull request is dropped or weakened.
+
+**Before and after.**
+
+| `node tools/bettor/football_decision.test.js` | result |
+|---|---|
+| `main` (`0107338a`) | `ReferenceError: g is not defined`, exit 1 |
+| this change | 181 passed, 0 failed |
+| this change, with the board's hold rule switched off (mutation, not committed) | 180 / 1: the guard fails, `{"live":[],"pinned":[]}` |
+
 ## 2026-10-26 — Football decision test: the NFL hold rule is checked on a pinned slate, not only on today's market
 
 **What broke.** Since the scheduled data push at 23:12 UTC (`e0205970`, "starter context, quarterback EPA, team profiles and the published card"), `tools/bettor/football_decision.test.js` has failed on `main` with 180 passed and 1 failed:

@@ -510,7 +510,16 @@ chk('fault kind: a canonical label carries the build\'s kind, else the facts\', 
 
 section('REAL PAYLOADS · NFL (football/nfl/slate.json: the real model, the real consensus line)');
 const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'nfl', 'slate.json'), 'utf8'));
-
+/* THE HOLD RULE ALSO READS A PINNED SLATE. Whether the live slate holds any
+   game is the market's call, not the code's: ARI @ DAL was the only one (model
+   5.76, market DAL -6.5) until the 2026-10-26 23:12 data push moved the line to
+   -6, and from then on the hold checks below had nothing to read. The slate
+   pinned at 2026-10-25 21:53 UTC (tools/fixtures/nfl_slate_2026-10-25.json, the
+   one tools/intelligence/fixtures.js serves) holds DEN @ ARI under both engines,
+   so the rule is exercised on a real game every run; live games still join it
+   whenever their market crosses. */
+const SLATE_PINNED = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'fixtures', 'nfl_slate_2026-10-25.json'), 'utf8'));
+const nflEval = (g) => {
   const r = g.reference_market || {};
   if (r.home_line == null || g.model_home_margin == null) return null;
   const now = Date.parse(g.kickoff) - 6 * 3600e3, at = new Date(now - 10 * 60000).toISOString();
@@ -521,7 +530,10 @@ const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'nfl', 'sla
   const G = Q.evaluateGame(model, quotes, ctx);
   const facts = I.nflFacts({ gid: g.game_id, home: g.home_team, away: g.away_team, g: G, model, ctx, qs: quotes, dq: g.data_quality, qb: g.qb_known || null });
   const d = D.decide(I.inputFromFacts(facts, { model, quotes, qev_ctx: ctx, evaluation: G }, { now, sport: 'NFL' }));
-
+  return { g, d, model, G };
+};
+const nflReal = SLATE.games.map(nflEval).filter(Boolean);
+const nflPinned = SLATE_PINNED.games.map(nflEval).filter(Boolean);
 chk('real NFL: a decision for every slate game with a model and a line', nflReal.length === SLATE.games.filter((g) => g.reference_market && g.reference_market.home_line != null && g.model_home_margin != null).length && nflReal.length > 0, nflReal.length);
 chk('real NFL: every one is EVALUABLE and reaches BET / LEAN / WATCH / PASS', nflReal.every((x) => x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0), nflReal.filter((x) => x.d.decision === 'NO_DECISION').map((x) => x.g.game_id + ':' + x.d.blocker_codes));
 chk('real NFL: every one decides on the PARTIALLY CALIBRATED pricing blend', nflReal.every((x) => x.d.probability_source === 'partially_calibrated'));
@@ -534,7 +546,8 @@ if (nflReal.length >= 6) {
    on one blend; the committed slate's rows are priced on the committed record */
 const kernelRow = (g) => { const k = PRICE.fairSpread({ sport: 'americanfootball_nfl', model_home_line: -g.model_home_margin, market_home_line: g.reference_market.home_line }); return k && k.ok ? { fair_line: k.fair_home_line, fair_status: k.status, market_line: g.reference_market.home_line } : null; };
 const withRow = nflReal.map((x) => ({ x, row: kernelRow(x.g) })).filter((y) => y.row && y.row.fair_line != null);
-
+const withRowPinned = nflPinned.map((x) => ({ x, row: kernelRow(x.g) })).filter((y) => y.row && y.row.fair_line != null);
+const withRowAll = withRow.concat(withRowPinned);
 /* THE BLEND MAY SHRINK THE DISAGREEMENT, NEVER REVERSE IT (audit 2026-09-30
    #4). The fitted blend (1.16 on the market, an intercept of -0.38) lands PAST
    the market line against the projection on most home underdogs — PIT @ CLE:
@@ -551,13 +564,15 @@ const crosses = (y) => { const km = -y.x.g.reference_market.home_line, mm = y.x.
 const boardHeld = (y) => !!(y.x.model.adjusted && y.x.model.adjusted.held_at_market);
 const plain = withRowAll.filter((y) => !boardHeld(y) && y.row.fair_status !== 'BLENDED_HELD');
 chk('real NFL: where neither engine holds the blend, the board reproduces the slate pricing kernel’s fair line', plain.length > 0 && plain.every((y) => Math.abs(y.x.d.canonical.decision_fair_home_spread - y.row.fair_line) < 0.02), plain.filter((y) => Math.abs(y.x.d.canonical.decision_fair_home_spread - y.row.fair_line) >= 0.02).map((y) => [y.x.g.game_id, y.x.d.canonical.decision_fair_home_spread, y.row.fair_line]));
-
+chk('real NFL: the kernel holds (BLENDED_HELD, at the market line) exactly the games whose blend crosses the market line against the projection, on the live and the pinned slate', withRowAll.every((y) => (y.row.fair_status === 'BLENDED_HELD') === crosses(y) && (y.row.fair_status !== 'BLENDED_HELD' || Math.abs(y.row.fair_line - y.row.market_line) < 1e-9)),
+  withRowAll.filter((y) => (y.row.fair_status === 'BLENDED_HELD') !== crosses(y)).map((y) => [y.x.g.game_id, y.row.fair_status, y.row.fair_line, y.row.market_line, Math.round(rawBlend(y) * 100) / 100]));
 /* the audit's named games, while they are on the live slate: a game leaves it
    once it kicks off (PIT @ CLE, 2026-10-02), and the rule itself is checked on
    every slate game just above */
 const auditOnSlate = ['2026_04_PIT_CLE', '2026_04_LA_PHI'].filter((id) => withRow.some((y) => y.x.g.game_id === id));
 chk('real NFL: the audit games still on the slate are held by the kernel — PIT @ CLE, LA @ PHI', auditOnSlate.every((id) => withRow.some((y) => y.x.g.game_id === id && y.row.fair_status === 'BLENDED_HELD')), withRow.filter((y) => /PIT_CLE|ARI_NYG|LA_PHI/.test(y.x.g.game_id)).map((y) => [y.x.g.game_id, y.row.fair_status]));
-
+const heldLive = withRow.filter(boardHeld), heldPinned = withRowPinned.filter(boardHeld), heldB = heldLive.concat(heldPinned);
+chk('real NFL: the board holds some real games (the rule is exercised, not vacuous): DEN @ ARI on the pinned slate every run, live games when their market crosses', heldPinned.some((y) => y.x.g.game_id === '2026_07_DEN_ARI'), { live: heldLive.map((y) => y.x.g.game_id), pinned: heldPinned.map((y) => y.x.g.game_id) });
 /* "just far enough": at the held centre the projection's side covers the
    market line at least half the time, and 0.01 pts back toward the fitted
    blend it no longer does (the pmf is keyed in half points, so the cover can
