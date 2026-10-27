@@ -139,6 +139,21 @@ chk('O keys are deterministic', JSON.stringify(CE.discover(snap, { now: NOW, pub
 chk('O keys are unique', new Set(opps.map((o) => o.key)).size === opps.length);
 chk('O every source has an https URL and a time (as the database requires)', opps.every((o) => o.sources.length && o.sources.every((s) => /^https:\/\//.test(s.url) && (s.as_of || s.published_at || s.retrieved_at))));
 chk('O formats are only those the topic can fill', opps.every((o) => o.formats.every((f) => CE.FORMATS[f]) && (o.kind !== 'weekly_preview' || o.formats[0] === o.league + '_weekly_preview')));
+/* a matchup analysis argues both sides, and the gate refuses one that cannot
+   (contrary_evidence). Tennessee at Cincinnati's evidence had nothing for
+   Tennessee (2026-10-27); with the case against EdgeDesk's side stripped
+   from Las Vegas at New England's the same way, that game is not offered,
+   and every analysis that is offered passes the gate */
+{
+  const s = CE.research.fromArtifacts(ART.frozen(), { now: NOW });
+  const p = s.nfl.games.find((g) => g.game_id === '2026_05_LV_NE'), X = p.evidence.explanation, con = new Set(X.contradicting);
+  X.contradicting = [];
+  p.evidence.claims = p.evidence.claims.filter((c) => !con.has(c.id) && !(c.football && c.leans && c.leans !== X.gap.toward));
+  const ma = CE.discover(s, { now: NOW, publisher: SR }).filter((o) => o.kind === 'matchup_analysis');
+  const bad = ma.map((o) => ({ key: o.key, r: CE.validate(CE.draft(o, { publisher: SR, format: 'matchup_analysis', now: NOW }), o, { publisher: SR, now: NOW, teamLists: TL }) })).filter((x) => !x.r.ok).map((x) => [x.key, x.r.failed]);
+  chk('O a matchup analysis is offered only where the evidence argues both sides, and every one offered passes the gate',
+    opps.some((o) => o.kind === 'matchup_analysis' && /LV_NE/.test(o.key)) && ma.length > 0 && !ma.some((o) => /LV_NE/.test(o.key)) && !bad.length, { offered: ma.map((o) => o.key), bad });
+}
 chk('O publisher fit: Stadium Rant prefers the broad preview to one matchup', (() => {
   const md = opps.find((o) => (o.kind === 'market_discrepancy' || o.kind === 'matchup_preview') && o.league === 'cfb' && o.research.games.length === 1);
   return !md || cfbPrev.scores.publisher_fit.score > md.scores.publisher_fit.score;
