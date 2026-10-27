@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-26 — Football decision test: the NFL hold rule is checked on a pinned slate, not only on today's market
+
+**What broke.** Since the scheduled data push at 23:12 UTC (`e0205970`, "starter context, quarterback EPA, team profiles and the published card"), `tools/bettor/football_decision.test.js` has failed on `main` with 180 passed and 1 failed:
+
+```
+FAIL | real NFL: the board holds some real games (the rule is exercised, not vacuous)  0
+```
+
+It turns CFB research terminal (`rules`), Decision quality (`suites`), Personal research CI (`suites`) and All checks red on every pull request that starts them. A `GITHUB_TOKEN` push starts no workflow, so `main` did not report the failure itself.
+
+**Why.** The check needs at least one game on the live NFL slate whose pricing blend is held at the market line. Before the push, only ARI @ DAL qualified: model DAL by 5.76, market DAL −6.5, raw blend 6.96. The push moved that line to −6, so |model − market| fell to 0.24, inside the 0.5-pt tolerance. Neither engine holds anything now: the board holds 0 and the kernel holds 0, and they agree. The rule is right. The check just read the market's hour, not the code.
+
+**The repair.** The hold-rule checks also read the slate pinned at 2026-10-25 21:53 UTC (`tools/fixtures/nfl_slate_2026-10-25.json`, the slate `tools/intelligence/fixtures.js` already serves). Both engines hold DEN @ ARI on it.
+- The non-vacuity guard reads the pinned slate: DEN @ ARI must be held on every run.
+- The "just far enough" check runs on held games from both slates.
+- So do the kernel's "held exactly when the blend crosses" check and the side invariant.
+- Every live-slate check is unchanged.
+- No engine code, record, fixture or threshold changed.
+
+**Before and after.**
+
+| `node tools/bettor/football_decision.test.js` | old test | this test |
+|---|---|---|
+| slate at `1028c428` (before the push) | 181 / 0 | 181 / 0 |
+| slate at `e0205970` (= `main`) | 180 / 1 | 181 / 0 |
+| `main`, with the board's hold rule switched off (mutation, not committed) | 180 / 1 (already red) | 180 / 1: the guard fails, `{"live":[],"pinned":[]}` |
+
 ## 2026-10-26 — Changelog: the last entry the #819 merge dropped is back
 
 The web-editor merge `c1081ebf7` (#819) dropped two `CHANGELOG.md` entries. #826 restored #819's own. The other, "Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market" (#818), is back, verbatim from `c7de08986`, where it stood: just before "All checks". Every heading from both sides of that merge is present again.
