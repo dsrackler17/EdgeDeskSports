@@ -139,6 +139,21 @@ chk('O keys are deterministic', JSON.stringify(CE.discover(snap, { now: NOW, pub
 chk('O keys are unique', new Set(opps.map((o) => o.key)).size === opps.length);
 chk('O every source has an https URL and a time (as the database requires)', opps.every((o) => o.sources.length && o.sources.every((s) => /^https:\/\//.test(s.url) && (s.as_of || s.published_at || s.retrieved_at))));
 chk('O formats are only those the topic can fill', opps.every((o) => o.formats.every((f) => CE.FORMATS[f]) && (o.kind !== 'weekly_preview' || o.formats[0] === o.league + '_weekly_preview')));
+/* a matchup analysis argues both sides, and the gate refuses one that cannot
+   (contrary_evidence). Tennessee at Cincinnati's evidence had nothing for
+   Tennessee (2026-10-27); with the case against EdgeDesk's side stripped
+   from Las Vegas at New England's the same way, that game is not offered,
+   and every analysis that is offered passes the gate */
+{
+  const s = CE.research.fromArtifacts(ART.frozen(), { now: NOW });
+  const p = s.nfl.games.find((g) => g.game_id === '2026_05_LV_NE'), X = p.evidence.explanation, con = new Set(X.contradicting);
+  X.contradicting = [];
+  p.evidence.claims = p.evidence.claims.filter((c) => !con.has(c.id) && !(c.football && c.leans && c.leans !== X.gap.toward));
+  const ma = CE.discover(s, { now: NOW, publisher: SR }).filter((o) => o.kind === 'matchup_analysis');
+  const bad = ma.map((o) => ({ key: o.key, r: CE.validate(CE.draft(o, { publisher: SR, format: 'matchup_analysis', now: NOW }), o, { publisher: SR, now: NOW, teamLists: TL }) })).filter((x) => !x.r.ok).map((x) => [x.key, x.r.failed]);
+  chk('O a matchup analysis is offered only where the evidence argues both sides, and every one offered passes the gate',
+    opps.some((o) => o.kind === 'matchup_analysis' && /LV_NE/.test(o.key)) && ma.length > 0 && !ma.some((o) => /LV_NE/.test(o.key)) && !bad.length, { offered: ma.map((o) => o.key), bad });
+}
 chk('O publisher fit: Stadium Rant prefers the broad preview to one matchup', (() => {
   const md = opps.find((o) => (o.kind === 'market_discrepancy' || o.kind === 'matchup_preview') && o.league === 'cfb' && o.research.games.length === 1);
   return !md || cfbPrev.scores.publisher_fit.score > md.scores.publisher_fit.score;
@@ -176,6 +191,18 @@ chk('D one deep dive per game: the storyline’s never repeats a matchup deep di
   return !dup;
 })());
 chk('D … and an NFL story score says its reliability was unmeasured instead of assuming one', (() => { const g = snap.nfl.games.find((p) => p.model.available); const sc = CE.story.score(g); return g && sc.reliability_measured === false && sc.research_reliability <= 40; })());
+/* an NFL matchup claim reads "When X have the ball: their …"; lifted into the
+   thesis or the counterargument without its clause, "Their passing game ranks
+   No. 29" under "The football that does point toward Cincinnati Bengals" read
+   as Cincinnati's, and it was Tennessee's */
+{
+  const nflMa = all.filter((o) => o.league === 'nfl' && o.kind === 'matchup_analysis').map((o) => CE.draft(o, { publisher: SR, format: 'matchup_analysis', now: NOW }));
+  const paras = (a) => [].concat(...a.sections.map((s) => String(s.body || '').split(/\n\n/)));
+  const atX = (p) => /^\*\*When .+ the ball\.\*\*/.test(p);
+  const bare = nflMa.map((a) => paras(a).filter((p) => !atX(p) && /(?:^|\n|[.!?:]\s)(?:- )?Their\s/.test(p))).filter((x) => x.length);
+  chk('D a stat lifted out of “When X have the ball” names X, never a bare “Their”', nflMa.length > 0 && bare.length === 0, bare.slice(0, 2));
+  chk('D … and under the heading that names X the pronoun stays', nflMa.some((a) => paras(a).some((p) => atX(p) && /the ball\.\*\* Their /.test(p))));
+}
 const a0 = CE.draft(cfbPrev, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
 chk('D the preview has every required section, in order', JSON.stringify(a0.sections.map((s) => s.key)) === JSON.stringify(CE.FORMATS.cfb_weekly_preview.sections.filter((k) => a0.sections.some((s) => s.key === k))));
 chk('D it explains that a projection is not a bet', /A projection is not a bet/.test(a0.sections.find((s) => s.key === 'how_to_read').body));
