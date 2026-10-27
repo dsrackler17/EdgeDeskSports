@@ -341,6 +341,10 @@ function siteHandler(req, res) {
     const card = await dpage.evaluate((g) => { const h = document.getElementById('p4gate-' + g), l = h && h.querySelector('.gvl'), a = h && (h.querySelector('.edd-act') || h.querySelector('.edd-mkt-only'));
       return { lead: l ? l.innerText : null, before: !!(l && a && (l.compareDocumentPosition(a) & 4)), hasBtn: !!(l && l.querySelector('.gvl-btn')) }; }, gid);
     chk('an FBS card opens with EdgeDesk’s projection above the decision', card.lead && /EdgeDesk projection/i.test(card.lead) && /Fair spread/i.test(card.lead) && card.before, card);
+    /* a loader whose artifact lands late (the season record, the quote-EV tables) repaints the board; the card the reader opened stays open */
+    await dpage.evaluate(() => window.renderFootball());
+    const kept = await dpage.evaluate((g) => { const h = document.getElementById('p4gate-' + g), l = h && h.querySelector('.gvl'); return { open: !!(h && h.getAttribute('data-open')), lead: l ? l.innerText : null }; }, gid);
+    chk('the open card stays open when late data repaints the board', kept.open && !!kept.lead && kept.lead === card.lead, kept);
     if (card.hasBtn) {
       /* the board repaints when late data lands; press the button the page holds right now */
       await dpage.evaluate((g) => { const b = document.querySelector('#p4gate-' + g + ' .gvl-btn'); if (b) b.click(); }, gid);
