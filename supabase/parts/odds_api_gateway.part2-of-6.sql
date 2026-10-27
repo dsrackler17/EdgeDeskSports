@@ -2,6 +2,89 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- Both inside 24 h of the start only; nothing faster than hourly (the floor
+-- above refuses it). nba_role_props is never polled for another sport.
+insert into public.odds_api_cadence (category, sport_group, max_hours_to_start, interval_minutes) values
+  ('sharp_check', '*', 3, 60), ('sharp_check', '*', 24, 60), ('sharp_check', '*', 1000000, null),
+  ('nba_role_props', 'nba', 3, 60), ('nba_role_props', 'nba', 24, 60), ('nba_role_props', 'nba', 1000000, null),
+  ('nba_role_props', '*', 1000000, null)
+on conflict (category, sport_group, max_hours_to_start) do nothing;
+
+-- ── 2. THE LEDGER: one row per gateway decision ─────────────────────────────
+create table if not exists public.odds_api_requests (
+  id                 bigserial primary key,
+  created_at         timestamptz not null default now(),
+  cycle_start        date not null,
+  usage_day          date not null,
+  caller             text not null,
+  trigger            text,
+  category           text,
+  sport_key          text,
+  event_id           text,
+  endpoint           text,
+  markets            text[],
+  selection          text,
+  odds_format        text,
+  region_equivalents integer,
+  fingerprint        text,
+  decision           text not null,
+  reason             text,
+  dispatched         boolean not null default false,
+  status             text not null,
+  priority           smallint,
+  shed_level         smallint,
+  hours_to_start     numeric,
+  interval_minutes   numeric,
+  reserved_credits   integer not null default 0,
+  actual_credits     integer,
+  cost_is_exact      boolean,
+  http_status        integer,
+  requests_used      integer,
+  requests_remaining integer,
+  requests_last      integer,
+  attempt            smallint not null default 1,
+  parent_request_id  bigint,
+  served_request_id  bigint,
+  duration_ms        integer,
+  error              text,
+  lease_expires_at   timestamptz,
+  settled_at         timestamptz
+);
+create index if not exists odds_api_requests_cycle_idx on public.odds_api_requests (cycle_start) where dispatched;
+create index if not exists odds_api_requests_day_idx on public.odds_api_requests (usage_day, caller);
+create index if not exists odds_api_requests_open_idx on public.odds_api_requests (fingerprint, lease_expires_at) where status = 'reserved';
+create index if not exists odds_api_requests_recent_idx on public.odds_api_requests (created_at desc);
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'odds_api_requests_status_chk') then
+    alter table public.odds_api_requests add constraint odds_api_requests_status_chk
+      check (status in ('reserved', 'settled', 'failed', 'expired', 'not_dispatched'));
+  end if;
+end $$;
+alter table public.odds_api_requests enable row level security;
+revoke all on public.odds_api_requests from anon, authenticated;
+
+-- ── 3. THE SNAPSHOT STORE: the latest successful answer per fingerprint ─────
+create table if not exists public.odds_api_snapshots (
+  fingerprint         text primary key,
+  category            text,
+  sport_key           text,
+  event_id            text,
+  endpoint            text,
+  markets             text[],
+  selection           text,
+  odds_format         text,
+  last_request_id     bigint,
+  last_attempt_at     timestamptz,
+  last_status         text,
+  last_http_status    integer,
+  last_success_at     timestamptz,
+  body                jsonb,
+  events_count        integer,
+  markets_returned    integer,
+  bookmakers_returned integer,
+  cost_last           integer,
+  updated_at          timestamptz not null default now()
+);
 create index if not exists odds_api_snapshots_sport_idx on public.odds_api_snapshots (sport_key, category, last_success_at desc);
 alter table public.odds_api_snapshots enable row level security;
 revoke all on public.odds_api_snapshots from anon, authenticated;

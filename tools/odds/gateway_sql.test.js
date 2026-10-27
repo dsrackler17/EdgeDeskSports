@@ -46,6 +46,10 @@ T.chk('emergency stop: pauses (alter_job active false), never unschedules or del
   /cron\.alter_job\(\$1, null, null, null, null, false\)/.test(STOP) && !/cron\.unschedule/.test(STOP) && !/delete from cron/.test(STOP));
 T.chk('gateway: the switch row is created OFF (fail closed)', /insert into public\.odds_api_config \(id, odds_api_enabled[^)]*\)\s*values \(1, false/.test(GW));
 T.chk('gateway: acquire locks the one config row before deciding (FOR UPDATE)', /from public\.odds_api_config where id = 1 for update;[\s\S]*v_now := clock_timestamp\(\)/.test(GW));
+const patternList = (sql) => ((code(sql).match(/function public\.odds_api_spend_patterns\(\)[\s\S]*?array\[([\s\S]*?)\]::text\[\]/) || [])[1] || '').replace(/\s+/g, '');
+T.chk('the spend patterns the gateway re-creates are exactly the emergency stop\'s (2026-10-26)', patternList(GW) !== '' && patternList(GW) === patternList(STOP), [patternList(GW), patternList(STOP)]);
+T.chk('gateway: a category\'s daily cap is checked inside acquire, under the config-row lock, before the grant',
+  /from public\.odds_api_config where id = 1 for update;[\s\S]*cat\.daily_cap_credits is not null[\s\S]*'denied_category_cap'[\s\S]*v_decision := 'granted'/.test(GW));
 T.chk('gateway: parts exist for the SQL editor', fs.readdirSync(path.join(ROOT, 'supabase', 'parts')).some((f) => /^odds_api_gateway\.part1-of-\d+\.sql$/.test(f)));
 
 /* ═══ LIVE ═══════════════════════════════════════════════════════════════ */
@@ -102,9 +106,9 @@ try {
   /* ── 2 · the gateway file, twice ─────────────────────────────────────── */
   out = db.applyFile(path.join(ROOT, 'supabase', 'odds_api_gateway.sql'));
   const rows = (o) => (o.match(/\|(ok|CHECK THIS)$/gm) || []);
-  T.chk('2 · the gateway applies; every report row ok', rows(out).length === 10 && rows(out).every((r) => /ok$/.test(r)), out.slice(-900));
+  T.chk('2 · the gateway applies; every report row ok', rows(out).length === 12 && rows(out).every((r) => /ok$/.test(r)), out.slice(-900));
   out = db.applyFile(path.join(ROOT, 'supabase', 'odds_api_gateway.sql'));
-  T.chk('2 · and a second time', rows(out).length === 10 && rows(out).every((r) => /ok$/.test(r)));
+  T.chk('2 · and a second time', rows(out).length === 12 && rows(out).every((r) => /ok$/.test(r)));
   T.chk('2 · the breaker is still OFF and the budget still ZERO after the gateway is applied',
     db.sql('select odds_api_enabled::text || monthly_budget::text || daily_target::text from public.odds_api_config') === 'false00');
   T.chk('2 · the retention job is scheduled, and is not a spend path', db.sql("select count(*) from cron.job where jobname = 'odds_api_prune' and command not like '%functions/v1%'") === '1');
@@ -274,6 +278,64 @@ try {
   T.chk('12 · retention: old event snapshots and old refusals go; the last sport board and the billed ledger stay',
     db.sql("select count(*) from public.odds_api_snapshots where fingerprint = 'old_ev'") === '0' && db.sql("select count(*) from public.odds_api_snapshots where fingerprint = 'old_board'") === '1'
     && db.sql("select count(*) from public.odds_api_requests where caller = 'old' and dispatched") === '1' && db.sql("select count(*) from public.odds_api_requests where caller = 'old' and not dispatched") === '0', pr);
+
+  /* ── 14 · per-category daily caps (2026-10-26 methodology change) ────── */
+  db.sql("truncate public.odds_api_requests, public.odds_api_snapshots restart identity; select public.odds_api_set_budget(60000, 0, 10000);"
+    + " update public.odds_api_config set odds_api_enabled = true, monthly_reserve = 0 where id = 1;"
+    + " insert into public.odds_api_sports (sport_key, sport_group, enabled, priority, label) values ('basketball_nba', 'nba', true, 4, 'NBA') on conflict (sport_key) do update set enabled = true;");
+  db.sql("select public.odds_api_confirm_quota(0, 100000, 'test')");
+  const capCats = J("select jsonb_object_agg(category, jsonb_build_object('enabled', enabled, 'cap', daily_cap_credits, 'priority', priority, 'books', bookmakers, 'markets', markets)) from public.odds_api_categories where category in ('sharp_check', 'nba_role_props')");
+  T.chk('14 · the two capped categories are created DISABLED, at priority 4, with caps of 90 and 48 credits',
+    capCats.sharp_check && capCats.sharp_check.enabled === false && capCats.sharp_check.cap === 90 && capCats.sharp_check.priority === 4
+    && capCats.nba_role_props && capCats.nba_role_props.enabled === false && capCats.nba_role_props.cap === 48 && capCats.nba_role_props.priority === 4, capCats);
+  T.chk('14 · sharp_check asks for Pinnacle and DraftKings only (one region-equivalent)', JSON.stringify(capCats.sharp_check.books) === '["pinnacle","draftkings"]', capCats.sharp_check.books);
+  T.chk('14 · every category that existed before keeps no cap of its own', db.sql("select count(*) from public.odds_api_categories where daily_cap_credits is not null and category not in ('sharp_check', 'nba_role_props')") === '0');
+  const capEvents = Array.from({ length: 40 }, (_, i) => "('cap_ev" + i + "', 'americanfootball_nfl', now() + interval '2 hours')").join(', ');
+  db.sql("insert into public.odds_api_events (event_id, sport_key, commence_time) values " + capEvents + ", ('nba_ev1', 'basketball_nba', now() + interval '2 hours'), ('nfl_far', 'americanfootball_nfl', now() + interval '30 hours') on conflict (event_id) do update set commence_time = excluded.commence_time, last_seen_at = now();");
+  const sc = (ev, sport) => acq({ caller: 'sharp_check', category: 'sharp_check', sport_key: sport || 'americanfootball_nfl', event_id: ev });
+  T.chk('14 · a disabled capped category buys nothing', sc('cap_ev0').decision === 'denied_category');
+  db.sql("select public.odds_api_set_category('sharp_check', true); select public.odds_api_set_category('nba_role_props', true);");
+  const g1 = sc('cap_ev0');
+  T.chk('14 · enabled: one event, three markets, two books = a 3-credit reservation', g1.decision === 'granted' && g1.est_credits === 3 && g1.endpoint === 'event_odds', g1);
+  T.chk('14 · sharp_check is never polled beyond 24 h of the start', sc('nfl_far').decision === 'skipped_window');
+  db.sql("update public.odds_api_categories set daily_cap_credits = 9 where category = 'sharp_check'");
+  const g2 = sc('cap_ev1'), g3 = sc('cap_ev2');
+  T.chk('14 · reservations count against the cap: 3 + 3 + 3 = 9 is admitted', g2.decision === 'granted' && g3.decision === 'granted', [g2.decision, g3.decision]);
+  const over = sc('cap_ev3');
+  T.chk('14 · the request that would cross the cap is refused (denied_category_cap), and says why', over.decision === 'denied_category_cap' && /capped at 9 credits a day: 9 spent or reserved today/.test(over.reason), over);
+  settle({ request_id: g1.request_id, ok: true, http_status: 200, requests_used: 10, requests_remaining: 99990, requests_last: 0, body: { id: 'cap_ev0', commence_time: new Date(Date.now() + 2 * 3600e3).toISOString(), bookmakers: [] } });
+  const back = sc('cap_ev4');
+  T.chk('14 · a settled request is charged what the provider billed (0: no market posted yet, not the 3 reserved), so the cap gives the difference back', back.decision === 'granted', back);
+  T.chk('14 · a cache hit costs nothing and is never refused by the cap', sc('cap_ev0').decision === 'cache_hit');
+  T.chk('14 · the cap is the category\'s own: featured and props are unaffected', acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).decision === 'granted'
+    && acq({ caller: 't', category: 'props', sport_key: 'americanfootball_nfl', event_id: 'cap_ev5' }).decision === 'granted');
+  db.sql("update public.odds_api_requests set usage_day = usage_day - 1 where category = 'sharp_check'");
+  T.chk('14 · a new UTC day starts the cap again', sc('cap_ev6').decision === 'granted');
+  db.sql("update public.odds_api_categories set daily_cap_credits = 0 where category = 'sharp_check'");
+  T.chk('14 · a cap of 0 stops the category without disabling it', sc('cap_ev7').decision === 'denied_category_cap');
+  const negCap = (() => { try { db.sql("update public.odds_api_categories set daily_cap_credits = -1 where category = 'sharp_check'"); return 'accepted'; } catch (e) { return /odds_api_categories_daily_cap_chk/.test(String(e.message)) ? 'refused' : String(e.message).slice(0, 200); } })();
+  T.chk('14 · the database refuses a negative cap', negCap === 'refused', negCap);
+  /* the cap holds under REAL concurrency: 12 sessions on 12 events, 12 credits of room = 4 grants of 3 */
+  db.sql("delete from public.odds_api_requests where category = 'sharp_check'; update public.odds_api_categories set daily_cap_credits = 12 where category = 'sharp_check'");
+  const b3 = db.background('select pg_advisory_lock(4444); select pg_sleep(1.5); select pg_advisory_unlock(4444);');
+  db.sleep(0.3);
+  const w3 = Array.from({ length: 12 }, (_, i) => db.background("select pg_advisory_lock_shared(4444); select pg_advisory_unlock_shared(4444); select public.odds_api_acquire('{\"caller\":\"c" + i + "\",\"category\":\"sharp_check\",\"sport_key\":\"americanfootball_nfl\",\"event_id\":\"cap_ev" + (20 + i) + "\"}'::jsonb)->>'decision';"));
+  b3.wait(20000);
+  const d3 = w3.map((w) => w.wait(20000).out.trim().split('\n').pop());
+  T.chk('14 · 12 concurrent checks against a 12-credit cap: exactly 4 granted, 8 refused by the cap, none by a race',
+    d3.filter((d) => d === 'granted').length === 4 && d3.filter((d) => d === 'denied_category_cap').length === 8, d3);
+  T.chk('14 · and the reservations stop exactly at the cap', db.sql("select sum(reserved_credits) from public.odds_api_requests where category = 'sharp_check' and dispatched") === '12');
+  const rp = acq({ caller: 'role', category: 'nba_role_props', sport_key: 'basketball_nba', event_id: 'nba_ev1' });
+  T.chk('14 · nba_role_props: one NBA event, four volume markets, ten books = a 4-credit reservation', rp.decision === 'granted' && rp.est_credits === 4
+    && JSON.stringify(rp.markets) === '["player_assists","player_points_rebounds_assists","player_rebounds","player_threes"]', rp);
+  T.chk('14 · nba_role_props is never polled for another sport', acq({ caller: 'role', category: 'nba_role_props', sport_key: 'americanfootball_nfl', event_id: 'cap_ev8' }).decision === 'skipped_window');
+  T.chk('14 · the dashboard shows each category\'s cap', (J('select public.odds_api_dashboard(7)').categories || []).some((k) => k.category === 'sharp_check' && k.daily_cap_credits === 12));
+  T.chk('14 · the emergency stop covers the sharp_check dispatcher', db.sql("select '%/functions/v1/sharp_check%' = any (public.odds_api_spend_patterns())") === 't'
+    && db.sql("select 'select net.http_post(url := ''https://x.supabase.co/functions/v1/sharp_check'')' ilike any (public.odds_api_spend_patterns())") === 't'
+    && db.sql("select 'select public.sharp_check_poke();' ilike any (public.odds_api_spend_patterns())") === 't');
+  T.chk('14 · the free job\'s cron command is not a spend path either', db.sql("select 'select public.sharp_lag_poke();' ilike any (public.odds_api_spend_patterns())") === 'f');
+  T.chk('14 · and the free sharp_lag function is NOT a spend path (it may run every 10 minutes)', db.sql("select 'select net.http_post(url := ''https://x.supabase.co/functions/v1/sharp_lag'')' ilike any (public.odds_api_spend_patterns())") === 'f');
+  db.sql("select public.odds_api_set_category('sharp_check', false); select public.odds_api_set_category('nba_role_props', false); update public.odds_api_categories set daily_cap_credits = case category when 'sharp_check' then 90 else 48 end where category in ('sharp_check', 'nba_role_props'); truncate public.odds_api_requests restart identity;");
 
   /* ── 13 · who may call what (as PostgREST connects) ──────────────────── */
   const anonFeed = asApi('anon', "select public.odds_feed_status()->>'state';");
