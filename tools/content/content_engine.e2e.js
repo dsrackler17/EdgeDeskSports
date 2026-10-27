@@ -285,9 +285,14 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     const crow2 = P.locator('#pbContacts .crow').last();
     await crow2.locator('[data-c=name]').fill('Pat Writer');
     await crow2.locator('[data-c=email]').fill('Pat@Publisher.example');
+    await P.evaluate(() => document.querySelector('#pbEdit .card').setAttribute('data-e2e-before-save', '1'));
     await P.click('#pbSave');
     await P.waitForFunction(() => /Saved/.test(document.getElementById('pbMsg').textContent), null, { timeout: 15000 });
     chk('6 the contact is saved on the publisher (owner-only)', /jordan@publisher\.example/.test(db.sql(`select contacts::text from content_engine.publishers where slug = 'stadium-rant';`)));
+    /* the editor is drawn again from the saved row; the confirmation must outlive the redraw
+       (it lasted about 30 ms, and CI's Chromium 131 missed it on #840) */
+    await P.waitForSelector('#pbEdit .card:not([data-e2e-before-save])', { timeout: 15000 });
+    chk('6 … and "Saved." stays on screen once the editor is drawn again from the saved row', /Saved/.test(await P.textContent('#pbMsg')), await P.textContent('#pbMsg'));
 
     await P.click('.tabs button[data-tab="pub"]');
     await P.waitForSelector('#pCols button[data-open="' + art.id + '"]');
