@@ -176,6 +176,26 @@ chk('D one deep dive per game: the storyline’s never repeats a matchup deep di
   return !dup;
 })());
 chk('D … and an NFL story score says its reliability was unmeasured instead of assuming one', (() => { const g = snap.nfl.games.find((p) => p.model.available); const sc = CE.story.score(g); return g && sc.reliability_measured === false && sc.research_reliability <= 40; })());
+/* a one-game piece must cite the evidence against EdgeDesk's view, so a game
+   whose packet holds none is never offered as one: Tennessee at Cincinnati
+   (NFL Week 8, 2026), where every claim that leaned, leaned Cincinnati, was
+   offered and then BLOCKED by contrary_evidence on every draft */
+{
+  const ma = opps.find((o) => o.league === 'nfl' && o.kind === 'matchup_analysis');
+  const gid = ma && ma.research.games[0].game_id;
+  const strip = (p) => { const X = p.evidence.explanation, to = X.gap && X.gap.toward; X.contradicting = []; p.evidence.claims.forEach((c) => { if (c.leans && c.leans !== to) delete c.leans; }); return p; };
+  const one = JSON.parse(JSON.stringify(snap));
+  strip(one.nfl.games.find((p) => p.game_id === gid));
+  const after = CE.discover(one, { now: NOW, publisher: SR });
+  const maKeys = (list) => list.filter((o) => o.kind === 'matchup_analysis').map((o) => o.key);
+  chk('D a game whose packet holds no evidence against EdgeDesk’s view is not offered as a matchup analysis', !!gid && !after.some((o) => o.kind === 'matchup_analysis' && o.research.games.some((p) => p.game_id === gid)), gid);
+  chk('D … because its article fails contrary_evidence whatever it says', (() => {
+    const o = JSON.parse(JSON.stringify(ma)); strip(o.research.games[0]);
+    const v = CE.validate(CE.draft(o, { publisher: SR, format: 'matchup_analysis', now: NOW }), o, { publisher: SR, now: NOW, teamLists: TL });
+    return v.failed.indexOf('contrary_evidence') >= 0;
+  })());
+  chk('D … and every other matchup analysis is still offered', JSON.stringify(maKeys(after)) === JSON.stringify(maKeys(opps).filter((k) => k !== ma.key)), [maKeys(opps), maKeys(after)]);
+}
 const a0 = CE.draft(cfbPrev, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
 chk('D the preview has every required section, in order', JSON.stringify(a0.sections.map((s) => s.key)) === JSON.stringify(CE.FORMATS.cfb_weekly_preview.sections.filter((k) => a0.sections.some((s) => s.key === k))));
 chk('D it explains that a projection is not a bet', /A projection is not a bet/.test(a0.sections.find((s) => s.key === 'how_to_read').body));
