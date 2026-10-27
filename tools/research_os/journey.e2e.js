@@ -73,6 +73,10 @@ if (!GAME) {
 const KEY = GAME.research.game_key, LG = KEY.split('|')[0], GID = KEY.split('|')[1];
 const DESK_SPORT = LG === 'nfl' ? 'americanfootball_nfl' : 'americanfootball_ncaaf';
 const HOME = GAME.home.name, AWAY = GAME.away.name;
+/* the game page names the game as its research snapshot does (app.html gvCtx), and so does the
+   context it sets; the slate can name the same club longer: "Western Kentucky Hilltoppers" on the
+   slate, "Western Kentucky" in the snapshot (cfb|401871071, 2026-10-27) */
+const SNAP_HOME = (snapBy[KEY].home || {}).name, SNAP_AWAY = (snapBy[KEY].away || {}).name;
 const DAY = G.dateKey(Date.parse(GAME.start_utc), ZONE), TODAY = G.today(CLOCK, ZONE);
 const TODAY_N = G.select(SLATE.events.concat(SLATE.upcoming || []), { zone: ZONE, now: CLOCK, date: TODAY }).total_day;
 console.log('the journey game: ' + AWAY + ' at ' + HOME + ' (' + KEY + ', ' + GAME.id + ', ' + GAME.start_utc + '), clock ' + new Date(CLOCK).toISOString() + ', ' + TODAY_N + ' games on ' + TODAY);
@@ -280,7 +284,7 @@ const SERVED = /\/rest\/v1\/(rpc\/(sc_[a-z_]+|sim_[a-z_]+|portfolio_[a-z_]+)|(my
       await page.waitForSelector('#gvWs', { timeout: 30000 });
       s = await st(page);
       T.chk(W + ': Open research lands on the game\'s own page, by its research key', s.views.join() === 'v-game' && s.hash === '#game/' + LG + '/' + GID && s.seat.join() === 'research', s);
-      T.chk(W + ': the game is the research context', s.ctx && s.ctx.researchKey === KEY && s.ctx.home === HOME, s.ctx);
+      T.chk(W + ': the game is the research context', s.ctx && s.ctx.researchKey === KEY && !!SNAP_HOME && s.ctx.home === SNAP_HOME && !!SNAP_AWAY && s.ctx.away === SNAP_AWAY, s.ctx);
       T.chk(W + ': and the AI desk\'s screen, by the card\'s own id and sport key', s.screen && s.screen.game_id === GID && s.screen.sport === DESK_SPORT, s.screen);
       const links = await page.$$eval('#gvWs a[href]', (as) => as.map((a) => a.getAttribute('href')));
       T.chk(W + ': the workspace links Signals, Foresight and the Simulator for this game', links.indexOf('#signals/' + LG) >= 0 && links.indexOf('#foresight/game/' + encodeURIComponent(LG + ':' + GID)) >= 0 && (LG !== 'nfl' || links.indexOf('#simulator/nfl') >= 0), links);
