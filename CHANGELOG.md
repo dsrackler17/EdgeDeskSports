@@ -17,7 +17,9 @@
 - SHSU @ MOST printed MOST +2.1 and +2.8 on 6.65, with the matchup term nowhere.
 - DEL @ WKU printed WKU +0.1 and +0.4 on 3.27, without the 2.8-point home field.
 
-Each engine term now sits on exactly one in-number chip. A missing term takes the place of the weakest item that carries no points, and a second chip for the same term gives its place up. NFL cards are unchanged. The regression test in `tools/football/game_research.test.js` §15 failed on the old code (59 of 63) and passes now.
+Each engine term now sits on exactly one in-number chip. A missing term takes the place of the weakest item that carries no points. The regression test in `tools/football/game_research.test.js` §15 failed on the old code (59 of 63) and passes now.
+
+**Fixed: no term on two chips, NFL included.** BAL @ BUF printed BUF +3.2 twice (its QB watch and the quarterback term's own item). LAC @ LAR printed LAC +1.8 twice (travel and the rest-and-travel term). The item that tells the story keeps the chip. The other gives its place to the strongest item that adds no term already shown. The regression test failed on the old code (those 2 games) and passes now.
 
 **New: `npm run cfb:trust`** (`football/cfb_validation/trust.js`, `docs/cfb-validation/TRUST.md`). For every upcoming college game it gives:
 - the gap to the latest pregame line, and the terms behind the number;

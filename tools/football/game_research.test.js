@@ -880,6 +880,14 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
     const ok = new Set(terms).size === terms.length && rows.every((r) => terms.indexOf(r.key) >= 0) && Math.abs(sum - x.model.home_margin) <= tol;
     return ok ? null : { game: x.game_key, margin: x.model.home_margin, chips: chips.map((i) => i.effect.label + ' (' + i.effect.term + ')'), terms: rows.map((r) => r.key + ' ' + r.points) };
   }).filter(Boolean);
+  /* ONE CHIP PER TERM, every league. On 2026-10-27, BAL @ BUF printed BUF +3.2 twice (its QB
+     watch and the quarterback term's own item) and LAC @ LAR LAC +1.8 twice (travel and rest),
+     so a reader adding the chips counted each term twice. */
+  const twice = proj.map((x) => {
+    const t = x.insights.filter((i) => i.effect && i.effect.kind === 'in_number').map((i) => i.effect.term);
+    return new Set(t).size === t.length ? null : { game: x.game_key, chips: x.insights.map((i) => i.id + ' ' + (i.effect && i.effect.label)) };
+  }).filter(Boolean);
+  chk('no game puts one term on two in-number chips (NFL and college)', twice.length === 0, twice.slice(0, 2));
   chk('the committed slates hold college games priced from the engine’s own terms', cfbTermed.length > 20, cfbTermed.length);
   chk('every college game’s in-number chips carry each priced term once and add up to its fair margin', unreconciled.length === 0, { n: unreconciled.length, of: cfbTermed.length, first: unreconciled.slice(0, 2) });
 

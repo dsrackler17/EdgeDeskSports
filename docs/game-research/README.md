@@ -198,11 +198,17 @@ item with the reason.
   terms (home field, team strength, the stylistic matchup) sits on exactly
   one in-number chip, so the chips sum to the fair margin to their 0.1-pt
   rounding. A term the story ranking left out takes the place of the weakest
-  item that carries no points (never a reserved one), and a second chip for a
-  term already on the card gives its place up. Before this, on 2026-10-27, 59
-  of 63 college cards left a priced term off: SHSU @ MOST printed `MOST +2.1`
-  and `MOST +2.8` on a 6.65 line, and its 1.74-pt matchup term, most of its
-  gap to the market, was on no chip.
+  item that carries no points (never a reserved one). Before this, on
+  2026-10-27, 59 of 63 college cards left a priced term off: SHSU @ MOST
+  printed `MOST +2.1` and `MOST +2.8` on a 6.65 line, and its 1.74-pt matchup
+  term, most of its gap to the market, was on no chip.
+- **One chip per term, every league.** When two items carry the same term,
+  the one that tells the story keeps the chip: a reserved item first, then
+  any item before the term's generic `term_` item, then the stronger. The
+  other gives its place to the strongest unpicked item whose chip adds no
+  term already on the card. On 2026-10-27 BAL @ BUF printed `BUF +3.2` twice
+  (its QB watch and the quarterback term), and LAC @ LAR `LAC +1.8` twice
+  (travel and the rest-and-travel term).
 - A college pass or run mismatch is printed beside the same defence's other
   lane (`UTAH pass O #19 vs HOU pass D #86; run O #24 vs run D #36.`). Its
   chip is the **matchup term**, which nets all eight offence-vs-defence
