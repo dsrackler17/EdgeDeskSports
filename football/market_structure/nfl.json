@@ -1,14 +1,14 @@
 {
  "schema": "edgedesk_nfl_market_structure_v1",
  "version": 1,
- "generated_at": "2026-10-27T05:10:39.787Z",
+ "generated_at": "2026-10-27T16:52:06.575Z",
  "engine": "edgedesk_market_structure_v1",
  "tier": "T0 observations and T2 deterministic transforms; nothing here is a model, a price, a projection or a grade",
  "source": {
   "lines": {
    "file": "football/pricing/lines_nfl.json",
    "schema": "edgedesk_lines_archive_v1",
-   "generated_at": "2026-10-27T05:10:39.025Z",
+   "generated_at": "2026-10-27T15:30:25.476Z",
    "basis": "nflverse/nfldata games.csv; the spread, total and moneyline columns are the consensus close as nflverse carries them, no book, no capture time"
   },
   "schedule": {
@@ -4079,12 +4079,12 @@
     "season": 2026,
     "week": 7,
     "season_type": "REG",
-    "games": 13,
-    "xp_att": 60,
-    "two_pt_att": 4,
-    "two_pt_made": 2,
-    "touchdowns": 65,
-    "share": 0.0625
+    "games": 14,
+    "xp_att": 66,
+    "two_pt_att": 5,
+    "two_pt_made": 3,
+    "touchdowns": 72,
+    "share": 0.0704
    }
   ],
   "seasons": [
@@ -4255,32 +4255,32 @@
    },
    {
     "season": 2026,
-    "games": 106,
-    "xp_att": 489,
-    "two_pt_att": 47,
-    "two_pt_made": 26,
-    "touchdowns": 538,
+    "games": 107,
+    "xp_att": 495,
+    "two_pt_att": 48,
+    "two_pt_made": 27,
+    "touchdowns": 545,
     "weeks": 7,
-    "share": 0.0877,
+    "share": 0.0884,
     "ci95": [
-     0.0666,
-     0.1147
+     0.0673,
+     0.1153
     ],
-    "per_game": 0.443
+    "per_game": 0.449
    }
   ],
   "drift": {
    "season": 2026,
-   "share": 0.0877,
+   "share": 0.0884,
    "baseline_seasons": [
     2023,
     2024,
     2025
    ],
    "baseline_share": 0.0947,
-   "diff_pp": -0.7,
-   "z": -0.52,
-   "n_tries": 536,
+   "diff_pp": -0.63,
+   "z": -0.47,
+   "n_tries": 543,
    "baseline_tries": 4056,
    "status": "STABLE",
    "rule": "share of tries that went for two, season to date vs the pooled prior three seasons; |z| ≥ 2 is reported as a move. Descriptive: it feeds nothing."
