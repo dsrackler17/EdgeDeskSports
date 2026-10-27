@@ -14,6 +14,7 @@ policy would have done.
 | `divergence_backtest.js` | walk-forward backtest of rating-state divergence vs error (DEV 2015–2021 / HOLDOUT 2022–2025 / LIVE 2026) |
 | `build.js` | writes every artifact below; `--check` builds and prints without writing (a smoke run on the committed ledger), `--offline` uses the cached schedule feed only |
 | `tests.js` | the core, freeze and backtest contracts |
+| `trust.js` | research only, writes nothing by default: every upcoming game beside this season's record — its gap to the latest pregame line and the engine terms behind it, both rating tracks, each team's season against EdgeDesk and the close, and the season's record at that gap ([docs/cfb-validation/TRUST.md](../../docs/cfb-validation/TRUST.md)); `trust.test.js` holds its contracts |
 
 ## Artifacts
 
@@ -42,6 +43,8 @@ npm run cfb:validation:check      # build and print, write nothing (smoke run)
 npm run cfb:validation:test       # canon + core + UI contracts
 npm run cfb:freeze:status         # fingerprints vs champion.json
 npm run cfb:validation:backtest   # rebuild divergence_backtest.json from a replay
+npm run cfb:trust                 # every upcoming game beside the season (markdown; --out DIR writes it)
+npm run cfb:trust:test            # its contracts
 node football/cfb_validation/freeze.js --init --effective-at <ISO> --now <ISO>   # a NEW release only
 ```
 

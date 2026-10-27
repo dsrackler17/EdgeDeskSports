@@ -64,6 +64,8 @@ jobs:
         run: node tools/validation/ui.test.js
       - name: The build runs on the committed ledger (check mode, writes nothing)
         run: node football/cfb_validation/build.js --check
+      - name: The trust audit (each game's gap to the line, the terms behind it, both rating tracks, the season's record at that gap; writes nothing)
+        run: node football/cfb_validation/trust.test.js
       - name: Leave one term out (the harness on synthetic games, and the committed record)
         run: node tools/football/loto.test.js
       - name: The research terminal still builds and keeps its rules

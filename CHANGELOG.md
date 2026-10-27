@@ -136,6 +136,33 @@ The game page builds the research context from its snapshot (`gvCtx` in `app.htm
 | without this change | 334 / 1: "- Their run game ranks No. 3, and Atlanta Falcons' run defense ranks No. 25." (BAL @ ATL) |
 | with it | 335 / 0 |
 
+## 2026-10-27 — College football: the graphic's chips add up to the line, and a game-by-game trust audit
+
+**The question.** Is EdgeDesk overrating teams like Missouri State (fair −6.65, DraftKings −4.5) and Western Kentucky (fair −3.3, DraftKings +1.5)? Does the model take account of past weeks?
+
+**What the season says.** These are 393 graded FBS-vs-FBS games, as of 2026-10-27 13:30 UTC.
+- EdgeDesk missed by 11.90 a game and the close by 10.99. The close finished nearer the final in 59.3% of games.
+- A disagreement with the close carries no measurable information: slope −0.13, 95% CI −0.42 to +0.16. At a 7+ point gap the close was nearer in 69%.
+- There is no systematic lean: today's 15 lined games average +0.28 points toward the home side.
+- A team's earlier misses do not predict its next one (slope +0.02, 95% CI −0.13 to +0.17, n 278), so the ratings do absorb past weeks.
+- Missouri State's 2.2-point gap is mostly its 1.74-point stylistic matchup term. That term's held-out gain is not significant. On this season's games alone, Sam Houston rates 1.0 better on a neutral field. The long-run track, weighted 60%, has Missouri State 4.2 better.
+
+**Fixed: a college card's chips add up to its line** (`lib/edgedesk_game_snapshot.js`). The "What to watch for" chips were picked on story strength alone. On 2026-10-27, 59 of 63 college cards left a priced engine term off every chip:
+- SHSU @ MOST printed MOST +2.1 and +2.8 on 6.65, with the matchup term nowhere.
+- DEL @ WKU printed WKU +0.1 and +0.4 on 3.27, without the 2.8-point home field.
+
+Each engine term now sits on exactly one in-number chip. A missing term takes the place of the weakest item that carries no points. The regression test in `tools/football/game_research.test.js` §15 failed on the old code (59 of 63) and passes now.
+
+**Fixed: no term on two chips, NFL included.** BAL @ BUF printed BUF +3.2 twice (its QB watch and the quarterback term's own item). LAC @ LAR printed LAC +1.8 twice (travel and the rest-and-travel term). The item that tells the story keeps the chip. The other gives its place to the strongest item that adds no term already shown. The regression test failed on the old code (those 2 games) and passes now.
+
+**New: `npm run cfb:trust`** (`football/cfb_validation/trust.js`, `docs/cfb-validation/TRUST.md`). For every upcoming college game it gives:
+- the gap to the latest pregame line, and the terms behind the number;
+- both rating tracks;
+- each team's season against EdgeDesk and the close;
+- the season's record at that size of gap.
+
+It is research only: it writes nothing by default and changes no number, grade or label. Its 47 contracts run in CFB validation.
+
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
 **What broke, twice.**
