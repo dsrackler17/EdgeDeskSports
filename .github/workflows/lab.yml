@@ -31,6 +31,13 @@ on:
       - '.github/workflows/lab.yml'
       - '.github/workflows/lab-validate.yml'
       - '.github/workflows/lab-build.yml'
+      # every other job that refits a record the registry reads: tools/lab/lab.test.js checks that each
+      # publishes the registry and board rebuilt from it
+      - '.github/workflows/nhl-validate.yml'
+      - '.github/workflows/college-baseball-research-validate.yml'
+      - '.github/workflows/model-loop-college-baseball.yml'
+      - '.github/workflows/model-loop-basketball.yml'
+      - '.github/workflows/model-loop-ufc.yml'
   push:
     branches: [main]
     paths:
