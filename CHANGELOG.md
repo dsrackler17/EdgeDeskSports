@@ -97,9 +97,27 @@ No assertion changed, and no committed snapshot, parameter or record was touched
 - **Surfaces (E).** "Sharp lag · Experimental" sections on the football game page and the terminal's matchup view, today's flags in Signals, and a public record on Performance. Live fairs and live flag details are for subscribers. The public gets counts and progress, plus every flag once its game has started, but only after an operator switches `public_display` on, having read The Odds API's terms (not readable from the build environment).
 - **NBA role shifts (F).** The 3-hourly NBA build writes `nba/role_shift.json`: for every top-8 rotation player, his teammates' minutes and volume in an injury-conditioned regime. Game-level with/without splits are shrunk by 10 games and fed through the existing props model, with stints as a cross-check and 3PM = 3PA × a shrunk 3P%. The default props are unchanged. When a report moves the player to OUT or DOUBTFUL, `sharp_lag` switches to that scenario, and `sharp_check` buys one capped `nba_role_props` pull. Flags use the registered 2.5 pp (never the absent player's unders) and are graded at the same book and line, with the actual stat stored. The NBA game page shows "Who absorbs the minutes".
 
-**Depends on** the methodology change "Odds gateway: per-category daily caps", which creates the `sharp_check` and `nba_role_props` categories, disabled. It must merge first.
+**Builds on** the methodology change "Odds gateway: per-category daily caps" (#834, merged), which created the `sharp_check` and `nba_role_props` categories, disabled, and the spend patterns that let the emergency stop pause `sharp_check`. `supabase/sharp_lag_cron.sql` refuses to run until those patterns are installed.
 
 **Not verified here.** Kalshi's current fee schedule and The Odds API's terms (neither site is reachable from the build environment). The production database's state is also not verified.
+
+## 2026-10-26 — Odds gateway: per-category daily caps (methodology change)
+
+**Why.** The Sharp-lag research pipeline buys event-driven checks (an injury, a goalie change, a Kalshi move) and NBA role-shift props. A news trigger has no schedule, and the gateway had no limit per category: a category could spend until the shared daily allowance shed it. The owner's decision was a cap the gateway enforces itself, never one that lives only in the caller.
+
+**What.** `supabase/odds_api_gateway.sql`, its six parts regenerated:
+- `odds_api_categories.daily_cap_credits` (NULL = no cap, every existing category);
+- `odds_api_acquire` refuses `denied_category_cap` under the same config-row lock as the shared budget;
+- two categories, created **disabled** at priority 4: `sharp_check` (≤ 3 credits a request, 90/day) and `nba_role_props` (≤ 4 credits a request, 48/day), each inside 24 h of the start only, at most hourly;
+- `odds_api_spend_patterns()` covers `/functions/v1/sharp_check` and its cron poke `sharp_check_poke()`. The emergency stop's list and the gateway's copy are kept identical by a test.
+
+Full write-up and operator steps: `docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-26-category-caps.md`.
+
+**Evidence.** `tools/odds/gateway_sql.test.js` section 14 on a real PostgreSQL:
+- before (`main`'s SQL): 70 passed, 5 failed;
+- after: 104 passed, 0 failed, including 12 concurrent sessions against a 12-credit cap (exactly 4 granted).
+
+`tools/odds/no_bypass.test.js` checks that the emergency stop names the new dispatcher.
 
 ## 2026-10-26 — Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market
 

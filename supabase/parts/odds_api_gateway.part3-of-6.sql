@@ -35,6 +35,7 @@ declare
   st jsonb; v_level smallint; v_level_now smallint := 0; v_stretch numeric := 1;
   v_spent_today bigint; v_allow integer; v_spent bigint; v_rem bigint; v_confirmed boolean; v_pct numeric;
   v_open_id bigint; v_id bigint; v_decision text; v_reason text; v_tripped boolean := false;
+  v_cat_today bigint;
 begin
   begin
     v_max_age := greatest(0, coalesce(nullif(p->>'max_age_seconds', '')::numeric, 0));
@@ -198,6 +199,19 @@ begin
         perform public.odds_api_alert('warning', 'reserve_floor', 'A request was refused to protect the provider reserve.',
           jsonb_build_object('provider_remaining_effective', v_rem, 'reserve', c.monthly_reserve));
         v_decision := 'denied_reserve'; v_reason := 'provider reserve would be crossed'; exit decide;
+      end if;
+      -- THE CATEGORY'S OWN DAILY CAP (2026-10-26, §1). Today's spend in this
+      -- category, settled or still reserved, plus this request's upper bound.
+      if cat.daily_cap_credits is not null then
+        select coalesce(sum(coalesce(actual_credits, reserved_credits)), 0) into v_cat_today
+          from public.odds_api_requests
+         where dispatched and category = v_category and usage_day = (v_now at time zone 'utc')::date;
+        if v_cat_today + v_est > cat.daily_cap_credits then
+          v_decision := 'denied_category_cap';
+          v_reason := format('category %s is capped at %s credits a day: %s spent or reserved today, this request needs up to %s',
+                             v_category, cat.daily_cap_credits, v_cat_today, v_est);
+          exit decide;
+        end if;
       end if;
       v_level := public.odds_api_shed_level(v_spent_today, v_est, v_allow, c.daily_overdraft_pct, v_pct, c.critical_pct);
       if not public.odds_api_level_admits(v_level, v_priority, v_hours) then
