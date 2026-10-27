@@ -31,6 +31,32 @@ The game page builds the research context from its snapshot (`gvCtx` in `app.htm
 | slate and snapshot at `4630c7685` (before the push): Dallas at Philadelphia | 126 / 0 | 126 / 0 |
 | `main`, with the game page's home and away swapped in `gvCtx` (mutation, not committed) | not run (already red on this data) | 124 / 2: the context check fails |
 
+## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
+
+**What broke, twice.**
+1. At 23:12 UTC on 2026-10-26, the scheduled push `e0205970` moved ARI @ DAL from DAL −6.5 to −6. That left no game on the live NFL slate whose pricing blend is held at the market line. `tools/bettor/football_decision.test.js` required one ("real NFL: the board holds some real games"), so it failed 180 / 1. The engines were right: the board held 0 and the kernel held 0.
+2. #836 and #837 fixed that in parallel, each green on its own. Both pinned the hold-rule checks to `tools/fixtures/nfl_slate_2026-10-25.json`, where both engines hold DEN @ ARI.
+   - #837 merged at 02:00:00 UTC.
+   - "Update branch" on #836 merged `main` into it at 02:01:15 (`04f23a4e`). Git took hunks from both versions without a conflict, and the result kept neither function header around the per-game body.
+   - #836 merged 19 seconds later, before that commit's checks reported.
+   - From then on the file threw `ReferenceError: g is not defined` at line 514, in CFB research terminal, Decision quality and Personal research CI.
+
+**The repair.** #836's merge is reverted (`git revert -m 1 2016a238`). The test is again exactly #837's (`3f9fb966`):
+- the held-rule checks run on the live slate plus the pinned slate;
+- the guard is met by DEN @ ARI whatever the live lines are.
+
+No assertion, threshold or fixture changed.
+
+**Before and after.** `node tools/bettor/football_decision.test.js`:
+
+| `main` | result |
+|---|---|
+| at `e0205970` | 180 / 1 |
+| `d3267217` | `ReferenceError` |
+| this revert | 181 / 0 |
+
+**The lesson is §5's:** after "Update branch", wait for that new commit's checks. They are the only checks that have seen the merged code.
+
 ## 2026-10-26 — Changelog: the last entry the #819 merge dropped is back
 
 The web-editor merge `c1081ebf7` (#819) dropped two `CHANGELOG.md` entries. #826 restored #819's own. The other, "Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market" (#818), is back, verbatim from `c7de08986`, where it stood: just before "All checks". Every heading from both sides of that merge is present again.
@@ -114,6 +140,23 @@ No assertion changed, and no committed snapshot, parameter or record was touched
 **Tests.** Both suites pass at the incumbent's old and new versions:
 - at `ed0691fda`, 1.1.0: SQL 68/0, operations 38/0;
 - at `main`, 1.2.0: SQL 68/0, operations 38/0.
+
+## 2026-10-26 — Sharp lag (Experimental): slow markets against Pinnacle, graded at the close; NBA role shifts
+
+**What it asks.** Does a slow market (a Kalshi YES price, DraftKings) that sits at least 2.5 percentage points below Pinnacle's de-vigged fair, after its own fees, show positive closing-line value? And does a teammate's volume prop lag when a rotation player is ruled out? Research only: a flag records a measured gap at one moment, and every flag is graded against the close, losses included. `docs/sharp-lag/README.md`.
+
+**The pieces.**
+- **The anchor (A).** The free `sharp_lag` function (every 10 minutes, never spends) stores Pinnacle and DraftKings from snapshots the gateway already bought, append-only, de-vigged by Shin (capture's arithmetic).
+- **Triggered checks (B).** An NBA starter's status change, an NHL goalie change and a Kalshi move of 3¢ or more are recorded as triggers. The paid `sharp_check` dispatcher (hourly, through `odds_gateway` only) buys one check per event, inside the `sharp_check` category's daily cap. Dispatch starts in `shadow` and buys nothing until an operator switches it to `live`.
+- **Flags (C).** Same side and same point only. DraftKings cost includes its vig. Kalshi cost uses the highest plausible fee and is marked `fee_unverified` until Kalshi's published schedule is verified and recorded. One flag per episode; append-only; the database refuses a flag below the registered threshold or on a past price.
+- **Registered before graded (R).** `SHARP-LAG` and `NBA-ROLE-SHIFT` v0.1 are registered separately, EXPERIMENTAL. Promotion needs BOTH 200+ graded flags AND a 95% lower bound on mean CLV above zero, from a bootstrap clustered by game. A person promotes; code never does. The database refuses any grade before the registry link exists.
+- **Grading (D).** The close is the last Pinnacle observation after the flag's own observation, at or before the start and no more than 90 minutes before it; graded against itself, a flag's CLV would be its gap. CLV = closing fair − cost; hit = CLV > 0. Lag to converge is censored at the start. Every flag carries its snapshot resolution. The record reports the no-close count and rate as data quality.
+- **Surfaces (E).** "Sharp lag · Experimental" sections on the football game page and the terminal's matchup view, today's flags in Signals, and a public record on Performance. Live fairs and live flag details are for subscribers. The public gets counts and progress, plus every flag once its game has started, but only after an operator switches `public_display` on, having read The Odds API's terms (not readable from the build environment).
+- **NBA role shifts (F).** The 3-hourly NBA build writes `nba/role_shift.json`: for every top-8 rotation player, his teammates' minutes and volume in an injury-conditioned regime. Game-level with/without splits are shrunk by 10 games and fed through the existing props model, with stints as a cross-check and 3PM = 3PA × a shrunk 3P%. The default props are unchanged. When a report moves the player to OUT or DOUBTFUL, `sharp_lag` switches to that scenario, and `sharp_check` buys one capped `nba_role_props` pull. Flags use the registered 2.5 pp (never the absent player's unders) and are graded at the same book and line, with the actual stat stored. The NBA game page shows "Who absorbs the minutes".
+
+**Builds on** the methodology change "Odds gateway: per-category daily caps" (#834, merged), which created the `sharp_check` and `nba_role_props` categories, disabled, and the spend patterns that let the emergency stop pause `sharp_check`. `supabase/sharp_lag_cron.sql` refuses to run until those patterns are installed.
+
+**Not verified here.** Kalshi's current fee schedule and The Odds API's terms (neither site is reachable from the build environment). The production database's state is also not verified.
 
 ## 2026-10-26 — Odds gateway: per-category daily caps (methodology change)
 

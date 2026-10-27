@@ -1,0 +1,91 @@
+{
+ "schema": "edgedesk_research_registration_v1",
+ "model_key": "NBA-ROLE-SHIFT",
+ "name": "NBA role shift — teammates' volume props when a rotation player is out",
+ "version": "0.1",
+ "status": "EXPERIMENTAL",
+ "provenance": "T3",
+ "provenance_label": "EdgeDesk research",
+ "sport": "NBA",
+ "registered_at": "2026-10-26",
+ "hypothesis": "When a top-8 rotation player is ruled OUT or DOUBTFUL, the market under-adjusts his teammates' volume props (rebounds, assists, 3-pointers made, points + rebounds + assists). An injury-conditioned regime, the existing props model fed with each teammate's minutes and per-minute rates from games without the absent player (shrunk toward the full-roster numbers), prices them closer to the close, so flags where its fair probability beats the posted price by 2.5 pp or more show positive CLV.",
+ "objective": "Measure whether injury-conditioned fair lines anticipate the market's adjustment, graded against the closing price at the same book and line, with the actual stat stored beside every grade. Research only: no flag is a recommendation.",
+ "primary_metric": "Mean CLV in percentage points over graded role-shift flags, CLV = the closing Shin no-vig probability of the flag's side at the same book and the same line minus the flag's cost (1 / decimal price, vig included), with its game-clustered 95% bootstrap interval. The actual stat and the over/under/push/void outcome are stored and reported, not the criterion.",
+ "unit": "One flag: one teammate, one market, one side at one posted line, one book. Clusters: the game (event_id).",
+ "baseline": "The default props model (nba/props/build_props.js, the previous-game rotation) and the market itself: no edge means mean CLV at most 0.",
+ "training_window": "None fitted for the regime: the props model is the existing one (trained on the four seasons before the current); the regime's splits use this season and last, as of each trigger.",
+ "validation_window": "None. There is no tuning step.",
+ "holdout_window": "Every role-shift flag from the first one onward. Evaluated at 200 graded flags and every 100 after; the repeated looks are disclosed.",
+ "machine": {
+  "window_dates": {
+   "training": null,
+   "validation": null,
+   "holdout": [
+    "2026-11-01",
+    null
+   ]
+  },
+  "window_note": "[from, to): open-ended; the flag table is append-only",
+  "minimum_sample": 200,
+  "version": "0.1",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3"
+ },
+ "minimum_sample": {
+  "graded_flags": 200,
+  "note": "Below 200 graded flags the record is descriptive. Every flag counts, losses included."
+ },
+ "promotion_criteria": {
+  "decision_rule": "eligible = true only if BOTH criteria hold on the graded flags at the time of evaluation. A criterion that cannot be evaluated is not met. Eligibility does not promote the model: a person promotes it to VALIDATED through a validation report. Software tests passing is never evidence for any criterion.",
+  "criteria": [
+   {
+    "id": "C1_SAMPLE",
+    "rule": "At least 200 graded flags (close_status = 'graded'). Flags with no usable close are counted and reported (the no-close count and rate), never graded and never counted toward the 200."
+   },
+   {
+    "id": "C2_CLV_LOWER_BOUND",
+    "rule": "The lower end of the two-sided 95% percentile interval of the mean CLV (pp, flag-weighted) is above zero. The interval is a cluster bootstrap that resamples whole GAMES (event_id) with replacement: 2,000 resamples, mulberry32 seeded 20261026 (lib/edgedesk_sharp_lag.js clusterBootstrap), because flags in one game share its news and its close and are not independent."
+   }
+  ],
+  "family_correction": "Both are required (an intersection test); neither is reported as a pass on its own."
+ },
+ "forking_paths": {
+  "candidates_tried": [
+   {
+    "version": "0.1",
+    "gap_pp": 2.5,
+    "trigger": "top-8 rotation player to OUT or DOUBTFUL",
+    "splits": "game-level primary, stints as the cross-check",
+    "shrinkage_games": 10,
+    "three_pct_prior_attempts": 100,
+    "evaluated_against_outcomes": false
+   }
+  ],
+  "alternatives_considered_not_tried": [
+   "the props model's own learned absence feature (miss_proj) instead of with/without splits",
+   "stint-level splits as the primary",
+   "QUESTIONABLE as a trigger",
+   "modelling 3-point attempts markets (books post made)"
+  ],
+  "choice_and_reason": "The owner's specification: game-level splits primary (every stat exists per game; rebounds do not exist per stint), stints as the cross-check, 3-pointers made as modelled attempts times the shrunk 3P%, 2.5 pp.",
+  "data_already_seen": "No NBA prop price has ever been captured (the gateway's NBA row is disabled), so no role-shift flag has been computed or graded.",
+  "comparisons_made": 0,
+  "stopping_rule": "No stopping: the record runs on. Eligibility is evaluated at 200 graded flags and every 100 after."
+ },
+ "spec": {
+  "trigger": "nba_injury_sync records a top-8 rotation player (reference rotation minutes, nba/roster_inputs.json) moving to OUT or DOUBTFUL",
+  "splits": "per teammate: minutes, usage (FGA + 0.44 FTA + TOV), FGA, 3PA, REB, AST, PTS per game in games WITHOUT the absent player vs WITH him, this season and last; shrunk = (n_without x without + k x with) / (n_without + k), k = 10 games; stints (on-court minutes, FGA, 3PA, assists) as the cross-check, reported beside, never overriding",
+  "regime": "the existing props model's prediction with minutes and per-minute rates from the shrunk splits (the default model and its output unchanged); 3-pointers made = modelled 3PA x the player's 3P% shrunk toward the league rate with 100 attempts",
+  "prices": "one nba_role_props request per game (player_rebounds, player_assists, player_threes, player_points_rebounds_assists; ten books, one region-equivalent, <= 4 credits), stored for the 3-4 teammates with the largest minutes or usage change",
+  "flag": "regime P(side at the posted line) - 1 / posted decimal >= 2.5 pp, at the first book posting the line in the order draftkings, fanduel, betmgm, williamhill_us, espnbet, betrivers, fanatics, hardrockbet, betonlineag, pinnacle; never the absent player's own unders",
+  "grade": "close = the same book's last two-way price at the same line after the flag's own price and at or before the tip, at most 90 minutes before it (else no close); CLV = closing Shin no-vig P(side) - flag cost; actual = the player's stat (void if he did not play)",
+  "code": "nba/props/role_shift.js; lib/edgedesk_sharp_lag.js; supabase/functions/sharp_lag",
+  "known_limitations": [
+   "the scenarios are built ahead, one per top-8 rotation player, in the 3-hourly NBA build and switched on when the report lands, so their inputs can be up to 3 hours old; a build more than 24 hours old switches nothing on",
+   "per-stint rebounds are not in the play-by-play stints",
+   "sample sizes without a player can be small: shrinkage is fixed, not fitted",
+   "a line that moves is graded only if the same line closes at the same book"
+  ]
+ },
+ "result": null
+}
