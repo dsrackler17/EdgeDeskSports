@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-27 — NHL engine browser suite: read the goalie block after the starter sync answers
+
+**The intermittent failure.** `NHL engine › The NHL and Engine panels in Chromium` sometimes failed "the slate fallback says the starter sync has no card for the game yet" (`tools/engine/engine_ui.e2e.js`). It failed once on a fully loaded machine. It passed six reruns at the same commits.
+
+**The cause.** `goalieBlock` (`lib/edgedesk_engine_ui.js`) draws the slate's goalie block at once. It then asks the starter sync, and draws the block again with the answer, which is when the "no card" note appears. The suite read the block once "Starting goalies" was drawn. That is already true before the answer, so a slow reply lost the race.
+
+**The fix (test only).** The suite also waits until `EDNHLGoalies.state(game)` has finished loading and holds an answer or an error, then reads the block. The assertion is unchanged.
+
+**Tests.**
+- **Unchanged suite, sync reply held 2 s:** 150 passed, 2 failed (desktop and phone), the same failure as the loaded machine.
+- **Fixed suite:** 152/0, and still 152/0 with the reply held 2 s.
+- **Mutation:** with the note removed from `lib/edgedesk_nhl_goalies.js`, it still fails 150/2, so the wait masks nothing.
+
 ## 2026-10-26 — Changelog: the last entry the #819 merge dropped is back
 
 The web-editor merge `c1081ebf7` (#819) dropped two `CHANGELOG.md` entries. #826 restored #819's own. The other, "Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market" (#818), is back, verbatim from `c7de08986`, where it stood: just before "All checks". Every heading from both sides of that merge is present again.

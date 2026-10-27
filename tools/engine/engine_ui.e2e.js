@@ -201,6 +201,9 @@ const TODAY = (() => {
       chk(label + ': Overview says whether a price is actionable and why not', /Is a price actionable\?/.test(overview) && /No\./.test(overview));
       /* starting goalies: the starter sync has no card for this game, so the slate's own block, in the same shape */
       await page.waitForFunction(() => /Starting goalies/.test(document.querySelector('#nhlHost .xe-tabp').textContent) && !/Loading the starting goalies/.test(document.querySelector('#nhlHost .xe-tabp').textContent), null, { timeout: 15000 }).catch(() => {});
+      /* …and until the starter sync has answered: the block is drawn from the slate first and drawn again
+         with the sync's answer (lib/edgedesk_engine_ui.js goalieBlock), so a read before the answer races it */
+      await page.waitForFunction((id) => { const st = window.EDNHLGoalies && window.EDNHLGoalies.state(id); return !!st && !st.loading && !!(st.data || st.err); }, g.game_id, { timeout: 15000 }).catch(() => {});
       const gov = await page.textContent('#nhlHost .xe-goalies').catch(() => '');
       const unconf = g.goalies.certainty !== 'CONFIRMED';
       chk(label + ': Overview shows the starting goalies, each with a status badge and its source', /Starting goalies/.test(gov) && new RegExp(g.goalies.home[0].name.replace('.', '\\.')).test(gov) && /Projected|Confirmed/.test(gov) && /EdgeDesk usage projection|Manual entry/.test(gov), gov.slice(0, 400));
