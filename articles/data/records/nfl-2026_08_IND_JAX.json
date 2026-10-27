@@ -24,7 +24,7 @@
   "game_when_label": "2026-11-01 18:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-26T19:17:02.637Z",
-  "generated_at": "2026-10-26T20:26:45.560Z",
+  "generated_at": "2026-10-27T00:22:05.722Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 6.8-point gap is context only and the game is excluded from research ranking.",
@@ -1303,6 +1303,69 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-26T20:26:45.560Z"
+    "at": "2026-10-27T00:22:05.722Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "p753qp6nk11v",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Jaguars stop the Colts’ run game?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Jacksonville Jaguars, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 6.8,
+      "toward": "Jacksonville Jaguars",
+      "other": "Indianapolis Colts"
+    },
+    "supporting": [
+      "When Jacksonville Jaguars have the ball: their passing game ranks No. 2, and Indianapolis Colts’ pass defense ranks No. 22.",
+      "When Jacksonville Jaguars have the ball: their pass protection ranks No. 5, and Indianapolis Colts’ pass rush ranks No. 27.",
+      "When Jacksonville Jaguars have the ball: their run game ranks No. 11, and Indianapolis Colts’ run defense ranks No. 25.",
+      "When Indianapolis Colts have the ball: their passing game ranks No. 24, and Jacksonville Jaguars’ pass defense ranks No. 11."
+    ],
+    "contradicting": [
+      "When Indianapolis Colts have the ball: their pass protection ranks No. 17, and Jacksonville Jaguars’ pass rush ranks No. 30.",
+      "Jacksonville Jaguars’ pass rush ranks No. 30 of 32 in sack rate this season.",
+      "Indianapolis Colts’ running game ranks No. 2 of 32 in rushing efficiency this season."
+    ],
+    "quarterbacks": [
+      "Jacksonville Jaguars’ passers have completed 120 of 184 (65.2%) for 1,480 yards, 8.0 yards per attempt, with 14 touchdowns, 4 interceptions and 10 sacks taken in six games.",
+      "Indianapolis Colts’ passers have completed 143 of 240 (59.6%) for 1,398 yards, 5.8 yards per attempt, with 4 touchdowns, 7 interceptions and 19 sacks taken in seven games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Jacksonville Jaguars have to win on the ground (Indianapolis Colts’ No. 2 run game against Jacksonville Jaguars’ No. 5 run defense).",
+        "The Jacksonville Jaguars have to slow the Indianapolis Colts in the pass-rush matchup (Indianapolis Colts’ No. 17 pass protection against Jacksonville Jaguars’ No. 30 pass rush).",
+        "The Jacksonville Jaguars have to win in the pass-rush matchup (Jacksonville Jaguars’ No. 5 pass protection against Indianapolis Colts’ No. 27 pass rush).",
+        "The Jacksonville Jaguars have to win through the air (Jacksonville Jaguars’ No. 2 passing game against Indianapolis Colts’ No. 22 pass defense)."
+      ],
+      "market": [
+        "The Indianapolis Colts have to win in the pass-rush matchup (Indianapolis Colts’ No. 17 pass protection against Jacksonville Jaguars’ No. 30 pass rush).",
+        "The Indianapolis Colts have to win on the ground (Indianapolis Colts’ No. 2 run game against Jacksonville Jaguars’ No. 5 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "The line on file was captured Sept. 13 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-26T23:11:24.541Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-27T00:21:56.013Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

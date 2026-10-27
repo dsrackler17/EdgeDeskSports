@@ -15,6 +15,9 @@ on:
       - 'basketball/**'
       - 'mlb/history/**'
       - 'engine/**'
+      # engine/build_registry.js reads college baseball's validation records: a change to them is a
+      # change to the registry's evidence (2026-10-26: the weekly run's records broke this check)
+      - 'college_baseball/validation/**'
       - 'lib/edgedesk_xboard.js'
       - 'lib/edgedesk_sport_brains.js'
       - 'lib/edgedesk_engine_ui.js'
