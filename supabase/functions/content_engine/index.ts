@@ -7841,7 +7841,16 @@
     var even = all.filter(function (pr) { return !pr.favors; }).sort(function (a, b) { return PAIR_ORDER.indexOf(a.key) - PAIR_ORDER.indexOf(b.key); });
     return edges.concat(even).slice(0, n).map(function (pr) { return by[pr.claim]; });
   }
-  function stripWhen(t) { return cap(String(t).replace(/^When .+? ha(?:s|ve) the ball(?: \(([^)]+)\))?: /, function (_, l) { return l ? cap(l) + ': ' : ''; })); }
+  /* an NFL claim reads "When X have the ball: their …", and "their" is X:
+     with the clause gone, X comes back in its place ("their passing game"
+     under a list for the other team read as that team's). Under a heading
+     that names X (atX) the pronoun stays */
+  function stripWhen(t, atX) {
+    return cap(String(t).replace(/^When (.+?) ha(?:s|ve) the ball(?: \(([^)]+)\))?: (their )?/, function (_, team, l, their) {
+      var F = fe();
+      return (l ? cap(l) + ': ' : '') + (!their ? '' : atX ? their : (F ? F.writer.poss(team) : team + '’s') + ' ');
+    }));
+  }
   /* WHO MAY BE CALLED UNCERTAIN. Every availability classification the
      packets and reports carry, by team and by player name: the game packet's
      own quarterback read, the conference's official report row by row, and
@@ -8105,7 +8114,7 @@
       var prs = pairsFor(p, team, 3, reserved);
       if (!prs.length) return;
       prs.forEach(function (c) { used[c.id] = 1; });
-      E.push('**When ' + team + (p.league === 'nfl' ? ' have' : ' has') + ' the ball.** ' + (firstParty ? '\n\n' + prs.map(function (c) { return '- ' + sent(cap(shortOf(c))); }).join('\n') : prs.map(function (c) { return sent(stripWhen(c.text)); }).join(' ')));
+      E.push('**When ' + team + (p.league === 'nfl' ? ' have' : ' has') + ' the ball.** ' + (firstParty ? '\n\n' + prs.map(function (c) { return '- ' + sent(cap(shortOf(c))); }).join('\n') : prs.map(function (c) { return sent(stripWhen(c.text, true)); }).join(' ')));
     });
     var pos = C.filter(function (c) { return c.topic === 'position' && c.strength && !reserved[c.id] && !used[c.id]; }).sort(sortStrength).slice(0, 3);
     var injs = (F ? F.writer.materialInjuries(ev) : []).filter(function (c) { return !used[c.id] && c.topic === 'injury'; });
