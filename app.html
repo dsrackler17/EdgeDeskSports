@@ -59537,6 +59537,27 @@ window.fbP4Gate=function(gid){
   var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
   el.innerHTML=u?('<div style="margin:8px 0 12px">'+fbP4Card(u)+(window.fbBriefBtn?fbBriefBtn('cfb',u.g,u):'')+'</div>'):'';
 };
+/* the cards a reader has open. The board draws every row closed, and the
+   loaders repaint it when their artifact lands (the season record, the
+   quote-EV tables, the grades), so renderFootball reopens these after each
+   repaint, as fbP4Gate opens them, without counting a second visit */
+function fbP4OpenGates(host){
+  var gates=[];
+  try{Array.prototype.forEach.call(host.querySelectorAll('[id^="p4gate-"][data-open]'),function(el){gates.push(el.id.slice(7));});}catch(_){}
+  return gates;
+}
+function fbP4Reopen(gates){
+  gates.forEach(function(gid){
+    try{
+      var el=document.getElementById('p4gate-'+gid),ar=document.getElementById('p4arr-'+gid),u=null;
+      if(!el||el.getAttribute('data-open'))return;
+      FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
+      if(!u)return;
+      el.setAttribute('data-open','1');if(ar)ar.textContent='▾';
+      el.innerHTML='<div style="margin:8px 0 12px">'+fbP4Card(u)+(window.fbBriefBtn?fbBriefBtn('cfb',u.g,u):'')+'</div>';
+    }catch(_){}
+  });
+}
 function fbP4StatusStrip(){
   var S=FB.p4,h=FB.health;
   function chip(label,txt,color){
@@ -61432,9 +61453,11 @@ window.fbRefreshClick=function(){
 
 window.renderFootball=function(){
   var host=$('fbBody');if(!host)return;
+  var gates=fbP4OpenGates(host);
   fbRenderOverview();
   fbRenderSystem();          /* creates the rsMeta-football host the shell paints into */
   fbRenderBoard(host);
+  fbP4Reopen(gates);
   fbAfterRender();
 };
 /* ═══ EDGEDESK PLAYER QUALITY + SCHEME MATCHUP ENGINE ══════════════════════
@@ -65561,27 +65584,15 @@ function fbRepaintKeepingPlace(){
       return false;
     }
   }catch(_){}
-  var open=[],gates=[],y=null;
+  var open=[],y=null;
   try{
     y=window.scrollY;
     Array.prototype.forEach.call(host.querySelectorAll('details[open]'),function(d){
       var c=d.parentElement&&d.parentElement.closest?d.parentElement.closest('[id]'):null;if(!c||!c.id)return;
       open.push([c.id,Array.prototype.indexOf.call(c.querySelectorAll('details'),d)]);
     });
-    Array.prototype.forEach.call(host.querySelectorAll('[id^="p4gate-"][data-open]'),function(el){gates.push(el.id.slice(7));});
   }catch(_){}
-  window.renderFootball();
-  gates.forEach(function(gid){
-    /* reopened as fbP4Gate opens it, without counting a second visit */
-    try{
-      var el=document.getElementById('p4gate-'+gid),ar=document.getElementById('p4arr-'+gid),u=null;
-      if(!el||el.getAttribute('data-open'))return;
-      FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
-      if(!u)return;
-      el.setAttribute('data-open','1');if(ar)ar.textContent='▾';
-      el.innerHTML='<div style="margin:8px 0 12px">'+fbP4Card(u)+(window.fbBriefBtn?fbBriefBtn('cfb',u.g,u):'')+'</div>';
-    }catch(_){}
-  });
+  window.renderFootball();   /* reopens the open cards itself (fbP4Reopen) */
   open.forEach(function(o){
     try{var c=document.getElementById(o[0]),d=c?c.querySelectorAll('details')[o[1]]:null;if(d)d.open=true;}catch(_){}
   });

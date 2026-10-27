@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-27 — FBS board: a card the reader opened stays open when late data repaints the board
+
+**What was wrong.** Opening a game on the FBS board draws its card into `#p4gate-<id>` (`fbP4Gate`). The board draws every row closed. About 40 places call `renderFootball()` when their data lands, among them the season record, the quote-EV tables, the grades and the matchup data. Only the 60-second price refresh went through `fbRepaintKeepingPlace()`, which reopens the open cards. So a card opened in the first seconds after load could shut again, empty, when a late artifact arrived.
+
+**How it showed.** `tools/football/game_research_ui.e2e.js` failed once inside a full `npm run verify`: 53 / 1, "an FBS card opens with EdgeDesk's projection above the decision", `{"lead":null,…}`. Run alone, it passed. The check opens a card 1.5 s after the board first paints. In a normal run the board repaints four more times in that window, the last at +1.4 s. Under load, one of those repaints can land on the card just opened.
+- One `renderFootball()` after the open reproduces the failure exactly: 53 / 1, `{"lead":null,"before":false,"hasBtn":false}`.
+- Nothing forced, with the season record (`record/football/cfb_<season>.json`) served 4 s late: its own repaint, 2.5 s after the click, closed the card. Six seconds after the click, the card was still closed and empty.
+
+**The repair.**
+- `renderFootball()` notes the open cards before it repaints (`fbP4OpenGates`) and reopens them after (`fbP4Reopen`). It does this the way `fbRepaintKeepingPlace()` did, without counting a second visit.
+- `fbRepaintKeepingPlace()` keeps its scroll and `<details>` restore, and leaves reopening the cards to `renderFootball()`.
+- No model number, threshold, record or existing assertion changed.
+
+**Regression check.** `game_research_ui.e2e.js` now repaints the board once after the card opens. It requires the card to stay open with the same lead.
+
+| `node tools/football/game_research_ui.e2e.js` | old `app.html` | this `app.html` |
+|---|---|---|
+| the new check | **FAIL** `{"open":false,"lead":null}` (54 / 3) | 58 / 0, twice |
+| season record served 4 s late, nothing forced (local probe, not committed) | closed and empty 6 s after the click | open, same lead |
+
 ## 2026-10-27 — Research OS journey and changelog: what this morning's "Update branch" merges deleted is back
 
 **What was lost.** Between 12:51 and 12:59 UTC, #844, #841, #840, #842 and #843 merged. Three of them merged on an "Update branch" merge commit, two of them within ten seconds of it. Those three merges dropped work that no check had seen:
