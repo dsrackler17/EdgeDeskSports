@@ -866,6 +866,22 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
   chk('the committed slates hold at least one altitude item', altN >= 1, altN);
   chk('the committed slates exercise a lane the matchup term does not price', laneZeroN >= 10, laneZeroN);
   chk('a college line-of-scrimmage item keeps the matchup term’s points', proj.filter((x) => x.league === 'cfb').every((x) => x.insights.filter((i) => i.family === 'trenches').every((i) => i.effect.kind !== 'in_number' || i.effect.term === 'matchup')));
+  /* THE COLLEGE CHIPS ADD UP TO THE LINE. On 2026-10-27, 48 of the 63 college
+     graphics printed in-number chips 1+ pts short of their own fair line: SHSU @
+     MOST showed MOST +2.1 and MOST +2.8 on a 6.65 line, and its 1.74-pt matchup
+     term, most of the gap to the market, sat on no chip. */
+  const cfbTermed = proj.filter((x) => x.league === 'cfb' && x.drivers && x.drivers.basis === 'cfb_engine_terms');
+  const unreconciled = cfbTermed.map((x) => {
+    const chips = x.insights.filter((i) => i.effect && i.effect.kind === 'in_number');
+    const terms = chips.map((i) => i.effect.term), rows = x.drivers.rows;
+    const sum = chips.reduce((a, i) => a + (i.effect.team === 'home' ? 1 : -1) * i.effect.points, 0);
+    /* each chip is its term to 0.1, and a term under 0.05 pts is listed only by name */
+    const tol = 0.05 * (rows.length + (x.drivers.small || []).length) + 1e-9;
+    const ok = new Set(terms).size === terms.length && rows.every((r) => terms.indexOf(r.key) >= 0) && Math.abs(sum - x.model.home_margin) <= tol;
+    return ok ? null : { game: x.game_key, margin: x.model.home_margin, chips: chips.map((i) => i.effect.label + ' (' + i.effect.term + ')'), terms: rows.map((r) => r.key + ' ' + r.points) };
+  }).filter(Boolean);
+  chk('the committed slates hold college games priced from the engine’s own terms', cfbTermed.length > 20, cfbTermed.length);
+  chk('every college game’s in-number chips carry each priced term once and add up to its fair margin', unreconciled.length === 0, { n: unreconciled.length, of: cfbTermed.length, first: unreconciled.slice(0, 2) });
 
   /* the graphic: one chip per item, the legend, and an old spec redraws without either */
   const s = proj.find((x) => x.insights.length >= 5 && x.insights.some((i) => i.effect && i.effect.kind === 'zero')), spec = GS.graphicSpec(s);
