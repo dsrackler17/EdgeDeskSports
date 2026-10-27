@@ -1,57 +1,61 @@
 {
- "name": "TEMP bypass probe CONTROL (delete after; Claude session 2026-10-26)",
- "target": "branch",
- "enforcement": "active",
- "conditions": {
-  "ref_name": {
-   "include": [
-    "refs/heads/claude/bypass-probe-control/**"
-   ],
-   "exclude": []
-  }
- },
- "bypass_actors": [],
- "rules": [
-  {
-   "type": "deletion"
+  "name": "TEMP bypass probe CONTROL (delete after; Claude session 2026-10-27)",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": [
+        "refs/heads/claude/bypass-probe-control/**"
+      ],
+      "exclude": []
+    }
   },
-  {
-   "type": "non_fast_forward"
-  },
-  {
-   "type": "pull_request",
-   "parameters": {
-    "required_approving_review_count": 0,
-    "dismiss_stale_reviews_on_push": true,
-    "require_code_owner_review": false,
-    "require_last_push_approval": false,
-    "required_review_thread_resolution": true,
-    "allowed_merge_methods": [
-     "merge",
-     "squash"
-    ]
-   }
-  },
-  {
-   "type": "required_status_checks",
-   "parameters": {
-    "strict_required_status_checks_policy": false,
-    "do_not_enforce_on_create": false,
-    "required_status_checks": [
-     {
-      "context": "Repository integrity",
-      "integration_id": 15368
-     },
-     {
-      "context": "Odds gateway suites",
-      "integration_id": 15368
-     },
-     {
-      "context": "audit",
-      "integration_id": 15368
-     }
-    ]
-   }
-  }
- ]
+  "bypass_actors": [],
+  "rules": [
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 0,
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": true,
+        "allowed_merge_methods": [
+          "merge",
+          "squash"
+        ]
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": false,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          {
+            "context": "Repository integrity",
+            "integration_id": 15368
+          },
+          {
+            "context": "Odds gateway suites",
+            "integration_id": 15368
+          },
+          {
+            "context": "audit",
+            "integration_id": 15368
+          },
+          {
+            "context": "All checks",
+            "integration_id": 15368
+          }
+        ]
+      }
+    }
+  ]
 }

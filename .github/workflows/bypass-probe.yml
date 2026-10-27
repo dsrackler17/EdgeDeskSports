@@ -1,13 +1,22 @@
-# TEMPORARY — the GitHub Actions bypass probe (2026-10-26). Lives only on the
-# orphan branch claude/bypass-probe-runner; never on main. Question: does the
-# ruleset bypass for the GitHub Actions app (id 15368, docs/ci/main-ruleset.json)
-# let a push made with the default GITHUB_TOKEN through the rules #805/#806
-# propose for main? It pushes one commit to each of two scratch branches:
-#   claude/bypass-probe/target          ruleset = main-ruleset.json + Actions bypass
-#   claude/bypass-probe-control/target  the same rules, empty bypass list
-# The control must be REFUSED (the rules bind GITHUB_TOKEN pushes); the probe is
-# ACCEPTED only if the bypass works. Until both scratch rulesets are active it
-# pushes nothing and exits green. main is never touched.
+# TEMPORARY — the ruleset bypass probe (2026-10-26, revised 2026-10-27). Lives
+# only on the orphan branch claude/bypass-probe-runner; never on main.
+#
+# On 2026-10-27 GitHub refused to import docs/ci/main-ruleset.json: "invalid
+# actor". This personal account does not accept the GitHub Actions app
+# (id 15368) as a bypass actor, so the question is now which bypass it does
+# accept that lets the data jobs' pushes through. Each kind of push the data
+# jobs could make pushes one commit to each of three scratch branches, whose
+# rulesets carry main-ruleset.json's rules unchanged:
+#
+#   claude/bypass-probe-control/target    no bypass        every push REFUSED
+#   claude/bypass-probe-write/target      Write role       GITHUB_TOKEN ?
+#   claude/bypass-probe-deploykey/target  Deploy keys      deploy key ?
+#
+# Pushers: the default GITHUB_TOKEN, as every data job pushes today; and a
+# deploy key, only when the PROBE_DEPLOY_KEY secret exists. A refusal is
+# reported as REFUSED only when GitHub names a rule violation (GH013); any
+# other failure is reported as itself. Until all three scratch rulesets are in
+# force it pushes nothing and exits green. main is never touched.
 name: TEMP bypass probe
 
 on:
@@ -22,35 +31,77 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: The two scratch rulesets are active, and main has no rules from them
+      - name: The three scratch rulesets are in force
         id: ready
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          n() { gh api "repos/$GITHUB_REPOSITORY/rules/branches/$1" --jq 'length' 2>/dev/null || echo error; }
-          probe=$(n claude%2Fbypass-probe%2Ftarget); ctrl=$(n claude%2Fbypass-probe-control%2Ftarget); main=$(n main)
-          echo "rules in force: probe=$probe control=$ctrl main=$main"
-          if [ "$probe" = 0 ] || [ "$ctrl" = 0 ] || [ "$probe" = error ] || [ "$ctrl" = error ]; then
-            echo "::notice::NOT READY: import probe-ruleset.json and control-ruleset.json (PROBE.md), then re-run this job. Nothing was pushed."
-            echo "ready=no" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          ready=yes
+          for leg in control write deploykey; do
+            n=$(gh api "repos/$GITHUB_REPOSITORY/rules/branches/claude%2Fbypass-probe-$leg%2Ftarget" --jq 'length' 2>/dev/null || echo error)
+            echo "rules in force on claude/bypass-probe-$leg/target: $n"
+            case "$n" in 0|error) ready=no ;; esac
+          done
+          if [ "$ready" = no ]; then
+            msg="NOT READY: import the three rulesets in PROBE.md, then re-run this job. Nothing was pushed."
+            echo "::notice::$msg"
+            echo "$msg" >> "$GITHUB_STEP_SUMMARY"
           fi
-      - name: Push one commit to each scratch branch with the default GITHUB_TOKEN
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Push one commit to each scratch branch with each kind of push
         if: steps.ready.outputs.ready == 'yes'
         env:
+          GH_TOKEN: ${{ github.token }}
           TOKEN: ${{ github.token }}
+          DEPLOY_KEY: ${{ secrets.PROBE_DEPLOY_KEY }}
         run: |
+          summary() { echo "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          token_url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          ssh_url="git@github.com:${GITHUB_REPOSITORY}.git"
+          key="$RUNNER_TEMP/probe_key"
+          trap 'rm -f "$key"' EXIT
+          if [ -n "$DEPLOY_KEY" ]; then
+            ( umask 077; printf '%s\n' "$DEPLOY_KEY" > "$key" )
+            gh api meta --jq '.ssh_keys[] | "github.com " + .' > "$RUNNER_TEMP/known_hosts"
+            export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts"
+          fi
           git init -q p && cd p
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git remote add origin "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          for b in claude/bypass-probe/target claude/bypass-probe-control/target; do
-            git fetch -q --depth=1 origin "$b"
-            git checkout -q -B work FETCH_HEAD
-            echo "run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT" > probe.txt
-            git add probe.txt
-            git commit -q -m "bypass probe: update $b (run $GITHUB_RUN_ID)"
-            if git push origin "HEAD:refs/heads/$b" > out.txt 2>&1; then echo "PROBE_RESULT $b ACCEPTED"; else echo "PROBE_RESULT $b REFUSED"; fi
-            sed 's/^/    | /' out.txt
+
+          summary "| pushed with | control (no bypass) | write (Write role) | deploykey (Deploy keys) |"
+          summary "|---|---|---|---|"
+          for who in token deploykey; do
+            if [ "$who" = token ]; then
+              push_url=$token_url; row="| GITHUB_TOKEN (as the data jobs push today) |"
+            elif [ -n "$DEPLOY_KEY" ]; then
+              push_url=$ssh_url; row="| deploy key (PROBE_DEPLOY_KEY) |"
+            else
+              summary "| deploy key | not run: no PROBE_DEPLOY_KEY secret | | |"
+              continue
+            fi
+            for leg in control write deploykey; do
+              b="claude/bypass-probe-$leg/target"
+              # read with the token; only the push uses the identity under test
+              git fetch -q --depth=1 "$token_url" "$b"
+              git checkout -q -B work FETCH_HEAD
+              echo "run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT, pushed with $who at $(date -u +%FT%T.%NZ)" > probe.txt
+              git add probe.txt
+              git commit -q -m "bypass probe: $who updates $b (run $GITHUB_RUN_ID)"
+              if git push "$push_url" "HEAD:refs/heads/$b" > out.txt 2>&1; then r=ACCEPTED
+              elif grep -q 'GH013' out.txt; then r=REFUSED
+              elif grep -q 'Permission denied (publickey)' out.txt; then r='KEY NOT ACCEPTED (is it a deploy key with write access?)'
+              else r='FAILED (see the log)'
+              fi
+              echo "PROBE_RESULT $who -> $b: $r"
+              sed 's/^/    | /' out.txt
+              row="$row $r |"
+            done
+            summary "$row"
           done
+
+          summary ""
+          summary "Expected: **control** REFUSED on every row (the rules bind that kind of push)."
+          summary "**write** ACCEPTED on the GITHUB_TOKEN row: a Write-role bypass lets today's data jobs through unchanged."
+          summary "**deploykey** ACCEPTED on the deploy key row: the deploy-key fallback works."
