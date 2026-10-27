@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-27 — Research OS journey: the game page's context is checked against the label the game page carries
+
+**What broke.** Since the scheduled slate push at 00:22 UTC (`f213b5eb`, "slate: today's games"), `tools/research_os/journey.e2e.js` has failed on `main` with 124 passed and 2 failed:
+
+```
+FAIL | desktop: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky",...}
+FAIL | phone: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky",...}
+```
+
+It turns Research OS tests (`browser`) and All checks red on every pull request that starts them (#835 was the first). Research OS tests runs only on pull requests, so `main` did not report the failure itself.
+
+**Why.** The journey takes the earliest upcoming NFL or FBS game on the committed slate. Before the push that was Dallas at Philadelphia (`nfl|2026_07_DAL_PHI`); after it, Delaware at Western Kentucky (`cfb|401871071`). The game page builds the research context from the game research snapshot (`gvCtx` in `app.html`, through `EDContext.fromResearchKey`), so its `home` is the snapshot's label, "Western Kentucky". The check compared it with the slate's label, "Western Kentucky Hilltoppers". NFL snapshots and the slate use the same names, so the check passed only while the first game was an NFL game. `home` and `away` are display labels only (DESIGN.md §2), and the code is right. The check depended on which sport the day's first game was.
+
+**The repair.** The check compares the context's `home` with the research snapshot's `home.name`, the label the game page is built from. It is still an exact match, together with the research key. Every other check is unchanged. No app code, data or fixture changed.
+
+**Before and after.** `ROS_SQL_REQUIRED=1 ROS_E2E_REQUIRED=1 node tools/research_os/journey.e2e.js`:
+
+| Data | old test | this test |
+|---|---|---|
+| `main` before the slate push (`f213b5eb~1`, DAL @ PHI) | 126 / 0 | 126 / 0 |
+| `main` now (`1b8a82be`, DEL @ WKU) | **124 / 2** | 126 / 0 |
+| `main` now, with `gvCtx` handed the away team's label (local mutation, not committed) | 124 / 2 | **124 / 2** |
+
+The last row shows the check still fails when the game page carries the wrong label.
+
 ## 2026-10-26 — Changelog: the last entry the #819 merge dropped is back
 
 The web-editor merge `c1081ebf7` (#819) dropped two `CHANGELOG.md` entries. #826 restored #819's own. The other, "Model integrity audit: six input and pricing defects repaired, and every projection checked against its inputs and the market" (#818), is back, verbatim from `c7de08986`, where it stood: just before "All checks". Every heading from both sides of that merge is present again.
