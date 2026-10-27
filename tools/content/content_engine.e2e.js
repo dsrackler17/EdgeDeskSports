@@ -285,8 +285,16 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     const crow2 = P.locator('#pbContacts .crow').last();
     await crow2.locator('[data-c=name]').fill('Pat Writer');
     await crow2.locator('[data-c=email]').fill('Pat@Publisher.example');
+    await P.evaluate(() => { window.__msgs = []; const rec = () => { const m = document.getElementById('pbMsg'); window.__msgs.push([Date.now(), performance.now() | 0, m ? m.className + '|' + m.textContent : '(no #pbMsg)']); };
+      new MutationObserver(rec).observe(document.body, { subtree: true, childList: true, characterData: true }); });
+    const callsBefore = o.calls.length;
     await P.click('#pbSave');
-    await P.waitForFunction(() => /Saved/.test(document.getElementById('pbMsg').textContent), null, { timeout: 15000 });
+    try { await P.waitForFunction(() => /Saved/.test(document.getElementById('pbMsg').textContent), null, { timeout: 15000 }); console.log('DIAG Saved seen by waitForFunction'); }
+    catch (e) { console.log('DIAG timeout; #pbMsg now: ' + JSON.stringify(await P.evaluate(() => { const m = document.getElementById('pbMsg'); return m ? m.className + '|' + m.textContent : null; }))); }
+    console.log('DIAG messages: ' + JSON.stringify(await P.evaluate(() => window.__msgs.filter((x, i, a) => !i || x[2] !== a[i - 1][2]))));
+    console.log('DIAG calls after save: ' + JSON.stringify(o.calls.slice(callsBefore)));
+    console.log('DIAG page errors: ' + JSON.stringify(o.errors));
+    console.log('DIAG browser: ' + browser.version());
     chk('6 the contact is saved on the publisher (owner-only)', /jordan@publisher\.example/.test(db.sql(`select contacts::text from content_engine.publishers where slug = 'stadium-rant';`)));
 
     await P.click('.tabs button[data-tab="pub"]');
