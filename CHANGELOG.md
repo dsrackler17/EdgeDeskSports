@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-27 — Content engine: no matchup analysis the gate must block, and NFL stats name their team
+
+**What broke.** `tools/content/evidence.test.js` fails on `main` with 202 passed and 1 failed:
+
+```
+× L every article generated from today's research passes the gate — [{"key":"nfl:2026:w8:matchup_analysis:2026_08_TEN_CIN/matchup_analysis","ok":false,"failed":["contrary_evidence"],"readiness":"BLOCKED"}]
+```
+
+Content engine is path-filtered, so `main` shows no red run, but every pull request that touches its paths fails.
+
+**Why.** A one-game piece must cite the evidence against EdgeDesk's view (the gate's `contrary_evidence` check). Tennessee at Cincinnati's packet holds none: `contradicting` is empty, and all 18 of its leaning claims lean Cincinnati. `discover()` offered it as a matchup analysis anyway, for its 6.3-point gap. The gate then blocked every draft, whatever it said.
+
+The gap is 6.3 because the line on file is CIN −6.5, captured 2026-09-13 and labelled stale. Paid odds retrieval has been paused since the 2026-10-10 credit exhaustion and resumes on 2026-11-01 ([INCIDENT.md](docs/odds-api-incident-2026-10/INCIDENT.md)), so Week 7–8 NFL games carry September look-ahead lines. That pause is the owner's and is not changed here.
+
+**The repairs.**
+- `discover()` offers a matchup analysis only when the packet holds evidence against EdgeDesk's view (`arguesBothSides`, the gate's own necessary condition). It already keeps out games the gate could never pass for other reasons. The gate is unchanged.
+- `stripWhen()` puts the team back where an NFL claim's "their" stood. "Their passing game ranks No. 29", listed under "The football that does point toward Cincinnati Bengals", was Tennessee's. The frozen research held 20 such sentences, in every NFL matchup analysis' thesis and counterargument. Under the evidence section's "When X have the ball" heading, which names X, the pronoun stays.
+- The Edge Function's copy is regenerated with `node tools/content/inline.js`. It reaches production only on a manual deploy.
+
+**Before and after.**
+
+| | before | after |
+|---|---|---|
+| `tools/content/evidence.test.js` (live research) | 202 / 1 | 203 / 0 |
+| `tools/content/content.test.js` (5 new checks) | 335 / 3 without either fix | 338 / 0 |
+| bare "Their" sentences in the frozen drafts | 20 | 0 |
+
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
 **What broke, twice.**
