@@ -42,55 +42,6 @@ The lesson is §5's, again: after "Update branch", wait for that new commit's ch
 - **Fixed suite:** 152/0, and still 152/0 with the reply held 2 s.
 - **Mutation:** with the note removed from `lib/edgedesk_nhl_goalies.js`, it still fails 150/2, so the wait masks nothing.
 
-## 2026-10-27 — The jobs that refit a model record publish the registry rebuilt from it
-
-**Why.** `engine/registry.json` reads each sport's state from its committed record. On 2026-10-26 the college baseball weekly validation pushed a record whose state had changed, but not the registry. For 100 minutes `main` disagreed with itself, and Multi-sport lab failed on every pull request (#828 fixed that job). Three more jobs publish a record the registry reads without the registry:
-- the UFC model loop (`model_loop/published/ufc/validation.json`);
-- the basketball model loop (`basketball/validation/<league>_walkforward.json` on a promotion);
-- the college baseball model loop's `release` mode (`college_baseball/validation/walkforward.json`).
-
-The four jobs that do publish the registry (`lab-build`, `lab-validate`, `nhl-build`, `nhl-validate`) carried their own copy over a newer tip when a push was rejected. That copy drops whatever record another job had just published.
-
-**What.**
-- `model-loop-ufc.yml`, `model-loop-basketball.yml` and `model-loop-college-baseball.yml` (release only) rebuild the registry and board after the record, `--check` both, and push them with the record.
-- Every job that publishes the registry sets `PUSH_REBUILD: node engine/build_registry.js && node engine/build_board.js`, so on a rejected push both are rebuilt on the new tip (`tools/ci/push_generated.sh`).
-- `lab.yml` also runs on pull requests that change the record-refitting workflows.
-
-**Evidence.** A local race through the real `tools/ci/push_generated.sh`: one job published an NBA record change and the registry, and a UFC loop that had started from the same commit lost the push.
-- Before: the UFC loop's carried registry still said NBA moneyline `OUTCOME_VALIDATED` over a record that said `PROVISIONAL`, and `engine/build_registry.js --check` FAILED on the result.
-- After: the registry on the new tip held both changes, and `--check` passed.
-
-**Tests.**
-- `tools/lab/lab.test.js`: each of the seven jobs that refit a record the registry reads rebuilds, checks, pushes and `PUSH_REBUILD`s the registry and board. 15 checks fail on the old workflows.
-- `tools/ci/push_generated.test.js` §11 lists the registry and board as aggregates. It fails on the four jobs that carried them.
-
-**Not here.** The football records (`football/validation/linemaker_*.json`, `pricing_*.json`) are rewritten by `linemaker-calibrate.yml`, `learning-loop.yml` and `football-weekly-build.yml`. Their registry is rebuilt only by the next lab or NHL build. `linemaker-calibrate.yml` pushes with `git pull --rebase`, which conflicts on a file another job rewrote, so it needs `tools/ci/push_generated.sh` before it can carry the registry. That is a separate change.
-
-## 2026-10-27 — Research OS journey: the game page's context is checked against the label the game page carries
-
-**What broke.** Since the scheduled slate push at 00:22 UTC (`f213b5eb`, "slate: today's games"), `tools/research_os/journey.e2e.js` has failed on `main` with 124 passed and 2 failed:
-
-```
-FAIL | desktop: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky",...}
-FAIL | phone: the game is the research context  {..."researchKey":"cfb|401871071",..."home":"Western Kentucky",...}
-```
-
-It turns Research OS tests (`browser`) and All checks red on every pull request that starts them. #835 was the first, and it merged with this check red. Research OS tests runs only on pull requests, so `main` did not report the failure itself.
-
-**Why.** The journey takes the earliest upcoming NFL or FBS game on the committed slate. Before the push that was Dallas at Philadelphia (`nfl|2026_07_DAL_PHI`); after it, Delaware at Western Kentucky (`cfb|401871071`). The game page builds the research context from the game research snapshot (`gvCtx` in `app.html`, through `EDContext.fromResearchKey`), so its `home` is the snapshot's label, "Western Kentucky". The check compared it with the slate's label, "Western Kentucky Hilltoppers". NFL snapshots and the slate use the same names, so the check passed only while the first game was an NFL game. `home` and `away` are display labels only (DESIGN.md §2), and the code is right. The check depended on which sport the day's first game was.
-
-**The repair.** The check compares the context's `home` with the research snapshot's `home.name`, the label the game page is built from. It is still an exact match, together with the research key. Every other check is unchanged. No app code, data or fixture changed.
-
-**Before and after.** `ROS_SQL_REQUIRED=1 ROS_E2E_REQUIRED=1 node tools/research_os/journey.e2e.js`:
-
-| Data | old test | this test |
-|---|---|---|
-| `main` before the slate push (`f213b5eb~1`, DAL @ PHI) | 126 / 0 | 126 / 0 |
-| `main` after it (`1b8a82be`, DEL @ WKU) | **124 / 2** | 126 / 0 |
-| `main` after #835 and #839 (`b48f627d`, DEL @ WKU) | **124 / 2** | 126 / 0 |
-| `1b8a82be`, with `gvCtx` handed the away team's label (local mutation, not committed) | 124 / 2 | **124 / 2** |
-
-The last row shows the check still fails when the game page carries the wrong label.
 
 ## 2026-10-27 — Research OS journey: the research context is checked against the names the game page shows
 
@@ -136,32 +87,6 @@ The game page builds the research context from its snapshot (`gvCtx` in `app.htm
 | without this change | 334 / 1: "- Their run game ranks No. 3, and Atlanta Falcons' run defense ranks No. 25." (BAL @ ATL) |
 | with it | 335 / 0 |
 
-## 2026-10-27 — College football: the graphic's chips add up to the line, and a game-by-game trust audit
-
-**The question.** Is EdgeDesk overrating teams like Missouri State (fair −6.65, DraftKings −4.5) and Western Kentucky (fair −3.3, DraftKings +1.5)? Does the model take account of past weeks?
-
-**What the season says.** These are 393 graded FBS-vs-FBS games, as of 2026-10-27 13:30 UTC.
-- EdgeDesk missed by 11.90 a game and the close by 10.99. The close finished nearer the final in 59.3% of games.
-- A disagreement with the close carries no measurable information: slope −0.13, 95% CI −0.42 to +0.16. At a 7+ point gap the close was nearer in 69%.
-- There is no systematic lean: today's 15 lined games average +0.28 points toward the home side.
-- A team's earlier misses do not predict its next one (slope +0.02, 95% CI −0.13 to +0.17, n 278), so the ratings do absorb past weeks.
-- Missouri State's 2.2-point gap is mostly its 1.74-point stylistic matchup term. That term's held-out gain is not significant. On this season's games alone, Sam Houston rates 1.0 better on a neutral field. The long-run track, weighted 60%, has Missouri State 4.2 better.
-
-**Fixed: a college card's chips add up to its line** (`lib/edgedesk_game_snapshot.js`). The "What to watch for" chips were picked on story strength alone. On 2026-10-27, 59 of 63 college cards left a priced engine term off every chip:
-- SHSU @ MOST printed MOST +2.1 and +2.8 on 6.65, with the matchup term nowhere.
-- DEL @ WKU printed WKU +0.1 and +0.4 on 3.27, without the 2.8-point home field.
-
-Each engine term now sits on exactly one in-number chip. A missing term takes the place of the weakest item that carries no points. The regression test in `tools/football/game_research.test.js` §15 failed on the old code (59 of 63) and passes now.
-
-**Fixed: no term on two chips, NFL included.** BAL @ BUF printed BUF +3.2 twice (its QB watch and the quarterback term's own item). LAC @ LAR printed LAC +1.8 twice (travel and the rest-and-travel term). The item that tells the story keeps the chip. The other gives its place to the strongest item that adds no term already shown. The regression test failed on the old code (those 2 games) and passes now.
-
-**New: `npm run cfb:trust`** (`football/cfb_validation/trust.js`, `docs/cfb-validation/TRUST.md`). For every upcoming college game it gives:
-- the gap to the latest pregame line, and the terms behind the number;
-- both rating tracks;
-- each team's season against EdgeDesk and the close;
-- the season's record at that size of gap.
-
-It is research only: it writes nothing by default and changes no number, grade or label. Its 47 contracts run in CFB validation.
 
 ## 2026-10-27 — Football decision test: one fix for the NFL hold-rule guard, and the merge that broke it reverted
 
