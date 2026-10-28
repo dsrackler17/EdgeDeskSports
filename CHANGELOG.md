@@ -7,8 +7,11 @@
 **What changed:**
 - `index.html`: a line, **Integrated with Juice Reel**, sits under the hero's audience line. The words are in the page itself, so a reader without the script, or a crawler, sees them too. It is on the first screen at phone and desktop widths.
 - `lib/edgedesk_landing_desk.css`: its pill style, kept out of the page's own sheet for the 216 KB budget. The stamp moves to `20261028jr2` and is recorded in `tools/presentation/landing_asset_stamps.json`.
-- The page now has 2 characters of room under the budget (it had 56).
-- `tools/billing/juicereel_checkout.e2e.js` gains three checks: the line is in the hero's HTML, and it is on the first screen at 390 px and at 1280 px. With the line, 49 passed, 0 failed. Without it, those three checks fail: 46 passed, 3 failed.
+- A shared link's preview leads with it too. `og:description` (LinkedIn, Slack) and `twitter:description` (X) now open with "Integrated with Juice Reel.", because previews cut long text.
+  - To fit the budget, "the whole terminal:" and "the whole desk:" left those two lines. Every feature they list is still listed.
+  - The search description (`<meta name="description">`) is unchanged.
+- The page now has 20 characters of room under the budget (it had 56).
+- `tools/billing/juicereel_checkout.e2e.js` gains four checks: the line is in the hero's HTML, it is on the first screen at 390 px and at 1280 px, and both share descriptions lead with it. With these changes, 50 passed, 0 failed. Without the hero line, its three checks fail (46 passed, 3 failed). Without the preview change, its check fails (49 passed, 1 failed).
 
 ## 2026-10-28 — Two red checks left by the Juice Reel work (#860, #862), fixed in the tests
 

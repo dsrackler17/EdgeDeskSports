@@ -160,6 +160,9 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       chk('  and links to juicereel.com', await page.evaluate(() => !!document.querySelector('#juicereel a[href="https://www.juicereel.com/"][rel="noopener"]')));
       chk('  the hero says "Integrated with Juice Reel" in the page itself, so a reader without the script sees it too',
         /<header class="hero"[\s\S]*?<p class="jrc">Integrated with Juice Reel<\/p>[\s\S]*?<\/header>/.test(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')));
+      /* a shared link's preview (LinkedIn, Slack, X) leads with it: previews cut long text */
+      chk('  and a shared link\'s preview leads with it (og:description, twitter:description)', ['property="og:description"', 'name="twitter:description"']
+        .every((k) => fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').indexOf('<meta ' + k + ' content="Integrated with Juice Reel. ') >= 0));
       chk('  switch OFF: no Juice Reel checkout line or button is shown', !(await page.isVisible('#jrAct')) && !(await page.isVisible('#jrLive')) && !(await page.isVisible('#jrBtn')));
       chk('  no script errors', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
