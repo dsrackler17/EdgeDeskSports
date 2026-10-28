@@ -21,7 +21,7 @@
   - `index.html`: an EdgeDesk × Juice Reel band in Pricing. Its checkout button appears only when the server's switch is on.
 - **Off by default** (`JUICE_REEL_CHECKOUT=off`). Then `operators` for the live test, then `on`: **Actions → Deploy Juice Reel billing**. Stripe billing and the card trial are unchanged.
 - **Not yet confirmed with Juice Reel:** the shapes of the subscriber-status answer, the owner subscriber list and the webhook body, and the signature's exact input. Reading them fails closed (docs/juicereel-billing.md § 9).
-- **Tests:** `juicereel_billing.test.js` (80, real PostgreSQL), `juicereel_client.test.js` (25), `juicereel_checkout.e2e.js` (39, Chromium). All are in `personal-tests.yml`, the browser suite in a new `browser` job.
+- **Tests:** `juicereel_billing.test.js` (82, real PostgreSQL), `juicereel_client.test.js` (25), `juicereel_checkout.e2e.js` (42, Chromium). All are in `personal-tests.yml`, the browser suite in a new `browser` job.
 - `docs/juicereel.md` § 1–2 no longer say EdgeDesk does not sell through Juice Reel. What they say about the bet-sync connector is unchanged.
 
 ## 2026-10-28 — Bet Checker installs on production's board (the page's "board could not be loaded")

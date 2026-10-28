@@ -205,12 +205,23 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
   }
 
   /* ── 6. what Juice Reel's status answer may look like ─────────────────── */
-  for (const shape of ['list', 'array']) {
+  for (const shape of ['list', 'array', 'flag_bare']) {
     const U = w.user('shape-' + shape + '@example.com');
     J.S.statusShape = shape;
+    J.S.ownerAccess = shape !== 'flag_bare';   // the status answer alone must do it
     let r = await call({ action: 'start', kind: 'checkout' }, U.token);
     r = await complete(U, J.pay(r.body.url, String(5100 + shape.length)).url);
     chk('subscriber status as ' + shape + ' → access', r.body.outcome === 'active' && access(U).has_access, JSON.stringify(r.body));
+    J.S.ownerAccess = true;
+  }
+  {
+    // Juice Reel's own "no" wins over an entry that looks active; the owner list is not consulted to overrule it here
+    const U = w.user('shape-contradiction@example.com');
+    J.S.statusShape = 'contradiction'; J.S.ownerAccess = false;
+    let r = await call({ action: 'start', kind: 'checkout' }, U.token);
+    r = await complete(U, J.pay(r.body.url, '5150').url);
+    chk('a top-level "not subscribed" over an active-looking entry grants nothing (fail closed)', r.body.outcome === 'pending' && !access(U).has_access, JSON.stringify(r.body));
+    J.S.ownerAccess = true;
   }
   {
     const U = w.user('shape-absent@example.com');

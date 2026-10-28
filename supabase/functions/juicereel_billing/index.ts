@@ -301,6 +301,10 @@ function subscriptionsIn(body, nowMs) {
     ['subscription', 'data'].forEach((k) => { if (body[k] && typeof body[k] === 'object' && !Array.isArray(body[k])) add(body[k]); });
     ['subscriptions', 'data', 'items', 'results', 'subscribers'].forEach((k) => { if (Array.isArray(body[k])) body[k].forEach(add); });
     if (!out.length) add(body);
+    // a top-level yes/no speaks for entries that do not say: "no" overrides
+    // every entry (fail closed), "yes" fills in an entry that only has a date
+    const top = first(body, ['isSubscribed', 'subscribed']);
+    if (typeof top === 'boolean') out.forEach((s) => { if (!top) s.active = false; else if (s.active === null) s.active = true; });
   }
   return out.sort((a, b) => (b.active === true) - (a.active === true) || String(b.expires_at || '').localeCompare(String(a.expires_at || '')));
 }

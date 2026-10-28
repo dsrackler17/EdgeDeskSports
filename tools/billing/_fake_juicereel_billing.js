@@ -42,7 +42,7 @@ function make(opts) {
   const S = {
     sessions: {}, codes: {}, tokens: {}, subs: {},   // subs[jrUserId] = [{productId, expiresDate, status}]
     users: {}, calls: [],
-    statusShape: 'flag',          // flag | list | array | absent (404) | not_subscribed
+    statusShape: 'flag',          // flag | list | array | flag_bare | contradiction | absent (404) | not_subscribed
     ownerAccess: true,            // false: /subscribers/current refuses Basic
     down: {},                     // path -> true: answer 503
     checkoutUrlHost: 'https://www.juicereel.com',
@@ -154,6 +154,8 @@ function make(opts) {
       if (S.statusShape === 'not_subscribed' || !cur.length) return res(200, { isSubscribed: false, subscriptions: [] });
       if (S.statusShape === 'list') return res(200, { subscriptions: cur.map(entry) });
       if (S.statusShape === 'array') return res(200, cur.map(entry));
+      if (S.statusShape === 'flag_bare') return res(200, { isSubscribed: true, subscription: { expiresDate: cur[0].expiresDate } });
+      if (S.statusShape === 'contradiction') return res(200, { isSubscribed: false, subscription: entry(cur[0]) });
       return res(200, { isSubscribed: true, subscription: entry(cur[0]) });
     }
 
