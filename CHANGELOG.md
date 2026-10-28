@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-28 — Juice Reel buyers get a way back to Juice Reel from the terminal
+
+**Why.** People who subscribe on Juice Reel come and go between Juice Reel's app and EdgeDesk on the web. Once signed in, the terminal offered them no way back.
+
+**What changed** (`app.html`):
+- A reader whose access came through Juice Reel (`price_id 'juicereel'`) now sees **Back to Juice Reel ↗** in the account menu at every width.
+- From 600 px they also see a **↗ Juice Reel** chip in the header, beside Ask AI and Help. The phone header has no room for it.
+- Both open juicereel.com in a new tab, so EdgeDesk stays open.
+- Nobody else sees either: not a Stripe subscriber, not a comp, not a reader without access, and nobody while the switch is off.
+- One function, `edJrBackSync()`, decides, wherever the page learns the reader's subscription (`loadSubStatus`, `pgReadAccess`).
+- `tools/billing/juicereel_checkout.e2e.js` gains four checks: 46 passed, 0 failed.
+
 ## 2026-10-28 — EdgeDesk sold through Juice Reel: hosted checkout, account link, webhook and reconcile (off until switched on)
 
 **What it adds.** A reader can pay for EdgeDesk on Juice Reel's hosted checkout, and the EdgeDesk account they are signed in to opens. A reader who bought on Juice Reel's marketplace can link their Juice Reel account and get in. The landing page shows the partnership with Juice Reel. Juice Reel's CEO approved this by phone on 2026-10-28, as the account owner reports. Runbook: [docs/juicereel-billing.md](docs/juicereel-billing.md).
