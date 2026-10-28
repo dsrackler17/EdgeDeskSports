@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-10-28 — Deploying Bet Checker: checkout works with a key that can't read Products, and bet_checker.sql applies on production's board
+## 2026-10-28 — Deploying Bet Checker: checkout works with a Stripe key that can't read Products
 
 **What was wrong.** Bet Checker made `create_checkout_session` read every price with its product expanded, to learn the product's metadata `tier`. The restricted key that `docs/billing-hardening.md` set up has no Products read, and Stripe refuses such a key the expanded product (403). Once deployed, every terminal checkout would have answered `stripe_unavailable`. The reconciler already fell back to what the database had learned. But a Bet Checker price nobody learned at checkout would have stayed unknown, and the access rule reads an unknown price as the terminal.
 
@@ -10,9 +10,33 @@
 - A product that was read and names no tier is still never overruled by its price.
 - Products read is now optional: the function headers, `docs/billing-hardening.md` and `docs/bet-checker.md` say so.
 
-**bet_checker.sql on production's board.** Deploy Bet Checker stopped at the file's own guard: "public.signals has no column(s) is_player_prop". Production has never applied `capture_v11_player_props.sql`. Nothing changed in production. Bet Checker never needed that column: v11 files every prop under a `player_*` market, and every query in the file reads only `h2h`, `spreads` and `totals`. The column and its 12 filters are gone; the market filter still keeps props out.
+**Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0.
 
-**Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0. New last section of `tools/bet_checker/bet_checker_sql.test.js` (a board without `is_player_prop`, as production's is): main's file fails with production's exact error; with this change it applies with all 11 report rows ok, and the pickers list the game line but never the prop. The suite is 113 / 0.
+**Also.** `deploy-bet-checker.yml` applies `bet_checker.sql` in one transaction (`psql --single-transaction`), and a requested part whose secret is missing now fails the run instead of finishing green.
+
+## 2026-10-28 — Bet Checker installs on production's board (the page's "board could not be loaded")
+
+**What was wrong.** `/bet-checker/` told every reader "EdgeDesk’s board could not be loaded", and under it "No upcoming games on EdgeDesk’s board". The database half of Bet Checker had never been installed. Both *Deploy Bet Checker* runs stopped in `bet_checker.sql`'s first check, before anything was created:
+
+| Run | Stopped on |
+|---|---|
+| 1, 13:18 UTC | `has_bet_checker_paid()` missing: billing had not been applied yet |
+| 2, 13:46 UTC | `public.signals has no column(s) is_player_prop` |
+
+`is_player_prop` comes from `capture_v11_player_props.sql`, which is optional. Capture writes game rows without it, and production has not run it. Bet Checker used the column only in a redundant filter: every query also pins `market` to `h2h` / `spreads` / `totals`, and a player row's market is always `player_*`.
+
+**The change.**
+- `bet_checker.sql` and its byte-identical migration mirror no longer require `is_player_prop`, and the 12 redundant predicates are gone. Every query selects the same rows as before. The grade thresholds, the free allowance and the CLV formula are unchanged.
+- The game picker says "EdgeDesk’s board could not be loaded" when the load failed. "No upcoming games" is kept for a board that loaded empty.
+
+Nothing changes in production until an operator runs *Deploy Bet Checker* with `apply_sql` and `apply_cron`.
+
+**Regression check.** The new tests were run against the old code first:
+
+| Suite | old code | this change |
+|---|---|---|
+| `tools/bet_checker/bet_checker_sql.test.js` | **111 / 1**: production's exact error; the checks that depend on the install did not run | 116 / 0 |
+| `tools/bet_checker/page.test.js` | **32 / 1** | 33 / 0 |
 
 ## 2026-10-28 — Changelog and incident note: what this morning's "Update branch" merges deleted is back
 

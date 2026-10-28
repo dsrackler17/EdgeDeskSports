@@ -71,9 +71,11 @@ begin
   if to_regclass('public.signals') is null then
     raise exception 'bet_checker.sql reads public.signals (capture''s board), which does not exist here';
   end if;
-  -- No player props, and no need for capture v11's is_player_prop column: v11
-  -- files every prop under a player_* market, and every query here reads only
-  -- h2h, spreads and totals.
+  -- capture's GAME-row columns only. Not v11's player-prop columns
+  -- (capture_v11_player_props.sql is optional: capture writes game rows
+  -- without them, and production's board has none). No player row can reach
+  -- Bet Checker anyway: every query here pins market to h2h / spreads /
+  -- totals, and a player row's market is always player_*.
   select string_agg(c, ', ') into missing
     from unnest(array['sig_key', 'event_id', 'sport_key', 'commence_time', 'home_team', 'away_team', 'market', 'selection',
                       'point', 'sharp_fair', 'last_seen_at', 'point_is_modal', 'flagged_at', 'closed_at',

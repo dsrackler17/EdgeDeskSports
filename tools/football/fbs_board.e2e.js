@@ -454,6 +454,7 @@ function serve(handler) {
       viewport: de.clientWidth,
       rows, sets,
       countsVisible: !!counts && counts.getBoundingClientRect().height > 0,
+      countsHeight: counts ? Math.round(counts.getBoundingClientRect().height) : null,
       /* the height of the control surface itself: the header line, the
          status strip, the filters and the counts, from the header's top to
          the counts' bottom. The data-notes drawer above it and the research
@@ -482,6 +483,8 @@ function serve(handler) {
   chk('at least one filter row actually scrolls horizontally',
     mob.sets.some(s => s.scrolls), mob.sets);
   chk('the counts strip is still visible', mob.countsVisible === true);
+  chk('the counts strip is one scrolling line, however many counts the slate brings',
+    mob.countsHeight != null && mob.countsHeight < 30, mob.countsHeight);
   chk('the controls do not push the board down the panel',
     mob.controlsHeight != null && mob.controlsHeight < 460,
     { controls: mob.controlsHeight, board_offset: mob.boardOffset });

@@ -102,5 +102,32 @@ chk('no flag badge unless the grader set it', !/EdgeDesk had this flagged/.test(
 h = page.cardHTML(Object.assign({}, base, { team: '<img src=x onerror=alert(1)>', book: '"><script>x</script>', entry_grade: 'green', entry_edge_pct: 2, entry_fair_price: -110 }));
 chk('every string is escaped', !/<img src=x/.test(h) && !/<script>x/.test(h) && /&lt;img src=x/.test(h));
 
-console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'bet checker page wiring — ' + pass + ' passed, ' + fail + ' failed');
-process.exit(fail === 0 ? 0 : 1);
+/* ── the game picker says what happened to the board ───────────────────── */
+/* On 2026-10-28 the board's RPC was not installed: the page said the board
+   "could not be loaded" and, right under it, "No upcoming games on EdgeDesk's
+   board" — a claim about the board it never read. */
+function pickerAfterLoad(gamesAnswer) {
+  const opt = () => ({ innerHTML: '', value: '', dataset: {} });
+  const els = { game: opt(), market: opt(), side: opt(), line: opt() };
+  const form = { elements: els };
+  const host = { querySelector: (s) => (s === 'form[data-bc="form"]' ? form : null), querySelectorAll: () => [], addEventListener: () => {} };
+  const fetch = async (url) => {
+    const name = String(url).split('/rpc/')[1];
+    const a = name === 'bet_checker_games' ? gamesAnswer : { status: 200, body: name === 'my_bet_checker_bets' ? { bets: [] } : null };
+    return { ok: a.status < 300, status: a.status, text: async () => (a.body == null ? '' : JSON.stringify(a.body)) };
+  };
+  const p = UI._make(host, { url: 'x', key: 'y', fetch, auth: {}, access: {},
+    social: { user: () => ({ id: 'u1' }), session: () => ({ access_token: 't' }) } });
+  return p.load().then(() => els.game.innerHTML);
+}
+(async () => {
+  let sel = await pickerAfterLoad({ status: 404, body: { code: 'PGRST202', message: 'Could not find the function public.bet_checker_games' } });
+  chk('a board that failed to load is not called empty', /could not be loaded/.test(sel) && !/No upcoming games/.test(sel), sel);
+  sel = await pickerAfterLoad({ status: 200, body: [] });
+  chk('a board that loaded with no games says so', /No upcoming games on EdgeDesk’s board/.test(sel), sel);
+  sel = await pickerAfterLoad({ status: 200, body: [{ event_id: 'e1', sport: 'NFL', commence_time: '2026-11-01T18:00:00Z', home_team: 'Detroit Lions', away_team: 'Green Bay Packers' }] });
+  chk('a board with games offers them', /Pick a game \(1\)/.test(sel) && /value="e1">Green Bay Packers at Detroit Lions/.test(sel), sel);
+
+  console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'bet checker page wiring — ' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail === 0 ? 0 : 1);
+})().catch((e) => { console.log('FAIL | the picker checks threw: ' + (e && e.stack)); process.exit(1); });

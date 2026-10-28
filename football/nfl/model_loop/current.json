@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_loop_nfl_current_v1",
  "model_version": "2.0.0",
  "status": "EXPERIMENTAL",
- "generated_at": "2026-10-27T19:27:01Z",
+ "generated_at": "2026-10-28T19:10:14Z",
  "season": 2026,
  "config_sha256": "2ae53dbf05e0871616ba35159c4914c5a9073a99252c02e8212349ff6216ef35",
  "distribution": {
@@ -43,20 +43,20 @@
   "kmax": 70
  },
  "coefficients": {
-  "home_field": 2.1453189213728234,
-  "covid_2020": -2.091364559954999,
-  "pass_off": 8.372516228013028,
-  "pass_def": 8.372516228013028,
-  "qb": 14.935191535470247,
-  "rush_off": 22.225023378358063,
-  "rush_def": 22.225023378358063,
-  "market": 0.7996581351021801,
-  "rest": 1.8040447678653064,
-  "bye": -0.5827369364955376,
-  "short": 0.6175317238458223,
-  "travel": 0.5652495282261776,
-  "timezone": -0.7830695756660216,
-  "body_clock": 0.7049064519286565
+  "home_field": 2.1453189213727892,
+  "covid_2020": -2.0913645599549753,
+  "pass_off": 8.372516228013012,
+  "pass_def": 8.372516228013012,
+  "qb": 14.935191535470278,
+  "rush_off": 22.225023378358152,
+  "rush_def": 22.225023378358152,
+  "market": 0.7996581351021803,
+  "rest": 1.8040447678653204,
+  "bye": -0.5827369364955529,
+  "short": 0.6175317238458145,
+  "travel": 0.5652495282262434,
+  "timezone": -0.783069575666076,
+  "body_clock": 0.7049064519287099
  },
  "thresholds": {
   "flag_points": 3.0,
@@ -204,12 +204,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 7.945354,
-    "fair_home_margin": 7.945354,
-    "unattributed": -0.0
+    "components_sum": 7.945349,
+    "fair_home_margin": 7.945349,
+    "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -6.5,
+    "home_line": -7.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -359,9 +359,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.733941,
-    "fair_home_margin": 0.733941,
-    "unattributed": -0.0
+    "components_sum": 0.733939,
+    "fair_home_margin": 0.733939,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -2.5,
@@ -514,12 +514,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 8.661742,
-    "fair_home_margin": 8.661742,
-    "unattributed": 0.0
+    "components_sum": 8.661741,
+    "fair_home_margin": 8.661741,
+    "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": -3.5,
+    "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [
@@ -528,13 +528,13 @@
      "qb_id": "00-0034796",
      "fair_home_line": -5.48,
      "home_win_prob": 0.6587,
-     "gap_vs_market": 1.98
+     "gap_vs_market": 2.48
     }
    ],
    "disagreement": {
     "level": "QB UNRESOLVED",
-    "text": "Model disagrees with market by 5.2 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": 5.161741876983056,
+    "text": "Model disagrees with market by 5.7 with the schedule feed's starter; the starter is contested (see scenarios)",
+    "gap_points": 5.6617413724550065,
     "direction": "home",
     "drivers": [
      {
@@ -865,9 +865,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 1.046347,
-    "fair_home_margin": 1.046347,
-    "unattributed": 0.0
+    "components_sum": 1.046344,
+    "fair_home_margin": 1.046344,
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -3.0,
@@ -1020,8 +1020,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 5.878494,
-    "fair_home_margin": 5.878494,
+    "components_sum": 5.878495,
+    "fair_home_margin": 5.878495,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -1032,7 +1032,7 @@
    "disagreement": {
     "level": "WATCH",
     "text": "Model disagrees with market by 2.4",
-    "gap_points": 2.3784944832075015,
+    "gap_points": 2.3784950133631027,
     "direction": "home",
     "drivers": [
      {
@@ -1194,47 +1194,16 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 11.126656,
-    "fair_home_margin": 11.126656,
+    "components_sum": 11.12666,
+    "fair_home_margin": 11.12666,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -8.5,
+    "home_line": -10.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": {
-    "level": "WATCH",
-    "text": "Model disagrees with market by 2.6",
-    "gap_points": 2.6266558627830836,
-    "direction": "home",
-    "drivers": [
-     {
-      "key": "qb",
-      "label": "Quarterback",
-      "points": 3.26,
-      "prior_share": 0.077
-     },
-     {
-      "key": "rest",
-      "label": "Rest days",
-      "points": 1.8,
-      "prior_share": null
-     },
-     {
-      "key": "timezone",
-      "label": "Time zones crossed",
-      "points": 0.76,
-      "prior_share": null
-     },
-     {
-      "key": "rush_def",
-      "label": "Rush defense",
-      "points": 0.76,
-      "prior_share": 0.142
-     }
-    ]
-   },
+   "disagreement": null,
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -1380,9 +1349,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -1.129531,
-    "fair_home_margin": -1.129531,
-    "unattributed": 0.0
+    "components_sum": -1.129529,
+    "fair_home_margin": -1.129529,
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": 1.5,
@@ -1535,8 +1504,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 11.570722,
-    "fair_home_margin": 11.570722,
+    "components_sum": 11.570724,
+    "fair_home_margin": 11.570724,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -1547,7 +1516,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 5.1",
-    "gap_points": 5.070722348220489,
+    "gap_points": 5.0707238037081215,
     "direction": "home",
     "drivers": [
      {
@@ -1878,7 +1847,7 @@
    "reconciliation": {
     "components_sum": 3.971783,
     "fair_home_margin": 3.971783,
-    "unattributed": -0.0
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -3.0,
@@ -2031,19 +2000,19 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -4.939713,
-    "fair_home_margin": -4.939713,
+    "components_sum": -4.939712,
+    "fair_home_margin": -4.939712,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": 7.5,
+    "home_line": 7.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
    "disagreement": {
     "level": "WATCH",
-    "text": "Model disagrees with market by 2.6",
-    "gap_points": 2.5602871243492356,
+    "text": "Model disagrees with market by 2.1",
+    "gap_points": 2.0602878417371056,
     "direction": "home",
     "drivers": [
      {
@@ -2205,8 +2174,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.913045,
-    "fair_home_margin": 4.913045,
+    "components_sum": 4.913023,
+    "fair_home_margin": 4.913023,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2360,19 +2329,19 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 15.336558,
-    "fair_home_margin": 15.336558,
+    "components_sum": 15.336559,
+    "fair_home_margin": 15.336559,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -10.0,
+    "home_line": -10.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
    "disagreement": {
     "level": "FLAG",
-    "text": "Model disagrees with market by 5.3",
-    "gap_points": 5.336558182792258,
+    "text": "Model disagrees with market by 4.8",
+    "gap_points": 4.836559256895306,
     "direction": "home",
     "drivers": [
      {
@@ -2416,29 +2385,29 @@
     "home": {
      "id": "00-0034869",
      "name": "Sam Darnold",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0033119",
      "name": "Jacoby Brissett",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 9.31,
-   "fair_home_line": -9.31,
-   "fair_total": 44.05,
-   "home_win_prob": 0.7543,
-   "fair_home_ml": -307,
-   "fair_away_ml": 307,
+   "fair_home_margin": 9.38,
+   "fair_home_line": -9.38,
+   "fair_total": 44.06,
+   "home_win_prob": 0.7557,
+   "fair_home_ml": -309,
+   "fair_away_ml": 309,
    "range80": {
-    "lo": -7.42,
-    "hi": 26.05,
-    "centre": 9.31,
-    "half_width": 16.73
+    "lo": -7.38,
+    "hi": 26.13,
+    "centre": 9.38,
+    "half_width": 16.76
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 7.422,
+    "Base strength": 7.4827,
     "Rest & travel": -0.2525
    },
    "components": [
@@ -2503,10 +2472,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 5.4364,
+     "points": 5.4971,
      "from_prior": 0.3033,
-     "from_this_season": 5.1331,
-     "prior_share": 0.056
+     "from_this_season": 5.1938,
+     "prior_share": 0.055
     },
     {
      "key": "rest",
@@ -2546,35 +2515,171 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 9.314724,
-    "fair_home_margin": 9.314724,
+    "components_sum": 9.375467,
+    "fair_home_margin": 9.375467,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -12.5,
+    "home_line": -10.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": {
-    "level": "FLAG",
-    "text": "Model disagrees with market by 3.2",
-    "gap_points": -3.1852760088151193,
-    "direction": "away",
-    "drivers": [
-     {
-      "key": "rush_off",
-      "label": "Rush offense",
-      "points": -0.87,
-      "prior_share": 0.13
-     },
-     {
-      "key": "rest",
-      "label": "Rest days",
-      "points": -0.26,
-      "prior_share": null
-     }
-    ]
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
+  },
+  {
+   "game_id": "2026_09_BUF_MIN",
+   "week": 9,
+   "home": "MIN",
+   "away": "BUF",
+   "kickoff_et": "2026-11-09 20:15:00",
+   "starters": {
+    "home": {
+     "id": "00-0035228",
+     "name": "Kyler Murray",
+     "basis": "most recent starter"
+    },
+    "away": {
+     "id": "00-0034857",
+     "name": "Josh Allen",
+     "basis": "most recent starter"
+    }
    },
+   "fair_home_margin": -3.31,
+   "fair_home_line": 3.31,
+   "fair_total": 49.8,
+   "home_win_prob": 0.402,
+   "fair_home_ml": 149,
+   "fair_away_ml": -149,
+   "range80": {
+    "lo": -20.35,
+    "hi": 13.72,
+    "centre": -3.31,
+    "half_width": 17.03
+   },
+   "groups": {
+    "Environment": 2.1453,
+    "Base strength": -5.2533,
+    "Rest & travel": -0.2032
+   },
+   "components": [
+    {
+     "key": "home_field",
+     "label": "Home field",
+     "group": "environment",
+     "points": 2.1453
+    },
+    {
+     "key": "covid_2020",
+     "label": "No-crowd season (2020)",
+     "group": "environment",
+     "points": -0.0
+    },
+    {
+     "key": "pass_off",
+     "label": "Pass offense (team, excluding QB)",
+     "group": "base_strength",
+     "points": -0.3837,
+     "from_prior": -0.1063,
+     "from_this_season": -0.2774,
+     "prior_share": 0.277
+    },
+    {
+     "key": "qb",
+     "label": "Quarterback",
+     "group": "base_strength",
+     "points": -3.5517,
+     "from_prior": -0.569,
+     "from_this_season": -2.9827,
+     "prior_share": 0.16
+    },
+    {
+     "key": "pass_def",
+     "label": "Pass defense",
+     "group": "base_strength",
+     "points": 1.1374,
+     "from_prior": 0.1393,
+     "from_this_season": 0.9981,
+     "prior_share": 0.122
+    },
+    {
+     "key": "rush_off",
+     "label": "Rush offense",
+     "group": "base_strength",
+     "points": -2.3678,
+     "from_prior": -1.6237,
+     "from_this_season": -0.7441,
+     "prior_share": 0.686
+    },
+    {
+     "key": "rush_def",
+     "label": "Rush defense",
+     "group": "base_strength",
+     "points": 1.1236,
+     "from_prior": 0.5746,
+     "from_this_season": 0.549,
+     "prior_share": 0.511
+    },
+    {
+     "key": "market",
+     "label": "Market rating (prior weeks' closing lines)",
+     "group": "base_strength",
+     "points": -1.2111,
+     "from_prior": -0.2319,
+     "from_this_season": -0.9792,
+     "prior_share": 0.191
+    },
+    {
+     "key": "rest",
+     "label": "Rest days",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "bye",
+     "label": "Off a bye",
+     "group": "rest_travel",
+     "points": -0.0
+    },
+    {
+     "key": "short",
+     "label": "Short week",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "travel",
+     "label": "Travel distance",
+     "group": "rest_travel",
+     "points": -0.1243
+    },
+    {
+     "key": "timezone",
+     "label": "Time zones crossed",
+     "group": "rest_travel",
+     "points": -0.0262
+    },
+    {
+     "key": "body_clock",
+     "label": "Early body-clock kickoff",
+     "group": "rest_travel",
+     "points": -0.0527
+    }
+   ],
+   "reconciliation": {
+    "components_sum": -3.311164,
+    "fair_home_margin": -3.311164,
+    "unattributed": 0.0
+   },
+   "market_reference": {
+    "home_line": 2.5,
+    "source": "nflverse games.csv consensus (reference, not a price)"
+   },
+   "qb_scenarios": [],
+   "disagreement": null,
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -2590,29 +2695,29 @@
     "home": {
      "id": "00-0039917",
      "name": "Michael Penix Jr.",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0036442",
      "name": "Joe Burrow",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": -5.0,
-   "fair_home_line": 5.0,
-   "fair_total": 48.32,
-   "home_win_prob": 0.3544,
-   "fair_home_ml": 182,
-   "fair_away_ml": -182,
+   "fair_home_margin": -5.13,
+   "fair_home_line": 5.13,
+   "fair_total": 48.18,
+   "home_win_prob": 0.3509,
+   "fair_home_ml": 185,
+   "fair_away_ml": -185,
    "range80": {
-    "lo": -21.75,
-    "hi": 11.75,
-    "centre": -5.0,
-    "half_width": 16.75
+    "lo": -21.88,
+    "hi": 11.63,
+    "centre": -5.13,
+    "half_width": 16.76
    },
    "groups": {
     "Environment": 0.0,
-    "Base strength": -4.8929,
+    "Base strength": -5.0213,
     "Rest & travel": -0.104
    },
    "components": [
@@ -2677,10 +2782,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -3.5002,
+     "points": -3.6286,
      "from_prior": -0.1196,
-     "from_this_season": -3.3806,
-     "prior_share": 0.034
+     "from_this_season": -3.509,
+     "prior_share": 0.033
     },
     {
      "key": "rest",
@@ -2720,16 +2825,29 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -4.996908,
-    "fair_home_margin": -4.996908,
+    "components_sum": -5.125298,
+    "fair_home_margin": -5.125298,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": 3.5,
+    "home_line": 3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null,
+   "disagreement": {
+    "level": "WATCH",
+    "text": "Model disagrees with market by 2.1",
+    "gap_points": -2.1252977202559356,
+    "direction": "away",
+    "drivers": [
+     {
+      "key": "qb",
+      "label": "Quarterback",
+      "points": -1.74,
+      "prior_share": 0.354
+     }
+    ]
+   },
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -2745,29 +2863,29 @@
     "home": {
      "id": "00-0040743",
      "name": "Tyler Shough",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0033537",
      "name": "Deshaun Watson",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 3.52,
-   "fair_home_line": -3.52,
-   "fair_total": 43.47,
-   "home_win_prob": 0.6041,
-   "fair_home_ml": -153,
-   "fair_away_ml": 153,
+   "fair_home_margin": 3.51,
+   "fair_home_line": -3.51,
+   "fair_total": 43.46,
+   "home_win_prob": 0.6037,
+   "fair_home_ml": -152,
+   "fair_away_ml": 152,
    "range80": {
-    "lo": -13.55,
-    "hi": 20.59,
-    "centre": 3.52,
+    "lo": -13.56,
+    "hi": 20.58,
+    "centre": 3.51,
     "half_width": 17.07
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.2513,
+    "Base strength": 0.2381,
     "Rest & travel": 1.1254
    },
    "components": [
@@ -2832,10 +2950,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.631,
+     "points": 0.6178,
      "from_prior": -0.0408,
-     "from_this_season": 0.6718,
-     "prior_share": 0.057
+     "from_this_season": 0.6586,
+     "prior_share": 0.058
     },
     {
      "key": "rest",
@@ -2875,8 +2993,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 3.522031,
-    "fair_home_margin": 3.522031,
+    "components_sum": 3.508771,
+    "fair_home_margin": 3.508771,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2900,29 +3018,29 @@
     "home": {
      "id": "00-0035710",
      "name": "Daniel Jones",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0033077",
      "name": "Dak Prescott",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": -2.41,
-   "fair_home_line": 2.41,
-   "fair_total": 49.73,
-   "home_win_prob": 0.4282,
-   "fair_home_ml": 134,
-   "fair_away_ml": -134,
+   "fair_home_margin": -2.72,
+   "fair_home_line": 2.72,
+   "fair_total": 49.74,
+   "home_win_prob": 0.419,
+   "fair_home_ml": 139,
+   "fair_away_ml": -139,
    "range80": {
-    "lo": -19.14,
-    "hi": 14.31,
-    "centre": -2.41,
-    "half_width": 16.73
+    "lo": -19.61,
+    "hi": 14.16,
+    "centre": -2.72,
+    "half_width": 16.88
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -4.3771,
+    "Base strength": -4.6903,
     "Rest & travel": -0.1796
    },
    "components": [
@@ -2987,10 +3105,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -2.935,
+     "points": -3.2482,
      "from_prior": -0.0501,
-     "from_this_season": -2.8849,
-     "prior_share": 0.017
+     "from_this_season": -3.1981,
+     "prior_share": 0.015
     },
     {
      "key": "rest",
@@ -3030,12 +3148,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -2.41146,
-    "fair_home_margin": -2.41146,
-    "unattributed": 0.0
+    "components_sum": -2.724606,
+    "fair_home_margin": -2.724606,
+    "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": 3.0,
+    "home_line": 3.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -3055,29 +3173,29 @@
     "home": {
      "id": "00-0039150",
      "name": "Bryce Young",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0039732",
      "name": "Bo Nix",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 0.57,
-   "fair_home_line": -0.57,
-   "fair_total": 44.21,
-   "home_win_prob": 0.5172,
+   "fair_home_margin": 0.59,
+   "fair_home_line": -0.59,
+   "fair_total": 44.08,
+   "home_win_prob": 0.5178,
    "fair_home_ml": -107,
    "fair_away_ml": 107,
    "range80": {
-    "lo": -16.2,
-    "hi": 17.35,
-    "centre": 0.57,
+    "lo": -16.17,
+    "hi": 17.36,
+    "centre": 0.59,
     "half_width": 16.77
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -1.7103,
+    "Base strength": -1.6899,
     "Rest & travel": 0.1381
    },
    "components": [
@@ -3142,10 +3260,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -1.3096,
+     "points": -1.2892,
      "from_prior": -0.4624,
-     "from_this_season": -0.8472,
-     "prior_share": 0.353
+     "from_this_season": -0.8268,
+     "prior_share": 0.359
     },
     {
      "key": "rest",
@@ -3185,8 +3303,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.572998,
-    "fair_home_margin": 0.572998,
+    "components_sum": 0.59343,
+    "fair_home_margin": 0.59343,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3197,7 +3315,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.1",
-    "gap_points": 3.072998377680645,
+    "gap_points": 3.093430079623634,
     "direction": "home",
     "drivers": [
      {
@@ -3229,29 +3347,29 @@
     "home": {
      "id": "00-0038128",
      "name": "Malik Willis",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0033106",
      "name": "Jared Goff",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": -5.88,
-   "fair_home_line": 5.88,
-   "fair_total": 50.04,
-   "home_win_prob": 0.3304,
-   "fair_home_ml": 203,
-   "fair_away_ml": -203,
+   "fair_home_margin": -5.76,
+   "fair_home_line": 5.76,
+   "fair_total": 49.97,
+   "home_win_prob": 0.3337,
+   "fair_home_ml": 200,
+   "fair_away_ml": -200,
    "range80": {
-    "lo": -22.72,
-    "hi": 10.95,
-    "centre": -5.88,
-    "half_width": 16.84
+    "lo": -22.59,
+    "hi": 11.08,
+    "centre": -5.76,
+    "half_width": 16.83
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -8.8385,
+    "Base strength": -8.713,
     "Rest & travel": 0.8102
    },
    "components": [
@@ -3316,10 +3434,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -5.8257,
+     "points": -5.7002,
      "from_prior": -0.2678,
-     "from_this_season": -5.5579,
-     "prior_share": 0.046
+     "from_this_season": -5.4324,
+     "prior_share": 0.047
     },
     {
      "key": "rest",
@@ -3359,29 +3477,16 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -5.883101,
-    "fair_home_margin": -5.883101,
-    "unattributed": -0.0
+    "components_sum": -5.75765,
+    "fair_home_margin": -5.75765,
+    "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": 8.5,
+    "home_line": 7.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": {
-    "level": "WATCH",
-    "text": "Model disagrees with market by 2.6",
-    "gap_points": 2.616899159210237,
-    "direction": "home",
-    "drivers": [
-     {
-      "key": "timezone",
-      "label": "Time zones crossed",
-      "points": 0.76,
-      "prior_share": null
-     }
-    ]
-   },
+   "disagreement": null,
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -3397,29 +3502,29 @@
     "home": {
      "id": "00-0039851",
      "name": "Drake Maye",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0036264",
      "name": "Jordan Love",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 2.35,
-   "fair_home_line": -2.35,
-   "fair_total": 49.45,
-   "home_win_prob": 0.57,
-   "fair_home_ml": -133,
-   "fair_away_ml": 133,
+   "fair_home_margin": 2.28,
+   "fair_home_line": -2.28,
+   "fair_total": 49.32,
+   "home_win_prob": 0.568,
+   "fair_home_ml": -131,
+   "fair_away_ml": 131,
    "range80": {
-    "lo": -14.34,
-    "hi": 19.04,
-    "centre": 2.35,
-    "half_width": 16.69
+    "lo": -14.37,
+    "hi": 18.93,
+    "centre": 2.28,
+    "half_width": 16.65
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 1.1087,
+    "Base strength": 1.0419,
     "Rest & travel": -0.9064
    },
    "components": [
@@ -3484,10 +3589,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.9218,
+     "points": 0.855,
      "from_prior": 0.3134,
-     "from_this_season": 0.6084,
-     "prior_share": 0.34
+     "from_this_season": 0.5416,
+     "prior_share": 0.367
     },
     {
      "key": "rest",
@@ -3527,12 +3632,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 2.347579,
-    "fair_home_margin": 2.347579,
-    "unattributed": 0.0
+    "components_sum": 2.280789,
+    "fair_home_margin": 2.280789,
+    "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": -2.5,
+    "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -3552,29 +3657,29 @@
     "home": {
      "id": "00-0036355",
      "name": "Justin Herbert",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0039163",
      "name": "C.J. Stroud",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": -5.83,
-   "fair_home_line": 5.83,
-   "fair_total": 42.47,
-   "home_win_prob": 0.3318,
-   "fair_home_ml": 201,
-   "fair_away_ml": -201,
+   "fair_home_margin": -5.87,
+   "fair_home_line": 5.87,
+   "fair_total": 42.54,
+   "home_win_prob": 0.3308,
+   "fair_home_ml": 202,
+   "fair_away_ml": -202,
    "range80": {
-    "lo": -22.66,
-    "hi": 11.01,
-    "centre": -5.83,
+    "lo": -22.7,
+    "hi": 10.97,
+    "centre": -5.87,
     "half_width": 16.83
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -6.1285,
+    "Base strength": -6.167,
     "Rest & travel": -1.8462
    },
    "components": [
@@ -3639,10 +3744,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -2.8668,
+     "points": -2.9053,
      "from_prior": 0.3351,
-     "from_this_season": -3.2019,
-     "prior_share": 0.095
+     "from_this_season": -3.2404,
+     "prior_share": 0.094
     },
     {
      "key": "rest",
@@ -3682,9 +3787,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -5.829297,
-    "fair_home_margin": -5.829297,
-    "unattributed": -0.0
+    "components_sum": -5.867789,
+    "fair_home_margin": -5.867789,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": 3.0,
@@ -3693,8 +3798,8 @@
    "qb_scenarios": [],
    "disagreement": {
     "level": "WATCH",
-    "text": "Model disagrees with market by 2.8",
-    "gap_points": -2.829296962193779,
+    "text": "Model disagrees with market by 2.9",
+    "gap_points": -2.867788504899214,
     "direction": "away",
     "drivers": [
      {
@@ -3738,29 +3843,29 @@
     "home": {
      "id": "00-0034796",
      "name": "Lamar Jackson",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0036971",
      "name": "Trevor Lawrence",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 2.36,
-   "fair_home_line": -2.36,
-   "fair_total": 50.56,
-   "home_win_prob": 0.5703,
-   "fair_home_ml": -133,
-   "fair_away_ml": 133,
+   "fair_home_margin": 2.17,
+   "fair_home_line": -2.17,
+   "fair_total": 50.64,
+   "home_win_prob": 0.5646,
+   "fair_home_ml": -130,
+   "fair_away_ml": 130,
    "range80": {
-    "lo": -14.34,
-    "hi": 19.06,
-    "centre": 2.36,
-    "half_width": 16.7
+    "lo": -14.42,
+    "hi": 18.75,
+    "centre": 2.17,
+    "half_width": 16.58
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -0.3336,
+    "Base strength": -0.5273,
     "Rest & travel": 0.5489
    },
    "components": [
@@ -3825,10 +3930,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -1.8035,
+     "points": -1.9972,
      "from_prior": 0.2983,
-     "from_this_season": -2.1018,
-     "prior_share": 0.124
+     "from_this_season": -2.2955,
+     "prior_share": 0.115
     },
     {
      "key": "rest",
@@ -3868,12 +3973,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 2.360537,
-    "fair_home_margin": 2.360537,
-    "unattributed": -0.0
+    "components_sum": 2.16691,
+    "fair_home_margin": 2.16691,
+    "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -2.5,
+    "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -3893,29 +3998,29 @@
     "home": {
      "id": "00-0039910",
      "name": "Jayden Daniels",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0026498",
      "name": "Matthew Stafford",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": -5.75,
-   "fair_home_line": 5.75,
-   "fair_total": 48.02,
-   "home_win_prob": 0.334,
+   "fair_home_margin": -5.73,
+   "fair_home_line": 5.73,
+   "fair_total": 48.08,
+   "home_win_prob": 0.3344,
    "fair_home_ml": 199,
    "fair_away_ml": -199,
    "range80": {
-    "lo": -22.58,
-    "hi": 11.08,
-    "centre": -5.75,
+    "lo": -22.56,
+    "hi": 11.1,
+    "centre": -5.73,
     "half_width": 16.83
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -7.7202,
+    "Base strength": -7.7029,
     "Rest & travel": -0.1739
    },
    "components": [
@@ -3980,10 +4085,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -3.8392,
+     "points": -3.8219,
      "from_prior": -0.5269,
-     "from_this_season": -3.3123,
-     "prior_share": 0.137
+     "from_this_season": -3.295,
+     "prior_share": 0.138
     },
     {
      "key": "rest",
@@ -4023,12 +4128,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -5.748922,
-    "fair_home_margin": -5.748922,
-    "unattributed": -0.0
+    "components_sum": -5.731596,
+    "fair_home_margin": -5.731596,
+    "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": 4.5,
+    "home_line": 5.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -4048,29 +4153,29 @@
     "home": {
      "id": "00-0037834",
      "name": "Brock Purdy",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0029604",
      "name": "Kirk Cousins",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 12.35,
-   "fair_home_line": -12.35,
-   "fair_total": 49.93,
-   "home_win_prob": 0.817,
-   "fair_home_ml": -447,
-   "fair_away_ml": 447,
+   "fair_home_margin": 12.36,
+   "fair_home_line": -12.36,
+   "fair_total": 49.95,
+   "home_win_prob": 0.8174,
+   "fair_home_ml": -448,
+   "fair_away_ml": 448,
    "range80": {
-    "lo": -5.06,
-    "hi": 29.75,
-    "centre": 12.35,
+    "lo": -5.04,
+    "hi": 29.77,
+    "centre": 12.36,
     "half_width": 17.4
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 8.5967,
+    "Base strength": 8.6142,
     "Rest & travel": 1.6038
    },
    "components": [
@@ -4099,9 +4204,9 @@
      "key": "qb",
      "label": "Quarterback",
      "group": "base_strength",
-     "points": 1.0604,
+     "points": 1.0605,
      "from_prior": 0.1049,
-     "from_this_season": 0.9555,
+     "from_this_season": 0.9556,
      "prior_share": 0.099
     },
     {
@@ -4135,10 +4240,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 3.5891,
+     "points": 3.6065,
      "from_prior": 0.3401,
-     "from_this_season": 3.249,
-     "prior_share": 0.095
+     "from_this_season": 3.2664,
+     "prior_share": 0.094
     },
     {
      "key": "rest",
@@ -4178,8 +4283,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 12.345858,
-    "fair_home_margin": 12.345858,
+    "components_sum": 12.36334,
+    "fair_home_margin": 12.36334,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4189,8 +4294,8 @@
    "qb_scenarios": [],
    "disagreement": {
     "level": "WATCH",
-    "text": "Model disagrees with market by 2.8",
-    "gap_points": 2.845858370700121,
+    "text": "Model disagrees with market by 2.9",
+    "gap_points": 2.86333996525158,
     "direction": "home",
     "drivers": [
      {
@@ -4234,29 +4339,29 @@
     "home": {
      "id": "00-0038400",
      "name": "Tanner McKee",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0039923",
      "name": "J.J. McCarthy",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 0.82,
-   "fair_home_line": -0.82,
-   "fair_total": 40.22,
-   "home_win_prob": 0.5245,
-   "fair_home_ml": -110,
-   "fair_away_ml": 110,
+   "fair_home_margin": 0.85,
+   "fair_home_line": -0.85,
+   "fair_total": 40.21,
+   "home_win_prob": 0.5256,
+   "fair_home_ml": -111,
+   "fair_away_ml": 111,
    "range80": {
-    "lo": -15.91,
-    "hi": 17.54,
-    "centre": 0.82,
+    "lo": -15.87,
+    "hi": 17.58,
+    "centre": 0.85,
     "half_width": 16.72
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -0.3181,
+    "Base strength": -0.2824,
     "Rest & travel": -1.0089
    },
    "components": [
@@ -4321,10 +4426,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 1.0395,
+     "points": 1.0752,
      "from_prior": 0.3408,
-     "from_this_season": 0.6987,
-     "prior_share": 0.328
+     "from_this_season": 0.7344,
+     "prior_share": 0.317
     },
     {
      "key": "rest",
@@ -4364,16 +4469,47 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.818221,
-    "fair_home_margin": 0.818221,
-    "unattributed": 0.0
+    "components_sum": 0.853855,
+    "fair_home_margin": 0.853855,
+    "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": -1.5,
+    "home_line": 1.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null,
+   "disagreement": {
+    "level": "WATCH",
+    "text": "Model disagrees with market by 2.4",
+    "gap_points": 2.353855173370043,
+    "direction": "home",
+    "drivers": [
+     {
+      "key": "timezone",
+      "label": "Time zones crossed",
+      "points": 0.76,
+      "prior_share": null
+     },
+     {
+      "key": "rush_off",
+      "label": "Rush offense",
+      "points": 0.63,
+      "prior_share": 0.865
+     },
+     {
+      "key": "bye",
+      "label": "Off a bye",
+      "points": 0.58,
+      "prior_share": null
+     },
+     {
+      "key": "rush_def",
+      "label": "Rush defense",
+      "points": 0.34,
+      "prior_share": 0.647
+     }
+    ]
+   },
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -4389,29 +4525,29 @@
     "home": {
      "id": "00-0033873",
      "name": "Patrick Mahomes",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0030565",
      "name": "Geno Smith",
-     "basis": "depth chart QB1 (2026-10-27T13:08:56Z)"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 10.8,
-   "fair_home_line": -10.8,
-   "fair_total": 45.63,
-   "home_win_prob": 0.7866,
+   "fair_home_margin": 10.81,
+   "fair_home_line": -10.81,
+   "fair_total": 45.57,
+   "home_win_prob": 0.7867,
    "fair_home_ml": -369,
    "fair_away_ml": 369,
    "range80": {
-    "lo": -6.43,
-    "hi": 28.03,
-    "centre": 10.8,
+    "lo": -6.42,
+    "hi": 28.04,
+    "centre": 10.81,
     "half_width": 17.23
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 8.6645,
+    "Base strength": 8.6657,
     "Rest & travel": -0.0053
    },
    "components": [
@@ -4476,9 +4612,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 4.2828,
+     "points": 4.284,
      "from_prior": 0.915,
-     "from_this_season": 3.3678,
+     "from_this_season": 3.369,
      "prior_share": 0.214
     },
     {
@@ -4519,41 +4655,16 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 10.804498,
-    "fair_home_margin": 10.804498,
-    "unattributed": 0.0
+    "components_sum": 10.805686,
+    "fair_home_margin": 10.805686,
+    "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": -8.5,
+    "home_line": -9.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": {
-    "level": "WATCH",
-    "text": "Model disagrees with market by 2.3",
-    "gap_points": 2.304498117355525,
-    "direction": "home",
-    "drivers": [
-     {
-      "key": "qb",
-      "label": "Quarterback",
-      "points": 2.27,
-      "prior_share": 0.648
-     },
-     {
-      "key": "rush_off",
-      "label": "Rush offense",
-      "points": 1.5,
-      "prior_share": 0.46
-     },
-     {
-      "key": "pass_def",
-      "label": "Pass defense",
-      "points": 0.42,
-      "prior_share": 0.652
-     }
-    ]
-   },
+   "disagreement": null,
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -4569,29 +4680,29 @@
     "home": {
      "id": "00-0039918",
      "name": "Caleb Williams",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     },
     "away": {
      "id": "00-0034855",
      "name": "Baker Mayfield",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-28T13:58:02Z)"
     }
    },
-   "fair_home_margin": 7.35,
-   "fair_home_line": -7.35,
-   "fair_total": 46.26,
-   "home_win_prob": 0.7075,
-   "fair_home_ml": -242,
-   "fair_away_ml": 242,
+   "fair_home_margin": 7.33,
+   "fair_home_line": -7.33,
+   "fair_total": 46.16,
+   "home_win_prob": 0.7071,
+   "fair_home_ml": -241,
+   "fair_away_ml": 241,
    "range80": {
-    "lo": -9.57,
-    "hi": 24.27,
-    "centre": 7.35,
+    "lo": -9.59,
+    "hi": 24.25,
+    "centre": 7.33,
     "half_width": 16.92
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 5.5139,
+    "Base strength": 5.4982,
     "Rest & travel": -0.3104
    },
    "components": [
@@ -4656,10 +4767,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.1992,
+     "points": 2.1835,
      "from_prior": 0.1804,
-     "from_this_season": 2.0188,
-     "prior_share": 0.082
+     "from_this_season": 2.0031,
+     "prior_share": 0.083
     },
     {
      "key": "rest",
@@ -4699,12 +4810,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 7.348724,
-    "fair_home_margin": 7.348724,
-    "unattributed": -0.0
+    "components_sum": 7.333047,
+    "fair_home_margin": 7.333047,
+    "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -6.5,
+    "home_line": -6.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -4727,7 +4838,7 @@
   "reasons": [],
   "games_flagged": 1,
   "missing_results": [],
-  "checked_at": "2026-10-27T19:27:01Z"
+  "checked_at": "2026-10-28T19:10:14Z"
  },
  "contract": "Per game: fair_home_margin (+ = home), fair_home_line (book convention), home_win_prob, tie_prob, fair moneylines, range80 (centred on the margin), components that sum exactly to fair_home_margin, the starter priced, qb_scenarios for a contested starter, disagreement vs the reference line. distribution (sigma + key-number multipliers by |margin|) prices any spread: P(M=k) proportional to exp(-((k-mu')/sigma)^2/2) * mult[|k|], mu' solved so the mean is the margin."
 }

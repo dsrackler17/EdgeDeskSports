@@ -177,6 +177,9 @@ checks) and a 150-case grid in `tools/billing/billing_hardening_sql.test.js`.
    `deploy_stripe_webhook`, `deploy_create_checkout_session`.
 2. **Bet Checker** — Actions → *Deploy Bet Checker* (`deploy-bet-checker.yml`)
    with `deploy_functions`, `apply_sql`, `set_cron_secret` and `apply_cron`.
+   `bet_checker.sql` needs only capture's game-row columns on `signals`, not
+   the optional player-prop migration (`capture_v11_player_props.sql`).
+   Until `apply_sql` succeeds, the page says the board could not be loaded.
 3. The page ships with the site (GitHub Pages serves `main`).
 
 ### Stripe dashboard

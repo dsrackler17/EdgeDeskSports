@@ -2,12 +2,12 @@
  "alerts": [
   {
    "evidence": {
-    "brier": 0.2121,
-    "mean_gap": -0.02
+    "brier": 0.2124,
+    "mean_gap": -0.0191
    },
    "kind": "calibration",
    "level": "warn",
-   "message": "season-to-date win probabilities are off by -0.020 on average (Brier 0.212)"
+   "message": "season-to-date win probabilities are off by -0.019 on average (Brier 0.212)"
   },
   {
    "evidence": {
@@ -185,27 +185,56 @@
    "week": 8
   },
   {
+   "ats_at_close": 0.0,
+   "ats_at_freeze_line": 0.0,
+   "bias": -0.092,
+   "brier": 0.2388,
+   "clv_mean": 0.0,
    "disagreement_c_d_mean": 1.851,
-   "final": 0,
+   "final": 2,
    "frozen_games": 56,
+   "largest_misses": [
+    {
+     "abs_error": 16.8,
+     "final": 21.0,
+     "game": "Sam Houston @ Missouri State",
+     "v2": 4.2
+    },
+    {
+     "abs_error": 16.7,
+     "final": -14.0,
+     "game": "Delaware @ Western Kentucky",
+     "v2": 2.7
+    }
+   ],
+   "mae": 16.755,
+   "mae_candidate_001_same_games": 16.86,
+   "mae_close": 14.625,
+   "mae_line_at_freeze": 14.625,
+   "mae_v1_same_games": 15.81,
+   "mae_v2_same_close_games": 16.755,
+   "mae_v2_same_line_at_freeze_games": 16.755,
+   "mae_v2_vs_candidate_001_games": 16.755,
+   "mae_v2_vs_v1_games": 16.755,
+   "rmse": 16.756,
    "week": 9
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.097,
-  "ens_pred_noise_q99": 0.278,
-  "ens_sd": 0.201,
-  "ens_sd_noise_q99": 0.278,
-  "pred_total": 0.118,
-  "pred_total_noise_q99": 0.278,
+  "ens_pred": 0.101,
+  "ens_pred_noise_q99": 0.281,
+  "ens_sd": 0.171,
+  "ens_sd_noise_q99": 0.281,
+  "pred_total": 0.12,
+  "pred_total_noise_q99": 0.281,
   "reference_weeks": "week8",
-  "sigma": 0.129,
-  "sigma_noise_q99": 0.278
+  "sigma": 0.119,
+  "sigma_noise_q99": 0.281
  },
- "generated_at": "2026-10-28T10:51:13Z",
+ "generated_at": "2026-10-28T16:53:32Z",
  "learning": {
-  "bias": -1.2924585152838428,
+  "bias": -1.2820692640692641,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -218,20 +247,20 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -1.2924585152838428,
+    "bias": -1.2820692640692641,
     "fcs_not_priced_games": 6,
-    "games_scored": 229,
-    "mae": 12.080231441048035,
-    "major_miss_share": 0.11790393013100436,
+    "games_scored": 231,
+    "mae": 12.120709956709957,
+    "major_miss_share": 0.11688311688311688,
     "sources": {
-     "FROZEN": 229
+     "FROZEN": 231
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 229,
-  "mae": 12.080231441048035,
-  "major_miss_share": 0.11790393013100436,
+  "games_scored": 231,
+  "mae": 12.120709956709957,
+  "major_miss_share": 0.11688311688311688,
   "miss_classes": {
    "explosive_variance": 3,
    "garbage_time": 4,
@@ -243,7 +272,7 @@
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 229
+   "FROZEN": 231
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1925,8 +1954,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 229,
+  "final": 231,
   "frozen_games": 285,
-  "mae": 12.08
+  "mae": 12.121
  }
 }

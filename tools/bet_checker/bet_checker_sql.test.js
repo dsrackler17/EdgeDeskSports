@@ -106,6 +106,48 @@ try {
   }
   const thinBoard = db.mustFail(() => db.applyFileAtomic(FILE));
   chk('a board without the columns it reads: it stops and names them', /no column\(s\).*event_id/.test(thinBoard || ''), thinBoard && thinBoard.slice(0, 300));
+
+  /* PRODUCTION'S BOARD: capture's game rows WITHOUT the v11 player-prop columns.
+     capture_v11_player_props.sql is optional (capture writes game rows in the v9
+     shape, and player rows only when CAPTURE_PLAYER_PROPS is on), and production
+     has not run it. On 2026-10-28 Deploy Bet Checker stopped here on "no
+     column(s) is_player_prop", nothing installed, and every reader's board
+     failed to load. Bet Checker must install, and work, on this board. */
+  const V9_COLS = SIG_COLS.replace('is_player_prop boolean not null default false, ', '');
+  chk('(the v9 board has no is_player_prop column)', !/is_player_prop/.test(V9_COLS));
+  V('drop table public.signals cascade; create table public.signals (' + V9_COLS + ');');
+  const v9 = db.mustFail(() => { const o = db.applyFileAtomic(FILE); throw new Error(o); }) || '';
+  const v9rep = v9.split('\n').filter((l) => /^\d\d /.test(l));
+  chk('on a board without the player-prop columns it installs: eleven report rows, every one ok',
+    v9rep.length === 11 && v9rep.every((l) => /\|ok/.test(l)), v9.slice(-600));
+  if (v9rep.length === 11) {
+    const W = uid(9), EV = 'ev_v9_nfl';
+    V('insert into auth.users (id, email) values (' + lit(W) + ", 'v9@x.co');");
+    const v9sig = (market, selection, point, fair) => {
+      const k = EV + '|' + market + '|' + selection + '|' + (point == null ? '' : String(point));
+      V('insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point, sharp_fair, last_seen_at, point_is_modal) values (' +
+        [lit(k), lit(EV), "'americanfootball_nfl'", at(48 * H), "'Detroit Lions'", "'Green Bay Packers'", lit(market), lit(selection),
+         point == null ? 'null' : point, fair, at(-10 * 60 * 1000), 'true'].join(', ') + ');');
+      return k;
+    };
+    const kh = v9sig('spreads', 'Detroit Lions', -3.5, 0.52);
+    v9sig('spreads', 'Green Bay Packers', 3.5, 0.48);
+    v9sig('h2h', 'Detroit Lions', null, 0.6);
+    v9sig('h2h', 'Green Bay Packers', null, 0.4);
+    const g9 = JSON.parse(db.as(W, 'select coalesce(json_agg(g), \'[]\') from public.bet_checker_games(null) g;'));
+    chk('on that board the game picker lists the game', g9.length === 1 && g9[0].event_id === EV && g9[0].sport === 'NFL', g9);
+    const l9 = JSON.parse(db.as(W, 'select coalesce(json_agg(l), \'[]\') from public.bet_checker_lines(' + lit(EV) + ') l;'));
+    chk('and the line picker lists its priced lines', l9.length === 4 && l9.every((l) => l.priced === true), l9);
+    const r9 = logBet(W, EV, 'spread', 'home', -3.5, 105);
+    chk('and a bet logs with its grade (+105 vs 52%: green)', r9.ok && r9.bet.entry_grade === 'green' && r9.bet.entry_sig_key === kh, r9);
+    kickoffPassed([r9.bet.id]);
+    V("update public.signals set closed_at = now(), closing_sharp_fair = 0.55 where sig_key = " + lit(kh) + ';');
+    const gr9 = grade();
+    const b9 = row(r9.bet.id);
+    chk('and the grader captures its close (2.05 x 0.55 - 1 = +12.75%)',
+      gr9.closes_captured === 1 && b9.close_status === 'captured' && Number(b9.clv_pct) === 12.75 && b9.flag_checked_at != null, { gr9, b9 });
+    V('delete from auth.users where id = ' + lit(W) + ';');   // its bets and grades go with it (on delete cascade)
+  }
   V('drop table public.signals cascade; create table public.signals (' + SIG_COLS + ');');
   V('insert into auth.users (id, email) values ' + [A, B, P, Q, C, Z].map((u, i) => '(' + lit(u) + ", 'u" + i + "@x.co')").join(', ') + ';');
   /* a bet the decision card recorded before Bet Checker existed */
@@ -428,32 +470,6 @@ try {
   chk('the suite ran to the end', false, String(e && e.stack || e).slice(0, 1500));
 } finally {
   db.stop();
-}
-
-/* ===================================================================== */
-/* PRODUCTION'S BOARD, BEFORE CAPTURE V11: NO is_player_prop COLUMN       */
-/* ===================================================================== */
-/* Deploy Bet Checker (2026-10-28) stopped at the guard: production's signals had never had
-   capture_v11_player_props.sql applied. Props live under player_* markets, which nothing here reads. */
-const db10 = PG.start('betchk10');
-try {
-  db10.sql('create table public.signals (' + SIG_COLS.replace(' is_player_prop boolean not null default false,', '') + ');');
-  for (const f of ['bankroll_and_stakes.sql', 'bettor_decisions.sql', 'billing.sql', 'stripe_webhook.sql', 'billing_hardening.sql']) {
-    db10.applyFileAtomic(path.join(ROOT, 'supabase', f));
-  }
-  chk('production\'s board shape: signals has no is_player_prop', db10.sql("select count(*) from information_schema.columns where table_name = 'signals' and column_name = 'is_player_prop';") === '0');
-  const out10 = db10.applyFileAtomic(FILE);
-  const rep10 = out10.split('\n').filter((l) => /^\d\d /.test(l));
-  chk('it applies on a board capture v11 never touched: eleven report rows, every one ok', rep10.length === 11 && rep10.every((l) => /\|ok/.test(l)), out10.slice(-800));
-  db10.sql("insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point, sharp_fair, last_seen_at, point_is_modal) values " +
-    "('ev10|spreads|Kansas City Chiefs|-3.5', 'ev10', 'americanfootball_nfl', now() + interval '2 days', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3.5, 0.52, now(), true), " +
-    "('ev10|player_pass_yds|Over|250.5', 'ev10', 'americanfootball_nfl', now() + interval '2 days', 'Kansas City Chiefs', 'Buffalo Bills', 'player_pass_yds', 'Over', 250.5, 0.5, now(), true);");
-  const lines10 = JSON.parse(db10.service("select coalesce(json_agg(t), '[]'::json) from public.bet_checker_lines('ev10') t;") || '[]');
-  chk('  ... and its pickers list the game line, never the prop', lines10.length === 1 && lines10[0].market_type === 'spread', lines10);
-} catch (e) {
-  chk('the pre-v11 board check ran to the end', false, String(e && e.stack || e).split('\n').filter((l) => /ERROR|Error:/.test(l)).slice(0, 4).join(' | '));
-} finally {
-  db10.stop();
 }
 function round2(v) { return Math.round(v * 10000) / 100; }
 function round1(v) { return Math.round(v * 10) / 10; }
