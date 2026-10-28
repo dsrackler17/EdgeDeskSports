@@ -1201,7 +1201,7 @@ on `main`.
 
 | piece | how it ships | how to check |
 |---|---|---|
-| `app.html`, `football/fbs/slate.json`, `football/availability/current.json` | GitHub Pages, on merge to `main` | the `pages build and deployment` run for the merge commit |
+| `app.html`, `football/fbs/slate.json`, `football/availability/current.json` | GitHub Pages: `.github/workflows/pages-deploy.yml`, on merge to `main` and every 10 minutes (docs/ci/README.md, Publishing the site) | the first `Pages deploy` run at or after the merge commit; until the Pages source is GitHub Actions, Pages' own `pages build and deployment` run |
 | `supabase/functions/edgedesk_ai` | **manual** — `supabase functions deploy edgedesk_ai` | `GET /functions/v1/edgedesk_ai?probe=1` → `build` |
 | `supabase/recommendation_ledger.sql` | **manual** — `psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql` (idempotent) | `GET /rest/v1/recommendation_ledger?select=entry_key&limit=1` |
 
