@@ -1,6 +1,98 @@
 # Changelog
 
+## 2026-10-28 — Changelog and incident note: what this morning's "Update branch" merges deleted is back
 
+**What was lost.** Between 13:14 and 13:17 UTC, #854, #855 and #853 merged. Two of them merged seconds after an "Update branch" merge commit whose conflicts were resolved in GitHub's editor, before any check ran on it:
+
+| "Update branch" merge | Merged | What it dropped |
+|---|---|---|
+| `b97f6f61c` on #855 | 13 s later | #854's entry, already on `main`, and #855's own |
+| `0ffe1e1be` on #853 | 15 s later | #853's own entry, and both 2026-10-28 amendments to `docs/odds-api-incident-2026-10/INCIDENT.md`, #853's and #855's |
+
+The code of all three pull requests reached `main` intact. Only these notes were lost.
+
+**The repair.**
+- The three entries are back, verbatim from their own commits (`c78e90fd`, `7f19bf1ed`, and `main` at `cc2f8c04f` for #854), newest merge first.
+- Both `INCIDENT.md` amendments are back, verbatim from `c78e90fd` and `7f19bf1ed`.
+- The blank lines the deletions left at the top of this file are removed.
+- Nothing else changes. AGENTS.md §5 asks for conflicts to be resolved locally, keeping both sides' entries, and for the update commit's checks before a merge.
+
+## 2026-10-28 — Odds emergency stop: the Collective's own jobs are covered (methodology change)
+
+**What was wrong.** The emergency stop and the hourly limits find a paid pg_cron job by its command, with `public.odds_api_spend_patterns()`, a list of function URLs. The Collective's two odds jobs, `collective_nfl_odds` (`35 12 * * *`) and `collective_cfb_odds` (`40 12 * * *`), run `select odds.run_ingest(...)`. That function posts to `collective_odds_ingest` at a URL held in `odds.settings`, so the commands match nothing. The 2026-10-14 stop never paused them, and they ran every day through the incident. The stop's own "no active paid job" row could not count them, and the hourly limits never saw them. In production `provider.default` is `theoddsapi`, so they do reach a paid path. The jobs were read from production by the read-only Collective odds doctor.
+
+**The change** ([methodology note](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-jobs.md)):
+- `odds_api_spend_patterns()` gains `%odds.run_ingest%`, in `odds_api_emergency_stop.sql` and in the gateway's identical copy.
+- `odds_api_resume_schedules()` resumes them too: the repository's ingest buys only through the gateway.
+- `odds_api_gateway.sql` now re-creates the resume verbatim, as it already re-creates the pattern list. Otherwise a database that took the new patterns would pair the stop with an older resume that keeps the Collective's jobs paused. A test keeps the two definitions identical.
+- Report row 13 confirms both production commands match and the resume names them.
+- The six SQL-editor parts are regenerated with `tools/sql/split_sql.js`, which reproduces `main`'s parts byte for byte from `main`'s file. Parts 5 and 6 change.
+
+Nothing changes in production until an operator applies a file or calls the stop. Both jobs already run once a day, so the hourly limits leave their schedules as they are. No committed data changes.
+
+**Regression check.** The new tests were run against `main`'s SQL first:
+
+| Suite | `main` | new tests, `main`'s SQL | new tests, this SQL |
+|---|---|---|---|
+| `tools/odds/no_bypass.test.js` | 102 / 0 | **102 / 1** | 103 / 0 |
+| `tools/odds/gateway_sql.test.js` | 104 / 0 | **27 / 8**, the stale resume aborts the live layer | 107 / 0 |
+| `tools/odds/hourly_limits_sql.test.js` | 36 / 0 | **37 / 2** | 39 / 0 |
+
+`tools/sharp_lag/sharp_lag_sql.test.js` (77) and `tools/sql/split_sql.test.js` also pass. Three existing checks count what the new fixture adds, and their expected numbers rise with it: paused jobs 6 to 8, fixture jobs 8 to 10, report rows 12 to 13. No check is relaxed.
+
+## 2026-10-28 — Collective: polls with its own key until the Nov 1 reset (methodology change, time-boxed)
+
+**Why.** Since 2026-10-22 every daily Collective poll was refused by `odds_gateway` (`denied_unconfirmed_quota`), so no closing line was captured. The gateway buys from the main account, which is empty until 2026-11-01 00:00 UTC. Until 2026-10-21 the Collective had bought with its own key, on its own account (443 credits left). Without a change, week 8 loses its closes as week 7 did, starting with Thursday night's game.
+
+**The change** ([methodology note](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-own-key.md)):
+- `collective_odds_ingest` gains one marked block. Until 2026-11-01T00:00:00Z, The Odds API requests go to the provider with `COLLECTIVE_ODDS_API_KEY`, a new name, never the main key's.
+- That happens only while the key is set and `public.odds_api_enabled()` reads on. An unreadable breaker is off.
+- It makes the same request as before 2026-10-21 (3 credits, american prices) and records the provider's balance, so the existing reserve guard applies. The key is redacted from every error.
+- From the reset on, every request goes to `odds_gateway` again.
+- `tools/odds/no_bypass.test.js` is amended openly. Rules 1 and 2 cut this one block out of this one file. `COLLECTIVE_ODDS_API_KEY` joins the forbidden key names everywhere else. A new section, 1b, pins the block: one block, this file, this expiry, this key name, the breaker before the call, and one call site.
+- `deploy-odds-gateway.yml` gains a `callers` input, so `collective_odds_ingest` can be deployed alone. `close` has a pending change on `main`.
+
+**Tests.**
+- `node tools/odds/collective_own_key.test.js` (new, 29) runs the deployed handler with the database, gateway and provider stubbed and the clock injected. It covers:
+  - before the reset, at its last second, and at the reset;
+  - no key, a blank key, and the old key names;
+  - the breaker off and unreadable;
+  - a 401 echoing the key;
+  - the reserve guard.
+
+  Against `main`'s function it is 13 passed, 16 failed.
+- `no_bypass.test.js`: the unamended guard catches the block (100 / 2). The amended guard passes 110 / 0, and six mutations each turn it red.
+- `tsc --strict`: no new error.
+
+**Operator steps:** set `COLLECTIVE_ODDS_API_KEY`, merge, then run Deploy odds gateway with `callers` = `collective_odds_ingest` and the other options unchecked. After Nov 1:
+- unset the key;
+- confirm the gateway's new-cycle quota;
+- remove the block.
+
+## 2026-10-28 — Bet Checker v1, and two billing tiers: a Bet Checker subscription never opens the terminal
+
+**What it is.** A cheaper entry product (`/bet-checker/`, `docs/bet-checker.md`). A reader logs a bet they already placed; EdgeDesk grades the price against its own fair price at that moment (green ≥ +1.5 points of implied probability, red ≤ −1.5, from one constant, `bet_checker_rules()`), then against its own captured close (CLV by the house formula, `close/index.ts` `decideClose()`). No fair at exactly that line, or a close at a different line, is said out loud — ungraded, or *no close available* — never estimated. Free: ten grades a month and CLV on every bet; Bet Checker ($7.99/month, $59/year, Stripe product metadata `tier = red`): every bet graded, stats, splits, full history; the Research Terminal (`tier = blue`) includes it.
+
+**What it builds on.** `public.user_bets` (bettor_decisions.sql), extended — no second bets table; `public.signals` for games, fair prices, closes and flags (there is no events table); `settle`'s word and the Collective's final scores for results; the billing core, `create_checkout_session` and the landing page's automatic-renewal consent order for checkout; the Games sign-in door, configured to come back to the page.
+
+**What was wrong, in billing, before it could ship.** `billing_row_grants_access()` granted the terminal to any subscription in good standing, so a $7.99 Bet Checker purchase would have opened the $49.99 terminal. This is an authorization change (AGENTS.md §3), kept in its own commit:
+- what each Stripe price sells is learned only from its product's metadata (`billing_price_tiers`, `billing_learn_price_tier()`), before payment and on every sync;
+- `billing_row_in_good_standing()` is the old rule; `billing_row_grants_access()` is it and a price that does not sell red;
+- `subscriptions.tier` follows the price (a red ↔ blue switch in Stripe flips it), `has_bet_checker_paid()` is the one Bet Checker gate;
+- a Bet Checker customer is never sold the terminal's trial beside it (`switch_plan`), and the terminal's paywall sends them to the billing portal.
+
+**Also.** `tools/personal/research_state.js` now leaves Bet Checker rows to Bet Checker's grader (it would have graded them from the record files too). The billing portal link moved from `app.html` into `lib/edgedesk_pricing.js` (`PORTAL_LINK`), which the Bet Checker page needs as well. Seven database suites that copy the access rule out of `billing_hardening.sql` (Research OS journey, signal center, simulator, NCAAM/NCAAW forecast) were stale: they now also copy what the rule calls (`billing_row_in_good_standing()`, `billing_tier_of_price()`, `billing_price_tiers`); no assertion changed.
+
+**Regression check.**
+
+| check | old code | this change |
+|---|---|---|
+| `tools/billing/tier_flow.test.js` with the rule made tier-blind again | — | **FAIL** 8 of 44, among them "THE TERMINAL IS NOT: a $7.99 purchase never opens the $49.99 product" |
+| `tools/billing/tier_flow.test.js` | — | 44 / 0 |
+| `tools/bettor/decision.test.js`, the new "a Bet Checker bet is left to Bet Checker's own grader" | **FAIL** (196 / 1) | 197 / 0 |
+| `tools/billing/billing_hardening_sql.test.js` | 86 / 0 | 109 / 0 (a 150-case red / blue / unknown / comp grid; the report-row count moves 11 → 14 for the three new rows) |
+
+New suites: `tools/bet_checker/bet_checker_sql.test.js` (110), `functions.test.js` (37), `core.test.js` (46), `page.test.js` (30), `page.e2e.js` (36, Chromium); CI `bet-checker-tests.yml`. No model number, signal, ranking, research protocol or signal CLV changed.
 
 ## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
 
