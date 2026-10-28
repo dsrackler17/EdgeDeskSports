@@ -364,6 +364,10 @@ async function gradeJournal() {
 
 /* the reader's placed bets: close, CLV and result from the committed record */
 function gradeBet(b, rec, now) {
+  /* a Bet Checker bet names a board event: its close, CLV and result are
+     EdgeDesk's captured ones, written by bet_checker_grade_pending()
+     (supabase/bet_checker.sql), never this job's record-file grade */
+  if (b && b.event_id) return { patch: null, note: 'graded by Bet Checker' };
   if (!b || b.market_type !== 'spread' || (b.side !== 'home' && b.side !== 'away')) return { patch: null, note: 'only spread bets are graded' };
   const closeSide = rec && rec.close && typeof rec.close.home_line === 'number' ? (b.side === 'home' ? rec.close.home_line : -rec.close.home_line) : null;
   const final = rec && rec.final && typeof rec.final.home_score === 'number' && typeof rec.final.away_score === 'number' ? { home_margin: rec.final.home_score - rec.final.away_score } : null;
