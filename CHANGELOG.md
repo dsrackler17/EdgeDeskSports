@@ -1,27 +1,6 @@
 # Changelog
 
-## 2026-10-28 — Odds emergency stop: the Collective's own jobs are covered (methodology change)
 
-**What was wrong.** The emergency stop and the hourly limits find a paid pg_cron job by its command, with `public.odds_api_spend_patterns()`, a list of function URLs. The Collective's two odds jobs, `collective_nfl_odds` (`35 12 * * *`) and `collective_cfb_odds` (`40 12 * * *`), run `select odds.run_ingest(...)`. That function posts to `collective_odds_ingest` at a URL held in `odds.settings`, so the commands match nothing. The 2026-10-14 stop never paused them, and they ran every day through the incident. The stop's own "no active paid job" row could not count them, and the hourly limits never saw them. In production `provider.default` is `theoddsapi`, so they do reach a paid path. The jobs were read from production by the read-only Collective odds doctor.
-
-**The change** ([methodology note](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-jobs.md)):
-- `odds_api_spend_patterns()` gains `%odds.run_ingest%`, in `odds_api_emergency_stop.sql` and in the gateway's identical copy.
-- `odds_api_resume_schedules()` resumes them too: the repository's ingest buys only through the gateway.
-- `odds_api_gateway.sql` now re-creates the resume verbatim, as it already re-creates the pattern list. Otherwise a database that took the new patterns would pair the stop with an older resume that keeps the Collective's jobs paused. A test keeps the two definitions identical.
-- Report row 13 confirms both production commands match and the resume names them.
-- The six SQL-editor parts are regenerated with `tools/sql/split_sql.js`, which reproduces `main`'s parts byte for byte from `main`'s file. Parts 5 and 6 change.
-
-Nothing changes in production until an operator applies a file or calls the stop. Both jobs already run once a day, so the hourly limits leave their schedules as they are. No committed data changes.
-
-**Regression check.** The new tests were run against `main`'s SQL first:
-
-| Suite | `main` | new tests, `main`'s SQL | new tests, this SQL |
-|---|---|---|---|
-| `tools/odds/no_bypass.test.js` | 102 / 0 | **102 / 1** | 103 / 0 |
-| `tools/odds/gateway_sql.test.js` | 104 / 0 | **27 / 8**, the stale resume aborts the live layer | 107 / 0 |
-| `tools/odds/hourly_limits_sql.test.js` | 36 / 0 | **37 / 2** | 39 / 0 |
-
-`tools/sharp_lag/sharp_lag_sql.test.js` (77) and `tools/sql/split_sql.test.js` also pass. Three existing checks count what the new fixture adds, and their expected numbers rise with it: paused jobs 6 to 8, fixture jobs 8 to 10, report rows 12 to 13. No check is relaxed.
 
 ## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
 

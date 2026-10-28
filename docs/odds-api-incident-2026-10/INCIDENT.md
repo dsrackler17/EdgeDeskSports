@@ -9,11 +9,7 @@ Every caller now goes through one gateway. It re-enables on 2026-11-01 under a
 capped research categories exist, disabled
 ([METHODOLOGY-2026-10-26-category-caps.md](METHODOLOGY-2026-10-26-category-caps.md)).
 
-**Amended 2026-10-28:** the stop now covers the Collective's own jobs,
-`collective_nfl_odds` and `collective_cfb_odds`. Their command is
-`select odds.run_ingest(...)`, with no URL in it, so the 2026-10-14 stop never
-paused them. In production `provider.default` is `theoddsapi`, not OddsBlaze
-([METHODOLOGY-2026-10-28-collective-jobs.md](METHODOLOGY-2026-10-28-collective-jobs.md)).
+
 
 **Plan:** $59/month, 100,000 credits. On 2026-10-10 at 12:24Z the provider
 reported **99,336 used and 664 remaining**. By 13:55Z it reported **100,000

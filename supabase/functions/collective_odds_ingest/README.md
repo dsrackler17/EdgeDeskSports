@@ -56,6 +56,16 @@ migration were clean; and as `service_role` — which holds no rights on
 uncaught, so it answers with a PGRST202 "could not find the function" body
 before the migration and `{"ok":true,...,"games_linked":N}` after it.
 
+## The own-key exception (2026-10-28 to 2026-11-01)
+
+Until 2026-11-01T00:00:00Z, The Odds API requests go to the provider with the
+Collective's own key, `COLLECTIVE_ODDS_API_KEY`, instead of `odds_gateway`.
+That happens only while the key is set and the odds_api breaker reads on.
+From the reset on they go to the gateway again, and the block is dead code.
+See `docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-own-key.md`.
+Deploy this function alone with Deploy odds gateway, `callers` =
+`collective_odds_ingest`.
+
 ## Deployment
 
 Paste as `index.ts` for a function named exactly `collective_odds_ingest`,

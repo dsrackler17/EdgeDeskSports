@@ -188,6 +188,11 @@ jobs:
       # through the three shipped Edge Functions against the real SQL.
       - name: Every checkout converges between Stripe and EdgeDesk
         run: node tools/billing/billing_flow.test.js
+      # Two products on one row: Bet Checker (red) is paid but never opens the
+      # Research Terminal (blue); a red <-> blue switch in Stripe flips the
+      # tier; what each price sells comes from its product's metadata only.
+      - name: Bet Checker never opens the terminal, and a plan switch flips the tier
+        run: node tools/billing/tier_flow.test.js
       # The deployment's own safety checks: the read-only preflight, the snapshot,
       # the one-transaction apply that commits only behind its gate (and refuses
       # a migration that rewrites a row or opens a writer), the role probe, the

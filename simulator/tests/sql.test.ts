@@ -3,8 +3,10 @@
    throwaway cluster with the Supabase shim's roles and auth.uid()).
 
    The entitlement rule is installed exactly as production has it after
-   billing_hardening.sql: billing_row_grants_access() (extracted verbatim from
-   that file) and community_is_entitled() delegating to it.
+   billing_hardening.sql: billing_row_grants_access() and what it calls
+   (billing_row_in_good_standing(), billing_tier_of_price(), the
+   billing_price_tiers table; extracted verbatim from that file) and
+   community_is_entitled() delegating to it.
 
    The publisher under test is the real one (simulator/src/publish/publish.ts)
    talking to the database through a psql-backed adapter, so the same RPCs a
@@ -75,8 +77,10 @@ let mainRun = '';
 try {
   /* ---- the billing rule, as production has it ---- */
   const BH = fs.readFileSync(F('billing_hardening.sql'), 'utf8');
+  const r0 = BH.indexOf('create or replace function public.billing_row_in_good_standing('), r1 = BH.indexOf('-- THE ACCESS RULE', r0);
   const i0 = BH.indexOf('create or replace function public.billing_row_grants_access('), i1 = BH.indexOf('$$;', i0) + 3;
   db.sql(`create table public.subscriptions (user_id uuid, status text, price_id text, current_period_end timestamptz);
+    ${BH.slice(r0, r1)}
     ${BH.slice(i0, i1)}
     create or replace function public.community_is_entitled(p_user uuid) returns boolean language sql stable security definer set search_path = public, pg_temp as $b$
       select exists (select 1 from public.subscriptions s where s.user_id = p_user and public.billing_row_grants_access(s.status, s.price_id, s.current_period_end, now())); $b$;

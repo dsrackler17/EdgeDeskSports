@@ -41,6 +41,8 @@ jobs:
           node-version: '22'
       - name: No path around the gateway (only odds_gateway holds the key or names the provider host)
         run: node tools/odds/no_bypass.test.js
+      - name: The Collective's own-key exception until 2026-11-01 (the deployed handler, stubbed database and provider)
+        run: node tools/odds/collective_own_key.test.js
       - name: The control plane against a real PostgreSQL (budget, reservations under concurrency, single flight, shedding, breaker)
         env:
           ODDS_SQL_REQUIRED: '1'
