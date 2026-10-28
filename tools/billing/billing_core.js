@@ -10,7 +10,7 @@
 // Plain JavaScript on purpose: Deno runs it as-is, and Node tests load it
 // without a build step.
 
-var CORE_VERSION = 'billing-core-2026-10-28-tiers-1';
+var CORE_VERSION = 'billing-core-2026-10-28-tiers-2';
 
 // ── THE RULE, mirrored ──────────────────────────────────────────────────────
 // The authority is public.billing_row_grants_access() in
@@ -116,6 +116,8 @@ function normalizeSubscription(sub) {
     lookup_key: price && price.lookup_key ? String(price.lookup_key) : null,
     // known already only when the product came expanded; resolveTiers asks otherwise
     tier: product && typeof product === 'object' ? tierOf(product.metadata && product.metadata.tier) : null,
+    // the price's own metadata tier: used only when the key may not read the product
+    price_tier: price ? tierOf(price.metadata && price.metadata.tier) : null,
     created_ms: sub.created ? Number(sub.created) * 1000 : 0,
     metadata_user_id: metadataUserId(sub),
     livemode: sub.livemode === false ? false : (sub.livemode === true ? true : null),
@@ -125,8 +127,10 @@ function normalizeSubscription(sub) {
 // ── WHAT EACH SUBSCRIPTION SELLS ────────────────────────────────────────────
 // Stripe's product metadata says (tier = red | blue). Read once per price per
 // warm instance, and written to billing_price_tiers so the database's rule
-// agrees. When Stripe cannot say (a restricted key without Products read, an
-// outage), what the database learned before is used — create_checkout_session
+// agrees. A restricted key without Products read is refused the product (403):
+// then the price's own metadata tier stands in. A product that was read and
+// names no tier is never overruled by its price. When Stripe cannot say at all
+// (an outage), what the database learned before is used — create_checkout_session
 // learns every Bet Checker price before anyone can pay for it. A price nobody
 // can name is left unknown (the rule treats it as the terminal, as everything
 // sold before Bet Checker was) and raised for a human.
@@ -144,14 +148,20 @@ async function resolveTiers(ctx, subs, opts) {
     if (hit && now - hit.at < TIER_TTL_MS) { s.tier = hit.tier; if (!s.product_id) s.product_id = hit.product_id; continue; }
     if (!ctx.stripe) continue;
     try {
-      var product = null;
-      if (s.product_id) product = await ctx.stripe.get('/products/' + encodeURIComponent(s.product_id));
-      else {
-        var pr = await ctx.stripe.get('/prices/' + encodeURIComponent(s.price_id), { expand: ['product'] });
-        product = pr && pr.product && typeof pr.product === 'object' ? pr.product : null;
-        if (pr && !s.lookup_key && pr.lookup_key) s.lookup_key = String(pr.lookup_key);
+      var product = null, t = null;
+      try {
+        if (s.product_id) product = await ctx.stripe.get('/products/' + encodeURIComponent(s.product_id));
+        else {
+          var pr = await ctx.stripe.get('/prices/' + encodeURIComponent(s.price_id), { expand: ['product'] });
+          product = pr && pr.product && typeof pr.product === 'object' ? pr.product : null;
+          if (pr && !s.lookup_key && pr.lookup_key) s.lookup_key = String(pr.lookup_key);
+        }
+        t = tierOf(product && product.metadata && product.metadata.tier);
+      } catch (e) {
+        if (!e || e.status !== 403 || !s.price_tier) throw e;
+        logLine(ctx.svc, 'warn', 'reconcile.product_unreadable', { price_id: s.price_id, product_id: s.product_id, tier_from: 'price_metadata' });
+        t = s.price_tier;
       }
-      var t = tierOf(product && product.metadata && product.metadata.tier);
       if (product && product.id) s.product_id = product.id;
       if (!t) continue;
       s.tier = t;

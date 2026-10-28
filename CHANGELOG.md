@@ -1,6 +1,72 @@
 # Changelog
 
+## 2026-10-28 — Billing: a Stripe key without Products read no longer breaks checkout (and two dropped changelog entries are back)
 
+**What was wrong.** Bet Checker made `create_checkout_session` read every price with its product expanded, to learn the product's metadata `tier`. The restricted key that `docs/billing-hardening.md` set up has no Products read, and Stripe refuses such a key the expanded product (403). Once deployed, every terminal checkout would have answered `stripe_unavailable`. The reconciler already fell back to what the database had learned. But a Bet Checker price nobody learned at checkout would have stayed unknown, and the access rule reads an unknown price as the terminal.
+
+**What changed.**
+- When Stripe refuses the product (a 403, nothing else), the checkout reads the price again on its own. The terminal's checkout never needs the product.
+- In that case only, the price's own metadata `tier` stands in, in the checkout and in the reconciler. Both live Bet Checker prices carry `tier = red`.
+- A product that was read and names no tier is still never overruled by its price.
+- Products read is now optional: the function headers, `docs/billing-hardening.md` and `docs/bet-checker.md` say so.
+
+**Also.** Merge commit `b97f6f61` (main into #855) dropped two 2026-10-28 entries: Bet Checker's and #855's own. Both are restored below, verbatim from their commits.
+
+**Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0.
+
+## 2026-10-28 — Collective: polls with its own key until the Nov 1 reset (methodology change, time-boxed)
+
+**Why.** Since 2026-10-22 every daily Collective poll was refused by `odds_gateway` (`denied_unconfirmed_quota`), so no closing line was captured. The gateway buys from the main account, which is empty until 2026-11-01 00:00 UTC. Until 2026-10-21 the Collective had bought with its own key, on its own account (443 credits left). Without a change, week 8 loses its closes as week 7 did, starting with Thursday night's game.
+
+**The change** ([methodology note](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-own-key.md)):
+- `collective_odds_ingest` gains one marked block. Until 2026-11-01T00:00:00Z, The Odds API requests go to the provider with `COLLECTIVE_ODDS_API_KEY`, a new name, never the main key's.
+- That happens only while the key is set and `public.odds_api_enabled()` reads on. An unreadable breaker is off.
+- It makes the same request as before 2026-10-21 (3 credits, american prices) and records the provider's balance, so the existing reserve guard applies. The key is redacted from every error.
+- From the reset on, every request goes to `odds_gateway` again.
+- `tools/odds/no_bypass.test.js` is amended openly. Rules 1 and 2 cut this one block out of this one file. `COLLECTIVE_ODDS_API_KEY` joins the forbidden key names everywhere else. A new section, 1b, pins the block: one block, this file, this expiry, this key name, the breaker before the call, and one call site.
+- `deploy-odds-gateway.yml` gains a `callers` input, so `collective_odds_ingest` can be deployed alone. `close` has a pending change on `main`.
+
+**Tests.**
+- `node tools/odds/collective_own_key.test.js` (new, 29) runs the deployed handler with the database, gateway and provider stubbed and the clock injected. It covers:
+  - before the reset, at its last second, and at the reset;
+  - no key, a blank key, and the old key names;
+  - the breaker off and unreadable;
+  - a 401 echoing the key;
+  - the reserve guard.
+
+  Against `main`'s function it is 13 passed, 16 failed.
+- `no_bypass.test.js`: the unamended guard catches the block (100 / 2). The amended guard passes 110 / 0, and six mutations each turn it red.
+- `tsc --strict`: no new error.
+
+**Operator steps:** set `COLLECTIVE_ODDS_API_KEY`, merge, then run Deploy odds gateway with `callers` = `collective_odds_ingest` and the other options unchecked. After Nov 1:
+- unset the key;
+- confirm the gateway's new-cycle quota;
+- remove the block.
+
+## 2026-10-28 — Bet Checker v1, and two billing tiers: a Bet Checker subscription never opens the terminal
+
+**What it is.** A cheaper entry product (`/bet-checker/`, `docs/bet-checker.md`). A reader logs a bet they already placed; EdgeDesk grades the price against its own fair price at that moment (green ≥ +1.5 points of implied probability, red ≤ −1.5, from one constant, `bet_checker_rules()`), then against its own captured close (CLV by the house formula, `close/index.ts` `decideClose()`). No fair at exactly that line, or a close at a different line, is said out loud — ungraded, or *no close available* — never estimated. Free: ten grades a month and CLV on every bet; Bet Checker ($7.99/month, $59/year, Stripe product metadata `tier = red`): every bet graded, stats, splits, full history; the Research Terminal (`tier = blue`) includes it.
+
+**What it builds on.** `public.user_bets` (bettor_decisions.sql), extended — no second bets table; `public.signals` for games, fair prices, closes and flags (there is no events table); `settle`'s word and the Collective's final scores for results; the billing core, `create_checkout_session` and the landing page's automatic-renewal consent order for checkout; the Games sign-in door, configured to come back to the page.
+
+**What was wrong, in billing, before it could ship.** `billing_row_grants_access()` granted the terminal to any subscription in good standing, so a $7.99 Bet Checker purchase would have opened the $49.99 terminal. This is an authorization change (AGENTS.md §3), kept in its own commit:
+- what each Stripe price sells is learned only from its product's metadata (`billing_price_tiers`, `billing_learn_price_tier()`), before payment and on every sync;
+- `billing_row_in_good_standing()` is the old rule; `billing_row_grants_access()` is it and a price that does not sell red;
+- `subscriptions.tier` follows the price (a red ↔ blue switch in Stripe flips it), `has_bet_checker_paid()` is the one Bet Checker gate;
+- a Bet Checker customer is never sold the terminal's trial beside it (`switch_plan`), and the terminal's paywall sends them to the billing portal.
+
+**Also.** `tools/personal/research_state.js` now leaves Bet Checker rows to Bet Checker's grader (it would have graded them from the record files too). The billing portal link moved from `app.html` into `lib/edgedesk_pricing.js` (`PORTAL_LINK`), which the Bet Checker page needs as well. Seven database suites that copy the access rule out of `billing_hardening.sql` (Research OS journey, signal center, simulator, NCAAM/NCAAW forecast) were stale: they now also copy what the rule calls (`billing_row_in_good_standing()`, `billing_tier_of_price()`, `billing_price_tiers`); no assertion changed.
+
+**Regression check.**
+
+| check | old code | this change |
+|---|---|---|
+| `tools/billing/tier_flow.test.js` with the rule made tier-blind again | — | **FAIL** 8 of 44, among them "THE TERMINAL IS NOT: a $7.99 purchase never opens the $49.99 product" |
+| `tools/billing/tier_flow.test.js` | — | 44 / 0 |
+| `tools/bettor/decision.test.js`, the new "a Bet Checker bet is left to Bet Checker's own grader" | **FAIL** (196 / 1) | 197 / 0 |
+| `tools/billing/billing_hardening_sql.test.js` | 86 / 0 | 109 / 0 (a 150-case red / blue / unknown / comp grid; the report-row count moves 11 → 14 for the three new rows) |
+
+New suites: `tools/bet_checker/bet_checker_sql.test.js` (110), `functions.test.js` (37), `core.test.js` (46), `page.test.js` (30), `page.e2e.js` (36, Chromium); CI `bet-checker-tests.yml`. No model number, signal, ranking, research protocol or signal CLV changed.
 
 ## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
 
