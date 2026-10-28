@@ -188,6 +188,22 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       await ctx.close();
     }
 
+    /* ── an abandoned Juice Reel click never hijacks the card trial ──────── */
+    {
+      console.log('\nlanding page, switch ON, a Juice Reel intent left from an abandoned click');
+      const { ctx, page, state, errors } = await open(browser, base, { mode: 'on', signedIn: true });
+      await ctx.addInitScript(() => { try { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('edgedesk_pending_jr', '1'); sessionStorage.setItem('seeded', '1'); } } catch (_) {} });
+      await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      await eventually(() => page.evaluate(() => !document.getElementById('jrAct').hidden), 6000);
+      await page.click('#subBtn');
+      await page.waitForSelector('#arlModal.on', { timeout: 10000 }).catch(() => null);
+      chk('  the card-trial button opens the card trial\'s terms, not Juice Reel', await page.evaluate(() => document.getElementById('arlModal').classList.contains('on'))
+        && !state.fn.some((b) => b.action === 'start') && state.jr.length === 0);
+      chk('  and the stale Juice Reel intent is gone', await page.evaluate(() => localStorage.getItem('edgedesk_pending_jr') === null));
+      chk('  no script errors', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
     /* ── 5. a locked reader, switch ON ──────────────────────────────────── */
     {
       console.log('\napp paywall, signed in, not subscribed, switch ON');

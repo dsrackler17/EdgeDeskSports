@@ -2096,6 +2096,10 @@ function sessionValid(){var s=edSession();return !!(s&&s.access_token&&(!s.expir
 /* Subscribe entry point. An account must exist FIRST — without a user id there is
    nothing to attach the payment to. */
 async function startSubscribe(){
+  /* a card-trial button clears a Juice Reel intent left by an earlier,
+     abandoned click: this reader chose the trial (jrStart sets .jr) */
+  if(!startSubscribe.jr)setPendingJr(false);
+  startSubscribe.jr=false;
   var btn=document.getElementById('subBtn');
   if(sessionValid()){ openArl(); return; }
   /* An expired access_token is not a logged-out user. Refresh before demanding
@@ -2141,7 +2145,7 @@ var JR_READY=(async function jrBoot(){
   ['jrLive','jrAct'].forEach(function(id){var el=document.getElementById(id);if(el)el.hidden=false;});
   return true;
 })();
-function jrStart(){ if(!JR_LIVE||!window.EDJuiceReel)return; setPendingJr(true); startSubscribe(); }
+function jrStart(){ if(!JR_LIVE||!window.EDJuiceReel)return; setPendingJr(true); startSubscribe.jr=true; startSubscribe(); }
 async function jrCheckout(){
   setPendingJr(false); setPendingSub(false);
   var m=document.getElementById('jrMsg'), b=document.getElementById('jrBtn');
