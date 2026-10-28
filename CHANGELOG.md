@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-28 — main is red: the "Integrated with Juice Reel" line pushed the free calculator off a short phone's first screen (#864)
+
+**What failed.** Funnel tests, browser job, `tools/home/landing.e2e.js`: "first visit: the top of the free calculator shows, labelled Free". On a 375×548 screen (an iPhone SE inside X's in-app browser), the calculator's top bar ended at 581 px on the runner, past the 548 px fold. #864 added the hero line inside the text column, and on phones that column stacks above the calculator, so the line pushed the calculator down by 43 px.
+- On this machine, the same layout put the bar at exactly 548 of 548 px, which is why the full local `verify` passed. The runner's fallback fonts set the hero 33 px taller.
+
+**The fix** (`index.html`, `lib/edgedesk_landing_desk.css`):
+- The line moves out of the text column to right after the hero's two columns.
+- On a wide screen, the text column is the taller one, so the line sits in the same place as before: under the hero's text, on the first screen (1024 to 1440 px measured).
+- Where the columns stack, it follows the calculator. The calculator's top bar is back where it was before #864: 505 of 548 px here.
+- Stylesheet stamp `20261028jr3`, recorded.
+
+**Tests:**
+- `tools/home/landing.e2e.js`: 327 passed, 0 failed.
+- `tools/billing/juicereel_checkout.e2e.js` now checks both placements: under the text at 1280 px, and right after the calculator at 390 px. With the fix, 50 passed, 0 failed. With #864's layout, 49 passed, 1 failed.
+
 ## 2026-10-28 — The site's deploy is no longer cancelled by the next push (inert until Pages' source is switched)
 
 **Why.** Pages' own "Deploy from a branch" build cancels the build before it on every push. The data jobs push every few minutes, and a build takes about four. On 2026-10-28, 23 builds in a row were cancelled (19:54 to 20:38 UTC). The site served a 19:49 copy through the merges of #860, #861 and #862.
