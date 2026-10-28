@@ -122,9 +122,9 @@ chk('the in-app paywall states the trial line for a new account and promises no 
   /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /\(fresh\?'<a class="'\+stripeCls\+'" href="\.\/index\.html#subscribe">Start '\+\(X\?X\.TRIAL_DAYS:''\)\+' days free<\/a>'/.test(APP)
   && /<span class="per">then '\+stEsc\(price\)\+'\/month<\/span>/.test(APP));
 chk('the new-account paywall button goes through the consented trial flow', /\(fresh\?'<a class="'\+stripeCls\+'" href="\.\/index\.html#subscribe">Start /.test(APP));
-/* the card button is the primary one unless the Juice Reel checkout is
-   offered above it (docs/juicereel-billing.md), when it steps back to ghost */
-chk('and it is the primary button whenever the Juice Reel checkout is not offered', /var stripeCls=jr\?'pg-btn ghost"[^']*':'pg-btn';/.test(APP) && /var jr=pgJuiceReelOn\(\);/.test(APP));
+/* Juice Reel (#860) moved the card trial's button into stripeCls: below Juice
+   Reel's own button, as a secondary one, only when its switch is on. */
+chk('with Juice Reel off, the card trial is still the paywall\'s primary button', /var stripeCls=jr\?'pg-btn ghost"[^']*':'pg-btn';/.test(APP));
 chk('and a new account is asked to unlock Full Access, not told it has lapsed', /:fresh\?'Unlock '\+stEsc\(SUB_PLAN_NAME\)/.test(APP));
 chk('no countdown or scarcity device anywhere in the offer file', !/countdown|limited|hurry|expires/i.test(read('lib/edgedesk_pricing.js').replace(/No countdowns, no scarcity, no "limited time"/, '').replace(/nothing here counts down/, '')));
 

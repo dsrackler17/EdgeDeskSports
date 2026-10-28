@@ -249,13 +249,11 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       const { ctx, page, state, errors } = await open(browser, base, { mode: 'on', signedIn: true, cancel: true });
       await page.goto(base + '/app.html', { waitUntil: 'domcontentloaded' });
       await eventually(() => gateOn(page), 20000);
-      /* this page is app.html already, so waiting for that URL would not wait:
-         wait for the return from Juice Reel's stand-in to land */
-      const back = page.waitForEvent('framenavigated', { timeout: 30000,
-        predicate: (f) => f === page.mainFrame() && /\/app\.html\?jrsub=return/.test(f.url()) });
       await page.click('#payGate .pg-card .pg-btn');
-      await back;
-      await page.waitForLoadState('domcontentloaded');
+      /* The page is already on /app.html, so /\/app\.html/ matched at once and
+         the poll below ran into the navigation away ("Execution context was
+         destroyed"). Wait for the return from oauth/juicereel-subscribe.html. */
+      await page.waitForURL(/\/app\.html\?jrsub=return/, { timeout: 30000 });
       await eventually(async () => /do not pay again/i.test(await gateText(page)), 20000);
       const t = await gateText(page);
       chk('6 a cancelled checkout: nothing opened, and a payer is told not to pay again and how to link', /was cancelled/.test(t) && /do not pay again/i.test(t) && /I bought EdgeDesk on Juice Reel/.test(t) && !state.paid, t.slice(0, 400));

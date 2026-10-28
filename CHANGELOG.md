@@ -28,17 +28,17 @@
 - The page now has 20 characters of room under the budget (it had 56).
 - `tools/billing/juicereel_checkout.e2e.js` gains four checks: the line is in the hero's HTML, it is on the first screen at 390 px and at 1280 px, and both share descriptions lead with it. With these changes, 50 passed, 0 failed. Without the hero line, its three checks fail (46 passed, 3 failed). Without the preview change, its check fails (49 passed, 1 failed).
 
-## 2026-10-28 — Two red checks left by the Juice Reel work (#860, #862), fixed in the tests
+## 2026-10-28 — main is red: Personal research CI after the Juice Reel merge (#860)
 
-Both failures are in Personal research CI, which runs only on pull requests. The product code is unchanged.
+**What was wrong.** #860 merged with Personal research CI red, and `main` has stayed red since. Two checks fail there, both in tests, not in what a reader sees:
+- `tools/personal/personal_wiring.test.js`: two checks pinned the paywall's card-trial button as `<a class="pg-btn" …>`. #860 moved its class into `stripeCls`, so the button can sit below Juice Reel's as a secondary one when the switch is on. The checks no longer matched the code, which still sends a new account through `index.html#subscribe`.
+- `tools/billing/juicereel_checkout.e2e.js`, "a cancelled Juice Reel checkout": after the click, the test waited for `/app.html`. The page was already there, so the wait returned at once, and the next poll ran into the navigation to Juice Reel ("Execution context was destroyed"). It failed on every run here.
 
-- **`tools/personal/personal_wiring.test.js`: 72 passed, 2 failed since #860.** The test matched the paywall's card button by its literal source, `'<a class="pg-btn" href="./index.html#subscribe">`. #860 deliberately made that class `stripeCls`, so the button can step back to a secondary (ghost) button when the Juice Reel checkout is offered above it.
-  - The two checks now match `'<a class="'+stripeCls+'"`. They still pin the link to the consented trial flow, the trial days and the price.
-  - A new check pins `stripeCls` to the primary `pg-btn` unless `pgJuiceReelOn()`. That is what the literal used to guarantee.
-  - Now 75 passed, 0 failed (74 passed, 0 failed before #860).
-- **`tools/billing/juicereel_checkout.e2e.js`: the cancelled-checkout case raced.** It started on `app.html`, then waited for the URL to match `app.html`, so the wait returned at once (Juice Reel visits: 0). The next read could land mid-navigation: "Execution context was destroyed" on #862's CI.
-  - It now waits for the return navigation to `app.html?jrsub=return` itself.
-  - With polling tightened from 100 ms to 2 ms, the old test failed in 3 of 3 runs with CI's exact error. The fixed test passed 5 of 5 that way, and 3 of 3 as committed (46 passed, 0 failed).
+**What changed.**
+- The two wiring checks match `class="'+stripeCls+'"`. A new check requires that with Juice Reel off, `stripeCls` is the plain `pg-btn`, so the card trial is still the primary button. Making it `pg-btn ghost` fails that check.
+- The e2e waits for the return from `oauth/juicereel-subscribe.html` (`/app.html?jrsub=return`).
+
+**Evidence.** On `main`: personal wiring 72 passed, 2 failed; the Juice Reel e2e failed 2 of 2 runs. With this change: 75 / 0, and 42 / 0 on each of 3 runs. No page, function or SQL changed.
 
 ## 2026-10-28 — Juice Reel buyers get a way back to Juice Reel from the terminal
 
