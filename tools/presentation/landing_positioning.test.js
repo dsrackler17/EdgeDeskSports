@@ -37,8 +37,8 @@
         and falls back to an example that says it is one;
      8  pricing is Free, then Bet Checker, then the one Full Access plan,
         every figure read from lib/edgedesk_pricing.js, listing only what is
-        live, with the real trial terms and no scarcity device; and which
-        one does what, row by row (Bet Checker joined on 2026-10-28);
+        live, with the real trial terms and no scarcity device (Bet Checker
+        joined on 2026-10-28);
      9  no picks, no profit promises, no invented proof, no marketing sludge;
     10  the FAQ answers the questions a bettor asks, with the real coverage
         and the real connection support;
@@ -557,28 +557,6 @@ chk('Bet Checker is "every bet graded", never "Unlimited"', !/unlimited/i.test(p
 has(PRICE.slice(PRICE.indexOf('id="subscribe"')), '<p class="pinc">Includes <span data-ed-price="bc_plan">' + X.BET_CHECKER.PLAN_NAME + '</span>: every bet graded, with your stats.</p>',
   'the Full Access card says it includes Bet Checker');
 chk('and says it outside its FEATURES list, which the terminal\'s paywall shares', PRICE.indexOf('<p class="pinc">') > PRICE.indexOf('<ul class="pincl">'));
-/* WHICH ONE DO I NEED? the #desk table's rows (.upg), three plans wide */
-const PLT = (PRICE.match(/<div class="plans rv">([\s\S]*?)<\/table>/) || [, ''])[1];
-chk('"Which one do I need?" sits under the cards, before the value note', /<h3>Which one do I need\?<\/h3>/.test(PLT)
-  && PRICE.indexOf('class="plans rv"') > PRICE.indexOf('id="subBtn"') && PRICE.indexOf('class="plans rv"') < PRICE.indexOf('class="pnote rv"'));
-chk('and answers it in one sentence first', /Already placed a bet and want to know if you got a good price: <b>Bet Checker<\/b>\. Want EdgeDesk&rsquo;s research before you bet: <b>Full Access<\/b>, which includes Bet Checker\./.test(PLT));
-chk('it is the reused .upg table, a column per plan, in the cards\' order', /<table class="upg">/.test(PLT)
-  && /<thead><tr><th scope="col">What you get<\/th><th scope="col">Free<\/th><th scope="col">Bet Checker<\/th><th scope="col">Full Access<\/th><\/tr><\/thead>/.test(PLT));
-const plRows = [...PLT.matchAll(/<tr><th scope="row">([^<]+)<\/th><td data-l="Free"( class="no")?>([\s\S]*?)<\/td><td data-l="Bet Checker"( class="no")?>([\s\S]*?)<\/td><td data-l="Full Access">([\s\S]*?)<\/td><\/tr>/g)]
-  .map(m => ({ row: plain(m[1]).trim(), freeNo: !!m[2], free: plain(m[3]).trim(), bcNo: !!m[4], bc: plain(m[5]).trim(), full: plain(m[6]).trim(), html: m[0] }));
-const plRow = (n) => plRows.find(r => r.row === n) || {};
-chk('seven rows, each with a cell for every plan', plRows.length === 7 && (PLT.match(/<tr>/g) || []).length === 8, plRows.map(r => r.row));
-chk('grading a bet already placed: ' + PW.bc_free + ' a month free, every bet on either paid plan', (r => r.free === PW.bc_free + ' a month' && /data-ed-price="bc_free"/.test(r.html) && r.bc === 'Every bet' && r.full === 'Every bet')(plRow('Grade bets you already placed')), plRow('Grade bets you already placed'));
-chk('CLV after the close on all three', (r => r.free === 'Every bet' && r.bc === 'Every bet' && r.full === 'Every bet')(plRow('CLV after the close')));
-chk('stats and splits are paid', (r => r.freeNo && r.bc === 'Included' && r.full === 'Included')(plRow('Your stats and splits')));
-chk('history: the last 30 days free, all of it paid', (r => r.free === 'Last 30 days' && r.bc === 'Full' && r.full === 'Full')(plRow('Your bet history')));
-chk('research before the bet is Full Access, beyond the free sample; Bet Checker has none', (r => /sample/.test(r.free) && r.bcNo && r.full === 'Every NFL and FBS game')(plRow("EdgeDesk's fair lines and research before you bet")));
-chk('Signal Center, the Simulator, props and EV are Full Access, beyond Signal Center\'s free preview', (r => /preview/.test(r.free) && r.bcNo && r.full === 'Included')(plRow('Signal Center, the Simulator, player props, EdgeDesk EV')));
-chk('a cell that is not included says so in words, never a bare dash', plRows.every(r => (!r.freeNo || r.free === 'Not included') && (!r.bcNo || r.bc === 'Not included')) && !/>\s*(?:&mdash;|&ndash;|[-–—])\s*<\/td>/.test(PLT));
-chk('the price row: $0, both Bet Checker plans, then Full Access after its trial, every paid figure a pricing word', (r => r.free === '$0'
-  && new RegExp('<td data-l="Bet Checker"><span data-ed-price="bc_monthly">' + rx(PW.bc_monthly) + '</span> or <span data-ed-price="bc_annual">' + rx(PW.bc_annual) + '</span></td>').test(r.html)
-  && new RegExp('<td data-l="Full Access"><span data-ed-price="monthly">' + rx(PW.monthly) + '</span> after a <span data-ed-price="days">' + X.TRIAL_DAYS + '</span>-day free trial</td>').test(r.html))(plRow('Price')), plRow('Price').html);
-
 /* ======================================================================== */
 /* 9. NO PICKS. NO PROFIT PROMISES. NO INVENTED PROOF. NO SLUDGE.           */
 /* ======================================================================== */

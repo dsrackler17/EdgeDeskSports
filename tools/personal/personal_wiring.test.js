@@ -113,7 +113,7 @@ chk('apply() fills a page from those same words, Full Access\'s and Bet Checker\
 });
 const bcBound = [...IDX.matchAll(/data-ed-price="(bc_[a-z]+)">([^<]*)</g)];
 chk('the landing page binds Bet Checker\'s plan, price, both plans and free grades', ['bc_plan', 'bc_price', 'bc_monthly', 'bc_annual', 'bc_free'].every((k) => bcBound.some((m) => m[1] === k)), bcBound.map((m) => m[1]));
-chk('and every bound static copy equals the one source (no-JS readers see the same figures)', bcBound.length >= 8 && bcBound.every((m) => m[2] === PW[m[1]]), bcBound.filter((m) => m[2] !== PW[m[1]]).map((m) => m[0]));
+chk('and every bound static copy equals the one source (no-JS readers see the same figures)', bcBound.length >= 7 && bcBound.every((m) => m[2] === PW[m[1]]), bcBound.filter((m) => m[2] !== PW[m[1]]).map((m) => m[0]));
 chk('no Bet Checker figure is typed on the landing page outside its word', () => {
   const rest = IDX.replace(/<!--[\s\S]*?-->/g, '').replace(/data-ed-price="bc_[a-z]+">[^<]*</g, '');
   const typed = rest.match(/\$\s?7\.99|\$\s?59(?:\.00)?\b|\b799\b|\b5900\b/);

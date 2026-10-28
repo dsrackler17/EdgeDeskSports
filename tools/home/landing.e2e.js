@@ -268,7 +268,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk(w + ': no tout language anywhere', !BANNED.test(r.text.replace(REFUSALS, '')), (r.text.replace(REFUSALS, '').match(BANNED) || [])[0]);
     chk(w + ': the price is the configured one', r.priceText.length > 0 && r.priceText.every((t) => t === X.PRICE_DISPLAY), r.priceText);
     chk(w + ': the trial is the configured one', r.trialText.length > 0 && r.trialText.every((t) => t === X.TRIAL_LABEL), r.trialText.slice(0, 4));
-    chk(w + ': Bet Checker\'s plan, prices and free grades are the configured ones', r.bcWords.length >= 8 && r.bcWords.every(([k, t]) => t === X.priceWords()[k]), r.bcWords);
+    chk(w + ': Bet Checker\'s plan, prices and free grades are the configured ones', r.bcWords.length >= 7 && r.bcWords.every(([k, t]) => t === X.priceWords()[k]), r.bcWords);
     chk(w + ': the sticky call to action is not shown at the top of the page', !r.mbar);
     const ov = await overflowing(page);
     chk(w + ': nothing is wider than the screen', ov.length === 0, ov);

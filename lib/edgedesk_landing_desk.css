@@ -2,8 +2,8 @@
    THE DESK — the landing page's #desk, #signals and #simulator
    (index.html): the terminal's six seats, the upgrade from free to Full
    Access, and the two pictures of what shipped on 2026-10-23 (Signal Center
-   and the Simulator); and #pricing's "Which one do I need?", the same rows
-   three plans wide. Moved out of the page's <style> for its weight budget,
+   and the Simulator); and #trust's public record, moved here on 2026-10-28
+   when #pricing took Bet Checker. Moved out of the page's <style> for its weight budget,
    like lib/edgedesk_landing_pictures.css, and loaded the same way: it never
    blocks the first screen. Every token is the page's own (:root in
    index.html); the provenance badges are the Simulator reader's colours
@@ -48,19 +48,6 @@
   .upg td:last-child::before{color:var(--obs)}
 }
 
-/* ---------- #pricing: which plan does what, the same rows three plans wide ---------- */
-.plans{max-width:1040px;margin:52px auto 0}
-.plans h3{font-size:24px;text-align:center}
-.plans>p{max-width:40em;margin:10px auto 0;text-align:center;font-size:15px;line-height:1.55;color:var(--dim)}
-.plans>p b{color:var(--text);font-weight:600}
-/* four columns where the rows are a table; a phone keeps the card rows above */
-@media(min-width:641px){.plans .upg tbody th{width:28%}.plans .upg td,.plans .upg td:last-child{width:24%}}
-@media(max-width:640px){.plans{margin-top:40px}.plans h3{font-size:21px}}
-
-/* both pictures sit in the page's .rs grid; its stacked phone column must
-   never take the width of what is inside it */
-.rs>div{min-width:0}
-
 /* ---------- #signals: one sample signal, in the detail view's order ---------- */
 .sig{padding:16px}
 .sig-k{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
@@ -97,3 +84,48 @@
 /* five columns in a 288 px phone: the headers wrap, the numbers never do */
 @media(max-width:560px){.simt th,.simt td{padding:9px 6px;font-size:12px}.simt th:first-child{padding-left:12px}.simt tbody th{font-size:13.5px}.simt thead th{font-size:9px;letter-spacing:.04em}}
 @media(max-width:374px){.simt th,.simt td{padding:8px 5px;font-size:11.5px}.simt th:first-child{padding-left:10px}.simt tbody th{font-size:13px}}
+
+/* ---------- trust / public record ---------- */
+.trust{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:44px;align-items:start}
+@media(max-width:900px){.trust{grid-template-columns:1fr;gap:32px}}
+.proc{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:14px}
+.proc li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;font-size:15.5px;line-height:1.5}
+.proc li::before{content:"\2713";color:var(--obs);font-weight:700;font-family:var(--mono);border:1px solid rgba(47,167,154,.35);border-radius:7px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.proc li b{display:block}
+.proc li span{display:block;color:var(--dim);font-size:14px;margin-top:2px}
+.rec-cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-top:24px}
+.rec-cta small{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.ledger{border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:var(--panel)}
+.ledger-hd{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--val);flex:none}
+#proofInner{padding:0;min-height:120px}
+.rf{display:grid;grid-template-columns:132px minmax(0,1fr);gap:15px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.rf:last-child{border-bottom:0}
+.rf .rk{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.rf .rv2{display:block;font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.05em;color:var(--text)}
+.rf .rv2.warnc{color:var(--est)}.rf .rv2.okc{color:var(--val)}
+.rf .rsub{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.02em;margin-top:4px;line-height:1.5}
+.seg{display:flex;gap:2px;margin-bottom:6px}
+.seg i{flex:1;height:10px;background:var(--cell);border:1px solid var(--line2);border-radius:1px}
+.seg i.on{background:var(--obs);border-color:var(--obs)}
+.lkpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.lk{background:var(--cell);padding:15px 14px}
+.lk .n{font-family:var(--mono);font-size:22px;font-weight:700}
+.lk .n.pos{color:var(--val)}.lk .n.neg{color:var(--neg)}
+.lk .l{font-size:10px;margin-top:3px}
+.lnote{padding:12px 2px 0;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--faint)}
+.relia{display:block;width:100%;max-width:320px;margin:6px auto 2px}
+@media(max-width:560px){.rf{grid-template-columns:1fr;gap:5px}}
+.press{margin-top:52px;padding-top:36px;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:24px 40px;align-items:start}
+.press h3{font-size:19px;margin-top:12px}
+.press p{color:var(--dim);font-size:14.5px;line-height:1.6;margin-top:8px}
+.press q{color:var(--text)}
+.press-list{display:grid;gap:10px}
+.press-card{display:block;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel);transition:border-color .15s}
+.press-card:hover{border-color:rgba(47,167,154,.45)}
+.press-card .pub{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.press-card .pub b{color:var(--text);font-weight:700}
+.press-card .hl{display:block;font-size:14.5px;font-weight:600;line-height:1.4;margin-top:6px}
+.press-card .cr{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--obs)}
+.press .press-note{grid-column:1/-1;margin-top:0;font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--faint);max-width:90ch}
+@media(max-width:900px){.press{grid-template-columns:1fr}}

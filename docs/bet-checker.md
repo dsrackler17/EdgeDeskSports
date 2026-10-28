@@ -23,7 +23,7 @@ the Games door (`games/lib/auth.js`, configured to return here), the same
 **Where it is sold.** The landing page's `#pricing` shows it between Free and
 Full Access, with every figure a `data-ed-price` word that
 `lib/edgedesk_pricing.js` derives from `BET_CHECKER` (`bc_plan`, `bc_price`,
-`bc_monthly`, `bc_annual`, `bc_free`), and a "Which one do I need?" table.
+`bc_monthly`, `bc_annual`, `bc_free`).
 Its **Get Bet Checker** button is `/bet-checker/?upgrade=monthly&ref=landing_pricing`;
 `?upgrade=annual` works the same. The page keeps that plan in the tab's
 `sessionStorage` (`bc_upgrade_intent`) through the sign-in round trip, and
