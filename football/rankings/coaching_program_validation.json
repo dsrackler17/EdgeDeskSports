@@ -1,0 +1,1264 @@
+{
+ "schema": "edgedesk_coaching_program_validation_v1",
+ "sport": "americanfootball_ncaaf",
+ "generated_at": "2026-10-28T02:39:23.806Z",
+ "policy": {
+  "sport_specific": true,
+  "statement": "CFB selects its own Coaching / Program cap. No result in this artifact is transferable to NFL, tennis, baseball, UFC or another sport without that sport running its own holdout.",
+  "caps_tested": [
+   0,
+   0.5,
+   1,
+   1.5,
+   2
+  ],
+  "primary_selection_metric": "tune-window spread MAE after RMSE and residual-direction guards",
+  "holdout_role": "certification only; the holdout cannot change the tune-selected cap",
+  "tie_break": "if tune MAE differs by <= 0.01, choose the smaller cap",
+  "ats_policy": "ATS-versus-close is reported at fixed thresholds and never optimized to choose the cap"
+ },
+ "frame": {
+  "first": 2021,
+  "last": 2025,
+  "tune_seasons": [
+   2021,
+   2022,
+   2023
+  ],
+  "holdout_seasons": [
+   2024,
+   2025
+  ],
+  "week_step": 1,
+  "leakage": "each week is rebuilt from games strictly before that week; prior-season chains are cap-specific",
+  "market": "closing spread is benchmark-only and is never an input to a rating"
+ },
+ "tune": {
+  "baseline": {
+   "n": 2258,
+   "spread_mae": 13.878,
+   "rmse": 17.654,
+   "brier": 0.201
+  },
+  "arms": [
+   {
+    "cap": 0.5,
+    "metrics": {
+     "n": 2258,
+     "spread_mae": 13.877,
+     "rmse": 17.653,
+     "brier": 0.201
+    },
+    "predictive_residual": {
+     "n": 2208,
+     "correlation": 0.086,
+     "slope": 121.0549,
+     "mean_adjustment": 0.0005,
+     "mean_base_residual": 0.0698
+    }
+   },
+   {
+    "cap": 1,
+    "metrics": {
+     "n": 2258,
+     "spread_mae": 13.877,
+     "rmse": 17.652,
+     "brier": 0.201
+    },
+    "predictive_residual": {
+     "n": 2208,
+     "correlation": 0.0828,
+     "slope": 59.6158,
+     "mean_adjustment": 0.0011,
+     "mean_base_residual": 0.0698
+    }
+   },
+   {
+    "cap": 1.5,
+    "metrics": {
+     "n": 2258,
+     "spread_mae": 13.877,
+     "rmse": 17.651,
+     "brier": 0.201
+    },
+    "predictive_residual": {
+     "n": 2207,
+     "correlation": 0.0818,
+     "slope": 39.8611,
+     "mean_adjustment": 0.0016,
+     "mean_base_residual": 0.0797
+    }
+   },
+   {
+    "cap": 2,
+    "metrics": {
+     "n": 2258,
+     "spread_mae": 13.876,
+     "rmse": 17.65,
+     "brier": 0.201
+    },
+    "predictive_residual": {
+     "n": 2207,
+     "correlation": 0.0814,
+     "slope": 29.8019,
+     "mean_adjustment": 0.0021,
+     "mean_base_residual": 0.0797
+    }
+   }
+  ],
+  "selection": {
+   "selected_cap": 0,
+   "reason": "no non-zero cap improved tune MAE by the minimum effect while passing the RMSE and residual-direction guards"
+  }
+ },
+ "baseline": {
+  "n": 1606,
+  "spread_mae": 13.636,
+  "rmse": 17.198,
+  "brier": 0.2003,
+  "feature": "coaching_program_cap_0",
+  "market": {
+   "n": 444,
+   "spread_mae": 11.77,
+   "rmse": 14.914,
+   "brier": 0.183
+  },
+  "ats_vs_close": {
+   "1": {
+    "n": 396,
+    "wins": 201,
+    "losses": 195,
+    "pushes": 7,
+    "win_pct": 0.5076,
+    "p_one_sided_vs_50": 0.4008,
+    "clears_110_break_even": false
+   },
+   "2": {
+    "n": 361,
+    "wins": 176,
+    "losses": 185,
+    "pushes": 6,
+    "win_pct": 0.4875,
+    "p_one_sided_vs_50": 0.7007,
+    "clears_110_break_even": false
+   },
+   "3": {
+    "n": 319,
+    "wins": 151,
+    "losses": 168,
+    "pushes": 6,
+    "win_pct": 0.4734,
+    "p_one_sided_vs_50": 0.8432,
+    "clears_110_break_even": false
+   },
+   "5": {
+    "n": 223,
+    "wins": 107,
+    "losses": 116,
+    "pushes": 5,
+    "win_pct": 0.4798,
+    "p_one_sided_vs_50": 0.7485,
+    "clears_110_break_even": false
+   },
+   "0.5": {
+    "n": 415,
+    "wins": 215,
+    "losses": 200,
+    "pushes": 8,
+    "win_pct": 0.5181,
+    "p_one_sided_vs_50": 0.246,
+    "clears_110_break_even": false
+   },
+   "1.5": {
+    "n": 376,
+    "wins": 188,
+    "losses": 188,
+    "pushes": 6,
+    "win_pct": 0.5,
+    "p_one_sided_vs_50": 0.5206,
+    "clears_110_break_even": false
+   }
+  }
+ },
+ "arms": [
+  {
+   "cap": 0.5,
+   "metrics": {
+    "n": 1606,
+    "spread_mae": 13.635,
+    "rmse": 17.196,
+    "brier": 0.2003
+   },
+   "verdict": {
+    "feature": "coaching_program_cap_0_5",
+    "status": "CANDIDATE",
+    "may_move_lines": false,
+    "effect_size": 0.001,
+    "effect_units": "points of spread MAE improvement on the holdout",
+    "p_value": 0.0006,
+    "brier_delta": 0,
+    "worst_season": 2024,
+    "worst_season_delta": -0.001,
+    "conditions_passed": [
+     "holdout_breadth",
+     "significance",
+     "season_stability",
+     "calibration",
+     "leakage"
+    ],
+    "conditions_failed": [
+     "pooled_improvement"
+    ],
+    "reasons": [
+     "pooled MAE improved by only 0.001 points, against a 0.02 bar"
+    ],
+    "holdout_results": {
+     "baseline": {
+      "n": 1606,
+      "spread_mae": 13.636,
+      "rmse": 17.198,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_0",
+      "market": {
+       "n": 444,
+       "spread_mae": 11.77,
+       "rmse": 14.914,
+       "brier": 0.183
+      },
+      "ats_vs_close": {
+       "1": {
+        "n": 396,
+        "wins": 201,
+        "losses": 195,
+        "pushes": 7,
+        "win_pct": 0.5076,
+        "p_one_sided_vs_50": 0.4008,
+        "clears_110_break_even": false
+       },
+       "2": {
+        "n": 361,
+        "wins": 176,
+        "losses": 185,
+        "pushes": 6,
+        "win_pct": 0.4875,
+        "p_one_sided_vs_50": 0.7007,
+        "clears_110_break_even": false
+       },
+       "3": {
+        "n": 319,
+        "wins": 151,
+        "losses": 168,
+        "pushes": 6,
+        "win_pct": 0.4734,
+        "p_one_sided_vs_50": 0.8432,
+        "clears_110_break_even": false
+       },
+       "5": {
+        "n": 223,
+        "wins": 107,
+        "losses": 116,
+        "pushes": 5,
+        "win_pct": 0.4798,
+        "p_one_sided_vs_50": 0.7485,
+        "clears_110_break_even": false
+       },
+       "0.5": {
+        "n": 415,
+        "wins": 215,
+        "losses": 200,
+        "pushes": 8,
+        "win_pct": 0.5181,
+        "p_one_sided_vs_50": 0.246,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 376,
+        "wins": 188,
+        "losses": 188,
+        "pushes": 6,
+        "win_pct": 0.5,
+        "p_one_sided_vs_50": 0.5206,
+        "clears_110_break_even": false
+       }
+      }
+     },
+     "arm": {
+      "n": 1606,
+      "spread_mae": 13.635,
+      "rmse": 17.196,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_0_5",
+      "label": "Coaching / Program ±0.5 prior-side points",
+      "coefficient": 0.5,
+      "paired": {
+       "n": 1606,
+       "mean_diff": 0.0014,
+       "t": 3.417,
+       "p": 0.0006
+      },
+      "per_season": [
+       {
+        "season": 2024,
+        "n": 798,
+        "mae_before": 13.829,
+        "mae_after": 13.828,
+        "rmse_before": 17.392,
+        "rmse_after": 17.391
+       },
+       {
+        "season": 2025,
+        "n": 808,
+        "mae_before": 13.446,
+        "mae_after": 13.444,
+        "rmse_before": 17.004,
+        "rmse_after": 17.002
+       }
+      ],
+      "leakage_clean": true,
+      "version": "coaching_program_v1"
+     }
+    },
+    "fitted_coefficient": 0.5,
+    "date_validated": null,
+    "version": "coaching_program_v1",
+    "rules": {
+     "min_holdout_seasons": 2,
+     "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+     "p_max": 0.05,
+     "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+     "min_pooled_improvement": 0.02,
+     "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+     "max_season_degradation": 0.15,
+     "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+     "max_brier_degradation": 0.002,
+     "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+     "require_leakage_clean": true,
+     "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+    }
+   },
+   "selected_on_tune": false,
+   "predictive_residual": {
+    "n": 1606,
+    "correlation": 0.1145,
+    "slope": 116.1194,
+    "mean_adjustment": 0.0011,
+    "mean_base_residual": 1.2743
+   },
+   "reliability_buckets": {
+    "lt_035": {
+     "n": 186,
+     "reliability_range": [
+      0,
+      0.35
+     ],
+     "mae_before": 13.652,
+     "mae_after": 13.651,
+     "improvement": 0.001
+    },
+    "035_055": {
+     "n": 143,
+     "reliability_range": [
+      0.35,
+      0.55
+     ],
+     "mae_before": 14.814,
+     "mae_after": 14.812,
+     "improvement": 0.002
+    },
+    "055_070": {
+     "n": 1036,
+     "reliability_range": [
+      0.55,
+      0.7
+     ],
+     "mae_before": 13.617,
+     "mae_after": 13.616,
+     "improvement": 0.001
+    },
+    "ge_070": {
+     "n": 241,
+     "reliability_range": [
+      0.7,
+      null
+     ],
+     "mae_before": 13.007,
+     "mae_after": 13.006,
+     "improvement": 0.001
+    }
+   },
+   "ats_vs_close": {
+    "1": {
+     "n": 396,
+     "wins": 201,
+     "losses": 195,
+     "pushes": 7,
+     "win_pct": 0.5076,
+     "p_one_sided_vs_50": 0.4008,
+     "clears_110_break_even": false
+    },
+    "2": {
+     "n": 360,
+     "wins": 176,
+     "losses": 184,
+     "pushes": 6,
+     "win_pct": 0.4889,
+     "p_one_sided_vs_50": 0.6824,
+     "clears_110_break_even": false
+    },
+    "3": {
+     "n": 319,
+     "wins": 151,
+     "losses": 168,
+     "pushes": 6,
+     "win_pct": 0.4734,
+     "p_one_sided_vs_50": 0.8432,
+     "clears_110_break_even": false
+    },
+    "5": {
+     "n": 222,
+     "wins": 107,
+     "losses": 115,
+     "pushes": 5,
+     "win_pct": 0.482,
+     "p_one_sided_vs_50": 0.7271,
+     "clears_110_break_even": false
+    },
+    "0.5": {
+     "n": 417,
+     "wins": 217,
+     "losses": 200,
+     "pushes": 8,
+     "win_pct": 0.5204,
+     "p_one_sided_vs_50": 0.2167,
+     "clears_110_break_even": false
+    },
+    "1.5": {
+     "n": 376,
+     "wins": 188,
+     "losses": 188,
+     "pushes": 6,
+     "win_pct": 0.5,
+     "p_one_sided_vs_50": 0.5206,
+     "clears_110_break_even": false
+    }
+   },
+   "market_comparison": {
+    "n": 444,
+    "model_mae": 13.659,
+    "close_mae": 11.77,
+    "model_minus_close_mae": 1.889
+   }
+  },
+  {
+   "cap": 1,
+   "metrics": {
+    "n": 1606,
+    "spread_mae": 13.633,
+    "rmse": 17.194,
+    "brier": 0.2003
+   },
+   "verdict": {
+    "feature": "coaching_program_cap_1",
+    "status": "CANDIDATE",
+    "may_move_lines": false,
+    "effect_size": 0.003,
+    "effect_units": "points of spread MAE improvement on the holdout",
+    "p_value": 0.0001,
+    "brier_delta": 0,
+    "worst_season": 2024,
+    "worst_season_delta": -0.002,
+    "conditions_passed": [
+     "holdout_breadth",
+     "significance",
+     "season_stability",
+     "calibration",
+     "leakage"
+    ],
+    "conditions_failed": [
+     "pooled_improvement"
+    ],
+    "reasons": [
+     "pooled MAE improved by only 0.003 points, against a 0.02 bar"
+    ],
+    "holdout_results": {
+     "baseline": {
+      "n": 1606,
+      "spread_mae": 13.636,
+      "rmse": 17.198,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_0",
+      "market": {
+       "n": 444,
+       "spread_mae": 11.77,
+       "rmse": 14.914,
+       "brier": 0.183
+      },
+      "ats_vs_close": {
+       "1": {
+        "n": 396,
+        "wins": 201,
+        "losses": 195,
+        "pushes": 7,
+        "win_pct": 0.5076,
+        "p_one_sided_vs_50": 0.4008,
+        "clears_110_break_even": false
+       },
+       "2": {
+        "n": 361,
+        "wins": 176,
+        "losses": 185,
+        "pushes": 6,
+        "win_pct": 0.4875,
+        "p_one_sided_vs_50": 0.7007,
+        "clears_110_break_even": false
+       },
+       "3": {
+        "n": 319,
+        "wins": 151,
+        "losses": 168,
+        "pushes": 6,
+        "win_pct": 0.4734,
+        "p_one_sided_vs_50": 0.8432,
+        "clears_110_break_even": false
+       },
+       "5": {
+        "n": 223,
+        "wins": 107,
+        "losses": 116,
+        "pushes": 5,
+        "win_pct": 0.4798,
+        "p_one_sided_vs_50": 0.7485,
+        "clears_110_break_even": false
+       },
+       "0.5": {
+        "n": 415,
+        "wins": 215,
+        "losses": 200,
+        "pushes": 8,
+        "win_pct": 0.5181,
+        "p_one_sided_vs_50": 0.246,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 376,
+        "wins": 188,
+        "losses": 188,
+        "pushes": 6,
+        "win_pct": 0.5,
+        "p_one_sided_vs_50": 0.5206,
+        "clears_110_break_even": false
+       }
+      }
+     },
+     "arm": {
+      "n": 1606,
+      "spread_mae": 13.633,
+      "rmse": 17.194,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_1",
+      "label": "Coaching / Program ±1 prior-side points",
+      "coefficient": 1,
+      "paired": {
+       "n": 1606,
+       "mean_diff": 0.0032,
+       "t": 3.8836,
+       "p": 0.0001
+      },
+      "per_season": [
+       {
+        "season": 2024,
+        "n": 798,
+        "mae_before": 13.829,
+        "mae_after": 13.827,
+        "rmse_before": 17.392,
+        "rmse_after": 17.389
+       },
+       {
+        "season": 2025,
+        "n": 808,
+        "mae_before": 13.446,
+        "mae_after": 13.441,
+        "rmse_before": 17.004,
+        "rmse_after": 16.999
+       }
+      ],
+      "leakage_clean": true,
+      "version": "coaching_program_v1"
+     }
+    },
+    "fitted_coefficient": 1,
+    "date_validated": null,
+    "version": "coaching_program_v1",
+    "rules": {
+     "min_holdout_seasons": 2,
+     "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+     "p_max": 0.05,
+     "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+     "min_pooled_improvement": 0.02,
+     "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+     "max_season_degradation": 0.15,
+     "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+     "max_brier_degradation": 0.002,
+     "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+     "require_leakage_clean": true,
+     "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+    }
+   },
+   "selected_on_tune": false,
+   "predictive_residual": {
+    "n": 1606,
+    "correlation": 0.1289,
+    "slope": 67.3668,
+    "mean_adjustment": 0.0022,
+    "mean_base_residual": 1.2743
+   },
+   "reliability_buckets": {
+    "lt_035": {
+     "n": 186,
+     "reliability_range": [
+      0,
+      0.35
+     ],
+     "mae_before": 13.652,
+     "mae_after": 13.649,
+     "improvement": 0.003
+    },
+    "035_055": {
+     "n": 143,
+     "reliability_range": [
+      0.35,
+      0.55
+     ],
+     "mae_before": 14.814,
+     "mae_after": 14.808,
+     "improvement": 0.006
+    },
+    "055_070": {
+     "n": 1036,
+     "reliability_range": [
+      0.55,
+      0.7
+     ],
+     "mae_before": 13.617,
+     "mae_after": 13.615,
+     "improvement": 0.002
+    },
+    "ge_070": {
+     "n": 241,
+     "reliability_range": [
+      0.7,
+      null
+     ],
+     "mae_before": 13.007,
+     "mae_after": 13.004,
+     "improvement": 0.003
+    }
+   },
+   "ats_vs_close": {
+    "1": {
+     "n": 395,
+     "wins": 201,
+     "losses": 194,
+     "pushes": 7,
+     "win_pct": 0.5089,
+     "p_one_sided_vs_50": 0.3814,
+     "clears_110_break_even": false
+    },
+    "2": {
+     "n": 360,
+     "wins": 176,
+     "losses": 184,
+     "pushes": 6,
+     "win_pct": 0.4889,
+     "p_one_sided_vs_50": 0.6824,
+     "clears_110_break_even": false
+    },
+    "3": {
+     "n": 319,
+     "wins": 151,
+     "losses": 168,
+     "pushes": 6,
+     "win_pct": 0.4734,
+     "p_one_sided_vs_50": 0.8432,
+     "clears_110_break_even": false
+    },
+    "5": {
+     "n": 222,
+     "wins": 107,
+     "losses": 115,
+     "pushes": 5,
+     "win_pct": 0.482,
+     "p_one_sided_vs_50": 0.7271,
+     "clears_110_break_even": false
+    },
+    "0.5": {
+     "n": 416,
+     "wins": 216,
+     "losses": 200,
+     "pushes": 8,
+     "win_pct": 0.5192,
+     "p_one_sided_vs_50": 0.231,
+     "clears_110_break_even": false
+    },
+    "1.5": {
+     "n": 376,
+     "wins": 188,
+     "losses": 188,
+     "pushes": 6,
+     "win_pct": 0.5,
+     "p_one_sided_vs_50": 0.5206,
+     "clears_110_break_even": false
+    }
+   },
+   "market_comparison": {
+    "n": 444,
+    "model_mae": 13.658,
+    "close_mae": 11.77,
+    "model_minus_close_mae": 1.888
+   }
+  },
+  {
+   "cap": 1.5,
+   "metrics": {
+    "n": 1606,
+    "spread_mae": 13.632,
+    "rmse": 17.192,
+    "brier": 0.2003
+   },
+   "verdict": {
+    "feature": "coaching_program_cap_1_5",
+    "status": "CANDIDATE",
+    "may_move_lines": false,
+    "effect_size": 0.004,
+    "effect_units": "points of spread MAE improvement on the holdout",
+    "p_value": 0.0001,
+    "brier_delta": 0,
+    "worst_season": 2024,
+    "worst_season_delta": -0.003,
+    "conditions_passed": [
+     "holdout_breadth",
+     "significance",
+     "season_stability",
+     "calibration",
+     "leakage"
+    ],
+    "conditions_failed": [
+     "pooled_improvement"
+    ],
+    "reasons": [
+     "pooled MAE improved by only 0.004 points, against a 0.02 bar"
+    ],
+    "holdout_results": {
+     "baseline": {
+      "n": 1606,
+      "spread_mae": 13.636,
+      "rmse": 17.198,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_0",
+      "market": {
+       "n": 444,
+       "spread_mae": 11.77,
+       "rmse": 14.914,
+       "brier": 0.183
+      },
+      "ats_vs_close": {
+       "1": {
+        "n": 396,
+        "wins": 201,
+        "losses": 195,
+        "pushes": 7,
+        "win_pct": 0.5076,
+        "p_one_sided_vs_50": 0.4008,
+        "clears_110_break_even": false
+       },
+       "2": {
+        "n": 361,
+        "wins": 176,
+        "losses": 185,
+        "pushes": 6,
+        "win_pct": 0.4875,
+        "p_one_sided_vs_50": 0.7007,
+        "clears_110_break_even": false
+       },
+       "3": {
+        "n": 319,
+        "wins": 151,
+        "losses": 168,
+        "pushes": 6,
+        "win_pct": 0.4734,
+        "p_one_sided_vs_50": 0.8432,
+        "clears_110_break_even": false
+       },
+       "5": {
+        "n": 223,
+        "wins": 107,
+        "losses": 116,
+        "pushes": 5,
+        "win_pct": 0.4798,
+        "p_one_sided_vs_50": 0.7485,
+        "clears_110_break_even": false
+       },
+       "0.5": {
+        "n": 415,
+        "wins": 215,
+        "losses": 200,
+        "pushes": 8,
+        "win_pct": 0.5181,
+        "p_one_sided_vs_50": 0.246,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 376,
+        "wins": 188,
+        "losses": 188,
+        "pushes": 6,
+        "win_pct": 0.5,
+        "p_one_sided_vs_50": 0.5206,
+        "clears_110_break_even": false
+       }
+      }
+     },
+     "arm": {
+      "n": 1606,
+      "spread_mae": 13.632,
+      "rmse": 17.192,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_1_5",
+      "label": "Coaching / Program ±1.5 prior-side points",
+      "coefficient": 1.5,
+      "paired": {
+       "n": 1606,
+       "mean_diff": 0.0048,
+       "t": 3.9663,
+       "p": 0.0001
+      },
+      "per_season": [
+       {
+        "season": 2024,
+        "n": 798,
+        "mae_before": 13.829,
+        "mae_after": 13.826,
+        "rmse_before": 17.392,
+        "rmse_after": 17.388
+       },
+       {
+        "season": 2025,
+        "n": 808,
+        "mae_before": 13.446,
+        "mae_after": 13.439,
+        "rmse_before": 17.004,
+        "rmse_after": 16.996
+       }
+      ],
+      "leakage_clean": true,
+      "version": "coaching_program_v1"
+     }
+    },
+    "fitted_coefficient": 1.5,
+    "date_validated": null,
+    "version": "coaching_program_v1",
+    "rules": {
+     "min_holdout_seasons": 2,
+     "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+     "p_max": 0.05,
+     "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+     "min_pooled_improvement": 0.02,
+     "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+     "max_season_degradation": 0.15,
+     "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+     "max_brier_degradation": 0.002,
+     "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+     "require_leakage_clean": true,
+     "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+    }
+   },
+   "selected_on_tune": false,
+   "predictive_residual": {
+    "n": 1606,
+    "correlation": 0.1282,
+    "slope": 45.0689,
+    "mean_adjustment": 0.0035,
+    "mean_base_residual": 1.2743
+   },
+   "reliability_buckets": {
+    "lt_035": {
+     "n": 186,
+     "reliability_range": [
+      0,
+      0.35
+     ],
+     "mae_before": 13.652,
+     "mae_after": 13.648,
+     "improvement": 0.004
+    },
+    "035_055": {
+     "n": 143,
+     "reliability_range": [
+      0.35,
+      0.55
+     ],
+     "mae_before": 14.814,
+     "mae_after": 14.805,
+     "improvement": 0.009
+    },
+    "055_070": {
+     "n": 1036,
+     "reliability_range": [
+      0.55,
+      0.7
+     ],
+     "mae_before": 13.617,
+     "mae_after": 13.613,
+     "improvement": 0.004
+    },
+    "ge_070": {
+     "n": 241,
+     "reliability_range": [
+      0.7,
+      null
+     ],
+     "mae_before": 13.007,
+     "mae_after": 13.003,
+     "improvement": 0.004
+    }
+   },
+   "ats_vs_close": {
+    "1": {
+     "n": 395,
+     "wins": 201,
+     "losses": 194,
+     "pushes": 7,
+     "win_pct": 0.5089,
+     "p_one_sided_vs_50": 0.3814,
+     "clears_110_break_even": false
+    },
+    "2": {
+     "n": 360,
+     "wins": 176,
+     "losses": 184,
+     "pushes": 6,
+     "win_pct": 0.4889,
+     "p_one_sided_vs_50": 0.6824,
+     "clears_110_break_even": false
+    },
+    "3": {
+     "n": 320,
+     "wins": 151,
+     "losses": 169,
+     "pushes": 6,
+     "win_pct": 0.4719,
+     "p_one_sided_vs_50": 0.8559,
+     "clears_110_break_even": false
+    },
+    "5": {
+     "n": 223,
+     "wins": 107,
+     "losses": 116,
+     "pushes": 5,
+     "win_pct": 0.4798,
+     "p_one_sided_vs_50": 0.7485,
+     "clears_110_break_even": false
+    },
+    "0.5": {
+     "n": 416,
+     "wins": 216,
+     "losses": 200,
+     "pushes": 8,
+     "win_pct": 0.5192,
+     "p_one_sided_vs_50": 0.231,
+     "clears_110_break_even": false
+    },
+    "1.5": {
+     "n": 377,
+     "wins": 188,
+     "losses": 189,
+     "pushes": 6,
+     "win_pct": 0.4987,
+     "p_one_sided_vs_50": 0.541,
+     "clears_110_break_even": false
+    }
+   },
+   "market_comparison": {
+    "n": 444,
+    "model_mae": 13.657,
+    "close_mae": 11.77,
+    "model_minus_close_mae": 1.887
+   }
+  },
+  {
+   "cap": 2,
+   "metrics": {
+    "n": 1606,
+    "spread_mae": 13.63,
+    "rmse": 17.189,
+    "brier": 0.2003
+   },
+   "verdict": {
+    "feature": "coaching_program_cap_2",
+    "status": "CANDIDATE",
+    "may_move_lines": false,
+    "effect_size": 0.006,
+    "effect_units": "points of spread MAE improvement on the holdout",
+    "p_value": 0,
+    "brier_delta": 0,
+    "worst_season": 2024,
+    "worst_season_delta": -0.004,
+    "conditions_passed": [
+     "holdout_breadth",
+     "significance",
+     "season_stability",
+     "calibration",
+     "leakage"
+    ],
+    "conditions_failed": [
+     "pooled_improvement"
+    ],
+    "reasons": [
+     "pooled MAE improved by only 0.006 points, against a 0.02 bar"
+    ],
+    "holdout_results": {
+     "baseline": {
+      "n": 1606,
+      "spread_mae": 13.636,
+      "rmse": 17.198,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_0",
+      "market": {
+       "n": 444,
+       "spread_mae": 11.77,
+       "rmse": 14.914,
+       "brier": 0.183
+      },
+      "ats_vs_close": {
+       "1": {
+        "n": 396,
+        "wins": 201,
+        "losses": 195,
+        "pushes": 7,
+        "win_pct": 0.5076,
+        "p_one_sided_vs_50": 0.4008,
+        "clears_110_break_even": false
+       },
+       "2": {
+        "n": 361,
+        "wins": 176,
+        "losses": 185,
+        "pushes": 6,
+        "win_pct": 0.4875,
+        "p_one_sided_vs_50": 0.7007,
+        "clears_110_break_even": false
+       },
+       "3": {
+        "n": 319,
+        "wins": 151,
+        "losses": 168,
+        "pushes": 6,
+        "win_pct": 0.4734,
+        "p_one_sided_vs_50": 0.8432,
+        "clears_110_break_even": false
+       },
+       "5": {
+        "n": 223,
+        "wins": 107,
+        "losses": 116,
+        "pushes": 5,
+        "win_pct": 0.4798,
+        "p_one_sided_vs_50": 0.7485,
+        "clears_110_break_even": false
+       },
+       "0.5": {
+        "n": 415,
+        "wins": 215,
+        "losses": 200,
+        "pushes": 8,
+        "win_pct": 0.5181,
+        "p_one_sided_vs_50": 0.246,
+        "clears_110_break_even": false
+       },
+       "1.5": {
+        "n": 376,
+        "wins": 188,
+        "losses": 188,
+        "pushes": 6,
+        "win_pct": 0.5,
+        "p_one_sided_vs_50": 0.5206,
+        "clears_110_break_even": false
+       }
+      }
+     },
+     "arm": {
+      "n": 1606,
+      "spread_mae": 13.63,
+      "rmse": 17.189,
+      "brier": 0.2003,
+      "feature": "coaching_program_cap_2",
+      "label": "Coaching / Program ±2 prior-side points",
+      "coefficient": 2,
+      "paired": {
+       "n": 1606,
+       "mean_diff": 0.0067,
+       "t": 4.1606,
+       "p": 0
+      },
+      "per_season": [
+       {
+        "season": 2024,
+        "n": 798,
+        "mae_before": 13.829,
+        "mae_after": 13.825,
+        "rmse_before": 17.392,
+        "rmse_after": 17.386
+       },
+       {
+        "season": 2025,
+        "n": 808,
+        "mae_before": 13.446,
+        "mae_after": 13.437,
+        "rmse_before": 17.004,
+        "rmse_after": 16.993
+       }
+      ],
+      "leakage_clean": true,
+      "version": "coaching_program_v1"
+     }
+    },
+    "fitted_coefficient": 2,
+    "date_validated": null,
+    "version": "coaching_program_v1",
+    "rules": {
+     "min_holdout_seasons": 2,
+     "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+     "p_max": 0.05,
+     "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+     "min_pooled_improvement": 0.02,
+     "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+     "max_season_degradation": 0.15,
+     "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+     "max_brier_degradation": 0.002,
+     "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+     "require_leakage_clean": true,
+     "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+    }
+   },
+   "selected_on_tune": false,
+   "predictive_residual": {
+    "n": 1606,
+    "correlation": 0.1325,
+    "slope": 34.9618,
+    "mean_adjustment": 0.0046,
+    "mean_base_residual": 1.2743
+   },
+   "reliability_buckets": {
+    "lt_035": {
+     "n": 186,
+     "reliability_range": [
+      0,
+      0.35
+     ],
+     "mae_before": 13.652,
+     "mae_after": 13.647,
+     "improvement": 0.005
+    },
+    "035_055": {
+     "n": 143,
+     "reliability_range": [
+      0.35,
+      0.55
+     ],
+     "mae_before": 14.814,
+     "mae_after": 14.801,
+     "improvement": 0.013
+    },
+    "055_070": {
+     "n": 1036,
+     "reliability_range": [
+      0.55,
+      0.7
+     ],
+     "mae_before": 13.617,
+     "mae_after": 13.611,
+     "improvement": 0.006
+    },
+    "ge_070": {
+     "n": 241,
+     "reliability_range": [
+      0.7,
+      null
+     ],
+     "mae_before": 13.007,
+     "mae_after": 13.001,
+     "improvement": 0.006
+    }
+   },
+   "ats_vs_close": {
+    "1": {
+     "n": 395,
+     "wins": 201,
+     "losses": 194,
+     "pushes": 7,
+     "win_pct": 0.5089,
+     "p_one_sided_vs_50": 0.3814,
+     "clears_110_break_even": false
+    },
+    "2": {
+     "n": 360,
+     "wins": 176,
+     "losses": 184,
+     "pushes": 6,
+     "win_pct": 0.4889,
+     "p_one_sided_vs_50": 0.6824,
+     "clears_110_break_even": false
+    },
+    "3": {
+     "n": 320,
+     "wins": 151,
+     "losses": 169,
+     "pushes": 6,
+     "win_pct": 0.4719,
+     "p_one_sided_vs_50": 0.8559,
+     "clears_110_break_even": false
+    },
+    "5": {
+     "n": 222,
+     "wins": 107,
+     "losses": 115,
+     "pushes": 5,
+     "win_pct": 0.482,
+     "p_one_sided_vs_50": 0.7271,
+     "clears_110_break_even": false
+    },
+    "0.5": {
+     "n": 416,
+     "wins": 216,
+     "losses": 200,
+     "pushes": 8,
+     "win_pct": 0.5192,
+     "p_one_sided_vs_50": 0.231,
+     "clears_110_break_even": false
+    },
+    "1.5": {
+     "n": 378,
+     "wins": 189,
+     "losses": 189,
+     "pushes": 6,
+     "win_pct": 0.5,
+     "p_one_sided_vs_50": 0.5205,
+     "clears_110_break_even": false
+    }
+   },
+   "market_comparison": {
+    "n": 444,
+    "model_mae": 13.655,
+    "close_mae": 11.77,
+    "model_minus_close_mae": 1.885
+   }
+  }
+ ],
+ "selection": {
+  "selected_cap": 0,
+  "tuned_cap": 0,
+  "affects_etsr": false,
+  "status": "RESEARCH_ONLY",
+  "reason": "no non-zero cap improved tune MAE by the minimum effect while passing the RMSE and residual-direction guards"
+ }
+}
