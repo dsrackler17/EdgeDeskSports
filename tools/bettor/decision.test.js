@@ -431,6 +431,9 @@ chk('a placed bet: close, CLV +2.0, result and units at the recorded price', gb.
 const gbOpen = RS.gradeBet({ market_type: 'spread', side: 'home', line: -3, odds: -110, units: 1, kickoff: '2026-09-27T19:00:00Z', close_line: null }, { close: { home_line: -4.5 } }, Date.parse('2026-09-28T00:00:00Z'));
 chk('a close without a final: CLV now, the result later (not graded yet)', gbOpen.patch && gbOpen.patch.clv_points === 1.5 && !gbOpen.patch.graded_at, gbOpen);
 chk('only spreads are graded', RS.gradeBet({ market_type: 'moneyline', side: 'home' }, null, Date.now()).patch === null);
+chk('a Bet Checker bet (it names a board event) is left to Bet Checker\'s own grader',
+  RS.gradeBet({ market_type: 'spread', side: 'home', line: -3, odds: -110, units: 1, kickoff: '2026-09-20T19:00:00Z', close_line: null, event_id: 'ev1' },
+    { close: { home_line: -4.5 }, final: { home_score: 24, away_score: 20 } }, Date.parse('2026-10-28T00:00:00Z')).patch === null);
 
 /* ------------------------------------------------------------------ out */
 failures.forEach((f) => console.log('FAIL | ' + f));

@@ -14,6 +14,10 @@
        a different payment method and, often, a different email.
      * failures: fail('GET /v1/subscriptions', n) makes the next n matching
        calls answer 500; stall(...) makes them never answer (a timeout).
+     * products and what they sell (tier_flow.test.js): each product carries
+       metadata.tier — prod_edgedesk is the Research Terminal (blue),
+       prod_bet_checker is Bet Checker (red) with a monthly and an annual
+       price found by lookup key — and `expand` returns the product inline.
      * promotion codes and the billing clock (affiliate_flow.test.js): a
        session's promotion code becomes the subscription's Discount, with a
        repeating coupon's end counted from the subscription's start, as Stripe
@@ -50,13 +54,21 @@ function make(opts) {
   let clock = o.startSec || Math.floor(Date.now() / 1000);
   let seq = 0;
   const id = (p) => p + '_' + (++seq).toString(36).padStart(6, '0') + Math.random().toString(36).slice(2, 8).replace(/[^a-z0-9]/g, 'x');
-  const S = { customers: {}, subscriptions: {}, sessions: {}, prices: {}, promos: {}, idem: {}, invoices: {}, charges: {}, paid: {} };
+  const S = { customers: {}, subscriptions: {}, sessions: {}, prices: {}, products: {}, promos: {}, idem: {}, invoices: {}, charges: {}, paid: {} };
   const calls = [];
   const failing = [];   // {pattern, n, mode}
   const livemode = o.live !== false;
 
   S.prices.price_4999 = { id: 'price_4999', object: 'price', active: true, type: 'recurring', currency: 'usd',
-    unit_amount: 4999, recurring: { interval: 'month', interval_count: 1 }, product: 'prod_edgedesk' };
+    unit_amount: 4999, recurring: { interval: 'month', interval_count: 1 }, product: 'prod_edgedesk', lookup_key: null };
+  S.prices.price_799 = { id: 'price_799', object: 'price', active: true, type: 'recurring', currency: 'usd',
+    unit_amount: 799, recurring: { interval: 'month', interval_count: 1 }, product: 'prod_bet_checker', lookup_key: 'bet_checker_monthly' };
+  S.prices.price_5900 = { id: 'price_5900', object: 'price', active: true, type: 'recurring', currency: 'usd',
+    unit_amount: 5900, recurring: { interval: 'year', interval_count: 1 }, product: 'prod_bet_checker', lookup_key: 'bet_checker_annual' };
+  S.products.prod_edgedesk = { id: 'prod_edgedesk', object: 'product', active: true, name: 'EdgeDesk Research Terminal',
+    metadata: { tier: 'blue' }, livemode };
+  S.products.prod_bet_checker = { id: 'prod_bet_checker', object: 'product', active: true, name: 'Bet Checker',
+    metadata: { tier: 'red' }, livemode };
 
   // Stripe's month arithmetic: the same day next month, clamped to its last day
   function addMonths(sec, n) {
@@ -148,7 +160,8 @@ function make(opts) {
       ev('checkout.session.completed', snap(s)),
     ];
     if (!trialDays) events.push(ev('invoice.paid', { id: id('in'), object: 'invoice', customer: cust.id,
-      subscription: sub.id, amount_paid: 4999, currency: 'usd', customer_email: s.customer_details.email }));
+      subscription: sub.id, amount_paid: Number((S.prices[priceId] || S.prices.price_4999).unit_amount), currency: 'usd',
+      customer_email: s.customer_details.email }));
     return { session: s, subscription: sub, customer: cust, events };
   }
 
@@ -305,8 +318,26 @@ function make(opts) {
       }
       out = createSession(body, false);
     }
+    // expand[]=product, expand[0]=product, expand[]=data.product: Stripe takes any of them
+    const expands = [];
+    q.forEach((v, k) => { if (/^expand(\[\d*\])?$/.test(k)) expands.push(v); });
+    const withProduct = (p, field) => {
+      const o2 = snap(p);
+      if (expands.indexOf(field) >= 0 && typeof o2.product === 'string') o2.product = S.products[o2.product] ? snap(S.products[o2.product]) : o2.product;
+      return o2;
+    };
     if ((m = /^\/v1\/prices\/([^/]+)$/.exec(path))) {
-      return S.prices[m[1]] ? R(200, snap(S.prices[m[1]])) : notFound('price');
+      return S.prices[m[1]] ? R(200, withProduct(S.prices[m[1]], 'product')) : notFound('price');
+    }
+    if (method === 'GET' && path === '/v1/prices') {
+      const keys = [];
+      q.forEach((v, k) => { if (/^lookup_keys(\[\d*\])?$/.test(k)) keys.push(v); });
+      const data = Object.values(S.prices).filter((p) => (!keys.length || keys.indexOf(p.lookup_key) >= 0) &&
+        (q.get('active') == null || String(p.active) === q.get('active')));
+      return R(200, { object: 'list', data: data.slice(0, Number(q.get('limit') || 10)).map((p) => withProduct(p, 'data.product')) });
+    }
+    if ((m = /^\/v1\/products\/([^/]+)$/.exec(path)) && method === 'GET') {
+      return S.products[m[1]] ? R(200, snap(S.products[m[1]])) : notFound('product');
     }
     if ((m = /^\/v1\/promotion_codes\/([^/]+)$/.exec(path)) && method === 'GET') {
       return S.promos[m[1]] ? R(200, snap(S.promos[m[1]])) : notFound('promotion code');

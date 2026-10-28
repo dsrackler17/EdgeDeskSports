@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-28 — Bet Checker v1, and two billing tiers: a Bet Checker subscription never opens the terminal
+
+**What it is.** A cheaper entry product (`/bet-checker/`, `docs/bet-checker.md`). A reader logs a bet they already placed; EdgeDesk grades the price against its own fair price at that moment (green ≥ +1.5 points of implied probability, red ≤ −1.5, from one constant, `bet_checker_rules()`), then against its own captured close (CLV by the house formula, `close/index.ts` `decideClose()`). No fair at exactly that line, or a close at a different line, is said out loud — ungraded, or *no close available* — never estimated. Free: ten grades a month and CLV on every bet; Bet Checker ($7.99/month, $59/year, Stripe product metadata `tier = red`): every bet graded, stats, splits, full history; the Research Terminal (`tier = blue`) includes it.
+
+**What it builds on.** `public.user_bets` (bettor_decisions.sql), extended — no second bets table; `public.signals` for games, fair prices, closes and flags (there is no events table); `settle`'s word and the Collective's final scores for results; the billing core, `create_checkout_session` and the landing page's automatic-renewal consent order for checkout; the Games sign-in door, configured to come back to the page.
+
+**What was wrong, in billing, before it could ship.** `billing_row_grants_access()` granted the terminal to any subscription in good standing, so a $7.99 Bet Checker purchase would have opened the $49.99 terminal. This is an authorization change (AGENTS.md §3), kept in its own commit:
+- what each Stripe price sells is learned only from its product's metadata (`billing_price_tiers`, `billing_learn_price_tier()`), before payment and on every sync;
+- `billing_row_in_good_standing()` is the old rule; `billing_row_grants_access()` is it and a price that does not sell red;
+- `subscriptions.tier` follows the price (a red ↔ blue switch in Stripe flips it), `has_bet_checker_paid()` is the one Bet Checker gate;
+- a Bet Checker customer is never sold the terminal's trial beside it (`switch_plan`), and the terminal's paywall sends them to the billing portal.
+
+**Also.** `tools/personal/research_state.js` now leaves Bet Checker rows to Bet Checker's grader (it would have graded them from the record files too). The billing portal link moved from `app.html` into `lib/edgedesk_pricing.js` (`PORTAL_LINK`), which the Bet Checker page needs as well. Seven database suites that copy the access rule out of `billing_hardening.sql` (Research OS journey, signal center, simulator, NCAAM/NCAAW forecast) were stale: they now also copy what the rule calls (`billing_row_in_good_standing()`, `billing_tier_of_price()`, `billing_price_tiers`); no assertion changed.
+
+**Regression check.**
+
+| check | old code | this change |
+|---|---|---|
+| `tools/billing/tier_flow.test.js` with the rule made tier-blind again | — | **FAIL** 8 of 44, among them "THE TERMINAL IS NOT: a $7.99 purchase never opens the $49.99 product" |
+| `tools/billing/tier_flow.test.js` | — | 44 / 0 |
+| `tools/bettor/decision.test.js`, the new "a Bet Checker bet is left to Bet Checker's own grader" | **FAIL** (196 / 1) | 197 / 0 |
+| `tools/billing/billing_hardening_sql.test.js` | 86 / 0 | 109 / 0 (a 150-case red / blue / unknown / comp grid; the report-row count moves 11 → 14 for the three new rows) |
+
+New suites: `tools/bet_checker/bet_checker_sql.test.js` (110), `functions.test.js` (37), `core.test.js` (46), `page.test.js` (30), `page.e2e.js` (36, Chromium); CI `bet-checker-tests.yml`. No model number, signal, ranking, research protocol or signal CLV changed.
+
 ## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
 
 **What was wrong.** All 14 NFL week 7 games settled with a final score and no captured closing line. So none of them has an against-the-spread (ATS) result. The last close on file is WAS @ SF (kickoff 2026-10-20 00:15Z). The settlement refresh puts every week-7 game in class L: snapshots exist, but none falls inside the final 360 minutes before kickoff. College week 8 has no closes either. College closes have been mostly missing all season (the ten-character name join in `collective/settled/README.md`), so the stop shows most clearly in the NFL.

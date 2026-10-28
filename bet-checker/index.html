@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bet Checker — Grade the Bets You Already Placed | EdgeDesk</title>
+<meta name="description" content="EdgeDesk Bet Checker grades the price you took against EdgeDesk's fair price the moment you log it, then against the captured close. No picks — just measurement. Free for ten grades a month.">
+<link rel="canonical" href="https://edgedesksports.com/bet-checker/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/bet-checker/">
+<meta property="og:title" content="Bet Checker — EdgeDesk">
+<meta property="og:description" content="Log a bet you placed. See how your price compared with EdgeDesk's fair price, and whether you beat the close.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261028bc1">
+<link rel="stylesheet" href="/lib/edgedesk_bet_checker.css?v=20261028bc1">
+</head>
+<body data-ed-page="bet_checker">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+</header>
+<main class="wrap gm-page bc" id="bc">
+  <span class="ey">EdgeDesk · No picks, just measurement</span>
+  <h1>Bet Checker</h1>
+  <p class="lede">Log a bet you already placed. Bet Checker grades your price against EdgeDesk’s fair price the moment you log it,
+  then grades it against EdgeDesk’s captured close. Where we don’t own the number, we say so — we never estimate one.</p>
+
+  <div class="bc-status" data-bc="status" role="status" aria-live="polite" hidden></div>
+
+  <!-- signed out: the free door (games/lib/auth.js, coming back here) -->
+  <section class="card bc-auth" data-bc="out" hidden aria-labelledby="bc-auth-h">
+    <h2 id="bc-auth-h" style="margin-top:0">Sign in to check your bets</h2>
+    <p class="note">Free: log every bet, an instant grade on ten bets a month, and CLV on all of them after the close. Your EdgeDesk account works here.</p>
+    <form data-bc="auth" onsubmit="return false">
+      <label class="fl">Email<input type="email" name="email" autocomplete="email" required></label>
+      <label class="fl">Password<input type="password" name="password" autocomplete="current-password" required minlength="6"></label>
+      <label class="bc-agree"><input type="checkbox" name="consent"><span>New account: I confirm I am <b>21+</b>, that betting is legal where I am, and I agree to the <a href="/terms.html" target="_blank">Terms</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. EdgeDesk is a research tool, not betting advice.</span></label>
+      <div class="row">
+        <button type="button" class="btn" data-bc-act="signin">Sign in</button>
+        <button type="button" class="btn ghost" data-bc-act="signup">Create a free account</button>
+        <button type="button" class="bc-link" data-bc-act="recover">Forgot password?</button>
+      </div>
+      <div class="bc-auth-msg" data-bc="auth-msg" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <div data-bc="in" hidden>
+    <p class="bc-who" data-bc="who"></p>
+
+    <!-- log a bet -->
+    <details class="card bc-form" data-bc="form-wrap">
+      <summary>Log a bet</summary>
+      <form data-bc="form" novalidate>
+        <div class="gm-pills full" role="group" aria-label="Sport">
+          <button type="button" class="gm-pill" data-bc-sport="all" aria-pressed="true">All</button>
+          <button type="button" class="gm-pill" data-bc-sport="NFL" aria-pressed="false">NFL</button>
+          <button type="button" class="gm-pill" data-bc-sport="CFB" aria-pressed="false">College football</button>
+        </div>
+        <div class="bc-f">
+          <label class="full">Game (only games that have not started)<select name="game" required><option value="">Loading the board…</option></select></label>
+          <label class="half">Market<select name="market" required><option value="">Market</option></select></label>
+          <label class="half">Side<select name="side" required><option value="">Side</option></select></label>
+          <label class="half" data-bc="line-row">Line<input name="line" inputmode="decimal" list="bc-lines" placeholder="-3.5" autocomplete="off"></label>
+          <datalist id="bc-lines"></datalist>
+          <label class="half">Odds (American)<input name="odds" inputmode="numeric" placeholder="-110" autocomplete="off"></label>
+          <p class="bc-hint full" data-bc="lines"></p>
+          <label class="half">Book<select name="book"><option value="DraftKings">DraftKings</option><option value="Kalshi">Kalshi</option><option value="DK Predictions">DK Predictions</option><option value="Other">Other</option></select></label>
+          <label class="half">Stake (units)<input name="stake" inputmode="decimal" value="1" autocomplete="off"></label>
+          <div class="full bc-cents" data-bc="cents-row" hidden>
+            <label>Paid in cents? All-in price per contract, fees included<input name="cents" inputmode="decimal" placeholder="55"></label>
+            <span data-bc="cents-out"></span>
+          </div>
+          <div class="full"><button type="submit" class="btn" data-bc="submit">Log bet and grade it</button></div>
+        </div>
+        <div class="bc-result" data-bc="result" role="status" aria-live="polite" hidden></div>
+      </form>
+    </details>
+
+    <!-- the dashboard -->
+    <section class="card" aria-labelledby="bc-dash-h">
+      <h2 id="bc-dash-h" style="margin-top:0">Your record</h2>
+      <div class="bc-usage" data-bc="usage" hidden></div>
+      <div data-bc="stats"></div>
+    </section>
+
+    <section aria-labelledby="bc-bets-h">
+      <h2 id="bc-bets-h">Your bets</h2>
+      <div data-bc="bets"><div class="gm-empty">Loading your bets…</div></div>
+      <p class="bc-older" data-bc="older" hidden></p>
+    </section>
+
+    <section class="card" aria-labelledby="bc-set-h" id="settings">
+      <h2 id="bc-set-h" style="margin-top:0">Settings › Subscription</h2>
+      <div data-bc="settings"></div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="bc-how-h">
+    <h2 id="bc-how-h" style="margin-top:0">How a bet is graded</h2>
+    <p><b>At entry.</b> The moment you log a bet, Bet Checker takes EdgeDesk’s current fair price for exactly that game, market, side and line, and compares the probability it implies with the probability your odds imply.</p>
+    <ul class="bc-legend" data-bc="legend"></ul>
+    <p>If EdgeDesk has no current fair price at exactly your line, the bet is saved without a grade, and the card says why. We never estimate one from a nearby line.</p>
+    <p><b>After the close.</b> Once the game starts, your price is graded against EdgeDesk’s captured no-vig close at your line — the same closing-line value EdgeDesk grades its own signals with. If the market closed at a different line, the card says <i>no close available</i> rather than adjusting anything.</p>
+    <p class="fine">Bet Checker measures prices. It is not betting advice and it never tells you what to bet. 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</p>
+  </section>
+
+  <!-- the automatic-renewal terms (California ARL): shown, ticked, recorded, then Stripe -->
+  <div class="bc-sheet" data-bc="arl" role="dialog" aria-modal="true" aria-labelledby="bc-arl-h" hidden>
+    <div class="bc-sheet-in">
+      <button type="button" class="bc-x" data-bc-act="arl-close" aria-label="Close">&times;</button>
+      <h2 id="bc-arl-h">Bet Checker</h2>
+      <p class="note">A grade on every bet, running stats, splits by market, sport and book, and your full history.</p>
+      <div class="seg" role="group" aria-label="Plan">
+        <button type="button" data-bc-plan="monthly" aria-pressed="true" class="on">Monthly</button>
+        <button type="button" data-bc-plan="annual" aria-pressed="false">Annual</button>
+      </div>
+      <div class="bc-terms"><b>AUTOMATIC RENEWAL TERMS</b><p data-bc="terms" style="margin:6px 0 0"></p></div>
+      <label class="bc-agree"><input type="checkbox" data-bc="agree"><span>I have read and <b>expressly agree to these automatic renewal terms</b>. I understand my subscription renews automatically and my card is charged until I cancel.</span></label>
+      <button type="button" class="btn" data-bc-act="arl-go" data-bc="arl-go" disabled>Subscribe</button>
+      <div class="bc-arl-msg" data-bc="arl-msg" role="status" aria-live="polite"></div>
+      <p class="fine">Billed by Rackler Tech Ventures LLC through Stripe. EdgeDesk never sees or stores your card details.</p>
+    </div>
+  </div>
+</main>
+
+<script src="/lib/edgedesk_auth.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_access.js?v=20261028bc1"></script>
+<script src="/games/lib/attribution.js?v=20261028bc1"></script>
+<script src="/games/lib/social.js?v=20261028bc1"></script>
+<script src="/games/lib/auth.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_bet_checker_core.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_bet_checker.js?v=20261028bc1"></script>
+<script>
+/* The Supabase project, from the same committed file the games pages read
+   (games/data/config.json, written from app.html by the build), so this page
+   and the terminal can never point at different projects. */
+(function () {
+  var host = document.getElementById('bc');
+  var fail = function () {
+    var el = host.querySelector('[data-bc="status"]');
+    el.hidden = false; el.className = 'bc-status err';
+    el.textContent = 'Bet Checker could not load its settings. Reload the page to try again.';
+  };
+  fetch('/games/data/config.json', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (c) {
+      if (!c || !c.supabase_url || !c.supabase_anon_key || !window.EDBetChecker) return fail();
+      window.EDBetChecker.mount(host, { url: c.supabase_url, key: c.supabase_anon_key });
+    })
+    .catch(fail);
+})();
+</script>
+</body>
+</html>

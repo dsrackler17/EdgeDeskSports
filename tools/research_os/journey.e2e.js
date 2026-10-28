@@ -91,6 +91,7 @@ const okApply = (name, twice) => { let out = db.applyFile(F(name)); T.chk(name +
 function setupDb() {
   const BH = fs.readFileSync(F('billing_hardening.sql'), 'utf8'), FU = fs.readFileSync(F('funnel.sql'), 'utf8');
   db.sql(`create table public.subscriptions (user_id uuid, status text, price_id text, current_period_end timestamptz);
+    ${slice(BH, 'create or replace function public.billing_row_in_good_standing(', '-- THE ACCESS RULE')}
     ${slice(BH, 'create or replace function public.billing_row_grants_access(', '$$;')}
     ${slice(BH, 'create or replace function public.billing_is_admin()', '$$;')}
     create or replace function public.community_is_entitled(p_user uuid) returns boolean language sql stable security definer set search_path = public, pg_temp as $b$

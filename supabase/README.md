@@ -582,6 +582,43 @@ signed-in readers. Views: `bettor_decision_transitions`,
 50 settled bets) and `user_bet_clv`. Tested against a real PostgreSQL by
 `tools/bettor/bettor_sql.test.js`; the design is `docs/bettor-decision/DESIGN.md`.
 
+### `bet_checker.sql` + `bet_checker_cron.sql` — Bet Checker: the reader's own bets, graded at entry and at the close
+Apply **after** `bettor_decisions.sql` and `billing_hardening.sql` (it stops,
+naming either, otherwise) on a project with capture's `signals` (it names any
+column it reads that is missing). Mirrored byte for byte in
+`migrations/20261028120000_bet_checker.sql`; applied by
+`.github/workflows/deploy-bet-checker.yml`. `docs/bet-checker.md` is the narrative.
+
+- **No new bets table.** `user_bets` gains the entry (`entry_fair_price`,
+  `entry_fair_prob`, `entry_edge_pct`, `entry_grade`, `entry_grade_reason`), the
+  close (`close_status`, `close_reason`, `close_fair_prob`, `clv_pct`, reusing
+  `close_line` / `close_odds`), the flag (`edgedesk_flagged`,
+  `flagged_signal_id`), `event_id` and `updated_at`. A Bet Checker row names a
+  board event; the view `bet_checker_bets` shows it under Bet Checker's names.
+- **The rules are one constant**, `bet_checker_rules()` (green ≥ +1.5 points,
+  red ≤ −1.5, ten free grades a New York calendar month, a "current" fair seen
+  within 390 minutes).
+- **The grading columns are the service role's**: a reader may update `notes`
+  and `status` only (the existing column grants), and a reader's own insert is
+  reset to ungraded by trigger. An event must be on the board, NFL or CFB, and
+  not started.
+- `bet_checker_log_bet()` (service role; the `log_user_bet` function): the free
+  allowance under a per-reader advisory lock, the fair at EXACTLY the line,
+  the edge and grade — or ungraded with the reason — in one transaction.
+  `bet_checker_grades` is the append-only allowance ledger.
+- `bet_checker_grade_pending()` (service role; `grade_user_bets`, every 15
+  minutes by `bet_checker_cron.sql`): CLV at the bet's own line by the house
+  formula, `no_close_available` with close's own reason otherwise, the result
+  from settle or the final score, the flag after kickoff. Idempotent; every run
+  in `bet_checker_grade_runs`.
+- The reader's doors: `bet_checker_games()`, `bet_checker_lines()` (identity
+  and lines, never a price), `my_bet_checker_bets()` (free: 30 days),
+  `my_bet_checker_stats()` (paid only: `has_bet_checker_paid()`),
+  `bet_checker_usage()`.
+- **The report** has 11 rows (`bet_checker_cron.sql`: 3, row 2 naming the
+  `close` job it follows). Tested against a real PostgreSQL by
+  `tools/bet_checker/bet_checker_sql.test.js`.
+
 ### `card_opportunities.sql` — the EdgeDesk Card's saved games and props
 Apply **after** `bettor_decisions.sql` (the file stops with a message naming
 it otherwise). `card_opportunities` holds what a reader added to the Card
