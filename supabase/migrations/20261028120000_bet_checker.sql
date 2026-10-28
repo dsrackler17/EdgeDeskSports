@@ -71,9 +71,12 @@ begin
   if to_regclass('public.signals') is null then
     raise exception 'bet_checker.sql reads public.signals (capture''s board), which does not exist here';
   end if;
+  -- No player props, and no need for capture v11's is_player_prop column: v11
+  -- files every prop under a player_* market, and every query here reads only
+  -- h2h, spreads and totals.
   select string_agg(c, ', ') into missing
     from unnest(array['sig_key', 'event_id', 'sport_key', 'commence_time', 'home_team', 'away_team', 'market', 'selection',
-                      'point', 'sharp_fair', 'last_seen_at', 'point_is_modal', 'is_player_prop', 'flagged_at', 'closed_at',
+                      'point', 'sharp_fair', 'last_seen_at', 'point_is_modal', 'flagged_at', 'closed_at',
                       'closing_sharp_fair', 'clv_excluded_reason', 'result']) c
    where not exists (select 1 from information_schema.columns
                       where table_schema = 'public' and table_name = 'signals' and column_name = c);
@@ -265,7 +268,7 @@ begin
   if new.event_id is not null then
     select s.sport_key, s.commence_time, s.home_team, s.away_team into ev
       from public.signals s
-     where s.event_id = new.event_id and s.market in ('h2h', 'spreads', 'totals') and not coalesce(s.is_player_prop, false)
+     where s.event_id = new.event_id and s.market in ('h2h', 'spreads', 'totals')
      order by s.last_seen_at desc nulls last limit 1;
     if not found then
       raise exception 'user_bets: event % is not on EdgeDesk''s board', new.event_id using errcode = 'foreign_key_violation';
@@ -371,7 +374,7 @@ begin
     select q.event_id, (r -> 'sports' ->> q.sport_key)::text, q.commence_time, q.home_team, q.away_team
       from (select distinct on (s.event_id) s.event_id, s.sport_key, s.commence_time, s.home_team, s.away_team
               from public.signals s
-             where s.market in ('h2h', 'spreads', 'totals') and not coalesce(s.is_player_prop, false)
+             where s.market in ('h2h', 'spreads', 'totals')
                and s.sport_key in (select jsonb_object_keys(r -> 'sports'))
                -- the board's recent rows only (signals (sport_key, commence_time)
                -- serves it); a week back keeps a rescheduled game's newest row in
@@ -406,7 +409,7 @@ begin
   return query
     with ev as (
       select s.event_id, s.home_team, s.away_team, s.commence_time from public.signals s
-       where s.event_id = p_event_id and s.market in ('h2h', 'spreads', 'totals') and not coalesce(s.is_player_prop, false)
+       where s.event_id = p_event_id and s.market in ('h2h', 'spreads', 'totals')
        order by s.last_seen_at desc nulls last limit 1
     ), ln as (
       select case s.market when 'spreads' then 'spread' when 'totals' then 'total' when 'h2h' then 'moneyline' end as mt,
@@ -421,7 +424,7 @@ begin
               and s.last_seen_at >= now() - make_interval(mins => (r ->> 'fair_max_age_min')::int)) as pr
         from public.signals s cross join ev
        where s.event_id = ev.event_id and ev.commence_time > now()
-         and s.market in ('h2h', 'spreads', 'totals') and not coalesce(s.is_player_prop, false)
+         and s.market in ('h2h', 'spreads', 'totals')
     )
     select mt, sd, max(tm), pt, bool_or(md), bool_or(coalesce(pr, false))
       from ln where mt is not null and sd is not null
@@ -523,7 +526,7 @@ begin
   -- 1. the event: on the board, a sport Bet Checker grades, not started
   select s.sport_key, s.commence_time, s.home_team, s.away_team into ev
     from public.signals s
-   where s.event_id = p_event_id and s.market in ('h2h', 'spreads', 'totals') and not coalesce(s.is_player_prop, false)
+   where s.event_id = p_event_id and s.market in ('h2h', 'spreads', 'totals')
    order by s.last_seen_at desc nulls last limit 1;
   if not found then return jsonb_build_object('ok', false, 'reason', 'no_such_game', 'message', 'That game is not on EdgeDesk''s board.'); end if;
   v_sport := r -> 'sports' ->> ev.sport_key;
@@ -551,7 +554,7 @@ begin
     select s.sig_key, s.sharp_fair, s.last_seen_at into v_sig, v_fair, v_seen
       from public.signals s
      where s.event_id = p_event_id and s.market = v_bmkt and s.selection = v_sel
-       and s.point is not distinct from v_line and not coalesce(s.is_player_prop, false)
+       and s.point is not distinct from v_line
      order by s.last_seen_at desc nulls last limit 1;
     if v_sig is null or v_fair is null or not (v_fair > 0 and v_fair < 1) then
       v_grade := 'ungraded'; v_reason := 'no_fair_price_at_line';
@@ -672,7 +675,7 @@ begin
     v_dec := public.bet_checker_decimal(b.odds);
     -- when the board says the game starts now (a rescheduled game moves)
     select s2.commence_time into v_start from public.signals s2
-     where s2.event_id = b.event_id and s2.market in ('h2h', 'spreads', 'totals') and not coalesce(s2.is_player_prop, false)
+     where s2.event_id = b.event_id and s2.market in ('h2h', 'spreads', 'totals')
      order by s2.last_seen_at desc nulls last limit 1;
     v_start := coalesce(v_start, b.kickoff);
     if v_start > now() then continue; end if;
@@ -681,7 +684,7 @@ begin
     if b.flag_checked_at is null then
       v_sig := null;
       select s2.sig_key into v_sig from public.signals s2
-       where s2.event_id = b.event_id and s2.market = v_mkt and s2.selection = v_sel and not coalesce(s2.is_player_prop, false)
+       where s2.event_id = b.event_id and s2.market = v_mkt and s2.selection = v_sel
          and s2.flagged_at is not null and s2.flagged_at <= b.created_at
        order by s2.flagged_at desc limit 1;
       update public.user_bets set edgedesk_flagged = v_sig is not null, flagged_signal_id = v_sig, flag_checked_at = now()
@@ -695,17 +698,17 @@ begin
       select s2.sig_key, s2.closed_at, s2.closing_sharp_fair, s2.clv_excluded_reason into v_sig, v_closed, v_fair, v_excl
         from public.signals s2
        where s2.event_id = b.event_id and s2.market = v_mkt and s2.selection = v_sel
-         and s2.point is not distinct from b.line and not coalesce(s2.is_player_prop, false)
+         and s2.point is not distinct from b.line
        order by s2.closed_at desc nulls last limit 1;
       v_have := v_sig is not null;
       -- the line(s) the market closed at for this side, with a usable close
       select array_agg(distinct s3.point) into v_lines from public.signals s3
-       where s3.event_id = b.event_id and s3.market = v_mkt and s3.selection = v_sel and not coalesce(s3.is_player_prop, false)
+       where s3.event_id = b.event_id and s3.market = v_mkt and s3.selection = v_sel
          and s3.closed_at is not null and s3.closing_sharp_fair > 0 and s3.closing_sharp_fair < 1
          and coalesce(s3.clv_excluded_reason, 'no_entry_price') = 'no_entry_price';
       -- has close run for this side at all?
       select exists (select 1 from public.signals s4 where s4.event_id = b.event_id and s4.market = v_mkt
-                        and s4.selection = v_sel and s4.closed_at is not null and not coalesce(s4.is_player_prop, false))
+                        and s4.selection = v_sel and s4.closed_at is not null)
         into v_side_closed;
       if v_have and v_closed is not null then
         if v_fair > 0 and v_fair < 1 and coalesce(v_excl, 'no_entry_price') = 'no_entry_price' then
@@ -742,7 +745,7 @@ begin
       v_res := null; v_src := null; v_word := null;
       select s2.result into v_word from public.signals s2
        where s2.event_id = b.event_id and s2.market = v_mkt and s2.selection = v_sel
-         and s2.point is not distinct from b.line and not coalesce(s2.is_player_prop, false)
+         and s2.point is not distinct from b.line
          and s2.result is not null
        limit 1;
       if v_word is not null then

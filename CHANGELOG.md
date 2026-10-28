@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-10-28 — Billing: a Stripe key without Products read no longer breaks checkout (and two dropped changelog entries are back)
+## 2026-10-28 — Deploying Bet Checker: checkout works with a key that can't read Products, and bet_checker.sql applies on production's board (and two dropped changelog entries are back)
 
 **What was wrong.** Bet Checker made `create_checkout_session` read every price with its product expanded, to learn the product's metadata `tier`. The restricted key that `docs/billing-hardening.md` set up has no Products read, and Stripe refuses such a key the expanded product (403). Once deployed, every terminal checkout would have answered `stripe_unavailable`. The reconciler already fell back to what the database had learned. But a Bet Checker price nobody learned at checkout would have stayed unknown, and the access rule reads an unknown price as the terminal.
 
@@ -10,9 +10,11 @@
 - A product that was read and names no tier is still never overruled by its price.
 - Products read is now optional: the function headers, `docs/billing-hardening.md` and `docs/bet-checker.md` say so.
 
+**bet_checker.sql on production's board.** Deploy Bet Checker stopped at the file's own guard: "public.signals has no column(s) is_player_prop". Production has never applied `capture_v11_player_props.sql`. Nothing changed in production. Bet Checker never needed that column: v11 files every prop under a `player_*` market, and every query in the file reads only `h2h`, `spreads` and `totals`. The column and its 12 filters are gone; the market filter still keeps props out.
+
 **Also.** Merge commit `b97f6f61` (main into #855) dropped two 2026-10-28 entries: Bet Checker's and #855's own. Both are restored below, verbatim from their commits.
 
-**Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0.
+**Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0. New last section of `tools/bet_checker/bet_checker_sql.test.js` (a board without `is_player_prop`, as production's is): main's file fails with production's exact error; with this change it applies with all 11 report rows ok, and the pickers list the game line but never the prop. The suite is 113 / 0.
 
 ## 2026-10-28 — Collective: polls with its own key until the Nov 1 reset (methodology change, time-boxed)
 

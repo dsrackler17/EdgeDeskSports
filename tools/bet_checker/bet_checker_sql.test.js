@@ -429,6 +429,32 @@ try {
 } finally {
   db.stop();
 }
+
+/* ===================================================================== */
+/* PRODUCTION'S BOARD, BEFORE CAPTURE V11: NO is_player_prop COLUMN       */
+/* ===================================================================== */
+/* Deploy Bet Checker (2026-10-28) stopped at the guard: production's signals had never had
+   capture_v11_player_props.sql applied. Props live under player_* markets, which nothing here reads. */
+const db10 = PG.start('betchk10');
+try {
+  db10.sql('create table public.signals (' + SIG_COLS.replace(' is_player_prop boolean not null default false,', '') + ');');
+  for (const f of ['bankroll_and_stakes.sql', 'bettor_decisions.sql', 'billing.sql', 'stripe_webhook.sql', 'billing_hardening.sql']) {
+    db10.applyFileAtomic(path.join(ROOT, 'supabase', f));
+  }
+  chk('production\'s board shape: signals has no is_player_prop', db10.sql("select count(*) from information_schema.columns where table_name = 'signals' and column_name = 'is_player_prop';") === '0');
+  const out10 = db10.applyFileAtomic(FILE);
+  const rep10 = out10.split('\n').filter((l) => /^\d\d /.test(l));
+  chk('it applies on a board capture v11 never touched: eleven report rows, every one ok', rep10.length === 11 && rep10.every((l) => /\|ok/.test(l)), out10.slice(-800));
+  db10.sql("insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point, sharp_fair, last_seen_at, point_is_modal) values " +
+    "('ev10|spreads|Kansas City Chiefs|-3.5', 'ev10', 'americanfootball_nfl', now() + interval '2 days', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3.5, 0.52, now(), true), " +
+    "('ev10|player_pass_yds|Over|250.5', 'ev10', 'americanfootball_nfl', now() + interval '2 days', 'Kansas City Chiefs', 'Buffalo Bills', 'player_pass_yds', 'Over', 250.5, 0.5, now(), true);");
+  const lines10 = JSON.parse(db10.service("select coalesce(json_agg(t), '[]'::json) from public.bet_checker_lines('ev10') t;") || '[]');
+  chk('  ... and its pickers list the game line, never the prop', lines10.length === 1 && lines10[0].market_type === 'spread', lines10);
+} catch (e) {
+  chk('the pre-v11 board check ran to the end', false, String(e && e.stack || e).split('\n').filter((l) => /ERROR|Error:/.test(l)).slice(0, 4).join(' | '));
+} finally {
+  db10.stop();
+}
 function round2(v) { return Math.round(v * 10000) / 100; }
 function round1(v) { return Math.round(v * 10) / 10; }
 process.exit(T.done());
