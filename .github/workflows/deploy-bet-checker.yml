@@ -79,13 +79,23 @@ jobs:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           DBURL: ${{ secrets.SB_DB_URL }}
+          WANT_FN: ${{ inputs.deploy_functions }}
+          WANT_SQL: ${{ inputs.apply_sql }}
+          WANT_SECRET: ${{ inputs.set_cron_secret }}
+          WANT_CRON: ${{ inputs.apply_cron }}
         run: |
           # Presence only. No value is ever printed.
           echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
           echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
           echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
-          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the functions cannot be deployed from CI."; fi
-          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — paste bet_checker.sql, then bet_checker_cron.sql, into the SQL editor instead."; fi
+          # A part that was asked for and cannot run fails the run: a green run
+          # that deployed nothing would be a false claim (AGENTS.md §4).
+          bad=0
+          if { [ "$WANT_FN" = "true" ] || [ "$WANT_SECRET" = "true" ]; } && { [ -z "$TOKEN" ] || [ -z "$REF" ]; }; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the functions cannot be deployed from CI."; bad=1; fi
+          if { [ "$WANT_SQL" = "true" ] || [ "$WANT_SECRET" = "true" ] || [ "$WANT_CRON" = "true" ]; } && [ -z "$DBURL" ]; then
+            echo "::error::SB_DB_URL is not set — paste bet_checker.sql, then bet_checker_cron.sql, into the SQL editor instead."; bad=1; fi
+          exit $bad
 
       - name: Install the Supabase CLI
         if: ${{ (inputs.deploy_functions || inputs.set_cron_secret) && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
@@ -138,7 +148,9 @@ jobs:
           PGURL: ${{ secrets.SB_DB_URL }}
         run: |
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
-          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/bet_checker.sql)
+          # one transaction: a statement that fails rolls the whole file back
+          # (the suites apply it the same way, applyFileAtomic)
+          out=$(psql "$PGURL" --single-transaction -v ON_ERROR_STOP=1 -f supabase/bet_checker.sql)
           echo "== supabase/bet_checker.sql"; echo "$out" | tail -14
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::bet_checker.sql: a report row says CHECK THIS"; exit 1; fi
 
