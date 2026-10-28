@@ -15,7 +15,9 @@
         ?status=success&code&state; the page strips them from the address,
         hands them to the app in this tab, and the app sends them to the server
      4  the server's answer opens the terminal; Settings says it is billed
-        through Juice Reel, with no Stripe portal and no Stripe price
+        through Juice Reel, with no Stripe portal and no Stripe price; the
+        account menu (and, from 600 px, the header) offers a way back to
+        Juice Reel, which nobody else is shown
      5  a locked reader sees Juice Reel first, the card trial still offered
         below it, and can link a Juice Reel purchase made elsewhere
      6  a cancelled checkout is told not to pay again; switch OFF leaves the
@@ -121,6 +123,12 @@ async function open(browser, base, opts) {
   await page.route(/^https?:\/\/(?!127\.0\.0\.1|iattxbkbufslbauoumga\.supabase\.co|www\.juicereel\.com)/, (r) => r.abort());
   return { ctx, page, state, errors };
 }
+/* the way back to Juice Reel: the header chip, and the account menu's item */
+const jrBack = (page) => page.evaluate(() => {
+  const a = document.getElementById('edJrBack'), m = document.getElementById('avJr');
+  return { chip: !!a && getComputedStyle(a).display !== 'none', menu: !!m && getComputedStyle(m).display !== 'none',
+    href: a && a.getAttribute('href'), target: a && a.target, rel: a && a.rel };
+});
 const gateOn = (page) => page.evaluate(() => { const g = document.getElementById('payGate'); return !!(g && g.classList.contains('on')); });
 const gateText = (page) => page.evaluate(() => { const g = document.querySelector('#payGate .pg-card'); return g ? g.innerText : ''; });
 
@@ -184,6 +192,9 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
         ? await page.evaluate(() => renderSetSub().replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')) : '';
       chk('  Settings: billed through Juice Reel, managed on Juice Reel', /Billed through .*Juice Reel bills and renews it Juice Reel Paid through/.test(card) && /Manage on Juice Reel/.test(card), card.slice(0, 300));
       chk('  and no Stripe price, charge or portal is claimed for it', !/billing portal|You will be charged|\/ month/.test(card), card.slice(0, 300));
+      const back = await jrBack(page);
+      chk('  a way back to Juice Reel: "Back to Juice Reel" in the account menu' + (width >= 600 ? ', and the header chip' : ' (the phone header has no room for the chip)'),
+        back.menu && back.chip === (width >= 600) && back.href === 'https://www.juicereel.com/' && back.target === '_blank' && /noopener/.test(back.rel), back);
       chk('  no script errors on the way', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
     }
@@ -215,6 +226,7 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       chk('5 the paywall offers Subscribe with Juice Reel first, as the primary button', btns[0] && /Subscribe with Juice Reel/.test(btns[0].t) && !btns[0].ghost, btns.slice(0, 4));
       chk('  then "I bought EdgeDesk on Juice Reel — link my account"', btns[1] && /I bought EdgeDesk on Juice Reel/.test(btns[1].t), btns.slice(0, 4));
       chk('  and still the card trial, as a secondary button', btns.some((b) => /days free/.test(b.t) && b.ghost), btns);
+      chk('  no way back to Juice Reel for a reader who did not come from it', await jrBack(page).then((x) => !x.chip && !x.menu));
       chk('  saying Juice Reel shows the plan and price and bills it', /secure checkout shows the plan and price before you pay/.test(t) && /Through Juice Reel: billed, renewed and cancelled on Juice Reel/.test(t), t.slice(0, 500));
       await page.click('text=I bought EdgeDesk on Juice Reel');
       await eventually(() => state.jr.length > 0, 8000);
@@ -246,6 +258,7 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       await page.goto(base + '/app.html', { waitUntil: 'domcontentloaded' });
       await eventually(() => gateOn(page), 20000);
       const btns = await page.evaluate(() => Array.from(document.querySelectorAll('#payGate .pg-card .pg-btn')).map((b) => ({ t: b.innerText.trim(), ghost: b.classList.contains('ghost') })));
+      chk('  switch OFF: no way back to Juice Reel either', await jrBack(page).then((x) => !x.chip && !x.menu));
       chk('  switch OFF: no Juice Reel button, and the card trial is the primary button as before', !btns.some((b) => /Juice Reel/.test(b.t)) && /days free/.test(btns[0].t) && !btns[0].ghost, btns.slice(0, 3));
       chk('  no script errors', errors.length === 0, errors.slice(0, 3));
       await ctx.close();

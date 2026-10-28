@@ -86,6 +86,7 @@ Then compare the Supabase function logs with § 9, and record what Juice Reel ac
 | **Paywall** | unchanged | First: what Juice Reel's checkout does, **Subscribe with Juice Reel** and **I bought EdgeDesk on Juice Reel — link my account**. Then "Or with a card:" and the card trial, unchanged |
 | **Back from Juice Reel** | — | "Confirming your Juice Reel checkout…", then open. A cancelled checkout: "If you did pay on Juice Reel, do not pay again — link your account". Not yet confirmed: "Your payment is safe… Do not pay again", with a reference |
 | **Settings → Subscription** (a Juice Reel row) | — | "Billed through Juice Reel", the paid-through date, **Manage on Juice Reel**, **Renewed? Re-check with Juice Reel**. No Stripe price, charge or portal |
+| **Header and account menu** (a Juice Reel row) | — | **Back to Juice Reel ↗** in the account menu at every width, and a **↗ Juice Reel** chip in the header from 600 px. Both open juicereel.com in a new tab. Nobody else sees them |
 
 Under `operators`, only operators see the paywall's Juice Reel buttons, and the landing page shows the partnership only.
 
