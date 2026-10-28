@@ -445,8 +445,10 @@ that does not hold.
 (`billing-probe-a|b@edgedesksports.com`, confirmed without email,
 `user_metadata.billing_probe = true`), never a customer. Probe B gets a
 `comp_trial` row for the comp tests, removed again in a `finally`. After stage 6,
-probe A has a Stripe customer and ONE open, unpaid Checkout Session that expires
-on its own within 24 hours. Nothing is charged and no Stripe object is invented.
+probe A has a Stripe customer and one open, unpaid Checkout Session per price it
+opened: Bet Checker monthly and annual (probed whether or not `STRIPE_PRICE_ID`
+is set, since Bet Checker's prices are found by lookup key), and the terminal's
+when the price is set. Each expires on its own within 24 hours. Nothing is charged and no Stripe object is invented.
 "An existing subscriber's sync" is not something CI can do without that
 subscriber's password — do it from `/admin/billing/` (search a paying customer:
 expect **ACCESS GRANTED — systems agree**; *Repair from Stripe* → outcome

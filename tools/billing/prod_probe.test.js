@@ -121,18 +121,32 @@ const leaks = (text) => {
     W.db.sql("update public.billing_sync_log set at = at - interval '11 minutes' where source in ('self','checkout_return','checkout');");
 
     /* ── checkout (Phase 8) ────────────────────────────────────────────── */
+    const resetCheckoutAllowance = () => W.db.sql("update public.billing_sync_log set at = at - interval '11 minutes' where source = 'checkout';");
     fns = Object.assign({}, W.fns, { create_checkout_session: W.load('create_checkout_session', { STRIPE_PRICE_ID: '' }) });
     r = await run('checkout');
-    chk('checkout: with the kill switch on, the probe says so (503 fallback_ok, WARN) and creates nothing',
+    chk('checkout: with the kill switch on, the probe says so (503 fallback_ok, WARN)',
       r.fails.length === 0 && r.warns.some((w) => /kill switch/.test(w.label)), labels(r.results));
+    const bcLive = (rs) => ['monthly', 'annual'].every((p) => rs.passes.some((x) => x.label === 'Bet Checker ' + p + ': a signed-in reader gets a Stripe-hosted checkout (checkout.stripe.com)'));
+    chk('checkout: and Bet Checker, which needs no STRIPE_PRICE_ID, is probed anyway: monthly and annual each open a live checkout', bcLive(r), labels(r.passes));
+    // a Bet Checker product that does not say tier = red is never sold, and the probe FAILS on it
+    resetCheckoutAllowance();
+    W.stripe.S.products.prod_bet_checker.metadata = {};
+    fns = Object.assign({}, W.fns, { create_checkout_session: W.load('create_checkout_session', {}) });
+    r = await run('checkout');
+    W.stripe.S.products.prod_bet_checker.metadata = { tier: 'red' };
+    chk('checkout: a Bet Checker product without metadata tier = red FAILS the probe (the function refuses to sell it)',
+      ['monthly', 'annual'].every((p) => r.fails.some((f) => f.label === 'Bet Checker ' + p + ': a signed-in reader gets a Stripe-hosted checkout (checkout.stripe.com)')), labels(r.fails));
+    resetCheckoutAllowance();
     fns = W.fns;
     r = await run('checkout');
     chk('checkout: every Phase 8 property holds on the shipped function', r.fails.length === 0, labels(r.fails));
-    chk('checkout: and it checked them all', r.passes.length >= 18, r.passes.length);
+    chk('checkout: and it checked them all, Bet Checker\'s included', r.passes.length >= 29 && bcLive(r), r.passes.length);
     const A = W.q("select id from auth.users where email = 'billing-probe-a@edgedesksports.com'")[0].id;
-    const sessions = W.q('select id, user_id, status from public.billing_checkout_sessions where user_id = ' + PG.lit(A));
-    chk('checkout: exactly ONE session exists for probe A, however often it opened checkout', sessions.length === 1 && sessions[0].status === 'open', sessions);
-    const sess = W.stripe.S.sessions[sessions[0].id];
+    const sessions = W.q('select id, user_id, status, kind, price_id from public.billing_checkout_sessions where user_id = ' + PG.lit(A) + ' order by price_id');
+    chk('checkout: probe A has ONE open session per price, however often it opened checkout (the terminal\'s, Bet Checker monthly and annual)',
+      sessions.length === 3 && sessions.every((x) => x.status === 'open') &&
+      JSON.stringify(sessions.map((x) => x.kind + ':' + x.price_id)) === JSON.stringify(['trial:price_4999', 'bet_checker:price_5900', 'bet_checker:price_799']), sessions);
+    const sess = W.stripe.S.sessions[sessions.find((x) => x.kind === 'trial').id];
     chk('checkout: Stripe received the account three ways (client_reference_id, metadata, subscription_data.metadata) and a stamped customer',
       sess.client_reference_id === A && sess.metadata.supabase_user_id === A && sess.subscription_data.metadata.supabase_user_id === A &&
       W.stripe.S.customers[sess.customer].metadata.supabase_user_id === A, { cri: sess.client_reference_id === A });

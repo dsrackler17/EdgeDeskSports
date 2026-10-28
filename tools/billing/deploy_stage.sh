@@ -213,7 +213,7 @@ case "$STAGE" in
       note "STRIPE_PRICE_ID set (the function checks it against Stripe and the consent text before every session)"
     fi
     deploy_fn create_checkout_session
-    section "Phase 8 probes (probe accounts only; leaves one open, unpaid session that expires in 24 hours)"
+    section "Phase 8 probes (probe accounts only; leaves one open, unpaid session per price, each expiring in 24 hours)"
     node tools/billing/prod_probe.js checkout | tee >(fence) || stop "create_checkout_session did not verify — to undo: stage checkout_kill_switch (the page falls back to the Payment Link at once)"
     ;;
   apply_cron)
