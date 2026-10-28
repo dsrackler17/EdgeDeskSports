@@ -8,7 +8,7 @@
 
      1  the landing page shows the Juice Reel partnership; with the server's
         switch OFF it offers no Juice Reel checkout at all
-     2  switch ON: "Subscribe with Juice Reel" → sign up → the function's
+     2  switch ON: "Get EdgeDesk on Juice Reel" → sign up → the function's
         checkout URL on www.juicereel.com (never the card trial's terms, and no
         renewal consent is recorded for a purchase Stripe will not make)
      3  Juice Reel sends the buyer to oauth/juicereel-subscribe.html with
@@ -150,7 +150,7 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       const band = await page.evaluate(() => { const b = document.getElementById('juicereel'); return b ? b.innerText : ''; });
       chk('1 the landing page shows the partnership: EdgeDesk × Juice Reel, "working with Juice Reel"', /EdgeDesk\s*×\s*Juice Reel/.test(band) && /working with Juice Reel/.test(band), band);
       chk('  and links to juicereel.com', await page.evaluate(() => !!document.querySelector('#juicereel a[href="https://www.juicereel.com/"][rel="noopener"]')));
-      chk('  switch OFF: no Juice Reel checkout line or button is shown', await page.evaluate(() => document.getElementById('jrAct').hidden && document.getElementById('jrLive').hidden));
+      chk('  switch OFF: no Juice Reel checkout line or button is shown', !(await page.isVisible('#jrAct')) && !(await page.isVisible('#jrLive')) && !(await page.isVisible('#jrBtn')));
       chk('  no script errors', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
     }
@@ -160,8 +160,8 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       console.log('\n' + width + 'px, Juice Reel switch ON, a new reader');
       const { ctx, page, state, errors } = await open(browser, base, { mode: 'on', width });
       await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
-      await eventually(() => page.evaluate(() => !document.getElementById('jrAct').hidden), 6000);
-      chk('2 switch ON: the partner band offers "Subscribe with Juice Reel"', await page.evaluate(() => !document.getElementById('jrAct').hidden && /Subscribe with Juice Reel/.test(document.getElementById('jrBtn').innerText)));
+      await eventually(() => page.isVisible('#jrBtn'), 6000);
+      chk('2 switch ON: the partner band shows "Get EdgeDesk on Juice Reel"', (await page.isVisible('#jrBtn')) && /Get EdgeDesk on Juice Reel/.test(await page.innerText('#jrBtn')));
       chk('  and says Juice Reel shows the plan and price, and bills it', /shows the plan and price before you pay, and bills and renews it/.test(await page.textContent('#jrLive')));
       chk('  the card trial is still offered exactly as before', /7 days free/.test(await page.textContent('.pcard:not(.freecard)')));
       await page.click('#jrBtn');

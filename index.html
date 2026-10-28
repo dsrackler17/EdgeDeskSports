@@ -471,15 +471,6 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .timeline b{display:block;font-size:16px;font-weight:600}
 .timeline span{display:block;color:var(--dim);font-size:14px;line-height:1.5}
 .timeline .when span,.timeline b span{display:inline;color:inherit;font-size:inherit}
-/* the Juice Reel partner band (#juicereel, inside #pricing) */
-.jr-band{max-width:1040px;margin:40px auto 0;padding:24px 22px;border:1px solid var(--line2);border-radius:16px;background:var(--panel);text-align:center}
-.jr-band .ey{justify-content:center}
-.jr-band h3{margin:10px 0 0;font-size:22px;font-weight:700;letter-spacing:-.01em}
-.jr-band h3 .x{color:var(--obs);font-weight:500;margin:0 6px}
-.jr-band p{max-width:640px;margin:10px auto 0;color:var(--dim);font-size:15px;line-height:1.55}
-.jr-band p a{color:var(--obs);font-weight:600;text-decoration:none}
-.jr-act{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}
-.jr-band .auth-msg{max-width:640px;margin-left:auto;margin-right:auto;text-align:left}
 @media(max-width:900px){.price{grid-template-columns:1fr;max-width:560px}.timeline{grid-template-columns:1fr;max-width:560px}}
 @media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}}
 
@@ -626,8 +617,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1"></noscript>
 <!-- the desk's styles (#desk, #signals, #simulator), below the first screen too -->
-<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261024dk2" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261024dk2"></noscript>
+<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028jr1" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028jr1"></noscript>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -1344,22 +1335,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <li><span class="when">Before day <span data-ed-price="day8">8</span></span><b>Reminder email</b><span>A reminder before your trial converts, with the exact date your card will be charged.</span></li>
       <li><span class="when">Day <span data-ed-price="day8">8</span></span><b data-ed-price="monthly">$49.99/month</b><span>Unless cancelled before renewal &mdash; Settings &rsaquo; Subscription, one click.</span></li>
     </ol>
-    <!-- PARTNER · JUICE REEL. The partnership is always shown. The checkout
-         line and buttons appear only when the server's juicereel_billing says
-         its switch is ON and it is ready (jrBoot, below), so this page never
-         offers a Juice Reel checkout that is not live. Text only: no Juice
-         Reel logo or artwork is reproduced. docs/juicereel-billing.md -->
-    <div class="jr-band rv" id="juicereel">
-      <span class="ey">Partner</span>
-      <h3>EdgeDesk<span class="x" aria-hidden="true">&times;</span>Juice Reel</h3>
-      <p>EdgeDesk is working with <a href="https://www.juicereel.com/" target="_blank" rel="noopener">Juice Reel</a>, the sports betting marketplace and bet tracker.</p>
-      <p id="jrLive" hidden>Get EdgeDesk through Juice Reel: pay on Juice Reel&rsquo;s secure checkout, and your EdgeDesk account opens when you come back. Juice Reel shows the plan and price before you pay, and bills and renews it.</p>
-      <div class="jr-act" id="jrAct" hidden>
-        <button type="button" class="btn primary lg" id="jrBtn" onclick="jrStart()" data-track="juicereel_cta_click" data-cta="juicereel_checkout">Subscribe with Juice Reel <span class="ar" aria-hidden="true">&rarr;</span></button>
-        <a class="btn ghost lg" href="./app.html" data-cta="juicereel_link">Bought on Juice Reel? Open EdgeDesk</a>
-      </div>
-      <p class="auth-msg" id="jrMsg" role="status"></p>
-    </div>
+    <div class="jr-band rv" id="juicereel"></div>
   </div>
 </section>
 
@@ -1650,7 +1626,6 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- THE ONE ACCESS DECISION (public.my_billing_access) and the two server
      functions that change it: create_checkout_session, sync_subscription. -->
 <script src="/lib/edgedesk_access.js?v=20261028a"></script>
-<!-- EdgeDesk through Juice Reel: the partner band's checkout (supabase/functions/juicereel_billing) -->
 <script src="/lib/edgedesk_juicereel_billing.js?v=20261028jr1"></script>
 <!-- The creator's code this visitor will check out with: the last valid
      ?ref= clicked, kept 30 days (sent to create_checkout_session as
@@ -2095,11 +2070,8 @@ function sessionValid(){var s=edSession();return !!(s&&s.access_token&&(!s.expir
 
 /* Subscribe entry point. An account must exist FIRST — without a user id there is
    nothing to attach the payment to. */
-async function startSubscribe(){
-  /* a card-trial button clears a Juice Reel intent left by an earlier,
-     abandoned click: this reader chose the trial (jrStart sets .jr) */
-  if(!startSubscribe.jr)setPendingJr(false);
-  startSubscribe.jr=false;
+async function startSubscribe(jr){
+  JR&&JR.intent(jr===1);
   var btn=document.getElementById('subBtn');
   if(sessionValid()){ openArl(); return; }
   /* An expired access_token is not a logged-out user. Refresh before demanding
@@ -2126,42 +2098,7 @@ var pendingSubscribe=false;
    they are staring at a generic page with no idea how to pay. */
 function setPendingSub(v){pendingSubscribe=!!v;try{v?localStorage.setItem('edgedesk_pending_sub','1'):localStorage.removeItem('edgedesk_pending_sub');}catch(e){}}
 function getPendingSub(){try{return localStorage.getItem('edgedesk_pending_sub')==='1';}catch(e){return false;}}
-
-/* ---- JUICE REEL (docs/juicereel-billing.md) -------------------------------
-   The partner band's checkout. Its intent outlives a sign-up and an email
-   confirmation the same way the trial's does (edgedesk_pending_jr), and every
-   path that would open the renewal-terms screen opens Juice Reel's checkout
-   instead while that intent is set: openArl() asks first, and waits for the
-   live check, so a return from email confirmation cannot race it into the
-   Stripe screen. Live = the server's switch is ON and it is ready; otherwise
-   the band shows the partnership only and nothing here does anything. */
-var JR_LIVE=false;
-function setPendingJr(v){try{v?localStorage.setItem('edgedesk_pending_jr','1'):localStorage.removeItem('edgedesk_pending_jr');}catch(e){}}
-function getPendingJr(){try{return localStorage.getItem('edgedesk_pending_jr')==='1';}catch(e){return false;}}
-var JR_READY=(async function jrBoot(){
-  if(!window.EDJuiceReel)return false;
-  JR_LIVE=EDJuiceReel.live(await EDJuiceReel.health(SB_URL));
-  if(!JR_LIVE){ setPendingJr(false); return false; }
-  ['jrLive','jrAct'].forEach(function(id){var el=document.getElementById(id);if(el)el.hidden=false;});
-  return true;
-})();
-function jrStart(){ if(!JR_LIVE||!window.EDJuiceReel)return; setPendingJr(true); startSubscribe.jr=true; startSubscribe(); }
-async function jrCheckout(){
-  setPendingJr(false); setPendingSub(false);
-  var m=document.getElementById('jrMsg'), b=document.getElementById('jrBtn');
-  if(!sessionValid()) await edRefresh();
-  if(b)b.disabled=true;
-  if(m){m.className='auth-msg ok';m.textContent='Opening Juice Reel’s secure checkout…';}
-  try{document.getElementById('juicereel').scrollIntoView({block:'center'});}catch(_){}
-  var r=await EDJuiceReel.start({url:SB_URL,key:SB_KEY,token:function(){var x=edSession();return x&&x.access_token;}},'checkout');
-  if(r.ok){ EDJuiceReel.go(r.url); return; }
-  if(b)b.disabled=false;
-  if(r.reason==='already_entitled'){
-    if(m){m.className='auth-msg ok';m.innerHTML='<b>This account already has full access</b> — there is nothing to pay for. Opening the terminal…';}
-    setTimeout(function(){window.location.href=APP_URL;},700); return;
-  }
-  if(m){m.className='auth-msg err';m.innerHTML=esc(r.message)+(r.ref?' <span class="mono" style="font-size:11px">Ref '+esc(r.ref)+'</span>':'');}
-}
+var JR=window.EDJuiceReel&&EDJuiceReel.landing({url:SB_URL,key:SB_KEY,s:edSession,v:sessionValid,r:edRefresh,go:startSubscribe,app:APP_URL});
 
 async function edRefresh(){
   var s=edSession(); if(!s||!s.refresh_token)return null;
@@ -2180,11 +2117,7 @@ function edSignOut(){try{localStorage.removeItem('edgedesk_session');localStorag
 function openArl(){
   var u=edUserFromSession();
   if(!u||!u.id){ setPendingSub(true); openAuth('signup'); return; }
-  /* the Juice Reel button started this: its checkout, not the card trial's terms */
-  if(getPendingJr()){
-    JR_READY.then(function(live){ if(live){ jrCheckout(); } else { setPendingJr(false); openArl(); } });
-    return;
-  }
+  if(JR&&JR.pending()){ JR.resume(openArl); return; }
   /* ALREADY PAID: never show this screen. It is the renewal-terms consent for
      a purchase, and an account that already has access has no purchase to
      make -- a live subscriber sent through it buys a second one, and a comp
@@ -2496,7 +2429,7 @@ async function submitAuth(){
       /* Fire-and-forget: partner credit must not gate the customer's path. */
       if(authMode==='signup')attrRecord(edUserFromSession(),d.access_token);
       if(pendingSubscribe||getPendingSub()){setPendingSub(false);pendingSubscribe=true;
-        msg(getPendingJr()?'Account ready — opening Juice Reel checkout…':'Account ready — starting your free trial…','ok');
+        msg(JR&&JR.pending()?'Account ready — opening Juice Reel…':'Account ready — starting your free trial…','ok');
         setTimeout(function(){closeAuth();openArl();},400);return;}
       /* An account alone does not open the terminal. New signups go straight to
          checkout; returning logins go to the app, where the paywall gate decides. */
@@ -2769,7 +2702,7 @@ async function handleAuthCallback(){
   var who=u.email?('You are signed in as <b>'+esc(u.email)+'</b>.'):'You are signed in.';
   var resume=pendingSubscribe||getPendingSub();
   retnPanel('Email confirmed',
-    who+(resume?(getPendingJr()?' Opening Juice Reel checkout…':' Opening your free trial…'):' Opening EdgeDesk…'),
+    who+(resume?(JR&&JR.pending()?' Opening Juice Reel…':' Opening your free trial…'):' Opening EdgeDesk…'),
     'Nothing else to do — this happens automatically.','');
   var bar=retnEl('retnBar'); if(bar) bar.style.width='100%';
 

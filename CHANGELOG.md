@@ -18,7 +18,7 @@
   - `oauth/juicereel-subscribe.html` (new): the return page. It strips the code and state, hands them to this tab only, and loads nothing.
   - `lib/edgedesk_juicereel_billing.js` (new).
   - `app.html`: when the server offers it, the paywall puts Juice Reel first, with "link my account" and the card trial below, labelled as the card's. The return is finished on the server. Settings shows a Juice Reel row as billed through Juice Reel, with no Stripe price or portal.
-  - `index.html`: an EdgeDesk × Juice Reel band in Pricing. Its checkout button appears only when the server's switch is on.
+  - `index.html`: an EdgeDesk × Juice Reel band in Pricing ("Get EdgeDesk on Juice Reel"). Its checkout button appears only when the server's switch is on. The band is drawn by the library and styled in `lib/edgedesk_landing_desk.css`, so the page stays within its 216 KB budget; both asset stamps are recorded.
 - **Off by default** (`JUICE_REEL_CHECKOUT=off`). Then `operators` for the live test, then `on`: **Actions → Deploy Juice Reel billing**. Stripe billing and the card trial are unchanged.
 - **Not yet confirmed with Juice Reel:** the shapes of the subscriber-status answer, the owner subscriber list and the webhook body, and the signature's exact input. Reading them fails closed (docs/juicereel-billing.md § 9).
 - **Tests:** `juicereel_billing.test.js` (82, real PostgreSQL), `juicereel_client.test.js` (25), `juicereel_checkout.e2e.js` (42, Chromium). All are in `personal-tests.yml`, the browser suite in a new `browser` job.

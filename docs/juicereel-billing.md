@@ -12,7 +12,22 @@ This is separate from the Juice Reel **bet sync** in Portfolio ([docs/juicereel.
 
 ---
 
-## 1. Set up at Juice Reel (Settings → OAuth applications → EdgeDeskSports)
+## 1. Set up at Juice Reel (Settings → OAuth applications)
+
+**Which application (what the account's settings showed on 2026-10-28).** Juice Reel's settings page says these integrations are for giving a seller's Juice Passholders "additional value outside of what Juice Reel provides", so that "their subscription also gives them access". That is exactly this build. The account has two applications:
+
+| Application | Client id | Sign in With Juice Reel | Use for this |
+|---|---|---|---|
+| EdgeDeskSports | `jr_AFk36va1…` | **off**: owner-only. It cannot run the checkout, whose last step is the buyer's consent, and this cannot be changed after creation | no; disable it once the other passes `check` |
+| **EdgeDesk Sports Integration** | `jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK` | **on** | **yes** |
+
+On **EdgeDesk Sports Integration**, as found:
+- **Its only registered redirect URI** is `https://iattxbkbufslbauoumga.supabase.co/functions/v1/juicereel-callback`. Nothing in this repository serves that address. Add the two URIs in step 1 below.
+- **Its approved scopes** are `subscribers.read` and `bets.open.read`. Billing needs only the first. `bets.settled.read` is **not** approved, and the Portfolio bet sync asks for it ([juicereel.md](juicereel.md)).
+- **Supabase's `JUICE_REEL_CLIENT_ID` must be this application's id**, and `JUICE_REEL_CLIENT_SECRET` its secret. Juice Reel shows a secret only once: if it was not kept, use **Rotate secret** and put the new one straight into Supabase.
+
+The steps:
+
 
 1. **Redirect URI.** Register exactly:
 
@@ -20,7 +35,7 @@ This is separate from the Juice Reel **bet sync** in Portfolio ([docs/juicereel.
    https://edgedesksports.com/oauth/juicereel-subscribe.html
    ```
 
-   It is the checkout's **success URL**, its **cancel URL**, and the **redirect URI** of an account link. One URI serves all three. Juice Reel compares it character for character: same scheme, host and path, no trailing slash. The bet sync's own URI (`/oauth/juicereel-callback.html`) stays registered too.
+   It is the checkout's **success URL**, its **cancel URL**, and the **redirect URI** of an account link. One URI serves all three. Juice Reel compares it character for character: same scheme, host and path, no trailing slash. Add the bet sync's own URI too, `https://edgedesksports.com/oauth/juicereel-callback.html`.
 2. **Scope.** Have `subscribers.read` approved. The checkout asks for it, and it is what lets EdgeDesk ask Juice Reel whether the buyer is subscribed.
 3. **What is sold.** Create the EdgeDesk subscription product(s) on EdgeDesk's Juice Reel seller account (the plan, price and duration). EdgeDesk sends no product id: the buyer chooses on Juice Reel's checkout. To let only some of the seller's products open EdgeDesk, set `JUICE_REEL_PRODUCT_IDS` (§ 8). By default, every product this seller sells opens it.
 4. **Webhook.** Subscribe the **SUBSCRIPTION_EVENTS** bucket (purchased, renewed, cancelled, expired) to:
@@ -67,12 +82,14 @@ Then compare the Supabase function logs with § 9, and record what Juice Reel ac
 
 | Where | Switch off | Switch on |
 |---|---|---|
-| **Landing page** (`#juicereel`, in Pricing) | "EdgeDesk × Juice Reel — EdgeDesk is working with Juice Reel" | The same, plus how it works and **Subscribe with Juice Reel** / **Bought on Juice Reel? Open EdgeDesk**. The card trial stays offered as before |
+| **Landing page** (`#juicereel`, in Pricing) | "EdgeDesk × Juice Reel — EdgeDesk is working with Juice Reel" | The same, plus how it works and **Get EdgeDesk on Juice Reel** / **Bought on Juice Reel? Open EdgeDesk**. The card trial stays offered as before |
 | **Paywall** | unchanged | First: what Juice Reel's checkout does, **Subscribe with Juice Reel** and **I bought EdgeDesk on Juice Reel — link my account**. Then "Or with a card:" and the card trial, unchanged |
 | **Back from Juice Reel** | — | "Confirming your Juice Reel checkout…", then open. A cancelled checkout: "If you did pay on Juice Reel, do not pay again — link your account". Not yet confirmed: "Your payment is safe… Do not pay again", with a reference |
 | **Settings → Subscription** (a Juice Reel row) | — | "Billed through Juice Reel", the paid-through date, **Manage on Juice Reel**, **Renewed? Re-check with Juice Reel**. No Stripe price, charge or portal |
 
 Under `operators`, only operators see the paywall's Juice Reel buttons, and the landing page shows the partnership only.
+
+The landing band is drawn by `lib/edgedesk_juicereel_billing.js` (`landing`), and styled in `lib/edgedesk_landing_desk.css`. `index.html` has a hard size budget (`tools/presentation/landing_interaction.test.js`), so it carries only a placeholder and three hooks. Its button does not say "Subscribe": the landing page keeps one call-to-action verb, "Start free trial" (`landing_positioning.test.js`).
 
 ## 5. How it works
 
