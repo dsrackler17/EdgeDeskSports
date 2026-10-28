@@ -25,7 +25,11 @@
      7  after the close, a card shows its CLV — and a bet whose line the
         market closed off says "No close available"
      8  a Bet Checker subscriber sees real stats and the billing portal
-     9  at 390 px nothing scrolls sideways; no script error anywhere
+     9  the landing page's ?upgrade=annual|monthly: a signed-in free reader
+        sees the renewal terms OPEN on that plan (unticked, Subscribe off, no
+        checkout asked for); a signed-out reader is told checkout opens after
+        signing in, and gets it back with no query; a paid reader gets no sheet
+    10  at 390 px nothing scrolls sideways; no script error anywhere
 
    Needs Playwright + Chromium and PostgreSQL (skips cleanly without;
    BET_CHECKER_UI_REQUIRED=1 makes a missing one a failure, as CI sets it).
@@ -292,6 +296,51 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     await shot(page, '4-subscriber');
     chk('Settings › Subscription names the plan and links the billing portal to cancel',
       /EdgeDesk Bet Checker/.test(await text(page, '[data-bc="settings"]')) && await page.locator('[data-bc="portal"]').getAttribute('href') === PRICING.portalLink());
+    await ctx.close();
+
+    /* 9. the landing page's "Get Bet Checker": /bet-checker/?upgrade=monthly|annual
+       OPENS the renewal terms on that plan once the reader is signed in —
+       never past them — and says so to a plan that already includes it */
+    const consentsBefore = db.sql('select count(*) from public.billing_consents;');
+    const sheetOpen = (page) => page.locator('[data-bc="arl"]').isVisible();
+    const kept = (page) => page.evaluate(() => { try { return sessionStorage.getItem('bc_upgrade_intent'); } catch (_) { return 'unreadable'; } });
+    ({ ctx, page } = await pageFor(FREE));
+    await page.goto(BASE + '/bet-checker/?upgrade=annual&ref=landing_pricing');
+    chk('a signed-in free reader arriving with ?upgrade=annual sees the renewal terms, on the ANNUAL plan',
+      await eventually(async () => sheetOpen(page)) && (await text(page, '[data-bc="terms"]')) === PRICING.betCheckerTerms('annual'), await text(page, '[data-bc="terms"]'));
+    chk('the sheet\'s button and plan switch say annual', /\$59\.00\/year/.test(await text(page, '[data-bc="arl-go"]')) && await page.getAttribute('[data-bc-plan="annual"]', 'aria-pressed') === 'true');
+    chk('nothing is skipped: the terms are unticked and Subscribe is off', !(await page.isChecked('[data-bc="agree"]')) && await page.locator('[data-bc="arl-go"]').isDisabled());
+    chk('opening it asked for no checkout and recorded no consent', checkouts.length === 1 && db.sql('select count(*) from public.billing_consents;') === consentsBefore, [checkouts.length, consentsBefore]);
+    chk('the query left the address (the ref stays) and the intent is spent', /\/bet-checker\/\?ref=landing_pricing$/.test(page.url()) && await kept(page) === null, [page.url(), await kept(page)]);
+    await shot(page, '5-deep-link-annual');
+    await page.click('[data-bc-act="arl-close"]');
+    await page.reload();
+    await eventually(async () => (await page.locator('.bc-card').count()) > 0);
+    await page.waitForTimeout(400);
+    chk('used once: a reload does not open it again', await page.locator('[data-bc="arl"]').isHidden());
+    await ctx.close();
+
+    /* the sign-in round trip: signed out with the link, then back with no query */
+    ({ ctx, page } = await pageFor(null));
+    await page.goto(BASE + '/bet-checker/?upgrade=monthly&ref=landing_pricing');
+    chk('signed out with ?upgrade=monthly: the sign-in door says checkout opens next, at the monthly figure, terms first',
+      await eventually(async () => page.locator('[data-bc="intent"]').isVisible()) &&
+      /Bet Checker’s checkout opens next \(\$7\.99\/month\)\. You read the renewal terms before anything is charged\./.test(await text(page, '[data-bc="intent"]')), await text(page, '[data-bc="intent"]'));
+    chk('and the intent is kept in this tab for the trip', await kept(page) === 'monthly');
+    await page.evaluate((s) => { localStorage.setItem('edgedesk_session', JSON.stringify(s)); }, FREE.session);
+    await page.goto(BASE + '/bet-checker/');
+    chk('back from signing in, with no query: the renewal terms open on the MONTHLY plan',
+      await eventually(async () => sheetOpen(page)) && (await text(page, '[data-bc="terms"]')) === PRICING.betCheckerTerms('monthly'), await text(page, '[data-bc="terms"]'));
+    chk('and the intent is spent', await kept(page) === null);
+    await ctx.close();
+
+    /* a plan that already includes Bet Checker */
+    ({ ctx, page } = await pageFor(PAID));
+    await page.goto(BASE + '/bet-checker/?upgrade=monthly&ref=landing_pricing');
+    chk('an already-paid reader arriving with ?upgrade= sees NO sheet, and is told the plan includes Bet Checker',
+      await eventually(async () => /Your plan already includes Bet Checker\./.test(await text(page, '[data-bc="status"]'))) && await page.locator('[data-bc="arl"]').isHidden(),
+      await text(page, '[data-bc="status"]'));
+    chk('and the intent is spent there too', await kept(page) === null);
     await ctx.close();
 
     chk('no script error on any page load', errors.length === 0, errors.slice(0, 4));
