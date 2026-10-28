@@ -1,6 +1,42 @@
 # Changelog
 
+## 2026-10-28 — EdgeDesk sold through Juice Reel: hosted checkout, account link, webhook and reconcile (off until switched on)
 
+**What it adds.** A reader can pay for EdgeDesk on Juice Reel's hosted checkout, and the EdgeDesk account they are signed in to opens. A reader who bought on Juice Reel's marketplace can link their Juice Reel account and get in. The landing page shows the partnership with Juice Reel. Juice Reel's CEO approved this by phone on 2026-10-28, as the account owner reports. Runbook: [docs/juicereel-billing.md](docs/juicereel-billing.md).
+
+- **`supabase/functions/juicereel_billing`** (new). It covers `start`, `complete`, `status`, the webhook, the hourly `reconcile` and an operator `check`.
+  - The checkout is created server-side (`POST /checkout/sessions`, HTTP Basic), with PKCE S256 and a state bound to the reader.
+  - The code is exchanged with the success URL as `redirect_uri`. `/oauth2/me` names the buyer, and Juice Reel is asked whether they are subscribed.
+  - Webhooks are verified with HMAC-SHA256 over the raw body.
+  - No verifier, token or secret is stored or logged.
+- **`supabase/juicereel_billing.sql`** (new, additive). It adds the sessions (SHA-256 of the state, single use), the EdgeDesk ↔ Juice Reel link (one to one), what Juice Reel said per buyer, and the webhook ledger.
+  - `billing_jr_project` is the one writer into `subscriptions`. It writes `price_id 'juicereel'`, active until Juice Reel's expiry, under the existing access rule, unchanged.
+  - Juice Reel only revokes what it granted. It never writes over `owner_comp`, a Stripe-backed row in good standing (it raises an alert instead) or a hand grant.
+  - When it takes over a row whose Stripe subscription ended, it clears that id, so the Stripe sweep cannot end a paid buyer.
+- **`supabase/juicereel_billing_cron.sql`** (new): the hourly reconcile, debounced in the database.
+- **Pages.**
+  - `oauth/juicereel-subscribe.html` (new): the return page. It strips the code and state, hands them to this tab only, and loads nothing.
+  - `lib/edgedesk_juicereel_billing.js` (new).
+  - `app.html`: when the server offers it, the paywall puts Juice Reel first, with "link my account" and the card trial below, labelled as the card's. The return is finished on the server. Settings shows a Juice Reel row as billed through Juice Reel, with no Stripe price or portal.
+  - `index.html`: an EdgeDesk × Juice Reel band in Pricing ("Get EdgeDesk on Juice Reel"). Its checkout button appears only when the server's switch is on. The band is drawn by the library and styled in `lib/edgedesk_landing_desk.css`, so the page stays within its 216 KB budget; both asset stamps are recorded.
+- **Off by default** (`JUICE_REEL_CHECKOUT=off`). Then `operators` for the live test, then `on`: **Actions → Deploy Juice Reel billing**. Stripe billing and the card trial are unchanged.
+- **Not yet confirmed with Juice Reel:** the shapes of the subscriber-status answer, the owner subscriber list and the webhook body, and the signature's exact input. Reading them fails closed (docs/juicereel-billing.md § 9).
+- **Tests:** `juicereel_billing.test.js` (82, real PostgreSQL), `juicereel_client.test.js` (25), `juicereel_checkout.e2e.js` (42, Chromium). All are in `personal-tests.yml`, the browser suite in a new `browser` job.
+- `docs/juicereel.md` § 1–2 no longer say EdgeDesk does not sell through Juice Reel. What they say about the bet-sync connector is unchanged.
+
+## 2026-10-28 — Deploying Bet Checker: checkout works with a Stripe key that can't read Products
+
+**What was wrong.** Bet Checker made `create_checkout_session` read every price with its product expanded, to learn the product's metadata `tier`. The restricted key that `docs/billing-hardening.md` set up has no Products read, and Stripe refuses such a key the expanded product (403). Once deployed, every terminal checkout would have answered `stripe_unavailable`. The reconciler already fell back to what the database had learned. But a Bet Checker price nobody learned at checkout would have stayed unknown, and the access rule reads an unknown price as the terminal.
+
+**What changed.**
+- When Stripe refuses the product (a 403, nothing else), the checkout reads the price again on its own. The terminal's checkout never needs the product.
+- In that case only, the price's own metadata `tier` stands in, in the checkout and in the reconciler. Both live Bet Checker prices carry `tier = red`.
+- A product that was read and names no tier is still never overruled by its price.
+- Products read is now optional: the function headers, `docs/billing-hardening.md` and `docs/bet-checker.md` say so.
+
+**Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0.
+
+**Also.** `deploy-bet-checker.yml` applies `bet_checker.sql` in one transaction (`psql --single-transaction`), and a requested part whose secret is missing now fails the run instead of finishing green.
 
 ## 2026-10-28 — Bet Checker installs on production's board (the page's "board could not be loaded")
 
