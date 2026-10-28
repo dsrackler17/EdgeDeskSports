@@ -108,10 +108,12 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     tokens[t] = { id, email, confirmed: true };
     return { id, email, token: t, session: { access_token: t, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: { id, email } } };
   };
-  const FREE = user(1, 'free@example.com'), PAID = user(2, 'paid@example.com');
+  const FREE = user(1, 'free@example.com'), PAID = user(2, 'paid@example.com'), COMP = user(3, 'comp@example.com');
   db.service("select public.billing_learn_price_tier('price_red_e2e', 'prod_bc', 'red', 'bet_checker_monthly', true, 'e2e');");
   db.sql("insert into public.subscriptions (user_id, status, price_id, current_period_end, stripe_customer_id, stripe_subscription_id) values (" +
     lit(PAID.id) + ", 'active', 'price_red_e2e', now() + interval '20 days', 'cus_e2e', 'sub_e2e');");
+  /* the owner's comp: full access granted in the database, never sold */
+  db.sql("insert into public.subscriptions (user_id, status, price_id, current_period_end) values (" + lit(COMP.id) + ", 'active', 'owner_comp', null);");
 
   /* ── the shipped function, and the stand-in, behind Supabase's URL ─── */
   const rest = REST.make(db, { serviceKey: 'service-key', anonKey: ANON, tokens });
@@ -129,7 +131,7 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
   const BASE = 'http://127.0.0.1:' + port;
   const browser = await pw.chromium.launch();
   const errors = [];
-  async function pageFor(u, width) {
+  async function pageFor(u, width, failRpc) {
     const ctx = await browser.newContext({ viewport: { width: width || 1280, height: 900 } });
     if (u) await ctx.addInitScript((s) => { try { localStorage.setItem('edgedesk_session', JSON.stringify(s)); } catch (_) {} }, u.session);
     await ctx.route(SB + '/**', async (route) => {
@@ -139,7 +141,9 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
       const body = r.postData();
       if (r.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }, body: '' });
       let res;
-      if (url.indexOf('/functions/v1/log_user_bet') >= 0) {
+      if (failRpc && url.indexOf('/rest/v1/rpc/' + failRpc) >= 0) {
+        res = new Response(JSON.stringify({ code: 'PGRST202', message: 'Could not find the function public.' + failRpc }), { status: 404 });
+      } else if (url.indexOf('/functions/v1/log_user_bet') >= 0) {
         const q = console.log; console.log = () => {};
         try { res = await LOG.handle(new Request(url, { method: r.method(), headers, body: r.method() === 'POST' ? body : undefined })); }
         finally { console.log = q; }
@@ -296,6 +300,25 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     await shot(page, '4-subscriber');
     chk('Settings › Subscription names the plan and links the billing portal to cancel',
       /EdgeDesk Bet Checker/.test(await text(page, '[data-bc="settings"]')) && await page.locator('[data-bc="portal"]').getAttribute('href') === PRICING.portalLink());
+    await ctx.close();
+
+    /* 8b. a stats call that FAILS is not a "not paid": a subscriber is never shown a paywall for it */
+    ({ ctx, page } = await pageFor(PAID, 1280, 'my_bet_checker_stats'));
+    await page.goto(BASE + '/bet-checker/');
+    chk('stats unavailable: it says they could not be loaded, and offers no upgrade',
+      await eventually(async () => /Your stats could not be loaded/.test(await text(page, '[data-bc="stats"]'))) &&
+      await page.locator('[data-bc="stats"] .bc-blur').count() === 0 && await page.locator('[data-bc="stats"] [data-bc-act="upgrade"]').count() === 0,
+      await text(page, '[data-bc="stats"]'));
+    await ctx.close();
+
+    /* 8c. the owner's comp: Bet Checker in full, and no billing to manage */
+    ({ ctx, page } = await pageFor(COMP));
+    await page.goto(BASE + '/bet-checker/');
+    chk('a comped account: Settings names the terminal, complimentary, with no billing portal and no upgrade',
+      await eventually(async () => /Research Terminal \(includes Bet Checker\) — complimentary/.test(await text(page, '[data-bc="settings"]'))) &&
+      await page.locator('[data-bc="portal"]').count() === 0 && await page.locator('[data-bc="settings"] [data-bc-act="upgrade"]').count() === 0,
+      await text(page, '[data-bc="settings"]'));
+    chk('  ... and its stats are not locked', await page.locator('.bc-blur').count() === 0);
     await ctx.close();
 
     /* 9. the landing page's "Get Bet Checker": /bet-checker/?upgrade=monthly|annual
