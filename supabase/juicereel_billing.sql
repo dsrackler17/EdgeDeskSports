@@ -28,7 +28,14 @@
 --     the Research Terminal under THE access rule unchanged: 'active' until
 --     current_period_end (Juice Reel's expiry). An unknown price is the
 --     terminal (billing_tier_of_price), so nothing in billing_hardening.sql
---     changes.
+--     changes. Juice Reel sells only the terminal: never Bet Checker (red) or
+--     Fairline (black), which the terminal includes.
+--   * A LIVE STRIPE PLAN THE TERMINAL REPLACES IS RAISED. The tiers that are not
+--     the terminal — Bet Checker (red) and Fairline (black) — do not pass the
+--     access rule, so a Juice Reel buyer whose row holds one in good standing
+--     is given the terminal over it (it includes both). Stripe would go on
+--     billing that plan with nothing pointing at it, so it is raised for a
+--     human (juicereel_and_stripe_both_paid) to cancel in Stripe.
 --   * JUICE REEL ONLY REVOKES WHAT JUICE REEL GRANTED. A row entitled by Stripe,
 --     by owner_comp or by hand is never overwritten; a Stripe-backed row in good
 --     standing while Juice Reel also says paid raises an alert (billed twice).
@@ -343,6 +350,18 @@ begin
     -- taking over a row: an ended Stripe subscription's id must not stay on it
     -- (the Stripe sweep re-checks rows that carry one, and would end this one)
     v_takeover_stripe := e.stripe_subscription_id;
+    -- ...and a Stripe plan that has NOT ended, sold under a tier that is not
+    -- the terminal (red: Bet Checker, black: Fairline), is still being billed:
+    -- the terminal from Juice Reel replaces it here, and a human cancels it there
+    if e.stripe_subscription_id is not null
+       and public.billing_row_in_good_standing(e.status, e.price_id, e.current_period_end, v_now)
+       and public.billing_tier_of_price(e.price_id) in ('red', 'black') then
+      perform public.billing_raise_alert('juicereel_and_stripe_both_paid', 'user:' || p_user, p_user,
+        e.stripe_customer_id, e.stripe_subscription_id, null,
+        jsonb_build_object('juicereel_expires_at', j.expires_at, 'stripe_status', e.status,
+                           'stripe_tier', public.billing_tier_of_price(e.price_id),
+                           'note', 'the terminal from Juice Reel replaced a live Stripe Bet Checker / Fairline plan on this row: cancel that Stripe subscription'));
+    end if;
   end if;
 
   update public.subscriptions set

@@ -37,10 +37,11 @@
 --                           from signals, by the same house formula.
 --   public.bankroll_settings  the reader's unit (bettor_decisions.sql), used
 --                           only to show a unit as dollars or dollars as units.
---   has_bet_checker_paid()  billing_hardening.sql. THE GATE, for now: every
---                           Fairline gate calls fairline_paid(), and
---                           fairline_paid() calls this. The Fairline tier is
---                           a separate billing change.
+--   has_fairline_paid()     billing_hardening.sql. THE GATE: every Fairline
+--                           gate calls fairline_paid(), and fairline_paid()
+--                           calls this: Fairline (black) or the Research
+--                           Terminal (blue) in good standing. Bet Checker
+--                           (red) alone is not Fairline.
 --
 -- THE RULES live in ONE constant, fairline_rules().
 --
@@ -56,7 +57,7 @@
 --                    named account: the caller themselves or the service role.
 --
 -- REQUIRES bettor_decisions.sql (user_bets, bankroll_settings),
--- billing_hardening.sql (has_bet_checker_paid), bet_checker.sql (the Bet
+-- billing_hardening.sql (has_fairline_paid), bet_checker.sql (the Bet
 -- Checker columns and bet_checker_trusted), portfolio.sql and bet_import.sql
 -- (portfolio_positions.market_sig_key / price_american), and capture's
 -- public.signals.
@@ -72,8 +73,8 @@ begin
   if to_regclass('public.user_bets') is null or to_regclass('public.bankroll_settings') is null then
     raise exception 'fairline.sql reads public.user_bets and public.bankroll_settings: apply supabase/bettor_decisions.sql first';
   end if;
-  if to_regprocedure('public.has_bet_checker_paid(uuid,timestamptz)') is null then
-    raise exception 'fairline.sql needs public.has_bet_checker_paid(): apply supabase/billing_hardening.sql first';
+  if to_regprocedure('public.has_fairline_paid(uuid,timestamptz)') is null then
+    raise exception 'fairline.sql needs public.has_fairline_paid(): apply supabase/billing_hardening.sql (with the Fairline tier) first';
   end if;
   if to_regprocedure('public.bet_checker_trusted()') is null or to_regprocedure('public.bet_checker_decimal(numeric)') is null then
     raise exception 'fairline.sql reads Bet Checker''s grades: apply supabase/bet_checker.sql first';
@@ -186,8 +187,8 @@ $$;
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. THE GATE — one helper
 -- ─────────────────────────────────────────────────────────────────────────────
--- Every Fairline gate calls this, and nothing else. For now it is Bet
--- Checker's paid plan (red) or the Research Terminal (blue).
+-- Every Fairline gate calls this, and nothing else: Fairline (black) or the
+-- Research Terminal (blue) in good standing (has_fairline_paid()).
 create or replace function public.fairline_paid(p_user uuid, p_at timestamptz default now())
 returns boolean
 language sql
@@ -195,10 +196,10 @@ stable
 security definer
 set search_path = public, pg_temp
 as $$
-  select p_user is not null and coalesce(public.has_bet_checker_paid(p_user, p_at), false);
+  select p_user is not null and coalesce(public.has_fairline_paid(p_user, p_at), false);
 $$;
 comment on function public.fairline_paid(uuid, timestamptz) is
-  'THE Fairline gate. Every Fairline door calls this. Today: has_bet_checker_paid() (red or blue in good standing).';
+  'THE Fairline gate. Every Fairline door calls this: has_fairline_paid() (black or blue in good standing).';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. THE BUCKETS
@@ -883,8 +884,8 @@ select piece, state from (
          case when (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                      where n.nspname = 'public' and p.proname in ('fairline_my_bets', 'fairline_leaks', 'fairline_board')
                        and pg_get_functiondef(p.oid) like '%public.fairline_paid(%') = 3
-              then 'ok (fairline_paid -> ' || case when pg_get_functiondef('public.fairline_paid(uuid,timestamptz)'::regprocedure) like '%has_bet_checker_paid%'
-                                                    then 'has_bet_checker_paid' else 'another rule' end || ')'
+               and pg_get_functiondef('public.fairline_paid(uuid,timestamptz)'::regprocedure) like '%has_fairline_paid%'
+              then 'ok (fairline_paid -> has_fairline_paid)'
               else 'CHECK THIS' end as state
   union all select '02 signals RLS is untouched (The Board is a definer door, not a policy)',
          case when not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'signals' and policyname like 'fairline%')

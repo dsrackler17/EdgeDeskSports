@@ -13,6 +13,9 @@
      * what is not built is shown inactive, never hidden or faked: The Tape
        and DK Predictions say Coming Soon
      * no price is typed in the page: the offer is lib/edgedesk_pricing.js's
+     * the consent order is Bet Checker's: the server checkout first, then the
+       terms AS SHOWN recorded, then — only then — Stripe; a Bet Checker
+       customer is sent to the billing portal to switch, never to a checkout
      * a row and a leak card say what the database decided and nothing more,
        and every string is escaped
 
@@ -60,10 +63,15 @@ chk('the page is in the sitemap', /https:\/\/edgedesksports\.com\/fairline\//.te
 /* ── the doors ─────────────────────────────────────────────────────────── */
 const rpcs = [...MOD.matchAll(/rpc\('([a-z_]+)'/g)].map((m) => m[1]).sort();
 chk('the page calls the two Fairline doors and nothing else', JSON.stringify([...new Set(rpcs)]) === JSON.stringify(['fairline_board', 'fairline_leaks']), rpcs);
-chk('it never reads a table directly (signals stays the terminal\'s)', !/\/rest\/v1\/(?!rpc\/)/.test(MOD.replace(/\/rest\/v1\/rpc\//g, '')) && !/signals\?/.test(MOD));
+const tables = [...MOD.matchAll(/\/rest\/v1\/(?!rpc\/)([a-z_]+)/g)].map((m) => m[1]);
+chk('it reads no table directly (signals stays the terminal\'s); the one table it touches is its own consent record, by insert',
+  JSON.stringify([...new Set(tables)]) === JSON.stringify(['billing_consents']) && /'\/rest\/v1\/billing_consents', \{ method: 'POST'/.test(MOD) && !/signals\?/.test(MOD), tables);
 chk('the free sign-in is the Games door, configured to come back here', /configure\(S\.url, S\.key, \{ returnPath: '\/fairline\/', surface: 'fairline' \}\)/.test(MOD));
 chk('a confirmation link lands here and is consumed (lib/edgedesk_auth.js)', /S\.edauth\.consume\(\{ url: S\.url, key: S\.key \}\)/.test(MOD));
-chk('the page decides no gate: paid comes from the answer, never from the plan in the browser', /S\.board && S\.board\.paid/.test(MOD) && !/has_access/.test(MOD) && !/bet_checker_paid/.test(MOD));
+const fnBody = (name) => { const a = MOD.indexOf('function ' + name + '('); const b = MOD.indexOf('\n    function ', a + 10); return a < 0 ? '' : MOD.slice(a, b < 0 ? undefined : b); };
+chk('the page decides no gate: what The Board and The Leaks show comes from their answers, never from the plan in the browser',
+  /S\.board && S\.board\.paid/.test(MOD) && fnBody('renderBoard').length > 200 && fnBody('renderLeaks').length > 200 &&
+  !/S\.acc/.test(fnBody('renderBoard')) && !/S\.acc/.test(fnBody('renderLeaks')) && /if \(!b\.paid\)/.test(fnBody('renderBoard')) && /if \(!L\.paid\)/.test(fnBody('renderLeaks')));
 
 /* ── what it says ──────────────────────────────────────────────────────── */
 chk('it says plainly: prices, not picks; it never tells you what to bet', /Prices, not picks/.test(PAGE) && /never tells you what to bet/.test(PAGE) &&
@@ -75,7 +83,24 @@ chk('…and Kalshi\'s own limits (5-minute snapshots, the 6¢ spread rule, befor
 chk('The Tape is visible and inactive: Coming Soon, disabled', /data-fl-tab="tape"[^>]*disabled[^>]*>The Tape <span class="fl-chip soon">Coming Soon<\/span>/.test(PAGE));
 chk('DK Predictions is a column, Coming Soon, with no data source', /cell\('DK Predictions', '<span class="fl-chip soon">Coming Soon<\/span>', 'inactive'/.test(MOD) &&
   /no price feed exists yet/.test(UI.BOARD_LIMITS.join(' ')) && !/dk_predictions_price|dk_price/.test(MOD + CORE));
-chk('no price is typed in the page or the module: the offer is the pricing file\'s', !/\$[1-9]/.test(PAGE) && !/\$[1-9]/.test(MOD) && /P\.betCheckerOffer\('monthly'\)/.test(MOD));
+chk('no price is typed in the page or the module: the offer is the pricing file\'s', !/\$[1-9]/.test(PAGE) && !/\$[1-9]/.test(MOD) && /P\.fairlineOffer\('monthly'\)/.test(MOD));
+
+/* ── the consent, in Bet Checker's order ───────────────────────────────── */
+const iCo = MOD.indexOf('S.access.startCheckout('), iConsent = MOD.indexOf("'/rest/v1/billing_consents'"), iGo = MOD.indexOf('S.location.href = co.url');
+chk('server checkout, then the consent record, then Stripe — in that order', iCo > 0 && iConsent > iCo && iGo > iConsent, [iCo, iConsent, iGo]);
+chk('no consent record, no Stripe: a failed write stops before navigating', /if \(!ok\) \{[\s\S]{0,400}Nothing has been charged[\s\S]{0,200}return;\s*\}\s*S\.location\.href = co\.url/.test(MOD));
+chk('the checkout asked for is Fairline\'s, at the offer\'s own figure, no trial',
+  /startCheckout\(accessCfg\(\), \{ kind: 'fairline', plan: off\.plan, price_cents: off\.price_cents,\s*trial_days: 0, consent_version: off\.consent_version \}\)/.test(MOD));
+chk('the terms recorded are the element\'s text, the words the reader saw', /offer_text: terms/.test(MOD) && /var terms = \$\(host, '\[data-fl="terms"\]'\)\.textContent/.test(MOD));
+chk('the terms are lib/edgedesk_pricing.js fairlineTerms(), never typed in the page', /P\.fairlineTerms\(S\.plan\)/.test(MOD));
+chk('Subscribe starts disabled; only the tick enables it', /data-fl="arl-go" disabled>/.test(PAGE) && /\$\(host, '\[data-fl="arl-go"\]'\)\.disabled = !e\.target\.checked/.test(MOD));
+chk('after Stripe, the page asks the server until Fairline is confirmed (never the redirect itself)',
+  /S\.access\.finalize\(accessCfg\(\), \{[\s\S]{0,120}until: function \(a\) \{ return !!\(a && a\.fairline_paid\); \}/.test(MOD));
+chk('a Bet Checker customer is sent to the billing portal to switch, never to a second checkout',
+  /function switcher\(\) \{ return !!\(S\.acc && S\.acc\.bet_checker_paid && !S\.acc\.fairline_paid && !S\.acc\.has_access\); \}/.test(MOD) &&
+  /if \(switcher\(\)\) \{[\s\S]{0,400}portalLink[\s\S]{0,300}return;\s*\}\s*setPlan\(S\.plan\);/.test(MOD));
+chk('the page names its Settings › Subscription, where the renewal terms send a reader to cancel', /Settings › Subscription/.test(PAGE) &&
+  /Settings \\u203a Subscription on the Fairline page/.test(read('lib/edgedesk_pricing.js')) && /data-fl="portal">Manage billing or cancel/.test(MOD));
 chk('labels are chips with words, never colour alone', /class="fl-chip ' \+ esc\(lv\.cls\)/.test(MOD) && /esc\(lv\.chip\)/.test(MOD) && /\.fl-chip\.leak\{/.test(CSS));
 chk('each leak card leads with its verdict, big and plain, numbers underneath', /chip\(s, true\) \+\s*'<p class="fl-verdict/.test(MOD) && /\+ numsHTML\(s\) \+ '<\/article>'/.test(MOD) &&
   /\.fl-verdict\.lead\{font-size:clamp\(19px/.test(CSS));

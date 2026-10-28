@@ -10,7 +10,10 @@
 #             anon and the service role: owner-only reads, the paid gate, one
 #             row per bet across Bet Checker and the Portfolio, the slices and
 #             their labels, the minimum sample, The Board's freshness rule; and
-#             the page's mirrors of the rules held equal to the SQL.
+#             the page's mirrors of the rules held equal to the SQL. Then the
+#             Fairline tier (black) through the shipped billing functions: paid
+#             for Fairline, never the terminal (tools/billing/fairline_tier.test.js,
+#             also run by personal-tests.yml with the other billing suites).
 #   browser   fairline/index.html in Chromium (1280 px and a 390 px phone)
 #             against the same stack: a free reader's teaser, a paid reader's
 #             Board and Leaks, nothing scrolling sideways.
@@ -48,6 +51,16 @@ on:
       - 'supabase/bet_import.sql'
       - 'supabase/functions/close/index.ts'
       - 'supabase/functions/capture/index.ts'
+      - 'supabase/referral_codes.sql'
+      - 'supabase/subscription_price.sql'
+      - 'supabase/juicereel_billing.sql'
+      - 'supabase/functions/create_checkout_session/**'
+      - 'supabase/functions/stripe_webhook/**'
+      - 'supabase/functions/sync_subscription/**'
+      - 'tools/billing/billing_core.js'
+      - 'tools/billing/_harness.js'
+      - 'tools/billing/_fake_stripe.js'
+      - 'tools/billing/fairline_tier.test.js'
       - 'tools/fairline/**'
       - 'tools/personal/_pg.js'
       - 'tools/billing/_pgrest.js'
@@ -101,6 +114,10 @@ jobs:
         env:
           FAIRLINE_SQL_REQUIRED: '1'
         run: node tools/fairline/fairline_sql.test.js
+      - name: The Fairline tier (black) through the shipped billing functions — paid for Fairline, never the terminal, an unlearned price never sold
+        env:
+          FAIRLINE_TIER_REQUIRED: '1'
+        run: node tools/billing/fairline_tier.test.js
 
   browser:
     runs-on: ubuntu-latest

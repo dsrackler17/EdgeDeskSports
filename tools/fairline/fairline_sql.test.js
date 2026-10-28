@@ -11,9 +11,10 @@
        and its report says ok
      2 a reader's bets are their own: the view, the doors and the per-account
        functions; anon reads nothing
-     3 the paid gate: a free account gets the slice name of its biggest leak
-       and no number, three Board rows and no filters; Bet Checker (red) and
-       the terminal (blue) get everything; a lapsed plan is free
+     3 the paid gate (has_fairline_paid): a free account, and a Bet Checker
+       (red) one, gets the slice name of its biggest leak and no number, three
+       Board rows and no filters; Fairline (black) and the terminal (blue) get
+       everything; a lapsed plan is free
      4 one view of both sources: a bet in Bet Checker AND the Portfolio is one
        row (linked, same market key, same game), a different bet is never
        merged, twins pair one to one, the book's money and Bet Checker's close
@@ -85,7 +86,7 @@ if (db.skip) { if (process.env.FAIRLINE_SQL_REQUIRED === '1') chk('environment: 
 const J = (q) => JSON.parse(db.sql('select coalesce(json_agg(t), \'[]\'::json) from (' + q + ') t;') || '[]');
 const V = (q) => db.sql(q);
 const uid = (n) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
-const A = uid(1), B = uid(2), P = uid(3), Q = uid(4), C = uid(5), D = uid(6), L = uid(7);
+const A = uid(1), B = uid(2), P = uid(3), Q = uid(4), C = uid(5), D = uid(6), L = uid(7), RD = uid(8);
 const H = 3600 * 1000, MIN = 60 * 1000;
 const at = (ms) => "(now() + interval '" + Math.round(ms / 1000) + " seconds')";
 const asJ = (u, q) => JSON.parse(db.as(u, q) || 'null');
@@ -166,19 +167,21 @@ try {
   let out = db.applyFileAtomic(FILE);
   const rep = out.split('\n').filter((l) => /^\d\d /.test(l));
   chk('it applies: nine report rows, every one ok', rep.length === 9 && rep.every((l) => /\|ok/.test(l)), out.slice(-1500));
-  chk('the report names the gate it calls today: has_bet_checker_paid', /01 [^|]*\|ok \(fairline_paid -> has_bet_checker_paid\)/.test(out));
+  chk('the report names the gate it calls: has_fairline_paid', /01 [^|]*\|ok \(fairline_paid -> has_fairline_paid\)/.test(out));
   out = db.applyFileAtomic(FILE);
   chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d\d .*\|ok/.test(l)).length === 9);
   chk('no policy was added to signals', V("select count(*) from pg_policies where tablename = 'signals';") === '0');
 
-  V('insert into auth.users (id, email) values ' + [A, B, P, Q, C, D, L].map((u, i) => '(' + lit(u) + ", 'u" + i + "@x.co')").join(', ') + ';');
+  V('insert into auth.users (id, email) values ' + [A, B, P, Q, C, D, L, RD].map((u, i) => '(' + lit(u) + ", 'u" + i + "@x.co')").join(', ') + ';');
   db.service("select public.billing_learn_price_tier('price_red_t', 'prod_bc', 'red', 'bet_checker_monthly', true, 'test');");
+  db.service("select public.billing_learn_price_tier('price_black_t', 'prod_fl', 'black', 'fairline_monthly', true, 'test');");
   db.service("select public.billing_learn_price_tier('price_blue_t', 'prod_ed', 'blue', null, true, 'test');");
-  subscribe(P, 'price_red_t', 'active', 20);
+  subscribe(P, 'price_black_t', 'active', 20);
   subscribe(Q, 'price_blue_t', 'trialing', 5);
-  subscribe(C, 'price_red_t', 'canceled', -3);
-  subscribe(D, 'price_red_t', 'active', 20);
+  subscribe(C, 'price_black_t', 'canceled', -3);
+  subscribe(D, 'price_black_t', 'active', 20);
   subscribe(L, 'price_blue_t', 'active', 20);
+  subscribe(RD, 'price_red_t', 'active', 20);
 
   /* ===================================================================== */
   /* 2. A READER'S BETS ARE THEIR OWN                                      */
@@ -214,9 +217,12 @@ try {
   const fa = leaks(A);
   chk('a free reader\'s leaks: paid false, a teaser, and no number but the rule', fa.paid === false && !!fa.teaser &&
     JSON.stringify(numbers(fa)) === JSON.stringify(['.rules.min_sample_bets']) && !('slices' in fa) && !('overall' in fa), fa);
-  chk('a lapsed Bet Checker plan is free', leaks(C).paid === false);
-  chk('Bet Checker (red) is paid', leaks(P).paid === true);
+  chk('a lapsed Fairline plan is free', leaks(C).paid === false);
+  chk('Fairline (black) is paid', leaks(P).paid === true);
   chk('the Research Terminal (blue, trialing) is paid', leaks(Q).paid === true);
+  ub(RD, { odds: -110, result: 'loss', won: -1, close: 'captured', clv: -1 });
+  chk('BET CHECKER (red) ALONE IS NOT FAIRLINE: its leaks are the teaser, its bets unserved, its board three rows',
+    leaks(RD).paid === false && myBets(RD).length === 0 && board(RD).paid === false && JSON.stringify(numbers(leaks(RD))) === JSON.stringify(['.rules.min_sample_bets']));
 
   /* ===================================================================== */
   /* 4. ONE VIEW OF BOTH SOURCES, EACH BET ONCE                            */

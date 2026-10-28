@@ -620,7 +620,8 @@ column it reads that is missing). Mirrored byte for byte in
   `tools/bet_checker/bet_checker_sql.test.js`.
 
 ### `fairline.sql` — Fairline: The Board and The Leaks
-Apply **after** `bettor_decisions.sql`, `billing_hardening.sql`,
+Apply **after** `bettor_decisions.sql`, `billing_hardening.sql` (with the
+`black` tier and `has_fairline_paid()`; `docs/billing-hardening.md` §15),
 `bet_checker.sql`, `portfolio.sql` and `bet_import.sql` (it stops, naming the
 missing one, otherwise) on a project with capture's `signals` (it names any
 column it reads that is missing). Mirrored byte for byte in
@@ -631,8 +632,9 @@ column it reads that is missing). Mirrored byte for byte in
 - **The rules are one constant**, `fairline_rules()` (a label from 15 settled
   bets, a label about the close from 15 captured closes, the odds, lead-time
   and stake buckets, and capture's own freshness limits for The Board).
-- **The gate is one helper**, `fairline_paid()`: every door calls it; today it
-  is `has_bet_checker_paid()`.
+- **The gate is one helper**, `fairline_paid()`: every door calls it, and it
+  calls `has_fairline_paid()` (`billing_hardening.sql`): Fairline (`black`)
+  or the Research Terminal (`blue`). Apply `billing_hardening.sql` first.
 - `fairline_bets_for(uuid)` (the caller or the service role): one row per bet
   from `user_bets` and `portfolio_positions`, a bet in both counted once
   (linked, same market key, same game), with units, dollars and the house CLV
