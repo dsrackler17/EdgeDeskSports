@@ -59,9 +59,11 @@ function redact(s, secrets) {
     .replace(/[A-Za-z0-9_+-]{32,}={0,2}/g, (m) => '<redacted:' + m.length + '>');
 }
 
-/* A setting whose name says it is a credential is never read out. */
+/* A setting whose name says it is a credential is never read out. Any "key"
+   counts: ingest.anon_key is public, but the rule is about names, not about
+   which credentials happen to be harmless. */
 function secretKey(k) {
-  return /token|secret|password|passwd|api_?key|credential|private/i.test(String(k));
+  return /token|secret|password|passwd|key|credential|private/i.test(String(k));
 }
 
 /* ---- psql, read-only ------------------------------------------------------ */
@@ -183,6 +185,35 @@ function sqlSettings(table) {
   return agg(`select ${q('key')} as key, ${q('value')}::text as value from odds.${q(table.table_name)}`, 't.key');
 }
 
+/* THE GATEWAY. Since 2026-10-21 the ingest's The Odds API provider buys only
+   through odds_gateway (category `collective`), so its refusals are the
+   gateway's. odds_api_budget_state() is a stable read; the config and the
+   category are read whole and printed through an allowlist. */
+const GATEWAY_COLS = ['odds_api_enabled', 'breaker_reason', 'breaker_changed_at', 'breaker_changed_by', 'monthly_budget',
+  'daily_target', 'monthly_reserve', 'plan_monthly_credits', 'provider_requests_used', 'provider_requests_remaining',
+  'provider_observed_at', 'provider_observed_source', 'provider_cooldown_until', 'cooldown_reason', 'free_endpoints_enabled'];
+const BUDGET_KEYS = ['cycle_start', 'next_reset', 'quota_confirmed', 'provider_used', 'provider_remaining',
+  'provider_remaining_effective', 'provider_observed_at', 'monthly_budget', 'spent_cycle', 'spent_today',
+  'daily_allowance', 'threshold'];
+const CATEGORY_COLS = ['category', 'enabled', 'priority', 'endpoint', 'daily_cap_credits'];
+function sqlGatewayConfig() {
+  return 'select coalesce((select to_jsonb(c) from public.odds_api_config c where id = 1), \'{}\'::jsonb)';
+}
+function sqlBudgetState() {
+  return 'select public.odds_api_budget_state()';
+}
+function sqlCategories() {
+  return agg("select to_jsonb(c) as row from public.odds_api_categories c where c.category in ('collective', 'featured', 'close')");
+}
+function sqlGatewayDecisions(since) {
+  return agg(`select r.usage_day as day, r.category, r.caller, r.decision, count(*)::int as n,
+      coalesce(sum(r.actual_credits), 0)::int as credits, max(r.created_at) as last
+    from public.odds_api_requests r where r.created_at >= '${since}'::date
+      and (r.category = 'collective' or r.caller ilike '%collective%')
+    group by 1, 2, 3, 4`, 't.day, t.category, t.decision');
+}
+const pick = (obj, keys) => keys.filter((k) => obj && k in obj).map((k) => ({ field: k, value: obj[k] }));
+
 /* ---- the function's own status ------------------------------------------- */
 async function fetchStatus(base, key, league, fetchImpl) {
   const url = `${String(base).replace(/\/$/, '')}/functions/v1/collective_odds_ingest/v1/status?league=${encodeURIComponent(league)}`;
@@ -229,24 +260,29 @@ async function main(env, argv, deps) {
   say('## Collective odds doctor (read-only)\n');
   say(`Since ${args.since}. Nothing here writes, and no provider is called.\n`);
 
-  /* 1. the function */
+  /* 1. the function. A convenience view of the tables the database half reads
+     directly, so a refusal here is reported and is a failure only when the
+     database half is unread too. The function compares the bearer with its
+     own SUPABASE_SERVICE_ROLE_KEY; a GitHub secret in the newer sb_secret_
+     format, which PostgREST accepts, is refused here with 401. */
+  const statusUnread = [];
   const base = String(env.EDGD_SB_URL || '').trim();
   const key = String(env.EDGD_SB_SERVICE || '').trim();
   if (!base || !key) {
-    failed.push('status');
+    statusUnread.push('status');
     say('\n### collective_odds_ingest /v1/status\n\n**not read:** EDGD_SB_URL / EDGD_SB_SERVICE are empty.\n');
   } else {
     for (const league of args.leagues) {
       say(`\n### collective_odds_ingest /v1/status?league=${league}\n`);
       try {
         const st = await fetchStatus(base, key, league, deps.fetch);
-        if (st.http !== 200) failed.push('status ' + league);
+        if (st.http !== 200) statusUnread.push('status ' + league);
         const b = st.body || {};
         say(`HTTP ${st.http}` + (b.diagnosis ? ` · diagnosis **${redact(b.diagnosis.state, secrets)}**: ${redact(b.diagnosis.detail, secrets)}` +
           (b.diagnosis.fix ? ` Fix: ${redact(b.diagnosis.fix, secrets)}` : '') : '') + '\n');
         say('```json\n' + redact(JSON.stringify(b, null, 2), secrets).slice(0, 6000) + '\n```\n');
       } catch (e) {
-        failed.push('status ' + league);
+        statusUnread.push('status ' + league);
         say('**could not read:** ' + redact(e && e.message, secrets) + '\n');
       }
     }
@@ -309,14 +345,32 @@ async function main(env, argv, deps) {
         say(table(rows, ['key', 'value'], secrets));
       });
     }
+    section('odds_gateway: the switch and the provider quota (public.odds_api_config)', () => {
+      say(table(pick(pg.json(sqlGatewayConfig()), GATEWAY_COLS), ['field', 'value'], secrets));
+    });
+    section('odds_gateway: this cycle (odds_api_budget_state())', () => {
+      say(table(pick(pg.json(sqlBudgetState()), BUDGET_KEYS), ['field', 'value'], secrets));
+    });
+    section('odds_gateway: categories', () => {
+      const rows = (pg.json(sqlCategories()) || []).map((r) => r.row || {});
+      say(table(rows, CATEGORY_COLS.filter((c) => rows.some((r) => c in r)), secrets));
+    });
+    section("odds_gateway: the Collective's requests and their decisions", () => {
+      say(table(pg.json(sqlGatewayDecisions(args.since)), ['day', 'category', 'caller', 'decision', 'n', 'credits', 'last'], secrets));
+    });
   }
 
+  // The status route only restates the tables above, so its refusal fails
+  // the run only when there is no database reading to stand in for it.
+  if (statusUnread.length && (!pg || failed.length)) failed.unshift(...statusUnread);
+  else if (statusUnread.length) say('\n_Status route not read (' + statusUnread.join(', ') + '); the database reading above covers it._\n');
   if (failed.length) say('\n**Not read:** ' + failed.join(', ') + '\n');
   return { text: out.join('\n'), failed };
 }
 
 module.exports = { redact, secretKey, readOnly, psqlRunner, parseArgs, pickRunTable, pickSnapshotTables,
-  sqlCronJobs, sqlRunsByDay, sqlRunsLatest, sqlRunLog, sqlRunSummary, sqlSnapshotsByDay, sqlSettings, fetchStatus, main };
+  sqlCronJobs, sqlRunsByDay, sqlRunsLatest, sqlRunLog, sqlRunSummary, sqlSnapshotsByDay, sqlSettings,
+  sqlGatewayConfig, sqlBudgetState, sqlCategories, sqlGatewayDecisions, fetchStatus, main };
 
 if (require.main === module) {
   main(process.env, process.argv.slice(2)).then(({ text, failed }) => {

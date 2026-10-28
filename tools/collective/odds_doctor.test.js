@@ -34,6 +34,7 @@ chk('a JSON header map loses its values', !D.redact('{"apikey": "zzz-short", "x-
 
 chk('ingest.cron_token is a secret key', D.secretKey('ingest.cron_token'));
 chk('provider.api_key is a secret key', D.secretKey('provider.api_key'));
+chk('ingest.anon_key is a secret key (any key, by name)', D.secretKey('ingest.anon_key'));
 chk('nfl.enabled is not', !D.secretKey('nfl.enabled'));
 chk('provider.default is not', !D.secretKey('provider.default'));
 
@@ -73,6 +74,10 @@ chk('an identifier outside [a-z0-9_] is refused', throws(() => D.sqlRunLog({ tab
       if (/odds_api_paused_jobs/.test(sql)) return [];
       if (/pg_namespace/.test(sql)) return tables;
       if (/from odds\."settings"/.test(sql)) return [{ key: 'ingest.cron_token', value: '"a1b2c3d4e5f6"' }, { key: 'nfl.enabled', value: 'true' }];
+      if (/odds_api_config/.test(sql)) return { odds_api_enabled: true, monthly_budget: 60000, provider_observed_at: '2026-10-10T13:55:00Z', untracked: 'x' };
+      if (/odds_api_budget_state/.test(sql)) return { cycle_start: '2026-10-01', quota_confirmed: false, spent_cycle: 0 };
+      if (/odds_api_categories/.test(sql)) return [{ row: { category: 'collective', enabled: true, priority: 2, description: 'long text' } }];
+      if (/odds_api_requests/.test(sql)) return [{ day: '2026-10-22', category: 'collective', caller: 'collective_odds_ingest', decision: 'denied_unconfirmed_quota', n: 2, credits: 0, last: '2026-10-22T12:40:03Z' }];
       return [];
     },
   };
@@ -90,6 +95,9 @@ chk('an identifier outside [a-z0-9_] is refused', throws(() => D.sqlRunLog({ tab
   chk('the report omits the credential setting and keeps the others', !res.text.includes('ingest.cron_token') && res.text.includes('nfl.enabled'));
   chk('the report names the function\'s own diagnosis', res.text.includes('diagnosis **stale**'));
   chk('the report shows the job and its schedule', res.text.includes('collective_odds_nfl') && res.text.includes('27 * * * *'));
+  chk('the report shows whether the gateway has confirmed this cycle\'s quota', /\| quota_confirmed \| false \|/.test(res.text), null);
+  chk('the report shows the gateway\'s decisions on the Collective\'s requests', res.text.includes('denied_unconfirmed_quota'));
+  chk('the gateway config is read through its allowlist', res.text.includes('monthly_budget') && !res.text.includes('untracked'));
   chk('no statement it sent writes anything',
     sent.every((s) => !/\b(insert|update|delete|alter|drop|create|truncate|grant|revoke)\b/i.test(s.replace(/'[^']*'/g, ''))), sent);
 
@@ -99,7 +107,19 @@ chk('an identifier outside [a-z0-9_] is refused', throws(() => D.sqlRunLog({ tab
 
   const bad = await D.main({ EDGD_SB_URL: 'https://ref.supabase.co', EDGD_SB_SERVICE: SERVICE }, ['--league', 'nfl'],
     { fetch: async () => ({ status: 401, text: async () => '{"error":{"code":"invalid_key"}}' }) });
-  chk('a refused status call is a failure, not a pass', bad.failed.includes('status nfl'), bad.failed);
+  chk('a refused status call with no database reading is a failure, not a pass', bad.failed.includes('status nfl'), bad.failed);
+
+  const refusedButRead = await D.main(env, ['--league', 'nfl'],
+    { psql: fakePg, fetch: async () => ({ status: 401, text: async () => '{"error":{"code":"invalid_key"}}' }) });
+  chk('a refused status call beside a full database reading is reported, and the reading stands',
+    refusedButRead.failed.length === 0 && refusedButRead.text.includes('Status route not read (status nfl)'), refusedButRead.failed);
+
+  const dbBroken = await D.main(env, ['--league', 'nfl'], {
+    psql: { json() { throw new Error('connection refused'); } },
+    fetch: async () => ({ status: 401, text: async () => '{}' }),
+  });
+  chk('a refused status call beside a failed database reading fails both', dbBroken.failed.includes('status nfl') &&
+    dbBroken.failed.length > 1, dbBroken.failed);
 
   if (fail) { console.error('FAILED ' + pass + ' passed, ' + fail + ' failed'); for (const f of fails) console.error(' - ' + f.name + (f.detail !== undefined ? ' :: ' + JSON.stringify(f.detail).slice(0, 400) : '')); process.exit(1); }
   console.log('ALL GREEN ' + pass + ' passed, 0 failed');
