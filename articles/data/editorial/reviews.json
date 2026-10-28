@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-28T13:11:12.827Z",
+  "generated_at": "2026-10-28T16:41:09.265Z",
   "open": 16,
   "count": 16,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -196,7 +196,7 @@
       "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-10-06T18:25:23.283Z",
-      "updated_at": "2026-10-21T22:21:08.057Z",
+      "updated_at": "2026-10-28T16:21:16.677Z",
       "evidence": [
         {
           "lesson_id": "401862792:contradicted:market",
@@ -252,16 +252,27 @@
           "result": "Alabama Crimson Tide lost by 16 where EdgeDesk projected a 6.8-point edge. Alabama Crimson Tide lost by 16.",
           "severity": "high",
           "at": "2026-10-21T22:21:08.057Z"
+        },
+        {
+          "lesson_id": "401856881:contradicted:market",
+          "game_id": "401856881",
+          "season": 2026,
+          "week": 4,
+          "team": "West Virginia",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at West Virginia -9.1 with a fair total of 54.7, which makes West Virginia the better team here by that margin on this field. EdgeDesk makes it West Virginia -9.1 where the market has West Virginia -1.5 at captured (stale 102h) · theScore Bet — a 7.6 points disagreement.",
+          "result": "West Virginia Mountaineers lost by 17 where EdgeDesk projected a 9.1-point edge. West Virginia Mountaineers lost by 17.",
+          "severity": "high",
+          "at": "2026-10-28T16:21:16.677Z"
         }
       ],
-      "occurrences": 5,
+      "occurrences": 6,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 5 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 6 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",

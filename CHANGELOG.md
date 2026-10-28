@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-10-28 — Deploying Bet Checker: checkout works with a key that can't read Products, and bet_checker.sql applies on production's board (and two dropped changelog entries are back)
+## 2026-10-28 — Deploying Bet Checker: checkout works with a key that can't read Products, and bet_checker.sql applies on production's board
 
 **What was wrong.** Bet Checker made `create_checkout_session` read every price with its product expanded, to learn the product's metadata `tier`. The restricted key that `docs/billing-hardening.md` set up has no Products read, and Stripe refuses such a key the expanded product (403). Once deployed, every terminal checkout would have answered `stripe_unavailable`. The reconciler already fell back to what the database had learned. But a Bet Checker price nobody learned at checkout would have stayed unknown, and the access rule reads an unknown price as the terminal.
 
@@ -12,9 +12,47 @@
 
 **bet_checker.sql on production's board.** Deploy Bet Checker stopped at the file's own guard: "public.signals has no column(s) is_player_prop". Production has never applied `capture_v11_player_props.sql`. Nothing changed in production. Bet Checker never needed that column: v11 files every prop under a `player_*` market, and every query in the file reads only `h2h`, `spreads` and `totals`. The column and its 12 filters are gone; the market filter still keeps props out.
 
-**Also.** Merge commit `b97f6f61` (main into #855) dropped two 2026-10-28 entries: Bet Checker's and #855's own. Both are restored below, verbatim from their commits.
-
 **Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0. New last section of `tools/bet_checker/bet_checker_sql.test.js` (a board without `is_player_prop`, as production's is): main's file fails with production's exact error; with this change it applies with all 11 report rows ok, and the pickers list the game line but never the prop. The suite is 113 / 0.
+
+## 2026-10-28 — Changelog and incident note: what this morning's "Update branch" merges deleted is back
+
+**What was lost.** Between 13:14 and 13:17 UTC, #854, #855 and #853 merged. Two of them merged seconds after an "Update branch" merge commit whose conflicts were resolved in GitHub's editor, before any check ran on it:
+
+| "Update branch" merge | Merged | What it dropped |
+|---|---|---|
+| `b97f6f61c` on #855 | 13 s later | #854's entry, already on `main`, and #855's own |
+| `0ffe1e1be` on #853 | 15 s later | #853's own entry, and both 2026-10-28 amendments to `docs/odds-api-incident-2026-10/INCIDENT.md`, #853's and #855's |
+
+The code of all three pull requests reached `main` intact. Only these notes were lost.
+
+**The repair.**
+- The three entries are back, verbatim from their own commits (`c78e90fd`, `7f19bf1ed`, and `main` at `cc2f8c04f` for #854), newest merge first.
+- Both `INCIDENT.md` amendments are back, verbatim from `c78e90fd` and `7f19bf1ed`.
+- The blank lines the deletions left at the top of this file are removed.
+- Nothing else changes. AGENTS.md §5 asks for conflicts to be resolved locally, keeping both sides' entries, and for the update commit's checks before a merge.
+
+## 2026-10-28 — Odds emergency stop: the Collective's own jobs are covered (methodology change)
+
+**What was wrong.** The emergency stop and the hourly limits find a paid pg_cron job by its command, with `public.odds_api_spend_patterns()`, a list of function URLs. The Collective's two odds jobs, `collective_nfl_odds` (`35 12 * * *`) and `collective_cfb_odds` (`40 12 * * *`), run `select odds.run_ingest(...)`. That function posts to `collective_odds_ingest` at a URL held in `odds.settings`, so the commands match nothing. The 2026-10-14 stop never paused them, and they ran every day through the incident. The stop's own "no active paid job" row could not count them, and the hourly limits never saw them. In production `provider.default` is `theoddsapi`, so they do reach a paid path. The jobs were read from production by the read-only Collective odds doctor.
+
+**The change** ([methodology note](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-jobs.md)):
+- `odds_api_spend_patterns()` gains `%odds.run_ingest%`, in `odds_api_emergency_stop.sql` and in the gateway's identical copy.
+- `odds_api_resume_schedules()` resumes them too: the repository's ingest buys only through the gateway.
+- `odds_api_gateway.sql` now re-creates the resume verbatim, as it already re-creates the pattern list. Otherwise a database that took the new patterns would pair the stop with an older resume that keeps the Collective's jobs paused. A test keeps the two definitions identical.
+- Report row 13 confirms both production commands match and the resume names them.
+- The six SQL-editor parts are regenerated with `tools/sql/split_sql.js`, which reproduces `main`'s parts byte for byte from `main`'s file. Parts 5 and 6 change.
+
+Nothing changes in production until an operator applies a file or calls the stop. Both jobs already run once a day, so the hourly limits leave their schedules as they are. No committed data changes.
+
+**Regression check.** The new tests were run against `main`'s SQL first:
+
+| Suite | `main` | new tests, `main`'s SQL | new tests, this SQL |
+|---|---|---|---|
+| `tools/odds/no_bypass.test.js` | 102 / 0 | **102 / 1** | 103 / 0 |
+| `tools/odds/gateway_sql.test.js` | 104 / 0 | **27 / 8**, the stale resume aborts the live layer | 107 / 0 |
+| `tools/odds/hourly_limits_sql.test.js` | 36 / 0 | **37 / 2** | 39 / 0 |
+
+`tools/sharp_lag/sharp_lag_sql.test.js` (77) and `tools/sql/split_sql.test.js` also pass. Three existing checks count what the new fixture adds, and their expected numbers rise with it: paused jobs 6 to 8, fixture jobs 8 to 10, report rows 12 to 13. No check is relaxed.
 
 ## 2026-10-28 — Collective: polls with its own key until the Nov 1 reset (methodology change, time-boxed)
 

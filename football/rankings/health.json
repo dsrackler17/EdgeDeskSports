@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-10-27T19:14:47.118Z",
+ "generated_at": "2026-10-28T16:18:01.565Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -14,12 +14,12 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "80bc03f91eceb325"
+  "digest": "888be6599797dfd3"
  },
  "season": 2026,
- "week": 8,
- "week_ordinal": 8,
- "week_label": "Week 8",
+ "week": 9,
+ "week_ordinal": 9,
+ "week_label": "Week 9",
  "fbs_teams_expected": 138,
  "teams_processed": 138,
  "teams_missing_entirely": [],
@@ -331,26 +331,43 @@
   }
  ],
  "ingestion": {
-  "completed_games_in_schedule": 566,
-  "last_completed_kickoff": "2026-10-25T02:15:00.000Z",
-  "team_games_read": 2112,
+  "completed_games_in_schedule": 568,
+  "last_completed_kickoff": "2026-10-28T00:00:00.000Z",
+  "team_games_read": 2116,
   "teams_with_a_performance_rating": 138,
-  "special_teams_team_games_joined": 1128,
-  "special_teams_coverage_joined": 1068,
+  "special_teams_team_games_joined": 1132,
+  "special_teams_coverage_joined": 1072,
   "special_teams_box_available": true,
   "opponent_adjustment_converged": true
  },
  "source_freshness": {
-  "completed_games": 566,
-  "latest_completed_kickoff": "2026-10-25T02:15:00.000Z",
-  "completed_games_digest": "de243adcf488afc8",
+  "completed_games": 568,
+  "latest_completed_kickoff": "2026-10-28T00:00:00.000Z",
+  "completed_games_digest": "d69a21cd9e93c82e",
   "finality": {
    "schedule_final": 566,
-   "confirmed_by_box_alone": 0,
-   "games": [],
+   "confirmed_by_box_alone": 2,
+   "games": [
+    {
+     "game_id": "401871071",
+     "home": "Western Kentucky",
+     "away": "Delaware",
+     "week": 9,
+     "start_date": "2026-10-27T23:00:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401871072",
+     "home": "Missouri State",
+     "away": "Sam Houston",
+     "week": 9,
+     "start_date": "2026-10-28T00:00:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    }
+   ],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
-  "team_games_read": 2112,
+  "team_games_read": 2116,
   "teams_with_a_performance_rating": 138,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
@@ -359,10 +376,10 @@
   "season": 2026,
   "reference_season": 2025,
   "per_team_game": {
-   "team_games": 1129,
+   "team_games": 1133,
    "fg_att": 1.5,
    "xp_att": 3.12,
-   "punts": 4.21,
+   "punts": 4.2,
    "punts_in20": 1.34,
    "kr": 1.49,
    "pr": 1.27
@@ -388,7 +405,7 @@
   "basis": "per-team-game kicking, punting and return volumes in this season’s box artifact against the most recent completed season this build read. A season in progress publishes in pieces — a game lands, then the punter’s line lands — so a ratio below one is the FEED still filling in, not football that did not happen. It moves no rating: it is why some teams have no special-teams number yet."
  },
  "history": {
-  "snapshots": 9,
+  "snapshots": 10,
   "weeks_on_file": [
    "2026 Preseason",
    "2026 Week 1",
@@ -398,19 +415,20 @@
    "2026 Week 5",
    "2026 Week 6",
    "2026 Week 7",
-   "2026 Week 8"
+   "2026 Week 8",
+   "2026 Week 9"
   ],
   "latest": {
    "season": 2026,
-   "week_ordinal": 8,
-   "week_label": "Week 8",
+   "week_ordinal": 9,
+   "week_label": "Week 9",
    "season_type": "regular",
-   "generated_at": "2026-10-27T19:14:47.118Z",
+   "generated_at": "2026-10-28T16:18:01.565Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-10-27T19:14:47.118Z",
+ "last_rankings_build": "2026-10-28T16:18:01.565Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
