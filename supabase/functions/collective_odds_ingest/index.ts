@@ -1795,7 +1795,93 @@ interface TaRawFetch {
   reason: string | null;
 }
 
+// ── BEGIN COLLECTIVE OWN-KEY EXCEPTION (methodology change 2026-10-28; ends 2026-11-01T00:00:00Z) ──
+//
+// docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-own-key.md.
+// Until 2026-10-21 the Collective bought The Odds API with its OWN key, on its
+// own account (57 used, 443 left that day), not the 100,000-credit account the
+// incident spent. Routed through odds_gateway since then, every daily poll has
+// been refused (denied_unconfirmed_quota: the gateway's account is empty until
+// it resets at 2026-11-01 00:00 UTC), so no closing line has been captured.
+//
+// Until that reset, and only while COLLECTIVE_ODDS_API_KEY is set, this
+// function asks the provider itself, with that key and nothing else. It still
+// obeys the incident's master switch: the gateway's breaker
+// (public.odds_api_enabled()) must read ON, and a breaker it cannot read
+// counts as OFF. Its own reserve guard and quota record (provider.credit_reserve,
+// provider.quota) work as they did before 2026-10-21. From the reset on, the
+// date check fails and every request goes through odds_gateway again; this
+// block is then dead code, to be removed.
+//
+// tools/odds/no_bypass.test.js holds this block to that shape: one block, in
+// this file only, this expiry, this key name, the breaker read first.
+const COLLECTIVE_OWN_KEY_UNTIL = "2026-11-01T00:00:00Z";
+const COLLECTIVE_OWN_KEY_BASE = "https://api.the-odds-api.com/v4/";
+
+function collectiveOwnKey(): string {
+  return (Deno.env.get("COLLECTIVE_ODDS_API_KEY") ?? "").trim();
+}
+
+/** Before the reset, with the Collective's own key set. */
+function collectiveOwnKeyOpen(): boolean {
+  return Date.now() < Date.parse(COLLECTIVE_OWN_KEY_UNTIL) && collectiveOwnKey().length > 0;
+}
+
+/** The incident's breaker. Anything but a clear ON is OFF. */
+async function collectiveBreakerOn(): Promise<boolean> {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/odds_api_enabled`, {
+      method: "POST",
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+      body: "{}",
+    });
+    if (!res.ok) return false;
+    return (await res.json()) === true;
+  } catch {
+    return false;
+  }
+}
+
+async function collectiveOwnKeyRequest(opts: FetchOptions): Promise<TaRawFetch> {
+  const empty: ProviderQuota = { remaining: null, used: null, last_cost: null };
+  if (!(await collectiveBreakerOn())) {
+    return { ok: false, status: null, body: null, quota: empty, reason: "the odds_api breaker is off or unreadable; the Collective's own key obeys it" };
+  }
+  const key = collectiveOwnKey();
+  const league = normKey(String(opts.league ?? "").trim()) || "nfl";
+  const markets = (opts.markets.length ? opts.markets : GAME_MARKETS).map((m) => TA_MARKET_PARAM[m]).filter(Boolean);
+  const u = new URL(`sports/${taSportKey(opts)}/odds`, COLLECTIVE_OWN_KEY_BASE);
+  u.searchParams.set("apiKey", key);
+  u.searchParams.set("regions", taRegions(league));
+  u.searchParams.set("markets", (markets.length ? markets : ["h2h", "spreads", "totals"]).join(","));
+  u.searchParams.set("oddsFormat", "american");
+  u.searchParams.set("dateFormat", "iso");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.max(opts.timeoutMs ?? 0, TA_DEFAULT_TIMEOUT_MS));
+  try {
+    const res = await fetch(u.toString(), { signal: controller.signal });
+    const quota = readTaQuota(res.headers);
+    const text = await res.text();
+    if (!res.ok) {
+      const detail = redactSecret(text, key).replace(/\s+/g, " ").slice(0, 300);
+      return { ok: false, status: res.status, body: null, quota, reason: `${taReasonFor(res.status)} (own key)${detail ? ": " + detail : ""}` };
+    }
+    try {
+      return { ok: true, status: res.status, body: JSON.parse(text), quota, reason: null };
+    } catch {
+      return { ok: false, status: res.status, body: null, quota, reason: "the response was not JSON (own key)" };
+    }
+  } catch (e) {
+    const msg = redactSecret(String((e as Error)?.message ?? e), key);
+    return { ok: false, status: null, body: null, quota: empty, reason: msg.includes("abort") ? "the request timed out (own key)" : msg };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+// ── END COLLECTIVE OWN-KEY EXCEPTION ──
+
 async function taRequest(opts: FetchOptions): Promise<TaRawFetch> {
+  if (collectiveOwnKeyOpen()) return collectiveOwnKeyRequest(opts);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Math.max(opts.timeoutMs ?? 0, TA_DEFAULT_TIMEOUT_MS));
   const empty: ProviderQuota = { remaining: null, used: null, last_cost: null };

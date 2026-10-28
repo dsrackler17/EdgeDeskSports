@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-28 — Collective: polls with its own key until the Nov 1 reset (methodology change, time-boxed)
+
+**Why.** Since 2026-10-22 every daily Collective poll was refused by `odds_gateway` (`denied_unconfirmed_quota`), so no closing line was captured. The gateway buys from the main account, which is empty until 2026-11-01 00:00 UTC. Until 2026-10-21 the Collective had bought with its own key, on its own account (443 credits left). Without a change, week 8 loses its closes as week 7 did, starting with Thursday night's game.
+
+**The change** ([methodology note](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-28-collective-own-key.md)):
+- `collective_odds_ingest` gains one marked block. Until 2026-11-01T00:00:00Z, The Odds API requests go to the provider with `COLLECTIVE_ODDS_API_KEY`, a new name, never the main key's.
+- That happens only while the key is set and `public.odds_api_enabled()` reads on. An unreadable breaker is off.
+- It makes the same request as before 2026-10-21 (3 credits, american prices) and records the provider's balance, so the existing reserve guard applies. The key is redacted from every error.
+- From the reset on, every request goes to `odds_gateway` again.
+- `tools/odds/no_bypass.test.js` is amended openly. Rules 1 and 2 cut this one block out of this one file. `COLLECTIVE_ODDS_API_KEY` joins the forbidden key names everywhere else. A new section, 1b, pins the block: one block, this file, this expiry, this key name, the breaker before the call, and one call site.
+- `deploy-odds-gateway.yml` gains a `callers` input, so `collective_odds_ingest` can be deployed alone. `close` has a pending change on `main`.
+
+**Tests.**
+- `node tools/odds/collective_own_key.test.js` (new, 29) runs the deployed handler with the database, gateway and provider stubbed and the clock injected. It covers:
+  - before the reset, at its last second, and at the reset;
+  - no key, a blank key, and the old key names;
+  - the breaker off and unreadable;
+  - a 401 echoing the key;
+  - the reserve guard.
+
+  Against `main`'s function it is 13 passed, 16 failed.
+- `no_bypass.test.js`: the unamended guard catches the block (100 / 2). The amended guard passes 110 / 0, and six mutations each turn it red.
+- `tsc --strict`: no new error.
+
+**Operator steps:** set `COLLECTIVE_ODDS_API_KEY`, merge, then run Deploy odds gateway with `callers` = `collective_odds_ingest` and the other options unchecked. After Nov 1:
+- unset the key;
+- confirm the gateway's new-cycle quota;
+- remove the block.
+
 ## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
 
 **What was wrong.** All 14 NFL week 7 games settled with a final score and no captured closing line. So none of them has an against-the-spread (ATS) result. The last close on file is WAS @ SF (kickoff 2026-10-20 00:15Z). The settlement refresh puts every week-7 game in class L: snapshots exist, but none falls inside the final 360 minutes before kickoff. College week 8 has no closes either. College closes have been mostly missing all season (the ten-character name join in `collective/settled/README.md`), so the stop shows most clearly in the NFL.
