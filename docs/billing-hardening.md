@@ -632,3 +632,32 @@ you refund.
 * **Hand-made entitled rows without a Stripe subscription** (e.g. the 2108 row) are
   protected from Stripe revoking them and raise `db_active_stripe_inactive`; convert
   each to `owner_comp`, a `comp_trial`, or delete it.
+
+## 14. Two tiers (2026-10-28)
+
+Two products are sold now: **Bet Checker** (Stripe product metadata
+`tier = red`, $7.99/month or $59/year, sold by lookup keys
+`bet_checker_monthly` / `bet_checker_annual`) and the **Research Terminal**
+(`tier = blue`, $49.99/month). They share the one `subscriptions` row and the
+one writer. The rule changed so that red never opens the terminal:
+
+- `billing_row_in_good_standing()` is §1's rule as it was (still immutable);
+  `billing_row_grants_access()` is it **and** a price that does not sell red
+  (`billing_tier_of_price()`, read from `billing_price_tiers`). Every gate that
+  calls the rule — RLS, `community_is_entitled()`, `billing_access_for()`, the
+  Signal Center, Simulator and Market Foresight gates — inherits this.
+- What a price sells is written only by `billing_learn_price_tier()`, from the
+  product's metadata: `create_checkout_session` before payment, the
+  reconciler on every sync (it reads each subscription's product). A price
+  nobody can name stays unknown (the terminal, as every price sold before Bet
+  Checker was) and raises `unknown_price_tier`; a tier that changes raises
+  `price_tier_changed`.
+- `subscriptions.tier` follows the price by trigger; `has_bet_checker_paid()`
+  and `billing_access_for()`'s `bet_checker_paid` are red or blue in good
+  standing; a red row is offered `upgrade` (a plan switch in the portal).
+- The billing functions' restricted keys need **READ on Products**.
+
+Before deploying: §11 query 10 must show that the production-only paywall
+RLS calls the rule rather than inlining statuses, or a Bet Checker
+subscription would still read the terminal's data. Full detail and tests:
+`docs/bet-checker.md`.

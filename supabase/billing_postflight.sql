@@ -83,6 +83,8 @@ rule_results as (
 ),
 expected_fns(sig) as (values
   ('public.billing_row_grants_access(text,text,timestamptz,timestamptz)'),
+  ('public.billing_row_in_good_standing(text,text,timestamptz,timestamptz)'), ('public.billing_tier_of_price(text)'),
+  ('public.billing_learn_price_tier(text,text,text,text,boolean,text)'), ('public.has_bet_checker_paid(uuid,timestamptz)'),
   ('public.billing_access_for(uuid,timestamptz)'), ('public.my_billing_access()'),
   ('public.billing_apply_subscription_state(uuid,text,text,text,text,timestamptz,boolean,timestamptz,text,boolean,boolean,text,timestamptz,boolean)'),
   ('public.billing_resolve_user(text,text,text,text,text,text)'), ('public.billing_link_customer(text,uuid,text,boolean,text)'),
@@ -102,12 +104,14 @@ service_only_fns(sig) as (values
   ('public.billing_raise_alert(text,text,uuid,text,text,text,jsonb,boolean)'), ('public.billing_clear_alerts(uuid,text[],text)'),
   ('public.billing_sync_admit(uuid,text,integer,integer,text)'), ('public.billing_sweep_admit(integer)'),
   ('public.billing_sweep_candidates(integer)'), ('public.billing_unresolved_events(integer)'),
-  ('public.billing_user_report(uuid)'), ('public.stripe_user_by_email(text)')
+  ('public.billing_user_report(uuid)'), ('public.stripe_user_by_email(text)'),
+  ('public.billing_learn_price_tier(text,text,text,text,boolean,text)'), ('public.has_bet_checker_paid(uuid,timestamptz)')
 ),
 service_tables(rel) as (values
   ('public.billing_customers'), ('public.billing_checkout_sessions'), ('public.billing_sync_log'),
   ('public.billing_alerts'), ('public.billing_sweep_state'), ('public.billing_diagnostics'),
-  ('public.billing_open_alerts'), ('public.stripe_events'), ('public.stripe_events_unresolved')
+  ('public.billing_open_alerts'), ('public.stripe_events'), ('public.stripe_events_unresolved'),
+  ('public.billing_price_tiers')
 ),
 checks(n, item, verdict, detail) as (
   select 0, 'compared against snapshot',
@@ -188,8 +192,9 @@ checks(n, item, verdict, detail) as (
          (select string_agg(k || ' → ' || coalesce(got::text, 'null') || case when got is distinct from expect then ' (EXPECTED ' || expect::text || ')' else '' end,
                             ' · ' order by k) from rule_results)
   union all
-  select 41, 'D. the rule is immutable (pure: same row, same instant, same answer)',
-         case when (select provolatile from pg_proc where oid = to_regprocedure('public.billing_row_grants_access(text,text,timestamptz,timestamptz)')) = 'i'
+  select 41, 'D. the standing rule is immutable (pure: same row, same instant, same answer), and the access rule is it plus what the price sells',
+         case when (select provolatile from pg_proc where oid = to_regprocedure('public.billing_row_in_good_standing(text,text,timestamptz,timestamptz)')) = 'i'
+               and pg_get_functiondef(to_regprocedure('public.billing_row_grants_access(text,text,timestamptz,timestamptz)')) like '%billing_tier_of_price%'
               then 'PASS' else 'FAIL' end, ''
 
   -- E. the other copy of the rule agrees

@@ -15,6 +15,13 @@ capped research categories exist, disabled
 paused them. In production `provider.default` is `theoddsapi`, not OddsBlaze
 ([METHODOLOGY-2026-10-28-collective-jobs.md](METHODOLOGY-2026-10-28-collective-jobs.md)).
 
+**Amended 2026-10-28 (until 2026-11-01):** until the reset,
+`collective_odds_ingest` may poll The Odds API with the Collective's **own**
+key, `COLLECTIVE_ODDS_API_KEY`, never the main account's, and only while the
+breaker reads on. One marked block, dated, held to its shape by
+`no_bypass.test.js`
+([METHODOLOGY-2026-10-28-collective-own-key.md](METHODOLOGY-2026-10-28-collective-own-key.md)).
+
 **Plan:** $59/month, 100,000 credits. On 2026-10-10 at 12:24Z the provider
 reported **99,336 used and 664 remaining**. By 13:55Z it reported **100,000
 used and 0 remaining** (the CFB props capture's own `capture_state.json`): the

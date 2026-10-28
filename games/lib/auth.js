@@ -26,11 +26,20 @@
   var CONSENT_VERSION = '2026-07';
   var TIMEOUT_MS = 12000;
   var SB_URL = null, SB_KEY = null;
+  /* Where a confirmation link comes back to, and which door the account came
+     through. Games by default; another free page that reuses this file (the
+     Bet Checker, bet-checker/) passes its own, so its readers return to it. */
+  var RETURN_PATH = '/games/', SURFACE = 'games_franchise';
 
   var S = root.EDGamesSocial || (typeof require === 'function' ? require('./social.js') : null);
   var AT = root.EDGamesAttribution || (typeof require === 'function' ? require('./attribution.js') : null);
 
-  function configure(url, key) { SB_URL = url || SB_URL; SB_KEY = key || SB_KEY; }
+  function configure(url, key, opts) {
+    SB_URL = url || SB_URL; SB_KEY = key || SB_KEY;
+    var o = opts || {};
+    if (typeof o.returnPath === 'string' && /^\/[A-Za-z0-9_\/-]*$/.test(o.returnPath)) RETURN_PATH = o.returnPath;
+    if (typeof o.surface === 'string' && /^[a-z0-9_]{1,40}$/.test(o.surface)) SURFACE = o.surface;
+  }
   function configured() { return !!(SB_URL && SB_KEY); }
   function origin() { try { return root.location.origin; } catch (_) { return 'https://edgedesksports.com'; } }
 
@@ -55,7 +64,7 @@
       landing_page: f.landing || null, referrer_host: f.referrer || null,
       first_seen_at: f.seen_at || null,
       organic_first_seen_at: f.organic_first_seen_at || null,
-      signup_surface: 'games_franchise'
+      signup_surface: SURFACE
     };
   }
 
@@ -128,9 +137,10 @@
       consent_version: CONSENT_VERSION };
     var a = attrPayload(), k;
     for (k in a) if (a.hasOwnProperty(k)) data[k] = a[k];
-    /* The confirmation link comes back to GAMES, where the franchise is,
-       rather than to whatever Site URL the project happens to declare. */
-    return post('/auth/v1/signup?redirect_to=' + encodeURIComponent(origin() + '/games/'),
+    /* The confirmation link comes back to GAMES, where the franchise is (or
+       to the page that configured its own return path), rather than to
+       whatever Site URL the project happens to declare. */
+    return post('/auth/v1/signup?redirect_to=' + encodeURIComponent(origin() + RETURN_PATH),
                 { email: email, password: password, data: data })
       .then(function (r) {
         if (!r.ok) return { ok: false, error: 'auth', status: r.status, message: authMessage(r.data, r.status, 'signup') };

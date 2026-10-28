@@ -23,6 +23,8 @@ Nothing changes in production until an operator applies a file or calls the stop
 
 `tools/sharp_lag/sharp_lag_sql.test.js` (77) and `tools/sql/split_sql.test.js` also pass. Three existing checks count what the new fixture adds, and their expected numbers rise with it: paused jobs 6 to 8, fixture jobs 8 to 10, report rows 12 to 13. No check is relaxed.
 
+
+
 ## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
 
 **What was wrong.** All 14 NFL week 7 games settled with a final score and no captured closing line. So none of them has an against-the-spread (ATS) result. The last close on file is WAS @ SF (kickoff 2026-10-20 00:15Z). The settlement refresh puts every week-7 game in class L: snapshots exist, but none falls inside the final 360 minutes before kickoff. College week 8 has no closes either. College closes have been mostly missing all season (the ten-character name join in `collective/settled/README.md`), so the stop shows most clearly in the NFL.

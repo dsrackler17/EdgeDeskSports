@@ -43,6 +43,10 @@ on:
         description: 'Deploy capture, close, collective_odds_ingest and props_cron as rewired to the gateway'
         type: boolean
         default: true
+      callers:
+        description: 'Which callers, space separated (default all four). E.g. collective_odds_ingest alone, so a pending change to another caller does not ship with it.'
+        type: string
+        default: 'capture close collective_odds_ingest props_cron'
 
 permissions:
   contents: read
@@ -136,8 +140,13 @@ jobs:
         if: ${{ inputs.deploy_callers && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CALLERS: ${{ inputs.callers }}
         run: |
-          for fn in capture close collective_odds_ingest props_cron; do
+          # Only the four rewired callers may be named; anything else stops the run.
+          for fn in ${CALLERS:-capture close collective_odds_ingest props_cron}; do
+            case "$fn" in capture|close|collective_odds_ingest|props_cron) ;; *) echo "::error::not a gateway caller: $fn"; exit 1;; esac
+          done
+          for fn in ${CALLERS:-capture close collective_odds_ingest props_cron}; do
             supabase functions deploy "$fn" \
               --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
               --no-verify-jwt
