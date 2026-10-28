@@ -21,7 +21,9 @@ chk('the cron token value is removed, its name is kept', !r1.includes('a1b2c3d4e
 chk('the service key is removed', !r1.includes(SERVICE) && !r1.includes('x'.repeat(32)), r1);
 chk('the URL path the job calls survives', r1.includes('/functions/v1/collective_odds_ingest/v1/ingest?league=nfl'), r1);
 
-const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.c2lnbmF0dXJlLXNpZ25hdHVyZQ';
+// a JWT shape only: {"role":"fake_fixture"} and a fake signature, so the
+// repository's secret audit (tools/cfb/secret_audit.js) reads it as a fixture
+const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiZmFrZV9maXh0dXJlIn0.ZmFrZS1zaWduYXR1cmUtZm9yLWEtdGVzdA';
 chk('a JWT is removed', !D.redact('Authorization: ' + jwt).includes('eyJ'), D.redact('Authorization: ' + jwt));
 chk('a connection string loses its password', !D.redact(DBURL).includes('hunter2'), D.redact(DBURL));
 chk('an exact secret from the environment is removed even when short of every pattern',
