@@ -309,8 +309,13 @@ chk('a Sign out click is never counted as a log in', /login_click' && \/sign out
 /* ======================================================================== */
 /* 200 KB until 2026-10-23, when the page took the desk, Signal Center and the
    Simulator: their styles are lib/edgedesk_landing_desk.css, so the growth is
-   markup, about 15 KB raw and 4 KB over the wire (57.9 to 61.9 KB gzipped) */
-chk('the page is under 216 KB, preserved auth and billing block included', IDX.length < 216 * 1024, Math.round(IDX.length / 1024) + ' KB');
+   markup, about 15 KB raw and 4 KB over the wire (57.9 to 61.9 KB gzipped).
+   216 KB until 2026-10-28, when #pricing took Bet Checker between Free and
+   Full Access: its card, and "Which one do I need?", whose styles are
+   lib/edgedesk_landing_desk.css too, so again the growth is markup, 5.1 KB
+   raw and 1.1 KB over the wire (63.2 to 64.3 KB gzipped). The card's own
+   rules stay inline: app.html sends readers straight to #subscribe beside it */
+chk('the page is under 221 KB, preserved auth and billing block included', IDX.length < 221 * 1024, Math.round(IDX.length / 1024) + ' KB');
 chk('the presentation script is small', LANDING.length < 28 * 1024, Math.round(LANDING.length / 1024) + ' KB');
 chk('the multi-megabyte artifacts are never fetched', !/rankings\/current\.json'|players\/current\.json'|props\/(?:nfl|cfb)\/(?:summary|board)\.json|cfb_terminal\/board\.json/.test(IDX.replace(/\/\*[\s\S]*?\*\//g, '')));
 const BOARD = path.join(ROOT, 'football', 'home', 'board.json');

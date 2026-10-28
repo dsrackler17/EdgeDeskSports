@@ -441,14 +441,14 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 @media(max-width:380px){.pm{grid-template-columns:1fr}.pm .nums{text-align:left}}
 
 /* ---------- value + pricing ---------- */
-.price{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:28px 56px;align-items:start;max-width:1040px;margin-left:auto;margin-right:auto}
+.price{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
 .hook{margin-top:30px;font-family:var(--disp);font-size:clamp(22px,2.4vw,28px);font-weight:600;letter-spacing:-.025em;line-height:1.15}
 .hook+p{margin-top:10px;font-size:15px;color:var(--dim);line-height:1.6;max-width:36em}
 .pcard{position:relative;background:var(--panel);border:1px solid rgba(47,167,154,.45);border-radius:20px;padding:30px;box-shadow:0 40px 80px -60px rgba(0,0,0,.95)}
 .pcard .ptag{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--obs)}
 .pcard .pname{font-family:var(--disp);font-size:20px;font-weight:600;margin-top:6px}
 .pprice{display:flex;align-items:baseline;gap:8px;margin-top:14px}
-.pamt{font-family:var(--disp);font-size:56px;font-weight:600;letter-spacing:-.04em;line-height:1}
+.pamt{font-family:var(--disp);font-size:clamp(46px,4.4vw,56px);font-weight:600;letter-spacing:-.04em;line-height:1}
 .pper{color:var(--dim);font-size:16px}
 .ptrial{display:inline-flex;margin-top:12px;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--val);border:1px solid rgba(124,193,66,.42);border-radius:7px;padding:5px 10px}
 .pincl{list-style:none;margin:20px 0 22px;padding:0;display:grid;gap:8px}
@@ -462,6 +462,14 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .freecard .ptag{color:var(--dim)}
 .freecard .pper{font-size:14px}
 .freecard .btn{width:100%}
+/* Bet Checker: the annual figure under the price, the free tier, two doors */
+.bccard{border-color:var(--line2)}
+.bccard .btn{width:100%}
+.bccard .btn+.btn{margin-top:10px}
+.pyear{margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+.pfree,.pinc{margin:-6px 0 18px;padding:10px 12px;border:1px dashed var(--line2);border-radius:10px;font-size:13.5px;line-height:1.5;color:var(--dim)}
+.pfree b,.pinc span{color:var(--text);font-weight:600}
+.pinc{border-color:rgba(47,167,154,.45)}
 .pnote{max-width:720px;margin:40px auto 0;text-align:center}
 .pnote .hook{margin-top:0}
 .pnote .hook+p{margin-left:auto;margin-right:auto}
@@ -471,7 +479,8 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .timeline b{display:block;font-size:16px;font-weight:600}
 .timeline span{display:block;color:var(--dim);font-size:14px;line-height:1.5}
 .timeline .when span,.timeline b span{display:inline;color:inherit;font-size:inherit}
-@media(max-width:900px){.price{grid-template-columns:1fr;max-width:560px}.timeline{grid-template-columns:1fr;max-width:560px}}
+@media(max-width:1020px){.price{grid-template-columns:1fr;max-width:560px;margin-left:auto;margin-right:auto}}
+@media(max-width:900px){.timeline{grid-template-columns:1fr;max-width:560px}}
 @media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}}
 
 /* ---------- trust / public record ---------- */
@@ -616,9 +625,9 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- the product pictures' styles (#coach, #film, #history), far below the first screen -->
 <link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1"></noscript>
-<!-- the desk's styles (#desk, #signals, #simulator), below the first screen too -->
-<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261024dk2" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261024dk2"></noscript>
+<!-- the desk's styles (#desk, #signals, #simulator, #pricing's plan table), below the first screen too -->
+<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028b" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028b"></noscript>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -686,8 +695,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       </div>
     </div>
 
-    <!-- 2 · FREE, AND WHAT FULL ACCESS ADDS, said once -->
-    <div class="strip" aria-label="What is free, and what Full Access adds">
+    <!-- 2 · FREE, THEN WHAT EACH PAID PLAN COSTS, said once -->
+    <div class="strip" aria-label="What is free, and what Bet Checker and Full Access cost">
       <span class="strip-k">Free</span>
       <ul>
         <li>Game research</li>
@@ -695,6 +704,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <li>Odds tools</li>
         <li>Weekly email</li>
       </ul>
+      <span class="strip-p"><span class="strip-k">Bet Checker</span> <span data-ed-price="bc_monthly">$7.99/month</span></span>
       <span class="strip-p"><span class="strip-k">Full Access</span> <span data-ed-price="monthly">$49.99/month</span></span>
       <a class="lnk strip-how" href="#how" data-track="how_it_works_click" data-cta="strip_how">How Full Access works</a>
     </div>
@@ -1273,13 +1283,16 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- ================== 10 · VALUE + PRICING ==================
      Every figure is lib/edgedesk_pricing.js (data-ed-price), the one source.
      app.html sends visitors to ./index.html#pricing and #subscribe. Free
-     (lib/edgedesk_plans.js FREE) beside Full Access (FEATURES); neither card
-     lists anything still in development. -->
+     (lib/edgedesk_plans.js FREE), then Bet Checker (BET_CHECKER, sold on
+     /bet-checker/ behind its own renewal consent), then Full Access
+     (FEATURES), and which one does what, row by row; no card lists anything
+     still in development. -->
 <section class="sec" id="pricing">
   <div class="wrap">
     <div class="sec-head center rv">
       <span class="ey">Pricing</span>
-      <h2>Free research. <span class="g">One price for the rest.</span></h2>
+      <h2>Free research. Check your own bets for <span data-ed-price="bc_price">$7.99</span>. <span class="g">Or get the whole terminal.</span></h2>
+      <p class="lede">Bet Checker grades the bets you have already placed. Full Access is the research you do before you bet, and it includes Bet Checker.</p>
     </div>
     <div class="sec-body price">
       <!-- lib/edgedesk_plans.js FREE, in order -->
@@ -1301,6 +1314,26 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <a class="btn ghost lg" href="#free" data-cta="pricing_free">Explore free research</a>
         <p class="psub">Free stays free. Full Access is there when you want the whole terminal.</p>
       </div>
+      <!-- lib/edgedesk_pricing.js BET_CHECKER: its figures, and its FEATURES
+           lines verbatim. /bet-checker/?upgrade= only OPENS the renewal
+           terms there; the reader still reads and ticks them. -->
+      <div class="bccard pcard rv">
+        <span class="ptag" data-ed-price="bc_plan">EdgeDesk Bet Checker</span>
+        <p class="pname">Already placed the bet? See if you got a good price.</p>
+        <div class="pprice"><span class="pamt" data-ed-price="bc_price">$7.99</span><span class="pper">/ month</span></div>
+        <p class="pyear">or <span data-ed-price="bc_annual">$59.00/year</span></p>
+        <ul class="pincl bc-incl">
+          <li>Every bet graded instantly against EdgeDesk&rsquo;s fair price</li>
+          <li>Running stats: CLV rate, average entry edge, average CLV</li>
+          <li>Splits by market, sport and book</li>
+          <li>Your full history</li>
+        </ul>
+        <p class="pfree"><b>Free account, no card:</b> <span data-ed-price="bc_free">10</span> graded bets a month, and CLV on every bet.</p>
+        <a class="btn primary lg" href="/bet-checker/?upgrade=monthly&amp;ref=landing_pricing" data-track="pricing_bet_checker_click" data-cta="pricing_bet_checker">Get Bet Checker <span class="ar" aria-hidden="true">&rarr;</span></a>
+        <a class="btn ghost" href="/bet-checker/?ref=landing_pricing" data-cta="pricing_bet_checker_free">Check a bet free</a>
+        <p class="psub">NFL and college football. No picks: it grades the price you took.</p>
+        <p class="psub">No free trial. Renews automatically; cancel anytime in Settings.</p>
+      </div>
       <div class="pcard rv">
         <span id="subscribe"></span>
         <span class="ptag" data-ed-price="plan">EdgeDesk Full Access</span>
@@ -1319,11 +1352,32 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
           <li>Bet journal, profit, ROI and closing-line value</li>
           <li>Process Coach and the weekly Film Room</li>
         </ul>
+        <p class="pinc">Includes <span data-ed-price="bc_plan">EdgeDesk Bet Checker</span>: every bet graded, with your stats.</p>
         <button type="button" class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()" data-track="pricing_cta_click" data-cta="pricing_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
         <p class="psub"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
         <p class="psub">A card holds the trial. Nothing charged until day <span data-ed-price="day8">8</span>.</p>
         <p class="psub" id="edOffer" hidden></p>
         <p class="psmall">21+ &middot; Research and decision-support tool &middot; Signals can be wrong &middot; <span class="nw">1-800-GAMBLER</span></p>
+      </div>
+    </div>
+    <!-- which plan does what: the #desk table's rows (.upg), three plans wide -->
+    <div class="plans rv">
+      <h3>Which one do I need?</h3>
+      <p>Already placed a bet and want to know if you got a good price: <b>Bet Checker</b>. Want EdgeDesk&rsquo;s research before you bet: <b>Full Access</b>, which includes Bet Checker.</p>
+      <div class="upg-w">
+        <table class="upg">
+          <caption class="sr">What Free, Bet Checker and Full Access each include, row by row.</caption>
+          <thead><tr><th scope="col">What you get</th><th scope="col">Free</th><th scope="col">Bet Checker</th><th scope="col">Full Access</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Grade bets you already placed</th><td data-l="Free"><span data-ed-price="bc_free">10</span> a month</td><td data-l="Bet Checker">Every bet</td><td data-l="Full Access">Every bet</td></tr>
+            <tr><th scope="row">CLV after the close</th><td data-l="Free">Every bet</td><td data-l="Bet Checker">Every bet</td><td data-l="Full Access">Every bet</td></tr>
+            <tr><th scope="row">Your stats and splits</th><td data-l="Free" class="no">Not included</td><td data-l="Bet Checker">Included</td><td data-l="Full Access">Included</td></tr>
+            <tr><th scope="row">Your bet history</th><td data-l="Free">Last 30 days</td><td data-l="Bet Checker">Full</td><td data-l="Full Access">Full</td></tr>
+            <tr><th scope="row">EdgeDesk&rsquo;s fair lines and research before you bet</th><td data-l="Free">Published research and a sample</td><td data-l="Bet Checker" class="no">Not included</td><td data-l="Full Access">Every NFL and FBS game</td></tr>
+            <tr><th scope="row">Signal Center, the Simulator, player props, EdgeDesk EV</th><td data-l="Free">Signal Center&rsquo;s preview</td><td data-l="Bet Checker" class="no">Not included</td><td data-l="Full Access">Included</td></tr>
+            <tr><th scope="row">Price</th><td data-l="Free">$0</td><td data-l="Bet Checker"><span data-ed-price="bc_monthly">$7.99/month</span> or <span data-ed-price="bc_annual">$59.00/year</span></td><td data-l="Full Access"><span data-ed-price="monthly">$49.99/month</span> after a <span data-ed-price="days">7</span>-day free trial</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
     <div class="pnote rv">
@@ -1621,7 +1675,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
      rather than duplicated inline so the landing page, the reset page and
      EdgeDesk Games cannot drift apart on any of the three. -->
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
-<script src="/lib/edgedesk_pricing.js?v=20261028a"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261028b"></script>
 <!-- THE ONE ACCESS DECISION (public.my_billing_access) and the two server
      functions that change it: create_checkout_session, sync_subscription. -->
 <script src="/lib/edgedesk_access.js?v=20261028a"></script>

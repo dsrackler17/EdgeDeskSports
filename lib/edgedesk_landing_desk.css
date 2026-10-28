@@ -2,7 +2,8 @@
    THE DESK — the landing page's #desk, #signals and #simulator
    (index.html): the terminal's six seats, the upgrade from free to Full
    Access, and the two pictures of what shipped on 2026-10-23 (Signal Center
-   and the Simulator). Moved out of the page's <style> for its weight budget,
+   and the Simulator); and #pricing's "Which one do I need?", the same rows
+   three plans wide. Moved out of the page's <style> for its weight budget,
    like lib/edgedesk_landing_pictures.css, and loaded the same way: it never
    blocks the first screen. Every token is the page's own (:root in
    index.html); the provenance badges are the Simulator reader's colours
@@ -46,6 +47,15 @@
   .upg td::before{content:attr(data-l);display:block;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:1px}
   .upg td:last-child::before{color:var(--obs)}
 }
+
+/* ---------- #pricing: which plan does what, the same rows three plans wide ---------- */
+.plans{max-width:1040px;margin:52px auto 0}
+.plans h3{font-size:24px;text-align:center}
+.plans>p{max-width:40em;margin:10px auto 0;text-align:center;font-size:15px;line-height:1.55;color:var(--dim)}
+.plans>p b{color:var(--text);font-weight:600}
+/* four columns where the rows are a table; a phone keeps the card rows above */
+@media(min-width:641px){.plans .upg tbody th{width:28%}.plans .upg td,.plans .upg td:last-child{width:24%}}
+@media(max-width:640px){.plans{margin-top:40px}.plans h3{font-size:21px}}
 
 /* both pictures sit in the page's .rs grid; its stacked phone column must
    never take the width of what is inside it */
