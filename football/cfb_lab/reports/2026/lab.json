@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-28T05:07:56.000Z",
+ "generated_at": "2026-10-28T06:07:54.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -62,10 +62,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1925,
-    "latest_snapshot_at": "2026-10-28T02:34:09.000Z",
-    "upcoming_games": 61,
-    "avg_confidence_upcoming": 75.9
+    "snapshots": 1967,
+    "latest_snapshot_at": "2026-10-28T06:07:54.000Z",
+    "upcoming_games": 103,
+    "avg_confidence_upcoming": 75.4
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -87,19 +87,19 @@
    }
   ],
   "data_quality": {
-   "games": 64,
+   "games": 103,
    "counts": {
     "GREEN": 7,
-    "YELLOW": 57,
+    "YELLOW": 96,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 57,
+     "YELLOW": 96,
      "RED": 0
     },
-    "team_mapping": {
-     "YELLOW": 3,
+    "pbp_freshness": {
+     "YELLOW": 1,
      "RED": 0
     }
    },
@@ -811,11 +811,6 @@
      "status": "YELLOW",
      "issues": [
       {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
-      {
        "check": "odds_freshness",
        "status": "YELLOW",
        "detail": "no market quote captured yet"
@@ -828,11 +823,6 @@
      "game_id": "401862818",
      "status": "YELLOW",
      "issues": [
-      {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
       {
        "check": "odds_freshness",
        "status": "YELLOW",
@@ -847,11 +837,6 @@
      "status": "YELLOW",
      "issues": [
       {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
-      {
        "check": "odds_freshness",
        "status": "YELLOW",
        "detail": "no market quote captured yet"
@@ -859,11 +844,523 @@
      ],
      "kickoff": "2026-11-07T01:00:00.000Z",
      "matchup": "Nebraska @ Illinois"
+    },
+    {
+     "game_id": "401864533",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T02:00:00.000Z",
+     "matchup": "New Mexico @ Nevada"
+    },
+    {
+     "game_id": "401856855",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T03:15:00.000Z",
+     "matchup": "TCU @ Arizona"
+    },
+    {
+     "game_id": "401856738",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Arkansas @ Auburn"
+    },
+    {
+     "game_id": "401856739",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Oklahoma @ Florida"
+    },
+    {
+     "game_id": "401856740",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Alabama @ LSU"
+    },
+    {
+     "game_id": "401856741",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Georgia @ Ole Miss"
+    },
+    {
+     "game_id": "401856742",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Vanderbilt @ Mississippi State"
+    },
+    {
+     "game_id": "401856743",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Texas @ Missouri"
+    },
+    {
+     "game_id": "401856744",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Texas A&M @ South Carolina"
+    },
+    {
+     "game_id": "401856745",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Kentucky @ Tennessee"
+    },
+    {
+     "game_id": "401856849",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "BYU @ Utah"
+    },
+    {
+     "game_id": "401856850",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "UCF @ Kansas"
+    },
+    {
+     "game_id": "401856851",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Cincinnati @ Houston"
+    },
+    {
+     "game_id": "401856852",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Colorado @ Arizona State"
+    },
+    {
+     "game_id": "401856853",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Iowa State @ Baylor"
+    },
+    {
+     "game_id": "401856854",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Oklahoma State @ Kansas State"
+    },
+    {
+     "game_id": "401856856",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "West Virginia @ Texas Tech"
+    },
+    {
+     "game_id": "401858285",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Clemson @ Syracuse"
+    },
+    {
+     "game_id": "401858286",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Duke @ NC State"
+    },
+    {
+     "game_id": "401858287",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Louisville @ Georgia Tech"
+    },
+    {
+     "game_id": "401858289",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Florida State @ Boston College"
+    },
+    {
+     "game_id": "401858290",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      },
+      {
+       "check": "pbp_freshness",
+       "status": "YELLOW",
+       "detail": "team play-by-play coverage 50%"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Merrimack @ Wake Forest"
+    },
+    {
+     "game_id": "401858511",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Michigan State @ Michigan"
+    },
+    {
+     "game_id": "401858512",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "UCLA @ Minnesota"
+    },
+    {
+     "game_id": "401858513",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Iowa @ Northwestern"
+    },
+    {
+     "game_id": "401858514",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Oregon @ Ohio State"
+    },
+    {
+     "game_id": "401858515",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Maryland @ Purdue"
+    },
+    {
+     "game_id": "401858516",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Penn State @ Washington"
+    },
+    {
+     "game_id": "401858517",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Rutgers @ Wisconsin"
+    },
+    {
+     "game_id": "401862819",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Charlotte @ UAB"
+    },
+    {
+     "game_id": "401862821",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Rice @ North Texas"
+    },
+    {
+     "game_id": "401862822",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Tulsa @ Tulane"
+    },
+    {
+     "game_id": "401864532",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Hawai'i @ UTEP"
+    },
+    {
+     "game_id": "401864534",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Northern Illinois @ San José State"
+    },
+    {
+     "game_id": "401869927",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Georgia State @ App State"
+    },
+    {
+     "game_id": "401869945",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Old Dominion @ Coastal Carolina"
+    },
+    {
+     "game_id": "401869951",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Marshall @ Georgia Southern"
+    },
+    {
+     "game_id": "401869968",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "South Alabama @ Louisiana"
+    },
+    {
+     "game_id": "401871098",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-07T05:00:00.000Z",
+     "matchup": "Louisiana Tech @ Troy"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-28T04:07:49.000Z",
-    "quotes_total": 27280,
+    "last_quote_at": "2026-10-28T06:07:54.000Z",
+    "quotes_total": 27400,
     "last_result_at": "2026-10-28T04:07:49.000Z"
    }
   },
@@ -914,9 +1411,9 @@
    }
   ],
   "ledger": {
-   "predictions": 7591,
-   "live_predictions": 7081,
-   "quotes": 27280,
+   "predictions": 7633,
+   "live_predictions": 7123,
+   "quotes": 27400,
    "lines": 4317,
    "results": 519,
    "evaluations": 7180,
