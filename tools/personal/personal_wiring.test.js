@@ -119,9 +119,12 @@ chk('the paywall renders the same list', /\(\(X&&X\.FEATURES\)\|\|\[\]\)\.map\(/
 chk('the hero says what follows the free week, right under its button',
   /id="heroCta"[\s\S]{0,200}<p class="microcta"><span><b>Free research, no card<\/b><\/span><span>Full Access <span data-ed-price="trial">7 days free<\/span><\/span><span>Then <span data-ed-price="price">\$49\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
 chk('the in-app paywall states the trial line for a new account and promises no trial to a lapsed one',
-  /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /\(fresh\?'<a class="pg-btn" href="\.\/index\.html#subscribe">Start '\+\(X\?X\.TRIAL_DAYS:''\)\+' days free<\/a>'/.test(APP)
+  /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /\(fresh\?'<a class="'\+stripeCls\+'" href="\.\/index\.html#subscribe">Start '\+\(X\?X\.TRIAL_DAYS:''\)\+' days free<\/a>'/.test(APP)
   && /<span class="per">then '\+stEsc\(price\)\+'\/month<\/span>/.test(APP));
-chk('the new-account paywall button goes through the consented trial flow', /\(fresh\?'<a class="pg-btn" href="\.\/index\.html#subscribe">Start /.test(APP));
+chk('the new-account paywall button goes through the consented trial flow', /\(fresh\?'<a class="'\+stripeCls\+'" href="\.\/index\.html#subscribe">Start /.test(APP));
+/* Juice Reel (#860) moved the card trial's button into stripeCls: below Juice
+   Reel's own button, as a secondary one, only when its switch is on. */
+chk('with Juice Reel off, the card trial is still the paywall\'s primary button', /var stripeCls=jr\?'pg-btn ghost"[^']*':'pg-btn';/.test(APP));
 chk('and a new account is asked to unlock Full Access, not told it has lapsed', /:fresh\?'Unlock '\+stEsc\(SUB_PLAN_NAME\)/.test(APP));
 chk('no countdown or scarcity device anywhere in the offer file', !/countdown|limited|hurry|expires/i.test(read('lib/edgedesk_pricing.js').replace(/No countdowns, no scarcity, no "limited time"/, '').replace(/nothing here counts down/, '')));
 
