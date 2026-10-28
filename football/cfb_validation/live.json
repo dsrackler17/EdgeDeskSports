@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-28T16:16:23.682Z",
+ "generated_at": "2026-10-28T17:09:53.468Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -286,7 +286,7 @@
   "release": "edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T00:00:00.000Z",
   "live_games": 237,
-  "live_snapshots_tracked": 1978,
+  "live_snapshots_tracked": 1982,
   "model_mae": 12.029,
   "market_moved_toward_edgedesk_pct": 53.6,
   "average_clv": -0.017,
@@ -1502,13 +1502,13 @@
     "what": "current FBS power rating rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-w7",
-    "to": "2026-w8"
+    "to": "2026-w9"
    },
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-10-22T14:42:40.854Z",
-    "to": "2026-10-28T13:19:58.573Z"
+    "to": "2026-10-28T16:18:50.307Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -1517,13 +1517,19 @@
     "to": 74
    },
    {
+    "what": "market coverage (% of slate games with 2+ fresh books)",
+    "kind": "MARKET",
+    "from": 0,
+    "to": 21
+   },
+   {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 59,
     "to": 52
    }
   ],
-  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "lab_alerts": [
   {
@@ -1565,9 +1571,9 @@
   {
    "kind": "market_source_stale",
    "level": "warn",
-   "message": "48% of snapshots within 72 h fail odds_freshness",
+   "message": "42% of snapshots within 72 h fail odds_freshness",
    "detail": {
-    "share": 0.484
+    "share": 0.415
    }
   }
  ],

@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-28T16:16:23.682Z",
- "board_generated_at": "2026-10-28T16:16:14.385Z",
+ "generated_at": "2026-10-28T17:09:53.468Z",
+ "board_generated_at": "2026-10-28T17:09:43.688Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -59,8 +59,8 @@
     },
     {
      "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Texas Tech: availability sources checked, nothing filed · PASS: Arizona: availability sources checked, nothing filed"
+     "result": "FAIL",
+     "detail": "FAIL: Texas Tech: availability feed fetch failed — abnormal missing data · FAIL: Arizona: availability feed fetch failed — abnormal missing data"
     },
     {
      "requirement": "component adjustments within historical bounds",
@@ -79,7 +79,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
   },
   {
    "game_id": "401859185",
@@ -88,15 +88,15 @@
    "named": false,
    "edgedesk": "Notre Dame −22.0",
    "market": "Notre Dame −30.5",
-   "books": 1,
+   "books": 2,
    "gap": 8.6,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "PLAYER_AVAILABILITY_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -110,8 +110,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
     },
     {
      "requirement": "current team states",
@@ -145,7 +145,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
+   "verdict": "INVESTIGATE is correct: no abnormal availability fail; submodel support fail."
   },
   {
    "game_id": "401858503",
@@ -191,8 +191,8 @@
     },
     {
      "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Maryland: availability sources checked, nothing filed · PASS: Illinois: availability sources checked, nothing filed"
+     "result": "FAIL",
+     "detail": "FAIL: Maryland: availability feed fetch failed — abnormal missing data · FAIL: Illinois: availability feed fetch failed — abnormal missing data"
     },
     {
      "requirement": "component adjustments within historical bounds",
@@ -211,7 +211,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail."
   },
   {
    "game_id": "401858514",
