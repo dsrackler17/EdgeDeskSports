@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-28 — The landing page's hero says "Integrated with Juice Reel"
+
+**Why.** The Juice Reel integration matters most as a credential. Until now the landing page said so only in the partner band, eleven sections down, and only once a script had drawn it.
+
+**What changed:**
+- `index.html`: a line, **Integrated with Juice Reel**, sits under the hero's audience line. The words are in the page itself, so a reader without the script, or a crawler, sees them too. It is on the first screen at phone and desktop widths.
+- `lib/edgedesk_landing_desk.css`: its pill style, kept out of the page's own sheet for the 216 KB budget. The stamp moves to `20261028jr2` and is recorded in `tools/presentation/landing_asset_stamps.json`.
+- The page now has 2 characters of room under the budget (it had 56).
+- `tools/billing/juicereel_checkout.e2e.js` gains three checks: the line is in the hero's HTML, and it is on the first screen at 390 px and at 1280 px. With the line, 49 passed, 0 failed. Without it, those three checks fail: 46 passed, 3 failed.
+
 ## 2026-10-28 — Two red checks left by the Juice Reel work (#860, #862), fixed in the tests
 
 Both failures are in Personal research CI, which runs only on pull requests. The product code is unchanged.

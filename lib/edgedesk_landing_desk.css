@@ -98,3 +98,9 @@
 .jr-band p a{color:var(--obs);font-weight:600;text-decoration:none}
 #jrAct{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}
 .jr-band .auth-msg{max-width:640px;margin-left:auto;margin-right:auto;text-align:left}
+/* the hero's credential under the audience line (index.html .jrc). Its words
+   are in the page, so a reader without the script sees them too; the pill is
+   drawn here, off the first screen's path, for the page's weight budget. */
+.jrc{display:flex;align-items:center;gap:8px;width:fit-content;margin:14px 0 0;padding:6px 13px;border:1px solid var(--line2);border-radius:999px;background:var(--panel);font-size:13px;font-weight:600;color:var(--text)}
+.jrc::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--obs)}
+@media(max-width:560px){.jrc{margin:10px auto 0;font-size:12px}}
