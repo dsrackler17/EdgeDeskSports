@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
+
+**What was wrong.** All 14 NFL week 7 games settled with a final score and no captured closing line. So none of them has an against-the-spread (ATS) result. The last close on file is WAS @ SF (kickoff 2026-10-20 00:15Z). The settlement refresh puts every week-7 game in class L: snapshots exist, but none falls inside the final 360 minutes before kickoff. College week 8 has no closes either. College closes have been mostly missing all season (the ten-character name join in `collective/settled/README.md`), so the stop shows most clearly in the NFL.
+
+**The cause, read from production.**
+- The Collective polls The Odds API once a day (`provider.default = theoddsapi`; pg_cron `collective_nfl_odds` at 12:35Z, `collective_cfb_odds` at 12:40Z) through `odds.run_ingest`. Its own quota read 57 used and 443 remaining on 2026-10-21.
+- The last successful poll was 2026-10-21 12:35Z, which wrote 872 snapshots.
+- That evening, Deploy odds gateway (21:51Z) put this repository's reconstruction of `collective_odds_ingest` live for the first time. In that version, The Odds API is reached only through `odds_gateway`, in category `collective`.
+- From 2026-10-22 through 2026-10-27, all 11 polls (NFL and college) ended `odds_gateway: denied_unconfirmed_quota`. No snapshot was written.
+- The gateway's switch is on (since 2026-10-21 20:46Z), with a 60,000 budget, and the `collective` category is enabled. But the gateway has seen no provider quota header in the October cycle (`provider_observed_at` is empty, `quota_confirmed` false), so it refuses every paid request. Its spend this cycle is 0.
+
+**What this changes.** Nothing in production. It adds the tool that read the cause:
+- `tools/collective/odds_doctor.js` reads `collective_odds_ingest`'s `GET /v1/status` and, inside `BEGIN TRANSACTION READ ONLY`, the pg_cron jobs that poll the ingest, the emergency stop's paused-jobs log, the jobs' runs, pg_net's recent answers, `odds.ingest_runs`, snapshot and closing-line counts by day, `odds.settings` (no setting whose name contains token, secret or key), and the gateway's switch, cycle, categories and decisions on the Collective's requests. It calls no provider and writes nothing. Every printed value is redacted first.
+- `.github/workflows/collective-odds-doctor.yml` runs it from Run workflow, or from a push to `claude/**` with `[odds-doctor]` in the head commit. Any other push runs only its tests.
+
+**Not changed, and why.**
+- Last week stays graded on scores alone. The Collective never stored those closes. Its rule allows only its own captured close, and filling them from another source would be a methodology change.
+- Restoring the polls means either confirming the gateway's quota (the main account was spent on 2026-10-10 and resets 2026-11-01 00:00 UTC) or giving the Collective its own key back. Both are odds gateway budget and bypass decisions (AGENTS.md §3), so they are left to the owner.
+
+Tests: `node tools/collective/odds_doctor.test.js` (40) covers redaction of tokens, JWTs, connection strings and header values; read-only wrapping; argument and identifier validation; and the report end to end on stubs. The test was mutation-checked: dropping the header-value rule, or `READ ONLY`, turns it red. Every section also ran against a local PostgreSQL 16 with pg_cron-, pg_net-, odds- and gateway-shaped tables, and a planted cron token never appeared. `collective-tests.yml` runs the suite.
+
 ## 2026-10-27 — FBS board: a card the reader opened stays open when late data repaints the board
 
 **What was wrong.** Opening a game on the FBS board draws its card into `#p4gate-<id>` (`fbP4Gate`). The board draws every row closed. About 40 places call `renderFootball()` when their data lands, among them the season record, the quote-EV tables, the grades and the matchup data. Only the 60-second price refresh went through `fbRepaintKeepingPlace()`, which reopens the open cards. So a card opened in the first seconds after load could shut again, empty, when a late artifact arrived.

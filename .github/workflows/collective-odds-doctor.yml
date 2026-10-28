@@ -9,6 +9,11 @@
 # repository's reconstruction. What the ingest has done since is visible only
 # in production; this reads it (tools/collective/odds_doctor.js).
 #
+# Its first reading (2026-10-28): every daily poll since 2026-10-22 ended
+# "odds_gateway: denied_unconfirmed_quota" with nothing written. The ingest
+# now buys only through odds_gateway, and the gateway has seen no provider
+# quota header in the October cycle, so it refuses every paid request.
+#
 # READ-ONLY. It calls collective_odds_ingest GET /v1/status (no provider call,
 # no credit) and reads pg_cron, pg_net and the odds schema inside BEGIN
 # TRANSACTION READ ONLY. It writes nothing, and the report it puts in the run
@@ -20,7 +25,7 @@
 # commit message carries [odds-doctor]. Any other push runs the tests only.
 #
 # SECRETS (the ones the settle job already uses): SB_URL, SB_SERVICE_ROLE,
-# SB_DB_URL. A half whose secret is empty is reported unread and the run fails.
+# SB_DB_URL. Without SB_DB_URL the database half is unread and the run fails.
 name: Collective odds doctor
 
 on:

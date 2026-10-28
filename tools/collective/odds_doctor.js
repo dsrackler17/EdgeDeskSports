@@ -14,7 +14,15 @@
    for the first time. What the ingest has done since is visible only in
    production, so this asks production.
 
-   READ-ONLY. Two halves, either of which runs without the other:
+   WHAT IT FOUND (2026-10-28). The Collective polls The Odds API
+   (provider.default = theoddsapi) once a day, at 12:35Z for the NFL and
+   12:40Z for college. The last successful poll was 2026-10-21 12:35Z. From
+   2026-10-22 every poll ended "odds_gateway: denied_unconfirmed_quota" with
+   nothing written: the reconstruction buys only through odds_gateway, and
+   the gateway has never seen a provider quota header in the October cycle
+   (provider_observed_at is empty), so it refuses every paid request.
+
+   READ-ONLY. Two halves:
      1. collective_odds_ingest GET /v1/status?league=<l>, with the service
         role. That route reads the feed status, the throttle and the settings
         and returns the function's own diagnosis. It calls no provider and
@@ -22,7 +30,9 @@
      2. Over psql, inside BEGIN TRANSACTION READ ONLY: the pg_cron jobs that
         poll the ingest, whether the 2026-10-10 emergency stop paused them,
         their recent runs, pg_net's recent answers from the function, the
-        ingest's own run log, its snapshot counts by day, and its settings.
+        ingest's own run log, its snapshot counts by day, its settings, and
+        the gateway's switch, cycle, categories and decisions on the
+        Collective's requests.
    Nothing is written anywhere. Commands, messages and settings pass through
    redact() before they are printed, and a setting whose key names a token,
    secret or key is left out entirely.
@@ -31,8 +41,10 @@
      node tools/collective/odds_doctor.js [--since 2026-10-18] [--league nfl,ncaaf]
 
    Env: EDGD_SB_URL and EDGD_SB_SERVICE (the status route; the same names the
-   settle job uses), SB_DB_URL (psql). It exits 1 when either half could not
-   be read, so a run that saw nothing is never green.
+   settle job uses), SB_DB_URL (psql). It exits 1 when the database half
+   could not be read, so a run that saw nothing is never green. The status
+   route restates the same tables, so its refusal alone is reported, not
+   fatal.
    =========================================================================== */
 'use strict';
 const cp = require('child_process');
