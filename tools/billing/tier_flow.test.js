@@ -19,6 +19,9 @@
      a price whose product says the wrong tier          -> refused before Stripe
      Products unreadable by the webhook's key           -> the tier learned at
                                                           checkout still decides
+     a restricted key Stripe refuses every product (403) -> the terminal's checkout
+                                                          still sells; Bet Checker's
+                                                          prices say red themselves
      a price nobody ever named                          -> raised for a human
 
    Needs PostgreSQL (skips loudly without it, like every SQL suite here).
@@ -182,6 +185,62 @@ const BLUE = { kind: 'trial', price_cents: 4999, trial_days: 7, consent_version:
     acc = w.access(P.id);
     chk('Stripe would not say (403/500 on Products): the tier learned at checkout still decides — red, no terminal',
       w.row(P.id).tier === 'red' && acc.has_access === false && acc.bet_checker_paid === true, [w.row(P.id), acc]);
+
+    /* ===================================================================== */
+    /* 4b. A RESTRICTED KEY WITHOUT PRODUCTS READ, AT CHECKOUT               */
+    /* ===================================================================== */
+    /* the key docs/billing-hardening.md set up before Bet Checker: Stripe answers 403 to any read of a
+       product, expanded or not. The terminal's checkout never needed a product and must not start to;
+       Bet Checker's prices carry metadata tier = red themselves (as production's do). */
+    const cold = async (body, token) => {
+      const res = await w.load('create_checkout_session')(new Request('https://fn.test/functions/v1/create_checkout_session', { method: 'POST',
+        headers: { 'content-type': 'application/json', apikey: 'anon-key', authorization: 'Bearer ' + token }, body: JSON.stringify(body) }));
+      return { status: res.status, body: await res.json() };
+    };
+    S.S.productsForbidden = true;
+    const K = w.user('restricted-blue@example.com');
+    let c0 = S.calls.length;
+    r = await cold(BLUE, K.token);
+    chk('RESTRICTED KEY: the terminal\'s trial checkout still sells STRIPE_PRICE_ID with its 7 days', r.status === 200 && r.body.ok &&
+      S.S.sessions[r.body.session_id].line_items[0].price === 'price_4999' && S.S.sessions[r.body.session_id].subscription_data.trial_period_days === '7', r.body);
+    chk('  ... it asked for the product, was refused, and read the price on its own',
+      S.calls.slice(c0).some((c) => /^GET \/v1\/prices\/price_4999\?.*expand/.test(c)) && S.calls.slice(c0).some((c) => c === 'GET /v1/prices/price_4999'), S.calls.slice(c0));
+
+    S.S.prices.price_799.metadata = { tier: 'red' };
+    const K2 = w.user('restricted-red@example.com');
+    n0 = sessions();
+    r = await cold(RED, K2.token);
+    chk('RESTRICTED KEY: Bet Checker sells the price holding bet_checker_monthly, its own metadata saying red',
+      r.status === 200 && r.body.ok && S.S.sessions[r.body.session_id].line_items[0].price === 'price_799' && sessions() === n0 + 1, r.body);
+    S.S.prices.price_799.metadata = {};
+    const K3 = w.user('restricted-notier@example.com');
+    n0 = sessions();
+    r = await cold(RED, K3.token);
+    chk('RESTRICTED KEY: a Bet Checker price that does not say red itself is refused, nothing made',
+      r.status === 409 && r.body.reason === 'offer_mismatch' && sessions() === n0, r.body);
+    S.S.prices.price_4999.metadata = { tier: 'red' };
+    n0 = sessions();
+    r = await cold(BLUE, K3.token);
+    chk('RESTRICTED KEY: STRIPE_PRICE_ID whose own metadata says red is refused as the terminal',
+      r.status === 409 && r.body.reason === 'offer_mismatch' && sessions() === n0, r.body);
+    delete S.S.prices.price_4999.metadata;
+    delete S.S.prices.price_799.metadata;
+
+    /* the reconciler, on a Bet Checker price nobody learned at checkout (bought around the server) */
+    S.S.prices.price_799_portal = { id: 'price_799_portal', object: 'price', active: true, type: 'recurring', currency: 'usd',
+      unit_amount: 799, recurring: { interval: 'month', interval_count: 1 }, product: 'prod_bet_checker', lookup_key: null, metadata: { tier: 'red' } };
+    const V = w.user('restricted-sub@example.com');
+    const custV = S.customer('restricted-sub@example.com', { supabase_user_id: V.id });
+    const subV = S.subscription(custV.id, 'price_799_portal', { metadata: { supabase_user_id: V.id } });
+    c0 = S.calls.length;
+    await w.deliver(S.ev('customer.subscription.created', S.snap(subV)), null, w.load('stripe_webhook'));
+    acc = w.access(V.id);
+    chk('RESTRICTED KEY: the webhook asked for the product and was refused',
+      S.calls.slice(c0).some((c) => /^GET \/v1\/products\/prod_bet_checker/.test(c)), S.calls.slice(c0));
+    chk('  ... the price\'s own metadata says red: Bet Checker paid, the terminal NOT opened',
+      w.row(V.id).tier === 'red' && acc.has_access === false && acc.bet_checker_paid === true, [w.row(V.id), acc]);
+    chk('  ... and the database learned it', tierOf('price_799_portal') === 'red');
+    S.S.productsForbidden = false;
 
     /* ===================================================================== */
     /* 5. A PRICE NOBODY EVER NAMED                                          */

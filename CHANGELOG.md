@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-28 — Deploying Bet Checker: checkout works with a Stripe key that can't read Products
+
+**What was wrong.** Bet Checker made `create_checkout_session` read every price with its product expanded, to learn the product's metadata `tier`. The restricted key that `docs/billing-hardening.md` set up has no Products read, and Stripe refuses such a key the expanded product (403). Once deployed, every terminal checkout would have answered `stripe_unavailable`. The reconciler already fell back to what the database had learned. But a Bet Checker price nobody learned at checkout would have stayed unknown, and the access rule reads an unknown price as the terminal.
+
+**What changed.**
+- When Stripe refuses the product (a 403, nothing else), the checkout reads the price again on its own. The terminal's checkout never needs the product.
+- In that case only, the price's own metadata `tier` stands in, in the checkout and in the reconciler. Both live Bet Checker prices carry `tier = red`.
+- A product that was read and names no tier is still never overruled by its price.
+- Products read is now optional: the function headers, `docs/billing-hardening.md` and `docs/bet-checker.md` say so.
+
+**Regression check.** New section 4b of `tools/billing/tier_flow.test.js` (a key Stripe refuses every product): main's code fails 7 of its 8 checks, including "the terminal's trial checkout still sells STRIPE_PRICE_ID" (it answered `stripe_unavailable`). With this change: 52 / 0.
+
+**Also.** `deploy-bet-checker.yml` applies `bet_checker.sql` in one transaction (`psql --single-transaction`), and a requested part whose secret is missing now fails the run instead of finishing green.
+
 ## 2026-10-28 — Bet Checker installs on production's board (the page's "board could not be loaded")
 
 **What was wrong.** `/bet-checker/` told every reader "EdgeDesk’s board could not be loaded", and under it "No upcoming games on EdgeDesk’s board". The database half of Bet Checker had never been installed. Both *Deploy Bet Checker* runs stopped in `bet_checker.sql`'s first check, before anything was created:
@@ -126,7 +140,7 @@ New suites: `tools/bet_checker/bet_checker_sql.test.js` (110), `functions.test.j
 - `lib/edgedesk_bet_checker.js`: `/bet-checker/?upgrade=monthly|annual` (the card's button) is kept in `sessionStorage` through the sign-in round trip. After sign-in it opens the renewal-terms sheet on that plan, unticked, or tells a reader whose plan already includes Bet Checker. It never skips the consent. A signed-out reader sees a line by the sign-in door saying checkout opens next.
 - `/bet-checker/`, seen on production before `bet_checker.sql` was applied: a stats call that FAILS used to read as "not paid", so a paying or comped reader was shown the blurred stats and an upgrade button. It now says the stats could not be loaded. A comped account (`owner_comp`) is now named complimentary in Settings, with no billing portal and nothing to cancel.
 - The page's 216 KB weight budget is unchanged. The new card's few rules stay inline, because app.html sends readers straight to `#subscribe`. To make room, `#trust`'s styles (3.9 KB, below the fold, linked from nowhere) moved to `lib/edgedesk_landing_desk.css`, which loads the same way. A "Which one do I need?" table was built and then left out: with it the page needed 221 KB, and the owner chose to keep the budget.
-- `?v=20261028b` for `lib/edgedesk_pricing.js` (index.html, app.html, bet-checker/, methodology/, research/sample/); `?v=20261028bc3` for `lib/edgedesk_bet_checker.js` (after #857's `bc2`); `?v=20261028c` for `lib/edgedesk_landing_desk.css`.
+- `?v=20261028b` for `lib/edgedesk_pricing.js` (index.html, app.html, bet-checker/, methodology/, research/sample/); `?v=20261028bc3` for `lib/edgedesk_bet_checker.js` (after #857's `bc2`); `?v=20261028d` for `lib/edgedesk_landing_desk.css` (after #860's `jr1`).
 
 Tests: `landing_positioning.test.js` covers the card, its FEATURES lines, both links and the strip. Its "one plan card" and Free-card checks were updated for the deliberate third card. `personal_wiring.test.js` checks the derived words, `apply()` and the static copies. `bet_checker/page.test.js` checks the deep link in Node with blocked or missing storage. `bet_checker/page.e2e.js` covers a signed-in free reader on `?upgrade=annual`, the signed-out round trip and an already-paid reader. `home/landing.e2e.js` checks the filled words at six widths.
 

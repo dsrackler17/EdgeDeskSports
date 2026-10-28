@@ -18,6 +18,8 @@
        metadata.tier — prod_edgedesk is the Research Terminal (blue),
        prod_bet_checker is Bet Checker (red) with a monthly and an annual
        price found by lookup key — and `expand` returns the product inline.
+       S.productsForbidden = true is a restricted key without Products read:
+       Stripe answers 403 to every read of a product, direct or expanded.
      * promotion codes and the billing clock (affiliate_flow.test.js): a
        session's promotion code becomes the subscription's Discount, with a
        repeating coupon's end counted from the subscription's start, as Stripe
@@ -321,6 +323,10 @@ function make(opts) {
     // expand[]=product, expand[0]=product, expand[]=data.product: Stripe takes any of them
     const expands = [];
     q.forEach((v, k) => { if (/^expand(\[\d*\])?$/.test(k)) expands.push(v); });
+    if (S.productsForbidden && (/^\/v1\/products\//.test(path) || expands.some((x) => /(^|\.)product$/.test(x)))) {
+      return R(403, { error: { type: 'invalid_request_error', message: 'The provided key does not have the required permissions ' +
+        "for this endpoint. Having the 'rak_product_read' permission would allow this request to continue." } });
+    }
     const withProduct = (p, field) => {
       const o2 = snap(p);
       if (expands.indexOf(field) >= 0 && typeof o2.product === 'string') o2.product = S.products[o2.product] ? snap(S.products[o2.product]) : o2.product;

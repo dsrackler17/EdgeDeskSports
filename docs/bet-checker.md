@@ -201,8 +201,11 @@ checks) and a 150-case grid in `tools/billing/billing_hardening_sql.test.js`.
   `bet_checker_monthly` ($7.99/month) and `bet_checker_annual` ($59/year),
   both **active**, USD, no trial.
 - Product **EdgeDesk Research Terminal**: metadata `tier = blue`.
-- The restricted keys (`STRIPE_SECRET_KEY` on the three billing functions) need
-  **READ on Products** in addition to what they had.
+- Put `tier` in each **price's** metadata too (`tier = red` on both Bet
+  Checker prices). The restricted keys (`STRIPE_SECRET_KEY` on the three
+  billing functions) do not need READ on Products: Stripe refuses a key without
+  it the product (403), and the functions then read the price's own `tier`. The
+  terminal's checkout reads no product at all when it is refused.
 - **Customer portal**: allow switching between the Bet Checker and Research
   Terminal prices (Settings → Billing → Customer portal → Subscriptions → *Customers
   can switch plans*), so a red ↔ blue switch is one subscription changing price.

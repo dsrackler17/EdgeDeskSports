@@ -655,7 +655,11 @@ one writer. The rule changed so that red never opens the terminal:
 - `subscriptions.tier` follows the price by trigger; `has_bet_checker_paid()`
   and `billing_access_for()`'s `bet_checker_paid` are red or blue in good
   standing; a red row is offered `upgrade` (a plan switch in the portal).
-- The billing functions' restricted keys need **READ on Products**.
+- The billing functions' restricted keys do **not** need READ on Products.
+  Stripe refuses such a key the product (403); the functions then read the
+  price's own metadata `tier` (both Bet Checker prices carry `tier = red`),
+  and the terminal's checkout goes on without a product. A product that was
+  read and names no tier is never overruled by its price.
 
 Before deploying: §11 query 10 must show that the production-only paywall
 RLS calls the rule rather than inlining statuses, or a Bet Checker

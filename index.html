@@ -581,8 +581,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1"></noscript>
 <!-- the desk's styles (#desk, #signals, #simulator) and #trust's, below the first screen too -->
-<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028c" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028c"></noscript>
+<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028d" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261028d"></noscript>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -1324,6 +1324,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <li><span class="when">Before day <span data-ed-price="day8">8</span></span><b>Reminder email</b><span>A reminder before your trial converts, with the exact date your card will be charged.</span></li>
       <li><span class="when">Day <span data-ed-price="day8">8</span></span><b data-ed-price="monthly">$49.99/month</b><span>Unless cancelled before renewal &mdash; Settings &rsaquo; Subscription, one click.</span></li>
     </ol>
+    <div class="jr-band rv" id="juicereel"></div>
   </div>
 </section>
 
@@ -1614,6 +1615,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- THE ONE ACCESS DECISION (public.my_billing_access) and the two server
      functions that change it: create_checkout_session, sync_subscription. -->
 <script src="/lib/edgedesk_access.js?v=20261028a"></script>
+<script src="/lib/edgedesk_juicereel_billing.js?v=20261028jr1"></script>
 <!-- The creator's code this visitor will check out with: the last valid
      ?ref= clicked, kept 30 days (sent to create_checkout_session as
      affiliate_code; the server decides whether it applies). -->
@@ -2057,7 +2059,8 @@ function sessionValid(){var s=edSession();return !!(s&&s.access_token&&(!s.expir
 
 /* Subscribe entry point. An account must exist FIRST — without a user id there is
    nothing to attach the payment to. */
-async function startSubscribe(){
+async function startSubscribe(jr){
+  JR&&JR.intent(jr===1);
   var btn=document.getElementById('subBtn');
   if(sessionValid()){ openArl(); return; }
   /* An expired access_token is not a logged-out user. Refresh before demanding
@@ -2084,6 +2087,7 @@ var pendingSubscribe=false;
    they are staring at a generic page with no idea how to pay. */
 function setPendingSub(v){pendingSubscribe=!!v;try{v?localStorage.setItem('edgedesk_pending_sub','1'):localStorage.removeItem('edgedesk_pending_sub');}catch(e){}}
 function getPendingSub(){try{return localStorage.getItem('edgedesk_pending_sub')==='1';}catch(e){return false;}}
+var JR=window.EDJuiceReel&&EDJuiceReel.landing({url:SB_URL,key:SB_KEY,s:edSession,v:sessionValid,r:edRefresh,go:startSubscribe,app:APP_URL});
 
 async function edRefresh(){
   var s=edSession(); if(!s||!s.refresh_token)return null;
@@ -2102,6 +2106,7 @@ function edSignOut(){try{localStorage.removeItem('edgedesk_session');localStorag
 function openArl(){
   var u=edUserFromSession();
   if(!u||!u.id){ setPendingSub(true); openAuth('signup'); return; }
+  if(JR&&JR.pending()){ JR.resume(openArl); return; }
   /* ALREADY PAID: never show this screen. It is the renewal-terms consent for
      a purchase, and an account that already has access has no purchase to
      make -- a live subscriber sent through it buys a second one, and a comp
@@ -2413,7 +2418,7 @@ async function submitAuth(){
       /* Fire-and-forget: partner credit must not gate the customer's path. */
       if(authMode==='signup')attrRecord(edUserFromSession(),d.access_token);
       if(pendingSubscribe||getPendingSub()){setPendingSub(false);pendingSubscribe=true;
-        msg('Account ready — starting your free trial…','ok');
+        msg(JR&&JR.pending()?'Account ready — opening Juice Reel…':'Account ready — starting your free trial…','ok');
         setTimeout(function(){closeAuth();openArl();},400);return;}
       /* An account alone does not open the terminal. New signups go straight to
          checkout; returning logins go to the app, where the paywall gate decides. */
@@ -2686,7 +2691,7 @@ async function handleAuthCallback(){
   var who=u.email?('You are signed in as <b>'+esc(u.email)+'</b>.'):'You are signed in.';
   var resume=pendingSubscribe||getPendingSub();
   retnPanel('Email confirmed',
-    who+(resume?' Opening your free trial…':' Opening EdgeDesk…'),
+    who+(resume?(JR&&JR.pending()?' Opening Juice Reel…':' Opening your free trial…'):' Opening EdgeDesk…'),
     'Nothing else to do — this happens automatically.','');
   var bar=retnEl('retnBar'); if(bar) bar.style.width='100%';
 
