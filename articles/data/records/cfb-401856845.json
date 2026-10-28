@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:30:00.000Z",
   "game_when_label": "2026-10-31 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-28T12:42:13.105Z",
-  "generated_at": "2026-10-28T12:42:13.105Z",
+  "updated_at": "2026-10-28T20:14:07.027Z",
+  "generated_at": "2026-10-28T20:14:07.027Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 8, built 2026-10-27. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -138,9 +138,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for TCU and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Kansas and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
           },
           {
             "field": "off_field",
@@ -252,7 +276,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T17:00:00.000Z",
-        "retrieved_at": "2026-10-27T19:14:28.311Z"
+        "retrieved_at": "2026-10-28T18:54:18.299Z"
       },
       "home": {
         "team": "TCU",
@@ -330,9 +354,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T16:00:00.000Z",
-        "retrieved_at": "2026-10-27T19:14:28.311Z"
+        "retrieved_at": "2026-10-28T18:54:18.299Z"
       },
-      "generated_at": "2026-10-27T19:15:03.325Z",
+      "generated_at": "2026-10-28T18:54:16.908Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -383,7 +407,7 @@
               },
               "h": {
                 "v": "+6.4",
-                "n": 6.38,
+                "n": 6.39,
                 "rank": "#25 of 138",
                 "rank_n": 25,
                 "note": null
@@ -430,15 +454,15 @@
                 "note": null
               },
               "h": {
-                "v": "61.9",
-                "n": 61.9,
+                "v": "62.0",
+                "n": 62,
                 "rank": "#24 of 138",
                 "rank_n": 24,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 6.8,
+                "gap": 6.9,
                 "rank_gap": 24
               }
             },
@@ -526,8 +550,8 @@
               "a": {
                 "v": "48.0",
                 "n": 48,
-                "rank": "#102 of 130",
-                "rank_n": 102,
+                "rank": "#103 of 130",
+                "rank_n": 103,
                 "note": null
               },
               "h": {
@@ -540,7 +564,7 @@
               "edge": {
                 "side": "h",
                 "gap": 4.6,
-                "rank_gap": 85
+                "rank_gap": 86
               }
             },
             {
@@ -548,8 +572,8 @@
               "k": "Run offense",
               "note": null,
               "a": {
-                "v": "57.6",
-                "n": 57.6,
+                "v": "57.5",
+                "n": 57.5,
                 "rank": "#41 of 138",
                 "rank_n": 41,
                 "note": null
@@ -563,7 +587,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 20.7,
+                "gap": 20.6,
                 "rank_gap": 87
               }
             },
@@ -574,8 +598,8 @@
               "a": {
                 "v": "55.1",
                 "n": 55.1,
-                "rank": "#40 of 137",
-                "rank_n": 40,
+                "rank": "#39 of 137",
+                "rank_n": 39,
                 "note": null
               },
               "h": {
@@ -588,7 +612,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.4,
-                "rank_gap": 7
+                "rank_gap": 8
               }
             },
             {
@@ -872,8 +896,8 @@
               "a": {
                 "v": "52.8",
                 "n": 52.8,
-                "rank": "#99 of 138",
-                "rank_n": 99,
+                "rank": "#101 of 138",
+                "rank_n": 101,
                 "note": null
               },
               "h": {
@@ -886,7 +910,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.3,
-                "rank_gap": 13
+                "rank_gap": 15
               }
             },
             {
@@ -924,12 +948,12 @@
         {
           "k": "Run offense",
           "rank_gap": 87,
-          "gap": 20.7,
+          "gap": 20.6,
           "lead": "Kansas",
           "trail": "TCU",
-          "lead_cell": "57.6 · #41 of 138",
+          "lead_cell": "57.5 · #41 of 138",
           "trail_cell": "36.9 · #128 of 138",
-          "text": "Kansas 57.6 (#41 of 138) vs TCU 36.9 (#128 of 138) — 87 places on the national board."
+          "text": "Kansas 57.5 (#41 of 138) vs TCU 36.9 (#128 of 138) — 87 places on the national board."
         },
         {
           "k": "Offensive line",
@@ -975,13 +999,13 @@
       "home": [
         {
           "k": "Special teams",
-          "rank_gap": 85,
+          "rank_gap": 86,
           "gap": 4.6,
           "lead": "TCU",
           "trail": "Kansas",
           "lead_cell": "52.6 · #17 of 130",
-          "trail_cell": "48.0 · #102 of 130",
-          "text": "TCU 52.6 (#17 of 130) vs Kansas 48.0 (#102 of 130) — 85 places on the national board."
+          "trail_cell": "48.0 · #103 of 130",
+          "text": "TCU 52.6 (#17 of 130) vs Kansas 48.0 (#103 of 130) — 86 places on the national board."
         },
         {
           "k": "Secondary",
@@ -1036,7 +1060,7 @@
           "team": "Kansas",
           "label": "pass offense",
           "v": "55.1",
-          "rank": "#40 of 137",
+          "rank": "#39 of 137",
           "note": null
         },
         "def": {
@@ -1047,14 +1071,14 @@
           "note": null
         },
         "complete": true,
-        "read": "Kansas’s pass offense rates 55.1 (#40 of 137) against TCU’s pass defense at 67.6 (#5 of 138). TCU’s unit stands higher among its own position group, by 35 places."
+        "read": "Kansas’s pass offense rates 55.1 (#39 of 137) against TCU’s pass defense at 67.6 (#5 of 138). TCU’s unit stands higher among its own position group, by 34 places."
       },
       {
         "title": "Kansas run offense vs TCU run defense",
         "att": {
           "team": "Kansas",
           "label": "run offense",
-          "v": "57.6",
+          "v": "57.5",
           "rank": "#41 of 138",
           "note": null
         },
@@ -1066,7 +1090,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Kansas’s run offense rates 57.6 (#41 of 138) against TCU’s run defense at 70.5 (#14 of 138). TCU’s unit stands higher among its own position group, by 27 places."
+        "read": "Kansas’s run offense rates 57.5 (#41 of 138) against TCU’s run defense at 70.5 (#14 of 138). TCU’s unit stands higher among its own position group, by 27 places."
       },
       {
         "title": "TCU pass offense vs Kansas pass defense",
@@ -1414,7 +1438,7 @@
           "Playing at TCU is worth 2.8 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+2.8 pts).",
           "TCU is the better football team by 2.7 points on opponent-adjusted results, with roughly 35% of it still inherited from last season (+2.7 pts).",
           "Stylistically the matchup favours TCU by 0.4 points: ball control vs front disruption (+0.4 pts).",
-          "Special teams: TCU 52.6 (#17 of 130) vs Kansas 48.0 (#102 of 130) — 85 places on the national board.",
+          "Special teams: TCU 52.6 (#17 of 130) vs Kansas 48.0 (#103 of 130) — 86 places on the national board.",
           "Secondary: TCU 60.3 (#11 of 138) vs Kansas 51.0 (#91 of 138) — 80 places on the national board."
         ]
       },
@@ -1422,7 +1446,7 @@
         "team": "Kansas",
         "heading": "Why Kansas can keep it close",
         "bullets": [
-          "Run offense: Kansas 57.6 (#41 of 138) vs TCU 36.9 (#128 of 138) — 87 places on the national board.",
+          "Run offense: Kansas 57.5 (#41 of 138) vs TCU 36.9 (#128 of 138) — 87 places on the national board.",
           "Offensive line: Kansas 57.2 (#15 of 138) vs TCU 50.4 (#77 of 138) — 62 places on the national board.",
           "Offense: Kansas 55.0 (#42 of 138) vs TCU 47.1 (#84 of 138) — 42 places on the national board.",
           "The outcome range is 14.6 points wide at one sigma — p10 -15.1 to p90 +26.9 for TCU, so a projection of +5.9 still produces results a long way either side of it.",
@@ -1587,11 +1611,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether TCU or Kansas’s starting QB can play",
-        "score": 89,
+        "text": "85 · STRONG",
+        "sub": "main deduction: Kansas’s availability sources refused",
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1605,7 +1629,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1617,7 +1641,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1633,20 +1657,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether TCU or Kansas’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Kansas’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Kansas’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2 once re-read availability inside the filing window (TCU) and Re-read availability inside the filing window (Kansas) is done"
+            "action": "Restore an injury/availability source for Kansas",
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (TCU) and Re-read availability inside the filing window (Kansas) is done"
+            "action": "Restore an injury/availability source for TCU",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1768,7 +1795,7 @@
         {
           "k": "Performance",
           "a": "55.1  #48",
-          "h": "61.9  #24",
+          "h": "62.0  #24",
           "note": null
         },
         {
@@ -1785,19 +1812,19 @@
         },
         {
           "k": "Special teams",
-          "a": "48.0  #102",
+          "a": "48.0  #103",
           "h": "52.6  #17",
           "note": null
         },
         {
           "k": "Run offense",
-          "a": "57.6  #41",
+          "a": "57.5  #41",
           "h": "36.9  #128",
           "note": null
         },
         {
           "k": "Pass offense",
-          "a": "55.1  #40",
+          "a": "55.1  #39",
           "h": "53.7  #47",
           "note": null
         },
@@ -1857,7 +1884,7 @@
         },
         {
           "k": "Depth",
-          "a": "52.8  #99",
+          "a": "52.8  #101",
           "h": "53.1  #86",
           "note": null
         },
@@ -1875,8 +1902,8 @@
         },
         {
           "k": "Δ national rank, this week",
-          "a": "up 9",
-          "h": "down 4",
+          "a": "no change",
+          "h": "no change",
           "note": "differenced from last week’s committed snapshot"
         }
       ]
@@ -1895,11 +1922,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 8, built 2026-10-27. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "sjmnxpacxhhr",
+    "packet_hash": "1ezi3441qwwl0m",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can TCU take away Kansas’ big plays?",
@@ -1955,21 +1982,21 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-28T05:47:00.409Z",
+        "observed_at": "2026-10-28T18:55:38.252Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-27T19:14:47.118Z",
+        "observed_at": "2026-10-28T16:18:01.565Z",
         "verification": "RATING"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-25T02:15:00.000Z",
+        "observed_at": "2026-10-28T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -1978,6 +2005,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-28T12:42:13.105Z"
+    "at": "2026-10-28T20:14:07.027Z"
   }
 }
