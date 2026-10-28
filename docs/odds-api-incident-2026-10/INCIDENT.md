@@ -9,12 +9,7 @@ Every caller now goes through one gateway. It re-enables on 2026-11-01 under a
 capped research categories exist, disabled
 ([METHODOLOGY-2026-10-26-category-caps.md](METHODOLOGY-2026-10-26-category-caps.md)).
 
-**Amended 2026-10-28 (until 2026-11-01):** until the reset,
-`collective_odds_ingest` may poll The Odds API with the Collective's **own**
-key, `COLLECTIVE_ODDS_API_KEY`, never the main account's, and only while the
-breaker reads on. One marked block, dated, held to its shape by
-`no_bypass.test.js`
-([METHODOLOGY-2026-10-28-collective-own-key.md](METHODOLOGY-2026-10-28-collective-own-key.md)).
+
 
 **Plan:** $59/month, 100,000 credits. On 2026-10-10 at 12:24Z the provider
 reported **99,336 used and 664 remaining**. By 13:55Z it reported **100,000
@@ -104,7 +99,7 @@ Cost rules:
 | `capture` alternates | day / near ticks | NFL, NCAAF | `/events/{id}/odds` | alternate_spreads, alternate_totals | `us,eu` (2) | ≤ 4 per event | up to 80 events per sport per run, to 30 h | part of ~4,660 | Useful, not critical | `alternates` category, 24 h only, priority 4 (shed first) |
 | `capture` player props | day / near ticks (on by default) | NFL, NCAAF | `/events/{id}/odds` | 33 + 26 alternates | `us,eu` (2) | ≤ 118 per event | to 30 h, 20-min near interval | part of ~4,660 | **No: a duplicate of row 1** | Off by default; when on, it shares the `props` fingerprint, so it gets a cache hit |
 | `close` | pg_cron (schedule in the database only) | sports with pending signals | `/odds` | h2h, spreads, totals | `us,eu` (2) | 6 per sport | ≤ every 35 min while games are pending | part of ~4,660 | Yes: closing lines | `close` category, the same fingerprint as `featured`, so a fresh board snapshot serves it free |
-| `collective_odds_ingest` | its own pg_cron, admin "Run now" / "Probe" | NFL, NCAAF | `/odds` | h2h, spreads, totals | `us` (1) | 3 | 60 s live, 300 s pregame (NFL), **only if `provider.default='theoddsapi'`** | unknown (default provider is OddsBlaze) | Optional | `collective` category through the gateway; the probe is the free quota probe |
+| `collective_odds_ingest` | its own pg_cron (`collective_nfl_odds` `35 12 * * *`, `collective_cfb_odds` `40 12 * * *`: `select odds.run_ingest(...)`, read 2026-10-28), admin "Run now" / "Probe" | NFL, NCAAF | `/odds` | h2h, spreads, totals | `us` (1) | 3 | 60 s live, 300 s pregame (NFL), **only if `provider.default='theoddsapi'`** | unknown (default provider is OddsBlaze) | Optional | `collective` category through the gateway; the probe is the free quota probe |
 | `edgedesk_ai` quote refresh → untiered `capture` | a signed-in reader's board question, only with `EDGEDESK_QUOTE_REFRESH=1` | every sport | as `capture` | as `capture` | as `capture` | a full capture | per question per sport | unknown | Optional | An untiered call is now the **day** tier narrowed to the asked sport, served from cache inside its cadence |
 | `cfb-lab.yml` → `alternates.js` | hourly, gated by `READ_ALT_CAPTURE` | NCAAF, NFL | `/events/{id}/odds` | alternates | 1 | ≤ 2 | 0 (skipped in 33/33 sampled runs [obs]) | 0 [obs] | Optional | `alternates` category |
 | `props-factory.yml` backfill | manual | NFL, NCAAF | historical event odds | 17 | 1 | 10× | 0 [obs] | 0 | Research only | `historical_*` categories, **off**, never part of polling |
@@ -125,7 +120,7 @@ Standalone, under 18 KB, safe to paste first:
 
 - `odds_api_config` holds the circuit breaker `odds_api_enabled`, created **false** (fail closed), with the monthly budget and daily target at **zero**.
 - `odds_api_emergency_stop(reason)` pauses (`cron.alter_job(..., active := false)`) every pg_cron job whose command can reach a paid path:
-  - capture, capture_poke, close, collective_odds_ingest, props_cron;
+  - capture, capture_poke, close, collective_odds_ingest (and, from 2026-10-28, the Collective's `odds.run_ingest` jobs), props_cron;
   - plus every deployed-only odds function listed in §2.
   - Each job is recorded in `odds_api_paused_jobs`. **Nothing is unscheduled or deleted.**
 - `odds_api_resume_schedules(by)` resumes only the jobs whose functions now go through the gateway. The deployed-only ones stay paused.

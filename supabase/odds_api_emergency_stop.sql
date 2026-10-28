@@ -73,14 +73,17 @@ revoke all on public.odds_api_paused_jobs from anon, authenticated;
 -- odds. A job is paused when its command matches any of these. `sharp_check`
 -- (2026-10-26) buys the Sharp-lag research pulls; its pg_cron command is
 -- `select public.sharp_check_poke();` (no URL in it, as with capture_poke),
--- hence both patterns. odds_api_gateway.sql
+-- hence both patterns. The Collective's own jobs (collective_nfl_odds,
+-- collective_cfb_odds; 2026-10-28) run `select odds.run_ingest(...)`, which
+-- posts to collective_odds_ingest at a URL held in odds.settings, so their
+-- commands carry no URL either: `%odds.run_ingest%`. odds_api_gateway.sql
 -- re-creates this list verbatim, so applying it reaches a live database
 -- without re-running this stop (a test keeps the two lists identical).
 create or replace function public.odds_api_spend_patterns()
 returns text[] language sql immutable as $$
   select array[
     '%/functions/v1/capture%', '%capture_poke%', '%/functions/v1/close%',
-    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
+    '%/functions/v1/collective_odds_ingest%', '%odds.run_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
     '%/functions/v1/odds?%', '%/functions/v1/odds''%', '%/functions/v1/odds"%',
     '%/functions/v1/wta_odds%', '%/functions/v1/wta_close%', '%/functions/v1/cfb_close%',
     '%/functions/v1/close_backfill%', '%/functions/v1/capture_boards%', '%/functions/v1/model_conf_odds%',
@@ -146,9 +149,13 @@ revoke all on function public.odds_api_emergency_stop(text) from public, anon, a
 
 -- Resume EXACTLY the jobs the emergency stop paused, and only those that call
 -- code routed through the gateway (capture, close, collective_odds_ingest,
--- props_cron). A job for a function this repository cannot see stays paused:
--- resuming it would let unaudited code spend credits directly. This does NOT
--- turn the breaker on; public.odds_api_set_enabled() does, under its own checks.
+-- directly or through odds.run_ingest, props_cron). A job for a function this
+-- repository cannot see stays paused: resuming it would let unaudited code
+-- spend credits directly. This does NOT turn the breaker on;
+-- public.odds_api_set_enabled() does, under its own checks.
+-- odds_api_gateway.sql re-creates this function verbatim (2026-10-28), so a
+-- database that takes the gateway's patterns also takes the resume that
+-- undoes them, without re-running this stop (a test keeps the two identical).
 create or replace function public.odds_api_resume_schedules(p_resumed_by text default 'operator')
 returns jsonb
 language plpgsql
@@ -165,7 +172,7 @@ begin
   end if;
   for p in select * from public.odds_api_paused_jobs where resumed_at is null order by id loop
     if p.command ilike any (array['%/functions/v1/capture?%', '%capture_poke%', '%/functions/v1/close%',
-                                  '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%'])
+                                  '%/functions/v1/collective_odds_ingest%', '%odds.run_ingest%', '%/functions/v1/props_cron%'])
        and p.command not ilike any (array['%close_backfill%', '%capture_boards%']) then
       begin
         execute 'select cron.alter_job($1, null, null, null, null, true)' using p.jobid;

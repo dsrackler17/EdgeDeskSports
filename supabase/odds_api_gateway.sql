@@ -1283,18 +1283,58 @@ end $$;
 -- The pg_cron command patterns that reach a paid path: the emergency stop
 -- pauses them and odds_api_hourly_limits.sql holds them to hourly. The same
 -- list as supabase/odds_api_emergency_stop.sql, re-created here so a new
--- spender (sharp_check, 2026-10-26) is covered without re-running the stop.
+-- spender (sharp_check, 2026-10-26; the Collective's odds.run_ingest jobs,
+-- 2026-10-28) is covered without re-running the stop.
 create or replace function public.odds_api_spend_patterns()
 returns text[] language sql immutable as $$
   select array[
     '%/functions/v1/capture%', '%capture_poke%', '%/functions/v1/close%',
-    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
+    '%/functions/v1/collective_odds_ingest%', '%odds.run_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
     '%/functions/v1/odds?%', '%/functions/v1/odds''%', '%/functions/v1/odds"%',
     '%/functions/v1/wta_odds%', '%/functions/v1/wta_close%', '%/functions/v1/cfb_close%',
     '%/functions/v1/close_backfill%', '%/functions/v1/capture_boards%', '%/functions/v1/model_conf_odds%',
     '%/functions/v1/ingest_multisport%', '%/functions/v1/run_slate%', '%/functions/v1/scores_diag%'
   ]::text[]
 $$;
+
+-- The resume that undoes the stop, verbatim from
+-- supabase/odds_api_emergency_stop.sql (2026-10-28). The list above now
+-- catches the Collective's odds.run_ingest jobs, so a database that takes it
+-- must also take a resume that brings them back; re-running the stop to get
+-- it would re-pause every job. A test keeps the two definitions identical.
+create or replace function public.odds_api_resume_schedules(p_resumed_by text default 'operator')
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_resumed jsonb := '[]'::jsonb;
+  v_kept jsonb := '[]'::jsonb;
+  p record;
+begin
+  if to_regclass('cron.job') is null then
+    return jsonb_build_object('resumed', v_resumed, 'note', 'pg_cron is not installed');
+  end if;
+  for p in select * from public.odds_api_paused_jobs where resumed_at is null order by id loop
+    if p.command ilike any (array['%/functions/v1/capture?%', '%capture_poke%', '%/functions/v1/close%',
+                                  '%/functions/v1/collective_odds_ingest%', '%odds.run_ingest%', '%/functions/v1/props_cron%'])
+       and p.command not ilike any (array['%close_backfill%', '%capture_boards%']) then
+      begin
+        execute 'select cron.alter_job($1, null, null, null, null, true)' using p.jobid;
+        update public.odds_api_paused_jobs set resumed_at = now(), resumed_by = left(p_resumed_by, 120) where id = p.id;
+        v_resumed := v_resumed || jsonb_build_object('jobid', p.jobid, 'jobname', p.jobname);
+      exception when others then
+        v_kept := v_kept || jsonb_build_object('jobid', p.jobid, 'jobname', p.jobname, 'error', left(sqlerrm, 200));
+      end;
+    else
+      v_kept := v_kept || jsonb_build_object('jobid', p.jobid, 'jobname', p.jobname, 'why', 'not routed through odds_gateway');
+    end if;
+  end loop;
+  return jsonb_build_object('resumed', v_resumed, 'kept_paused', v_kept,
+    'note', 'Schedules resumed. The breaker is unchanged; paid calls still need odds_api_set_enabled(true, ...).');
+end $$;
+revoke all on function public.odds_api_resume_schedules(text) from public, anon, authenticated;
 
 -- ── 13. WHO MAY CALL WHAT ───────────────────────────────────────────────────
 do $g$
@@ -1379,6 +1419,11 @@ with checks as (
   union all select 12, 'the emergency stop covers the sharp_check dispatcher (its URL and its cron poke)',
          (case when 'select public.sharp_check_poke();' ilike any (public.odds_api_spend_patterns())
                 and 'https://x.supabase.co/functions/v1/sharp_check' ilike any (public.odds_api_spend_patterns()) then 1 else 0 end), 1
+  union all select 13, 'the emergency stop covers the Collective''s odds.run_ingest jobs, and the resume brings them back',
+         (case when 'select odds.run_ingest(false);' ilike any (public.odds_api_spend_patterns())
+                and 'select odds.run_ingest(''ncaaf'', false);' ilike any (public.odds_api_spend_patterns())
+                and position('odds.run_ingest' in pg_get_functiondef('public.odds_api_resume_schedules(text)'::regprocedure)) > 0
+               then 1 else 0 end), 1
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;

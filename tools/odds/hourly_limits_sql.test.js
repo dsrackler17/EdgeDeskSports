@@ -89,7 +89,10 @@ try {
       ('legacy_wta_odds', '30 seconds', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/wta_odds'')', false),
       ('odds_nightly', '7 3 * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/odds?sport=nfl'')', true),
       ('kalshi_snapshot_5m', '*/5 * * * *', 'select public.kalshi_poke(''snapshot'');', true),
-      ('edgedesk_stats_nfl', '*/15 * * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/stats_nfl'')', true);`);
+      ('edgedesk_stats_nfl', '*/15 * * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/stats_nfl'')', true),
+      -- the Collective's odds job as production runs it (daily), and the same call every 30 minutes
+      ('collective_nfl_odds', '35 12 * * *', 'select odds.run_ingest(false);', true),
+      ('collective_cfb_odds', '*/30 * * * *', 'select odds.run_ingest(''ncaaf'', false);', true);`);
   const before = jobs();
   const cfgBefore = db.sql('select row_to_json(c)::text from public.odds_api_config c');
 
@@ -106,6 +109,9 @@ try {
   T.chk('2 · a paused legacy job keeps its first minute and its hours', sched('edgedesk_capture') === '5 9-23 * * *', sched('edgedesk_capture'));
   T.chk("2 · pg_cron's sub-minute 'seconds' form is slowed too", sched('legacy_wta_odds') === '27 * * * *', sched('legacy_wta_odds'));
   T.chk('2 · a paid job already slower than hourly is left alone', sched('odds_nightly') === '7 3 * * *', sched('odds_nightly'));
+  T.chk('2 · the Collective\'s daily odds.run_ingest job is left alone (2026-10-28)', sched('collective_nfl_odds') === '35 12 * * *', sched('collective_nfl_odds'));
+  T.chk('2 · an odds.run_ingest job firing every 30 minutes is slowed to hourly, though its command carries no URL',
+    sched('collective_cfb_odds') === '27 * * * *', sched('collective_cfb_odds'));
   T.chk('2 · Kalshi and stats jobs (no paid path) are untouched',
     JSON.stringify(after.kalshi_snapshot_5m) === JSON.stringify(before.kalshi_snapshot_5m)
     && JSON.stringify(after.edgedesk_stats_nfl) === JSON.stringify(before.edgedesk_stats_nfl));
@@ -143,6 +149,8 @@ try {
   db.sql("select public.odds_api_emergency_stop('test: stop again')");
   T.chk('6 · after the stop no paid job is active', db.sql('select public.odds_api_active_spend_jobs()') === '0');
   T.chk('6 · and the Kalshi job still runs', jobs().kalshi_snapshot_5m.active === true);
+  T.chk('6 · the Collective\'s odds.run_ingest jobs are paused with the rest', jobs().collective_nfl_odds.active === false && jobs().collective_cfb_odds.active === false,
+    [jobs().collective_nfl_odds, jobs().collective_cfb_odds]);
   T.chk('6 · the stop pauses but never re-speeds a schedule', jobs().capture_near.schedule === '12 * * * *' && jobs().edgedesk_close.schedule === '27 * * * *');
 } catch (e) {
   T.chk('the live layer ran without an unexpected error', false, String(e.message || e).slice(0, 1500));

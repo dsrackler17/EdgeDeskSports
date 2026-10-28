@@ -48,6 +48,11 @@ T.chk('gateway: the switch row is created OFF (fail closed)', /insert into publi
 T.chk('gateway: acquire locks the one config row before deciding (FOR UPDATE)', /from public\.odds_api_config where id = 1 for update;[\s\S]*v_now := clock_timestamp\(\)/.test(GW));
 const patternList = (sql) => ((code(sql).match(/function public\.odds_api_spend_patterns\(\)[\s\S]*?array\[([\s\S]*?)\]::text\[\]/) || [])[1] || '').replace(/\s+/g, '');
 T.chk('the spend patterns the gateway re-creates are exactly the emergency stop\'s (2026-10-26)', patternList(GW) !== '' && patternList(GW) === patternList(STOP), [patternList(GW), patternList(STOP)]);
+/* 2026-10-28: the patterns reach a live database whenever the gateway is
+   applied, so the resume must too, or a stop that now pauses the Collective's
+   odds.run_ingest jobs would be paired with an older resume that keeps them */
+const resumeDef = (sql) => ((code(sql).match(/create or replace function public\.odds_api_resume_schedules\(p_resumed_by text default 'operator'\)[\s\S]*?\nend \$\$;/) || [])[0] || '').replace(/\s+/g, '');
+T.chk('the resume the gateway re-creates is exactly the emergency stop\'s (2026-10-28)', resumeDef(GW) !== '' && resumeDef(GW) === resumeDef(STOP), [resumeDef(GW).length, resumeDef(STOP).length]);
 T.chk('gateway: a category\'s daily cap is checked inside acquire, under the config-row lock, before the grant',
   /from public\.odds_api_config where id = 1 for update;[\s\S]*cat\.daily_cap_credits is not null[\s\S]*'denied_category_cap'[\s\S]*v_decision := 'granted'/.test(GW));
 T.chk('gateway: parts exist for the SQL editor', fs.readdirSync(path.join(ROOT, 'supabase', 'parts')).some((f) => /^odds_api_gateway\.part1-of-\d+\.sql$/.test(f)));
@@ -88,7 +93,11 @@ try {
       ('collective_odds', '*/2 * * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/collective_odds_ingest/v1/ingest?league=nfl'')'),
       ('legacy_wta_odds', '*/15 * * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/wta_odds'')'),
       ('settle_hourly', '0 * * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/settle'')'),
-      ('research_state_dispatch', '*/5 * * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/research_cron'')');
+      ('research_state_dispatch', '*/5 * * * *', 'select net.http_post(url := ''https://x.supabase.co/functions/v1/research_cron'')'),
+      -- the Collective's two odds jobs, commands verbatim from production (2026-10-28): odds.run_ingest
+      -- posts to collective_odds_ingest at a URL held in odds.settings, so the command carries none
+      ('collective_nfl_odds', '35 12 * * *', 'select odds.run_ingest(false);'),
+      ('collective_cfb_odds', '40 12 * * *', 'select odds.run_ingest(''ncaaf'', false);');
     do $$ begin if not exists (select 1 from pg_roles where rolname = 'authenticator') then create role authenticator login noinherit; end if; end $$;
     grant anon, authenticated, service_role to authenticator;`);
 
@@ -98,17 +107,22 @@ try {
   const active = (n) => db.sql("select active from cron.job where jobname = '" + n + "'") === 't';
   T.chk('1 · capture, props dispatch, close, collective ingest and a legacy odds function are paused',
     ['capture_near', 'capture_day', 'player_props_dispatch', 'close_every_5', 'collective_odds', 'legacy_wta_odds'].every((n) => !active(n)));
+  T.chk('1 · the Collective\'s odds.run_ingest jobs are paused too, though their commands carry no URL (2026-10-28)',
+    !active('collective_nfl_odds') && !active('collective_cfb_odds'), [active('collective_nfl_odds'), active('collective_cfb_odds')]);
   T.chk('1 · research jobs and the suspect settle job are NOT paused', active('research_state_dispatch') && active('settle_hourly'));
-  T.chk('1 · paused jobs are recorded, nothing is deleted', db.sql('select count(*) from public.odds_api_paused_jobs') === '6' && db.sql('select count(*) from cron.job') === '8');
+  T.chk('1 · paused jobs are recorded, nothing is deleted', db.sql('select count(*) from public.odds_api_paused_jobs') === '8' && db.sql('select count(*) from cron.job') === '10');
   out = db.applyFile(path.join(ROOT, 'supabase', 'odds_api_emergency_stop.sql'));
-  T.chk('1 · running it twice changes nothing', !/CHECK THIS/.test(out) && db.sql('select count(*) from public.odds_api_paused_jobs') === '6');
+  T.chk('1 · running it twice changes nothing', !/CHECK THIS/.test(out) && db.sql('select count(*) from public.odds_api_paused_jobs') === '8');
 
   /* ── 2 · the gateway file, twice ─────────────────────────────────────── */
+  /* production's resume predates 2026-10-28; applying the gateway, not
+     re-running the stop (which would re-pause everything), must replace it */
+  db.sql("create or replace function public.odds_api_resume_schedules(p_resumed_by text default 'operator') returns jsonb language sql as $$ select '{\"stale\": true}'::jsonb $$;");
   out = db.applyFile(path.join(ROOT, 'supabase', 'odds_api_gateway.sql'));
   const rows = (o) => (o.match(/\|(ok|CHECK THIS)$/gm) || []);
-  T.chk('2 · the gateway applies; every report row ok', rows(out).length === 12 && rows(out).every((r) => /ok$/.test(r)), out.slice(-900));
+  T.chk('2 · the gateway applies; every report row ok', rows(out).length === 13 && rows(out).every((r) => /ok$/.test(r)), out.slice(-900));
   out = db.applyFile(path.join(ROOT, 'supabase', 'odds_api_gateway.sql'));
-  T.chk('2 · and a second time', rows(out).length === 12 && rows(out).every((r) => /ok$/.test(r)));
+  T.chk('2 · and a second time', rows(out).length === 13 && rows(out).every((r) => /ok$/.test(r)));
   T.chk('2 · the breaker is still OFF and the budget still ZERO after the gateway is applied',
     db.sql('select odds_api_enabled::text || monthly_budget::text || daily_target::text from public.odds_api_config') === 'false00');
   T.chk('2 · the retention job is scheduled, and is not a spend path', db.sql("select count(*) from cron.job where jobname = 'odds_api_prune' and command not like '%functions/v1%'") === '1');
@@ -116,6 +130,8 @@ try {
   /* ── 3 · resume: only jobs routed through the gateway ─────────────────── */
   const res = J("select public.odds_api_resume_schedules('test')");
   T.chk('3 · resume restores capture, props dispatch, close and collective ingest', ['capture_near', 'capture_day', 'player_props_dispatch', 'close_every_5', 'collective_odds'].every(active), res);
+  T.chk('3 · …and the Collective\'s odds.run_ingest jobs, with the resume the gateway file installed',
+    active('collective_nfl_odds') && active('collective_cfb_odds'), res);
   T.chk('3 · a legacy function nobody can audit stays paused', !active('legacy_wta_odds') && JSON.stringify(res.kept_paused).indexOf('legacy_wta_odds') >= 0);
   T.chk('3 · resuming schedules does not turn the breaker on', db.sql('select odds_api_enabled from public.odds_api_config') === 'f');
 
