@@ -21294,7 +21294,7 @@ function moreItem(ic,title,note,call,id){
     +'<b style="font-weight:600">'+edEsc(title)+'<span>'+edEsc(note)+'</span></b><span class="go">&rsaquo;</span></button>';
 }
 /* MORE — everything secondary, in sections, never a drawer of leftovers:
-     Community & tools   Collective, EdgeDesk Games
+     Community & tools   Collective, EdgeDesk Games, Bet Checker
      Transparency        Model performance, Methodology, Data sources
      System              Model & data health, Faults, News & moat alerts
      Account             Settings & account, Set up EdgeDesk, Learn EdgeDesk
@@ -21314,7 +21314,8 @@ function loadMore(){
     news:'<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
     start:'<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
     legal:'<path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/>',
-    help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2v.1"/>'
+    help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2v.1"/>',
+    check:'<path d="M4 12.5l5 5L20 6.5"/>'
   };
   var sec=[];
   function group(title,rows){rows=rows.filter(Boolean);if(rows.length)sec.push('<div class="morehd">'+title+'</div>'+rows.join(''));}
@@ -21323,7 +21324,11 @@ function loadMore(){
     /* EdgeDesk Games is a SEPARATE public product, not a view in this app: it
        needs no account, and its traffic is meant to run Games -> EdgeDesk rather
        than the other way round. It opens in its own tab so nobody loses a board. */
-    moreItem(IC.games,'EdgeDesk Games ↗','Free football games — price a matchup against the model, or make your weekly five. No account needed.','moreGoGames()','games')]);
+    moreItem(IC.games,'EdgeDesk Games ↗','Free football games — price a matchup against the model, or make your weekly five. No account needed.','moreGoGames()','games'),
+    /* Bet Checker is its own page as well: free and Bet Checker readers cannot
+       open this app, so the page they use lives outside it. Your plan includes
+       it (docs/bet-checker.md). */
+    moreItem(IC.check,'Bet Checker ↗','Log the bets you place: each graded against EdgeDesk’s fair price when you log it, then against the close. Included in your plan.','moreGoBetChecker()','bet_checker')]);
   group('Transparency',[
     /* EdgeDesk's record, never the reader's: the reader's results are Portfolio */
     $('v-record')?moreItem(IC.model,'Model performance','How EdgeDesk’s model and flagged edges have performed — every graded call. Not your bets.','show(\'record\')','model_performance'):'',
@@ -21363,6 +21368,10 @@ function moreGoProvenance(){
 function moreGoGames(){
   try{window.open('/games/?ref=app','_blank','noopener');}
   catch(_){location.href='/games/?ref=app';}
+}
+function moreGoBetChecker(){
+  try{window.open('/bet-checker/?ref=app','_blank','noopener');}
+  catch(_){location.href='/bet-checker/?ref=app';}
 }
 function moreGoPerformance(){
   try{window.open('/performance/','_blank','noopener');}

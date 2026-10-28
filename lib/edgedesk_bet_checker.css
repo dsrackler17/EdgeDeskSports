@@ -1,0 +1,105 @@
+/* ===========================================================================
+   EdgeDesk BET CHECKER — bet-checker/index.html, lib/edgedesk_bet_checker.js.
+   The cards ARE the simple game cards (lib/edgedesk_games.css .gm-card,
+   .gm-ctop, .gm-lg, .gm-st, .gm-pill, .gm-empty, inside .gm-page); the page
+   frame is the public tools frame (/tools/tools.css: .wrap, .card, .btn,
+   .stat, .tbl, .note). This file adds only what Bet Checker has that they
+   do not: the grade chips, the result line, the form rows, the blurred
+   stats for a free account, and the renewal-terms sheet. Mobile first.
+   =========================================================================== */
+.bc{--bc-green:var(--gm-pos,#76bd3e);--bc-red:var(--gm-neg,#e26044);--bc-yellow:var(--gm-warn,#d99a2b)}
+.bc [hidden]{display:none!important}
+.bc-status{border:1px solid var(--gm-bd);border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:14px;background:var(--gm-s1)}
+.bc-status.ok{border-color:rgba(47,167,154,.5)}
+.bc-status.warn{border-color:rgba(217,154,43,.55)}
+.bc-status.err{border-color:rgba(226,96,68,.55)}
+.bc-ref{font:600 11px var(--gm-mono);color:var(--gm-faint)}
+.bc-who{font-size:12.5px;color:var(--gm-dim);margin:-4px 0 12px}
+
+/* ---- the form ---- */
+.bc-form summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;font-size:17px;min-height:44px}
+.bc-form summary::-webkit-details-marker{display:none}
+.bc-form summary::after{content:'+';font:700 20px var(--gm-mono);color:var(--gm-ac)}
+.bc-form[open] summary::after{content:'−'}
+.bc-f{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.bc-f .full{grid-column:1/-1}
+.bc-f label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--gm-dim);min-width:0}
+.bc-f select,.bc-f input{width:100%;min-height:44px;font-size:16px}
+.bc-hint{font-size:12.5px;line-height:1.45;color:var(--gm-dim);margin:0}
+.bc-cents{display:flex;align-items:center;gap:8px}
+.bc-cents input{max-width:110px}
+.bc-cents span{font:600 12.5px var(--gm-mono);color:var(--gm-dim)}
+.bc-f .btn{width:100%;justify-content:center;min-height:48px;font-size:16px}
+@media(min-width:720px){.bc-f{grid-template-columns:repeat(4,1fr)}.bc-f .half{grid-column:span 2}}
+.bc-result{margin-top:12px;border:1px solid var(--gm-bd);border-radius:12px;padding:12px;background:var(--gm-s2)}
+.bc-result p{margin:8px 0 0;font-size:14px;line-height:1.5}
+.bc-result.green{border-color:var(--bc-green)}.bc-result.red{border-color:var(--bc-red)}.bc-result.yellow{border-color:var(--bc-yellow)}
+.bc-result.err{border-color:var(--bc-red);color:var(--gm-tx)}
+.bc-edge-big{margin-left:10px;font:700 18px var(--gm-mono);font-variant-numeric:tabular-nums}
+
+/* ---- chips ---- */
+.bc-chip{display:inline-flex;align-items:center;min-height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid var(--gm-bd);color:var(--gm-dim);white-space:nowrap}
+.bc-chip.big{min-height:32px;font-size:14px;padding:0 13px}
+.bc-chip.green{background:rgba(118,189,62,.16);border-color:var(--bc-green);color:var(--bc-green)}
+.bc-chip.yellow{background:rgba(217,154,43,.14);border-color:var(--bc-yellow);color:var(--bc-yellow)}
+.bc-chip.red{background:rgba(226,96,68,.14);border-color:var(--bc-red);color:var(--bc-red)}
+.bc-chip.ungraded{border-style:dashed}
+.bc-chip.clv.beat{color:var(--bc-green);border-color:var(--bc-green)}
+.bc-chip.clv.lost{color:var(--bc-red);border-color:var(--bc-red)}
+.bc-chip.clv.none{border-style:dashed;color:var(--gm-tx)}
+.bc-chip.clv.pending{color:var(--gm-faint)}
+
+/* ---- the cards ---- */
+.bc-cards{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:720px){.bc-cards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}}
+.bc-card[data-grade="green"]{border-left:4px solid var(--bc-green)}
+.bc-card[data-grade="yellow"]{border-left:4px solid var(--bc-yellow)}
+.bc-card[data-grade="red"]{border-left:4px solid var(--bc-red)}
+.bc-card[data-grade="ungraded"]{border-left:4px dashed var(--gm-bd)}
+.bc-card.bc-fresh{box-shadow:0 0 0 2px rgba(47,167,154,.45)}
+.bc-title{font-size:12.5px;color:var(--gm-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc-pick{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.bc-pick b{font-size:16px;font-weight:800}
+.bc-odds{font:700 15px var(--gm-mono);font-variant-numeric:tabular-nums}
+.bc-units{font:600 12px var(--gm-mono);color:var(--gm-faint)}
+.bc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bc-edge{font:600 12.5px var(--gm-mono);color:var(--gm-dim);font-variant-numeric:tabular-nums}
+.bc-why{margin:0;font-size:12.5px;line-height:1.45;color:var(--gm-dim)}
+.bc-res{font:700 13px var(--gm-mono)}
+.bc-res.win{color:var(--bc-green)}.bc-res.loss{color:var(--bc-red)}.bc-res.pending,.bc-res.void,.bc-res.push{color:var(--gm-dim)}
+.bc-flag{display:inline-flex;align-items:center;min-height:24px;padding:0 9px;border-radius:7px;font-size:11.5px;font-weight:800;background:rgba(47,167,154,.15);color:var(--gm-ac);border:1px solid rgba(47,167,154,.5)}
+
+/* ---- usage and stats ---- */
+.bc-usage{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;margin:0 0 12px}
+.bc-meter{display:inline-block;width:110px;height:8px;border-radius:999px;background:var(--gm-s2);border:1px solid var(--gm-bd);overflow:hidden;flex:none}
+.bc-meter i{display:block;height:100%;background:var(--gm-ac)}
+.bc-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(min-width:720px){.bc-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.bc-h3{font-size:14px;margin:14px 0 6px}
+.bc-tbl td.n,.bc-tbl th{text-align:right}.bc-tbl td:first-child,.bc-tbl th:first-child{text-align:left}
+.bc-locked{position:relative;border-radius:12px;overflow:hidden}
+.bc-blur{filter:blur(6px);opacity:.55;pointer-events:none;user-select:none}
+.bc-fake-tbl{height:90px;margin-top:10px;border-radius:10px;background:repeating-linear-gradient(180deg,var(--gm-s2) 0 22px,var(--gm-s1) 22px 30px)}
+.bc-lock-over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:14px;background:rgba(16,14,10,.55)}
+.bc-lock-over span{font-size:13.5px;color:var(--gm-dim);max-width:420px;line-height:1.45}
+.bc-link{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--gm-ac);text-decoration:underline;cursor:pointer}
+.bc-older{font-size:13px;color:var(--gm-dim);margin:10px 0 0}
+.bc-legend{list-style:none;padding:0;margin:8px 0;display:grid;gap:8px;font-size:13.5px;line-height:1.45}
+.bc-legend li{display:flex;gap:8px;align-items:flex-start}
+
+/* ---- the renewal terms sheet ---- */
+.bc-sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);padding:0}
+.bc-sheet-in{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--gm-s1);border:1px solid var(--gm-bd);border-radius:16px 16px 0 0;padding:16px 16px 20px}
+@media(min-width:720px){.bc-sheet{align-items:center}.bc-sheet-in{border-radius:16px}}
+.bc-sheet h2{margin:0 0 8px;font-size:19px}
+.bc-x{float:right;background:none;border:0;color:var(--gm-dim);font-size:26px;line-height:1;cursor:pointer;min-width:44px;min-height:44px}
+.bc-terms{border:1px solid var(--gm-bd);border-radius:10px;padding:10px 12px;background:var(--gm-s2);font-size:13.5px;line-height:1.55;margin:10px 0}
+.bc-agree{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;margin:10px 0}
+.bc-agree input{width:20px;height:20px;flex:none;margin-top:1px}
+.bc-sheet .btn{width:100%;justify-content:center;min-height:48px}
+.bc-sheet .btn[disabled]{opacity:.5;cursor:not-allowed}
+.bc-arl-msg{font-size:13px;margin-top:8px;min-height:1em}
+.bc-auth .fl{display:block;margin:8px 0}
+.bc-auth input[type=email],.bc-auth input[type=password]{width:100%;min-height:44px;font-size:16px}
+.bc-auth .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.bc-auth-msg{font-size:13.5px;margin-top:8px;min-height:1em}
