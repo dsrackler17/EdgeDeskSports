@@ -1,0 +1,203 @@
+# EdgeDesk bought through Juice Reel: deploy it, check it, and switch it on —
+# from GitHub, without a terminal (docs/juicereel-billing.md § 2).
+#
+# MANUAL ON PURPOSE (workflow_dispatch), and only from main. Pick one step:
+#
+#   check     READ-ONLY. What the deployed juicereel_billing function sees (by
+#             NAME: which secrets are set, the redirect URI, the scopes, the
+#             switch), whether Juice Reel accepts EdgeDesk's client id and
+#             secret (a revoke of a random token EdgeDesk made — the same client
+#             authentication the code exchange uses), and whether owner access
+#             reaches Juice Reel's current-subscriber list (what the hourly
+#             reconcile reads).
+#   deploy    the two suites first, against a throwaway PostgreSQL; then
+#             supabase/juicereel_billing.sql (one transaction, refused on any
+#             CHECK THIS), the juicereel_billing function (--no-verify-jwt: it
+#             verifies the reader itself), and the hourly reconcile
+#             (supabase/juicereel_billing_cron.sql); then check. The switch is
+#             NOT changed: a first deploy stays off.
+#   set_mode  sets JUICE_REEL_CHECKOUT to `mode`, then check:
+#               off        nobody can start a Juice Reel checkout
+#               operators  only billing operators (the live test, § 3)
+#               on         every signed-in reader: the paywall and the landing
+#                          page offer Juice Reel
+#             'on' is refused while the function reports a missing secret.
+#
+# deploy and set_mode change production: type the step name into confirm.
+#
+# SECRETS (Settings → Secrets and variables → Actions; the Portfolio and
+# billing deploys use the same ones):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   the CLI
+#   SB_DB_URL                                     deploy only (psql)
+# JUICE_REEL_CLIENT_ID, JUICE_REEL_CLIENT_SECRET and JUICE_REEL_WEBHOOK_SECRET
+# come from Juice Reel and are set by hand in Supabase (Edge Functions →
+# Secrets); this workflow never sets or prints them.
+name: Deploy Juice Reel billing
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: 'check (read-only) · deploy (SQL, function, hourly reconcile; the switch is left as it is) · set_mode (JUICE_REEL_CHECKOUT)'
+        type: choice
+        options:
+          - check
+          - deploy
+          - set_mode
+        default: check
+      mode:
+        description: 'set_mode only: off · operators (only billing operators: the live test) · on (every reader)'
+        type: choice
+        options:
+          - 'off'
+          - operators
+          - 'on'
+        default: operators
+      confirm:
+        description: 'deploy and set_mode change production: type the step name again'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-juicereel-billing
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      STEP: ${{ inputs.step }}
+      MODE: ${{ inputs.mode }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: A step that changes production must be confirmed by name, and runs only from main
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          case "$STEP" in check) echo "read-only: no confirmation needed";;
+            *) [ "$CONFIRM" = "$STEP" ] || { echo "::error::'$STEP' changes production: type '$STEP' into confirm to run it"; exit 1; };;
+          esac
+          [ "$REF_NAME" = "main" ] || { echo "::error::Juice Reel billing steps run only from main (this run is on $REF_NAME)"; exit 1; }
+          # presence only; no value is ever printed
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set in Settings > Secrets and variables > Actions."; exit 1
+          fi
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The suites must pass against a throwaway PostgreSQL before production is touched
+        if: ${{ inputs.step == 'deploy' }}
+        env:
+          JUICEREEL_BILLING_SQL_REQUIRED: '1'
+        run: |
+          node tools/billing/juicereel_client.test.js
+          node tools/billing/juicereel_billing.test.js
+
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Apply supabase/juicereel_billing.sql (one transaction; refused on any CHECK THIS)
+        if: ${{ inputs.step == 'deploy' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set (Settings > Secrets and variables > Actions)."; exit 1; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/juicereel_billing.sql 2>&1); then
+            echo "$out" | tail -20; echo "::error::supabase/juicereel_billing.sql failed and was rolled back"; exit 1
+          fi
+          echo "$out" | tail -12
+          if echo "$out" | grep -q "CHECK THIS"; then echo "::error::the migration's report says CHECK THIS (above)"; exit 1; fi
+
+      - name: Deploy juicereel_billing (it verifies the reader itself; the webhook by its signature)
+        if: ${{ inputs.step == 'deploy' }}
+        run: supabase functions deploy juicereel_billing --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Schedule the hourly reconcile (supabase/juicereel_billing_cron.sql)
+        if: ${{ inputs.step == 'deploy' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/juicereel_billing_cron.sql 2>&1); then
+            echo "$out" | tail -20; echo "::error::supabase/juicereel_billing_cron.sql failed and was rolled back"; exit 1
+          fi
+          echo "$out" | tail -6
+          if echo "$out" | grep -q "CHECK THIS"; then echo "::error::the schedule's report says CHECK THIS (above)"; exit 1; fi
+
+      - name: What the deployed function sees (names only)
+        run: |
+          fn="https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/juicereel_billing"
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /tmp/health.json -w '%{http_code}' "$fn" || echo 000)
+            [ "$code" = "200" ] && break; sleep 5
+          done
+          if [ "$code" != "200" ]; then echo "::error::juicereel_billing answered $code to its health check (404 = not deployed: run the deploy step)"; exit 1; fi
+          node -e "
+            const h = JSON.parse(require('fs').readFileSync('/tmp/health.json', 'utf8')), c = h.configured || {};
+            console.log('build:            ' + h.build);
+            console.log('switch:           ' + h.mode);
+            console.log('client id/secret: ' + (c.client_id ? 'set' : 'MISSING') + ' / ' + (c.client_secret ? 'set' : 'MISSING'));
+            console.log('webhook secret:   ' + (c.webhook_secret ? 'set' : 'MISSING'));
+            console.log('redirect URI:     ' + c.redirect_uri);
+            console.log('scopes:           ' + (c.scopes || []).join(' '));
+            console.log('products:         ' + c.products);
+            console.log('missing:          ' + ((h.missing || []).join(', ') || 'nothing'));
+          "
+
+      - name: Set the switch (JUICE_REEL_CHECKOUT)
+        if: ${{ inputs.step == 'set_mode' }}
+        run: |
+          case "$MODE" in off|operators|on) ;; *) echo "::error::mode must be off, operators or on"; exit 1;; esac
+          if [ "$MODE" = "on" ]; then
+            node -e "const h=JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8'));if((h.missing||[]).length){console.log('::error::Not switched on: the function still reports missing: '+h.missing.join(', '));process.exit(1)}"
+          fi
+          umask 077
+          envfile="$RUNNER_TEMP/jrb.env"
+          printf 'JUICE_REEL_CHECKOUT=%s\n' "$MODE" > "$envfile"
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$envfile" >/dev/null || { rm -f "$envfile"; echo "::error::supabase secrets set failed; nothing was changed"; exit 1; }
+          rm -f "$envfile"
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            curl -sS -o /tmp/health.json "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/juicereel_billing" || true
+            if node -e "process.exit(JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8')).mode===process.env.MODE?0:1)"; then echo "juicereel_billing now reads the switch as: $MODE"; break; fi
+            sleep 5
+          done
+          node -e "const m=JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8')).mode;if(m!==process.env.MODE){console.log('::error::the function still reads the switch as '+m);process.exit(1)}"
+
+      - name: Does Juice Reel accept EdgeDesk's credentials, and does owner access reach the subscriber list?
+        run: |
+          # The service key stays on this runner, masked, for this one call.
+          svc=$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" -o json 2>/dev/null \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const k=JSON.parse(s).find(x=>x&&x.name==='service_role'&&/^[\w-]+\.[\w-]+\.[\w-]+$/.test(x.api_key||''));process.stdout.write(k?k.api_key:'')}catch(e){}})" || true)
+          if [ -z "$svc" ]; then echo "::warning::Could not read the project's service_role key with the CLI, so Juice Reel was not asked."; exit 0; fi
+          echo "::add-mask::$svc"
+          code=$(curl -sS -o /tmp/check.json -w '%{http_code}' -X POST "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/juicereel_billing" \
+            -H "authorization: Bearer $svc" -H 'content-type: application/json' -d '{"action":"check"}' || echo 000)
+          svc=""
+          if [ "$code" != "200" ]; then echo "::error::check answered $code"; head -c 300 /tmp/check.json; echo; exit 1; fi
+          node -e "
+            const r = JSON.parse(require('fs').readFileSync('/tmp/check.json', 'utf8'));
+            const sum = ['### Juice Reel billing', '', '| | |', '|---|---|',
+              '| Switch (JUICE_REEL_CHECKOUT) | **' + r.mode + '** |',
+              '| Juice Reel accepts EdgeDesk\'s credentials | ' + (r.accepted ? '**yes**' : '**no** — ' + r.code + ' (HTTP ' + r.revoke_status + ')') + ' |',
+              '| Owner access to the current-subscriber list (the hourly reconcile) | ' + r.owner_list + ' (HTTP ' + r.owner_list_status + ') |',
+              '| Missing settings | ' + ((r.missing || []).join(', ') || 'none') + ' |',
+              '| Register at Juice Reel as success URL, cancel URL and redirect URI | ' + r.redirect_uri + ' |',
+              '| Scopes to have approved | ' + (r.scopes || []).join(' ') + ' |',
+              '| Webhook URL to register at Juice Reel (SUBSCRIPTION_EVENTS) | https://' + process.env.SUPABASE_PROJECT_REF + '.supabase.co/functions/v1/juicereel_billing/webhook |',
+              '| Products that open EdgeDesk | ' + r.products + ' |', ''];
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, sum.join('\n') + '\n');
+            console.log(sum.join('\n'));
+            if (!r.accepted) console.log('::warning::Juice Reel did not accept the credentials: ' + r.code);
+          "
