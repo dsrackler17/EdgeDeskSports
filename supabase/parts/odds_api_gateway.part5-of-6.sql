@@ -213,12 +213,13 @@ end $$;
 -- The pg_cron command patterns that reach a paid path: the emergency stop
 -- pauses them and odds_api_hourly_limits.sql holds them to hourly. The same
 -- list as supabase/odds_api_emergency_stop.sql, re-created here so a new
--- spender (sharp_check, 2026-10-26) is covered without re-running the stop.
+-- spender (sharp_check, 2026-10-26; the Collective's odds.run_ingest jobs,
+-- 2026-10-28) is covered without re-running the stop.
 create or replace function public.odds_api_spend_patterns()
 returns text[] language sql immutable as $$
   select array[
     '%/functions/v1/capture%', '%capture_poke%', '%/functions/v1/close%',
-    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
+    '%/functions/v1/collective_odds_ingest%', '%odds.run_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
     '%/functions/v1/odds?%', '%/functions/v1/odds''%', '%/functions/v1/odds"%',
     '%/functions/v1/wta_odds%', '%/functions/v1/wta_close%', '%/functions/v1/cfb_close%',
     '%/functions/v1/close_backfill%', '%/functions/v1/capture_boards%', '%/functions/v1/model_conf_odds%',
