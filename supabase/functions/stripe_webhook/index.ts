@@ -334,7 +334,7 @@ function normalizeSubscription(sub) {
 }
 
 // ── WHAT EACH SUBSCRIPTION SELLS ────────────────────────────────────────────
-// Stripe's product metadata says (tier = red | blue). Read once per product per
+// Stripe's product metadata says (tier = red | blue). Read once per price per
 // warm instance, and written to billing_price_tiers so the database's rule
 // agrees. When Stripe cannot say (a restricted key without Products read, an
 // outage), what the database learned before is used — create_checkout_session

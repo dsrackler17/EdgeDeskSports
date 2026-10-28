@@ -373,6 +373,11 @@ begin
               from public.signals s
              where s.market in ('h2h', 'spreads', 'totals') and not coalesce(s.is_player_prop, false)
                and s.sport_key in (select jsonb_object_keys(r -> 'sports'))
+               -- the board's recent rows only (signals (sport_key, commence_time)
+               -- serves it); a week back keeps a rescheduled game's newest row in
+               -- view, and the newest row alone decides below
+               and s.commence_time > now() - interval '7 days'
+               and s.commence_time <= now() + make_interval(days => (r ->> 'board_days_ahead')::int)
                and s.event_id is not null and s.home_team is not null and s.away_team is not null
              order by s.event_id, s.last_seen_at desc nulls last) q
      where q.commence_time > now()
