@@ -55,7 +55,8 @@ chk('the CLV is the house formula (close/index.ts decideClose: entryDec * closeF
   /return \{ clv: entryDec \* closeFair - 1, reason: null \};/.test(fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'close', 'index.ts'), 'utf8')));
 
 const db = PG.start('betchk');
-if (db.skip) { console.log('NOTE | ' + db.skip + ' — LIVE layer skipped'); process.exit(T.done()); }
+/* BET_CHECKER_SQL_REQUIRED=1 (CI) makes a missing PostgreSQL a failure, never a pass */
+if (db.skip) { if (process.env.BET_CHECKER_SQL_REQUIRED === '1') chk('environment: ' + db.skip, false); console.log('SKIPPED | ' + db.skip + ' — the LIVE layer did not run (not verified)'); process.exit(T.done()); }
 
 const J = (q) => JSON.parse(db.sql('select coalesce(json_agg(t), \'[]\'::json) from (' + q + ') t;') || '[]');
 const one = (q) => J(q)[0];
