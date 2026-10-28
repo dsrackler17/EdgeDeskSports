@@ -116,11 +116,15 @@ jobs:
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
           set -eu
+          # log_user_bet keeps JWT verification ON, so the gateway wants a JWT
+          # even on its health probe: the PUBLIC anon key (the one every page
+          # ships, games/data/config.json) is one. It grants nothing here.
+          ANON=$(node -e "process.stdout.write(require('./games/data/config.json').supabase_anon_key||'')")
           for fn in log_user_bet grade_user_bets; do
             want=$(sed -n "s/^export const BUILD = '\([^']*\)';.*/\1/p" "supabase/functions/$fn/index.ts" | head -1)
             got=""
             for i in $(seq 1 24); do
-              got=$(curl -sS -m 15 "https://$PROJECT_REF.supabase.co/functions/v1/$fn" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{process.stdout.write(JSON.parse(s).build||'')}catch(_){}})" || true)
+              got=$(curl -sS -m 15 -H "apikey: $ANON" -H "authorization: Bearer $ANON" "https://$PROJECT_REF.supabase.co/functions/v1/$fn" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{process.stdout.write(JSON.parse(s).build||'')}catch(_){}})" || true)
               [ "$got" = "$want" ] && break
               sleep 5
             done
