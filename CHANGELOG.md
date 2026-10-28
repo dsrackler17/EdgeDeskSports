@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-28 — main is red: Personal research CI after the Juice Reel merge (#860)
+
+**What was wrong.** #860 merged with Personal research CI red, and `main` has stayed red since. Two checks fail there, both in tests, not in what a reader sees:
+- `tools/personal/personal_wiring.test.js`: two checks pinned the paywall's card-trial button as `<a class="pg-btn" …>`. #860 moved its class into `stripeCls`, so the button can sit below Juice Reel's as a secondary one when the switch is on. The checks no longer matched the code, which still sends a new account through `index.html#subscribe`.
+- `tools/billing/juicereel_checkout.e2e.js`, "a cancelled Juice Reel checkout": after the click, the test waited for `/app.html`. The page was already there, so the wait returned at once, and the next poll ran into the navigation to Juice Reel ("Execution context was destroyed"). It failed on every run here.
+
+**What changed.**
+- The two wiring checks match `class="'+stripeCls+'"`. A new check requires that with Juice Reel off, `stripeCls` is the plain `pg-btn`, so the card trial is still the primary button. Making it `pg-btn ghost` fails that check.
+- The e2e waits for the return from `oauth/juicereel-subscribe.html` (`/app.html?jrsub=return`).
+
+**Evidence.** On `main`: personal wiring 72 passed, 2 failed; the Juice Reel e2e failed 2 of 2 runs. With this change: 75 / 0, and 42 / 0 on each of 3 runs. No page, function or SQL changed.
+
 ## 2026-10-28 — Juice Reel buyers get a way back to Juice Reel from the terminal
 
 **Why.** People who subscribe on Juice Reel come and go between Juice Reel's app and EdgeDesk on the web. Once signed in, the terminal offered them no way back.
