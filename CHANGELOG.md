@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-28 — Bet Checker installs on production's board (the page's "board could not be loaded")
+
+**What was wrong.** `/bet-checker/` told every reader "EdgeDesk’s board could not be loaded", and under it "No upcoming games on EdgeDesk’s board". The database half of Bet Checker had never been installed. Both *Deploy Bet Checker* runs stopped in `bet_checker.sql`'s first check, before anything was created:
+
+| Run | Stopped on |
+|---|---|
+| 1, 13:18 UTC | `has_bet_checker_paid()` missing: billing had not been applied yet |
+| 2, 13:46 UTC | `public.signals has no column(s) is_player_prop` |
+
+`is_player_prop` comes from `capture_v11_player_props.sql`, which is optional. Capture writes game rows without it, and production has not run it. Bet Checker used the column only in a redundant filter: every query also pins `market` to `h2h` / `spreads` / `totals`, and a player row's market is always `player_*`.
+
+**The change.**
+- `bet_checker.sql` and its byte-identical migration mirror no longer require `is_player_prop`, and the 12 redundant predicates are gone. Every query selects the same rows as before. The grade thresholds, the free allowance and the CLV formula are unchanged.
+- The game picker says "EdgeDesk’s board could not be loaded" when the load failed. "No upcoming games" is kept for a board that loaded empty.
+
+Nothing changes in production until an operator runs *Deploy Bet Checker* with `apply_sql` and `apply_cron`.
+
+**Regression check.** The new tests were run against the old code first:
+
+| Suite | old code | this change |
+|---|---|---|
+| `tools/bet_checker/bet_checker_sql.test.js` | **111 / 1**: production's exact error; the checks that depend on the install did not run | 116 / 0 |
+| `tools/bet_checker/page.test.js` | **32 / 1** | 33 / 0 |
+
 ## 2026-10-28 — Changelog and incident note: what this morning's "Update branch" merges deleted is back
 
 **What was lost.** Between 13:14 and 13:17 UTC, #854, #855 and #853 merged. Two of them merged seconds after an "Update branch" merge commit whose conflicts were resolved in GitHub's editor, before any check ran on it:
