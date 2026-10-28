@@ -12,10 +12,13 @@
 //  SECRETS:
 //    STRIPE_SECRET_KEY       sk_live_... or a restricted key with WRITE on
 //                            Customers and Checkout Sessions, READ on Prices,
-//                            Products, Promotion Codes and Subscriptions
-//                            (Products: each product's metadata `tier` says
-//                            what a price sells — red = Bet Checker, blue =
-//                            the Research Terminal)
+//                            Promotion Codes and Subscriptions. READ on
+//                            Products is optional: each product's metadata
+//                            `tier` says what a price sells (red = Bet
+//                            Checker, blue = the Research Terminal); a key
+//                            refused the product reads the price's own
+//                            metadata `tier` instead, and the terminal's
+//                            checkout never needs either
 //    STRIPE_PRICE_ID         price_... the EdgeDesk Full Access monthly price
 //                            (lib/edgedesk_pricing.js PRICE_CENTS, USD, month).
 //                            Bet Checker needs NO env var: its prices are found
@@ -101,7 +104,7 @@
 // refuses the discount (a first-time-only code, a customer with an earlier
 // payment), the checkout is made again without it rather than failed.
 
-const BUILD = 'create_checkout_session-2026-10-28-bet-checker-1';
+const BUILD = 'create_checkout_session-2026-10-28-bet-checker-2';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -145,7 +148,7 @@ function config() {
 // Plain JavaScript on purpose: Deno runs it as-is, and Node tests load it
 // without a build step.
 
-var CORE_VERSION = 'billing-core-2026-10-28-tiers-1';
+var CORE_VERSION = 'billing-core-2026-10-28-tiers-2';
 
 // ── THE RULE, mirrored ──────────────────────────────────────────────────────
 // The authority is public.billing_row_grants_access() in
@@ -251,6 +254,8 @@ function normalizeSubscription(sub) {
     lookup_key: price && price.lookup_key ? String(price.lookup_key) : null,
     // known already only when the product came expanded; resolveTiers asks otherwise
     tier: product && typeof product === 'object' ? tierOf(product.metadata && product.metadata.tier) : null,
+    // the price's own metadata tier: used only when the key may not read the product
+    price_tier: price ? tierOf(price.metadata && price.metadata.tier) : null,
     created_ms: sub.created ? Number(sub.created) * 1000 : 0,
     metadata_user_id: metadataUserId(sub),
     livemode: sub.livemode === false ? false : (sub.livemode === true ? true : null),
@@ -260,8 +265,10 @@ function normalizeSubscription(sub) {
 // ── WHAT EACH SUBSCRIPTION SELLS ────────────────────────────────────────────
 // Stripe's product metadata says (tier = red | blue). Read once per price per
 // warm instance, and written to billing_price_tiers so the database's rule
-// agrees. When Stripe cannot say (a restricted key without Products read, an
-// outage), what the database learned before is used — create_checkout_session
+// agrees. A restricted key without Products read is refused the product (403):
+// then the price's own metadata tier stands in. A product that was read and
+// names no tier is never overruled by its price. When Stripe cannot say at all
+// (an outage), what the database learned before is used — create_checkout_session
 // learns every Bet Checker price before anyone can pay for it. A price nobody
 // can name is left unknown (the rule treats it as the terminal, as everything
 // sold before Bet Checker was) and raised for a human.
@@ -279,14 +286,20 @@ async function resolveTiers(ctx, subs, opts) {
     if (hit && now - hit.at < TIER_TTL_MS) { s.tier = hit.tier; if (!s.product_id) s.product_id = hit.product_id; continue; }
     if (!ctx.stripe) continue;
     try {
-      var product = null;
-      if (s.product_id) product = await ctx.stripe.get('/products/' + encodeURIComponent(s.product_id));
-      else {
-        var pr = await ctx.stripe.get('/prices/' + encodeURIComponent(s.price_id), { expand: ['product'] });
-        product = pr && pr.product && typeof pr.product === 'object' ? pr.product : null;
-        if (pr && !s.lookup_key && pr.lookup_key) s.lookup_key = String(pr.lookup_key);
+      var product = null, t = null;
+      try {
+        if (s.product_id) product = await ctx.stripe.get('/products/' + encodeURIComponent(s.product_id));
+        else {
+          var pr = await ctx.stripe.get('/prices/' + encodeURIComponent(s.price_id), { expand: ['product'] });
+          product = pr && pr.product && typeof pr.product === 'object' ? pr.product : null;
+          if (pr && !s.lookup_key && pr.lookup_key) s.lookup_key = String(pr.lookup_key);
+        }
+        t = tierOf(product && product.metadata && product.metadata.tier);
+      } catch (e) {
+        if (!e || e.status !== 403 || !s.price_tier) throw e;
+        logLine(ctx.svc, 'warn', 'reconcile.product_unreadable', { price_id: s.price_id, product_id: s.product_id, tier_from: 'price_metadata' });
+        t = s.price_tier;
       }
-      var t = tierOf(product && product.metadata && product.metadata.tier);
       if (product && product.id) s.product_id = product.id;
       if (!t) continue;
       s.tier = t;
@@ -829,12 +842,24 @@ async function getUser(c, req) {
 }
 
 // The price is checked against Stripe once per warm instance, with its product,
-// whose metadata says what it sells.
+// whose metadata says what it sells. A restricted key without Products read
+// (the key docs/billing-hardening.md set up before Bet Checker) is refused the
+// product: the price is read again on its own, so the terminal's checkout
+// never depends on that permission, and productTier() falls back to the
+// price's own metadata.
 const PRICE_CACHE = {};
+async function getWithProduct(stripe, path, params, expand) {
+  try { return await stripe.get(path, Object.assign({ 'expand[]': expand }, params)); }
+  catch (e) {
+    if (!e || e.status !== 403) throw e;
+    logLine('create_checkout_session', 'warn', 'checkout.product_unreadable', { path: path.split('?')[0], code: e.code || null });
+    return await stripe.get(path, params);
+  }
+}
 async function readPrice(stripe, id) {
   const hit = PRICE_CACHE[id];
   if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.price;
-  const p = await stripe.get('/prices/' + encodeURIComponent(id), { 'expand[]': 'product' });
+  const p = await getWithProduct(stripe, '/prices/' + encodeURIComponent(id), {}, 'product');
   PRICE_CACHE[id] = { at: Date.now(), price: p };
   return p;
 }
@@ -869,15 +894,23 @@ const LOOKUP_CACHE = {};
 async function readPriceByLookupKey(stripe, key) {
   const hit = LOOKUP_CACHE[key];
   if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.price;
-  const r = await stripe.get('/prices', { 'lookup_keys[]': key, active: 'true', limit: 1, 'expand[]': 'data.product' });
+  const r = await getWithProduct(stripe, '/prices', { 'lookup_keys[]': key, active: 'true', limit: 1 }, 'data.product');
   const p = (r && Array.isArray(r.data) && r.data[0]) || null;
   LOOKUP_CACHE[key] = { at: Date.now(), price: p };
   return p;
 }
+// The product's metadata decides. Only when the key may not read the product
+// does the price's own metadata `tier` stand in; a product that was read and
+// names no tier is never overruled by its price.
 function productTier(price) {
   const prod = price && price.product && typeof price.product === 'object' ? price.product : null;
-  const t = prod && prod.metadata && typeof prod.metadata.tier === 'string' ? prod.metadata.tier.trim().toLowerCase() : null;
+  const meta = prod ? prod.metadata : price && price.metadata;
+  const t = meta && typeof meta.tier === 'string' ? meta.tier.trim().toLowerCase() : null;
   return t === 'red' || t === 'blue' ? t : null;
+}
+function productIdOf(price) {
+  const p = price && price.product;
+  return typeof p === 'string' ? p : (p && p.id) || null;
 }
 
 // ── a creator's code ─────────────────────────────────────────────────────────
@@ -1093,7 +1126,7 @@ async function handle(req) {
   // event about this subscription already finds its tier in the database.
   if (tier) {
     try {
-      await db.rpc('billing_learn_price_tier', { p_price_id: priceId, p_product_id: price.product && price.product.id || null,
+      await db.rpc('billing_learn_price_tier', { p_price_id: priceId, p_product_id: productIdOf(price),
         p_tier: tier, p_lookup_key: price.lookup_key || null, p_livemode: c.livemode, p_source: 'checkout' });
     } catch (e) {
       if (kind === 'bet_checker') {
