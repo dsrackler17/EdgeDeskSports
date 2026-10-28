@@ -1,0 +1,127 @@
+# EdgeDesk Bet Checker — the checks that gate every change to grading the
+# bets a reader already placed (docs/bet-checker.md).
+#
+#   suites    the page's arithmetic and words (lib/edgedesk_bet_checker_core.js),
+#             the page's wiring (the consent order, the doors, the cards), and
+#             the legacy placed-bet grader leaving Bet Checker's rows alone —
+#             offline, in Node.
+#   database  supabase/bet_checker.sql applied TWICE over bettor_decisions.sql
+#             and billing_hardening.sql on a throwaway PostgreSQL, acted on as
+#             two readers, anon and the service role (RLS, the grading-column
+#             guards, the grades and their boundaries, the free limit with a
+#             concurrent race, CLV, no close, results, the flag, stats, the
+#             schedule); then the SHIPPED log_user_bet and grade_user_bets,
+#             imported whole, against that SQL through a PostgREST stand-in.
+#   browser   bet-checker/index.html in Chromium (1280 px and a 390 px phone)
+#             against the same stack: a bet logged, its grade at once, the free
+#             limit, the blurred stats, the renewal consent before Stripe, CLV
+#             after the close, a subscriber's stats.
+#
+# The billing tiers it depends on (red never opens the terminal) are gated by
+# personal-tests.yml (tools/billing/tier_flow.test.js). Nothing here deploys or
+# writes anywhere. Deploying is .github/workflows/deploy-bet-checker.yml, run by hand.
+name: Bet Checker tests
+
+on:
+  pull_request:
+    paths:
+      - 'bet-checker/**'
+      - 'lib/edgedesk_bet_checker*'
+      - 'lib/edgedesk_pricing.js'
+      - 'lib/edgedesk_access.js'
+      - 'lib/edgedesk_auth.js'
+      - 'lib/edgedesk_games.css'
+      - 'games/lib/auth.js'
+      - 'games/lib/social.js'
+      - 'games/data/config.json'
+      - 'supabase/bet_checker*.sql'
+      - 'supabase/migrations/*_bet_checker.sql'
+      - 'supabase/bettor_decisions.sql'
+      - 'supabase/bankroll_and_stakes.sql'
+      - 'supabase/billing_hardening.sql'
+      - 'supabase/signal_pnl.sql'
+      - 'supabase/functions/log_user_bet/**'
+      - 'supabase/functions/grade_user_bets/**'
+      - 'supabase/functions/close/index.ts'
+      - 'supabase/functions/create_checkout_session/index.ts'
+      - 'tools/bet_checker/**'
+      - 'tools/personal/research_state.js'
+      - 'tools/personal/_pg.js'
+      - 'tools/billing/_pgrest.js'
+      - 'app.html'
+      - '.github/workflows/bet-checker-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'bet-checker/**'
+      - 'lib/edgedesk_bet_checker*'
+      - 'supabase/bet_checker*.sql'
+      - 'supabase/migrations/*_bet_checker.sql'
+      - 'supabase/functions/log_user_bet/**'
+      - 'supabase/functions/grade_user_bets/**'
+      - 'tools/bet_checker/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: bet-checker-ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The page's arithmetic and words — every reason the database can give has a sentence, an ungraded bet shows no number
+        run: node tools/bet_checker/core.test.js
+      - name: The page's wiring — one Main nav, the consent before Stripe, the doors, the cards say only what the database decided
+        run: node tools/bet_checker/page.test.js
+      - name: The placed-bet grader leaves Bet Checker's rows to Bet Checker
+        run: node tools/bettor/decision.test.js
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL on the runner
+        run: sudo apt-get install -y -qq postgresql >/dev/null
+      - name: bet_checker.sql as two readers, anon and the service role — RLS, the guards, grades, the free limit, CLV, results, the schedule
+        env:
+          BET_CHECKER_SQL_REQUIRED: '1'
+        run: node tools/bet_checker/bet_checker_sql.test.js
+      - name: The shipped log_user_bet and grade_user_bets against that SQL
+        env:
+          BET_CHECKER_SQL_REQUIRED: '1'
+        run: node tools/bet_checker/functions.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL on the runner
+        run: sudo apt-get install -y -qq postgresql >/dev/null
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The page in Chromium against the real stack — a bet logged and graded at once, the free limit, the consent before Stripe, CLV after the close
+        env:
+          BET_CHECKER_UI_REQUIRED: '1'
+        run: node tools/bet_checker/page.e2e.js

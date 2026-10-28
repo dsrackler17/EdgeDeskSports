@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_altitude_monitoring_v1",
- "generated_at": "2026-10-27T22:28:21.725Z",
+ "generated_at": "2026-10-28T06:00:25.670Z",
  "policy": "warnings inform a person; nothing here retrains, re-tunes, enables or disables anything",
  "ok": true,
  "params": {
@@ -11,16 +11,16 @@
   "flag": "cfb_altitude_adjustment_enabled"
  },
  "slate": {
-  "generated_at": "2026-10-27T22:28:21.183Z",
-  "games": 63,
-  "with_section": 63,
-  "usable": 60,
+  "generated_at": "2026-10-28T06:00:25.251Z",
+  "games": 103,
+  "with_section": 103,
+  "usable": 99,
   "exposure": {
-   "MINIMAL": 45,
-   "HIGH": 4,
-   "DESCENT": 8,
-   "UNKNOWN": 3,
-   "MODERATE": 3
+   "MINIMAL": 76,
+   "HIGH": 5,
+   "DESCENT": 12,
+   "UNKNOWN": 4,
+   "MODERATE": 6
   },
   "applied_games": 0,
   "unavailable": [
@@ -38,6 +38,11 @@
     "game_id": "401866456",
     "game": "Central Michigan @ Eastern Michigan",
     "why": "venue 3727 has no sourced elevation"
+   },
+   {
+    "game_id": "401858513",
+    "game": "Iowa @ Northwestern",
+    "why": "venue 11823 has no sourced elevation; Northwestern’s normal home venue (id 11823) has no sourced elevation"
    }
   ]
  },
@@ -76,7 +81,7 @@
   {
    "kind": "ELEVATION_UNAVAILABLE",
    "level": "WARN",
-   "message": "3 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
+   "message": "4 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
    "evidence": [
     {
      "game_id": "401856734",
@@ -92,6 +97,11 @@
      "game_id": "401866456",
      "game": "Central Michigan @ Eastern Michigan",
      "why": "venue 3727 has no sourced elevation"
+    },
+    {
+     "game_id": "401858513",
+     "game": "Iowa @ Northwestern",
+     "why": "venue 11823 has no sourced elevation; Northwestern’s normal home venue (id 11823) has no sourced elevation"
     }
    ]
   }

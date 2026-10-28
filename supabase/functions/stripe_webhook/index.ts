@@ -20,8 +20,12 @@
 //                            SUPABASE_SERVICE_ROLE_KEY)
 //    STRIPE_SECRET_KEY       sk_live_... or a restricted rk_live_... with READ
 //                            access to Customers, Subscriptions, Checkout
-//                            Sessions and Promotion Codes. Every delivery is
-//                            answered by ASKING STRIPE for the account's
+//                            Sessions, Promotion Codes and Products (a
+//                            product's metadata `tier` says what a price sells:
+//                            red = Bet Checker, blue = the Research Terminal;
+//                            without it, what the database already learned
+//                            decides, and a price nobody can name is alerted).
+//                            Every delivery is answered by ASKING STRIPE for the account's
 //                            subscriptions, so the state written is Stripe's
 //                            truth as of now — whatever order, delay or
 //                            duplication the events arrived in.
@@ -82,6 +86,15 @@
 // never lets Stripe revoke access that Stripe did not grant (a comp_trial or a
 // hand-made row): that disagreement goes to a human as an alert.
 //
+// WHAT WAS BOUGHT (2026-10-28). Two products are sold: Bet Checker (product
+// metadata tier = red) and the Research Terminal (tier = blue). The reconciler
+// reads each subscription's product metadata and records the price's tier
+// (billing_learn_price_tier); public.subscriptions.tier follows the price, and
+// the access rule grants the terminal only to blue. checkout.session.completed,
+// customer.subscription.updated (a red <-> blue switch is a price change on the
+// same subscription) and customer.subscription.deleted all need nothing of
+// their own: each is answered with Stripe's live state, tier included.
+//
 // AND IT RECORDS WHICH DISCOUNT CODE THE SALE CAME IN UNDER. Unchanged: a
 // promotion code redeemed at checkout is read from the session (or from the
 // subscription Stripe returns), named, and written to public.subscriptions in
@@ -102,7 +115,7 @@ const ENC = new TextEncoder();
 // template, paste, deploy — and a bundle that fails leaves the PREVIOUS version
 // serving, which is indistinguishable from a deploy that worked and changed
 // nothing. This string is how that is told apart. Bump it with every paste.
-const BUILD = 'stripe_webhook-2026-10-04-hardening-1';
+const BUILD = 'stripe_webhook-2026-10-28-tiers-1';
 
 // One place responses are made, so a reply cannot exist that forgot to say
 // which build produced it.
@@ -208,7 +221,7 @@ async function verifySignature(rawBody, header, secret, nowSeconds, toleranceSec
 // Plain JavaScript on purpose: Deno runs it as-is, and Node tests load it
 // without a build step.
 
-var CORE_VERSION = 'billing-core-2026-10-04-1';
+var CORE_VERSION = 'billing-core-2026-10-28-tiers-1';
 
 // ── THE RULE, mirrored ──────────────────────────────────────────────────────
 // The authority is public.billing_row_grants_access() in
@@ -220,8 +233,12 @@ var COMP_TRIAL_PRICE_ID = 'comp_trial';
 var PAST_DUE_GRACE_DAYS = 21;
 var STRIPE_API = 'https://api.stripe.com/v1';
 var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// What a product sells, from its Stripe metadata `tier`: red = Bet Checker,
+// blue = the Research Terminal. Anything else is not a tier.
+var TIERS = ['red', 'blue'];
 
-function grantsAccess(row, nowMs) {
+// public.billing_row_in_good_standing(): paid up, or comped, whatever it bought
+function inGoodStanding(row, nowMs) {
   if (!row) return false;
   var now = nowMs == null ? Date.now() : nowMs;
   var st = row.status;
@@ -231,6 +248,23 @@ function grantsAccess(row, nowMs) {
   if (st === 'active' || st === 'trialing') return pe == null || pe >= now;
   if (st === 'past_due') return pe == null || (now - pe) < PAST_DUE_GRACE_DAYS * 864e5;
   return false;
+}
+
+// public.billing_row_grants_access(): the Research Terminal. Bet Checker (red)
+// in good standing is paid, but not for this. An unknown tier is the terminal:
+// every price sold before Bet Checker existed was.
+function grantsAccess(row, nowMs) {
+  return inGoodStanding(row, nowMs) && (row.tier == null || row.tier === 'blue');
+}
+
+// public.has_bet_checker_paid(): red or blue, in good standing
+function grantsBetChecker(row, nowMs) {
+  return inGoodStanding(row, nowMs) && (row.tier == null || TIERS.indexOf(row.tier) >= 0);
+}
+
+function tierOf(v) {
+  var t = typeof v === 'string' ? v.trim().toLowerCase() : null;
+  return TIERS.indexOf(t) >= 0 ? t : null;
 }
 
 // ── reading Stripe objects ──────────────────────────────────────────────────
@@ -270,8 +304,18 @@ function metadataUserId(obj) {
   return typeof v === 'string' && UUID_RE.test(v) ? v.toLowerCase() : null;
 }
 
+// The single item's price object (Stripe sends the whole Price on a
+// subscription item, with its product as an id unless it was expanded).
+function priceOf(sub) {
+  if (!sub || !sub.items || !Array.isArray(sub.items.data) || sub.items.data.length !== 1) return null;
+  var p = sub.items.data[0] && (sub.items.data[0].price || sub.items.data[0].plan);
+  return p && typeof p === 'object' ? p : null;
+}
+
 function normalizeSubscription(sub) {
   if (!sub || typeof sub !== 'object' || !sub.id) return null;
+  var price = priceOf(sub);
+  var product = price ? price.product : null;
   return {
     id: sub.id,
     customer_id: idOf(sub.customer),
@@ -279,28 +323,117 @@ function normalizeSubscription(sub) {
     current_period_end: periodEnd(sub),
     cancel_at_period_end: !!sub.cancel_at_period_end,
     price_id: priceIdOf(sub),
+    product_id: idOf(product),
+    lookup_key: price && price.lookup_key ? String(price.lookup_key) : null,
+    // known already only when the product came expanded; resolveTiers asks otherwise
+    tier: product && typeof product === 'object' ? tierOf(product.metadata && product.metadata.tier) : null,
     created_ms: sub.created ? Number(sub.created) * 1000 : 0,
     metadata_user_id: metadataUserId(sub),
     livemode: sub.livemode === false ? false : (sub.livemode === true ? true : null),
   };
 }
 
+// ── WHAT EACH SUBSCRIPTION SELLS ────────────────────────────────────────────
+// Stripe's product metadata says (tier = red | blue). Read once per price per
+// warm instance, and written to billing_price_tiers so the database's rule
+// agrees. When Stripe cannot say (a restricted key without Products read, an
+// outage), what the database learned before is used — create_checkout_session
+// learns every Bet Checker price before anyone can pay for it. A price nobody
+// can name is left unknown (the rule treats it as the terminal, as everything
+// sold before Bet Checker was) and raised for a human.
+var TIER_CACHE = {};
+var TIER_TTL_MS = 10 * 60 * 1000;
+async function resolveTiers(ctx, subs, opts) {
+  var o = opts || {};
+  var now = ctx.nowMs ? ctx.nowMs() : Date.now();
+  var pending = (subs || []).filter(function (s) { return s && s.price_id && !s.tier; });
+  if (!pending.length) return subs;
+  // 1. the product's metadata, from Stripe
+  for (var i = 0; i < pending.length; i++) {
+    var s = pending[i];
+    var hit = TIER_CACHE[s.price_id];
+    if (hit && now - hit.at < TIER_TTL_MS) { s.tier = hit.tier; if (!s.product_id) s.product_id = hit.product_id; continue; }
+    if (!ctx.stripe) continue;
+    try {
+      var product = null;
+      if (s.product_id) product = await ctx.stripe.get('/products/' + encodeURIComponent(s.product_id));
+      else {
+        var pr = await ctx.stripe.get('/prices/' + encodeURIComponent(s.price_id), { expand: ['product'] });
+        product = pr && pr.product && typeof pr.product === 'object' ? pr.product : null;
+        if (pr && !s.lookup_key && pr.lookup_key) s.lookup_key = String(pr.lookup_key);
+      }
+      var t = tierOf(product && product.metadata && product.metadata.tier);
+      if (product && product.id) s.product_id = product.id;
+      if (!t) continue;
+      s.tier = t;
+      TIER_CACHE[s.price_id] = { at: now, tier: t, product_id: s.product_id };
+      if (!o.dryRun) {
+        try {
+          await ctx.db.rpc('billing_learn_price_tier', { p_price_id: s.price_id, p_product_id: s.product_id || null,
+            p_tier: t, p_lookup_key: s.lookup_key || null, p_livemode: s.livemode, p_source: o.source || 'sync' });
+        } catch (e) {
+          logLine(ctx.svc, 'warn', 'reconcile.tier_learn_failed', { price_id: s.price_id, error: String(e.message || e).slice(0, 200) });
+        }
+      }
+    } catch (e) {
+      logLine(ctx.svc, 'warn', 'reconcile.tier_unreadable', { price_id: s.price_id, product_id: s.product_id,
+        status: e && e.status, error: String((e && e.message) || e).slice(0, 200) });
+    }
+  }
+  // 2. what the database learned before
+  var still = pending.filter(function (s) { return !s.tier && /^price_[A-Za-z0-9_]+$/.test(s.price_id); });
+  if (still.length) {
+    try {
+      var ids = still.map(function (s) { return s.price_id; }).filter(function (v, k, a) { return a.indexOf(v) === k; });
+      var rows = await ctx.db.get('billing_price_tiers?select=price_id,tier&price_id=in.(' + ids.map(encodeURIComponent).join(',') + ')');
+      var known = {};
+      (rows || []).forEach(function (r) { known[r.price_id] = tierOf(r.tier); });
+      still.forEach(function (s) { if (known[s.price_id]) s.tier = known[s.price_id]; });
+    } catch (e) {
+      logLine(ctx.svc, 'warn', 'reconcile.tier_lookup_failed', { error: String(e.message || e).slice(0, 200) });
+    }
+  }
+  // 3. nobody can say
+  var unknown = pending.filter(function (s) { return !s.tier; });
+  if (unknown.length && !o.dryRun) {
+    for (var u = 0; u < unknown.length; u++) {
+      try {
+        await ctx.db.rpc('billing_raise_alert', { p_kind: 'unknown_price_tier', p_dedupe: 'price:' + unknown[u].price_id,
+          p_user: o.userId || null, p_customer: unknown[u].customer_id, p_subscription: unknown[u].id, p_event: o.eventId || null,
+          p_detail: { price_id: unknown[u].price_id, product_id: unknown[u].product_id || null,
+            why: 'Stripe did not say which tier this price sells (product metadata tier = red | blue), and it was never learned' },
+          p_resolved: false });
+      } catch (_) { /* the log line below still says it */ }
+    }
+    logLine(ctx.svc, 'warn', 'reconcile.tier_unknown', { price_ids: unknown.map(function (s) { return s.price_id; }) });
+  }
+  return subs;
+}
+
+// Paid for SOMETHING: the terminal, or Bet Checker alone. What a repair, a
+// grant or a revocation is judged by — a Bet Checker purchase landing is the
+// webhook doing its job exactly as a terminal trial is.
+function paidAccess(a) {
+  return !!(a && (a.has_access || a.bet_checker_paid));
+}
+
 var STATUS_RANK = { active: 60, trialing: 50, past_due: 40, unpaid: 30, paused: 20, incomplete: 10,
                     canceled: 0, incomplete_expired: -10 };
 
 // The subscription an account's row should describe, out of every one Stripe
-// has for it: one that grants access beats one that does not; paid beats
-// trial; then the later period end, then the newest. Two that both grant
-// access are a DUPLICATE purchase, returned so the caller can flag it.
+// has for it: one that grants the terminal beats one that grants only Bet
+// Checker, which beats one that grants nothing; paid beats trial; then the
+// later period end, then the newest. Two in good standing — whatever each
+// sells — are a DUPLICATE purchase, returned so the caller can flag it.
 function pickBest(subs, nowMs) {
   var seen = {}, list = [];
   (subs || []).forEach(function (s) {
     var n = s && s.id && s.current_period_end !== undefined && s.created_ms !== undefined ? s : normalizeSubscription(s);
     if (n && n.id && !seen[n.id]) { seen[n.id] = true; list.push(n); }
   });
-  var ent = function (n) { return grantsAccess(n, nowMs); };
+  var ent = function (n) { return grantsAccess(n, nowMs) ? 2 : (inGoodStanding(n, nowMs) ? 1 : 0); };
   list.sort(function (a, b) {
-    var ea = ent(a) ? 1 : 0, eb = ent(b) ? 1 : 0;
+    var ea = ent(a), eb = ent(b);
     if (ea !== eb) return eb - ea;
     var ra = STATUS_RANK[a.status] == null ? -20 : STATUS_RANK[a.status];
     var rb = STATUS_RANK[b.status] == null ? -20 : STATUS_RANK[b.status];
@@ -564,7 +697,7 @@ async function reconcileUser(ctx, user, opts) {
           stripe_subscription_id: b ? b.id : null, stripe_status: b ? b.status : null,
           db_status_before: row ? row.status : null,
           db_status_after: res.access && res.access.subscription ? res.access.subscription.status : (row ? row.status : null),
-          access_before: !!(before && before.has_access), access_after: !!(res.access && res.access.has_access),
+          access_before: paidAccess(before), access_after: paidAccess(res.access),
           duration_ms: (ctx.nowMs ? ctx.nowMs() : Date.now()) - t0,
           note: res.note ? String(res.note).slice(0, 300) : null,
         }]);
@@ -576,7 +709,7 @@ async function reconcileUser(ctx, user, opts) {
       user_id: user.id, source: o.source, ref: ref, event_id: o.eventId || null,
       customer_ids: res.customers.map(function (c) { return c.id; }),
       subscription_id: b ? b.id : null, stripe_status: b ? b.status : null,
-      access_before: !!(before && before.has_access), access_after: !!(res.access && res.access.has_access),
+      access_before: paidAccess(before), access_after: paidAccess(res.access),
       duplicates: res.duplicates, note: res.note || null,
     });
     return res;
@@ -656,7 +789,10 @@ async function reconcileUser(ctx, user, opts) {
     }
   }
 
-  var pick = pickBest(subs, t0);
+  // what each one sells, before any of them is ranked
+  var norm = subs.map(normalizeSubscription).filter(Boolean);
+  await resolveTiers(ctx, norm, { dryRun: o.dryRun, source: o.source, userId: user.id, eventId: o.eventId });
+  var pick = pickBest(norm, t0);
   res.best = pick.best;
   // the Stripe object itself, for a caller that reads more than the state (the
   // webhook reads the discount off it); never returned to a browser
@@ -664,7 +800,7 @@ async function reconcileUser(ctx, user, opts) {
   res.duplicates = pick.entitled.length;
   res.stripe = pick.all.map(function (s) {
     return { id: s.id, customer_id: s.customer_id, status: s.status, current_period_end: s.current_period_end,
-             cancel_at_period_end: s.cancel_at_period_end, price_id: s.price_id };
+             cancel_at_period_end: s.cancel_at_period_end, price_id: s.price_id, tier: s.tier || null };
   });
 
   if (!pick.best) {
@@ -678,7 +814,7 @@ async function reconcileUser(ctx, user, opts) {
       }
       return finish('stripe_error', false, { note: String(stripeErr.message || stripeErr).slice(0, 200) });
     }
-    if (row && row.stripe_subscription_id && before && before.has_access && !o.dryRun) {
+    if (row && row.stripe_subscription_id && paidAccess(before) && !o.dryRun) {
       try {
         await ctx.db.rpc('billing_raise_alert', { p_kind: 'db_active_stripe_inactive', p_dedupe: 'user:' + user.id,
           p_user: user.id, p_customer: row.stripe_customer_id, p_subscription: row.stripe_subscription_id,
@@ -715,7 +851,7 @@ async function reconcileUser(ctx, user, opts) {
   res.applied = applied;
   try { res.access = await ctx.db.rpc('billing_access_for', { p_user: user.id }); } catch (_) { /* keep before */ }
 
-  var had = !!(before && before.has_access), has = !!(res.access && res.access.has_access);
+  var had = paidAccess(before), has = paidAccess(res.access);
   // 'granted' is the webhook doing its job; 'repaired' is anything else having
   // to do it for the webhook — the number worth watching.
   var outcome = !(applied && applied.applied) || applied.changed === false ? 'unchanged'
@@ -1270,7 +1406,7 @@ async function processEvent(D, event, read, livemode, stripeCreated, trace, mark
     // CUSTOMER. With a key configured this was an outage: answer 500 so Stripe
     // delivers it again when Stripe can be asked. Without one there is nothing
     // a retry can change, so it is said loudly instead.
-    if (read.kind === 'checkout' && !(access && access.has_access)) {
+    if (read.kind === 'checkout' && !(access && (access.has_access || access.bet_checker_paid))) {
       if (stripe) {
         await markEvent({ user_id: who.user_id, resolved: true, applied, resolved_how: who.how,
           last_error: 'subscription state could not be read from Stripe; retrying' });

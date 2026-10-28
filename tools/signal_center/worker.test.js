@@ -48,6 +48,7 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
     const BH = fs.readFileSync(F('billing_hardening.sql'), 'utf8'), PR = fs.readFileSync(F('personal_research.sql'), 'utf8');
     const slice = (src, a, b) => { const i = src.indexOf(a); return src.slice(i, src.indexOf(b, i) + b.length); };
     db.sql(`create table public.subscriptions (user_id uuid, status text, price_id text, current_period_end timestamptz);
+      ${slice(BH, 'create or replace function public.billing_row_in_good_standing(', '-- THE ACCESS RULE')}
       ${slice(BH, 'create or replace function public.billing_row_grants_access(', '$$;')}
       create or replace function public.community_is_entitled(p_user uuid) returns boolean language sql stable security definer set search_path = public, pg_temp as $b$
         select exists (select 1 from public.subscriptions s where s.user_id = p_user and public.billing_row_grants_access(s.status, s.price_id, s.current_period_end, now())); $b$;

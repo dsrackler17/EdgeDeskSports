@@ -36,7 +36,7 @@ const chk = T.chk;
 const lit = PG.lit;
 const FILE = path.join(PG.ROOT, 'supabase', 'billing_hardening.sql');
 const SQL = fs.readFileSync(FILE, 'utf8');
-const CORE = new Function(fs.readFileSync(path.join(__dirname, 'billing_core.js'), 'utf8') + '\nreturn { grantsAccess };')();
+const CORE = new Function(fs.readFileSync(path.join(__dirname, 'billing_core.js'), 'utf8') + '\nreturn { grantsAccess, grantsBetChecker };')();
 const ACCESS = require(path.join(PG.ROOT, 'lib', 'edgedesk_access.js'));
 
 chk('no psql meta-commands (it is pasted into the SQL editor)', !/^\\/m.test(SQL));
@@ -105,14 +105,14 @@ try {
   /* ===================================================================== */
   let out = db.applyFileAtomic(FILE);
   const rep = out.split('\n').filter((l) => /^\d+\|/.test(l));
-  chk('it applies over production-shaped data', rep.length === 11, out.slice(-1500));
+  chk('it applies over production-shaped data', rep.length === 14, out.slice(-1500));
   const bad = rep.filter((l) => !/\|ok/.test(l));
   chk('and reports, honestly, exactly the two things a human must decide',
     bad.length === 2 && /^6\|/.test(bad[0]) && /sub_twice/.test(bad[0]) && /^8\|/.test(bad[1]) && /cus_shared/.test(bad[1]), bad);
   chk('a skipped unique index is a report row, not a failed migration',
     one("select to_regclass('public.subscriptions_stripe_subscription_uk') is null as skipped").skipped === true);
   out = db.applyFileAtomic(FILE);
-  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d+\|/.test(l)).length === 11);
+  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d+\|/.test(l)).length === 14);
   const after = J('select user_id, status, price_id, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id from public.subscriptions order by user_id');
   chk('no existing subscription row was changed by installing it', JSON.stringify(before) === JSON.stringify(after));
 
@@ -167,6 +167,76 @@ try {
   chk('and the installed one now defers to it', cmp.every((r) => r.now_installed === r.rule) &&
     /billing_row_grants_access/.test(V("select pg_get_functiondef('public.community_is_entitled(uuid)'::regprocedure);")));
   V("delete from public.subscriptions where user_id::text like '10000000-%'; delete from auth.users where id::text like '10000000-%';");
+
+  /* ===================================================================== */
+  /* 3b. WHAT A PRICE SELLS: red (Bet Checker) never opens blue (terminal) */
+  /* ===================================================================== */
+  const learn = (price, tier, src) => db.service('select public.billing_learn_price_tier(' + lit(price) + ", 'prod_t', " + lit(tier) +
+    ', null, true, ' + lit(src || 'test') + ');');
+  chk('a red price is learned', learn('price_red_t', 'red') === 'learned');
+  chk('a blue price is learned', learn('price_blue_t', 'blue') === 'learned');
+  chk('learning the same thing again changes nothing', learn('price_red_t', 'RED ') === 'unchanged');
+  chk('a tier that is not red or blue is refused, never guessed', learn('price_green_t', 'green') === 'refused:tier' &&
+    J("select 1 from public.billing_price_tiers where price_id = 'price_green_t'").length === 0);
+  chk('a price id that is not a Stripe price is refused', learn('owner_comp', 'blue') === 'refused:price');
+  chk('no reader may teach the rule what a price sells',
+    !!db.mustFail(() => db.as(owner, "select public.billing_learn_price_tier('price_red_t', null, 'blue', null, true, 'x');")) &&
+    !!db.mustFail(() => db.anon("select public.billing_learn_price_tier('price_red_t', null, 'blue', null, true, 'x');")));
+  chk('no reader may ask has_bet_checker_paid about an account',
+    !!db.mustFail(() => db.as(owner, 'select public.has_bet_checker_paid(' + lit(owner) + ');')));
+  chk('no reader may read the price map directly', !!db.mustFail(() => db.as(owner, 'select * from public.billing_price_tiers;')));
+
+  const tprices = [null, 'price_red_t', 'price_blue_t', 'price_never_seen', 'owner_comp', 'comp_trial'];
+  const tstat = ['active', 'trialing', 'past_due', 'canceled', null];
+  const toff = [null, '5 days', '-1 second', '-20 days', '-22 days'];
+  const tcases = [];
+  tstat.forEach((s) => tprices.forEach((p) => toff.forEach((o) => tcases.push({ s, p, o }))));
+  V('create table if not exists public.tier_grid (i int primary key, status text, price_id text, pe timestamptz);');
+  V('insert into public.tier_grid (i, status, price_id, pe) values ' + tcases.map((c, i) => '(' + i + ', ' + lit(c.s) + '::text, ' + lit(c.p) +
+    '::text, ' + (c.o == null ? 'null::timestamptz' : '(now() + interval ' + lit(c.o) + ')') + ')').join(',\n') + ';');
+  V("insert into auth.users (id, email, email_confirmed_at) select ('20000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid, 't' || i || '@x.co', now() from public.tier_grid on conflict do nothing;");
+  V("insert into public.subscriptions (user_id, status, price_id, current_period_end) select ('20000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid, status, price_id, pe from public.tier_grid on conflict do nothing;");
+  const tg = J("select g.i, g.status, g.price_id, g.pe, public.billing_tier_of_price(g.price_id) as tier, s.tier as row_tier, " +
+    "public.billing_row_grants_access(g.status, g.price_id, g.pe, now()) as terminal, " +
+    "public.billing_row_in_good_standing(g.status, g.price_id, g.pe, now()) as standing, " +
+    "public.has_bet_checker_paid(s.user_id, now()) as bc, public.billing_access_for(s.user_id, now()) as acc " +
+    "from public.tier_grid g join public.subscriptions s on s.user_id = ('20000000-0000-4000-8000-' || lpad(g.i::text, 12, '0'))::uuid order by g.i");
+  chk('the tier grid is the whole grid', tg.length === tcases.length && tcases.length === 150, tg.length);
+  const nowMs = Date.now();
+  const jrow = (r) => ({ status: r.status, price_id: r.price_id, current_period_end: r.pe, tier: r.tier });
+  chk('subscriptions.tier is what the price sells, on every row (the trigger)', tg.every((r) => r.row_tier === r.tier), tg.filter((r) => r.row_tier !== r.tier).slice(0, 3));
+  chk('the terminal: the server core and the browser agree with the SQL rule on all 150 tier cases',
+    tg.every((r) => CORE.grantsAccess(jrow(r), nowMs) === r.terminal && ACCESS.grants(jrow(r), nowMs) === r.terminal),
+    tg.filter((r) => CORE.grantsAccess(jrow(r), nowMs) !== r.terminal || ACCESS.grants(jrow(r), nowMs) !== r.terminal).slice(0, 3));
+  chk('Bet Checker: core, browser and has_bet_checker_paid agree on all 150',
+    tg.every((r) => CORE.grantsBetChecker(jrow(r), nowMs) === r.bc && ACCESS.betChecker(jrow(r), nowMs) === r.bc),
+    tg.filter((r) => CORE.grantsBetChecker(jrow(r), nowMs) !== r.bc).slice(0, 3));
+  chk('the decision\'s bet_checker_paid IS has_bet_checker_paid, and its has_access IS the rule',
+    tg.every((r) => r.acc.bet_checker_paid === r.bc && r.acc.has_access === r.terminal), tg.filter((r) => r.acc.bet_checker_paid !== r.bc).slice(0, 3));
+  chk('A RED PRICE NEVER OPENS THE TERMINAL, in any status or period', tg.filter((r) => r.price_id === 'price_red_t').every((r) => r.terminal === false));
+  chk('...but a red row in good standing has Bet Checker', tg.filter((r) => r.price_id === 'price_red_t' && r.standing).every((r) => r.bc === true) &&
+    tg.some((r) => r.price_id === 'price_red_t' && r.standing));
+  chk('the terminal always includes Bet Checker (blue, comps, and every price sold before Bet Checker)', tg.filter((r) => r.terminal).every((r) => r.bc));
+  chk('a price never learned is the terminal, as every price sold before Bet Checker was',
+    tg.filter((r) => r.price_id === 'price_never_seen').every((r) => r.terminal === r.standing && r.tier === null));
+  chk('a red row in good standing is offered the upgrade, and is not "behind Stripe"',
+    tg.filter((r) => r.price_id === 'price_red_t' && r.standing).every((r) => r.acc.offer === 'upgrade' && r.acc.reason === 'bet_checker_only' && r.acc.should_sync === false));
+  chk('and a red row that lapsed is offered what any lapsed row is', tg.filter((r) => r.price_id === 'price_red_t' && !r.standing && r.status === 'canceled')
+    .every((r) => r.acc.offer === 'resubscribe' || r.acc.offer === 'trial'));
+
+  /* a product's metadata edited in Stripe: Stripe wins, every row follows, a human hears */
+  chk('a price whose tier CHANGES is applied (Stripe is the authority)', learn('price_red_t', 'blue', 'test:edit') === 'changed');
+  chk('every subscription on it follows, in the same call',
+    J("select tier from public.subscriptions where price_id = 'price_red_t'").every((x) => x.tier === 'blue'));
+  chk('and the change is raised for a human', J("select 1 from public.billing_alerts where kind = 'price_tier_changed' and dedupe_key = 'price_tier_changed:price:price_red_t' and resolved_at is null").length === 1);
+  learn('price_red_t', 'red', 'test:restore');
+  V("delete from public.subscriptions where user_id::text like '20000000-%'; delete from auth.users where id::text like '20000000-%';");
+
+  /* the backfill runs ONCE: a re-run can never stamp a Bet Checker price blue */
+  V("insert into public.billing_checkout_sessions (id, user_id, price_id, kind) values ('cs_bc_t', " + lit(owner) + ", 'price_red_t', 'bet_checker') on conflict do nothing;");
+  db.applyFileAtomic(FILE);
+  chk('re-running the file leaves a learned red price red', J("select tier from public.billing_price_tiers where price_id = 'price_red_t'")[0].tier === 'red');
+  V("delete from public.billing_checkout_sessions where id = 'cs_bc_t';");
 
   /* ===================================================================== */
   /* 4. THE ONE WRITER                                                     */
