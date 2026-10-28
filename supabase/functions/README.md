@@ -101,6 +101,21 @@ by `.github/workflows/deploy-growth-outbound.yml` (manual):
 |---|---|---|
 | `content_engine` | `admin/content/` (owner only) | `{action:'draft', article_id, section?}`: Claude rewrites a draft (or one section) from the opportunity's frozen research; the reply is validated by the same gate the page uses and saved as a revision only if it passes (one retry with the objections; otherwise nothing is saved). `{action:'trending'}`: the allowlisted public RSS headline feeds, each fetch counted against the database's budget. `{action:'send', article_id, recipient, subject?, note?, test?}`: only when the owner presses Send. `content_engine_send_claim` (owner only) checks the approved hash, `ready_to_send`, and that the recipient is a contact on the publisher's profile (a test: the owner's own address), and writes the send first. Then Resend, with that idempotency key (the note, the article, and the Word/Markdown/HTML/SEO files attached, tagged `edgedesk=content`). Then `content_engine_send_result` records a delivery and `sent`. `{action:'status'}`: whether Claude and email are configured, never the keys. Never approves, reviews or publishes, and never sends on its own; holds no service-role key; every database call is the caller's. JWT verification OFF; the owner is verified inside. Secrets: `ANTHROPIC_API_KEY` (optional), `RESEND_API_KEY` (for Send; already set for the newsletter), `CONTENT_ENGINE_MODEL`, `CONTENT_ENGINE_ALLOWED_ORIGINS` (optional). Uses `npm:@anthropic-ai/sdk` (bundled at deploy). |
 
+**Bet Checker** (`docs/bet-checker.md`) — two single-file functions; every
+decision is the database's (`supabase/bet_checker.sql`). Deployed by
+`.github/workflows/deploy-bet-checker.yml` (manual):
+
+| function | called by | what for |
+|---|---|---|
+| `log_user_bet` | `bet-checker/` (`lib/edgedesk_bet_checker.js`) | a signed-in reader logs a bet they already placed: the caller is the token's (Supabase Auth), the shape is checked, then `bet_checker_log_bet()` as the service role decides everything else in one transaction (the game on the board and not started, the free allowance, EdgeDesk's fair at exactly that line, the edge, the grade — or ungraded with the reason) and the grade comes back at once. Never says whether EdgeDesk flagged the side (settled after kickoff). JWT verification ON. |
+| `grade_user_bets` | pg_cron (`supabase/bet_checker_cron.sql`, every 15 minutes, after `close`) | `bet_checker_grade_pending()`: CLV at the bet's own line, `no_close_available` otherwise, the result, the flag. Idempotent. Every POST needs `x-cron-secret` = `BET_CHECKER_CRON_SECRET` (Vault `bet_checker_cron_secret`); `{probe:true}` proves the secret and grades nothing. GET is a health probe carrying `BUILD`. JWT verification OFF (`--no-verify-jwt`). |
+
+The billing functions above also sell Bet Checker: `create_checkout_session`
+`{kind:'bet_checker', plan}` finds its price by lookup key and records the
+product's `tier` before payment, and the shared core reads every
+subscription's product metadata (red = Bet Checker, blue = the terminal) so
+`billing_row_grants_access()` never opens the terminal for Bet Checker.
+
 **Called by pg_cron only**
 
 | function | what for |
@@ -155,6 +170,7 @@ file header:
 | `rankings_current` | `cfbd_rankings`, `rankings_standings` |
 | `model_props` | `model_props`, `grade_props` |
 | `subscriptions` | `stripe_webhook`, `sync_subscription`, `create_checkout_session` — billing, all through `billing_apply_subscription_state` |
+| `user_bets` (Bet Checker's columns), `bet_checker_grades`, `bet_checker_grade_runs` | `log_user_bet`, `grade_user_bets` |
 
 **`park_bearings_sync` is referenced nowhere in `app.html`** — the only one of
 the 68 with no footprint in the shipped front end. That is a lead, not a
