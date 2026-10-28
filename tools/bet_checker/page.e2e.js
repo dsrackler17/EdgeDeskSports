@@ -313,7 +313,7 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     chk('opening it asked for no checkout and recorded no consent', checkouts.length === 1 && db.sql('select count(*) from public.billing_consents;') === consentsBefore, [checkouts.length, consentsBefore]);
     chk('the query left the address (the ref stays) and the intent is spent', /\/bet-checker\/\?ref=landing_pricing$/.test(page.url()) && await kept(page) === null, [page.url(), await kept(page)]);
     await shot(page, '5-deep-link-annual');
-    await page.click('[data-bc-act="arl-close"]');
+    if (await sheetOpen(page)) await page.click('[data-bc-act="arl-close"]');
     await page.reload();
     await eventually(async () => (await page.locator('.bc-card').count()) > 0);
     await page.waitForTimeout(400);
