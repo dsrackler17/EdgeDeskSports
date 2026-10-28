@@ -563,6 +563,12 @@ jobs:
       - name: Schedule matching
         run: node tools/collective/sync_schedule.test.js
 
+      # The odds doctor reads production with the service role and the
+      # database URL; these hold it to read-only statements and a report
+      # that never prints a credential.
+      - name: The odds doctor reads only and prints no credential
+        run: node tools/collective/odds_doctor.test.js
+
       # WHICH WEEK IS CURRENT. The Collective's College Football page led with
       # a finished Monday night game for a full day while the next week's
       # slate sat one request away: "current" meant a 36-hour clock offset

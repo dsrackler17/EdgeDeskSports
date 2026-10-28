@@ -1,0 +1,76 @@
+# Collective odds doctor: why the Collective stopped capturing closing lines.
+#
+# Every game of NFL week 7, 2026 settled with a score and no captured close,
+# so none has an against-the-spread result. The settlement refresh classes all
+# fourteen L: the odds feed holds snapshots for them, none inside the final
+# six hours before kickoff. The last close on file is from 2026-10-20, and the
+# one production change since is the Deploy odds gateway run of 2026-10-21
+# 21:51Z, which replaced the dashboard copy of collective_odds_ingest with this
+# repository's reconstruction. What the ingest has done since is visible only
+# in production; this reads it (tools/collective/odds_doctor.js).
+#
+# Its first reading (2026-10-28): every daily poll since 2026-10-22 ended
+# "odds_gateway: denied_unconfirmed_quota" with nothing written. The ingest
+# now buys only through odds_gateway, and the gateway has seen no provider
+# quota header in the October cycle, so it refuses every paid request.
+#
+# READ-ONLY. It calls collective_odds_ingest GET /v1/status (no provider call,
+# no credit) and reads pg_cron, pg_net and the odds schema inside BEGIN
+# TRANSACTION READ ONLY. It writes nothing, and the report it puts in the run
+# summary passes every command, message and setting through a redaction that
+# its own test proves first. A setting whose key names a credential is not
+# printed at all.
+#
+# It runs from Run workflow, or from a push to a claude/** branch whose head
+# commit message carries [odds-doctor]. Any other push runs the tests only.
+#
+# SECRETS (the ones the settle job already uses): SB_URL, SB_SERVICE_ROLE,
+# SB_DB_URL. Without SB_DB_URL the database half is unread and the run fails.
+name: Collective odds doctor
+
+on:
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'Read runs from this date (YYYY-MM-DD)'
+        required: false
+        default: '2026-10-18'
+  push:
+    branches: ['claude/**']
+    paths:
+      - '.github/workflows/collective-odds-doctor.yml'
+      - 'tools/collective/odds_doctor.js'
+      - 'tools/collective/odds_doctor.test.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collective-odds-doctor-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      READ_PRODUCTION: ${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[odds-doctor]')) && 'yes' || 'no' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+
+      - name: The doctor reads only and prints no credential
+        run: node tools/collective/odds_doctor.test.js
+
+      - name: Read production (read-only)
+        if: ${{ env.READ_PRODUCTION == 'yes' }}
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          SB_DB_URL: ${{ secrets.SB_DB_URL }}
+          SINCE: ${{ inputs.since }}
+        run: node tools/collective/odds_doctor.js --since "${SINCE:-2026-10-18}"
