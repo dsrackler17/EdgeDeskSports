@@ -1873,6 +1873,13 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   .fbs-flab{width:auto;min-width:52px;font-size:8.5px;text-align:left}
   .fbs-confmenu{margin-left:0}
   .fbs-counts{gap:2px 10px;font-size:10px}
+  /* one scrolling line, like each filter row: the counts grow with the slate
+     (a "kickoff TBA" count appears only when there are such games), the
+     controls above the board do not */
+  .fbs-counts{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:2px}
+  .fbs-counts::-webkit-scrollbar{height:3px}
+  .fbs-counts::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .fbs-count{flex:0 0 auto;white-space:nowrap}
 }
 
 /* ===== Settings ===== */
