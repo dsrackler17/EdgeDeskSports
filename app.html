@@ -20019,7 +20019,9 @@ function renderSetAccount(){
    refuses any URL that is not a billing.stripe.com portal link, so the button
    hides rather than double-charging someone. Get the real one from
    Stripe > Settings > Billing > Customer portal > no-code login link. */
-var STRIPE_PORTAL_URL="https://billing.stripe.com/p/login/9B64gy5LA3QpcHc8L08IU00";
+/* written once, in lib/edgedesk_pricing.js (PORTAL_LINK), because the Bet
+   Checker page sends its subscribers to the same portal */
+var STRIPE_PORTAL_URL=(window.EDPricing&&window.EDPricing.PORTAL_LINK)||'';
 
 function stripePortalHref(){
   var u=(typeof STRIPE_PORTAL_URL==='string')?STRIPE_PORTAL_URL.trim():'';
@@ -22719,6 +22721,25 @@ function pgLockedHTML(note){
   var acc=window.ED_ACCESS;
   var X=window.EDPricing, fresh=acc&&acc.offer?acc.offer==='trial':!s;
   var price=SUB_PRICE_DISPLAY;
+  /* BET CHECKER (tier red) IS PAID FOR, JUST NOT FOR THIS. The terminal is a
+     plan switch in the billing portal: one subscription changing price, never
+     a second checkout beside the first (create_checkout_session refuses that
+     with switch_plan). Their own product is one tap away. */
+  if(acc&&acc.offer==='upgrade'){
+    var portal=stripePortalHref();
+    return '<h1 class="pg-h">Your plan is Bet Checker</h1>'+
+      '<p class="pg-p">You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+'. Bet Checker grades the bets you place; the research terminal is the '+stEsc(SUB_PLAN_NAME)+' plan. '+
+      'Switch plans in the billing portal \u2014 the switch replaces Bet Checker, so you are never billed for both, and Bet Checker stays included.</p>'+
+      (note?'<div class="pg-status">'+note+'</div>':'')+
+      '<div class="pg-price"><span class="n">'+stEsc(price)+'</span><span class="per">per month for the terminal</span></div>'+
+      '<ul class="pg-list two">'+((X&&X.FEATURES)||[]).map(function(f){return '<li>'+stEsc(f)+'</li>';}).join('')+'</ul>'+
+      (portal?'<a class="pg-btn" href="'+portal+'" target="_blank" rel="noopener">Switch plan in the billing portal</a>'
+             :'<a class="pg-btn" href="mailto:'+PG_SUPPORT+'?subject='+encodeURIComponent('Switch my plan to the EdgeDesk terminal')+'">Switch plan \u2014 email us</a>')+
+      '<a class="pg-btn ghost" href="/bet-checker/" style="display:block;text-align:center;text-decoration:none;line-height:1.35;padding-top:13px;padding-bottom:13px">Open Bet Checker</a>'+
+      '<button class="pg-btn ghost" onclick="pgRecheck()">I already switched \u2014 check again</button>'+
+      '<button class="pg-btn ghost" onclick="edSignOut()">Sign out</button>'+
+      '<div class="pg-msg mut" id="pgMsg"></div>';
+  }
   var head=failed?'Your payment didn\u2019t go through'
           :canceled?'Your subscription has ended'
           :fresh?'Unlock '+stEsc(SUB_PLAN_NAME)
@@ -22751,6 +22772,7 @@ function pgLockedHTML(note){
        just signed up, not yet paid. There was no way from here to say so, and
        no way to reach the free half of the product they can use today. */
     '<a class="pg-btn ghost" href="/games/?ref=paygate" style="display:block;text-align:center;text-decoration:none;line-height:1.35;padding-top:13px;padding-bottom:13px">Play EdgeDesk Games \u2014 free, no subscription</a>'+
+    '<a class="pg-btn ghost" href="/bet-checker/?ref=paygate" style="display:block;text-align:center;text-decoration:none;line-height:1.35;padding-top:13px;padding-bottom:13px">Grade the bets you place \u2014 Bet Checker, free</a>'+
     '<button class="pg-btn ghost" data-ed-report="Payment or billing">Report a problem</button>'+
     '<button class="pg-btn ghost" onclick="edSignOut()">Sign out</button>'+
     '<div class="pg-msg mut" id="pgMsg"></div>'+
