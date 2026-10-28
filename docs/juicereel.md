@@ -37,12 +37,14 @@ https://edgedesksports.com/oauth/juicereel-callback.html
 
 - Same scheme, host, path and no trailing slash. Juice Reel compares it character for character.
 - It is a static page in this repository (`oauth/juicereel-callback.html`), served with the site (GitHub Pages).
-- Register no checkout success or cancel URIs: EdgeDesk does not use Juice Reel checkout.
-- **Scopes to have approved:** `bets.open.read` and `bets.settled.read`. EdgeDesk requests nothing else. In particular it does **not** request `subscribers.read`.
+- This bet-sync connection uses no checkout URI. Selling EdgeDesk through Juice Reel's checkout (2026-10-28) registers its own URI, `https://edgedesksports.com/oauth/juicereel-subscribe.html`: see [juicereel-billing.md](juicereel-billing.md) § 1.
+- **Scopes this connection requests:** `bets.open.read` and `bets.settled.read`, nothing else. The billing checkout requests `subscribers.read` on its own authorization ([juicereel-billing.md](juicereel-billing.md)).
 
 `node tools/portfolio/juicereel_smoke.js probe` prints the redirect URI the deployed function actually sends, and checks that the callback page is served there.
 
-## 2. Subscription events: not needed, not deployed
+## 2. Subscription events: not used by the bet sync
+
+**Update 2026-10-28:** EdgeDesk now sells through Juice Reel as well. Juice Reel's CEO approved it by phone on 2026-10-28, as the account owner reports; written confirmation is still to be kept with § 9's. The SUBSCRIPTION_EVENTS webhook, the hosted checkout and the subscriber endpoints are used by a separate function, `juicereel_billing`, built as the paragraph at the end of this section describes ([juicereel-billing.md](juicereel-billing.md)). Everything below still holds for **this** connector: the bet sync calls none of them.
 
 Juice Reel's webhook page offers one bucket, **SUBSCRIPTION_EVENTS**: `SUBSCRIPTION_PURCHASED`, `SUBSCRIPTION_RENEWED`, `SUBSCRIPTION_CANCELLED` and `SUBSCRIPTION_EXPIRED`, signed with `X-Juice-Reel-Signature: sha256=<hex>`.
 
@@ -50,12 +52,12 @@ Juice Reel's webhook page offers one bucket, **SUBSCRIPTION_EVENTS**: `SUBSCRIPT
 
 - **What they report.** These events describe people buying a subscription **from the OAuth application's owner** through Juice Reel: Juice Reel's marketplace, or its hosted checkout (`/checkout/sessions`). The payload says who subscribed to which product, for how long, and the revenue (`subscriberUserId`, `subscriptionProductId`, `revenueCentsUsd`, `expiresDate`).
 - **Why that does not apply to EdgeDesk:**
-  - EdgeDesk sells its research subscriptions through **Stripe** (`supabase/functions/stripe_webhook`, `create_checkout_session`). It sells nothing through Juice Reel.
-  - It never asks Juice Reel whether a reader is subscribed. It does not call `/oauth2/subscribers/current` or `/oauth2/subscribers/status`, and does not request `subscribers.read`.
+  - The bet sync is not billing. EdgeDesk's Stripe billing (`supabase/functions/stripe_webhook`, `create_checkout_session`) is unchanged, and Juice Reel purchases are handled by `juicereel_billing` ([juicereel-billing.md](juicereel-billing.md)).
+  - This connector never asks Juice Reel whether a reader is subscribed. It does not call `/oauth2/subscribers/current` or `/oauth2/subscribers/status`, and does not request `subscribers.read`.
 - **They carry no bet data.** Juice Reel documents no bet-update webhook. Treating a subscription event as a bet update would be wrong. So bets are kept current by **scheduled incremental reads of `/oauth2/bets/changed`** (§ 5).
 - **The Stripe billing is unchanged.** Juice Reel warned that applications collecting subscription payments outside Juice Reel may be rejected. EdgeDesk's Stripe billing is untouched by this work, and production stays gated until Juice Reel approves EdgeDesk's commercial use in writing (§ 9).
 
-If EdgeDesk ever sold through Juice Reel, the webhook would be a separate, small piece: verify the HMAC over the raw body, record each `id` once, then reconcile nightly against `/oauth2/subscribers/current`, because Juice Reel does not retry deliveries. None of that exists today, by design.
+Selling through Juice Reel needed exactly that separate piece, built on 2026-10-28 as `juicereel_billing`: it verifies the HMAC over the raw body, records each `id` once, and reconciles hourly against `/oauth2/subscribers/current`, because Juice Reel does not retry deliveries ([juicereel-billing.md](juicereel-billing.md)).
 
 ## 3. Secrets and configuration
 

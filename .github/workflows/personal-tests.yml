@@ -85,6 +85,13 @@ on:
       - 'app.html'
       - 'package.json'
       - '.github/workflows/personal-tests.yml'
+      # EdgeDesk bought through Juice Reel (docs/juicereel-billing.md)
+      - 'supabase/juicereel_billing.sql'
+      - 'supabase/juicereel_billing_cron.sql'
+      - 'supabase/functions/juicereel_billing/**'
+      - 'lib/edgedesk_juicereel_billing.js'
+      - 'oauth/juicereel-subscribe.html'
+      - '.github/workflows/deploy-juicereel-billing.yml'
   workflow_dispatch:
 
 permissions:
@@ -130,6 +137,8 @@ jobs:
         run: node tools/billing/billing_core.test.js
       - name: The browser asks the database for access, never decides it, and gives up boundedly
         run: node tools/billing/access_client.test.js
+      - name: The Juice Reel client navigates only to Juice Reel, reads a return once, and never decides access
+        run: node tools/billing/juicereel_client.test.js
       # A creator's code (?ref=CONNOR10): kept with its click time once the
       # server confirms it, the last valid click wins, gone after 30 days, and
       # a browser that refuses storage still checks out.
@@ -193,6 +202,16 @@ jobs:
       # tier; what each price sells comes from its product's metadata only.
       - name: Bet Checker never opens the terminal, and a plan switch flips the tier
         run: node tools/billing/tier_flow.test.js
+      # EdgeDesk bought through Juice Reel: the shipped juicereel_billing
+      # function against the real SQL and a fake Juice Reel enforcing the
+      # documented checkout and OAuth contract — checkout, account link,
+      # webhook, reconcile — and where it meets Stripe: Juice Reel only
+      # revokes what it granted, and an ended Stripe subscription never ends
+      # a Juice Reel buyer.
+      - name: A Juice Reel purchase opens the account that bought it, and nobody else's
+        env:
+          JUICEREEL_BILLING_SQL_REQUIRED: '1'
+        run: node tools/billing/juicereel_billing.test.js
       # The deployment's own safety checks: the read-only preflight, the snapshot,
       # the one-transaction apply that commits only behind its gate (and refuses
       # a migration that rewrites a row or opens a writer), the role probe, the
@@ -320,3 +339,26 @@ jobs:
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'
         run: node tools/personal/research_cron_sql.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      # The shipped landing page and terminal, with Supabase and Juice Reel's
+      # hosted checkout stood in at the network edge: the partnership shown,
+      # the checkout offered only when the server's switch is ON, sign-up →
+      # Juice Reel → oauth/juicereel-subscribe.html → the terminal opens, the
+      # code and state gone from the address, Settings billed through Juice
+      # Reel, a cancelled checkout told not to pay again, switch OFF unchanged.
+      - name: Juice Reel in Chromium — the partner band, checkout and return, the paywall and Settings, at 390 px and 1280 px
+        env:
+          JUICEREEL_UI_REQUIRED: '1'
+        run: node tools/billing/juicereel_checkout.e2e.js

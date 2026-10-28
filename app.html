@@ -4070,6 +4070,9 @@ window.mcRefresh=function(){
 <!-- the one access decision (public.my_billing_access) and the server
      reconciliation the paywall asks for before it locks anybody out -->
 <script src="/lib/edgedesk_access.js?v=20261028a"></script>
+<!-- EdgeDesk bought through Juice Reel: the checkout, the account link and the
+     return from oauth/juicereel-subscribe.html (supabase/functions/juicereel_billing) -->
+<script src="/lib/edgedesk_juicereel_billing.js?v=20261028jr1"></script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track); configured below with the session token -->
 <script src="/lib/edgedesk_track.js?v=20261026ros1"></script>
 <!-- The CFB research view: what a reader sees first on the college board
@@ -20192,6 +20195,26 @@ function renderSetSub(){
       'there is nothing here that can charge you.</div>');
     return out;
   }
+  /* BOUGHT THROUGH JUICE REEL (price_id 'juicereel'). Juice Reel took the
+     payment and renews or cancels it; EdgeDesk has no card, no price and no
+     portal for it, so none of the Stripe rows below are true of it. The date
+     is Juice Reel's own expiry, as Juice Reel last reported it. */
+  if(window.EDJuiceReel&&window.EDJuiceReel.isJuiceReelRow(sub)){
+    var jEnd=sub.current_period_end?new Date(sub.current_period_end):null;
+    var jEndStr=jEnd&&isFinite(jEnd.getTime())?jEnd.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}):'—';
+    var jOn=sub.status==='active'&&jEnd&&jEnd.getTime()>Date.now();
+    out+=setCard('Subscription',null,
+      setRow('Plan','<span class="set-val">'+stEsc(SUB_PLAN_NAME)+'</span>')+
+      setRow('Status','<span class="set-val '+(jOn?'pos':'')+'">'+(jOn?'Active':'Ended')+'</span>')+
+      setRow('Billed through','<span class="set-val">Juice Reel</span>','Paid on Juice Reel’s secure checkout. Juice Reel bills and renews it')+
+      setRow(jOn?(sub.cancel_at_period_end?'Access ends':'Paid through'):'Access ended','<span class="set-val">'+stEsc(jEndStr)+'</span>',
+        jOn?(sub.cancel_at_period_end?'Cancelled on Juice Reel — no further charges':'When Juice Reel renews it, EdgeDesk updates this date'):'Subscribe again to reopen the terminal'));
+    out+=setCard('Manage','Your subscription is managed on Juice Reel. EdgeDesk cannot change or cancel it, and holds no card for it.',
+      '<div class="set-act"><a class="btn ghost sm" href="https://www.juicereel.com/" target="_blank" rel="noopener" style="text-decoration:none">Manage on Juice Reel</a>'+
+      (window.EDJuiceReel?'<button class="btn ghost sm" onclick="pgJuiceReelStart(\'link\',this)">Renewed? Re-check with Juice Reel</button>':'')+
+      '<span class="set-msg" id="setAccessMsg"></span></div>');
+    return out;
+  }
   var trialing=sub.status==='trialing';
   var active=(sub.status==='active'||trialing);
   /* Every date below is the row's own current_period_end, which the Stripe
@@ -22725,6 +22748,78 @@ function pgCheckoutURL(){
   return url;
 }
 
+/* ---- BOUGHT THROUGH JUICE REEL (docs/juicereel-billing.md) ----------------
+   window.ED_JR is the server's word on whether this reader may buy through
+   Juice Reel (its JUICE_REEL_CHECKOUT switch). Unknown or unreachable reads
+   as unavailable, and the Stripe offer stands alone exactly as before. A
+   return from Juice Reel opens nothing by itself: the server exchanges the
+   code and asks Juice Reel, and the page re-reads my_billing_access. */
+window.ED_JR=null;
+async function pgLoadJuiceReel(){
+  if(!window.EDJuiceReel){ window.ED_JR=null; return null; }
+  try{ window.ED_JR=await window.EDJuiceReel.status(pgAccessCfg()); }catch(_){ window.ED_JR=null; }
+  return window.ED_JR;
+}
+function pgJuiceReelOn(){ return !!(window.ED_JR&&window.ED_JR.available); }
+async function pgJuiceReelStart(kind,btn){
+  var m=$('pgMsg')||$('setAccessMsg');
+  if(btn)btn.disabled=true;
+  if(m){m.className=(m.id==='pgMsg'?'pg-msg':'set-msg')+' mut';m.innerHTML='<span class="pg-spin"></span>'+(kind==='link'?'Opening Juice Reel…':'Opening Juice Reel’s secure checkout…');}
+  var r=await window.EDJuiceReel.start(pgAccessCfg(),kind);
+  /* the Stripe return poll must not run for a Juice Reel purchase */
+  if(r.ok){ try{localStorage.removeItem('edgedesk_pending_sub');}catch(_){} window.EDJuiceReel.go(r.url); return; }
+  if(btn)btn.disabled=false;
+  if(r.reason==='already_entitled'&&typeof pgRecheck==='function'){ pgRecheck(); return; }
+  if(m){m.className=(m.id==='pgMsg'?'pg-msg':'set-msg')+' err';m.innerHTML=stEsc(r.message)+(r.ref?' Reference <b>'+stEsc(r.ref)+'</b>.':'');}
+}
+function pgJuiceReelButtons(primary){
+  return '<button class="pg-btn'+(primary?'':' ghost')+'" onclick="pgJuiceReelStart(\'checkout\',this)">Subscribe with Juice Reel</button>'+
+    '<button class="pg-btn ghost" onclick="pgJuiceReelStart(\'link\',this)">I bought EdgeDesk on Juice Reel — link my account</button>';
+}
+function pgJuiceReelPendingHTML(line){
+  return '<h1 class="pg-h"><span class="pg-spin"></span>Confirming your Juice Reel checkout…</h1>'+
+    '<p class="pg-p">EdgeDesk is checking your purchase with Juice Reel and opening your account. This usually takes a few seconds.</p>'+
+    (line?'<div class="pg-status">'+line+'</div>':'')+
+    '<div class="pg-msg mut" id="pgMsg"></div>';
+}
+/* back from Juice Reel (oauth/juicereel-subscribe.html left the return in this
+   tab). Signed out: the return waits in the tab for sign-in, and nothing is
+   decided. */
+async function pgJuiceReelReturn(){
+  var X=window.EDJuiceReel;
+  var tok=null; try{ tok=(typeof edToken==='function')?await edToken():null; }catch(_){ tok=null; }
+  if(!X||!tok||!X.peekReturn())return false;
+  var ret=X.takeReturn();
+  try{ history.replaceState(null,'',location.pathname+location.hash); }catch(_){}
+  if(!ret)return false;
+  pgShow(pgJuiceReelPendingHTML(''));
+  var r=await X.complete(pgAccessCfg(),ret);
+  var unlock=function(){ pgHide(); pgWarnBar(window.SUB); pgOnUnlock(); return true; };
+  var a=await pgReadAccess();
+  if(a.ok&&a.access.has_access)return unlock();
+  /* paid, but Juice Reel's purchase event is a moment behind: bounded re-reads */
+  if(r.outcome==='pending'){
+    var waits=[2000,3000,5000,8000,12000];
+    for(var i=0;i<waits.length;i++){
+      pgShow(pgJuiceReelPendingHTML('Checked '+(i+1)+' of '+waits.length+' times. Leave this page open.'));
+      await new Promise(function(ok){setTimeout(ok,waits[i]);});
+      a=await pgReadAccess();
+      if(a.ok&&a.access.has_access)return unlock();
+    }
+  }
+  await pgLoadJuiceReel();
+  var ref=r.ref?' Reference <b>'+stEsc(r.ref)+'</b>.':'';
+  var note=r.outcome==='cancelled'
+      ? 'The Juice Reel checkout was cancelled, or access to your Juice Reel account was not allowed, so nothing was opened. <b>If you did pay on Juice Reel, do not pay again</b> — choose “I bought EdgeDesk on Juice Reel” below.'
+    : r.outcome==='pending'
+      ? 'Your Juice Reel payment is safe — Juice Reel has not confirmed it to EdgeDesk yet, and EdgeDesk keeps checking. <b>Do not pay again.</b> If this persists, email <a href="mailto:'+PG_SUPPORT+'">'+PG_SUPPORT+'</a>.'+ref
+    : r.outcome==='not_subscribed'
+      ? 'Your Juice Reel account'+(r.display_name?' (<b>'+stEsc(r.display_name)+'</b>)':'')+' is linked, but Juice Reel shows no EdgeDesk subscription on it. If you bought with a different Juice Reel account, link that one.'
+      : stEsc(r.message||'The Juice Reel checkout could not be finished.')+ref;
+  pgShow(pgLockedHTML(note));
+  return true;
+}
+
 function pgLockedHTML(note){
   var u=(typeof edUser==='function')?edUser():null;
   var s=window.SUB;
@@ -22764,9 +22859,20 @@ function pgLockedHTML(note){
           :canceled?'Your subscription was cancelled, so the terminal is closed. You can restart it any time.'
           :'You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+', but the terminal needs an active subscription. This is a locked board, not an empty one.';
   var resub=pgCheckoutURL();
+  /* JUICE REEL, when the server offers it: first, and the Stripe offer below
+     it unchanged (a ghost button), so nothing the landing page promises about
+     the trial stops being true. */
+  var jr=pgJuiceReelOn();
+  var stripeCls=jr?'pg-btn ghost" style="display:block;text-align:center;text-decoration:none;line-height:1.35;padding-top:13px;padding-bottom:13px':'pg-btn';
   return '<h1 class="pg-h">'+head+'</h1>'+
     '<p class="pg-p">'+body+'</p>'+
     (note?'<div class="pg-status">'+note+'</div>':'')+
+    /* Juice Reel's offer is its own: its checkout states the plan and price,
+       so it sits ABOVE the card trial's figures, which are labelled as the
+       card's and never read as Juice Reel's. */
+    (jr?'<div class="pg-status">Subscribe through EdgeDesk’s partner Juice Reel: its secure checkout shows the plan and price before you pay, '+
+        'Juice Reel bills it, and this account opens when you come back.</div>'+pgJuiceReelButtons(true)+
+        '<p class="pg-p" style="margin-top:18px">Or with a card:</p>':'')+
     /* THE WHOLE OFFER, BEFORE ANY CLICK. A reader who has never subscribed
        is sent through the landing page's trial flow, which records the
        auto-renewal consent before Stripe; a reader whose subscription lapsed
@@ -22779,9 +22885,9 @@ function pgLockedHTML(note){
     /* What Full Access includes: the same list the landing page's plan card
        carries, from the same file. Player props are in it, not sold apart. */
     '<ul class="pg-list two">'+((X&&X.FEATURES)||[]).map(function(f){return '<li>'+stEsc(f)+'</li>';}).join('')+'</ul>'+
-    (fresh?'<a class="pg-btn" href="./index.html#subscribe">Start '+(X?X.TRIAL_DAYS:'')+' days free</a>'
-       :resub?'<a class="pg-btn" href="'+resub+'">Subscribe \u2014 '+stEsc(price)+'/mo</a>'
-       :'<a class="pg-btn" href="mailto:'+PG_SUPPORT+'?subject='+encodeURIComponent('Restart my EdgeDesk subscription')+'">Restart your subscription \u2014 email us</a>')+
+    (fresh?'<a class="'+stripeCls+'" href="./index.html#subscribe">Start '+(X?X.TRIAL_DAYS:'')+' days free</a>'
+       :resub?'<a class="'+stripeCls+'" href="'+resub+'">Subscribe \u2014 '+stEsc(price)+'/mo</a>'
+       :'<a class="'+stripeCls+'" href="mailto:'+PG_SUPPORT+'?subject='+encodeURIComponent('Restart my EdgeDesk subscription')+'">Restart your subscription \u2014 email us</a>')+
     '<button class="pg-btn ghost" onclick="pgRecheck()">I already paid \u2014 check again</button>'+
     /* THIS SCREEN USED TO BE A DEAD END. Three buttons — pay, re-check, sign
        out — for the one visitor most likely to have hit a bug: brand new,
@@ -22792,7 +22898,8 @@ function pgLockedHTML(note){
     '<button class="pg-btn ghost" data-ed-report="Payment or billing">Report a problem</button>'+
     '<button class="pg-btn ghost" onclick="edSignOut()">Sign out</button>'+
     '<div class="pg-msg mut" id="pgMsg"></div>'+
-    '<div class="pg-foot">Billed monthly by Rackler Tech Ventures LLC. Renews automatically until cancelled. '+
+    '<div class="pg-foot">'+(jr?'Card trial and subscription: ':'')+'Billed monthly by Rackler Tech Ventures LLC. Renews automatically until cancelled. '+
+      (jr?'Through Juice Reel: billed, renewed and cancelled on Juice Reel. ':'')+
       'Questions or cancellation: <a href="mailto:'+PG_SUPPORT+'">'+PG_SUPPORT+'</a><br>'+
       'Research tool only, not betting advice. 21+.</div>';
 }
@@ -22822,6 +22929,7 @@ async function pgRecheck(){
       ? 'Could not reach the database to verify. Check your connection and try again.'
       : (limited?'Checked a moment ago \u2014 try again in a minute. '
                 :'Stripe has no active subscription or trial for this account yet. If you just paid, give it a minute. ')+
+        (pgJuiceReelOn()?'Bought on Juice Reel? Choose “I bought EdgeDesk on Juice Reel” above. ':'')+
         '<b>Please do not pay again or create another account.</b> Email <a href="mailto:'+PG_SUPPORT+
         (ref?'?subject='+encodeURIComponent('Access not active \u2014 '+ref):'')+'">'+PG_SUPPORT+'</a>'+
         (ref?' with reference <b>'+stEsc(ref)+'</b>':'')+' and it is fixed in one step.';
@@ -22885,6 +22993,9 @@ async function pgPollForSub(){
   var justPaid=/[?&]checkout=success/.test(qs);
   var pending=false; try{pending=localStorage.getItem('edgedesk_pending_sub')==='1';}catch(_){}
 
+  /* back from Juice Reel: the server finishes it before anything else is decided */
+  if(/[?&]jrsub=return/.test(qs)&&window.EDAccess&&window.EDJuiceReel&&await pgJuiceReelReturn())return;
+
   var st=await pgCheck();
   if(st==='ok'){
     try{localStorage.removeItem('edgedesk_pending_sub');}catch(_){}
@@ -22895,6 +23006,7 @@ async function pgPollForSub(){
   if(st==='unknown'){ pgEntitledSignal('unknown'); return; }   /* fail open; RLS still governs data */
 
   if(justPaid||pending){ await pgPollForSub(); return; }
+  await pgLoadJuiceReel();
   pgShow(pgLockedHTML(''));
 })();
 /* ===== end paywall gate ===== */
