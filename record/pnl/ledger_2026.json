@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_ledger_v1",
  "season": 2026,
- "generated_at": "2026-10-28T02:36:57.490Z",
+ "generated_at": "2026-10-28T04:10:52.829Z",
  "what": "Every EdgeDesk recommendation with a side, one row each, with its settlement and its profit and loss at the price recorded when it was made. Written by tools/record/pnl_ledger.js; nobody edits it by hand.",
  "sources": [
   {
@@ -23,7 +23,7 @@
   {
    "source": "bettor_decision",
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "snapshots": 5294,
+   "snapshots": 5295,
    "rows": 381,
    "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
   },
@@ -632790,16 +632790,16 @@
    "odds_captured_at": "2026-10-25T03:07:46.000Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "pending",
+   "result": "loss",
    "result_value": null,
    "result_detail": null,
    "final_score": null,
-   "closing_line": null,
+   "closing_line": 6,
    "closing_odds": null,
-   "clv_points": null,
-   "clv_prob_pp": null,
+   "clv_points": 0,
+   "clv_prob_pp": 0,
    "beat_close": null,
-   "settled_at": null,
+   "settled_at": "2026-10-28T04:08:04.645Z",
    "first_recorded_at": "2026-10-25T03:09:55.957Z",
    "corrections": [],
    "corrected": false,
@@ -632807,15 +632807,14 @@
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
    "profit_units": null,
-   "flat_profit_units": null,
-   "pnl_status": "PENDING",
-   "pnl_eligible": false,
-   "pnl_note": "Pending",
-   "record_state": "PENDING",
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
    "state_reason": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "bd:bds_16824111",
