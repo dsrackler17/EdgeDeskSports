@@ -48,6 +48,10 @@
   .upg td:last-child::before{color:var(--obs)}
 }
 
+/* both pictures sit in the page's .rs grid; its stacked phone column must
+   never take the width of what is inside it */
+.rs>div{min-width:0}
+
 /* ---------- #signals: one sample signal, in the detail view's order ---------- */
 .sig{padding:16px}
 .sig-k{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
