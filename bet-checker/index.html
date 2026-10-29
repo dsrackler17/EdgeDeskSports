@@ -22,7 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/tools/tools.css?v=1">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261028bc1">
-<link rel="stylesheet" href="/lib/edgedesk_bet_checker.css?v=20261028bc1">
+<link rel="stylesheet" href="/lib/edgedesk_bet_checker.css?v=20261029bc1">
 </head>
 <body data-ed-page="bet_checker">
 <header class="th">
@@ -72,12 +72,14 @@
         </div>
         <div class="bc-f">
           <label class="full">Game (only games that have not started)<select name="game" required><option value="">Loading the board…</option></select></label>
+          <div class="full bc-taps" data-bc="taps" hidden></div>
           <label class="half">Market<select name="market" required><option value="">Market</option></select></label>
           <label class="half">Side<select name="side" required><option value="">Side</option></select></label>
           <label class="half" data-bc="line-row">Line<input name="line" inputmode="decimal" list="bc-lines" placeholder="-3.5" autocomplete="off"></label>
           <datalist id="bc-lines"></datalist>
           <label class="half">Odds (American)<input name="odds" inputmode="numeric" placeholder="-110" autocomplete="off"></label>
           <p class="bc-hint full" data-bc="lines"></p>
+          <p class="bc-hint full bc-prefill" data-bc="prefill" role="status" aria-live="polite" hidden></p>
           <label class="half">Book<select name="book"><option value="DraftKings">DraftKings</option><option value="Kalshi">Kalshi</option><option value="DK Predictions">DK Predictions</option><option value="Other">Other</option></select></label>
           <label class="half">Stake (units)<input name="stake" inputmode="decimal" value="1" autocomplete="off"></label>
           <div class="full bc-cents" data-bc="cents-row" hidden>
@@ -143,8 +145,8 @@
 <script src="/games/lib/attribution.js?v=20261028bc1"></script>
 <script src="/games/lib/social.js?v=20261028bc1"></script>
 <script src="/games/lib/auth.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_bet_checker_core.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_bet_checker.js?v=20261028bc3"></script>
+<script src="/lib/edgedesk_bet_checker_core.js?v=20261029bc1"></script>
+<script src="/lib/edgedesk_bet_checker.js?v=20261029bc1"></script>
 <script>
 /* The Supabase project, from the same committed file the games pages read
    (games/data/config.json, written from app.html by the build), so this page
