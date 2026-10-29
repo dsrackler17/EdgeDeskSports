@@ -44,7 +44,8 @@ globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 /* the inputs as the build wrote them, with a test price (NHL prices are not captured today): VAN +150 / MIN -170 */
 const QUOTE = { captured_at: '2026-10-25T11:50:00Z', ml_best: { home: { book: 'testbook', american: 150 }, away: { book: 'testbook', american: -170 } }, ml_novig_home: 0.381, books: 1 };
-const INPUTS = JSON.parse(JSON.stringify(BASE)); INPUTS.games[0].quote = QUOTE;
+/* with the lineup-lock block (tools/hockey/fixtures/nhl_goalie_sources.js withLineups: constructed, checkable by hand) */
+const INPUTS = FX.withLineups(BASE); INPUTS.games[0].quote = QUOTE;
 const W = { inputs: INPUTS, inputsUp: true, df: 'morning', dfStatus: 200, box: null, boxStatus: 200, calls: [] };
 
 /* ---------------------------------------------------------------- PostgREST, in memory (the SQL triggers' rules included) */
@@ -206,8 +207,27 @@ globalThis.fetch = async (u, init) => {
   chk('the headline (xg_core) is 0.4174 on every version: the goalie never moved it', c.every((x) => x.headline.p_home === 0.4174 && x.headline.model_id === 'edgedesk_nhl_v1:xg_core'));
   chk('every version records the pairing used, both statuses and its generation time, in order', c.every((x, i) => x.goalie_pairing_used.home && x.goalie_pairing_used.away && x.goalie_status_home && x.goalie_status_away && (i === 0 || ms(x.generated_at) > ms(c[i - 1].generated_at))));
   chk('the card names its starter rows (the consensus observation it used)', c.every((x) => typeof x.home_starter_row_id === 'number' && DB.nhl_goalie_starters.find((s) => s.id === x.home_starter_row_id).source === 'consensus'));
+  /* lineup lock: at T-10 the NHL lists both dressed lineups (Vancouver without its first regular, a call-up in his place) */
+  const probeAt = (x) => (((x.sources || {}).nhl_api_boxscore || {}).games || []).find((y) => y.game_id === '2026020184') || null;
+  const p30 = probeAt(runs().filter((x) => x.status !== 'skipped').slice(-1)[0]);
+  chk('timing probe: the T-30 read records the minutes to puck drop and that no lineup was listed yet', p30 && p30.minutes_to_start === 30 && p30.lineups_posted === false && p30.skaters.home === 0 && p30.starters === 2, p30);
+  W.box = FX.boxscore({ id: 2026020184, home: 'VAN', away: 'MIN', homeGoalies: [{ id: 8482447, name: 'L. Meriläinen', starter: true }, { id: 8480947, name: 'K. Lankinen' }], awayGoalies: [{ id: 8475717, name: 'C. Pickard', starter: true }, { id: 8482661, name: 'J. Wallstedt' }],
+    homeSkaters: FX.skaterIds('VAN', 17, 2).concat(['9100099']), awaySkaters: FX.skaterIds('MIN') });
+  r = await run('2026-10-26T01:50:10Z');
+  c = cards();
+  chk('T-10: a lineup-lock check runs (every 5 minutes after the final pass)', r.run.due_kinds.indexOf('lineup_lock') >= 0, r.run);
+  chk('T-10: both lineups listed → version 5, its headline priced at lineup lock (reason lineup_locked)', c.length === 5 && c[4].headline.basis === 'lineup_lock' && c[4].reasons.indexOf('lineup_locked') >= 0 && c[4].trigger === 'inputs_changed' && c[4].headline.model_id === 'edgedesk_nhl_v1:xg_all_confirmed', c[4] && [c[4].trigger, c[4].reasons]);
+  chk('v5: the slate\'s price before lock is kept beside it; Vancouver missing a regular prices it below the goalie-only number', c[4].headline.before.p_home === 0.4174 && c[4].headline.p_home < c[3].pairing_price.p_home && c[4].headline.lineup.skaters.home === 18 && c[4].headline.lineup.delta.home < 0, c[4].headline);
+  chk('v5: the gate stays OPEN and the card says it was priced at lineup lock', c[4].edge_gate_state === 'OPEN' && /^Priced at lineup lock/.test(c[4].notes[0]));
+  const p10 = probeAt(runs().filter((x) => x.status !== 'skipped').slice(-1)[0]);
+  chk('timing probe: the T-10 read records the lineups as listed (18 skaters a side)', p10 && p10.minutes_to_start === 10 && p10.lineups_posted === true && p10.skaters.home === 18 && p10.skaters.away === 18 && runs().slice(-1)[0].sources.nhl_api_boxscore.lineups_posted === 1, p10);
+  e = DB.nhl_card_edge_events;
+  const eLock = e.filter((x) => x.card_id === c[4].id);
+  chk('edge: on v5 an edge is judged at the lock price (BOTH_CONFIRMED), never the slate\'s', eLock.length === 1 && eLock.every((x) => x.p_win === (x.side === 'home' ? c[4].headline.p_home : c[4].headline.p_away) && x.gate_basis === 'BOTH_CONFIRMED'), [eLock, c[4].headline.p_home]);
+  r = await run('2026-10-26T01:55:10Z');
+  chk('T-5: the same lineups again write no new version', r.run.due_kinds.indexOf('lineup_lock') >= 0 && r.run.cards_written === 0 && cards().length === 5, r.run);
   r = await run('2026-10-26T02:05:00Z', { force: true });
-  chk('after puck drop no card is written for the game', cards().length === 4 && r.run.cards_written === 0);
+  chk('after puck drop no card is written for the game', cards().length === 5 && r.run.cards_written === 0);
   chk('every run row is recorded with its due kinds and the next slot', runs().filter((x) => x.status !== 'skipped').every((x) => Array.isArray(x.due_kinds) && 'next_due_at' in x) && runs().length >= 8);
 
   /* ============================================================ a conflict */

@@ -46,7 +46,18 @@
                         realistic pairing.
      cadence            when the sync runs: every two hours from 8 AM Eastern,
                         every 15 minutes in the final three hours before each
-                        puck drop, and a final pass at T-30.
+                        puck drop, a final pass at T-30, and every 5 minutes
+                        after it until puck drop (the lineup-lock window).
+     lineup lock        once the NHL boxscore lists both dressed lineups (at
+                        least 12 skaters a side) and both starters are
+                        Confirmed, the card's HEADLINE is re-priced by the
+                        variant that knows tonight's lineups and goalies
+                        (xg_all_confirmed: each skater's recent time on ice,
+                        against the club's typical lineup, from
+                        hockey/model/lineups.js, carried in the inputs). Before
+                        lock the headline is the slate's production price,
+                        copied unchanged. The owner's decision of 2026-10-29
+                        (docs/engine/NHL_GOALIES.md §11).
 
    It never changes a goalie effect weight, the xG core or how edges are
    ranked: those live in hockey/model/ and lib/edgedesk_nhl_market.js.
@@ -77,6 +88,9 @@ const NHLG_DEFAULTS = {
   final_pass_min: 30,        /* and a final pass at T-30 */
   lookback_min: 90,          /* a slot missed by more than this is not chased */
   heartbeat_min: 55,         /* a declined poke is recorded at most this often */
+  lock_window_min: 30,       /* after the final pass, every lock_step_min until puck drop: lineups post late */
+  lock_step_min: 5,          /* pg_cron pokes every 5 minutes, the finest step there is */
+  lock_min_skaters: 12,      /* a lineup with fewer listed skaters is not a lineup yet (hockey/model/lineups.js) */
 };
 const NHLG_TEAMS = [
   ['ANA', 'Anaheim Ducks', 'Anaheim', 'Ducks'], ['BOS', 'Boston Bruins', 'Boston', 'Bruins'], ['BUF', 'Buffalo Sabres', 'Buffalo', 'Sabres'],
@@ -226,6 +240,14 @@ function nhlgParseNhlBoxscore(json, ctx) {
   if (!json || typeof json !== 'object' || json.id == null || !json.homeTeam || !json.awayTeam) { out.drift = 'not a boxscore (no id, homeTeam, awayTeam)'; return out; }
   out.ok = true; out.game_id = String(json.id); out.state = json.gameState || null;
   const pb = json.playerByGameStats || null;
+  /* the dressed skaters (forwards and defence, never the goalies), once lineups post: null until then */
+  out.lineups = { home: null, away: null };
+  for (const side of ['home', 'away']) {
+    const t = pb && pb[side + 'Team'];
+    if (!t) continue;
+    const ids = [].concat(Array.isArray(t.forwards) ? t.forwards : [], Array.isArray(t.defense) ? t.defense : []).map((x) => (x && x.playerId != null ? String(x.playerId) : null)).filter(Boolean);
+    out.lineups[side] = ids.filter((id, i) => ids.indexOf(id) === i);
+  }
   for (const side of ['home', 'away']) {
     const team = nhlgTeam(json[side + 'Team'].abbrev);
     const gs = pb && pb[side + 'Team'] && Array.isArray(pb[side + 'Team'].goalies) ? pb[side + 'Team'].goalies : [];
@@ -335,6 +357,44 @@ function nhlgPrice(gi, inputs, homeGoalie, awayGoalie, DIST, o) {
   return Object.assign(nhlgMarkets(D, DIST, o), { lambda: { home: nhlgR(lam.lh), away: nhlgR(lam.la) }, rated: { home: rh.rated, away: ra.rated } });
 }
 
+/* ---------------------------------------------------------------- the lineup-lock price */
+/** ln(tonight's lineup value / the club's typical): each skater's recent time on ice per game, summed (hockey/model/lineups.js) */
+function nhlgLineupDelta(ids, inputs, typical, o) {
+  o = Object.assign({}, NHLG_DEFAULTS, o || {});
+  if (!Array.isArray(ids) || ids.length < o.lock_min_skaters || !(typical > 0)) return null;
+  const vals = (inputs && inputs.skater_values) || {}, prior = inputs && inputs.skater_prior_s != null ? inputs.skater_prior_s : 600;
+  let v = 0; for (const id of ids) v += vals[String(id)] != null ? vals[String(id)] : prior;
+  return Math.log(v / typical);
+}
+/**
+ * The headline at lineup lock: both dressed lineups listed (lineups:
+ * { home: [skater ids], away: [...] }) and both starters Confirmed, priced by
+ * the variant that knows tonight's lineups and goalies (inputs.model.all_*).
+ * null when any of it is missing: the headline then stays the slate's.
+ */
+function nhlgLockPrice(gi, inputs, merged, lineups, DIST, o) {
+  o = Object.assign({}, NHLG_DEFAULTS, o || {});
+  const M = inputs && inputs.model, L = gi && gi.lineup;
+  if (!M || !M.all_beta || !M.all_pair_calibration || !L || !L.eta || !L.typical || !lineups || !nhlgBothConfirmed(merged)) return null;
+  const dH = nhlgLineupDelta(lineups.home, inputs, L.typical.home, o), dA = nhlgLineupDelta(lineups.away, inputs, L.typical.away, o);
+  if (dH == null || dA == null) return null;
+  const rh = nhlgRate(inputs, merged.home.goalie_id, gi), ra = nhlgRate(inputs, merged.away.goalie_id, gi);
+  const B = M.all_beta;
+  const lam = nhlgCalibrate(Math.exp(L.eta.home + B.goalie * ra.rate + B.lu_own * dH + B.lu_opp * dA), Math.exp(L.eta.away + B.goalie * rh.rate + B.lu_own * dA + B.lu_opp * dH), M.all_pair_calibration);
+  const D = DIST.game({ lamH: lam.lh, lamA: lam.la, effects: inputs.distribution.effects, ot: gi.type === 'P' ? { format: 'PO' } : inputs.distribution.ot, periods: false });
+  const mk = nhlgMarkets(D, DIST, o), pl = mk.puck_line;
+  const awayMinus = pl['1.5'] ? Math.max(0, 1 - pl['1.5'][0] - pl['1.5'][1]) : null;
+  const before = gi.headline || {};
+  return {
+    basis: 'lineup_lock', model_id: M.all_model_id || null, p_home: mk.p_home, p_away: nhlgR(1 - D.p_home), fair_home: mk.fair_home, fair_away: mk.fair_away,
+    exp_total: mk.exp_total, fair_total_line: mk.fair_total_line,
+    puck_line: { home_minus_1_5: pl['-1.5'] ? pl['-1.5'][0] : null, away_minus_1_5: nhlgR(awayMinus), fair_home_minus_1_5: pl['-1.5'] ? DIST.probToAmerican(pl['-1.5'][0]) : null, fair_away_minus_1_5: awayMinus != null ? DIST.probToAmerican(awayMinus) : null },
+    markets: { puck_line: pl, total: mk.total }, settles: before.settles || null, goalie_free: false, lambda: { home: nhlgR(lam.lh), away: nhlgR(lam.la) },
+    lineup: { skaters: { home: lineups.home.length, away: lineups.away.length }, delta: { home: nhlgR(dH), away: nhlgR(dA) }, goalies: { home: merged.home.goalie_id || null, away: merged.away.goalie_id || null }, rated: { home: rh.rated, away: ra.rated } },
+    before: { model_id: before.model_id || null, p_home: before.p_home != null ? before.p_home : null, fair_home: before.fair_home != null ? before.fair_home : null, fair_away: before.fair_away != null ? before.fair_away : null },
+  };
+}
+
 /* ---------------------------------------------------------------- realistic pairings */
 /**
  * The goalies who could realistically start for one side: the confirmed
@@ -434,13 +494,15 @@ function nhlgBuildCard(gi, inputs, merged, DIST, o) {
   const used = pairs.filter((p) => p.used)[0] || null;
   const both = nhlgBothConfirmed(merged);
   const ps = pairs.map((p) => p.p_home).filter((v) => v != null), ts = pairs.map((p) => p.exp_total).filter((v) => v != null);
+  const lock = nhlgLockPrice(gi, inputs, merged, o.lineups || null, DIST, o);
   const card = {
     core_version: NHLG_CORE_VERSION, game_id: String(gi.game_id), start_utc: gi.start_utc, home: gi.home, away: gi.away, type: gi.type || 'R',
     generated_at: nhlgIso(o.now != null ? o.now : Date.now()),
     goalie_pairing_used: { home: nhlgSidePick(merged.home, used ? used.rated.home : null), away: nhlgSidePick(merged.away, used ? used.rated.away : null) },
     goalie_status: { home: merged.home.status, away: merged.away.status },
     conflict: !!(merged.home.conflict || merged.away.conflict),
-    headline: gi.headline || null,
+    headline: lock || gi.headline || null,
+    lineup_locked: !!lock,
     pairing_price: used ? { home_goalie_id: used.home_goalie_id, home_goalie_name: used.home_goalie_name, away_goalie_id: used.away_goalie_id, away_goalie_name: used.away_goalie_name,
       p_home: used.p_home, fair_home: used.fair_home, fair_away: used.fair_away, exp_total: used.exp_total, fair_total_line: used.fair_total_line, puck_line: used.puck_line, total: used.total, lambda: used.lambda } : null,
     pairing_range: pairs,
@@ -450,8 +512,12 @@ function nhlgBuildCard(gi, inputs, merged, DIST, o) {
       ? { state: 'OPEN', basis: 'BOTH_CONFIRMED', rule: 'both starters are Confirmed: an edge is judged as before (lib/edgedesk_nhl_market.js)' }
       : { state: 'GATED', basis: 'EVERY_PAIRING', rule: 'a starter is not Confirmed: no EDGE on the moneyline, puck line or total unless it holds under every realistic pairing (' + pairs.length + ')' },
     known_limitations: nhlgLimitations(gi, merged, used),
-    notes: ['The headline numbers are the production model (' + ((inputs.model && inputs.model.id) || 'edgedesk_nhl_v1') + '), which carries no goalie term: a starter change does not move them. '
-      + 'The pairing numbers come from its goalie-aware variant (' + ((inputs.model && inputs.model.goalie_variant) || 'xg_goalie_confirmed') + '), the one the slate’s goalie scenarios use.'],
+    notes: lock
+      ? ['Priced at lineup lock: both dressed lineups are listed by the NHL and both starters are Confirmed, so the headline numbers come from the variant that knows tonight’s lineups and goalies (' + (lock.model_id || 'xg_all_confirmed') + '). '
+        + 'Before lock the headline was the production model (' + (lock.before.model_id || 'edgedesk_nhl_v1') + ', ' + gi.home + ' ' + (lock.before.p_home != null ? Math.round(lock.before.p_home * 1000) / 10 + '%' : '—') + '). '
+        + 'The pairing numbers come from the goalie-aware variant (' + ((inputs.model && inputs.model.goalie_variant) || 'xg_goalie_confirmed') + ').']
+      : ['The headline numbers are the production model (' + ((inputs.model && inputs.model.id) || 'edgedesk_nhl_v1') + '), which carries no goalie term: a starter change does not move them until lineup lock. '
+        + 'The pairing numbers come from its goalie-aware variant (' + ((inputs.model && inputs.model.goalie_variant) || 'xg_goalie_confirmed') + '), the one the slate’s goalie scenarios use.'],
     model_id: (inputs.model && inputs.model.id) || null, goalie_variant: (inputs.model && inputs.model.goalie_variant) || null,
     slate_generated_at: inputs.slate_generated_at || inputs.generated_at || null,
   };
@@ -476,11 +542,14 @@ function nhlgCardChange(prev, next) {
     else if ((a.status || null) !== (b.status || null)) reasons.push('status_changed:' + side);
     if (!!a.conflict !== !!b.conflict) reasons.push('conflict_changed:' + side);
   }
+  const locked = (c) => !!(c && c.headline && c.headline.basis === 'lineup_lock');
+  if (locked(prev) !== locked(next)) reasons.push(locked(next) ? 'lineup_locked' : 'lineup_unlocked');
   const num = (c) => JSON.stringify([c.headline && c.headline.p_home, c.headline && c.headline.exp_total, c.pairing_price && c.pairing_price.p_home, c.pairing_price && c.pairing_price.exp_total,
     (c.pairing_range || []).map((p) => [p.home_goalie_id, p.away_goalie_id, p.p_home, p.exp_total])]);
-  if (!reasons.length && num(prev) !== num(next)) reasons.push('inputs_changed');
+  if (!reasons.some((r) => !/^lineup_/.test(r)) && num(prev) !== num(next)) reasons.push('inputs_changed');
+  /* a lock moves the headline's numbers: it is recorded as its own reason under the inputs_changed trigger (the table's five triggers) */
   const order = ['starter_changed', 'status_changed', 'conflict_changed', 'inputs_changed'];
-  const trigger = reasons.length ? order.filter((t) => reasons.some((r) => r.indexOf(t) === 0))[0] : null;
+  const trigger = reasons.length ? order.filter((t) => reasons.some((r) => r.indexOf(t) === 0 || (t === 'inputs_changed' && /^lineup_/.test(r))))[0] : null;
   return { changed: reasons.length > 0, trigger, reasons };
 }
 
@@ -548,6 +617,7 @@ function nhlgEtToUtc(date, hour, minute) {
  *   two_hour     8:00, 10:00, ... Eastern on each Eastern date with a game, until its last puck drop
  *   pre_game     every 15 minutes in the three hours before each puck drop
  *   final_pass   T-30 for each game
+ *   lineup_lock  every 5 minutes after the final pass until puck drop (T-25 ... T-5)
  */
 function nhlgDueTimes(games, o) {
   o = Object.assign({}, NHLG_DEFAULTS, o || {});
@@ -557,6 +627,7 @@ function nhlgDueTimes(games, o) {
     const d = nhlgEtDate(s); if (!(d in lastByDate) || s > lastByDate[d]) lastByDate[d] = s;
     for (let k = o.pre_window_min; k > 0; k -= o.pre_step_min) out.push({ at: s - k * 60e3, kind: k === o.final_pass_min ? 'final_pass' : 'pre_game', game_id: String(g.game_id) });
     if (o.pre_window_min % o.pre_step_min !== 0 || o.final_pass_min % o.pre_step_min !== 0) out.push({ at: s - o.final_pass_min * 60e3, kind: 'final_pass', game_id: String(g.game_id) });
+    for (let k = Math.min(o.lock_window_min, o.final_pass_min) - o.lock_step_min; k > 0; k -= o.lock_step_min) out.push({ at: s - k * 60e3, kind: 'lineup_lock', game_id: String(g.game_id) });
   }
   for (const d of Object.keys(lastByDate)) {
     for (let h = o.first_et_hour; h < 24; h += o.every_hours) { const t = nhlgEtToUtc(d, h, 0); if (t >= lastByDate[d]) break; out.push({ at: t, kind: 'two_hour', game_id: null }); }
@@ -583,7 +654,7 @@ const EDNHLGoalieCore = {
   NHLG_CORE_VERSION, NHLG_STATUSES, NHLG_BADGE, NHLG_SOURCES, NHLG_DEFAULTS, NHLG_TEAMS, nhlgR, nhlgIso,
   nhlgStatus, nhlgStatusRank, nhlgMinStatus, nhlgSourceLabel, nhlgKey, nhlgTeam, nhlgNameParts, nhlgMatchGoalie,
   nhlgDailyFaceoffUrl, nhlgBoxscoreUrl, nhlgParseDailyFaceoff, nhlgParseNhlBoxscore,
-  nhlgIdentity, nhlgMergeSide, nhlgDisplay, nhlgRate, nhlgCalibrate, nhlgLambdas, nhlgMarkets, nhlgPrice, nhlgCandidates, nhlgPairings,
+  nhlgIdentity, nhlgMergeSide, nhlgDisplay, nhlgRate, nhlgCalibrate, nhlgLambdas, nhlgMarkets, nhlgPrice, nhlgLineupDelta, nhlgLockPrice, nhlgCandidates, nhlgPairings,
   nhlgBothConfirmed, nhlgLimitations, nhlgChangeNote, nhlgBuildCard, nhlgCardChange, nhlgStable, nhlgHash,
   nhlgDec, nhlgEv, nhlgSideProb, nhlgEdgeGate, nhlgEtParts, nhlgEtDate, nhlgEtToUtc, nhlgDueTimes, nhlgIsDue,
 };
