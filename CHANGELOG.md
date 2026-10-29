@@ -1,9 +1,10 @@
 # Changelog
 
-## 2026-10-29 — NHL goalie sync: a build stamp for the lineup lock
+## 2026-10-29 — NHL goalie sync: a build stamp for the lineup lock, and the job summary shows the headline
 
-- **Why.** #902 (the lineup lock) left the function's build at `nhl_goalie_sync@2026-10-25.1`, so after its deploy a `GET` could not tell the new code from the old.
-- **What.** `supabase/functions/nhl_goalie_sync/index.ts` answers `nhl_goalie_sync@2026-10-29.1`. Nothing else in the function changes. `docs/engine/NHL_GOALIES.md` §11 records the first deploy: Deploy NHL goalie layer run 4 deployed it, and its first run read the site's previous inputs, which the site had not yet replaced.
+- **Why.** #902 (the lineup lock) left two gaps. The function's build stayed at `nhl_goalie_sync@2026-10-25.1`, so after its deploy a `GET` could not tell the new code from the old. And the job summary's "Home win %" is the goalie pairing's number, so a lock never showed in NHL goalie sync or in the deploy's first run.
+- **What.** `supabase/functions/nhl_goalie_sync/index.ts` answers `nhl_goalie_sync@2026-10-29.1`. Nothing else in the function changes. `tools/hockey/nhl_goalie_run_summary.js` adds a "Headline home win %" column, marked "(lineup lock)" once the card is locked, and labels the old column "(pairing)".
+- **Tests.** `tools/hockey/nhl_goalie_sync.test.js`: the summary row carries the headline, and at lock it shows the lock price marked "(lineup lock)". On the old summary code: 76 passed, 2 failed. On the fix: 78/0. `docs/engine/NHL_GOALIES.md` §11 records the first deploy: Deploy NHL goalie layer run 4 deployed it, and its first run read the site's previous inputs, which the site had not yet replaced.
 
 ## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
 

@@ -219,6 +219,8 @@ globalThis.fetch = async (u, init) => {
   chk('T-10: both lineups listed → version 5, its headline priced at lineup lock (reason lineup_locked)', c.length === 5 && c[4].headline.basis === 'lineup_lock' && c[4].reasons.indexOf('lineup_locked') >= 0 && c[4].trigger === 'inputs_changed' && c[4].headline.model_id === 'edgedesk_nhl_v1:xg_all_confirmed', c[4] && [c[4].trigger, c[4].reasons]);
   chk('v5: the slate\'s price before lock is kept beside it; Vancouver missing a regular prices it below the goalie-only number', c[4].headline.before.p_home === 0.4174 && c[4].headline.p_home < c[3].pairing_price.p_home && c[4].headline.lineup.skaters.home === 18 && c[4].headline.lineup.delta.home < 0, c[4].headline);
   chk('v5: the gate stays OPEN and the card says it was priced at lineup lock', c[4].edge_gate_state === 'OPEN' && /^Priced at lineup lock/.test(c[4].notes[0]));
+  const smL = require(path.join(__dirname, 'nhl_goalie_run_summary.js')).render({ title: 'NHL goalie sync', run: r, http: '200' }, ms('2026-10-26T01:50:30Z')).markdown;
+  chk('summary at lock: the job shows the headline at the lock price, marked lineup lock', smL.indexOf('| ' + (c[4].headline.p_home * 100).toFixed(1) + '% (lineup lock) |') >= 0, smL);
   const p10 = probeAt(runs().filter((x) => x.status !== 'skipped').slice(-1)[0]);
   chk('timing probe: the T-10 read records the lineups as listed (18 skaters a side)', p10 && p10.minutes_to_start === 10 && p10.lineups_posted === true && p10.skaters.home === 18 && p10.skaters.away === 18 && runs().slice(-1)[0].sources.nhl_api_boxscore.lineups_posted === 1, p10);
   e = DB.nhl_card_edge_events;
@@ -307,7 +309,7 @@ globalThis.fetch = async (u, init) => {
   const READY = { state: 'ok', state_reason: null, last_check_status: 'ok', last_check_at: '2026-10-25T18:00:22+00:00', last_success_at: '2026-10-25T18:00:22+00:00', minutes_since_success: 3, daily_faceoff_ok: true, nhl_api_ok: true,
     cards_upcoming: 1, cards_gated: 1, sides_next_3h: 0, sides_unconfirmed_next_3h: 0, games_7d: 0, pct_confirmed_by_t30_7d: null, confirmed_by_t30_target_pct: 90, conflicts_open: 0, conflicts_24h: 0, conflicts_7d: 0, sync_failures_24h: 0, runs_24h: 2, next_due_at: '2026-10-25T20:00:00+00:00' };
   let sm = S.render({ title: 'NHL goalie sync — run by hand', run: r, http: '200', cron: CRON, readiness: READY }, NOW);
-  chk('summary: the card version the run wrote, with its starters, statuses, gate, home win % and change note', sm.markdown.includes('| MIN@VAN | 2 | starter_changed | L. Meriläinen / C. Pickard | likely / likely | GATED | 42.4% | Updated: starter changed from K. Lankinen to L. Meriläinen |'), sm.markdown);
+  chk('summary: the card version the run wrote, with its starters, statuses, gate, home win % and change note', sm.markdown.includes('| MIN@VAN | 2 | starter_changed | L. Meriläinen / C. Pickard | likely / likely | GATED | 42.4% | Updated: starter changed from K. Lankinen to L. Meriläinen | 41.7% |'), sm.markdown);
   chk('summary: what the run wrote, pg_cron\'s last call (3 min ago) and the readiness KPIs', /Cards written \/ unchanged \| 1 \/ 0/.test(sm.markdown) && /Last call \| 2026-10-25T18:00:00\.04\+00:00 \(3 min ago\), succeeded/.test(sm.markdown) && /Both starters Confirmed by T-30, last 7 days \| — \(no game yet\) \(target 90%\)/.test(sm.markdown), sm.markdown);
   chk('summary: a clean run, a calling pg_cron and ok readiness pass', sm.verdict.errors.length === 0 && sm.verdict.warnings.length === 0 && /\*\*Passed\.\*\*/.test(sm.markdown), sm.verdict);
   let vd = S.verdict({ cron: CRON }, NOW);

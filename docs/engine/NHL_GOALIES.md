@@ -233,7 +233,7 @@ evaluator has been written yet: the registration precedes it.
 | Suite | Checks |
 |---|---|
 | `node tools/hockey/nhl_goalie_core.test.js` | 104. Statuses, team identity, name matching, both parsers and their drift cases, the merge (agree, conflict, the lower status, projection fallback), exact re-pricing of the real MIN @ VAN scenarios, the card, change detection, the edge gate on all three markets, the cadence across the DST change, the inline copy. The lineup lock (§11): the boxscore's dressed skaters, the lock price against its formula, a call-up lowering his club's price, no lock with fewer than 12 skaters, a starter not Confirmed or a conflict, the new version and its trigger, the lock kept from the card's own lineups, and `build_slate --check` passing real lock inputs and failing tampered ones |
-| `node tools/hockey/nhl_goalie_sync.test.js` | 77. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth, and the GitHub jobs' summary and verdict (`tools/hockey/nhl_goalie_run_summary.js`) on the function's real answers, its own 401 told from the gateway's, and pg_cron's pokes refused. After v4, the timing probe at T−30 (no lineup yet), then v5 at T−10 when both lineups post: priced at lineup lock, lower than v4 for Vancouver with a regular scratched, the gate open, and the edge judged at the lock price; T−5 writes nothing new, nor does a run with the NHL API down after lock |
+| `node tools/hockey/nhl_goalie_sync.test.js` | 78. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth, and the GitHub jobs' summary and verdict (`tools/hockey/nhl_goalie_run_summary.js`) on the function's real answers, its own 401 told from the gateway's, and pg_cron's pokes refused. After v4, the timing probe at T−30 (no lineup yet), then v5 at T−10 when both lineups post: priced at lineup lock, lower than v4 for Vancouver with a regular scratched, the gate open, and the edge judged at the lock price; T−5 writes nothing new, nor does a run with the NHL API down after lock. The job summary shows the lock price as the headline, marked "(lineup lock)" |
 | `NHL_SQL_REQUIRED=1 node tools/hockey/nhl_goalie_sql.test.js` | 79. The layer on a real PostgreSQL: roles, append-only, the supersede, card versions, the confirmation and variant rules, edges attached to the version that existed, CLV, the KPIs (confirmed by T−30 with the grace, conflicts, failures, a silent scheduler), the card's freshness, the v2 registry, cron (each poke's answer kept and read back), a re-apply over live rows, and rollback, and the two queries the GitHub job reads (`tools/hockey/sql/`), and a lineup-lock version under `inputs_changed` |
 | `node tools/hockey/nhl_goalie_ui.test.js` | 46. The block's badges, sources, times, range, limitations and change note; the slate fallback; the market gate; compare with and without the live card; at lineup lock, the block's lock line, compare's lock price (full and compact) and the EV at it |
 | `node tools/engine/engine_ui.e2e.js` | +24, in Chromium on desktop and a 390 px phone: the block on the slate fallback, and a live card's version, change note and range. At lineup lock: the Overview headline, the block, the Markets banner, Check a price and the list card |
@@ -290,7 +290,8 @@ captured. The goalie inputs fixture is the real build output for the
      the sync itself, unforced so the function still decides what is due, and
      fails so the miss is seen;
    - either way, the job summary shows what the run wrote (each card version,
-     its starters, statuses, gate, home win % and change note), pg_cron's last
+     its starters, statuses, gate, the pairing's home win %, its change note, and
+     the headline's home win %, marked "(lineup lock)" once locked), pg_cron's last
      call and the readiness KPIs (`tools/hockey/sql/nhl_goalie_readiness_check.sql`,
      the view plus the last check's alert codes).
 
@@ -512,7 +513,9 @@ tonight's):
 lineup block. Then run Deploy NHL goalie layer with `deploy_function`. The
 SQL is unchanged: the card's trigger values and columns are the same. A `GET`
 of the function answers build `nhl_goalie_sync@2026-10-29.1` or later once
-the lock is deployed.
+the lock is deployed. The job summaries of NHL goalie sync and of the
+deploy's first run show each card's headline, marked "(lineup lock)" once it
+is locked.
 
 **The first deploy (2026-10-29, run 4 of Deploy NHL goalie layer).** It
 deployed `main` at 0e148dc6d, after NHL engine build had published the
