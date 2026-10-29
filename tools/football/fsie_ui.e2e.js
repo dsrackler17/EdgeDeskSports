@@ -35,9 +35,14 @@ function finish() { console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | situationa
 const GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 const CACHED = path.join(ROOT, 'football', 'nfl', '.cache', GAMES_URL.replace(/[^a-z0-9.]+/gi, '_').slice(-120));
 async function gamesCsv() { if (fs.existsSync(CACHED)) return fs.readFileSync(CACHED, 'utf8'); try { const r = await fetch(GAMES_URL); if (r.ok) return await r.text(); } catch (_) { /* below */ } return null; }
-function cfbSchedule(y) {
+/* the FBS schedule the board reads: a local cache when a build left one, else
+   the published file the page itself asks for (a CI runner has no cache) */
+const CFB_URL = (y) => 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_' + y + '.csv';
+const cfbFetched = {};
+async function cfbSchedule(y) {
   for (const d of [path.join(ROOT, 'football', 'situational', '.cache', 'raw', 'cfb_schedule_' + y + '.csv'), path.join(ROOT, 'football', 'fbs', '.cache', 'cfb_schedules_' + y + '.csv')]) if (fs.existsSync(d)) return fs.readFileSync(d, 'utf8');
-  return null;
+  if (!(y in cfbFetched)) cfbFetched[y] = fetch(CFB_URL(y)).then((r) => (r.ok ? r.text() : null)).catch(() => null);
+  return cfbFetched[y];
 }
 
 (async function main() {
@@ -81,7 +86,7 @@ function cfbSchedule(y) {
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       if (url === GAMES_URL || /nfldata\/master\/data\/games\.csv/.test(url)) return route.fulfill({ status: 200, contentType: 'text/csv', body: csv });
       const m = url.match(/cfb_schedules_(\d{4})\.csv/);
-      if (m) { const b = cfbSchedule(+m[1]); return b ? route.fulfill({ status: 200, contentType: 'text/csv', body: b }) : route.fulfill({ status: 404, body: 'not published' }); }
+      if (m) { const b = await cfbSchedule(+m[1]); return b ? route.fulfill({ status: 200, contentType: 'text/csv', body: b }) : route.fulfill({ status: 404, body: 'not published' }); }
       if (/supabase\.co/.test(url)) {
         if (/\/subscriptions/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', price_id: 'price_e2e', current_period_end: new Date(PIN + 30 * 864e5).toISOString(), cancel_at_period_end: false, stripe_customer_id: 'cus_e2e' }]) });
         return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
