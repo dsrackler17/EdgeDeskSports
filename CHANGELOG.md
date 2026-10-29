@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-29 — Deploy Fairline's Tape email switch reports what it stored
+
+**What was wrong.** The last step of `Deploy Fairline`, "The Tape's email switch", failed on every run. On 2026-10-29 at 14:20 UTC it was asked to turn the switch on and failed with "fairline_tape_settings was not updated (is fairline_tape.sql applied?)". In fact the update had been stored. The step compared psql's output with `true`, but `psql -At` prints a boolean as `t`, and after `UPDATE … RETURNING` it adds an `UPDATE 1` line. Neither `on` nor `off` could ever match.
+
+**What changed.**
+- **The step** runs `psql -qAt` and returns `email_enabled::text`, so the output is exactly `true` or `false`. A missing settings row still fails with the same message (`.github/workflows/deploy-fairline.yml`).
+
+**Tests.**
+- `tools/fairline/tape_sql.test.js` §9 runs the step verbatim from the workflow file against the real `fairline_tape.sql`. It checks that on and off each store the value and exit 0, and that the warning about the pipeline's own switch appears.
+- On `main`'s workflow, all 3 of those checks fail with the production error. With the fix, the suite passes 93 / 0.
+
 ## 2026-10-29 — Bet Checker says when sportsbook prices are paused
 
 **Why.** The odds account's October credits ran out on 2026-10-10, and paid price refresh is paused until the reset on 2026-11-01 (`docs/odds-api-incident-2026-10/INCIDENT.md`). Meanwhile most fair prices are older than the 6½ hours a grade accepts, so most bets logged on Bet Checker are saved Not graded, and nothing on the page said why. The owner asked for a notice (2026-10-29).

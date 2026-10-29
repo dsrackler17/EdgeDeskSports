@@ -33,12 +33,15 @@
      8 the sender (tools/fairline/tape_send.js) over the real SQL: one Resend
        call per Tape, its own Idempotency-Key, the List-Unsubscribe link,
        every row marked sent
+     9 the switch step in deploy-fairline.yml, run verbatim: on and off each
+       store the value and succeed
 
    Run: node tools/fairline/tape_sql.test.js
    =========================================================================== */
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const cp = require('child_process');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 
 const T = PG.kit('fairline tape SQL');
@@ -402,6 +405,26 @@ try {
     chk('a second run sends nothing', again.status === 'OK' && again.sent === 0 && calls.length === 1, again);
     V('update public.fairline_tape_settings set email_enabled = false;');
     chk('with The Tape\'s switch off the sender claims nothing', (await SENDER.run({ rpc, apiKey: 'k', key: 'svc', url: 'https://x.supabase.co', fetch: fakeFetch, log: () => {} })).status === 'DISABLED');
+
+    /* ===================================================================== */
+    /* 9. THE DEPLOY SWITCH, RUN AS THE WORKFLOW RUNS IT                     */
+    /* ===================================================================== */
+    /* deploy-fairline.yml's "The Tape's email switch" step, verbatim, against
+       this database. Production's first run (2026-10-29) stored the value and
+       still failed: psql -At printed "t" and "UPDATE 1", never "true" */
+    const WF = require(path.join(ROOT, 'tools', 'ci', 'workflows.js'));
+    const step = WF.parseYaml(fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy-fairline.yml'), 'utf8'))
+      .jobs.deploy.steps.find((s) => s.name === 'The Tape\'s email switch');
+    const sw = (want) => cp.spawnSync('bash', ['-c', step.run], { encoding: 'utf8', env: Object.assign({}, process.env, {
+      PATH: db.bin + ':' + process.env.PATH, PGURL: 'postgresql://postgres@/postgres?host=' + db.home + '&port=' + db.port, WANT: want }) });
+    V('update public.lifecycle_settings set sending_enabled = false;');
+    let st = sw('on');
+    chk('the deploy step turns The Tape\'s switch on and succeeds', st.status === 0 && V('select email_enabled from public.fairline_tape_settings;') === 't' &&
+      /The Tape's email switch: on\./.test(st.stdout), (st.stdout + st.stderr).slice(-400));
+    chk('…and warns that the pipeline\'s own switch is still off', /::warning::The pipeline's switch is off/.test(st.stdout), st.stdout.slice(-400));
+    st = sw('off');
+    chk('the deploy step turns it off again and succeeds', st.status === 0 && V('select email_enabled from public.fairline_tape_settings;') === 'f',
+      (st.stdout + st.stderr).slice(-400));
 
     /* deleting the account still removes its Tapes (the cascade passes the guard) */
     V('delete from auth.users where id = ' + lit(A) + ';');

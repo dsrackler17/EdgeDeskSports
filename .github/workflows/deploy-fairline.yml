@@ -181,7 +181,8 @@ jobs:
         run: |
           set -eu
           v=$([ "$WANT" = on ] && echo true || echo false)
-          got=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "update public.fairline_tape_settings set email_enabled = $v, updated_at = now() where id = 1 returning email_enabled")
+          # -q drops psql's "UPDATE 1" line; ::text prints true/false, not t/f
+          got=$(psql "$PGURL" -qAt -v ON_ERROR_STOP=1 -c "update public.fairline_tape_settings set email_enabled = $v, updated_at = now() where id = 1 returning email_enabled::text")
           [ "$got" = "$v" ] || { echo "::error::fairline_tape_settings was not updated (is fairline_tape.sql applied?)"; exit 1; }
           pipe=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select coalesce((select sending_enabled from public.lifecycle_settings limit 1), false)")
           echo "The Tape's email switch: $WANT. The pipeline's own switch (lifecycle_settings.sending_enabled): $pipe."
