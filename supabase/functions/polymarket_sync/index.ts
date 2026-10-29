@@ -59,7 +59,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-29.2";
+export const BUILD = "polymarket_sync@2026-10-29.5";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -381,6 +381,23 @@ export const BUILD = "polymarket_sync@2026-10-29.2";
       g['beat_close' + L[1]] = p != null && c ? c.p > p : null;
     });
     return g;
+  };
+
+  /* the stretches of a bet's price history its grade reads. R.priceAt takes the
+     last point at or before its moment, at most a gap older, so the follows read
+     [entry + 5 - 10, entry + 15] minutes and the close [start - 60, start]:
+     these alone give the same grade as the whole history (core.test.js), and a
+     bet placed days early is two short reads, not a point a minute for days.
+     Stretches that meet are one read, 15 minutes before the entry to a minute
+     after the start, as before. Times in ms, a minute's margin each side. */
+  R.gradeWindows = function (bet, rules) {
+    rules = R.rules(rules);
+    var e = bet.entry_at, s = bet.game_start_at;
+    var lagLo = Math.min(rules.follow_lag_min, rules.follow_lag_alt_min), lagHi = Math.max(rules.follow_lag_min, rules.follow_lag_alt_min);
+    var whole = { from: e - 15 * MIN, to: s + MIN };
+    var follow = { from: Math.max(whole.from, e + (lagLo - rules.follow_max_gap_min - 1) * MIN), to: e + (lagHi + 1) * MIN };
+    var close = { from: s - (rules.close_max_gap_min + 1) * MIN, to: s + MIN };
+    return follow.to >= close.from ? [whole] : [follow, close];
   };
 
   /* ------------------------------------------------------------ style */
@@ -835,6 +852,14 @@ const H = 3600e3, MIN = 60e3, DAY = 864e5;
 /* the run's budget: requests it asks poly_api_acquire for, by mode */
 export const ASK: Record<string, number> = { tonight: 400, pool: 20, wallets: 900, grade: 0 };
 const WALLETS_PER_RUN = 3;
+/* a wallets run must answer within Supabase's 150 s request limit (production's
+   first one, three new wallets, did not: HTTP 504). After WALLETS_TIME_MS it
+   starts no new wallet, activity page or graded bet; a wallet it did not finish
+   stays due with its place kept, and the next run carries on from there */
+const WALLETS_TIME_MS = 75000;
+/* and holds at most WALLET_PAGES_PER_RUN activity pages (1,000 rows each) at once: a production run with a
+   whole 30-page history ran out of compute (HTTP 546). The 30-page cap still counts across runs */
+const WALLET_PAGES_PER_RUN = 10;
 /* what Polymarket accepts (radar-sources run 40812803914): /v2/holders answers
    at most 100 holders a side with include_pnl (500 is refused, HTTP 400), and
    one unwindowed page of 100 open NFL events was 48 MB, so events are asked
@@ -842,8 +867,8 @@ const WALLETS_PER_RUN = 3;
    EVENTS_PER_PAGE at a time, at most EVENT_PAGES pages a series */
 const HOLDERS_LIMIT = 100, EVENTS_PER_PAGE = 5, EVENT_PAGES = 16;
 
-/* tests stand in for the clock between retries */
-export const hooks: any = { sleep: (ms: number) => new Promise((r) => setTimeout(r, ms)) };
+/* tests stand in for the clock between retries, and for the run's own clock */
+export const hooks: any = { sleep: (ms: number) => new Promise((r) => setTimeout(r, ms)), now: () => Date.now() };
 
 /* ---------------------------------------------------------------- the database (PostgREST, service role) */
 async function db(path: string, init?: any): Promise<any> {
@@ -969,8 +994,11 @@ async function tonight(ctx: any) {
   if (!ctx.dry && markets.length) await inChunks(markets.map((m: any) => marketRecord(m, false)), 200, (c) => upsert("poly_markets", c, "condition_id"));
 
   /* 2. match each pending market to ONE EdgeDesk game */
+  /* 100 ids a lookup, as everywhere else here: a night's full slate in one URL
+     is longer than fetch takes (65,534 bytes), and it refuses it "Invalid URL" */
   const ids = markets.map((m: any) => m.condition_id);
-  const stored: any[] = ids.length ? await dbAll("poly_markets?select=condition_id,event_id,match_status,sides,game_start_at&condition_id=in." + inList(ids)) : [];
+  const stored: any[] = [];
+  await inChunks(ids, 100, async (c) => { stored.push(...(await dbAll("poly_markets?select=condition_id,event_id,match_status,sides,game_start_at&condition_id=in." + inList(c)))); });
   const byId: Record<string, any> = {};
   for (const s of stored) byId[s.condition_id] = s;
   const pending = markets.filter((m: any) => !byId[m.condition_id] || !byId[m.condition_id].event_id);
@@ -1113,23 +1141,28 @@ async function wallets(ctx: any) {
   const rules = ctx.rules, now = ctx.nowMs;
   const due = await db("poly_wallets?select=wallet,activity_cursor,history_truncated&in_pool=is.true&or=(activity_synced_at.is.null,activity_synced_at.lt."
     + encodeURIComponent(iso(now - 20 * H)!) + ")&order=activity_synced_at.asc.nullsfirst,pool_rank.asc&limit=" + WALLETS_PER_RUN);
+  const late = () => hooks.now() - ctx.t0 > WALLETS_TIME_MS;
   ctx.run.details.wallets = [];
   for (const w of due || []) {
+    if (late()) { ctx.run.details.time_up = true; break; }
     const d: any = { wallet: w.wallet };
     ctx.run.details.wallets.push(d);
-    /* 1. activity since the cursor (the window's start the first time) */
+    /* 1. activity since the cursor (the window's start the first time). A first read cut by time keeps
+       first_pages in the cursor, so the next run carries on and the page cap counts both */
     const cur = w.activity_cursor || {};
-    const first = cur.ts_s == null;
-    let start = first ? Math.floor((now - 400 * DAY) / 1000) : Math.max(1, cur.ts_s - 1), cursor: any = null, pages = 0, last = cur.ts_s || null, truncated = !!w.history_truncated, ok = true;
+    const first = cur.ts_s == null || cur.first_pages != null, before = first ? Number(cur.first_pages || 0) : 0;
+    let start = cur.ts_s == null ? Math.floor((now - 400 * DAY) / 1000) : Math.max(1, cur.ts_s - 1), cursor: any = null, pages = 0, last = cur.ts_s || null, truncated = !!w.history_truncated, ok = true, actCut = false;
     const rows: any[] = [];
     for (;;) {
+      if (pages > 0 && late()) { actCut = true; break; }
       const r = await ask(ctx, "activity", { user: w.wallet, type: "TRADE,REDEEM,SPLIT,MERGE", limit: 1000, sort_direction: "ASC", start, cursor });
       if (!r.ok) { ok = false; break; }
       pages++;
       const pg = R.page(r.data);
       for (const a of pg.rows) { const x = R.activityRow(a, w.wallet); if (x) rows.push(x); else ctx.drift++; }
       if (!pg.has_more) break;
-      if (pages >= rules.wallet_max_pages) { if (first) truncated = true; break; }
+      if (before + pages >= rules.wallet_max_pages) { if (first) truncated = true; break; }
+      if (pages >= WALLET_PAGES_PER_RUN) { actCut = true; break; }
       cursor = pg.next_cursor;
     }
     d.pages = pages; d.rows = rows.length; d.truncated = truncated;
@@ -1153,14 +1186,21 @@ async function wallets(ctx: any) {
     if (!ctx.dry) await inChunks(coveredRows.map((t: any) => tradeRecord(t, markets[t.condition_id], ctx.run.run_id)), 500,
       (c) => insertOnce("poly_trades", c, "tx_hash,wallet,kind,token_key,side_key,size_key,price_key"));
     if (rows.length) last = Math.max(last || 0, Math.floor(Math.max(...rows.map((t: any) => t.ts)) / 1000));
-    /* 4. every newly resolved bet, graded once */
-    d.graded = await gradeNewBets(ctx, w.wallet, ctx.dry ? coveredRows : null, markets);
-    if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_synced_at: iso(now), activity_cursor: { ts_s: last }, history_truncated: truncated, updated_at: iso(now) });
+    /* 4. every newly resolved bet, graded once (the rest next run, if time runs out) */
+    const gr = await gradeNewBets(ctx, w.wallet, ctx.dry ? coveredRows : null, markets, late);
+    d.graded = gr.n;
+    /* 5. done, or kept due with its place: a wallet cut by time is read on, never skipped for 20 hours */
+    const partial = actCut || gr.cut, kept: any = { ts_s: last };
+    if (first && actCut) kept.first_pages = before + pages;
+    d.status = partial ? "partial" : "done";
+    if (partial) ctx.run.details.time_up = true;
+    if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet,
+      Object.assign({ activity_cursor: kept, history_truncated: truncated, updated_at: iso(now) }, partial ? {} : { activity_synced_at: iso(now) }));
   }
   if (ctx.drift) ctx.alert("DRIFT", "activity_unreadable", ctx.drift + " activity row(s) could not be read (no transaction hash, time, market, or price)");
 }
 
-async function gradeNewBets(ctx: any, wallet: string, dryTrades: any[] | null, seenMarkets: Record<string, any>) {
+async function gradeNewBets(ctx: any, wallet: string, dryTrades: any[] | null, seenMarkets: Record<string, any>, late?: () => boolean) {
   const rules = ctx.rules;
   const trades = dryTrades || (await dbAll("poly_trades?select=wallet,kind,side,condition_id,token_id,outcome_index,size,price,traded_at,tx_hash&wallet=eq." + wallet + "&order=traded_at")).map(tradeFromStored);
   const conds = Array.from(new Set(trades.map((t: any) => t.condition_id)));
@@ -1172,15 +1212,24 @@ async function gradeNewBets(ctx: any, wallet: string, dryTrades: any[] | null, s
   /* the newest first, at most a grade's worth a run: the grade reads the most recent max_bets_per_wallet, so a
      wallet's new bets are always graded however many older ones are stored */
   const todo = built.bets.filter((b: any) => b.settle != null && !have.has(b.token_id)).sort((a: any, b: any) => b.entry_at - a.entry_at).slice(0, rules.max_bets_per_wallet);
-  let n = 0;
+  let n = 0, cut = false;
   for (const b of todo) {
-    const r = await ask(ctx, "prices_history", { market: b.token_id, startTs: Math.floor(b.entry_at / 1000) - 900, endTs: Math.floor(b.game_start_at / 1000) + 60, fidelity: 1 });
-    if (!r.ok) { if (r.decision === "budget_exhausted" || r.decision === "breaker_open") break; continue; }
-    const g = R.gradeBet(b, R.priceHistory(r.data), rules);
+    if (late && late()) { cut = true; break; }
+    /* only the stretches the grade reads (R.gradeWindows): the same grade, without a point a minute for days */
+    let hist: any[] = [], failed = false, stop = false;
+    for (const w of R.gradeWindows(b, rules)) {
+      const r = await ask(ctx, "prices_history", { market: b.token_id, startTs: Math.floor(w.from / 1000), endTs: Math.floor(w.to / 1000), fidelity: 1 });
+      if (!r.ok) { failed = true; stop = r.decision === "budget_exhausted" || r.decision === "breaker_open"; break; }
+      hist = hist.concat(R.priceHistory(r.data));
+    }
+    if (stop) break;
+    if (failed) continue;
+    hist.sort((x: any, y: any) => x.t - y.t);
+    const g = R.gradeBet(b, hist, rules);
     if (!ctx.dry) await insertOnce("poly_bets", [betRecord(g, ctx.run.run_id)], "wallet,token_id");
     n++;
   }
-  return n;
+  return { n, cut };
 }
 
 /* ---------------------------------------------------------------- grade */
@@ -1219,7 +1268,7 @@ export async function syncOnce(opts: any = {}) {
   const dry = !!opts.dry;
   const run: any = { run_id: crypto.randomUUID(), mode, trigger: opts.trigger || "manual", status: "ok", started_at: iso(nowMs), requests: 0, details: {} };
   const alerts: any[] = [];
-  const ctx: any = { run, dry, nowMs, out: {}, drift: 0, failedRequests: 0, gw: null, rules: null, rawRules: null,
+  const ctx: any = { run, dry, nowMs, t0: hooks.now(), out: {}, drift: 0, failedRequests: 0, gw: null, rules: null, rawRules: null,
     alert: (severity: string, code: string, message: string, detail?: any) => alerts.push({ severity, code, message, detail: detail ?? null }) };
   const out: any = { ok: true, build: BUILD, run_id: run.run_id, mode, dry };
   let grant: any = null;

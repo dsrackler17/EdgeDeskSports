@@ -508,6 +508,30 @@ pregame price for every graded game against DraftKings' close, read as
 `NARROWER_THAN_MARKET`, `WIDER_THAN_MARKET`, `CONSISTENT` or `TOO_EARLY`
 (under 30 games). It never reprices anything.
 
+**Amendment, 2026-10-29: promoted by the owner.** The owner directed the
+switch the same day, before the rule's decision point. From then on the
+published 2026-27 price uses `b` = 1.125:
+- `walkforward.js` writes it into `live.json` for every model the slate prices
+  with, keeping the goal-split fit as `goal_split_b` (0.9).
+- `lab/base.js` prices the live season the same way.
+- Completed seasons keep the goal-split rule, so the selection and
+  confirmation records do not move.
+
+This is a methodology change that does **not** meet §1 or the shadow's own
+rule. On 2021-26 it is +0.00027 log loss (−0.00013 to +0.00063) against the
+rule it replaces. The record says so (`live.verdict.status` PROMOTED, with
+`rule_status` the rule's own reading).
+
+What it does to the slate:
+- Favourites move up about 1.5 points on average.
+- VAN at SJS goes from −133 to −142, and NYI at MIN from −146 to −161.
+
+What it cannot do: close the club-strength gaps (VAN, MIN) that are most of
+those two games' distance from DraftKings. The shadow stops pricing, since it
+is now the price. The 33 rows already in its ledger stay and are graded. The
+DraftKings spread check keeps reading the published price, so it shows
+whether the switch closes the scale gap.
+
 ## 7. Reproducibility
 
 Every fit is deterministic. IRLS has no randomness; the tree learner and the

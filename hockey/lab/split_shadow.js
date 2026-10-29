@@ -161,7 +161,8 @@ function check() {
     if (h && ['selection', 'confirmation', 'live'].some((w) => !h.windows[w] || !h.windows[w].shadow_minus_production || !h.windows[w].shadow_minus_production.ci95)) fails.push('a study window is missing');
     const L = d.live;
     if (!L || !L.verdict || SH.VERDICTS.indexOf(L.verdict.status) < 0) fails.push('no live verdict');
-    else if (L.verdict.status !== 'IN_PROGRESS' && L.verdict.n !== SH.PROTOCOL.decision_n) fails.push('a decision was read on ' + L.verdict.n + ' games, not ' + SH.PROTOCOL.decision_n);
+    else if (/^(ELIGIBLE|NOT_CONFIRMED)$/.test(L.verdict.rule_status) && L.verdict.n !== SH.PROTOCOL.decision_n) fails.push('a decision was read on ' + L.verdict.n + ' games, not ' + SH.PROTOCOL.decision_n);
+    if (L && L.verdict && SH.PROTOCOL.promoted && L.verdict.status !== 'PROMOTED') fails.push('the protocol is promoted but the record does not say so');
     if (!L || !L.market_spread || SH.SPREAD_READINGS.indexOf(L.market_spread.reading) < 0) fails.push('no DraftKings spread reading');
   }
   fails.push(...SH.checkLedger());

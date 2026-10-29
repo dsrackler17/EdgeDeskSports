@@ -17,10 +17,22 @@
           const r = await H.ask(question, { scenario, body });
    =========================================================================== */
 'use strict';
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const ROOT = path.join(__dirname, '..', '..', '..');
 const FX = require(path.join(ROOT, 'tools', 'intelligence', 'fixtures.js'));
+/* THE MATCHUP METRICS ARE PINNED. football/matchup/metrics.json carries the
+   official NFL injury report per club and is rewritten by the scheduled injury
+   sync, so a recorded-responses benchmark that read it answered differently
+   whenever the report changed: on 2026-10-29 13:08 the sync added Amon-Ra
+   St. Brown, and "Is Amon-Ra St. Brown out this week?" (a player EdgeDesk held
+   nothing on) began to route to AVAILABILITY. The metrics served here are the
+   committed artifact as it stood at the 2026-10-29 05:52 UTC build, the last
+   one every suite passed on (tools/fixtures/matchup_metrics_2026-10-29.json),
+   as tools/intelligence/fixtures.js pins the NFL slate. */
+const METRICS_FIXTURE = 'tools/fixtures/matchup_metrics_2026-10-29.json';
+const PINNED_METRICS = JSON.parse(fs.readFileSync(path.join(ROOT, METRICS_FIXTURE), 'utf8'));
 
 const NOW = Date.parse('2026-10-12T16:00:00Z');
 const ISO = (min) => new Date(NOW + min * 60000).toISOString();
@@ -110,7 +122,7 @@ async function init(o) {
   const MLB_SIGNALS = [RAYS_ML, CLE_ML];
 
   function metricsWith(over) {
-    const mm = JSON.parse(JSON.stringify(fx.metrics));
+    const mm = JSON.parse(JSON.stringify(PINNED_METRICS));
     mm.generated_at = ISO(-2 * H);
     Object.keys(mm.nfl.teams).forEach((k) => { const t = mm.nfl.teams[k]; if (t.injuries) t.injuries.retrieved_at = ISO(-2 * H); if (t.starter) { t.starter.published_at = ISO(-20 * H); t.starter.retrieved_at = ISO(-2 * H); } });
     Object.keys(over || {}).forEach((k) => { const t = mm.nfl.teams[k]; const x = over[k]; if (x.players) t.injuries.players = x.players.concat(t.injuries.players); if (x.retrieved_at) t.injuries.retrieved_at = x.retrieved_at; });
@@ -156,6 +168,9 @@ async function init(o) {
     injury_feed_down: { fail: (u) => /nflverse-data\/releases\/download\/injuries\//.test(u) },
     db_down: { fail: (u) => /\/rest\/v1\/signals\?/.test(u) },
     metrics_down: { fail: (u) => /football\/matchup\/metrics\.json/.test(u) },
+    /* a real player EdgeDesk holds nothing on. The committed injury build changes with every nflverse sync, so a
+       player on no report today can be on one tomorrow (Amon-Ra St. Brown was, on 2026-10-29): he is taken off it here */
+    not_on_report: { metrics: (() => { const mm = metricsWith(); Object.keys(mm.nfl.teams).forEach((k) => { const t = mm.nfl.teams[k]; if (t.injuries && Array.isArray(t.injuries.players)) t.injuries.players = t.injuries.players.filter((p) => p.name !== 'Amon-Ra St. Brown'); }); return mm; })() },
     model_down: { modelStatus: 503 }
   };
   SCENARIOS.cfb_outlier = { signals: [], noMlb: true, prep: () => { const g = fx.slate.games.find((x) => String(x.game_id) === '401858900'); const saved = [g.model_home_line, g.model_home_margin, g.kickoff]; g.model_home_line = -9.5; g.model_home_margin = 9.5; g.kickoff = ISO(5 * 24 * H); SCENARIOS.cfb_outlier.signals = [fx.signal({ commence_time: g.kickoff, last_seen_at: ISO(-4), first_seen_at: ISO(-300), flagged_at: ISO(-20) })]; return () => { g.model_home_line = saved[0]; g.model_home_margin = saved[1]; g.kickoff = saved[2]; }; } };
@@ -190,6 +205,6 @@ async function init(o) {
     if (undo) undo();
     return { status, ct, json, events, err, ms, model_calls: S.modelCalls, model_bodies: S.modelBodies.slice(), search_calls: S.searchCalls.length, odds_calls: S.oddsCalls.length, served: S.served, posted: S.posted.map((p) => p.table) };
   }
-  return { m, ask, NOW, ISO, SCENARIOS, USER_JWT, RECORDED_DESK_REPLY };
+  return { m, ask, NOW, ISO, SCENARIOS, USER_JWT, RECORDED_DESK_REPLY, METRICS_FIXTURE };
 }
-module.exports = { init, NOW, RECORDED_DESK_REPLY };
+module.exports = { init, NOW, RECORDED_DESK_REPLY, METRICS_FIXTURE };

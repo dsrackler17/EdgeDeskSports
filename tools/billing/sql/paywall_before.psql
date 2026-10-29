@@ -1,0 +1,17 @@
+-- Deploy Fairline, paywall_rule: what has_active_sub() answers for EVERY account
+-- BEFORE supabase/paywall_rule.sql, inside the same transaction as the change
+-- (paywall_after.psql reads it). Each account is asked as itself: auth.uid()
+-- reads request.jwt.claim.sub, or request.jwt.claims ->> 'sub'.
+create temp table paywall_before (user_id uuid primary key, granted boolean not null) on commit drop;
+do $pb$
+declare r record; v boolean;
+begin
+  if to_regprocedure('public.has_active_sub()') is null then return; end if;
+  for r in select id from auth.users loop
+    perform set_config('request.jwt.claim.sub', r.id::text, true);
+    perform set_config('request.jwt.claims', json_build_object('sub', r.id, 'role', 'authenticated')::text, true);
+    execute 'select public.has_active_sub()' into v;
+    insert into paywall_before values (r.id, coalesce(v, false));
+  end loop;
+end
+$pb$;

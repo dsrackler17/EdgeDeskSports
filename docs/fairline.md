@@ -5,8 +5,9 @@ Fairline answers the two questions every bettor has:
 1. **"Am I getting a good number right now?"** — The Board.
 2. **"Where am I losing money, and is it bad bets or bad luck?"** — The Leaks.
 
-A weekly recap, The Tape, ties them together; it is not built yet and the
-page shows it as **Coming Soon**.
+**The Tape** ties them together: every Monday morning (Central time), a
+snapshot of the reader's last week, kept for good, on the page and in their
+inbox.
 
 Fairline is **not a pick service**. It never says what to bet. It measures
 prices, and the reader's own decisions, against EdgeDesk's de-vigged fair
@@ -19,6 +20,8 @@ never hidden or faked; a small sample is labelled a small sample.
 | The page | [`fairline/index.html`](../fairline/index.html), `lib/edgedesk_fairline_app.js`, `lib/edgedesk_fairline_app.css` |
 | The words and the mirrors of the rules | `lib/edgedesk_fairline_core.js` |
 | The SQL | [`supabase/fairline.sql`](../supabase/fairline.sql), mirrored byte for byte in `supabase/migrations/20261028180000_fairline.sql` |
+| The Tape's SQL and schedule | [`supabase/fairline_tape.sql`](../supabase/fairline_tape.sql) and [`supabase/fairline_tape_cron.sql`](../supabase/fairline_tape_cron.sql), mirrored in `supabase/migrations/20261029120000_fairline_tape.sql` and `20261029120100_fairline_tape_cron.sql` |
+| The Tape's email | `tools/fairline/tape_email.js` (the words), `tools/fairline/tape_send.js` (the sender, run by `.github/workflows/lifecycle-email.yml`), [`email/tape/`](../email/tape/index.html) (the opt-out) |
 | The tests | `tools/fairline/` (`.github/workflows/fairline-tests.yml`) |
 
 `lib/edgedesk_fairline.js` is the Linemaker's fair-line sheet. It shares the
@@ -32,11 +35,11 @@ word and nothing else.
 | `black` | **Fairline** | $19.99/mo, $159/yr | Bet Checker + The Board + The Leaks + The Tape |
 | `blue` | EdgeDesk Full Access | $49.99/mo | Everything, including Fairline |
 
-| Account | The Board | The Leaks |
-|---|---|---|
-| Signed out | sign-in card | sign-in card |
-| Free, or Bet Checker (`red`) | the top 3 **fresh** rows of the whole board; the rest blurred with the offer; filters locked | the **name** of the biggest real leak's slice ("Your biggest leak is in Props"), and no number |
-| Fairline (`black`) or Full Access (`blue`) | every row, filters by sport, market and book | every slice, the 3 biggest real leaks, the labels |
+| Account | The Board | The Leaks | The Tape |
+|---|---|---|---|
+| Signed out | sign-in card | sign-in card | sign-in card |
+| Free, or Bet Checker (`red`) | the top 3 **fresh** rows of the whole board; the rest blurred with the offer; filters locked | the **name** of the biggest real leak's slice ("Your biggest leak is in Props"), and no number | placeholders under a blur, with the offer; no Tape is built and none is sent |
+| Fairline (`black`) or Full Access (`blue`) | every row, filters by sport, market and book | every slice, the 3 biggest real leaks, the labels | every Tape (the last 12 weeks on the page), and the email |
 
 **The gate is one helper, `fairline_paid(uuid, timestamptz)`.** Every
 Fairline door calls it and nothing else, and it calls
@@ -63,6 +66,10 @@ beyond the top three and no figure at all for The Leaks
 | `freshness_hours` / `freshness_min` | capture's `FRESHNESS_POLICY`, in minutes | how old a price may be and still be a price, by sport group (NFL, college football, everything else) and hours to the start; held equal to `supabase/functions/capture/index.ts` by the SQL suite |
 | `free_board_rows` | 3 | what a free account sees of The Board |
 | `top_leaks` | 3 | how many real leaks lead the page |
+| `tape.time_zone` | America/Chicago | The Tape's week: Monday 00:00 to Monday 00:00 there |
+| `tape.build_hour` | 6 | The Tape is built on Monday from this local hour |
+| `tape.email_within_hours` | 48 | a Tape not emailed this long after its week ended is not emailed at all (it stays on the page) |
+| `tape.history_weeks` | 12 | how many past Tapes the page lists |
 
 The page reads these from the database. `lib/edgedesk_fairline_core.js`
 mirrors the buckets and the labels only to explain a label on the page; the
@@ -177,6 +184,54 @@ at the side's **main line** (the line most books hang), game markets only:
 Sorted fresh first, then by edge vs fair, largest first. A side with a fair
 and no captured price is shown unpriced, last.
 
+## The Tape
+
+Every Monday from 06:00 in Chicago, `fairline_tape_build()` stores one Tape
+per Fairline reader for the week that just ended, in **`fairline_tapes`**.
+
+- **The week** is Monday 00:00 to Monday 00:00, America/Chicago (a DST week is
+  167 or 169 hours, and still one week). A bet belongs to the week its game
+  started; a bet with no known start, to the week it was placed.
+- **Append-only.** A Tape is never updated, never truncated, and never
+  deleted while its reader exists (a trigger refuses, even for the service
+  role); deleting the account still removes its Tapes. A bet graded or
+  imported after Monday does not rewrite last week's Tape: the Tape is what
+  the week looked like when it was built, and says so.
+- **Once.** One Tape per reader per week (the unique key): a second run, or
+  two overlapping runs, build nothing more.
+
+What a Tape holds (`fairline_tape_compute()`, every figure through The Leaks'
+own arithmetic, `fairline_slices_at()`):
+
+| Part | What it says |
+|---|---|
+| The week | settled and open bets, the record, dollars and units P/L (with how many bets each covers), the return in the week's own measure, average CLV and the beat-close rate |
+| Price quality | over the bets **checked against EdgeDesk's fair when placed** (Bet Checker's frozen entry edge): how many, the average points better or worse than fair, how many beat it. A bet never checked is counted and said, never guessed |
+| What changed | every slice whose label changed this week, or that crossed the minimum sample into a label: the slices over the bets before the week against the slices through it. Real leaks first; the page and the email say the first six and count the rest |
+| The best number | the largest entry edge over fair; with none, the best captured close; with neither, nothing |
+| Quiet | no bet in the week and nothing changed: kept and shown, not emailed |
+
+Each Tape stores the rules it was read by, so it keeps meaning what it said.
+
+**The email** goes through the existing email pipeline (`lifecycle_email.sql`,
+`tools/lifecycle/send.js`): the same provider, sender, from and reply-to,
+postal address, per-reader token, bounce and complaint list, and copy rule.
+`tools/fairline/tape_send.js` runs in the trial emails' hourly job, after its
+own tests; it claims each Tape's email once (`fairline_tape_due()`),
+re-checks the reader at that moment, and marks it (`fairline_tape_mark()`).
+An email is **skipped, with the reason**, when the reader turned The Tape
+emails off (on the page, or from the link in every Tape email:
+`/email/tape/`, a button, never a page load), the address bounced or
+complained, the reader is no longer on Fairline, the week ended more than 48
+hours ago, or the week was quiet. Each email carries its own Idempotency-Key
+(`edgedesk-lifecycle-fairline-tape-<id>`), so a retry cannot deliver twice.
+
+**Nothing is emailed until both switches are on:** the pipeline's
+(`lifecycle_settings.sending_enabled`, `/admin/funnel/`) and The Tape's own
+(`fairline_tape_settings.email_enabled`, **off by default**). Until then the
+page shows the email as **Coming Soon** and every Tape says it was not
+emailed.
+
 ## Known limitations
 
 - **Coverage is whatever capture recorded.** Per-book quotes (`book_quotes`)
@@ -192,6 +247,10 @@ and no captured price is shown unpriced, last.
   Reel syncs today) has no CLV; its slice says so rather than guessing.
 - Dollars for Bet Checker bets come from the reader's current unit size; a
   reader who changed their unit sees past bets at the new size.
+- The Tape's price quality covers only bets checked in Bet Checker before
+  they were placed; a Portfolio bet has no frozen fair at entry.
+- A Tape is built from what was graded by Monday morning; a bet settled later
+  shows in the next Leaks, never in that week's Tape.
 
 ## Out of scope (not built, on purpose)
 
@@ -232,13 +291,29 @@ In this order:
    functions (`sync_subscription`, `stripe_webhook`,
    `create_checkout_session`). A checkout deployed before the SQL refuses to
    sell Fairline rather than sell an unrecorded price.
-2. **`supabase/fairline.sql`** into the SQL editor (or `psql
-   --single-transaction -f`), **after** `bettor_decisions.sql`,
+2. **Actions → *Deploy Fairline*** (`deploy-fairline.yml`, from `main`) runs
+   steps 2–4 with the production database's own credentials. It first checks
+   production's paywall (`check_paywall`, read-only, on by default; see
+   *Before going live* below) and stops if the paywall restates the rule. Then
+   it applies what was asked for (`apply_sql`, `apply_tape_sql`,
+   `apply_tape_cron`, `tape_email`). Any report row that says `CHECK THIS`
+   fails the run. By hand instead: **`supabase/fairline.sql`** into the SQL
+   editor (or `psql --single-transaction -f`), **after** `bettor_decisions.sql`,
    `billing_hardening.sql`, `bet_checker.sql`, `portfolio.sql` and
    `bet_import.sql`; it stops with a message naming any that is missing. Every
    report row should say `ok`. It adds functions and one view, and changes no
    table, row or policy.
-3. The page is static and ships with the site.
+3. **`supabase/fairline_tape.sql`**, after `fairline.sql`,
+   `lifecycle_email.sql` (and the `funnel.sql` / `personal_research.sql` it
+   stands on). Every report row should say `ok`; row 07 says whether each email
+   switch is on. Then **`supabase/fairline_tape_cron.sql`** (pg_cron enabled):
+   one job, `fairline_tape_build`, Mondays at :23 past 11:00 and 12:00 UTC (the
+   build decides which of the two is 06:00 in Chicago). It calls nothing
+   outside the database and needs no secret.
+4. When the Tape email should start: `update public.fairline_tape_settings
+   set email_enabled = true;` (the pipeline's own switch must be on too). The
+   next hourly run of *Trial emails* (`lifecycle-email.yml`) sends what is due.
+5. The page is static and ships with the site.
 
 ### Stripe dashboard
 
@@ -254,15 +329,20 @@ In this order:
   and the paywall RLS that calls it are **not in this repository**. They must
   defer to `billing_row_grants_access()` (or `community_is_entitled()`), not
   inline statuses, or a Fairline subscription would read the terminal's data.
-  The tests prove it against a stand-in that defers to the rule; production's
-  own definition is **not verified** until that query is run there.
+  The tests prove it against a stand-in that defers to the rule. Deploy
+  Fairline's check found that production's copy did **not** defer
+  (2026-10-29). `supabase/paywall_rule.sql` fixes it: Deploy Fairline,
+  `paywall_rule` = `dry_run`, then `apply`, then `check_paywall`. The Fairline
+  prices stay inactive in Stripe until that check passes.
 
 ## Tests
 
 | Suite | What it proves |
 |---|---|
 | `tools/fairline/fairline_sql.test.js` | a real PostgreSQL, as readers A and B, anon and the service role: install (twice) and missing dependencies, owner-only reads, the paid gate (free, red, blue, lapsed), one row per bet across both sources (linked, same market, same game, a different price kept apart, twins, parlays), every slice and bucket, the four labels, the minimum sample, P/L only, the top leaks, The Board (main line, fair, best price, `book_quotes` first, edge, age, stale sorted last, Kalshi only when OK, DK Predictions inactive, filters, the free three), and the page's mirrors equal to the SQL |
+| `tools/fairline/tape_sql.test.js` | `fairline_tape.sql` and its cron file on a real PostgreSQL, as Fairline, Bet Checker, lapsed and free readers, anon and the service role: install (twice) and dependencies; the week in Chicago across both DST changes and the Monday 06:00 rule in CDT and CST; Fairline readers only, once a week, under overlapping runs; append-only even for the service role and the superuser, removed with the account; every figure in a Tape against hand-worked numbers; owner-only, no figure without Fairline; the email's two switches, its re-checks (opted out, bounced, lapsed, too late, quiet), claim-once, dry-run release, the pipeline's own token and an opt-out that touches only The Tape; and the sender end to end over the real SQL |
+| `tools/fairline/tape_email.test.js` | offline (the hourly email job runs it before sending): The Tape's words for every case, the email (the copy rule, the footer, the opt-out link, escaping), a refused Tape never sent, the sender's no-secret, not-installed, switched-off, provider-failure and dry-run paths, its own Idempotency-Key |
 | `tools/fairline/core.test.js` | the buckets at every boundary, the labels, the slice names, the verdict sentences, The Board's words |
-| `tools/fairline/page.test.js` | the page's wiring: the nav, the scripts, the two doors, prices not picks, the known limitations, Coming Soon, no typed price, escaping |
-| `tools/fairline/page.e2e.js` | Chromium against the shipped SQL: a free reader's teaser (the offer's button never cut off) and the upgrade (terms, consent before Stripe), a Bet Checker reader's portal switch, a Fairline reader's Board and Leaks, a 390 px phone, no script error |
+| `tools/fairline/page.test.js` | the page's wiring: the nav, the scripts, the doors, prices not picks, the known limitations, Coming Soon, no typed price, escaping, The Tape as a tab of its own |
+| `tools/fairline/page.e2e.js` | Chromium against the shipped SQL: a free reader's teaser and the upgrade (terms, consent before Stripe), a Bet Checker reader's portal switch, a Fairline reader's Board, Leaks and Tape (the week, what changed, the best number, the email Coming Soon, switching weeks, the email off and on), the offer's button never cut off, a 390 px phone, no script error |
 | `tools/billing/fairline_tier.test.js` | the `black` tier through the shipped billing functions and the real SQL: bought, paid for Fairline and Bet Checker, never the terminal (the rule, `community_is_entitled`, a `has_active_sub` that defers to it, signals RLS); an unlearned price refused at checkout; a portal switch to a never-learned Fairline price named black (product readable, Products refused, Stripe unreachable); switch_plan and already_entitled; blue still everything; the rule mirrored in the core and the browser on a 175-case grid; Juice Reel over a live Fairline plan raised |

@@ -176,7 +176,7 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       await eventually(() => page.isVisible('#jrBtn'), 6000);
       chk('2 switch ON: the partner band shows "Get EdgeDesk on Juice Reel"', (await page.isVisible('#jrBtn')) && /Get EdgeDesk on Juice Reel/.test(await page.innerText('#jrBtn')));
       chk('  and says Juice Reel shows the plan and price, and bills it', /shows the plan and price before you pay, and bills and renews it/.test(await page.textContent('#jrLive')));
-      chk('  the card trial is still offered exactly as before', /7 days free/.test(await page.textContent('.pcard:not(.freecard):not(.bccard)')));
+      chk('  the card trial is still offered exactly as before', /7 days free/.test(await page.textContent('.pcard:not(.freecard):not(.bccard):not(.flcard)')));
       /* two columns: under the hero's text, on the first screen; stacked: right
          after the calculator, which keeps its place on a short phone's first
          screen (tools/home/landing.e2e.js, 375x548) */

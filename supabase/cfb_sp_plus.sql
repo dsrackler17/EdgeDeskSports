@@ -151,8 +151,10 @@ end $blk$;
 -- ================================================================ the registry
 -- External estimates (football/sp_plus/registry.json): a third party's model
 -- is registered with its source, version and terms, and the server refuses to
--- record one as an EdgeDesk model or as validated by EdgeDesk. Public
--- metadata (no rating): anon and authenticated may read it; append-only like
+-- record one as an EdgeDesk model or as validated by EdgeDesk. Metadata (no
+-- rating): authenticated may read it; anon reads nothing here, because anon
+-- reads only the two settled-record views (docs/cfb-production/SECURITY.md
+-- §2; the public copy is football/sp_plus/registry.json). Append-only like
 -- the rest.
 create table if not exists public.cfb_external_estimates (
   estimate_id            text primary key,
@@ -211,7 +213,6 @@ begin
   revoke all on table public.cfb_external_estimates from public;
   if exists (select 1 from pg_roles where rolname = 'anon') then
     revoke all on table public.cfb_external_estimates from anon;
-    grant select on table public.cfb_external_estimates to anon;
   end if;
   if exists (select 1 from pg_roles where rolname = 'authenticated') then
     revoke all on table public.cfb_external_estimates from authenticated;

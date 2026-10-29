@@ -39,7 +39,8 @@
   - The suites run first.
   - `football-situational-tests.yml` runs every suite on a pull request (registered in `tools/ci/checks.json`).
 - **Rollback.** Set the modes in `football/situational/config/integration.json` to OFF, or set `FSIE_MODE=OFF` for one run. Then disable the workflow, remove the `app.html` section, and run the rollback SQL. The steps are in the README.
-- **Next scheduled builds.** The NFL slate and the FBS slate gain the SHADOW block on their next scheduled build. The FBS freeze log should record a PATCH version row for the new field.
+- **The CFB freeze.** `football/fbs/build_coverage.js` is on the CFB champion freeze's pricing path. Its new guarded hook therefore gets the declared PATCH row `edgedesk_cfb_r1+p13`, appended by `football/cfb_validation/build.js`. No price moves. That build also regenerated the validation dashboards it owns.
+- **Next scheduled builds.** The NFL slate and the FBS slate gain the SHADOW block on their next scheduled build.
 
 Tests:
 - `football/situational/tests/core.test.js` (69)
@@ -49,6 +50,71 @@ Tests:
 - `sql.test.js` (35, real PostgreSQL)
 - `tools/football/fsie_card_ui.test.js` (22)
 - `tools/football/fsie_ui.e2e.js` (14, Chromium)
+
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
+
+## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
+
+- **Bug.** The first live wallets call (run_now, 15:06 UTC) got HTTP 504, "Request idle timeout limit (150s) reached". One run took three new wallets: up to 30 activity pages each, then every resolved bet's price history (up to 150 a wallet). That is minutes of requests, and a function must answer within 150 s. The overnight schedule runs the same calls, so it would have stalled the same way.
+- **Fix** (`supabase/functions/polymarket_sync/index.ts`, build `polymarket_sync@2026-10-29.4`). After 75 s a wallets run starts no new wallet, activity page or graded bet. A wallet it did not finish stays due, with its place kept: the activity cursor, plus `first_pages` while the first read is cut. The next run carries on. The 30-page cap counts pages across runs, so a history is still marked truncated only when it really passes 30. Trades and bets are still stored once each.
+- **Test** (`tools/radar/sync_fn.test.js`). A fake clock, where every Polymarket request costs 4 s. A wallet joining with 63 bets to grade must be graded over several runs, each within 79 s, ending with all 63. A history that never ends, cut by time, must keep its page count and be marked truncated only at 30 pages. On the old code: 55 passed, 4 failed (one run took 256 s; 30 pages read at once). On the fix: 59 passed, 0 failed.
+- **run_now** allows up to 300 wallet calls, since a call may now finish only part of a wallet. The day's request reserve still stops it first.
+
+## 2026-10-29 — Prediction Radar: Deploy Prediction Radar can run the overnight work now (run_now)
+
+- **What.** `.github/workflows/deploy-radar.yml` gains `run_now`. It calls the live `polymarket_sync` for the pool, then for wallets (3 a call) until none is due, then for the grade, instead of waiting for 06:07–10:17 UTC.
+- **One call at a time.** Each answer is awaited before the next call, as pg_cron's 5-minute spacing does overnight. Two wallet calls at once would pick the same wallets.
+- **The day's budget.** The wallet calls stop while fewer than `run_now_reserve` (default 8,000) of the day's 40,000 Polymarket requests remain, read from the gateway's own ledger. The 10-minute tonight runs keep theirs, and the 06:10 UTC schedule takes any wallets still due.
+- **Checked** against a stand-in function and a throwaway PostgreSQL before committing. A normal run went pool, wallets 3/3/2/0, then grade. With 5,000 requests left, no wallet call was made. A failing call stopped the run red. Calls never overlapped (at most one in flight).
+
+## 2026-10-29 — Prediction Radar: the tonight sync looks markets up 100 at a time (production failed "Invalid URL")
+
+- **Bug.** The first production `tonight` runs (13:50 UTC on) ended in `error`: "tonight error: Invalid URL https://…/rest/v1/poly_markets?select=…&condition_id=in.(…)". The run looked up every market it saw in one request. On a full slate that URL is longer than fetch takes (65,534 bytes), so nothing was matched, no holders were read and no card was drawn.
+- **Fix.** `supabase/functions/polymarket_sync/index.ts` makes that lookup 100 ids a request, as the run's two other lookups already did. Build `polymarket_sync@2026-10-29.3`.
+- **Test.** `tools/radar/sync_fn.test.js`'s fake network now refuses a URL over 65,534 bytes, as Deno's fetch does. A new check runs `tonight` on a full slate of 1,200 more markets. On the old code: 54 passed, 1 failed, with production's error. On the fix: 55 passed, 0 failed.
+
+
+
+## 2026-10-29 — Authorization change: EdgeDesk's operators keep the terminal under the paywall rule
+
+**Authorization change; needs the owner's explicit review.** The first `paywall_rule = dry_run` against production refused, and nothing changed. One account had the terminal through production's old `has_active_sub()` without a `subscriptions` row, and the rule alone would have locked it out. The owner chose to keep operators in.
+
+- **`supabase/paywall_rule.sql`** (and its mirror): `has_active_sub()` is the rule **or** `billing_is_admin()`, the business consoles' existing operator list (the partner-program admins, else the problem-report admins, else the founding operator). It is still never red or black for anyone else. A new report row 04 checks it.
+- **`tools/billing/sql/paywall_after.psql`**: a refusal now also names the accounts it protects, masked as the billing logs mask them (the first 8 characters). If the account is not an operator, the next dry run refuses again and says which.
+- **Tests**: `paywall_rule.test.js` 29 / 0. An operator with no row keeps the terminal and reads `signals`; everything else is as before. Mutation: the fix without the operator clause, 26 passed, 3 failed.
+
+## 2026-10-29 — Bet Checker says when sportsbook prices are paused
+
+
+
+
+
+
+## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
+
+**What was wrong, once Pages' source was switched to GitHub Actions:**
+
+- **Three workflows deployed the site on every merge.** `jekyll-gh-pages.yml` and `static.yml`, the two starter workflows from the Pages settings screen, were added on 2026-10-28 at 21:20 UTC. They shared the `pages` queue with `pages-deploy.yml`, which keeps one waiting run, so each merge cancelled two of the three. Of 50 runs, 20 were cancelled.
+  - Whichever finished last decided the site. At 12:41 UTC that was `static.yml`, which uploads the repository without the Jekyll build.
+- **The data jobs' updates stopped reaching the site between merges.** The data jobs push with `GITHUB_TOKEN`, which starts no workflow, and `pages-deploy.yml` relied on an every-10-minutes timer.
+  - GitHub's cron fires only every 4 to 7 hours in this repository. The data jobs themselves are started by Supabase `pg_cron`.
+  - The timer ran twice in 15 hours (01:56 and 07:56 UTC). Nothing deployed between 07:59 and 12:22.
+
+**What changed:**
+- **`jekyll-gh-pages.yml` and `static.yml` are removed.** `pages-deploy.yml` is the only deployer.
+- **`pages-deploy.yml` now also runs when any of the 65 workflows that push to `main` finishes** (`workflow_run`, by name), the pattern `editorial.yml` already uses.
+  - The timer becomes an hourly backstop at :41.
+  - The comments now say what the queue really does. The deploy in progress always finishes; waiting runs are replaced by the newest and show as cancelled.
+- **`tools/ci/pages_deploy.test.js`** (Core validation) now also fails:
+  - when a workflow that pushes to `main` is missing from the list, naming it;
+  - when a listed name matches no workflow;
+  - when any other workflow deploys Pages or queues in `pages`.
+  - Results: 22 passed, 0 failed. Against `main` before this change, 17 passed, 5 failed. With one data workflow left out of the list, 21 passed, 1 failed.
+- **Docs:** `docs/ci/README.md`, "Publishing the site", and the shipping table in `docs/intelligence.md`.
 
 ## 2026-10-29 — CFB: SP+ beside EdgeDesk's number on every card, as an external estimate, graded against the close
 
@@ -96,6 +162,64 @@ Tests:
 - `sql.test.js` (46, a real PostgreSQL)
 
 All run in `cfb-sp-plus-tests.yml`.
+
+## 2026-10-29 — Prediction Radar: radar_registry.sql applies on the production registry (games_tested), and Deploy Prediction Radar
+
+- **Bug.** Applying `supabase/radar_registry.sql` in production stopped with "research_model_results requires games_tested and this file has nothing to put there". The registry's tables exist only in production. That table requires `games_tested`, and the generator had no mapping for it, so nothing was registered.
+- **Fix.** `tools/radar/build_registry_sql.js` fills `games_tested`, or the first of `n_games`, `holdout_games` and `games` that exists, with the report's holdout games (37). It fills a followed-bets column (`bets_tested`, `n_bets`, `n_followed` or `sample_size`) with the report's followed bets (41). `supabase/radar_registry.sql` is regenerated from it. The report and the verdict are unchanged (FAILED).
+- **Test.** `tools/radar/radar_sql.test.js`'s stand-in registry now requires `games_tested`, as production does. On the old SQL: 131 passed, 1 failed, with the production error. On the fix: 199 passed, 0 failed.
+- **Deploy Prediction Radar** (`.github/workflows/deploy-radar.yml`, run by hand, the `deploy-bet-checker.yml` pattern) runs the runbook in order with the repository's Supabase secrets, after the Radar suites pass:
+  - `apply_sql`: radar.sql, then radar_registry.sql, then radar_record.sql;
+  - `deploy_function`: `polymarket_sync`, checked by the build it serves;
+  - `set_cron_secret`: the function's and Vault's secrets made one value, never printed, and proved by a dry probe;
+  - `data_enabled`: both halves of the switch; `on` records `enable_note` in `radar_config`;
+  - `apply_cron`: the four schedules.
+
+  A report row that says CHECK THIS fails the run.
+
+## 2026-10-28 — Billing change: the Fairline tier (`black`), and Fairline gated on it
+
+**Authorization change; needs the owner's explicit review.** A third Stripe product, Fairline (`tier = black`, $19.99/month or $159/year, lookup keys `fairline_monthly` / `fairline_annual`). It includes Bet Checker and never opens the Research Terminal. The ladder is red ⊂ black ⊂ blue. Detail: [docs/billing-hardening.md §15](docs/billing-hardening.md), [docs/fairline.md](docs/fairline.md).
+
+- **`supabase/billing_hardening.sql`**:
+  - Both tier CHECK constraints know `black`. Each is dropped and re-added in one statement, and only when it does not.
+  - `billing_learn_price_tier()` accepts `black`.
+  - `has_bet_checker_paid()` is red, black or blue.
+  - New `has_fairline_paid(uuid, timestamptz)`: black or blue in good standing. Service role only.
+  - `billing_access_for()` adds `fairline_paid` and reason `fairline_only`, and offers a black row `upgrade` (a portal switch).
+  - Report row 15 checks every learned red and black price against the rule.
+  - The access rule itself is unchanged.
+- **`supabase/fairline.sql`**: `fairline_paid()` now calls `has_fairline_paid()`. Bet Checker alone is no longer Fairline.
+- **`create_checkout_session`**: `{kind: 'fairline'}`. It sells only a price whose product says `black` at the consented figure, and records the tier before the session exists. It **refuses to sell** (503, nothing created) when the database could not record it: an error, or `refused:tier` from a database without this SQL. Bet Checker's checkout now refuses that answer too. A Bet Checker customer buying Fairline, or a Fairline customer buying the terminal's trial, gets `switch_plan`.
+- **The billing core** (`tools/billing/billing_core.js`, inlined into the three functions):
+  - The tier list knows `black`.
+  - A price Stripe cannot name is named by the price itself: its metadata, else the EdgeDesk lookup key (`bet_checker_*` red, `fairline_*` black). It is then learned.
+  - The webhook does this for the event's own price before its Stripe-down fallback write.
+  - Without this, a portal switch to a never-learned Fairline price during a Stripe outage opened the terminal (`has_access: true`, mutation-tested).
+- **`supabase/juicereel_billing.sql`**: when a Juice Reel buyer's row holds a live red or black Stripe plan, the terminal still replaces it. `juicereel_and_stripe_both_paid` is now raised, so a human cancels the Stripe plan. Before, it was orphaned silently.
+- **`sync_subscription`**: its access answer carries `fairline_paid`.
+- **Pages**:
+  - `lib/edgedesk_pricing.js` gains a `FAIRLINE` block (the one place the price is written), `fairlineOffer()` and `fairlineTerms()`.
+  - `lib/edgedesk_access.js` gains `fairline()`, and black in `betChecker()` and `offerFor()`.
+  - The Fairline page sells Fairline with the automatic-renewal consent, in Bet Checker's order. It gains Settings › Subscription. A Bet Checker reader is offered the portal switch.
+  - The terminal's paywall and the Bet Checker page name a Fairline plan as Fairline.
+  - `index.html`, `app.html` and `bet-checker/index.html` load the changed `edgedesk_pricing.js`, `edgedesk_access.js` (and, on Bet Checker, `edgedesk_bet_checker.js`, at `?v=20261029fl4` since it merged with main's own Bet Checker changes) under a new stamp (`?v=20261029fl2`), so a returning browser cannot keep the old copies. On Bet Checker an old `edgedesk_access.js` would show a Fairline customer as free. The landing page's stamp check failed until this was done; a new check in `tools/fairline/page.test.js` fails on any of these pages loading a stamp from before the `black` tier.
+- **Tests**: `tools/billing/fairline_tier.test.js` (72, new; in `personal-tests.yml`, `fairline-tests.yml` and `deploy-billing.yml`). The Fairline suites now run with black as paid and red as free (SQL 116, page 37, browser 42). `billing_hardening_sql.test.js` expects 15 report rows instead of 14.
+- **Not verified here:** production's `has_active_sub()` and paywall RLS are not in this repository. Run `docs/billing-hardening.md` §11 query 10 before selling Fairline.
+
+## 2026-10-29 — Bet Checker grades the NBA and the NHL (once their odds are on)
+
+**What changed.**
+- **`supabase/bet_checker.sql`** (mirrored in `migrations/20261028120000_bet_checker.sql`):
+  - `bet_checker_rules().sports` adds `basketball_nba` → NBA and `icehockey_nhl` → NHL. The grade thresholds, the fair-price freshness, the free allowance and the CLV formula are unchanged.
+  - `user_bets.sport`'s check (`bettor_decisions.sql`: CFB, NFL) is replaced by one that takes all four leagues, in the same transaction. Every existing row passes it.
+  - Report row 12 says the check takes every league in the rules.
+- **The page**: NBA and NHL pills. An NHL moneyline says it includes overtime and the shootout, because the board carries no 60-minute line.
+- **`docs/bet-checker.md`**: "The leagues", including where results come from. For these two leagues that is only `settle`'s word on the signal.
+
+**When it shows.** Only when capture prices the leagues. Both are off in the odds gateway until the owner turns them on after the November reset, every two hours ([METHODOLOGY-2026-10-29-nba-nhl-lines.md](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md)). Until then the page offers no NBA or NHL game.
+
+**Tests.** `bet_checker_sql.test.js` 137 / 0: the widened check, MLB still refused, NBA and NHL games offered and filtered, an NBA spread and an NHL moneyline graded on the same rules, the puck line, the free allowance, and an NHL close and result. On the previous SQL, 5 fail and the suite stops. `page.e2e.js` 61 / 0: the NHL pill, and the overtime note.
 
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 

@@ -35,6 +35,28 @@ function ok(name, cond, detail) { if (cond) { pass++; return; } fail++; console.
   ok('every item names its route', Q.every((x) => typeof x.route === 'string' && x.route.length > 0), Q.filter((x) => !x.route).map((x) => x.id));
   ok('item ids are unique', new Set(Q.map((x) => x.id)).size === Q.length);
 
+  /* REGRESSION (2026-10-29): the benchmark's answers must not move with the LIVE NFL injury
+     report. football/matchup/metrics.json is rewritten by the scheduled injury sync; when the
+     13:08 sync added Amon-Ra St. Brown, "Is Amon-Ra St. Brown out this week?" (a player EdgeDesk
+     held nothing on) began to route to AVAILABILITY and this suite failed on main. A fictional
+     player is put on the live report here, in memory only, as Out; his question must still route
+     the way a player EdgeDesk holds nothing on routes. Before the harness pinned its metrics
+     (tools/research/benchmark/harness.js METRICS_FIXTURE) this check routed to AVAILABILITY. */
+  {
+    const FX = require(path.join(ROOT, 'tools', 'intelligence', 'fixtures.js'));
+    const HARNESS = require(path.join(ROOT, 'tools', 'research', 'benchmark', 'harness.js'));
+    const live = FX.build(HARNESS.NOW).metrics;
+    const det = live.nfl.teams.DET.injuries;
+    const ghost = { name: 'Thaddeus Pinnedtest', position: 'WR', status: 'Out', injury: 'Hamstring', practice: 'Did Not Participate In Practice' };
+    det.players.unshift(ghost);
+    try {
+      const H0 = await HARNESS.init({ tag: 'live-report-moved' });
+      const r = await H0.ask('Is Thaddeus Pinnedtest out this week?', { scenario: 'base' });
+      ok('the benchmark reads a pinned injury report: a player added to the LIVE report does not change its answers', B.routeOf(r) === 'MODEL_DESK', B.routeOf(r));
+      ok('the pinned report is the committed fixture ' + HARNESS.METRICS_FIXTURE, HARNESS.METRICS_FIXTURE === 'tools/fixtures/matchup_metrics_2026-10-29.json');
+    } finally { det.players.splice(det.players.indexOf(ghost), 1); }
+  }
+
   const res = await B.run({});
   const s = res.summary;
   ok('recorded responses only', res.recorded_responses === true);

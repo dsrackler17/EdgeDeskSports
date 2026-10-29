@@ -250,6 +250,9 @@ begin
       if pcol is not null then rv := rv || jsonb_build_object(pcol, pg_temp.edr_val(rs, pcol, null, RES -> 'passed', null)); end if;
       if mcol is not null then rv := rv || jsonb_build_object(mcol, pg_temp.edr_val(rs, mcol, null, RES -> 'metrics', null)); end if;
       c := pg_temp.edr_has(rs, array['notes', 'summary', 'verdict', 'reason']); if c is not null then rv := rv || jsonb_build_object(c, pg_temp.edr_val(rs, c, RES ->> 'notes', null, null)); end if;
+      -- the sample the verdict stands on, from the report: production requires games_tested
+      c := pg_temp.edr_has(rs, array['games_tested', 'n_games', 'holdout_games', 'games']); if c is not null then rv := rv || jsonb_build_object(c, pg_temp.edr_val(rs, c, null, RES -> 'metrics' -> 'games', null)); end if;
+      c := pg_temp.edr_has(rs, array['bets_tested', 'n_bets', 'n_followed', 'sample_size']); if c is not null then rv := rv || jsonb_build_object(c, pg_temp.edr_val(rs, c, null, RES -> 'metrics' -> 'followed', null)); end if;
       perform pg_temp.edr_insert(rs, rv, coalesce(rfk, rmcol));
       raise notice 'research registry: the H-RADAR-01 result was written (passed = %)', RES ->> 'passed';
     end if;

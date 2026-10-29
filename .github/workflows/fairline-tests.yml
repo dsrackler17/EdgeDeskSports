@@ -1,9 +1,12 @@
-# EdgeDesk Fairline — the checks that gate every change to The Board and The
-# Leaks (docs/fairline.md).
+# EdgeDesk Fairline — the checks that gate every change to The Board, The
+# Leaks and The Tape (docs/fairline.md).
 #
 #   suites    the page's rules and words (lib/edgedesk_fairline_core.js: the
 #             buckets, the labels, the verdicts) and the page's wiring (the
-#             doors, the limits, Coming Soon, no typed price) — offline, in Node.
+#             doors, the limits, Coming Soon, no typed price) — offline, in Node;
+#             The Tape's words, email and sender (tools/fairline/tape_email.js,
+#             tape_send.js), offline: the copy rule, the footer, the opt-out
+#             link, one Resend call per Tape, nothing while switched off.
 #   database  supabase/fairline.sql applied TWICE over everything it builds on
 #             (bettor_decisions, billing_hardening, bet_checker, portfolio,
 #             bet_import) on a throwaway PostgreSQL, acted on as two readers,
@@ -13,10 +16,17 @@
 #             the page's mirrors of the rules held equal to the SQL. Then the
 #             Fairline tier (black) through the shipped billing functions: paid
 #             for Fairline, never the terminal (tools/billing/fairline_tier.test.js,
-#             also run by personal-tests.yml with the other billing suites).
+#             also run by personal-tests.yml with the other billing suites),
+#             and the terminal's paywall on the one rule
+#             (tools/billing/paywall_rule.test.js, supabase/paywall_rule.sql).
+#             Then supabase/fairline_tape.sql (and its cron file) over
+#             fairline.sql and the email pipeline (lifecycle_email.sql): the
+#             week in Chicago across DST, only Fairline readers, append-only,
+#             what a Tape holds against hand-worked figures, the email's
+#             switches, re-checks and opt-outs, and the sender end to end.
 #   browser   fairline/index.html in Chromium (1280 px and a 390 px phone)
 #             against the same stack: a free reader's teaser, a paid reader's
-#             Board and Leaks, nothing scrolling sideways.
+#             Board, Leaks and Tape, nothing scrolling sideways.
 #
 # Not lib/edgedesk_fairline.js (the Linemaker's fair-line sheet, which only
 # shares the word): its own workflows name it exactly. Nothing here deploys or
@@ -41,6 +51,15 @@ on:
       - 'sitemap-pages.xml'
       - 'supabase/fairline*.sql'
       - 'supabase/migrations/*_fairline.sql'
+      - 'supabase/migrations/*_fairline_tape*.sql'
+      - 'supabase/lifecycle_email.sql'
+      - 'supabase/funnel.sql'
+      - 'supabase/personal_research.sql'
+      - 'supabase/affiliates.sql'
+      - 'supabase/growth.sql'
+      - 'tools/lifecycle/**'
+      - 'email/tape/**'
+      - '.github/workflows/lifecycle-email.yml'
       - 'supabase/bankroll_and_stakes.sql'
       - 'supabase/bettor_decisions.sql'
       - 'supabase/billing.sql'
@@ -61,6 +80,12 @@ on:
       - 'tools/billing/_harness.js'
       - 'tools/billing/_fake_stripe.js'
       - 'tools/billing/fairline_tier.test.js'
+      - 'supabase/paywall_rule.sql'
+      - 'supabase/community_posts.sql'
+      - 'supabase/site_articles.sql'
+      - 'tools/billing/paywall_rule.test.js'
+      - 'tools/billing/sql/paywall_*.psql'
+      - '.github/workflows/deploy-fairline.yml'
       - 'tools/fairline/**'
       - 'tools/personal/_pg.js'
       - 'tools/billing/_pgrest.js'
@@ -73,6 +98,7 @@ on:
       - 'lib/edgedesk_fairline_*'
       - 'supabase/fairline*.sql'
       - 'supabase/migrations/*_fairline.sql'
+      - 'supabase/migrations/*_fairline_tape*.sql'
       - 'tools/fairline/**'
   workflow_dispatch:
 
@@ -99,6 +125,8 @@ jobs:
         run: node tools/fairline/core.test.js
       - name: The page's wiring — one Main nav, the two doors, prices not picks, known limitations, Coming Soon, no typed price
         run: node tools/fairline/page.test.js
+      - name: The Tape's words, email and sender — the copy rule, the footer, the opt-out link, one Resend call per Tape, nothing while switched off
+        run: node tools/fairline/tape_email.test.js
 
   database:
     runs-on: ubuntu-latest
@@ -118,6 +146,14 @@ jobs:
         env:
           FAIRLINE_TIER_REQUIRED: '1'
         run: node tools/billing/fairline_tier.test.js
+      - name: The terminal's paywall defers to the one rule (supabase/paywall_rule.sql) — black and red never read signals, blue and comps still do, refused when the rule cannot see an account's access
+        env:
+          PAYWALL_RULE_REQUIRED: '1'
+        run: node tools/billing/paywall_rule.test.js
+      - name: fairline_tape.sql and its cron — the Chicago week across DST, Fairline readers only, append-only, what a Tape holds, the email's switches and opt-outs, the sender
+        env:
+          FAIRLINE_SQL_REQUIRED: '1'
+        run: node tools/fairline/tape_sql.test.js
 
   browser:
     runs-on: ubuntu-latest
@@ -133,7 +169,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
-      - name: The page in Chromium against the real stack — the free teaser, the paid Board and Leaks, a 390 px phone
+      - name: The page in Chromium against the real stack — the free teaser, the paid Board, Leaks and Tape, a 390 px phone
         env:
           FAIRLINE_UI_REQUIRED: '1'
         run: node tools/fairline/page.e2e.js
