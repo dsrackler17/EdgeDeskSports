@@ -15,6 +15,8 @@
         card is on the list, "1 of 10 grades used this month"
      3  a college football bet grades red; a line EdgeDesk never priced is
         saved "Not graded", saying it is never estimated
+     3b the NHL pill lists only NHL games, and an NHL moneyline says it
+        includes overtime and the shootout
      4  the paid stats are blurred, with no real number on the page, and an
         upgrade button
      5  the eleventh graded bet of the month is SAVED, ungraded, with the
@@ -102,6 +104,8 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
   sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Buffalo Bills', null, 0.38, true);
   sig('cfb1', 'americanfootball_ncaaf', 'Ohio State Buckeyes', 'Michigan Wolverines', 'spreads', 'Ohio State Buckeyes', -7, 0.5, true);
   sig('cfb1', 'americanfootball_ncaaf', 'Ohio State Buckeyes', 'Michigan Wolverines', 'spreads', 'Michigan Wolverines', 7, 0.5, true);
+  sig('nhl1', 'icehockey_nhl', 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Toronto Maple Leafs', null, 0.53, true);
+  sig('nhl1', 'icehockey_nhl', 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Montreal Canadiens', null, 0.47, true);
 
   const tokens = {};
   const user = (n, email) => {
@@ -236,6 +240,17 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
       await eventually(async () => /Not graded/.test(await text(page, '[data-bc="result"]'))) && /never estimate/.test(await text(page, '[data-bc="result"]')));
     chk('three cards now, newest first', await page.locator('.bc-card').count() === 3 && /Not graded/.test(await text(page, '.bc-card')));
     await shot(page, '1-free-after-three-bets');
+
+    /* 3b. the NHL (2026-10-29): its own pill, and its moneyline says it includes overtime */
+    await page.click('[data-bc-sport="NHL"]');
+    const nhlGames = await page.locator('select[name="game"] option[value]:not([value=""])').allTextContents();
+    chk('the NHL pill lists only NHL games', nhlGames.length === 1 && /Montreal Canadiens at Toronto Maple Leafs/.test(nhlGames[0]), nhlGames);
+    await page.selectOption('select[name="game"]', 'nhl1');
+    await eventually(async () => (await page.locator('select[name="market"] option').count()) === 2);
+    await page.selectOption('select[name="market"]', 'moneyline');
+    await page.selectOption('select[name="side"]', 'away');
+    chk('an NHL moneyline says it includes overtime and the shootout',
+      /An NHL moneyline includes overtime and the shootout/.test(await text(page, '[data-bc="lines"]')), await text(page, '[data-bc="lines"]'));
 
     /* 4. the paid stats, blurred */
     chk('the stats are locked for a free reader, with an upgrade button', await page.locator('.bc-locked .bc-blur').count() === 1 &&

@@ -116,7 +116,8 @@ as $$
     'no_close_after_hours',  24,
     'board_days_ahead',      14,
     'books',                 jsonb_build_array('Kalshi', 'DK Predictions', 'DraftKings', 'Other'),
-    'sports',                jsonb_build_object('americanfootball_nfl', 'NFL', 'americanfootball_ncaaf', 'CFB'));
+    'sports',                jsonb_build_object('americanfootball_nfl', 'NFL', 'americanfootball_ncaaf', 'CFB',
+                                                'basketball_nba', 'NBA', 'icehockey_nhl', 'NHL'));
 $$;
 
 -- the arithmetic, once
@@ -235,6 +236,26 @@ begin
 end
 $c$;
 
+-- The leagues Bet Checker grades. bettor_decisions.sql created user_bets.sport
+-- for the decision card's football ('CFB', 'NFL'); Bet Checker also grades the
+-- NBA and the NHL (2026-10-29). A check cannot be altered, so a narrower one is
+-- replaced, in this transaction, by one that takes every league in
+-- bet_checker_rules().sports. Every existing row passes the wider check.
+do $sp$
+declare v_con text;
+begin
+  for v_con in select conname from pg_constraint
+                where conrelid = 'public.user_bets'::regclass and contype = 'c'
+                  and pg_get_constraintdef(oid) ~ '\msport\M' and pg_get_constraintdef(oid) !~ '''NHL'''
+  loop
+    execute format('alter table public.user_bets drop constraint %I', v_con);
+  end loop;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.user_bets'::regclass and conname = 'user_bets_sport_check') then
+    alter table public.user_bets add constraint user_bets_sport_check check (sport in ('CFB', 'NFL', 'NBA', 'NHL'));
+  end if;
+end
+$sp$;
+
 create index if not exists user_bets_event_market_idx on public.user_bets (event_id, market_type) where event_id is not null;
 create index if not exists user_bets_bc_pending_idx on public.user_bets (kickoff)
   where event_id is not null and (close_status = 'pending' or result is null or flag_checked_at is null);
@@ -246,8 +267,8 @@ create index if not exists user_bets_bc_pending_idx on public.user_bets (kickoff
 -- so no column added here is writable by a reader at all. INSERT: a reader's
 -- own insert keeps its placement facts and loses every grading column — the
 -- same pattern as user_bets_on_insert() for close_line and result. Either way,
--- a Bet Checker row (event_id set) must name a real board event for NFL or
--- college football that has not started; its kickoff and teams are the board's.
+-- a Bet Checker row (event_id set) must name a real board event in a league
+-- Bet Checker grades that has not started; its kickoff and teams are the board's.
 -- WHO IS ASKING. The role the request runs as (PostgREST sets it: anon,
 -- authenticated, service_role), not current_user, which inside a SECURITY
 -- DEFINER function is the function's owner and would trust everybody. 'none'
@@ -367,7 +388,8 @@ $$;
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. THE BOARD THE FORM PICKS FROM (identity and lines; prices only for a paid reader)
 -- ─────────────────────────────────────────────────────────────────────────────
--- Games that have not started, NFL and college football, the next two weeks.
+-- Games that have not started, in the leagues Bet Checker grades (NFL, college
+-- football, NBA, NHL: bet_checker_rules().sports), the next two weeks.
 create or replace function public.bet_checker_games(p_sport text default null)
 returns table (event_id text, sport text, commence_time timestamptz, home_team text, away_team text)
 language plpgsql
@@ -505,7 +527,7 @@ $$;
 -- ─────────────────────────────────────────────────────────────────────────────
 -- The steps, in order; every refusal is an answer ({ok:false, reason}), never
 -- a half-written row:
---   1 the event is on the board, NFL or college football, and not started
+--   1 the event is on the board, in a league Bet Checker grades, and not started
 --   2 the free allowance: a reader without a paid plan who has used this
 --     month's free grades still has the bet SAVED, ungraded, with an upgrade
 --     prompt (and EdgeDesk's fair is not looked up, so it cannot leak)
@@ -597,7 +619,7 @@ begin
    order by s.last_seen_at desc nulls last limit 1;
   if not found then return jsonb_build_object('ok', false, 'reason', 'no_such_game', 'message', 'That game is not on EdgeDesk''s board.'); end if;
   v_sport := r -> 'sports' ->> ev.sport_key;
-  if v_sport is null then return jsonb_build_object('ok', false, 'reason', 'not_graded_sport', 'message', 'Bet Checker grades NFL and college football.'); end if;
+  if v_sport is null then return jsonb_build_object('ok', false, 'reason', 'not_graded_sport', 'message', 'Bet Checker grades the NFL, college football, the NBA and the NHL.'); end if;
   if ev.commence_time is null or ev.commence_time <= now() then
     return jsonb_build_object('ok', false, 'reason', 'game_started', 'message', 'That game has started. Bet Checker grades bets logged before kickoff.');
   end if;
@@ -1037,8 +1059,15 @@ select piece, state from (
               then 'ok (green >= ' || (public.bet_checker_rules() ->> 'green_min_edge_pct') || ', red <= '
                    || (public.bet_checker_rules() ->> 'red_max_edge_pct') || ')'
               else 'CHECK THIS' end
-  union all select '10 upcoming NFL / college football games on the board',
+  union all select '10 upcoming games on the board (NFL, college football, NBA, NHL)',
          'ok (' || (select count(*) from public.bet_checker_games(null))::text || ')'
   union all select '11 Bet Checker bets on file',
          'ok (' || (select count(*) from public.user_bets where event_id is not null)::text || ')'
+  union all select '12 user_bets takes a bet in every league Bet Checker grades',
+         case when (select count(*) from pg_constraint where conrelid = 'public.user_bets'::regclass and contype = 'c'
+                      and pg_get_constraintdef(oid) ~ '\msport\M') = 1
+               and (select bool_and(pg_get_constraintdef(c.oid) like '%''' || l.v || '''%')
+                      from pg_constraint c, jsonb_each_text(public.bet_checker_rules() -> 'sports') l(k, v)
+                     where c.conrelid = 'public.user_bets'::regclass and c.conname = 'user_bets_sport_check')
+              then 'ok' else 'CHECK THIS' end
 ) r order by 1;
