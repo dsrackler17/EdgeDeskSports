@@ -92,6 +92,27 @@ spec's names (`market`, `stake_units`, `closing_price`, `closing_line`, `result`
 | "current" fair | seen by capture within 390 minutes (capture refreshes every game at least every six hours) |
 | no close | none captured 24 hours after kickoff |
 
+## Picking the bet: one tap
+
+After the reader picks a game, `bet_checker_lines()` (every signed-in reader)
+gives the board's lines, and the page shows them as buttons
+(`tapLines()` in `lib/edgedesk_bet_checker_core.js`): both moneylines, and
+for spread and total the line most books hang, or the priced line where none
+is modal. One tap fills the market, the side and the line.
+
+For a **paid** reader (`has_bet_checker_paid`: Bet Checker or the terminal),
+the tap also fills the odds and the book from `bet_checker_line_prices()`:
+capture's best price at exactly that line (`signals.best_dec`, as American
+odds), the book hanging it, and when capture last saw it. Only lines seen
+within `fair_max_age_min` are offered. A book the form's list does not carry
+is set to Other. A note says where the price came from and how old it is, and
+asks the reader to change it to the price they got: **the grade is on the odds
+the reader submits**, never on the board's.
+
+A **free** reader gets no rows from `bet_checker_line_prices()`, taps the
+line and types the odds. The best price across the board's books is line
+shopping, which the paid tiers sell (owner's decision, 2026-10-29).
+
 ## Logging a bet (`log_user_bet` → `bet_checker_log_bet()`)
 
 One transaction, so the free count cannot race:
@@ -151,6 +172,7 @@ void). No final, no result.
 | delete | own rows | — | |
 | `bet_checker_log_bet`, `bet_checker_grade_pending` | — | — | ✓ |
 | `my_bet_checker_bets`, `my_bet_checker_stats`, `bet_checker_usage(self)`, `bet_checker_games`, `bet_checker_lines` | ✓ | — | ✓ |
+| `bet_checker_line_prices` | rows only for a paid reader | — | ✓ |
 
 Stats are computed in the database and only for a paid reader
 (`my_bet_checker_stats()` answers `{paid:false}` otherwise, with no number);
