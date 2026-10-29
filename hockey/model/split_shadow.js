@@ -36,6 +36,15 @@
    and hash-checked like the production ledger. Each row freezes the shadow's
    price AND production's at the same moment, so the pair is graded on equal
    terms. The production ledger is not touched.
+
+   PROMOTED BY THE OWNER, 2026-10-29 (PROTOCOL.promoted), before the rule's
+   decision point and against the 2021-26 record. From then on the published
+   2026-27 price uses b = 1.125: walkforward.js writes it into the live
+   parameters (and lab/base.js prices the live season the same way), with the
+   goal-split value kept beside it as goal_split_b. The shadow stops pricing,
+   since it is now the price; the 33 rows already in its ledger stay as they
+   are and are still graded. The DraftKings spread check keeps running on the
+   published price.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -61,8 +70,12 @@ const PROTOCOL = {
     'DraftKings\' closing prices (research/clv/openers/nhl) are reported beside the result. They never decide it.',
     'ELIGIBLE changes nothing by itself: promotion is a methodology-change pull request carrying this record, reviewed by the owner.',
   ],
+  promoted: {
+    on: '2026-10-29', by: 'the owner', from_b: 0.9,
+    basis: 'the owner directed the switch after the investigation, before the rule\'s decision point: the published moneyline was 1.2 times narrower than DraftKings\' closes (35 of 47 favourites less favoured). On 2021-26 the candidate is +0.00027 log loss (−0.00013 to +0.00063) against the goal-split rule; on 2026-27 to date −0.00265 (198 games). The decision rule was not met and is not claimed.',
+  },
 };
-const VERDICTS = ['IN_PROGRESS', 'ELIGIBLE', 'NOT_CONFIRMED'];
+const VERDICTS = ['IN_PROGRESS', 'ELIGIBLE', 'NOT_CONFIRMED', 'PROMOTED'];
 const SPREAD_READINGS = ['TOO_EARLY', 'NARROWER_THAN_MARKET', 'WIDER_THAN_MARKET', 'CONSISTENT'];
 const LEDGER_SCHEMA = 'edgedesk_nhl_split_shadow_ledger_v1';
 const OPENERS = path.join(C.ROOT, 'research', 'clv', 'openers', 'nhl');
@@ -73,7 +86,20 @@ const r4 = (v) => (v == null || !isFinite(v) ? null : Math.round(v * 1e4) / 1e4)
 const logit = (p) => Math.log(p / (1 - p));
 
 function grid() { const [lo, hi, st] = PROTOCOL.grid; const g = []; for (let b = lo; b <= hi + 1e-9; b += st) g.push(+b.toFixed(3)); return g; }
-function active(season) { return season === PROTOCOL.season; }
+/** the shadow prices beside production only while it is not production */
+function active(season) { return season === PROTOCOL.season && !PROTOCOL.promoted; }
+/** the split factor the published price uses this season, when promoted (null otherwise) */
+function promotedSplit(season) { return PROTOCOL.promoted && season === PROTOCOL.season ? PROTOCOL.b : null; }
+/**
+ * Production's pair recalibration for a season, with the promoted split
+ * factor when there is one. a and c are kept; the goal-split fit is kept as
+ * goal_split_b. An identity calibration (no earlier record) is left alone.
+ */
+function promote(cal, season) {
+  const b = promotedSplit(season);
+  if (b == null || !cal || !cal.c) return cal;
+  return Object.assign({}, cal, { b, goal_split_b: cal.goal_split_b != null ? cal.goal_split_b : cal.b, split_basis: PROTOCOL.id + ' promoted ' + PROTOCOL.promoted.on + ': b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)' });
+}
 /** the shadow's pair recalibration: production's, with the frozen split factor */
 function shadowCal(cal) { return Object.assign({}, cal || {}, { b: PROTOCOL.b }); }
 /** λ under the shadow (glm.js applyPairCalibration with the frozen b) */
@@ -225,8 +251,9 @@ function verdict(rows) {
   const sorted = rows.slice().sort((a, b) => Date.parse(a.start_utc) - Date.parse(b.start_utc));
   const reached = sorted.length >= PROTOCOL.decision_n;
   const set = reached ? sorted.slice(0, PROTOCOL.decision_n) : sorted;
-  const out = { status: reached ? null : 'IN_PROGRESS', n: set.length, needed: PROTOCOL.decision_n, decision_set: reached ? 'the first ' + PROTOCOL.decision_n + ' graded games by start time' : 'interim: every graded game so far (not a decision)' };
-  if (!set.length) { out.status = 'IN_PROGRESS'; return out; }
+  const out = { status: null, rule_status: null, n: set.length, needed: PROTOCOL.decision_n, decision_set: reached ? 'the first ' + PROTOCOL.decision_n + ' graded games by start time' : 'interim: every graded game so far (not a decision)' };
+  const done = (st) => { out.rule_status = st; out.status = PROTOCOL.promoted ? 'PROMOTED' : st; if (PROTOCOL.promoted) { out.promoted = PROTOCOL.promoted; out.decision_set = 'interim: the rows frozen before the promotion (not a decision; the rule was not met)'; } return out; };
+  if (!set.length) return done('IN_PROGRESS');
   const ml = (k) => V.binary(set.map((x) => ({ p: x[k].p, y: x.y })));
   const mP = ml('prod'), mS = ml('shadow');
   out.moneyline = {
@@ -242,8 +269,7 @@ function verdict(rows) {
     calibration: mS.calibration_slope != null && mS.calibration_slope >= 0.85 && mS.calibration_slope <= 1.15 && Math.abs(mS.calibration_in_the_large) <= 0.02,
     puck_line_not_worse: pl.length > 0 && plLL('shadow') <= plLL('prod') + 0.001,
   };
-  if (reached) out.status = Object.values(out.checks).every(Boolean) ? 'ELIGIBLE' : 'NOT_CONFIRMED';
-  return out;
+  return done(reached ? (Object.values(out.checks).every(Boolean) ? 'ELIGIBLE' : 'NOT_CONFIRMED') : 'IN_PROGRESS');
 }
 
 /**
@@ -291,4 +317,4 @@ function grade(o) {
   };
 }
 
-module.exports = { PROTOCOL, VERDICTS, SPREAD_READINGS, LEDGER_SCHEMA, ESPN_NHL, grid, active, shadowCal, shadowLambda, fitMoneylineSplit, noVigHome, readCloses, matchClose, spreadStats, ledgerFile, ledgerAppend, checkLedger, lastPregame, verdict, grade, readJsonl };
+module.exports = { PROTOCOL, VERDICTS, SPREAD_READINGS, LEDGER_SCHEMA, ESPN_NHL, grid, active, promotedSplit, promote, shadowCal, shadowLambda, fitMoneylineSplit, noVigHome, readCloses, matchClose, spreadStats, ledgerFile, ledgerAppend, checkLedger, lastPregame, verdict, grade, readJsonl };

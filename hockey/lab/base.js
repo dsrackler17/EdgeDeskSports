@@ -24,6 +24,7 @@ const path = require('path');
 const C = require('../config');
 const W = require('../model/walkforward');
 const GLM = require('../model/glm');
+const SH = require('../model/split_shadow');
 const { DEFAULTS } = require('../model/ratings');
 const { loadLineups } = require('../ingest/lineups');
 const { loadPeriods } = require('../ingest/periods');
@@ -83,7 +84,8 @@ function glmPredictions(base, cands, o) {
       /* the production rule reads the three seasons before S; `calWindow: 'expanding'` reads every earlier scored season (a lab candidate) */
       const from = o.calWindow === 'expanding' ? FIRST_SCORED : Math.max(FIRST_SCORED, S - 3);
       const rowsCal = games.filter((g) => g.season >= from && g.season < S && raw.has(g.game_id)).map((g) => ({ lh: raw.get(g.game_id)[c].lh, la: raw.get(g.game_id)[c].la, gh: g.reg_home, ga: g.reg_away }));
-      cal[S][c] = GLM.fitPairCalibration(rowsCal);
+      /* the season in progress is priced with production's promoted split factor (hockey/model/split_shadow.js), as walkforward.js does */
+      cal[S][c] = SH.promote(GLM.fitPairCalibration(rowsCal), S);
     }
   }
   const out = new Map();

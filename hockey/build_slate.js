@@ -45,12 +45,12 @@
    versions the game card when a starter is reported, confirmed or changed.
    Nothing in the production price reads it.
 
-   THE SPLIT-FACTOR SHADOW (hockey/model/split_shadow.js). Each game also
-   carries calibration_shadow: the same model with the pair recalibration's
-   split factor fitted on the moneyline instead of on goals (b = 1.125 for
-   2026-27; production 0.9). It is a pre-registered challenger, never the
-   price, and is frozen before puck drop in its own append-only ledger
-   (hockey/ledger/split_shadow_<season>.jsonl) beside production's price.
+   THE SPLIT FACTOR (hockey/model/split_shadow.js). Since 2026-10-29 the
+   published 2026-27 price uses the pair recalibration's split factor fitted
+   on the moneyline (b = 1.125, from live.json; the goal-split 0.9 is kept
+   there as goal_split_b), by the owner's decision. Before that it ran as a
+   shadow (calibration_shadow, frozen in hockey/ledger/split_shadow_<season>.jsonl);
+   a shadow that is not production still prices there, and this one no longer does.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
