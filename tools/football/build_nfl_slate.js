@@ -47,6 +47,19 @@ const SCHEMA = 'edgedesk_nfl_slate_v1';
 let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
 let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
 let COACHING = null; try { COACHING = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff.js')); } catch (_) { COACHING = null; }
+/* FOOTBALL SITUATIONAL INTELLIGENCE (football/situational) in SHADOW: situational
+   play volume and possessions beside the model, the attributable total
+   candidate (the engine's own pace_sum term swapped for the situational
+   expected plays) and applied_points 0. Appended under `situational` only when
+   the adapter returns a block — OFF or no artifact means no key at all. */
+let FSIE = null; try { FSIE = require(path.join(ROOT, 'football', 'situational', 'adapter.js')); } catch (_) { FSIE = null; }
+function fsieShadow(gameId, p) {
+  if (!FSIE) return {};
+  const priced = !!(p && p.status === 'PREDICTED');
+  const c = priced && p.contributions ? (p.contributions.total || []).find((x) => x.key === 'pace_sum') : null;
+  const b = FSIE.shadowBlock('nfl', 'nfl_slate', gameId, { fair_total: priced ? p.model.fair_total : null, pace: c ? { input: c.value, points: c.points } : null });
+  return b ? { situational: b } : {};
+}
 const SYNC = require(path.join(ROOT, 'football', 'nfl', 'starter_sync.js'));
 const COACHING_SEED_FILE = path.join(ROOT, 'football', 'nfl', 'coaching_staff_seed.json');
 const COACHING_VALIDATION_FILE = path.join(ROOT, 'football', 'validation', 'nfl_coaching_staff.json');
@@ -433,6 +446,7 @@ async function build(opts) {
       } : null,
       market_status: 'NOT JOINED IN THIS BUILD',
       market_note: 'Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.',
+      ...fsieShadow(String(g.game_id), p),
     };
   });
 
