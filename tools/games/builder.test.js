@@ -291,7 +291,14 @@ if (good.json) {
        Same rule: the step checks every key for PRESENCE first, and an empty
        one prints a ::warning:: and a run-summary line naming what was not
        imported. Read-only on Google's side; the log prints counts only. */
-    'GSC_SERVICE_ACCOUNT_JSON', 'GSC_SITE'];
+    'GSC_SERVICE_ACCOUNT_JSON', 'GSC_SITE',
+    /* The weekly SP+ capture (cfb-sp-plus.yml, football/sp_plus/sync.js).
+       Same rule, held more strictly: an empty key makes the sync FAILED with
+       the reason "no CFBD_API_KEY" (football/sp_plus/cfbd.js), written to the
+       run summary and to football/sp_plus/lines.json (last_attempt), and the
+       workflow's last step then fails the run. Nothing is captured or
+       published without it. */
+    'CFBD_API_KEY'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));

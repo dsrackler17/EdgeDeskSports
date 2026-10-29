@@ -166,8 +166,8 @@ try {
   chk('refused: any other kind', /cfb_ext_kind/.test(mustFail(ext({ kind: "'EDGEDESK_MODEL'" })) || ''));
   chk('refused: a rating tier other than T3', /cfb_ext_rating_tier/.test(mustFail(ext({ rating_tier: "'T1'" })) || ''));
   chk('refused: flipping the seeded row to validated, even for the owner', /append-only/.test(mustFail(`update public.cfb_external_estimates set validated_by_edgedesk = true`) || ''));
-  chk('anon reads the registry (public metadata)', psql(`select count(*) from public.cfb_external_estimates`, { role: 'anon' }) === '1');
-  chk('authenticated reads it too', psql(`select count(*) from public.cfb_external_estimates`, { role: 'authenticated' }) === '1');
+  chk('anon cannot read the registry (anon reads only the settled-record views; the public copy is registry.json)', /permission denied/.test(mustFail(`select count(*) from public.cfb_external_estimates`, { role: 'anon' }) || ''));
+  chk('authenticated reads it', psql(`select count(*) from public.cfb_external_estimates`, { role: 'authenticated' }) === '1');
   chk('anon cannot write it', /permission denied/.test(mustFail(ext({ anon: 'x' }), { role: 'anon' }) || ''));
 } catch (e) {
   chk('the live layer ran without an unexpected error', false, String(e.stderr || e.message).slice(0, 600));

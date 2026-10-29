@@ -156,6 +156,9 @@ async function init(o) {
     injury_feed_down: { fail: (u) => /nflverse-data\/releases\/download\/injuries\//.test(u) },
     db_down: { fail: (u) => /\/rest\/v1\/signals\?/.test(u) },
     metrics_down: { fail: (u) => /football\/matchup\/metrics\.json/.test(u) },
+    /* a real player EdgeDesk holds nothing on. The committed injury build changes with every nflverse sync, so a
+       player on no report today can be on one tomorrow (Amon-Ra St. Brown was, on 2026-10-29): he is taken off it here */
+    not_on_report: { metrics: (() => { const mm = metricsWith(); Object.keys(mm.nfl.teams).forEach((k) => { const t = mm.nfl.teams[k]; if (t.injuries && Array.isArray(t.injuries.players)) t.injuries.players = t.injuries.players.filter((p) => p.name !== 'Amon-Ra St. Brown'); }); return mm; })() },
     model_down: { modelStatus: 503 }
   };
   SCENARIOS.cfb_outlier = { signals: [], noMlb: true, prep: () => { const g = fx.slate.games.find((x) => String(x.game_id) === '401858900'); const saved = [g.model_home_line, g.model_home_margin, g.kickoff]; g.model_home_line = -9.5; g.model_home_margin = 9.5; g.kickoff = ISO(5 * 24 * H); SCENARIOS.cfb_outlier.signals = [fx.signal({ commence_time: g.kickoff, last_seen_at: ISO(-4), first_seen_at: ISO(-300), flagged_at: ISO(-20) })]; return () => { g.model_home_line = saved[0]; g.model_home_margin = saved[1]; g.kickoff = saved[2]; }; } };
