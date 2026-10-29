@@ -478,6 +478,9 @@ finish stays due with its place kept (the 30-page cap counts across runs).
 A run also holds at most 10 activity pages, and grades a bet from only the
 two stretches of its price history the grade reads (`R.gradeWindows`: the
 follows' and the close's), so a bet placed days early is two short reads.
+Each wallet is marked before its work and the mark cleared after, so a wallet
+whose run dies (out of compute) is set aside for 15 minutes, and after three
+such runs read once a day: it never blocks the pool behind it.
 By hand instead, in order. Each SQL file ends in a report whose rows should
 read `ok`.
 

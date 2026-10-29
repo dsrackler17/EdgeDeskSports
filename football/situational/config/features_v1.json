@@ -1,0 +1,10 @@
+{
+  "schema": "edgedesk_fsie_features_v1",
+  "version": "features_v1",
+  "frozen_at": "2026-10-29",
+  "doc": "Point-in-time tendency construction. half_life_games: exponential recency decay per game played. prior_games: last season's per-game average enters as this many pseudo-games, multiplied by new_coach_prior_factor when the head coach changed (NFL: the schedule's coach at game time; CFB: the cfbfastR head-coach table). league_prior_weight: weight of last season's league totals in the league reference, against the current season's own totals. Shrinkage constants k are measured on the training seasons only (research/params_<sport>.json) and are not edited by hand.",
+  "sports": {
+    "nfl": { "half_life_games": 6, "prior_games": 3, "new_coach_prior_factor": 0.5, "league_prior_weight": 0.25, "include_postseason": false },
+    "cfb": { "half_life_games": 5, "prior_games": 3, "new_coach_prior_factor": 0.5, "league_prior_weight": 0.25, "include_postseason": false }
+  }
+}

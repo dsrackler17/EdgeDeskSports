@@ -1,0 +1,56 @@
+{
+  "schema": "edgedesk_fsie_quality_v1",
+  "version": "quality_v1",
+  "frozen_at": "2026-10-29",
+  "doc": "Data-quality thresholds for the Football Situational Intelligence Engine. A change is a new version, never an edit. Expected play counts are NOT one number for every team: a game's scrimmage-play count is compared with the range the sport's own history supports, and a team's count with that team's own trailing distribution where one exists. The hard play-count bounds are sanity bounds for a broken feed (2026 week 4: NYJ ran a real 32-play game); a real but unusual game is caught by the team-relative z-score warning, not rejected. Missing-target bounds sit above real throwaway rates (2026 NFL team-game max 18.5%). A failed play invalidates the play; a failed game invalidates the game; a missing field invalidates only the features that read it.",
+  "play": {
+    "down": { "min": 1, "max": 4 },
+    "distance": { "min": 1, "max": 99 },
+    "yards_to_goal": { "min": 1, "max": 99 },
+    "period": { "min": 1, "max": 9 },
+    "seconds_left_in_period": { "min": 0, "max": 900 },
+    "distance_le_yards_to_goal_unless_goal_to_go": true
+  },
+  "game": {
+    "nfl": {
+      "scrimmage_plays_per_team": { "min": 20, "max": 100 },
+      "scrimmage_plays_per_game": { "min": 70, "max": 175 },
+      "max_unclassified_share": 0.02,
+      "max_invalid_play_share": 0.02,
+      "max_missing_passer_share": 0.02,
+      "max_missing_rusher_share": 0.02,
+      "max_missing_target_share": 0.30,
+      "score_must_match_final": true,
+      "max_score_inconsistent_share": 0.10,
+      "box_check_tolerance": { "pass_attempts": 2, "rush_attempts": 3 }
+    },
+    "cfb": {
+      "scrimmage_plays_per_team": { "min": 20, "max": 125 },
+      "scrimmage_plays_per_game": { "min": 70, "max": 215 },
+      "max_unclassified_share": 0.03,
+      "max_invalid_play_share": 0.03,
+      "max_missing_passer_share": 0.05,
+      "max_missing_rusher_share": 0.05,
+      "max_missing_target_share": 0.35,
+      "score_must_match_final": true,
+      "max_score_inconsistent_share": 0.10,
+      "box_check_tolerance": { "pass_attempts": 3, "rush_attempts": 4 }
+    }
+  },
+  "team_low_volume_z": -3.5,
+  "freshness": {
+    "nfl": { "stale_after_hours_in_season": 96 },
+    "cfb": { "stale_after_hours_in_season": 96 }
+  },
+  "coverage_tiers": {
+    "A": "verified play-by-play situational data AND observed formation/personnel detail on at least formation_min_share of the team's accepted plays",
+    "B": "verified play-by-play situational data (accepted games >= min_games_b) without that formation/personnel detail",
+    "C": "aggregate team-level statistics only (no accepted play-by-play game this season, but a schedule result or box line exists)",
+    "D": "insufficient trustworthy data"
+  },
+  "tier_thresholds": { "formation_min_share": 0.5, "min_games_b": 1 },
+  "schema_fingerprint_required_columns": {
+    "nfl_pbp": ["game_id", "play_id", "posteam", "defteam", "home_team", "away_team", "week", "season_type", "qtr", "down", "ydstogo", "yardline_100", "quarter_seconds_remaining", "half_seconds_remaining", "game_seconds_remaining", "posteam_score", "defteam_score", "play_type", "pass_attempt", "rush_attempt", "sack", "qb_scramble", "qb_kneel", "qb_spike", "two_point_attempt", "passer_player_id", "rusher_player_id", "receiver_player_id", "complete_pass", "shotgun", "no_huddle", "drive", "fixed_drive", "goal_to_go", "play_deleted", "home_score", "away_score", "wp", "game_date"],
+    "cfb_pbp": ["game_id", "season", "week", "seasonType", "id", "sequenceNumber", "pos_team_id", "def_pos_team_id", "period", "start.TimeSecsRem", "start.down", "start.distance", "start.yardsToEndzone", "start.pos_team_score", "start.def_pos_team_score", "drive.id", "type.text", "rush", "pass", "sack", "kneel_down", "scrimmage_play", "pass_attempt", "completion", "target", "rusher_player_id", "passer_player_id", "receiver_player_id", "homeTeamId", "awayTeamId", "homeFinalScore", "awayFinalScore", "status_type_completed", "wallclock", "text", "goal_to_go"]
+  }
+}
