@@ -60,6 +60,6 @@ nflverse (pbp, FTN, participation, schedules, injuries, rosters)      sportsdata
 ## Boundaries FSIE does not cross
 
 - No edit to `football/engine.js`, `nfl_model.js`, `params.js`, `nfl_params_v2.js`, `cfb_p4/engine.js`, `cfb_p4/params.js`, `rankings/`, ETSR or any EPA formula.
-- No edit to frozen research (`research/foresight/**`, `football/market_structure/preregistration.json`) or to any committed ledger.
+- No edit to frozen research (the market-forecasting research outputs, `football/market_structure/preregistration.json`) or to any committed ledger.
 - No Odds API call and no change to the gateway, its budget or its bypass guard.
 - No new npm, CDN or binary dependency.
