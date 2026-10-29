@@ -79,7 +79,7 @@ begin
   select string_agg(c, ', ') into missing
     from unnest(array['sig_key', 'event_id', 'sport_key', 'commence_time', 'home_team', 'away_team', 'market', 'selection',
                       'point', 'sharp_fair', 'last_seen_at', 'point_is_modal', 'flagged_at', 'closed_at',
-                      'closing_sharp_fair', 'clv_excluded_reason', 'result']) c
+                      'closing_sharp_fair', 'clv_excluded_reason', 'result', 'best_dec', 'best_book']) c
    where not exists (select 1 from information_schema.columns
                       where table_schema = 'public' and table_name = 'signals' and column_name = c);
   if missing is not null then
@@ -131,6 +131,14 @@ returns numeric language sql immutable as $$
   select case when p_american is null or abs(p_american) < 100 then null
               when p_american > 0 then 1 + p_american / 100
               else 1 + 100 / -p_american end;
+$$;
+-- decimal odds as American, rounded to a whole number (display only: the
+-- board's best price, offered to a paid reader as a starting point)
+create or replace function public.bet_checker_decimal_to_american(p_dec numeric)
+returns integer language sql immutable as $$
+  select case when p_dec is null or p_dec <= 1 then null
+              when p_dec >= 2 then round(100 * (p_dec - 1))::integer
+              else -round(100 / (p_dec - 1))::integer end;
 $$;
 -- a probability as American odds, rounded to a whole number (display only:
 -- every computation keeps the probability itself)
@@ -357,7 +365,7 @@ end;
 $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 5. THE BOARD THE FORM PICKS FROM (identity and lines, never a price)
+-- 5. THE BOARD THE FORM PICKS FROM (identity and lines; prices only for a paid reader)
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Games that have not started, NFL and college football, the next two weeks.
 create or replace function public.bet_checker_games(p_sport text default null)
@@ -429,6 +437,63 @@ begin
          and s.market in ('h2h', 'spreads', 'totals')
     )
     select mt, sd, max(tm), pt, bool_or(md), bool_or(coalesce(pr, false))
+      from ln where mt is not null and sd is not null
+     group by mt, sd, pt
+     order by case mt when 'spread' then 1 when 'total' then 2 else 3 end, sd, pt;
+end;
+$$;
+
+-- The board's best price at each line of one game, for a PAID reader only.
+-- bet_checker_lines() stays identity and lines, for every reader; this is the
+-- price beside them. The page fills it in when a paid reader taps a line, as a
+-- starting point the reader corrects to the price they got: the grade is always
+-- on the odds the reader submits, never on these.
+--   `best_odds`: capture's best_dec at exactly this line, as American odds;
+--   `best_book`: the book hanging it (any of the board's books, offshore and
+--   Pinnacle included); `best_seen_at`: when capture last saw it.
+-- Paid only (has_bet_checker_paid: Bet Checker or the terminal): the best price
+-- across the board's books is line shopping, which the terminal sells, so a
+-- free reader gets no rows and types the odds (owner's decision, 2026-10-29).
+-- Fresh only (fair_max_age_min, the window `priced` uses): an older price may
+-- no longer be hung, so it is not offered.
+create or replace function public.bet_checker_line_prices(p_event_id text)
+returns table (market_type text, side text, line numeric, best_odds integer, best_book text, best_seen_at timestamptz)
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare r jsonb := public.bet_checker_rules();
+begin
+  if auth.uid() is null and not public.bet_checker_trusted() then
+    raise exception 'bet_checker: sign in first' using errcode = '42501';
+  end if;
+  if not public.bet_checker_trusted() and not public.has_bet_checker_paid(auth.uid(), now()) then
+    return;
+  end if;
+  return query
+    with ev as (
+      select s.event_id, s.home_team, s.away_team, s.commence_time from public.signals s
+       where s.event_id = p_event_id and s.market in ('h2h', 'spreads', 'totals')
+       order by s.last_seen_at desc nulls last limit 1
+    ), ln as (
+      select case s.market when 'spreads' then 'spread' when 'totals' then 'total' when 'h2h' then 'moneyline' end as mt,
+             case when s.market = 'totals' and lower(s.selection) = 'over' then 'over'
+                  when s.market = 'totals' and lower(s.selection) = 'under' then 'under'
+                  when s.market <> 'totals' and s.selection = ev.home_team then 'home'
+                  when s.market <> 'totals' and s.selection = ev.away_team then 'away' end as sd,
+             case when s.market = 'h2h' then null else s.point end as pt,
+             s.best_dec as bd, s.best_book as bb, s.last_seen_at as seen
+        from public.signals s cross join ev
+       where s.event_id = ev.event_id and ev.commence_time > now()
+         and s.market in ('h2h', 'spreads', 'totals')
+         and s.best_dec > 1
+         and s.last_seen_at >= now() - make_interval(mins => (r ->> 'fair_max_age_min')::int)
+    )
+    select mt, sd, pt,
+           public.bet_checker_decimal_to_american((array_agg(bd order by seen desc nulls last))[1]),
+           (array_agg(bb order by seen desc nulls last))[1],
+           max(seen)
       from ln where mt is not null and sd is not null
      group by mt, sd, pt
      order by case mt when 'spread' then 1 when 'total' then 2 else 3 end, sd, pt;
@@ -907,17 +972,18 @@ revoke all on function public.bet_checker_grade_pending(integer, text) from publ
 revoke all on function public.bet_checker_usage(uuid) from public, anon;
 revoke all on function public.bet_checker_games(text) from public, anon;
 revoke all on function public.bet_checker_lines(text) from public, anon;
+revoke all on function public.bet_checker_line_prices(text) from public, anon;
 revoke all on function public.my_bet_checker_bets(integer, timestamptz) from public, anon;
 revoke all on function public.my_bet_checker_stats() from public, anon;
 grant execute on function public.bet_checker_usage(uuid), public.bet_checker_games(text), public.bet_checker_lines(text),
-  public.my_bet_checker_bets(integer, timestamptz), public.my_bet_checker_stats() to authenticated;
+  public.bet_checker_line_prices(text), public.my_bet_checker_bets(integer, timestamptz), public.my_bet_checker_stats() to authenticated;
 grant execute on function public.bet_checker_rules() to anon, authenticated;
 do $g$
 begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.bet_checker_log_bet(uuid, text, text, text, numeric, integer, text, numeric, text), '
          || 'public.bet_checker_grade_pending(integer, text), public.bet_checker_usage(uuid), public.bet_checker_games(text), '
-         || 'public.bet_checker_lines(text), public.bet_checker_rules() to service_role';
+         || 'public.bet_checker_lines(text), public.bet_checker_line_prices(text), public.bet_checker_rules() to service_role';
     execute 'grant select on public.bet_checker_grades, public.bet_checker_bets to service_role';
     execute 'grant select, insert on public.bet_checker_grade_runs to service_role';
   end if;
