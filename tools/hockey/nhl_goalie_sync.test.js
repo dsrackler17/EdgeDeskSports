@@ -226,6 +226,9 @@ globalThis.fetch = async (u, init) => {
   chk('edge: on v5 an edge is judged at the lock price (BOTH_CONFIRMED), never the slate\'s', eLock.length === 1 && eLock.every((x) => x.p_win === (x.side === 'home' ? c[4].headline.p_home : c[4].headline.p_away) && x.gate_basis === 'BOTH_CONFIRMED'), [eLock, c[4].headline.p_home]);
   r = await run('2026-10-26T01:55:10Z');
   chk('T-5: the same lineups again write no new version', r.run.due_kinds.indexOf('lineup_lock') >= 0 && r.run.cards_written === 0 && cards().length === 5, r.run);
+  /* the lineups are not stored anywhere but the card: a read that fails after lock must not unlock it on the eve of puck drop */
+  r = await run('2026-10-26T01:58:10Z', { force: true, simulate_outage: ['nhl_api'] });
+  chk('after lock, the NHL API down: the lock holds from the card\'s own lineups (no new version, still lineup_lock)', r.run.cards_written === 0 && cards().length === 5 && cards()[4].headline.basis === 'lineup_lock', [r.run.cards_written, cards().slice(-1)[0].headline.basis, cards().slice(-1)[0].reasons]);
   r = await run('2026-10-26T02:05:00Z', { force: true });
   chk('after puck drop no card is written for the game', cards().length === 5 && r.run.cards_written === 0);
   chk('every run row is recorded with its due kinds and the next slot', runs().filter((x) => x.status !== 'skipped').every((x) => Array.isArray(x.due_kinds) && 'next_due_at' in x) && runs().length >= 8);

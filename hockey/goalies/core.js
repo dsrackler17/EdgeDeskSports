@@ -390,9 +390,19 @@ function nhlgLockPrice(gi, inputs, merged, lineups, DIST, o) {
     exp_total: mk.exp_total, fair_total_line: mk.fair_total_line, p_overtime: nhlgR(D.p_ot), p_shootout: nhlgR(D.p_so),
     puck_line: { home_minus_1_5: pl['-1.5'] ? pl['-1.5'][0] : null, away_minus_1_5: nhlgR(awayMinus), fair_home_minus_1_5: pl['-1.5'] ? DIST.probToAmerican(pl['-1.5'][0]) : null, fair_away_minus_1_5: awayMinus != null ? DIST.probToAmerican(awayMinus) : null },
     markets: { puck_line: pl, total: mk.total }, settles: before.settles || null, goalie_free: false, lambda: { home: nhlgR(lam.lh), away: nhlgR(lam.la) },
-    lineup: { skaters: { home: lineups.home.length, away: lineups.away.length }, delta: { home: nhlgR(dH), away: nhlgR(dA) }, goalies: { home: merged.home.goalie_id || null, away: merged.away.goalie_id || null }, rated: { home: rh.rated, away: ra.rated } },
+    lineup: { ids: { home: lineups.home.map(String), away: lineups.away.map(String) }, skaters: { home: lineups.home.length, away: lineups.away.length }, delta: { home: nhlgR(dH), away: nhlgR(dA) }, goalies: { home: merged.home.goalie_id || null, away: merged.away.goalie_id || null }, rated: { home: rh.rated, away: ra.rated } },
     before: { model_id: before.model_id || null, p_home: before.p_home != null ? before.p_home : null, fair_home: before.fair_home != null ? before.fair_home : null, fair_away: before.fair_away != null ? before.fair_away : null },
   };
+}
+
+/**
+ * The dressed lineups a card was locked with. The card is the only place they
+ * are kept, so a run whose boxscore read failed, or listed no lineup, prices
+ * from these and the lock holds; a new listing replaces them.
+ */
+function nhlgLockedLineups(card) {
+  const L = card && card.headline && card.headline.basis === 'lineup_lock' ? card.headline.lineup : null;
+  return L && L.ids && Array.isArray(L.ids.home) && Array.isArray(L.ids.away) ? { home: L.ids.home.slice(), away: L.ids.away.slice() } : null;
 }
 
 /* ---------------------------------------------------------------- realistic pairings */
@@ -654,7 +664,7 @@ const EDNHLGoalieCore = {
   NHLG_CORE_VERSION, NHLG_STATUSES, NHLG_BADGE, NHLG_SOURCES, NHLG_DEFAULTS, NHLG_TEAMS, nhlgR, nhlgIso,
   nhlgStatus, nhlgStatusRank, nhlgMinStatus, nhlgSourceLabel, nhlgKey, nhlgTeam, nhlgNameParts, nhlgMatchGoalie,
   nhlgDailyFaceoffUrl, nhlgBoxscoreUrl, nhlgParseDailyFaceoff, nhlgParseNhlBoxscore,
-  nhlgIdentity, nhlgMergeSide, nhlgDisplay, nhlgRate, nhlgCalibrate, nhlgLambdas, nhlgMarkets, nhlgPrice, nhlgLineupDelta, nhlgLockPrice, nhlgCandidates, nhlgPairings,
+  nhlgIdentity, nhlgMergeSide, nhlgDisplay, nhlgRate, nhlgCalibrate, nhlgLambdas, nhlgMarkets, nhlgPrice, nhlgLineupDelta, nhlgLockPrice, nhlgLockedLineups, nhlgCandidates, nhlgPairings,
   nhlgBothConfirmed, nhlgLimitations, nhlgChangeNote, nhlgBuildCard, nhlgCardChange, nhlgStable, nhlgHash,
   nhlgDec, nhlgEv, nhlgSideProb, nhlgEdgeGate, nhlgEtParts, nhlgEtDate, nhlgEtToUtc, nhlgDueTimes, nhlgIsDue,
 };

@@ -247,6 +247,8 @@ try {
   chk('lock: the headline carries every line the card prices, from one distribution', cL.headline.markets.puck_line['-1.5'][0] === cL.headline.puck_line.home_minus_1_5 && Object.keys(cL.headline.markets.total).length === 5 && near(cL.headline.p_home + cL.headline.p_away, 1, 1e-4) && cL.headline.fair_home === DIST.probToAmerican(cL.headline.p_home));
   const chL = G.nhlgCardChange(cU, cL);
   chk('lock: a new version, reason lineup_locked, under the table\'s inputs_changed trigger', chL.changed && chL.reasons.indexOf('lineup_locked') >= 0 && chL.trigger === 'inputs_changed', chL);
+  chk('lock: the card keeps the lineups it locked with, and a run with no lineup read re-locks from them unchanged', G.nhlgLockedLineups && JSON.stringify(G.nhlgLockedLineups(cL)) === JSON.stringify(miss)
+    && !G.nhlgCardChange(cL, G.nhlgBuildCard(gi, IN, mC, DIST, { now: '2026-10-26T01:58:00Z', lineups: G.nhlgLockedLineups(cL) })).changed && G.nhlgLockedLineups(cU) === null, G.nhlgLockedLineups && G.nhlgLockedLineups(cL));
   chk('lock: the same lock five minutes later is not a new version', !G.nhlgCardChange(cL, G.nhlgBuildCard(gi, IN, mC, DIST, { now: '2026-10-26T01:55:00Z', lineups: miss })).changed);
   const mS = { home: Object.assign({}, mC.home, { status: 'likely' }), away: mC.away };
   const chS = G.nhlgCardChange(G.nhlgBuildCard(gi, IN, mS, DIST, { now: '2026-10-26T01:31:00Z' }), cL);
