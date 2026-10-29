@@ -112,8 +112,10 @@ function render(o, nowMs) {
         '| Open conflicts | ' + cell(R.conflicts_open) + ' |', '| Next slot | ' + cell(R.next_due_at) + ' |',
         '| Alerts | ' + ((r.alerts || []).map((a) => cell(a.severity + ' ' + a.code + ': ' + a.message)).join('<br>') || 'none') + ' |', '');
       if (C.length) {
-        L.push('| Game | v | Trigger | Starters (home / away) | Status | Gate | Home win % | Change |', '|---|---|---|---|---|---|---|---|');
-        for (const c of C) L.push('| ' + [c.matchup, c.version, c.trigger, (c.pairing || []).join(' / '), (c.status || []).join(' / '), c.gate, pct(c.p_home_pairing), c.change].map(cell).join(' | ') + ' |');
+        /* the pairing's goalie-only number, and the card's headline: the slate's price, or the lineup-lock price once locked */
+        L.push('| Game | v | Trigger | Starters (home / away) | Status | Gate | Home win % (pairing) | Change | Headline home win % |', '|---|---|---|---|---|---|---|---|---|');
+        for (const c of C) L.push('| ' + [c.matchup, c.version, c.trigger, (c.pairing || []).join(' / '), (c.status || []).join(' / '), c.gate, pct(c.p_home_pairing), c.change,
+          c.p_home_headline == null ? null : pct(c.p_home_headline) + (c.lineup_locked ? ' (lineup lock)' : '')].map(cell).join(' | ') + ' |');
         L.push('');
       }
     }

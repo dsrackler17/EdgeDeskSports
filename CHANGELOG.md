@@ -11,6 +11,38 @@ Tests: `tools/content/evidence.test.js` gains S 3e (each quarterback sentence in
 - Against `main`: `FAIL | football evidence pipeline | 210 passed, 2 failed`, with the conflict sentence and the "listed as out" sentence repeated.
 - After: evidence 212/212, core 336/336, edge function 70/70, weekly job 30/30.
 
+## 2026-10-29 — Football situational browser suite: the FBS schedule is fetched when no local cache exists, so CI stops failing every `app.html` pull request
+
+**Why.** `tools/football/fsie_ui.e2e.js` (Football situational tests, job `suites`) failed "the FBS board lists a game the artifact covers" on every pull request that touches `app.html`, and on `main` (`189bf8a75`): `9 passed, 1 failed`.
+- The suite served the FBS schedule (`cfb_schedules_<year>.csv`) only from a local cache (`football/situational/.cache/raw/` or `football/fbs/.cache/`). Neither is committed, and the workflow never builds one. So on a runner the board's schedule request got a 404, the FBS board listed no games, and the four FBS card checks never ran.
+- The NFL schedule already fell back to its published file. The FBS schedule now does the same, from the URL the page itself requests (`FBP4_URL_SCHED`), once per year per run. A local cache still wins when one exists.
+
+Tests: the suite itself.
+- On `main`: `FAIL | situational intelligence (browser) | 9 passed, 1 failed`.
+- After: `PASS | situational intelligence (browser) | 14 passed, 0 failed` (the four FBS card checks now run).
+
+## 2026-10-29 — Landing page: "Came from Juice Reel?" in the login and sign-up window
+
+**Why.** A reader who bought EdgeDesk on Juice Reel and then tapped **Log in** on edgedesksports.com saw only an email and a password. Nothing told them their Juice Reel purchase could be linked, or that they needed an EdgeDesk account first. Linking existed, but only on the terminal's paywall and behind the landing band's **Bought on Juice Reel? Open EdgeDesk**.
+
+- **The line** (`lib/edgedesk_juicereel_billing.js`, `landing`): above the form, **Came from Juice Reel? Link your Juice Reel account**. It is shown only while the Juice Reel switch is ON, and not to a reader already headed for Juice Reel's checkout.
+- **Pressed**, the window keeps its own form and says Juice Reel opens after they log in or sign up, with **Undo**. It stands in for the lede, whose sign-up wording promises the card trial.
+- **After sign-in** (a login, a sign-up, or an email confirmation), the reader goes to Juice Reel's authorize page through `juicereel_billing` (start `link`), then back through `oauth/juicereel-subscribe.html` to the terminal, as the paywall's link button does. The card trial's renewal terms never open, and no consent is recorded.
+  - How: a `link` intent is stored beside the existing checkout intent, with the page's pending flag, so the existing `openArl` → `resume()` path carries it. **Undo** restores the pending flag as it was, so a reader who pressed **Start free trial** first still goes on to the trial.
+  - If the switch has gone off before they sign in, they go to the terminal, where the paywall decides; never to the card trial's terms.
+- **`index.html` is unchanged** apart from the library's `?v=` stamp: the page is 7 characters under its 216 KB budget. The line is drawn and styled inline by the library. `app.html` takes the same stamp; `tools/presentation/landing_asset_stamps.json` records it.
+- Docs: `docs/juicereel-billing.md` § 4 and § 10.
+
+Tests: `tools/billing/juicereel_checkout.e2e.js` gains the login window: switch OFF, then ON at 390 px and 1280 px (line → Undo → line → log in → kind `link` → terminal open), sign-up after **Start free trial**, Undo keeping the trial, the switch going off before sign-in, and a stale intent dropped.
+- Against the old library: the run stops at the first new check (`#jrAuth` does not exist), exit 1.
+- After: `89 passed, 0 failed` (was 50).
+
+## 2026-10-29 — NHL goalie sync: a build stamp for the lineup lock, and the job summary shows the headline
+
+- **Why.** #902 (the lineup lock) left two gaps. The function's build stayed at `nhl_goalie_sync@2026-10-25.1`, so after its deploy a `GET` could not tell the new code from the old. And the job summary's "Home win %" is the goalie pairing's number, so a lock never showed in NHL goalie sync or in the deploy's first run.
+- **What.** `supabase/functions/nhl_goalie_sync/index.ts` answers `nhl_goalie_sync@2026-10-29.1`. Nothing else in the function changes. `tools/hockey/nhl_goalie_run_summary.js` adds a "Headline home win %" column, marked "(lineup lock)" once the card is locked, and labels the old column "(pairing)".
+- **Tests.** `tools/hockey/nhl_goalie_sync.test.js`: the summary row carries the headline, and at lock it shows the lock price marked "(lineup lock)". On the old summary code: 76 passed, 2 failed. On the fix: 78/0. `docs/engine/NHL_GOALIES.md` §11 records the first deploy: Deploy NHL goalie layer run 4 deployed it, and its first run read the site's previous inputs, which the site had not yet replaced.
+
 ## 2026-10-29 — Changelog: eleven entries that merges dropped are back
 
 Conflict resolutions in "Update branch" merges dropped whole entries again. Each one is restored verbatim from the last commit that held it. Every line on `main` is kept, except the second copy of one Prediction Radar entry, which a merge had duplicated.
@@ -26,6 +58,7 @@ Conflict resolutions in "Update branch" merges dropped whole entries again. Each
 - Fairline, part 3: The Tape (merge `a91cb0238c0`).
 - Authorization change: the terminal's paywall, `has_active_sub()`, defers to the one access rule (merge `502dc44665f`, #890). The later entry on EdgeDesk's operators was a separate change and stays.
 - Bet Checker says when sportsbook prices are paused: its heading survived, but merge `2ac8fc949b4` dropped its body.
+- Prediction Radar: a grade reads only the price stretches it uses. #908 removed one copy of the duplicate and `23630b7fa9a` removed the other, so merge `dcf3ee7b028` left none. It is restored once, from `316a47722ff`, which added it.
 
 ## 2026-10-29 — Prediction Radar: run_now grades every 25 wallet calls and stops the wallet calls after 5 hours, so a long run never loses its grade
 
@@ -166,6 +199,12 @@ The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads wi
 - **run_now** (`.github/workflows/deploy-radar.yml`) carries on after a failed wallet call, since the function now sets that wallet aside. It stops after three failures in a row, always runs the grade, reports how many wallets are set aside, and ends red if any call failed.
 - **Tests.** `tools/radar/sync_fn.test.js`: a wallet whose run died 2 minutes ago is set aside and the next wallet read; after 15 minutes it is read again, marked before the work starts, and its mark cleared when done; after three dead runs it is read only once a day. On the old code: 61 passed, 3 failed. On the fix: 64 passed, 0 failed. The workflow step was run against a stand-in function and a throwaway PostgreSQL: one HTTP 546 among the calls went on, graded and ended red; three in a row stopped, graded and ended red; a normal run ended green; at most one call was ever in flight.
 
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
+
 ## 2026-10-29 — Content engine: two Week 9 articles the gate blocked on main now pass it (the writer, not the gate, was wrong)
 
 - **What failed.** `node tools/content/evidence.test.js`, section "L live", on `main` since the Week 9 data landed. Two of today's generated articles were BLOCKED by the editorial gate: the upset watch (`injuries_addressed`) and the Utah at Cincinnati matchup piece (`numbers_in_evidence`). The gate was right both times, so it is unchanged.
@@ -199,6 +238,12 @@ The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads wi
 - `verify:core`: green.
 
 **To apply.** After merging, run **Actions → Deploy Juice Reel billing → deploy**. The function's health answer then reads build `juicereel_billing-2026-10-29-1`.
+
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
