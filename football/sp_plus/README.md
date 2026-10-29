@@ -80,3 +80,28 @@ cfb-sp-plus.yml (Mon, retry Tue/Wed; or Run workflow)
 npm run cfb:sp:sync          # node football/sp_plus/sync.js --write  (needs the three secrets)
 npm run cfb:sp:test          # the mocked ingest suite and the Postgres contract
 ```
+
+## B · The projected line (`lib/cfb_sp_plus.js`, `lines.js`)
+
+A **T2 deterministic transform of the T3 rating** (`cfb_sp_projection_v1`):
+
+```
+home margin = home SP+ − away SP+ + home field      (0 at a neutral site)
+home line   = − home margin                         (book sign: − = home favoured)
+```
+
+- **Home field.** The value EdgeDesk's CFB engine applies, read from the
+  engine itself (`lines.js` `appliedHomeField`): today 2.8 from
+  `football/cfb_p4/home_field.js` (`cfb_hfa_unified_v1`). If the engine ever
+  stopped applying that file, the projection would follow it to
+  `params.js` `venue.league_hfa`. `lines.json` records the value and its
+  source with every capture.
+- **Precision.** Stored at 0.01, shown at 0.1, named for its own favourite
+  ("Kennesaw State −1.3").
+- **Pure.** No clock, no randomness, no network: the same inputs give the same
+  line. The same file runs in node and in the browser (`window.EDCfbSpPlus`).
+- **Which games.** Every slate game of the captured week. A team SP+ does not
+  rate (an FCS opponent) gets no line, and the entry says why.
+- **What is published.** Per game: the teams, the week, the kickoff, the
+  neutral flag, `home_margin` and `home_line`, or `UNAVAILABLE` with the reason.
+  No rating.

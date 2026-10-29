@@ -8,7 +8,8 @@
    stores one row per team in public.cfb_sp_ratings (append-only, service role
    only) and records the attempt in public.cfb_sp_sync_runs. The public
    repository receives football/sp_plus/lines.json: the capture's metadata
-   and, per game, the DERIVED projected line. It never receives a rating.
+   and, per game of the captured week, the DERIVED projected line
+   (football/sp_plus/lines.js, lib/cfb_sp_plus.js). It never receives a rating.
 
    THE WEEK. A capture belongs to the slate's current week
    (football/fbs/slate.json current_week: the earliest schedule week with an
@@ -39,6 +40,7 @@
 const fs = require('fs');
 const path = require('path');
 const C = require('./cfbd.js');
+const LN = require('./lines.js');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const LINES = path.join(__dirname, 'lines.json');
@@ -61,7 +63,7 @@ function currentWeek(slate) {
 function emptyDoc(season) {
   return {
     schema: SCHEMA, generated_at: null, season: season == null ? null : season,
-    status: 'NEVER_SYNCED', last_attempt: null, snapshot: null,
+    status: 'NEVER_SYNCED', last_attempt: null, snapshot: null, projection: null,
     provenance: { rating_tier: 'T3', rating_tier_label: 'Research Model · external (not EdgeDesk’s)', line_tier: 'T2', line_tier_label: 'Computed from a T3 input',
       external: true, edgedesk_model: false, validated_by_edgedesk: false },
     attribution: ATTRIBUTION,
@@ -152,6 +154,13 @@ async function run(opts) {
 
   doc.snapshot = Object.assign({}, snap, { teams_rated: map.mapped.length, n_received: parsed.n_received, n_rejected: parsed.rejected.length,
     rejected: parsed.rejected.map((x) => ({ team: x.team, reason: x.reason })), unmapped: map.unmapped });
+  /* B · the derived line for every game of the captured week (T2 from T3);
+     the ratings stay in this function */
+  const hf = opts.homeField || LN.appliedHomeField();
+  const byTeam = {};
+  map.mapped.forEach((m) => { byTeam[m.team_id] = { sp_overall: m.sp_overall }; });
+  doc.projection = LN.projectionMeta(hf);
+  doc.games = LN.buildGames(slate, byTeam, cw, hf);
   return out('OK', null, { ratings: rows, mapped: map.mapped });
 }
 

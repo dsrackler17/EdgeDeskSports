@@ -56,7 +56,7 @@ jobs:
           node-version: '22'
 
       - name: SP+ suites (mocked sources; the rules the sync is about to apply)
-        run: node football/sp_plus/ingest.test.js
+        run: node football/sp_plus/ingest.test.js && node football/sp_plus/projection.test.js
 
       - name: Sync SP+ (CollegeFootballData -> public.cfb_sp_ratings, football/sp_plus/lines.json)
         id: sync
