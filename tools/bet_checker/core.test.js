@@ -115,5 +115,22 @@ chk('the board\'s book maps to the form\'s list, else Other',
   C.bookOption('DraftKings') === 'DraftKings' && C.bookOption('draftkings') === 'DraftKings' && C.bookOption('kalshi') === 'Kalshi' &&
   C.bookOption('FanDuel') === 'Other' && C.bookOption('') === 'Other' && C.bookOption(null) === 'Other');
 
+/* the notice while sportsbook price refresh is paused (odds_feed_status) */
+const BEFORE = Date.parse('2026-10-29T12:00:00Z'), AFTER = Date.parse('2026-11-01T00:00:01Z');
+const RULES = { fair_max_age_min: 390 };
+const nb = C.feedNotice({ state: 'paused', paused_by: 'breaker_off' }, RULES, BEFORE);
+chk('paused: a notice, named for the November 1 reset while it is ahead', !!nb && nb.title === 'Sportsbook prices are paused until November 1', nb);
+chk('it says a bet is still logged, graded only on a fair under the rules\' age (390 min = 6½ hours), else Not graded without using a free grade',
+  /You can still log a bet/.test(nb.body) && /under 6½ hours old/.test(nb.body) && /saved as Not graded, which doesn’t use one of your free grades/.test(nb.body), nb.body);
+chk('and that a game starting before prices refresh may show No close available', /No close available/.test(nb.body));
+const na = C.feedNotice({ state: 'paused' }, RULES, AFTER);
+chk('still paused after the reset: the same notice, without a date that has passed', na && na.title === 'Sportsbook prices are paused' && !/November/.test(na.title + na.body), na);
+chk('live, degraded, or no answer: no notice', C.feedNotice({ state: 'live' }, RULES, BEFORE) === null && C.feedNotice({ state: 'degraded' }, RULES, BEFORE) === null &&
+  C.feedNotice(null, RULES, BEFORE) === null && C.feedNotice({}, RULES, BEFORE) === null);
+chk('the age follows the rules, and 6½ hours when they have not loaded',
+  /under 6 hours old/.test(C.feedNotice({ state: 'paused' }, { fair_max_age_min: 360 }, BEFORE).body) && /under 6½ hours old/.test(C.feedNotice({ state: 'paused' }, null, BEFORE).body));
+chk('hours read as a person says them', C.hoursText(60) === '1 hour' && C.hoursText(90) === '1½ hours' && C.hoursText(390) === '6½ hours' &&
+  C.hoursText(100) === '1.7 hours' && C.hoursText(null) === null && C.hoursText(0) === null);
+
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'bet checker core — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

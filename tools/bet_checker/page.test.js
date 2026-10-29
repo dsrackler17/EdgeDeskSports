@@ -177,7 +177,34 @@ function pickerAfterLoad(gamesAnswer) {
     social: { user: () => ({ id: 'u1' }), session: () => ({ access_token: 't' }) } });
   return p.load().then(() => els.game.innerHTML);
 }
+/* ── the notice while sportsbook price refresh is paused ─────────────── */
+/* odds_feed_status() is public: read with the page's key, never a reader's
+   token, so a signed-out visitor deciding whether to buy sees it too. */
+function feedAfterLoad(answer) {
+  const el = { hidden: true, innerHTML: '' };
+  const calls = [];
+  const host = { querySelector: (s) => (s === '[data-bc="feed"]' ? el : null), querySelectorAll: () => [], addEventListener: () => {} };
+  const fetch = async (url, init) => {
+    calls.push({ url: String(url), auth: init && init.headers && init.headers.authorization });
+    if (answer === 'throw') throw new Error('offline');
+    return { ok: answer.status < 300, status: answer.status, json: async () => answer.body };
+  };
+  const p = UI._make(host, { url: 'https://sb.example', key: 'anon-key', fetch, auth: {}, access: {}, social: { user: () => null, session: () => null } });
+  return p.loadFeed().then(() => ({ el, calls }));
+}
 (async () => {
+  let f = await feedAfterLoad({ status: 200, body: { state: 'paused', paused_by: 'breaker_off' } });
+  chk('paused: the notice shows, signed out, read from odds_feed_status with the page\'s key',
+    f.el.hidden === false && /Sportsbook prices are paused/.test(f.el.innerHTML) && /Not graded/.test(f.el.innerHTML) &&
+    f.calls.length === 1 && /\/rest\/v1\/rpc\/odds_feed_status$/.test(f.calls[0].url) && f.calls[0].auth === 'Bearer anon-key', f);
+  f = await feedAfterLoad({ status: 200, body: { state: 'live', paused_by: null } });
+  chk('live: no notice', f.el.hidden === true && f.el.innerHTML === '');
+  f = await feedAfterLoad({ status: 404, body: { code: 'PGRST202' } });
+  chk('a failed read is no notice, never an error', f.el.hidden === true);
+  f = await feedAfterLoad('throw');
+  chk('an unreachable read is no notice, never an error', f.el.hidden === true);
+  chk('the page carries the notice\'s place, hidden until the feed says paused', /<div class="bc-status warn bc-feed" data-bc="feed" role="note" hidden><\/div>/.test(PAGE));
+
   let sel = await pickerAfterLoad({ status: 404, body: { code: 'PGRST202', message: 'Could not find the function public.bet_checker_games' } });
   chk('a board that failed to load is not called empty', /could not be loaded/.test(sel) && !/No upcoming games/.test(sel), sel);
   sel = await pickerAfterLoad({ status: 200, body: [] });
