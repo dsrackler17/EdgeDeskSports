@@ -16,6 +16,8 @@
      copy       no "bet now", no "copy trade", no affiliate link, no
                 "guaranteed" or "lock", no promise — in anything drawn, the
                 page or the module
+     record     "How following has done": its own numbers, Experimental and a
+                small sample until earned, what H-RADAR-01 found verbatim
      wiring     app.html loads the module before the Overview; the Overview
                 puts Smart Money Tonight first and reads it under the reader's
                 token; the public page calls anonymous doors only (never
@@ -49,6 +51,7 @@ chk('a total reads "Over 47.5"', U.sentence(card({ market_type: 'totals', outcom
 chk('a positive spread keeps its plus', U.sideLabel(card({ outcome: 'Raiders', point: 3.5 })) === 'Raiders +3.5');
 chk('dollars: $640, $8.4K, $84K, $1.2M', [640, 8400, 84210, 1234567].map(U.money).join() === '$640,$8.4K,$84K,$1.2M');
 chk('prices are cents', U.cents(0.4144) === '41¢' && U.cents(null) === '—');
+chk('a rate is never signed', U.rate(0.512) === '51.2%' && U.rate(0.5455, 0) === '55%' && U.rate(null) === '—');
 chk('percentages and points carry their sign', U.pct(0.0523) === '+5.2%' && U.pct(-0.1) === '−10.0%' && U.pp(-1.25) === '−1.3 pts' && U.pp(2) === '+2.0 pts');
 chk('a Yes/No outcome falls back to the team, never "Yes"', U.sideLabel(card({ market_type: 'moneyline', outcome: 'Yes', point: null })) === 'Chiefs');
 
@@ -106,6 +109,25 @@ chk('a subscriber: the open positions the database gave', /Bills vs\. Dolphins �
 chk('a trader page shows public data only: the wallet and its name, no bio', !/\bbio\b|profile image/i.test(th) && /0x3333333333333333333333333333333333333333/.test(th));
 chk('a wallet with no grade, a bad address, an error: said plainly', /no grade yet/.test(U.traderHTML({ status: 'not_graded' })) && /not a Polymarket wallet/.test(U.traderHTML({ status: 'bad_wallet' }))
   && /could not be loaded/.test(U.traderHTML({ status: 'error' })));
+
+/* ── How following has done (the Radar record) ───────────────────────── */
+const REC = (o) => Object.assign({ status: 'ok', label: 'EXPERIMENTAL', small_sample: true, min_sample: 200,
+  totals: { cards: 14, graded: 11, wins: 6, losses: 5, pushes: 0, void: 1, roi: -0.0312, beat_close_rate: 0.5455, with_close: 11, no_close: 0, pending: 2 },
+  h_radar_01: { status: 'complete', hypothesis_id: 'H-RADAR-01', passed: false, followed: 340, beat_close_rate: 0.512, beat_close_ci: [0.47, 0.55], follow_roi: -0.021, follow_roi_ci: [-0.08, 0.04] },
+  recent: [{ commence_time: '2026-10-28T00:15:00Z', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', market_type: 'moneyline', outcome: 'Chiefs', follow_price: 0.6, close_price: 0.64, result: 'win', roi: 0.6667 }] }, o || {});
+const rh = keep(U.recordHTML(REC()));
+chk('the record: its own numbers — record 6–5, ROI −3.1%, beat the close 55%', /Record<\/dt><dd>6–5/.test(rh) && /ROI<\/dt><dd>−3\.1%/.test(rh) && /Beat the close<\/dt><dd>55%/.test(rh), rh.slice(0, 1500));
+chk('labelled Experimental until H-RADAR-01 passes, and a small sample in words', /rd-chip exp">Experimental/.test(rh) && /Small sample: 11 of 200 graded/.test(rh));
+chk('it reports exactly what H-RADAR-01 found, bad as well as good', /H-RADAR-01, the registered test on past games, did not pass its criteria/.test(textOf(rh)) && /340 bets beat the close 51\.2% of the time \(95% interval 47\.0% to 55\.0%\)/.test(textOf(rh))
+  && /follow ROI of −2\.1% \(95% interval −8\.0% to \+4\.0%\)/.test(textOf(rh)), textOf(rh));
+chk('…and passing reads as passing, still with its numbers', /passed its criteria/.test(U.findingLine({ status: 'complete', passed: true, followed: 400, beat_close_rate: 0.58, follow_roi: 0.04 })));
+chk('a test that has not run says so, claims nothing', /has not reported yet/.test(U.findingLine({ status: 'not_run' })) && /has not reported yet/.test(U.findingLine(null)));
+chk('once passed: the label says so instead of Experimental', /Passed its registered test/.test(U.recordHTML(REC({ label: 'H-RADAR-01 PASSED', small_sample: false }))) && !/rd-chip exp/.test(U.recordHTML(REC({ label: 'H-RADAR-01 PASSED', small_sample: false }))));
+chk('nothing graded yet: said, no number', /No card has been graded yet/.test(U.recordHTML(REC({ totals: { graded: 0, pending: 3 } }))));
+chk('the record is the terminal\'s: nothing for a refused reader, off or not deployed', U.recordHTML({ status: 'subscribers_only' }) === '' && U.recordHTML({ status: 'disabled' }) === '' && U.recordHTML({ notDeployed: true }) === '');
+chk('it says past results do not predict future results, and never claims', /Past results do not predict future results/.test(rh) && /not a claim/.test(rh));
+chk('the Overview reads radar_record under the reader\'s token and draws it under the cards', /X\.rpc\('radar_record', \{ p_limit: 10 \}\)/.test(read('lib/edgedesk_overview.js')) && /U\.tonightHTML\(S\.svc\.radar\) \+ \(U\.recordHTML \? U\.recordHTML\(S\.svc\.radarRecord\) : ''\)/.test(read('lib/edgedesk_overview.js')));
+chk('the public page never asks for the record', !/radar_record/.test(read('radar/index.html')));
 
 /* ── Known limitations ───────────────────────────────────────────────── */
 const lim = keep(U.limitationsHTML());

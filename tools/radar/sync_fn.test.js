@@ -21,7 +21,9 @@
                never top-graded, the small sample unranked
      tonight   markets matched to EdgeDesk games once (or pending with a
                reason); holders stored for pool wallets only; names only when
-               public; prices; a started game's resolution; the card
+               public; prices; a started game's resolution; the card; the
+               Radar record (a warning while radar_record.sql is not applied,
+               then each card published once)
      budget    the run's grant is the ceiling: a short grant stops it with a
                DEGRADED alert, and the settlement records what was used
      breaker   six 429s in a row: the breaker opens, the next run is refused
@@ -299,6 +301,13 @@ let rest;
     const card = JSON.parse(db.as(SUB, 'select public.radar_tonight();'));
     chk('tonight: the subscriber\'s card — 2 top wallets on the Chiefs, $620, smart money agrees with the fair (0.62 vs 0.60)', card.status === 'ok' && card.cards.length === 1
       && card.cards[0].n_wallets === 2 && Number(card.cards[0].dollars) === 620 && card.cards[0].agrees === true && card.cards[0].other_side_wallets === 1, card);
+    chk('tonight: without radar_record.sql the run warns that nothing is being recorded, and goes on', tn.alerts.some((a) => a.code === 'record_not_installed' && a.severity === 'WARNING'), tn.alerts);
+    db.applyFileAtomic(path.join(ROOT, 'supabase', 'radar_record.sql'));
+    const tn2 = await go('tonight');
+    chk('tonight: with it, the card is published to the record once, at the price then', tn2.details.cards_published === 1 && V('select count(*) from public.radar_cards') === '1'
+      && V('select follow_price from public.radar_cards') === '0.6', tn2.details);
+    const tn3 = await go('tonight');
+    chk('tonight: the next run publishes nothing new for the same game and side', tn3.details.cards_published === 0 && V('select count(*) from public.radar_cards') === '1');
 
     /* ── budget ── */
     V('update public.poly_api_days set granted = 39997');

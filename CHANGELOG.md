@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar 3/3: the Radar record, "How following has done", append-only and graded against the close and the result
+
+**What it is.** A record of every Smart Money Tonight card, kept so nobody can edit it, and graded the way a follower would have done. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("The Radar record").
+- **`radar_cards`.** Every card is published once per game and side, at the Polymarket price at that moment, by the same function that draws Smart Money Tonight (`radar_publish_cards()`).
+- **`radar_card_results`.** Each card is graded once after its game (`radar_grade_cards()`):
+  - the close, whether the card beat it, and its CLV%;
+  - the result, from the market's own resolution;
+  - the ROI of one unit at the published price.
+
+  A card with no resolution a week after its start is void. Both tables are append-only. Their guards refuse a grade whose arithmetic is not the database's own.
+- **`radar_record()`**, for subscribers. It reports record, ROI and beat-close rate, plus a small-sample flag under 200 graded cards. It stays labelled **Experimental** until H-RADAR-01 passes its criteria, and quotes what H-RADAR-01 found verbatim.
+- **"How following has done"** sits under Smart Money Tonight on the Overview.
+- **`polymarket_sync`** publishes and grades in the 10-minute run, after it stores holders, prices and resolutions. While the record is not installed it raises a warning.
+
+**Tests.** `radar_sql.test.js` 198, `sync_fn.test.js` with the record, `radar_ui.test.js` 72, `radar_ui.e2e.js` 54.
+
 ## 2026-10-29 — Prediction Radar 2/3: Smart Money Tonight on the Overview, trader pages, and the free /radar/ page
 
 **What a reader sees.** Nothing is drawn while Radar is off or H-RADAR-01 is not registered. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("Where it shows").
