@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar: run_now grades every 25 wallet calls and stops the wallet calls after 5 hours, so a long run never loses its grade
+
+- **Bug.** `run_now` graded only once, after the last wallet call. On build `.6` ([run 40916807612](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40916807612)) the wallet calls were still going after 77 minutes, at about 76 s a call, with many wallets needing several calls. GitHub stops a job at 6 hours. A job stopped there would have ended before its grade, so the site would have shown nothing from all those calls.
+- **Fix** (`.github/workflows/deploy-radar.yml`). A grade also runs after every 25 good wallet calls; it asks Polymarket nothing. The wallet calls stop after 5 hours, so the last grade runs well inside the 6-hour limit, and the 06:10 UTC schedule takes the wallets still due. A grade along the way that fails is a warning: the wallet calls go on, the last grade still runs, and the step ends red.
+- **Test.** The workflow step was run against a stand-in function and a throwaway PostgreSQL. With the job stopped by a time limit (scaled down to seconds), main's loop made 19 wallet calls and no grade; this one stopped the wallet calls at its limit and graded. 31 wallet calls graded after the 25th and at the end. A failed grade along the way went on and ended red. The 546 and three-in-a-row cases are unchanged, and at most one call was ever in flight.
+
 ## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
 
 - **Bug.** `run_now` on build `.5` ([run 40905865196](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40905865196)) made 32 wallet calls in about 76 s each, all HTTP 200. The 33rd got HTTP 546, out of compute. A run that dies cannot record anything, so that wallet stayed first in line, and every later call, the 06:10 UTC schedule included, would have died on it. `run_now` also stopped before its grade, so nothing reached the site.
