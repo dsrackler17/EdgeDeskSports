@@ -4,6 +4,7 @@
 
 
 
+
 ## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
 
 **What was wrong, once Pages' source was switched to GitHub Actions:**

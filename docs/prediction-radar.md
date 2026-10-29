@@ -467,6 +467,11 @@ does every step below in this order with the repository's Supabase secrets:
 halves made one value, never printed), `data_enabled` (`on` needs
 `enable_note`: who read the terms, when, the clause) and `apply_cron`. The
 Radar suites run first, and a report row that says CHECK THIS fails the run.
+`run_now` does the overnight work at once: the pool, the wallets (3 a call)
+until none is due, then the grade, one call at a time, each answer awaited
+before the next. It stops the wallet calls while fewer than
+`run_now_reserve` (8,000) of the day's 40,000 Polymarket requests remain, so
+the 10-minute tonight runs keep theirs; the 06:10 UTC schedule takes the rest.
 By hand instead, in order. Each SQL file ends in a report whose rows should
 read `ok`.
 
