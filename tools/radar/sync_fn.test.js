@@ -248,11 +248,17 @@ let rest;
     chk('wallets: the close is the last price before the start (0.58), CLV +8 pp', Number(b0.close_price) === 0.58 && Number(b0.clv_pp) === 8, b0);
     chk('wallets: the 5-minute follow price 0.55, the 15-minute too', Number(b0.follow5_price) === 0.55 && Number(b0.follow15_price) === 0.55);
     chk('wallets: a win follows at 1 / 0.55 - 1, a loss at -1', Math.abs(Number(b0.follow5_roi) - (1 / 0.55 - 1)) < 1e-5 && Number(bets[1].follow5_roi) === -1);
+    const priceReads = pmCalls.slice(before).filter((u) => /prices-history\?/.test(u)).map((u) => { const q = new URL('https://' + u).searchParams; return (+q.get('endTs') - +q.get('startTs')) / 60; });
+    chk('wallets: each of the three wallets\' 60 bets, held two hours, is read in two short stretches (360 reads), the follow\'s and the close\'s (at most 62 minutes each), never its whole history',
+      priceReads.length === 360 && priceReads.every((m) => m <= 62), { reads: priceReads.length, longest: Math.max(...priceReads) });
     chk('wallets: the cursor is kept', V(`select (activity_cursor ->> 'ts_s')::bigint > 0 from public.poly_wallets where wallet = ${lit(W1)}`) === 't');
     const wb = await go('wallets');
     chk('wallets: the next run reads the next three', wb.details.wallets.map((x) => x.wallet).join() === [W4, W5, W6].join());
-    chk('wallets: a history that never ends is cut at 30 pages and marked truncated', V(`select history_truncated from public.poly_wallets where wallet = ${lit(W4)}`) === 't'
-      && wb.details.wallets.find((x) => x.wallet === W4).pages === 30);
+    /* at most 10 activity pages a run (a production run with a whole 30-page history ran out of compute, HTTP 546) */
+    const w4pages = [wb.details.wallets.find((x) => x.wallet === W4).pages];
+    for (let i = 0; i < 4 && V(`select activity_synced_at is null from public.poly_wallets where wallet = ${lit(W4)}`) === 't'; i++) w4pages.push(((await go('wallets')).details.wallets.find((x) => x.wallet === W4) || {}).pages);
+    chk('wallets: a history that never ends is read 10 pages a run, cut at 30 in all and marked truncated', V(`select history_truncated from public.poly_wallets where wallet = ${lit(W4)}`) === 't'
+      && w4pages.join() === '10,10,10', w4pages);
     const wc = await go('wallets');
     chk('wallets: nobody is due again within 20 hours', wc.details.wallets.length === 0);
     const tradesBefore = V('select count(*) from public.poly_trades'), betsBefore = V('select count(*) from public.poly_bets');
@@ -335,21 +341,23 @@ let rest;
     scenario.leaderboard = POOL.concat([W7]);
     await go('pool');
     const runs7 = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 14; i++) {
       const f0 = fake, r = await go('wallets');
       runs7.push({ s: (fake - f0) / 1000, status: r.status, wallets: (r.details.wallets || []).map((x) => x.wallet.slice(-1) + ':' + x.status + ':' + x.graded).join() });
       if (V(`select activity_synced_at is not null from public.poly_wallets where wallet = ${lit(W7)}`) === 't') break;
     }
-    chk('time: a new wallet too big for one run is graded over several, each run within its time budget (75 s of requests, far under the 150 s limit)',
-      runs7.length > 1 && runs7.every((r) => r.status !== 'error' && r.s <= 79) && V(`select count(*) from public.poly_bets where wallet = ${lit(W7)}`) === '63', runs7);
+    chk('time: a new wallet too big for one run is graded over several, each run within its time budget (75 s, plus the bet in flight: far under the 150 s limit)',
+      runs7.length > 1 && runs7.every((r) => r.status !== 'error' && r.s <= 83) && V(`select count(*) from public.poly_bets where wallet = ${lit(W7)}`) === '63', runs7);
     chk('time: a run that stops early says so, and leaves the wallet due for the next', /^7:partial:\d+$/.test(runs7[0].wallets) && /^7:done:\d+$/.test(runs7[runs7.length - 1].wallets), runs7);
+    scenario.costMs = 10000;   /* 10 s a page: time runs out after 8 pages, before the 10-page cap */
     V(`update public.poly_wallets set activity_synced_at = null, activity_cursor = null, history_truncated = false where wallet = ${lit(W4)}`);
     const w4a = await go('wallets'), p4a = ((w4a.details.wallets || []).find((x) => x.wallet === W4) || {}).pages;
     chk('time: an activity read cut by time keeps its place and its page count, and is not called truncated yet',
-      p4a > 0 && p4a < 30 && V(`select activity_synced_at is null and not history_truncated and (activity_cursor ->> 'first_pages')::int = ${p4a || 0} from public.poly_wallets where wallet = ${lit(W4)}`) === 't', { p4a, row: V(`select activity_cursor::text from public.poly_wallets where wallet = ${lit(W4)}`) });
-    const w4b = await go('wallets'), p4b = ((w4b.details.wallets || []).find((x) => x.wallet === W4) || {}).pages;
-    chk('time: the next run reads the rest of the 30 pages, and only then marks the history truncated',
-      p4a + p4b === 30 && V(`select history_truncated and activity_synced_at is not null from public.poly_wallets where wallet = ${lit(W4)}`) === 't', { p4a, p4b });
+      p4a > 0 && p4a < 10 && V(`select activity_synced_at is null and not history_truncated and (activity_cursor ->> 'first_pages')::int = ${p4a || 0} from public.poly_wallets where wallet = ${lit(W4)}`) === 't', { p4a, row: V(`select activity_cursor::text from public.poly_wallets where wallet = ${lit(W4)}`) });
+    const p4 = [p4a];
+    for (let i = 0; i < 6 && V(`select activity_synced_at is null from public.poly_wallets where wallet = ${lit(W4)}`) === 't'; i++) p4.push(((await go('wallets')).details.wallets.find((x) => x.wallet === W4) || {}).pages);
+    chk('time: the next runs read the rest of the 30 pages, and only then mark the history truncated',
+      p4.reduce((a, b) => a + b, 0) === 30 && V(`select history_truncated and activity_synced_at is not null from public.poly_wallets where wallet = ${lit(W4)}`) === 't', p4);
     scenario.costMs = 0;
     scenario.leaderboard = POOL;
     await go('pool');

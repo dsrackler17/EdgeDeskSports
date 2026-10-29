@@ -91,6 +91,7 @@ jobs:
           FAIRLINE_SQL_REQUIRED=1 node tools/fairline/fairline_sql.test.js
           node tools/fairline/tape_sql.test.js
           node tools/fairline/tape_email.test.js
+          FAIRLINE_SQL_REQUIRED=1 node tools/fairline/deploy_switch.test.js
           node tools/billing/fairline_tier.test.js
           PAYWALL_RULE_REQUIRED=1 node tools/billing/paywall_rule.test.js
 

@@ -1,30 +1,5 @@
 # Changelog
 
-## 2026-10-29 — Juice Reel billing reads Juice Reel's confirmed answers: isCurrentlySubscribed decides
-
-**Why.** Juice Reel approved the webhook on 2026-10-29 and pointed to its API docs for the shapes EdgeDesk had guessed (`docs/juicereel-billing.md` § 9). Tracing the documented answers through `supabase/functions/juicereel_billing` found four ways to get access wrong:
-- **`isCurrentlySubscribed` was never read.** Access followed `expiresDate` alone, so a list entry Juice Reel marks `false` with a future date (a refund) would let a buyer in. The hourly reconcile would then re-grant it every hour.
-- **The subscriber list holds everyone who ever subscribed**, a buyer's older entries included. The link check stopped at the buyer's first entry, so a returning buyer whose ended entry is listed before the current one was told "not subscribed".
-- **The reconcile counted every listed buyer as present**, so the "paid here, not on Juice Reel" alert could never fire.
-- **Webhook events carry `isCurrentlySubscribed` too.** A purchase or renewal event saying `false` would still have granted access.
-
-**What changed** (`supabase/functions/juicereel_billing/index.ts`, build `juicereel_billing-2026-10-29-1`):
-- `isCurrentlySubscribed` decides, on the status answer, each list entry and webhook data.
-- A bare yes with no subscription is not a purchase. Status answers `{isCurrentlySubscribed: true}`, with nothing else, to the application's owner, and linking the seller's own Juice Reel account opens nothing.
-- The link check reads the buyer's whole entry list.
-- The reconcile counts as present only buyers Juice Reel says have access now. It still never cuts anyone off; it raises the alert for a human.
-- An event saying `isCurrentlySubscribed: false` ends access, whatever its type or `expiresDate`.
-
-**The fake** (`tools/billing/_fake_juicereel_billing.js`) now answers in the documented shapes by default. That covers the owner's bare yes, a bare no for expired or never-subscribed buyers, the full one-page list with older entries first, and new `refund()` and `history()` helpers. The shapes guessed before stay available.
-
-**Tests:**
-- `tools/billing/juicereel_billing.test.js`: **90 passed, 0 failed** on a real PostgreSQL. Against the old function, the 4 new checks fail and everything else passes: 86 passed, 4 failed. The checks that fail on the old code are the refund, the returning buyer, the `false` event and the reconcile alert. A fifth new check, the owner's bare yes, passes on both.
-- `juicereel_client.test.js`: 25 passed, 0 failed.
-- `juicereel_checkout.e2e.js`: 50 passed, 0 failed.
-- `fairline_tier.test.js`: 72 passed, 0 failed.
-- `verify:core`: green.
-
-**To apply.** After merging, run **Actions → Deploy Juice Reel billing → deploy**. The function's health answer then reads build `juicereel_billing-2026-10-29-1`.
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
