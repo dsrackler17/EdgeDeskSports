@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T16:00:00.000Z",
   "game_when_label": "2026-10-31 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-29T09:49:42.098Z",
-  "generated_at": "2026-10-29T09:49:42.098Z",
+  "updated_at": "2026-10-29T18:25:10.361Z",
+  "generated_at": "2026-10-29T18:25:10.361Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -138,9 +138,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for NC State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for California and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -258,7 +282,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T16:00:00.000Z",
-        "retrieved_at": "2026-10-28T18:54:18.299Z"
+        "retrieved_at": "2026-10-29T16:25:42.209Z"
       },
       "home": {
         "team": "NC State",
@@ -348,9 +372,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T02:30:00.000Z",
-        "retrieved_at": "2026-10-28T18:54:18.299Z"
+        "retrieved_at": "2026-10-29T16:25:42.209Z"
       },
-      "generated_at": "2026-10-28T18:54:16.908Z",
+      "generated_at": "2026-10-29T16:26:38.488Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -394,14 +418,14 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "-3.9",
-                "n": -3.92,
-                "rank": "#98 of 138",
-                "rank_n": 98,
+                "n": -3.93,
+                "rank": "#99 of 138",
+                "rank_n": 99,
                 "note": null
               },
               "h": {
                 "v": "-0.3",
-                "n": -0.29,
+                "n": -0.3,
                 "rank": "#71 of 138",
                 "rank_n": 71,
                 "note": null
@@ -409,7 +433,7 @@
               "edge": {
                 "side": "h",
                 "gap": 3.6,
-                "rank_gap": 27
+                "rank_gap": 28
               }
             },
             {
@@ -417,23 +441,23 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "47.9",
-                "n": 47.9,
-                "rank": "#79 of 138",
-                "rank_n": 79,
+                "v": "47.8",
+                "n": 47.8,
+                "rank": "#80 of 138",
+                "rank_n": 80,
                 "note": null
               },
               "h": {
                 "v": "55.9",
                 "n": 55.9,
-                "rank": "#31 of 138",
-                "rank_n": 31,
+                "rank": "#30 of 138",
+                "rank_n": 30,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 8,
-                "rank_gap": 48
+                "gap": 8.1,
+                "rank_gap": 50
               }
             },
             {
@@ -496,8 +520,8 @@
               "a": {
                 "v": "47.0",
                 "n": 47,
-                "rank": "#85 of 138",
-                "rank_n": 85,
+                "rank": "#87 of 138",
+                "rank_n": 87,
                 "note": null
               },
               "h": {
@@ -510,7 +534,7 @@
               "edge": {
                 "side": "h",
                 "gap": 4,
-                "rank_gap": 24
+                "rank_gap": 26
               }
             },
             {
@@ -544,20 +568,20 @@
               "a": {
                 "v": "47.3",
                 "n": 47.3,
-                "rank": "#110 of 130",
-                "rank_n": 110,
+                "rank": "#109 of 130",
+                "rank_n": 109,
                 "note": null
               },
               "h": {
-                "v": "51.5",
-                "n": 51.5,
-                "rank": "#37 of 130",
-                "rank_n": 37,
+                "v": "51.6",
+                "n": 51.6,
+                "rank": "#36 of 130",
+                "rank_n": 36,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 4.2,
+                "gap": 4.3,
                 "rank_gap": 73
               }
             },
@@ -621,15 +645,15 @@
                 "note": null
               },
               "h": {
-                "v": "34.4",
-                "n": 34.4,
+                "v": "34.3",
+                "n": 34.3,
                 "rank": "#120 of 138",
                 "rank_n": 120,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 3.2,
+                "gap": 3.1,
                 "rank_gap": 5
               }
             },
@@ -669,21 +693,21 @@
               "a": {
                 "v": "59.2",
                 "n": 59.2,
-                "rank": "#57 of 138",
-                "rank_n": 57,
+                "rank": "#52 of 138",
+                "rank_n": 52,
                 "note": null
               },
               "h": {
                 "v": "62.6",
                 "n": 62.6,
-                "rank": "#15 of 138",
-                "rank_n": 15,
+                "rank": "#13 of 138",
+                "rank_n": 13,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 3.4,
-                "rank_gap": 42
+                "rank_gap": 39
               }
             },
             {
@@ -724,14 +748,14 @@
               "h": {
                 "v": "56.3",
                 "n": 56.3,
-                "rank": "#28 of 138",
-                "rank_n": 28,
+                "rank": "#29 of 138",
+                "rank_n": 29,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.2,
-                "rank_gap": 4
+                "rank_gap": 3
               }
             },
             {
@@ -765,21 +789,21 @@
               "a": {
                 "v": "54.8",
                 "n": 54.8,
-                "rank": "#119 of 138",
-                "rank_n": 119,
+                "rank": "#116 of 138",
+                "rank_n": 116,
                 "note": null
               },
               "h": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#99 of 138",
-                "rank_n": 99,
+                "rank": "#98 of 138",
+                "rank_n": 98,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.7,
-                "rank_gap": 20
+                "rank_gap": 18
               }
             },
             {
@@ -964,12 +988,12 @@
         {
           "k": "Special teams",
           "rank_gap": 73,
-          "gap": 4.2,
+          "gap": 4.3,
           "lead": "NC State",
           "trail": "California",
-          "lead_cell": "51.5 · #37 of 130",
-          "trail_cell": "47.3 · #110 of 130",
-          "text": "NC State 51.5 (#37 of 130) vs California 47.3 (#110 of 130) — 73 places on the national board."
+          "lead_cell": "51.6 · #36 of 130",
+          "trail_cell": "47.3 · #109 of 130",
+          "text": "NC State 51.6 (#36 of 130) vs California 47.3 (#109 of 130) — 73 places on the national board."
         },
         {
           "k": "Offensive line",
@@ -993,23 +1017,23 @@
         },
         {
           "k": "Talent",
-          "rank_gap": 48,
-          "gap": 8,
+          "rank_gap": 50,
+          "gap": 8.1,
           "lead": "NC State",
           "trail": "California",
-          "lead_cell": "55.9 · #31 of 138",
-          "trail_cell": "47.9 · #79 of 138",
-          "text": "NC State 55.9 (#31 of 138) vs California 47.9 (#79 of 138) — 48 places on the national board."
+          "lead_cell": "55.9 · #30 of 138",
+          "trail_cell": "47.8 · #80 of 138",
+          "text": "NC State 55.9 (#30 of 138) vs California 47.8 (#80 of 138) — 50 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 42,
+          "rank_gap": 39,
           "gap": 3.4,
           "lead": "NC State",
           "trail": "California",
-          "lead_cell": "62.6 · #15 of 138",
-          "trail_cell": "59.2 · #57 of 138",
-          "text": "NC State 62.6 (#15 of 138) vs California 59.2 (#57 of 138) — 42 places on the national board."
+          "lead_cell": "62.6 · #13 of 138",
+          "trail_cell": "59.2 · #52 of 138",
+          "text": "NC State 62.6 (#13 of 138) vs California 59.2 (#52 of 138) — 39 places on the national board."
         }
       ],
       "measured": [],
@@ -1049,12 +1073,12 @@
         "def": {
           "team": "NC State",
           "label": "run defense",
-          "v": "34.4",
+          "v": "34.3",
           "rank": "#120 of 138",
           "note": null
         },
         "complete": true,
-        "read": "California’s run offense rates 39.4 (#118 of 138) against NC State’s run defense at 34.4 (#120 of 138). California’s unit stands higher among its own position group, by 2 places."
+        "read": "California’s run offense rates 39.4 (#118 of 138) against NC State’s run defense at 34.3 (#120 of 138). California’s unit stands higher among its own position group, by 2 places."
       },
       {
         "title": "NC State pass offense vs California pass defense",
@@ -1100,7 +1124,7 @@
           "team": "California",
           "label": "QB room",
           "v": "59.2",
-          "rank": "#57 of 138",
+          "rank": "#52 of 138",
           "note": null
         },
         "def": {
@@ -1111,7 +1135,7 @@
           "note": null
         },
         "complete": true,
-        "read": "California’s QB room rates 59.2 (#57 of 138) against NC State’s secondary at 50.8 (#93 of 138). California’s unit stands higher among its own position group, by 36 places."
+        "read": "California’s QB room rates 59.2 (#52 of 138) against NC State’s secondary at 50.8 (#93 of 138). California’s unit stands higher among its own position group, by 41 places."
       },
       {
         "title": "NC State QB room vs California secondary",
@@ -1119,7 +1143,7 @@
           "team": "NC State",
           "label": "QB room",
           "v": "62.6",
-          "rank": "#15 of 138",
+          "rank": "#13 of 138",
           "note": null
         },
         "def": {
@@ -1130,7 +1154,7 @@
           "note": null
         },
         "complete": true,
-        "read": "NC State’s QB room rates 62.6 (#15 of 138) against California’s secondary at 49.3 (#115 of 138). NC State’s unit stands higher among its own position group, by 100 places."
+        "read": "NC State’s QB room rates 62.6 (#13 of 138) against California’s secondary at 49.3 (#115 of 138). NC State’s unit stands higher among its own position group, by 102 places."
       },
       {
         "title": "California offensive line vs NC State defensive line",
@@ -1176,7 +1200,7 @@
           "team": "California",
           "label": "running backs",
           "v": "54.8",
-          "rank": "#119 of 138",
+          "rank": "#116 of 138",
           "note": null
         },
         "def": {
@@ -1187,7 +1211,7 @@
           "note": null
         },
         "complete": true,
-        "read": "California’s running backs rates 54.8 (#119 of 138) against NC State’s linebackers at 50.7 (#101 of 138). NC State’s unit stands higher among its own position group, by 18 places."
+        "read": "California’s running backs rates 54.8 (#116 of 138) against NC State’s linebackers at 50.7 (#101 of 138). NC State’s unit stands higher among its own position group, by 15 places."
       },
       {
         "title": "NC State running backs vs California linebackers",
@@ -1195,7 +1219,7 @@
           "team": "NC State",
           "label": "running backs",
           "v": "55.5",
-          "rank": "#99 of 138",
+          "rank": "#98 of 138",
           "note": null
         },
         "def": {
@@ -1206,7 +1230,7 @@
           "note": null
         },
         "complete": true,
-        "read": "NC State’s running backs rates 55.5 (#99 of 138) against California’s linebackers at 49.3 (#116 of 138). NC State’s unit stands higher among its own position group, by 17 places."
+        "read": "NC State’s running backs rates 55.5 (#98 of 138) against California’s linebackers at 49.3 (#116 of 138). NC State’s unit stands higher among its own position group, by 18 places."
       },
       {
         "title": "California receivers vs NC State secondary",
@@ -1233,7 +1257,7 @@
           "team": "NC State",
           "label": "receivers",
           "v": "56.3",
-          "rank": "#28 of 138",
+          "rank": "#29 of 138",
           "note": null
         },
         "def": {
@@ -1244,7 +1268,7 @@
           "note": null
         },
         "complete": true,
-        "read": "NC State’s receivers rates 56.3 (#28 of 138) against California’s secondary at 49.3 (#115 of 138). NC State’s unit stands higher among its own position group, by 87 places."
+        "read": "NC State’s receivers rates 56.3 (#29 of 138) against California’s secondary at 49.3 (#115 of 138). NC State’s unit stands higher among its own position group, by 86 places."
       }
     ],
     "roster": {
@@ -1402,7 +1426,7 @@
           "NC State is the better football team by 7.4 points on opponent-adjusted results, with roughly 35% of it still inherited from last season (+7.4 pts).",
           "Playing at NC State is worth 2.8 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+2.8 pts).",
           "Stylistically the matchup favours NC State by 1.7 points: ball control vs front disruption (+1.7 pts).",
-          "Special teams: NC State 51.5 (#37 of 130) vs California 47.3 (#110 of 130) — 73 places on the national board.",
+          "Special teams: NC State 51.6 (#36 of 130) vs California 47.3 (#109 of 130) — 73 places on the national board.",
           "Offensive line: NC State 51.3 (#73 of 138) vs California 43.5 (#132 of 138) — 59 places on the national board."
         ]
       },
@@ -1562,11 +1586,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: California’s availability report is not due yet",
-        "score": 89,
+        "text": "85 · STRONG",
+        "sub": "main deduction: California’s availability sources refused",
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1580,7 +1604,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.2,
+            "score": 8.7,
             "max": 20
           },
           {
@@ -1592,7 +1616,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1608,9 +1632,25 @@
             "max": 10
           }
         ],
-        "main_deduction": "California’s availability report is not due yet; the impact of California’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "California’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of California’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
-        "next_actions": [],
+        "next_actions": [
+          {
+            "action": "Restore an injury/availability source for California",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Restore an injury/availability source for NC State",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 0.81,
@@ -1723,14 +1763,14 @@
       "rows": [
         {
           "k": "ETSR (overall)",
-          "a": "-3.9  #98",
+          "a": "-3.9  #99",
           "h": "-0.3  #71",
           "note": "points vs an average FBS team, neutral field"
         },
         {
           "k": "Talent",
-          "a": "47.9  #79",
-          "h": "55.9  #31",
+          "a": "47.8  #80",
+          "h": "55.9  #30",
           "note": null
         },
         {
@@ -1741,7 +1781,7 @@
         },
         {
           "k": "Offense",
-          "a": "47.0  #85",
+          "a": "47.0  #87",
           "h": "51.0  #61",
           "note": null
         },
@@ -1753,8 +1793,8 @@
         },
         {
           "k": "Special teams",
-          "a": "47.3  #110",
-          "h": "51.5  #37",
+          "a": "47.3  #109",
+          "h": "51.6  #36",
           "note": null
         },
         {
@@ -1772,7 +1812,7 @@
         {
           "k": "Run defense",
           "a": "31.2  #125",
-          "h": "34.4  #120",
+          "h": "34.3  #120",
           "note": null
         },
         {
@@ -1783,8 +1823,8 @@
         },
         {
           "k": "QB room",
-          "a": "59.2  #57",
-          "h": "62.6  #15",
+          "a": "59.2  #52",
+          "h": "62.6  #13",
           "note": null
         },
         {
@@ -1796,13 +1836,13 @@
         {
           "k": "Receivers",
           "a": "56.1  #32",
-          "h": "56.3  #28",
+          "h": "56.3  #29",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "54.8  #119",
-          "h": "55.5  #99",
+          "a": "54.8  #116",
+          "h": "55.5  #98",
           "note": null
         },
         {
@@ -1843,7 +1883,7 @@
         },
         {
           "k": "Δ national rank, this week",
-          "a": "no change",
+          "a": "down 1",
           "h": "no change",
           "note": "differenced from last week’s committed snapshot"
         }
@@ -1863,11 +1903,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1bpcowqq8wa60",
+    "packet_hash": "14luz5j99pbo5",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can NC State contain California’s explosive runs?",
@@ -1924,7 +1964,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-29T05:52:16.383Z",
+        "observed_at": "2026-10-29T16:27:54.289Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1940,6 +1980,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T09:49:42.098Z"
+    "at": "2026-10-29T18:25:10.361Z"
   }
 }

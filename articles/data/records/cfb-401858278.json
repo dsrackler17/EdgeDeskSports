@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T16:00:00.000Z",
   "game_when_label": "2026-10-31 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-29T09:49:42.098Z",
-  "generated_at": "2026-10-29T09:49:42.098Z",
+  "updated_at": "2026-10-29T18:25:10.361Z",
+  "generated_at": "2026-10-29T18:25:10.361Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "SMU carries the stronger underlying team rating — +8.5 against +3.0, a 5.6-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Syracuse +8.0 before any sportsbook number is consulted, with SMU winning 71% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is depth, where Syracuse leads SMU by 79 places nationally.",
+      "The position-group comparison shows where the separation comes from: the widest measured gap is depth, where Syracuse leads SMU by 80 places nationally.",
       "Data confidence on this matchup is 80% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
@@ -138,11 +138,35 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 1,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 2
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 4
         },
         "absent": [
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Syracuse and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for SMU and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff. 1 older row(s) on file were refused as HISTORICAL against this kickoff (published more than a week before it, or undated), so they say nothing about this game."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "ESPN injuries has a report on this player, but it was published 2022-10-30, more than a week ago, so it says nothing about this week. No current report is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
           {
             "field": "off_field",
             "side": "home",
@@ -246,7 +270,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T16:00:00.000Z",
-        "retrieved_at": "2026-10-28T18:54:18.299Z"
+        "retrieved_at": "2026-10-29T16:25:42.209Z"
       },
       "home": {
         "team": "Syracuse",
@@ -330,9 +354,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T23:30:00.000Z",
-        "retrieved_at": "2026-10-28T18:54:18.299Z"
+        "retrieved_at": "2026-10-29T16:25:42.209Z"
       },
-      "generated_at": "2026-10-28T18:54:16.908Z",
+      "generated_at": "2026-10-29T16:26:38.488Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -376,7 +400,7 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "+8.5",
-                "n": 8.53,
+                "n": 8.51,
                 "rank": "#14 of 138",
                 "rank_n": 14,
                 "note": null
@@ -401,21 +425,21 @@
               "a": {
                 "v": "65.9",
                 "n": 65.9,
-                "rank": "#8 of 138",
-                "rank_n": 8,
+                "rank": "#7 of 138",
+                "rank_n": 7,
                 "note": null
               },
               "h": {
                 "v": "54.8",
                 "n": 54.8,
-                "rank": "#38 of 138",
-                "rank_n": 38,
+                "rank": "#39 of 138",
+                "rank_n": 39,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 11.1,
-                "rank_gap": 30
+                "rank_gap": 32
               }
             },
             {
@@ -423,8 +447,8 @@
               "k": "Performance",
               "note": null,
               "a": {
-                "v": "65.3",
-                "n": 65.3,
+                "v": "65.2",
+                "n": 65.2,
                 "rank": "#14 of 138",
                 "rank_n": 14,
                 "note": null
@@ -438,7 +462,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 8.3,
+                "gap": 8.2,
                 "rank_gap": 28
               }
             },
@@ -476,8 +500,8 @@
               "k": "Offense",
               "note": null,
               "a": {
-                "v": "58.0",
-                "n": 58,
+                "v": "57.9",
+                "n": 57.9,
                 "rank": "#24 of 138",
                 "rank_n": 24,
                 "note": null
@@ -491,7 +515,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 5.1,
+                "gap": 5,
                 "rank_gap": 27
               }
             },
@@ -533,14 +557,14 @@
               "h": {
                 "v": "47.4",
                 "n": 47.4,
-                "rank": "#109 of 130",
-                "rank_n": 109,
+                "rank": "#108 of 130",
+                "rank_n": 108,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 2,
-                "rank_gap": 24
+                "rank_gap": 23
               }
             },
             {
@@ -548,10 +572,10 @@
               "k": "Run offense",
               "note": null,
               "a": {
-                "v": "46.8",
-                "n": 46.8,
-                "rank": "#83 of 138",
-                "rank_n": 83,
+                "v": "46.7",
+                "n": 46.7,
+                "rank": "#85 of 138",
+                "rank_n": 85,
                 "note": null
               },
               "h": {
@@ -563,8 +587,8 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 2,
-                "rank_gap": 10
+                "gap": 1.9,
+                "rank_gap": 8
               }
             },
             {
@@ -572,8 +596,8 @@
               "k": "Pass offense",
               "note": null,
               "a": {
-                "v": "65.5",
-                "n": 65.5,
+                "v": "65.4",
+                "n": 65.4,
                 "rank": "#9 of 137",
                 "rank_n": 9,
                 "note": null
@@ -587,7 +611,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 6.3,
+                "gap": 6.2,
                 "rank_gap": 15
               }
             },
@@ -651,21 +675,21 @@
               "a": {
                 "v": "64.3",
                 "n": 64.3,
-                "rank": "#8 of 138",
-                "rank_n": 8,
+                "rank": "#7 of 138",
+                "rank_n": 7,
                 "note": null
               },
               "h": {
                 "v": "58.7",
                 "n": 58.7,
-                "rank": "#64 of 138",
-                "rank_n": 64,
+                "rank": "#59 of 138",
+                "rank_n": 59,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 5.6,
-                "rank_gap": 56
+                "rank_gap": 52
               }
             },
             {
@@ -699,15 +723,15 @@
               "a": {
                 "v": "56.6",
                 "n": 56.6,
-                "rank": "#20 of 138",
-                "rank_n": 20,
+                "rank": "#21 of 138",
+                "rank_n": 21,
                 "note": null
               },
               "h": {
                 "v": "56.8",
                 "n": 56.8,
-                "rank": "#13 of 138",
-                "rank_n": 13,
+                "rank": "#14 of 138",
+                "rank_n": 14,
                 "note": null
               },
               "edge": {
@@ -778,14 +802,14 @@
               "h": {
                 "v": "51.3",
                 "n": 51.3,
-                "rank": "#87 of 138",
-                "rank_n": 87,
+                "rank": "#86 of 138",
+                "rank_n": 86,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 5.2,
-                "rank_gap": 46
+                "rank_gap": 45
               }
             },
             {
@@ -826,14 +850,14 @@
               "h": {
                 "v": "54.9",
                 "n": 54.9,
-                "rank": "#57 of 138",
-                "rank_n": 57,
+                "rank": "#56 of 138",
+                "rank_n": 56,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 4.5,
-                "rank_gap": 42
+                "rank_gap": 41
               }
             },
             {
@@ -872,8 +896,8 @@
               "a": {
                 "v": "53.1",
                 "n": 53.1,
-                "rank": "#85 of 138",
-                "rank_n": 85,
+                "rank": "#86 of 138",
+                "rank_n": 86,
                 "note": null
               },
               "h": {
@@ -886,7 +910,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.3,
-                "rank_gap": 79
+                "rank_gap": 80
               }
             },
             {
@@ -923,33 +947,33 @@
       "away": [
         {
           "k": "QB room",
-          "rank_gap": 56,
+          "rank_gap": 52,
           "gap": 5.6,
           "lead": "SMU",
           "trail": "Syracuse",
-          "lead_cell": "64.3 · #8 of 138",
-          "trail_cell": "58.7 · #64 of 138",
-          "text": "SMU 64.3 (#8 of 138) vs Syracuse 58.7 (#64 of 138) — 56 places on the national board."
+          "lead_cell": "64.3 · #7 of 138",
+          "trail_cell": "58.7 · #59 of 138",
+          "text": "SMU 64.3 (#7 of 138) vs Syracuse 58.7 (#59 of 138) — 52 places on the national board."
         },
         {
           "k": "Defensive line",
-          "rank_gap": 46,
+          "rank_gap": 45,
           "gap": 5.2,
           "lead": "SMU",
           "trail": "Syracuse",
           "lead_cell": "56.5 · #41 of 138",
-          "trail_cell": "51.3 · #87 of 138",
-          "text": "SMU 56.5 (#41 of 138) vs Syracuse 51.3 (#87 of 138) — 46 places on the national board."
+          "trail_cell": "51.3 · #86 of 138",
+          "text": "SMU 56.5 (#41 of 138) vs Syracuse 51.3 (#86 of 138) — 45 places on the national board."
         },
         {
           "k": "Secondary",
-          "rank_gap": 42,
+          "rank_gap": 41,
           "gap": 4.5,
           "lead": "SMU",
           "trail": "Syracuse",
           "lead_cell": "59.4 · #15 of 138",
-          "trail_cell": "54.9 · #57 of 138",
-          "text": "SMU 59.4 (#15 of 138) vs Syracuse 54.9 (#57 of 138) — 42 places on the national board."
+          "trail_cell": "54.9 · #56 of 138",
+          "text": "SMU 59.4 (#15 of 138) vs Syracuse 54.9 (#56 of 138) — 41 places on the national board."
         },
         {
           "k": "Linebackers",
@@ -975,13 +999,13 @@
       "home": [
         {
           "k": "Depth",
-          "rank_gap": 79,
+          "rank_gap": 80,
           "gap": 1.3,
           "lead": "Syracuse",
           "trail": "SMU",
           "lead_cell": "54.4 · #6 of 138",
-          "trail_cell": "53.1 · #85 of 138",
-          "text": "Syracuse 54.4 (#6 of 138) vs SMU 53.1 (#85 of 138) — 79 places on the national board."
+          "trail_cell": "53.1 · #86 of 138",
+          "text": "Syracuse 54.4 (#6 of 138) vs SMU 53.1 (#86 of 138) — 80 places on the national board."
         },
         {
           "k": "Offensive line",
@@ -999,9 +1023,9 @@
           "gap": 0.2,
           "lead": "Syracuse",
           "trail": "SMU",
-          "lead_cell": "56.8 · #13 of 138",
-          "trail_cell": "56.6 · #20 of 138",
-          "text": "Syracuse 56.8 (#13 of 138) vs SMU 56.6 (#20 of 138) — 7 places on the national board."
+          "lead_cell": "56.8 · #14 of 138",
+          "trail_cell": "56.6 · #21 of 138",
+          "text": "Syracuse 56.8 (#14 of 138) vs SMU 56.6 (#21 of 138) — 7 places on the national board."
         }
       ],
       "measured": [],
@@ -1015,7 +1039,7 @@
         "att": {
           "team": "SMU",
           "label": "pass offense",
-          "v": "65.5",
+          "v": "65.4",
           "rank": "#9 of 137",
           "note": null
         },
@@ -1027,15 +1051,15 @@
           "note": null
         },
         "complete": true,
-        "read": "SMU’s pass offense rates 65.5 (#9 of 137) against Syracuse’s pass defense at 59.5 (#25 of 138). SMU’s unit stands higher among its own position group, by 16 places."
+        "read": "SMU’s pass offense rates 65.4 (#9 of 137) against Syracuse’s pass defense at 59.5 (#25 of 138). SMU’s unit stands higher among its own position group, by 16 places."
       },
       {
         "title": "SMU run offense vs Syracuse run defense",
         "att": {
           "team": "SMU",
           "label": "run offense",
-          "v": "46.8",
-          "rank": "#83 of 138",
+          "v": "46.7",
+          "rank": "#85 of 138",
           "note": null
         },
         "def": {
@@ -1046,7 +1070,7 @@
           "note": null
         },
         "complete": true,
-        "read": "SMU’s run offense rates 46.8 (#83 of 138) against Syracuse’s run defense at 53.6 (#65 of 138). Syracuse’s unit stands higher among its own position group, by 18 places."
+        "read": "SMU’s run offense rates 46.7 (#85 of 138) against Syracuse’s run defense at 53.6 (#65 of 138). Syracuse’s unit stands higher among its own position group, by 20 places."
       },
       {
         "title": "Syracuse pass offense vs SMU pass defense",
@@ -1092,18 +1116,18 @@
           "team": "SMU",
           "label": "QB room",
           "v": "64.3",
-          "rank": "#8 of 138",
+          "rank": "#7 of 138",
           "note": null
         },
         "def": {
           "team": "Syracuse",
           "label": "secondary",
           "v": "54.9",
-          "rank": "#57 of 138",
+          "rank": "#56 of 138",
           "note": null
         },
         "complete": true,
-        "read": "SMU’s QB room rates 64.3 (#8 of 138) against Syracuse’s secondary at 54.9 (#57 of 138). SMU’s unit stands higher among its own position group, by 49 places."
+        "read": "SMU’s QB room rates 64.3 (#7 of 138) against Syracuse’s secondary at 54.9 (#56 of 138). SMU’s unit stands higher among its own position group, by 49 places."
       },
       {
         "title": "Syracuse QB room vs SMU secondary",
@@ -1111,7 +1135,7 @@
           "team": "Syracuse",
           "label": "QB room",
           "v": "58.7",
-          "rank": "#64 of 138",
+          "rank": "#59 of 138",
           "note": null
         },
         "def": {
@@ -1122,7 +1146,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Syracuse’s QB room rates 58.7 (#64 of 138) against SMU’s secondary at 59.4 (#15 of 138). SMU’s unit stands higher among its own position group, by 49 places."
+        "read": "Syracuse’s QB room rates 58.7 (#59 of 138) against SMU’s secondary at 59.4 (#15 of 138). SMU’s unit stands higher among its own position group, by 44 places."
       },
       {
         "title": "SMU offensive line vs Syracuse defensive line",
@@ -1137,11 +1161,11 @@
           "team": "Syracuse",
           "label": "defensive line",
           "v": "51.3",
-          "rank": "#87 of 138",
+          "rank": "#86 of 138",
           "note": null
         },
         "complete": true,
-        "read": "SMU’s offensive line rates 51.4 (#72 of 138) against Syracuse’s defensive line at 51.3 (#87 of 138). SMU’s unit stands higher among its own position group, by 15 places."
+        "read": "SMU’s offensive line rates 51.4 (#72 of 138) against Syracuse’s defensive line at 51.3 (#86 of 138). SMU’s unit stands higher among its own position group, by 14 places."
       },
       {
         "title": "Syracuse offensive line vs SMU defensive line",
@@ -1206,18 +1230,18 @@
           "team": "SMU",
           "label": "receivers",
           "v": "56.6",
-          "rank": "#20 of 138",
+          "rank": "#21 of 138",
           "note": null
         },
         "def": {
           "team": "Syracuse",
           "label": "secondary",
           "v": "54.9",
-          "rank": "#57 of 138",
+          "rank": "#56 of 138",
           "note": null
         },
         "complete": true,
-        "read": "SMU’s receivers rates 56.6 (#20 of 138) against Syracuse’s secondary at 54.9 (#57 of 138). SMU’s unit stands higher among its own position group, by 37 places."
+        "read": "SMU’s receivers rates 56.6 (#21 of 138) against Syracuse’s secondary at 54.9 (#56 of 138). SMU’s unit stands higher among its own position group, by 35 places."
       },
       {
         "title": "Syracuse receivers vs SMU secondary",
@@ -1225,7 +1249,7 @@
           "team": "Syracuse",
           "label": "receivers",
           "v": "56.8",
-          "rank": "#13 of 138",
+          "rank": "#14 of 138",
           "note": null
         },
         "def": {
@@ -1236,7 +1260,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Syracuse’s receivers rates 56.8 (#13 of 138) against SMU’s secondary at 59.4 (#15 of 138). Syracuse’s unit stands higher among its own position group, by 2 places."
+        "read": "Syracuse’s receivers rates 56.8 (#14 of 138) against SMU’s secondary at 59.4 (#15 of 138). Syracuse’s unit stands higher among its own position group, by 1 place."
       }
     ],
     "roster": {
@@ -1312,11 +1336,11 @@
         {
           "k": "Starter quality",
           "note": "projected starters, weighted by position value",
-          "a": "60.8",
+          "a": "60.7",
           "h": "57.4",
           "edge": {
             "side": "a",
-            "gap": 3.3999999999999986
+            "gap": 3.3000000000000043
           }
         },
         {
@@ -1361,7 +1385,7 @@
         {
           "k": "Starter quality",
           "lead": "SMU",
-          "text": "SMU leads on starter quality — SMU 60.8, Syracuse 57.4."
+          "text": "SMU leads on starter quality — SMU 60.7, Syracuse 57.4."
         },
         {
           "k": "Rotation quality",
@@ -1393,9 +1417,9 @@
         "bullets": [
           "SMU is the better football team by 9.3 points on opponent-adjusted results, with roughly 35% of it still inherited from last season (-9.3 pts).",
           "Stylistically the matchup favours SMU by 1.5 points: ball control vs front disruption (-1.5 pts).",
-          "QB room: SMU 64.3 (#8 of 138) vs Syracuse 58.7 (#64 of 138) — 56 places on the national board.",
-          "Defensive line: SMU 56.5 (#41 of 138) vs Syracuse 51.3 (#87 of 138) — 46 places on the national board.",
-          "Secondary: SMU 59.4 (#15 of 138) vs Syracuse 54.9 (#57 of 138) — 42 places on the national board."
+          "QB room: SMU 64.3 (#7 of 138) vs Syracuse 58.7 (#59 of 138) — 52 places on the national board.",
+          "Defensive line: SMU 56.5 (#41 of 138) vs Syracuse 51.3 (#86 of 138) — 45 places on the national board.",
+          "Secondary: SMU 59.4 (#15 of 138) vs Syracuse 54.9 (#56 of 138) — 41 places on the national board."
         ]
       },
       "underdog": {
@@ -1403,9 +1427,9 @@
         "heading": "Why Syracuse can keep it close",
         "bullets": [
           "Playing at Syracuse is worth 2.8 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+2.8 pts).",
-          "Depth: Syracuse 54.4 (#6 of 138) vs SMU 53.1 (#85 of 138) — 79 places on the national board.",
+          "Depth: Syracuse 54.4 (#6 of 138) vs SMU 53.1 (#86 of 138) — 80 places on the national board.",
           "Offensive line: Syracuse 53.5 (#48 of 138) vs SMU 51.4 (#72 of 138) — 24 places on the national board.",
-          "Receivers: Syracuse 56.8 (#13 of 138) vs SMU 56.6 (#20 of 138) — 7 places on the national board.",
+          "Receivers: Syracuse 56.8 (#14 of 138) vs SMU 56.6 (#21 of 138) — 7 places on the national board.",
           "The outcome range is 14.6 points wide at one sigma — p10 -29.1 to p90 +12.9 for Syracuse, so a projection of -8.1 still produces results a long way either side of it."
         ]
       },
@@ -1579,7 +1603,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.4,
+            "score": 7.9,
             "max": 20
           },
           {
@@ -1591,7 +1615,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1614,8 +1638,18 @@
         "next_actions": [
           {
             "action": "Confirm Syracuse’s starting QB (Steve Angeli)",
-            "potential_gain": 10,
-            "text": "up to +10"
+            "potential_gain": 7,
+            "text": "up to +7"
+          },
+          {
+            "action": "Restore an injury/availability source for SMU",
+            "potential_gain": 3,
+            "text": "up to +3 once confirm Syracuse’s starting QB (Steve Angeli) is done"
+          },
+          {
+            "action": "Restore an injury/availability source for Syracuse",
+            "potential_gain": 3,
+            "text": "up to +3 once confirm Syracuse’s starting QB (Steve Angeli) is done"
           }
         ],
         "stability": {
@@ -1730,19 +1764,19 @@
         },
         {
           "k": "Talent",
-          "a": "65.9  #8",
-          "h": "54.8  #38",
+          "a": "65.9  #7",
+          "h": "54.8  #39",
           "note": null
         },
         {
           "k": "Performance",
-          "a": "65.3  #14",
+          "a": "65.2  #14",
           "h": "57.0  #42",
           "note": null
         },
         {
           "k": "Offense",
-          "a": "58.0  #24",
+          "a": "57.9  #24",
           "h": "52.9  #51",
           "note": null
         },
@@ -1755,18 +1789,18 @@
         {
           "k": "Special teams",
           "a": "49.4  #85",
-          "h": "47.4  #109",
+          "h": "47.4  #108",
           "note": null
         },
         {
           "k": "Run offense",
-          "a": "46.8  #83",
+          "a": "46.7  #85",
           "h": "44.8  #93",
           "note": null
         },
         {
           "k": "Pass offense",
-          "a": "65.5  #9",
+          "a": "65.4  #9",
           "h": "59.2  #24",
           "note": null
         },
@@ -1784,8 +1818,8 @@
         },
         {
           "k": "QB room",
-          "a": "64.3  #8",
-          "h": "58.7  #64",
+          "a": "64.3  #7",
+          "h": "58.7  #59",
           "note": null
         },
         {
@@ -1796,8 +1830,8 @@
         },
         {
           "k": "Receivers",
-          "a": "56.6  #20",
-          "h": "56.8  #13",
+          "a": "56.6  #21",
+          "h": "56.8  #14",
           "note": null
         },
         {
@@ -1809,7 +1843,7 @@
         {
           "k": "Defensive line",
           "a": "56.5  #41",
-          "h": "51.3  #87",
+          "h": "51.3  #86",
           "note": null
         },
         {
@@ -1821,12 +1855,12 @@
         {
           "k": "Secondary",
           "a": "59.4  #15",
-          "h": "54.9  #57",
+          "h": "54.9  #56",
           "note": null
         },
         {
           "k": "Depth",
-          "a": "53.1  #85",
+          "a": "53.1  #86",
           "h": "54.4  #6",
           "note": null
         },
@@ -1864,11 +1898,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "dfumo41l3y59i",
+    "packet_hash": "1xsst7n19hq7gh",
     "status": "EXPLAINED",
     "input_suspect": false,
     "question": "Can SMU take away Syracuse’s big plays?",
@@ -1924,7 +1958,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-29T05:52:16.383Z",
+        "observed_at": "2026-10-29T16:27:54.289Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1940,6 +1974,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T09:49:42.098Z"
+    "at": "2026-10-29T18:25:10.361Z"
   }
 }

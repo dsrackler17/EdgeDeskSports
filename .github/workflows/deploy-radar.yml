@@ -31,6 +31,9 @@
 # may finish only part of a wallet; the next call carries on. The wallet calls stop while fewer than
 # run_now_reserve of today's Polymarket requests remain, so the 10-minute
 # tonight runs keep theirs; the 06:10 UTC schedule takes the wallets left.
+# A grade runs after every 25 good wallet calls as well as at the end, and the
+# wallet calls stop after 5 hours, so the last grade runs inside GitHub's
+# 6-hour job limit.
 name: Deploy Prediction Radar
 
 on:
@@ -295,17 +298,31 @@ jobs:
           case "$(field status)" in ok|warn) ;; *) echo "::error::the pool run ended '$(field status)': $(field message)"; exit 1;; esac
 
           echo "== the wallets, 3 a call, one call at a time"
-          n=0
+          # A call that fails (a wallet ran it out of compute: HTTP 546) leaves that wallet set aside by the
+          # function's attempt mark, so the next call goes on with the rest; three failures in a row stop the
+          # calls. The grade runs either way, and the step ends red if any call failed.
+          # A grade also runs after every 25 good wallet calls (it asks Polymarket nothing), so the site shows
+          # what is synced so far, and the wallet calls stop after 5 hours, so the last grade runs well inside
+          # GitHub's 6-hour job limit: a long run never loses its grade.
+          n=0; failed=0; streak=0; good=0; gfailed=0; t0=$(date +%s); stop_after=$((300 * 60)); grade_every=25
           while :; do
+            if [ $(($(date +%s) - t0)) -ge "$stop_after" ]; then echo "Stopping the wallet calls after 5 hours, so the grade runs inside GitHub's 6-hour job limit. The 06:10 UTC schedule takes the wallets still due."; break; fi
             l=$(left)
             if [ "$l" -lt "$RESERVE" ]; then echo "Stopping the wallet calls: $l of today's requests are left, under the $RESERVE kept for the tonight runs. The 06:10 UTC schedule takes the wallets still due."; break; fi
             n=$((n + 1))
-            call wallets || { echo "::error::wallet call $n did not answer 200"; exit 1; }
-            st=$(field status)
-            if [ "$st" = error ]; then echo "::error::wallet call $n ended in error: $(field message)"; exit 1; fi
-            if [ "$st" = skipped ]; then echo "Stopping the wallet calls: call $n was skipped ($(field message))."; break; fi
-            if [ "$(field details.wallets)" = 0 ]; then echo "Every pool wallet is synced."; break; fi
+            if call wallets && [ "$(field status)" != error ]; then streak=0; good=$((good + 1)); else
+              failed=$((failed + 1)); streak=$((streak + 1))
+              echo "::warning::wallet call $n failed (HTTP $code). The wallet it died on is set aside; the next call goes on."
+              if [ "$streak" -ge 3 ]; then echo "::error::three wallet calls in a row failed: stopping the wallet calls"; break; fi
+              continue
+            fi
+            if [ "$(field status)" = skipped ]; then echo "Stopping the wallet calls: call $n was skipped ($(field message))."; break; fi
+            if [ "$(field details.wallets)" = 0 ]; then sk=$(field details.skipped); echo "No wallet is due now (${sk:-0} set aside after a failed run; each is read again later)."; break; fi
             if [ "$n" -ge 300 ]; then echo "Stopping after 300 wallet calls."; break; fi
+            if [ $((good % grade_every)) -eq 0 ]; then
+              echo "== a grade along the way, after $good good wallet calls"
+              if ! { call grade && [ "$(field status)" != error ]; }; then gfailed=$((gfailed + 1)); echo "::warning::the grade after $good wallet calls did not finish (HTTP $code): the wallet calls go on, and the grade runs again"; fi
+            fi
           done
 
           echo "== the grade"
@@ -313,4 +330,7 @@ jobs:
           if [ "$(field status)" = error ]; then echo "::error::the grade ended in error: $(field message)"; exit 1; fi
           sec=""
           echo "== where it stands"
-          psql "$PGURL" -v ON_ERROR_STOP=1 -c "select (select count(*) from public.poly_wallets where in_pool) as pool_wallets, (select count(*) from public.poly_wallets where in_pool and activity_synced_at is not null) as synced, g.wallets as graded, g.ranked, g.top_directional, g.finished_at as graded_at from public.poly_grade_runs g order by g.finished_at desc limit 1"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -c "select (select count(*) from public.poly_wallets where in_pool) as pool_wallets, (select count(*) from public.poly_wallets where in_pool and activity_synced_at is not null) as synced, (select count(*) from public.poly_wallets where in_pool and activity_cursor ? 'attempt_at') as set_aside, g.wallets as graded, g.ranked, g.top_directional, g.finished_at as graded_at from public.poly_grade_runs g order by g.finished_at desc limit 1"
+          if [ "$gfailed" -gt 0 ]; then echo "::error::$gfailed grade(s) along the way did not finish (the last grade above still ran)"; fi
+          if [ "$failed" -gt 0 ]; then echo "::error::$failed wallet call(s) failed (the grade above still ran)"; fi
+          if [ "$failed" -gt 0 ] || [ "$gfailed" -gt 0 ]; then exit 1; fi

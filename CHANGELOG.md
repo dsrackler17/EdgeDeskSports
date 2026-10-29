@@ -1,5 +1,89 @@
 # Changelog
 
+## 2026-10-29 — Content engine: the evidence gate refused two correct week-9 articles and passed an incomplete one, from two writer bugs
+
+**Why.** `tools/content/evidence.test.js` ("every article generated from today's research passes the gate") went red on `main` from data alone: 202 passed, 1 failed, at `c933dc468`, `adcb2b7f8` and `9957decf9`. Two articles were blocked, for two different reasons.
+
+- **A number the claim itself prints was "not in the evidence"** (Utah at Cincinnati, `numbers_in_evidence`: 51.8, 44, 42.6). The gate was wrong.
+  - A claim's printed figure and its citation number were rounded by two different functions: `pct1` (`toFixed`) for the text, `rnd` for `cite.nums`.
+  - They disagree at x.x5. For example, 0.5185 prints as 51.8% but was cited as 51.9.
+  - So an article quoting the claim word for word could not cite it, and the FBS average in the same sentence fell with it.
+  - Today's research had 71 such claims out of 4,260, across third down, red zone, explosive plays, run blocking, early downs, efficiency, protection and the metric-conflict claims. One more claim cited a pick'em's 0.0 while printing "a pick'em".
+  - Fix (`lib/football_evidence.js`): `metricNum` now derives from `metricText`, the same formatter the reader sees, so no printed number changes. `other_models` cites only a number it prints. All 4,260 claims are now consistent.
+- **A starting quarterback listed out went unmentioned** (Kansas State at Colorado, upset watch, `injuries_addressed`: "Avery Johnson is listed as out on the Big 12 availability report"). The gate was right; the writer was wrong.
+  - The weekly-preview capsule printed either a team's quarterback input conflict or its first official listing, never both. So the conflict about Jacob Knuth (doubtful) hid Avery Johnson (out).
+  - Fix (`lib/content_engine.js`, `capsuleEv`): the capsule also prints every other quarterback listing and input conflict that the gate requires (`mustAddress`), and never repeats a player it has already covered. The single-game writer already did this.
+- `supabase/functions/content_engine/index.ts` was regenerated with `node tools/content/inline.js` (its `--check` passes).
+
+Tests: `tools/content/evidence.test.js` gains S 3b (a second quarterback listed out is named, and the gate passes), S 3c (every claim the current build makes cites only numbers its text prints) and S 3d (0.5185 is cited exactly as printed).
+- Against `main`'s library logic: `FAIL | football evidence pipeline | 202 passed, 4 failed` (S 3b, S 3c, S 3d and the live check).
+- After: `206 passed, 0 failed`.
+- The frozen week-6 fixture keeps the citations its own build wrote: it is a record and is not rewritten.
+
+
+## 2026-10-29 — Football situational intelligence (NFL + every FBS team): observed tendencies on the cards, four experimental volume models, SHADOW beside the existing models
+
+**Why.** EdgeDesk's football models price games but do not describe how each team plays by situation (down and distance, field position, clock, score, script), or how much volume a team and its players are likely to get. This engine observes that from public play-by-play, and tests whether it predicts volume better than averages. The full write-up is `football/situational/README.md`.
+
+**It changes no EdgeDesk number.**
+- Every integration target is SHADOW: a labelled block with `applied_points: 0` beside the NFL slate, the FBS slate and both simulators.
+- ACTIVE needs three locks, and no file in the repository opens the first.
+- On today's real feeds, the NFL slate builder and the FBS coverage builder produce the same artifacts with `FSIE_MODE=OFF` and in SHADOW, apart from the block and clock stamps.
+- No pricing file reads the layer (enforced by `tests/integration.test.js`).
+
+- **A · ingestion and quality** (`football/situational/{nfl,cfb}/source.js`, `core/ingest.js`, `core/quality.js`).
+  - Sources: nflverse (play-by-play, FTN charting, rosters, injury reports, team box) and the sportsdataverse ESPN college mirror. Every download is hashed and stamped, and a completed season is never fetched again.
+  - Play, game and team gates: volume, situation and player validity are judged separately, and every rejection carries its reason.
+  - NFL 2026: 107 / 107 games accepted, and pass and rush attempts match the team box on 214 / 214 team-games.
+  - CFB 2026: 138 / 138 FBS teams, 561 of 570 games accepted (7 partial, 2 rejected, 0 missing).
+  - Backfill: NFL 2015–2026, CFB 2014–2026.
+- **B · observed tendencies on the cards.** `app.html` adds a *Situational intelligence* section to NFL and FBS game cards.
+  - It shows season-to-date rates with their samples, the team's coverage tier and gaps, and a separate *Research Models (Experimental)* block with the holdout outcome.
+  - The rest of the board is unchanged (`tools/football/fsie_ui.e2e.js`).
+- **C · four EXPERIMENTAL models** (`core/volume_model.js`, `core/player_model.js`, `core/research.js`).
+  - NFL and CFB team play volume; NFL and CFB player opportunity.
+  - Preregistered and frozen before the 2025 holdout, which was evaluated once.
+  - **All four failed their criteria and stay EXPERIMENTAL.** The team models beat season and recent averages on every target. Against market-only, CFB was better on all three targets; NFL was better on plays and pass attempts, but rush attempts crossed 0.
+  - Both team models failed on bias, and the player models failed on bias and sample size.
+  - A harness defect was found after the look. The holdout's interval coverage was simulated on the `formation` rung instead of the primary `pace_script`. It is recorded, not fixed: a labelled post-hoc file (`research/posthoc_interval_variant_<sport>.json`) changes no verdict, and the fix belongs to a v2 registration.
+- **D · against the market and the existing forecast** (`core/market_study.js`).
+  - On the 2026 props the pipeline captured (NFL weeks 4–5, CFB weeks 5–6; capture has been down since Oct 10), the line was as good as or better than the model.
+  - Probability CLV was negative in every market.
+  - The existing props model, the situational model and the line could not be told apart on shared rows.
+  - Missing closes are excluded with their reason.
+- **E · database** (`supabase/football_situational.sql`, `_rollback.sql`, `_registry.sql`).
+  - 11 `fsie_` tables with write-once triggers, RLS (signed-in read, service write, no anon), pregame and CLV checks, and a shadow row that cannot apply points unless ACTIVE.
+  - The registry records the four models as EXPERIMENTAL with their holdout results.
+  - `football/situational/sync_supabase.js` copies insert-only.
+  - **Not applied to production here (no credentials): NOT VERIFIED.**
+- **F · automation.** `.github/workflows/football-situational.yml`: a daily build, an extra pass on Sun/Mon, a market refresh every 3 h, and the Tuesday prop study.
+  - The suites run first.
+  - `football-situational-tests.yml` runs every suite on a pull request (registered in `tools/ci/checks.json`).
+- **Rollback.** Set the modes in `football/situational/config/integration.json` to OFF, or set `FSIE_MODE=OFF` for one run. Then disable the workflow, remove the `app.html` section, and run the rollback SQL. The steps are in the README.
+- **The CFB freeze.** `football/fbs/build_coverage.js` is on the CFB champion freeze's pricing path. Its new guarded hook therefore gets the declared PATCH row `edgedesk_cfb_r1+p13`, appended by `football/cfb_validation/build.js`. No price moves. The validation dashboards are left as `main`'s scheduled build writes them; its next run regenerates them with `p13` in place.
+- **Next scheduled builds.** The NFL slate and the FBS slate gain the SHADOW block on their next scheduled build.
+
+Tests:
+- `football/situational/tests/core.test.js` (69)
+- `model.test.js` (44)
+- `market.test.js` (22)
+- `integration.test.js` (25)
+- `sql.test.js` (35, real PostgreSQL)
+- `tools/football/fsie_card_ui.test.js` (22)
+- `tools/football/fsie_ui.e2e.js` (14, Chromium)
+
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
+
+
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
 
 ## 2026-10-29 — Content engine: two Week 9 articles the gate blocked on main now pass it (the writer, not the gate, was wrong)
 
@@ -128,6 +212,53 @@ All run in `cfb-sp-plus-tests.yml`.
   - `apply_cron`: the four schedules.
 
   A report row that says CHECK THIS fails the run.
+
+## 2026-10-29 — Prediction Radar 3/3: the Radar record, "How following has done", append-only and graded against the close and the result
+
+**What it is.** A record of every Smart Money Tonight card, kept so nobody can edit it, and graded the way a follower would have done. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("The Radar record").
+- **`radar_cards`.** Every card is published once per game and side, at the Polymarket price at that moment, by the same function that draws Smart Money Tonight (`radar_publish_cards()`).
+- **`radar_card_results`.** Each card is graded once after its game (`radar_grade_cards()`):
+  - the close, whether the card beat it, and its CLV%;
+  - the result, from the market's own resolution;
+  - the ROI of one unit at the published price.
+
+  A card with no resolution a week after its start is void. Both tables are append-only. Their guards refuse a grade whose arithmetic is not the database's own.
+- **`radar_record()`**, for subscribers. It reports record, ROI and beat-close rate, plus a small-sample flag under 200 graded cards. It stays labelled **Experimental** until H-RADAR-01 passes its criteria, and quotes what H-RADAR-01 found verbatim.
+- **"How following has done"** sits under Smart Money Tonight on the Overview.
+- **`polymarket_sync`** publishes and grades in the 10-minute run, after it stores holders, prices and resolutions. While the record is not installed it raises a warning.
+
+**Tests.** `radar_sql.test.js` 198, `sync_fn.test.js` with the record, `radar_ui.test.js` 72, `radar_ui.e2e.js` 54.
+
+## 2026-10-29 — Prediction Radar 2/3: Smart Money Tonight on the Overview, trader pages, and the free /radar/ page
+
+**What a reader sees.** Nothing is drawn while Radar is off or H-RADAR-01 is not registered. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("Where it shows").
+- **Smart Money Tonight** is the first thing on the Overview, for subscribers. Each card leads with one plain sentence ("7 top bettors, $84K, on Chiefs -3"). Then come the average entry, the price now and whether it moved, EdgeDesk's fair with "Smart money agrees/disagrees with the sharp fair price" (or why there is no comparison), conviction flags, the other side, and each bettor. Cards are sorted by bettors, then dollars. A game with no graded bettor shows nothing.
+- **Trader pages** (a sheet in the terminal, a route on `/radar/`): the public name only when the wallet made it public, else a short address. They show record, ROI, CLV, follow ROI, style, sample, open positions (subscribers) and every graded bet with Polygonscan links. No bio.
+- **`/radar/`**, free: the graded leaderboard, trader pages, what H-RADAR-01 found, and a teaser of the first card that never names its side (`radar_teaser()`, new in `supabase/radar.sql`; the migration mirror stays byte-identical).
+- **Labels and limits.** Experimental, Small sample and High conviction are always visible. The Radar Score is never shown without its components. Every surface carries the Known limitations block. There are no bet or copy buttons, no affiliate links, and no promises.
+
+**Tests.** `tools/radar/radar_ui.test.js` 59, `tools/radar/radar_ui.e2e.js` 50 (Chromium at 390 and 1280 px), `radar_sql.test.js` 172 (with the teaser), `tools/site/free_access.test.js` with the new page and doors.
+
+## 2026-10-29 — Prediction Radar 1/3: Polymarket sports bettors graded from their own trades, behind a gateway and a switch; H-RADAR-01 registered before any data and run once
+
+**What it is.** Radar grades the Polymarket sports wallets with the most volume on their own trades: record, profit, ROI, CLV, the ROI a follower would have had 5 (and 15) minutes later, conviction and a style (Directional, Market Maker, Hedger). It is research, labelled Experimental, the same for every reader, and nothing trades for anyone. No UI ships in this change. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md).
+
+**What changed.**
+- **The grading core** (`lib/edgedesk_radar.js`). Every rule comes from one constant, `public.radar_rules()`, and nothing runs without it. P&L is computed from trades; Polymarket's P&L and rankings hosts are never read.
+- **The gateway** (`lib/edgedesk_poly_gateway.js`), the only Radar client of Polymarket: the `POLYMARKET_DATA_ENABLED` switch (off by default, one SQL statement turns it on or off, no deploy), a budget granted under a row lock, pacing, bounded backoff, a breaker. `tools/radar/no_bypass.test.js` fails if any other file names a Polymarket host.
+- **The data** (`supabase/radar.sql`, mirrored in `supabase/migrations/20261029120000_radar.sql`): append-only trades with transaction hashes, bets, versioned grades, holder and price snapshots. Anon reads the graded leaderboard and trader pages once Radar is on and H-RADAR-01 is registered; Smart Money Tonight and open positions are for subscribers (`has_active_sub()`). No existing policy changes.
+- **The job** (`supabase/functions/polymarket_sync`, schedules in `supabase/polymarket_sync_cron.sql`): holders every 10 minutes, the pool and wallet histories nightly, then a regrade.
+- **H-RADAR-01** (`research/radar/registration_h_radar_01.json`), committed before any Polymarket response was read: the top 25 directional wallets, followed 5 minutes after entry, must beat the close more than half the time and make money, each with a game-clustered 95% interval. The runner (`research/radar/run_validation.js`) runs it once, on GitHub's runner (`.github/workflows/radar-validation.yml`), and `research/radar/one_look.js` stops any later run from looking again until its report is committed.
+
+**What H-RADAR-01 found** (run 40823328433, `research/radar/H-RADAR-01/RESULTS.md`): **FAILED** on all three criteria. 41 followed bets over 37 games; beat-close rate 24.4% (95% CI 10.3% to 39.0%); follow ROI −1.7% (95% CI −33.4% to +30.5%). 172 of the 200 pool wallets had more than 30 pages of history and were excluded by the registered rule, so only 13 qualified, and 3 of them bet in the holdout. Radar stays Experimental; `supabase/radar_registry.sql` records the result with `passed = false`.
+
+**What the live probe found before the look** (`.github/workflows/radar-sources.yml`, each fixed with a regression test shown failing on the old code):
+- Gamma answers a resolved market only when asked with `closed=true`. Without it the H-RADAR-01 run would have read no market and spent its one look on an empty report.
+- `/v2/holders` refuses more than 100 holders with `include_pnl`, so Smart Money Tonight would never have shown a card.
+- One unwindowed page of open NFL events was 48 MB; events are now asked in a window, 5 a page.
+- Gamma's `spread` is the order book's spread, not a point; the line is read from `line` only.
+
+**Tests.** `tools/radar/`: core 96, fixtures 43 (recorded from the live probe), gateway 29, no-bypass 11, the runner and the one-look guard 30, the SQL on a real PostgreSQL as anon, a signed-in reader, a subscriber and the service role, and the shipped function against it 51. All run by `.github/workflows/radar-tests.yml`.
 
 ## 2026-10-28 — Billing change: the Fairline tier (`black`), and Fairline gated on it
 
