@@ -140,6 +140,21 @@ chk('S 3b a weekly-preview capsule names every quarterback on the availability r
   const body = a.sections.map((s) => s.body).join('\n');
   return /Jordan Example is listed as out/.test(body) && /Jared Curtis/.test(body) && (r.failed || []).indexOf('injuries_addressed') < 0;
 })());
+/* 2026-10-29: two fixes for the same capsule (#904, #907) merged side by side, and every quarterback
+   listing was printed up to three times, which no_repetition then blocked. Each is said once. */
+chk('S 3e a weekly-preview capsule says each quarterback listing once', (() => {
+  const g = JSON.parse(JSON.stringify(OM));
+  const base = g.evidence.claims.find((c) => c.key === 'report:home:Jared Curtis');
+  g.evidence.claims.push(Object.assign({}, base, { id: 'c_test_second_qb_out', key: 'report:home:Jordan Example', subject: 'Jordan Example', status: 'OUT',
+    values: Object.assign({}, base.values, { status: 'OUT' }), label: 'Jordan Example (official availability)',
+    text: base.text.replace('Jared Curtis as probable', 'Jordan Example as out'), short: 'Jordan Example is listed as out on the SEC availability report',
+    cite: { nums: [], words: ['Example', 'report|lists|listed|out'], all: true } }));
+  const a = CE.draft(oppFor([g], 'upset_watch'), { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
+  const qb = (a.sections.map((s) => s.body).join('\n').match(/\*\*Quarterbacks:\*\*[^\n]*/) || [''])[0];
+  const said = qb.replace(/\*\*Quarterbacks:\*\*\s*/, '').split(/(?<=\.)\s+/).filter(Boolean);
+  const twice = said.filter((x, i) => said.indexOf(x) !== i);
+  return said.length > 0 && twice.length === 0 || (console.log('   repeated: ' + JSON.stringify(twice)), false);
+})());
 /* 2026-10-29 (Utah at Cincinnati, week 9): a claim's citation numbers were rounded apart from its
    printed text (0.5185 printed 51.8% but was cited as 51.9), so an article quoting the claim word for
    word failed numbers_in_evidence. Every citation number must be one the claim itself prints. */
@@ -158,7 +173,7 @@ chk('S 3c every claim the current build makes cites only numbers its own text pr
 /* the same defect, deterministically: a percentage on a rounding boundary is cited as printed */
 chk('S 3d a percentage on a rounding boundary (0.5185) is cited exactly as the claim prints it', (() => {
   const t = FE.writer.metricText, n = FE.writer.metricNum;
-  return !!(t && n) && t('early_down_success', 0.5185) === '51.8%' && n('early_down_success', 0.5185) === '51.8' && n('def_early_down_allowed', 0.4405) === t('def_early_down_allowed', 0.4405).replace('%', '');
+  return !!(t && n) && t('early_down_success', 0.5185) === '51.9%' && n('early_down_success', 0.5185) === '51.9' && n('def_early_down_allowed', 0.4405) === t('def_early_down_allowed', 0.4405).replace('%', '');
 })());
 chk('S 4 it states the evidence against EdgeDesk’s number', passed(OMP.rep, 'contrary_evidence') && /The case for Ole Miss, and against EdgeDesk’s number/.test(OMB));
 chk('S 5 it never invents why the model likes a team', passed(OMP.rep, 'causal_supported') && /mechanics, not football reasons/.test(OMB));
