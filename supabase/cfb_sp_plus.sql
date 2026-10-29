@@ -151,9 +151,10 @@ end $blk$;
 -- ================================================================ the registry
 -- External estimates (football/sp_plus/registry.json): a third party's model
 -- is registered with its source, version and terms, and the server refuses to
--- record one as an EdgeDesk model or as validated by EdgeDesk. Public
--- metadata (no rating): anon and authenticated may read it; append-only like
--- the rest.
+-- record one as an EdgeDesk model or as validated by EdgeDesk. Metadata, no
+-- rating: authenticated may read it; anon holds nothing (the CFB security
+-- audit's least-privilege rule: anon reads only the settled-record views);
+-- append-only like the rest. Pages read football/sp_plus/registry.json.
 create table if not exists public.cfb_external_estimates (
   estimate_id            text primary key,
   name                   text not null,
@@ -181,7 +182,7 @@ create table if not exists public.cfb_external_estimates (
   constraint cfb_ext_attribution check (length(attribution) > 0)
 );
 comment on table public.cfb_external_estimates is
-  'External estimates (football/sp_plus/registry.json): third-party models shown beside EdgeDesk''s numbers. Never an EdgeDesk model, never validated by EdgeDesk (check constraint). Append-only; public metadata.';
+  'External estimates (football/sp_plus/registry.json): third-party models shown beside EdgeDesk''s numbers. Never an EdgeDesk model, never validated by EdgeDesk (check constraint). Append-only; authenticated read, anon nothing.';
 
 insert into public.cfb_external_estimates (estimate_id, name, kind, sport, edgedesk_model, validated_by_edgedesk, rating_tier, line_tier,
   model_key, rule, source, provider, source_version, terms_url, terms_dated, terms_summary, attribution, registered_at)
@@ -205,13 +206,12 @@ create trigger cfb_external_estimates_no_truncate_trg before truncate on public.
 
 alter table public.cfb_external_estimates enable row level security;
 drop policy if exists cfb_external_estimates_read on public.cfb_external_estimates;
-create policy cfb_external_estimates_read on public.cfb_external_estimates for select to public using (true);
+create policy cfb_external_estimates_read on public.cfb_external_estimates for select to authenticated using (true);
 do $blk$
 begin
   revoke all on table public.cfb_external_estimates from public;
   if exists (select 1 from pg_roles where rolname = 'anon') then
     revoke all on table public.cfb_external_estimates from anon;
-    grant select on table public.cfb_external_estimates to anon;
   end if;
   if exists (select 1 from pg_roles where rolname = 'authenticated') then
     revoke all on table public.cfb_external_estimates from authenticated;

@@ -25,7 +25,7 @@
   - A weekly and season report. Append-only, and checked before publish.
 - **E · the registry** (`football/sp_plus/registry.json`, `public.cfb_external_estimates`).
   - *SP+ projected line* is registered as an `EXTERNAL_ESTIMATE` with its source, version and terms.
-  - The server refuses to mark it an EdgeDesk model or validated.
+  - The server refuses to mark it an EdgeDesk model or validated. Authenticated readers may read it; anon gets nothing.
   - The page pins its badge to "External" ahead of the model registry.
 - **Terms.** CFBD's terms (2026-08-12, read as quoted; the site was unreachable from the build environment) allow commercial use and reasonable portions of factual data in a larger product, and recommend the attribution line. **No licence from ESPN for SP+ was found or obtained.** The owner chose to show the derived projected line only, publicly, with attribution.
 - **To switch it on.**
