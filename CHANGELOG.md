@@ -21,6 +21,8 @@
 - `page.e2e.js` 64 / 0: a signed-out visitor and a signed-in reader see it while paused, and it is gone after a reload once the feed is live.
 - On `main`'s page code the core suite crashes (no `feedNotice`), the wiring suite throws (no `loadFeed`), and the browser suite fails 2.
 
+
+
 ## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
 
 **What was wrong, once Pages' source was switched to GitHub Actions:**
@@ -103,6 +105,50 @@ All run in `cfb-sp-plus-tests.yml`.
   - `apply_cron`: the four schedules.
 
   A report row that says CHECK THIS fails the run.
+
+## 2026-10-28 — Billing change: the Fairline tier (`black`), and Fairline gated on it
+
+**Authorization change; needs the owner's explicit review.** A third Stripe product, Fairline (`tier = black`, $19.99/month or $159/year, lookup keys `fairline_monthly` / `fairline_annual`). It includes Bet Checker and never opens the Research Terminal. The ladder is red ⊂ black ⊂ blue. Detail: [docs/billing-hardening.md §15](docs/billing-hardening.md), [docs/fairline.md](docs/fairline.md).
+
+- **`supabase/billing_hardening.sql`**:
+  - Both tier CHECK constraints know `black`. Each is dropped and re-added in one statement, and only when it does not.
+  - `billing_learn_price_tier()` accepts `black`.
+  - `has_bet_checker_paid()` is red, black or blue.
+  - New `has_fairline_paid(uuid, timestamptz)`: black or blue in good standing. Service role only.
+  - `billing_access_for()` adds `fairline_paid` and reason `fairline_only`, and offers a black row `upgrade` (a portal switch).
+  - Report row 15 checks every learned red and black price against the rule.
+  - The access rule itself is unchanged.
+- **`supabase/fairline.sql`**: `fairline_paid()` now calls `has_fairline_paid()`. Bet Checker alone is no longer Fairline.
+- **`create_checkout_session`**: `{kind: 'fairline'}`. It sells only a price whose product says `black` at the consented figure, and records the tier before the session exists. It **refuses to sell** (503, nothing created) when the database could not record it: an error, or `refused:tier` from a database without this SQL. Bet Checker's checkout now refuses that answer too. A Bet Checker customer buying Fairline, or a Fairline customer buying the terminal's trial, gets `switch_plan`.
+- **The billing core** (`tools/billing/billing_core.js`, inlined into the three functions):
+  - The tier list knows `black`.
+  - A price Stripe cannot name is named by the price itself: its metadata, else the EdgeDesk lookup key (`bet_checker_*` red, `fairline_*` black). It is then learned.
+  - The webhook does this for the event's own price before its Stripe-down fallback write.
+  - Without this, a portal switch to a never-learned Fairline price during a Stripe outage opened the terminal (`has_access: true`, mutation-tested).
+- **`supabase/juicereel_billing.sql`**: when a Juice Reel buyer's row holds a live red or black Stripe plan, the terminal still replaces it. `juicereel_and_stripe_both_paid` is now raised, so a human cancels the Stripe plan. Before, it was orphaned silently.
+- **`sync_subscription`**: its access answer carries `fairline_paid`.
+- **Pages**:
+  - `lib/edgedesk_pricing.js` gains a `FAIRLINE` block (the one place the price is written), `fairlineOffer()` and `fairlineTerms()`.
+  - `lib/edgedesk_access.js` gains `fairline()`, and black in `betChecker()` and `offerFor()`.
+  - The Fairline page sells Fairline with the automatic-renewal consent, in Bet Checker's order. It gains Settings › Subscription. A Bet Checker reader is offered the portal switch.
+  - The terminal's paywall and the Bet Checker page name a Fairline plan as Fairline.
+  - `index.html`, `app.html` and `bet-checker/index.html` load the changed `edgedesk_pricing.js`, `edgedesk_access.js` (and, on Bet Checker, `edgedesk_bet_checker.js`, at `?v=20261029fl4` since it merged with main's own Bet Checker changes) under a new stamp (`?v=20261029fl2`), so a returning browser cannot keep the old copies. On Bet Checker an old `edgedesk_access.js` would show a Fairline customer as free. The landing page's stamp check failed until this was done; a new check in `tools/fairline/page.test.js` fails on any of these pages loading a stamp from before the `black` tier.
+- **Tests**: `tools/billing/fairline_tier.test.js` (72, new; in `personal-tests.yml`, `fairline-tests.yml` and `deploy-billing.yml`). The Fairline suites now run with black as paid and red as free (SQL 116, page 37, browser 42). `billing_hardening_sql.test.js` expects 15 report rows instead of 14.
+- **Not verified here:** production's `has_active_sub()` and paywall RLS are not in this repository. Run `docs/billing-hardening.md` §11 query 10 before selling Fairline.
+
+## 2026-10-29 — Bet Checker grades the NBA and the NHL (once their odds are on)
+
+**What changed.**
+- **`supabase/bet_checker.sql`** (mirrored in `migrations/20261028120000_bet_checker.sql`):
+  - `bet_checker_rules().sports` adds `basketball_nba` → NBA and `icehockey_nhl` → NHL. The grade thresholds, the fair-price freshness, the free allowance and the CLV formula are unchanged.
+  - `user_bets.sport`'s check (`bettor_decisions.sql`: CFB, NFL) is replaced by one that takes all four leagues, in the same transaction. Every existing row passes it.
+  - Report row 12 says the check takes every league in the rules.
+- **The page**: NBA and NHL pills. An NHL moneyline says it includes overtime and the shootout, because the board carries no 60-minute line.
+- **`docs/bet-checker.md`**: "The leagues", including where results come from. For these two leagues that is only `settle`'s word on the signal.
+
+**When it shows.** Only when capture prices the leagues. Both are off in the odds gateway until the owner turns them on after the November reset, every two hours ([METHODOLOGY-2026-10-29-nba-nhl-lines.md](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md)). Until then the page offers no NBA or NHL game.
+
+**Tests.** `bet_checker_sql.test.js` 137 / 0: the widened check, MLB still refused, NBA and NHL games offered and filtered, an NBA spread and an NHL moneyline graded on the same rules, the puck line, the free allowance, and an NHL close and result. On the previous SQL, 5 fail and the suite stops. `page.e2e.js` 61 / 0: the NHL pill, and the overtime note.
 
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 

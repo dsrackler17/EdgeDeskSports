@@ -538,6 +538,9 @@ only turns the day-1 and day-3 tips off; the billing reminder is not a tip.
 `lifecycle_admin_summary()` / `lifecycle_admin_set()` back the controls in
 `/admin/funnel/`. Report rows 1-5 should say `ok`. Tested by
 `tools/funnel/funnel_sql.test.js`; the sender by `tools/lifecycle/lifecycle.test.js`.
+Fairline's weekly Tape (`fairline_tape.sql`, below) is sent through this same
+pipeline: the same hourly job, sender, settings and `lifecycle_tokens`, behind
+`sending_enabled` and a switch of its own.
 
 ### `bankroll_and_stakes.sql` — the risk policy and the stake audit trail
 `bankroll_settings` is one MUTABLE row per reader: the bankroll (deliberately
@@ -716,8 +719,41 @@ column it reads that is missing). Mirrored byte for byte in
 - `fairline_board(p_sport, p_market, p_book)`: fair, the best price
   (`book_quotes` before `signals`), edge, quote age and freshness, Kalshi when
   its card says OK, DK Predictions inactive; paid every row, free the top 3.
+- `fairline_slices_at(uuid, from, to)`: the same slices over one window of
+  bets (by the game's start); `fairline_slices_for()` is it over every bet.
+  The Tape reads its week through it.
 - **The report** has 9 rows. Tested against a real PostgreSQL by
   `tools/fairline/fairline_sql.test.js`.
+
+### `fairline_tape.sql` / `fairline_tape_cron.sql` — The Tape, Fairline's Monday recap
+Apply **after** `fairline.sql` and `lifecycle_email.sql` (it stops, naming the
+missing one, otherwise). Mirrored byte for byte in
+`migrations/20261029120000_fairline_tape.sql` and
+`migrations/20261029120100_fairline_tape_cron.sql`. `docs/fairline.md` is the
+narrative.
+
+- `fairline_tapes`: **append-only**, one Tape per Fairline reader per week
+  (Monday to Monday, America/Chicago). Triggers refuse UPDATE, TRUNCATE and
+  any DELETE while the reader exists, for every role; deleting the account
+  still removes its Tapes. No client role reads it: the page reads through
+  `fairline_tapes()`, paid only (`fairline_paid()`).
+- `fairline_tape_build(at, force)`: service role / pg_cron; due Monday from
+  06:00 in Chicago, builds last week's Tape for every Fairline reader, once
+  (the unique key), and queues its email in `fairline_tape_deliveries`.
+- `fairline_tape_due()` / `fairline_tape_mark()`: the sender's
+  (`tools/fairline/tape_send.js`, in `lifecycle-email.yml`). Claim once,
+  re-check the reader now (opted out, bounced, no longer Fairline, too late,
+  a quiet week: skipped with the reason). Nothing is claimed unless
+  `lifecycle_settings.sending_enabled` **and**
+  `fairline_tape_settings.email_enabled` (**off by default**) are on.
+- `fairline_tape_unsubscribe(token)` (anon, the reader's `lifecycle_tokens`
+  token) and `fairline_tape_email(on)` (the reader): only The Tape's email,
+  `user_preferences.fairline_tape_emails`.
+- `fairline_tape_cron.sql`: one pg_cron job, `fairline_tape_build`, Mondays
+  at :23 past 11:00 and 12:00 UTC; the build decides which is 06:00 in
+  Chicago. No HTTP call and no secret.
+- **The reports** have 8 and 3 rows. Tested against a real PostgreSQL by
+  `tools/fairline/tape_sql.test.js`.
 
 ### `card_opportunities.sql` — the EdgeDesk Card's saved games and props
 Apply **after** `bettor_decisions.sql` (the file stops with a message naming

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>The Tape emails — EdgeDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     ONE-CLICK OPT-OUT FOR THE TAPE EMAILS (supabase/fairline_tape.sql).
+
+     The link in a Tape email carries ?t=<64-hex token> — the reader's own
+     lifecycle_tokens token, the same one the trial emails use. This page
+     posts that token, and nothing else, to fairline_tape_unsubscribe(), which
+     turns off user_preferences.fairline_tape_emails for the account the token
+     belongs to and skips any Tape email still waiting to go. It returns only
+     { ok }: it never says whose token it was.
+
+     As email/unsubscribe/: opening the link changes nothing; the reader
+     presses the button (a mail scanner that follows links switches nothing
+     off), and inside someone else's frame there is no button.
+
+     The Tape itself stays on the Fairline page; only the email stops. The
+     reader can turn it back on there.
+     =========================================================================== -->
+<style>
+:root{--ink:#0d1117;--panel:#141a22;--line:#26303c;--text:#eef2f6;--dim:#9aa7b4;--faint:#6b7885;--accent:#2fa79a;--on-accent:#042320;--neg:#e2604a}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;color-scheme:dark;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{width:100%;max-width:480px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 22px}
+.ey{font:700 11px/1.4 'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:22px;line-height:1.25;letter-spacing:-.02em;margin:10px 0 10px}
+p{color:var(--dim);font-size:14.5px;margin-top:10px}
+p.err{color:var(--neg)}
+.btn{display:inline-block;margin-top:18px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;border-radius:10px;padding:11px 16px;text-decoration:none;border:0;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+small{display:block;margin-top:18px;color:var(--faint);font-size:12px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main class="card" aria-live="polite">
+  <span class="ey">EdgeDesk · Fairline · The Tape</span>
+  <h1 id="h">Stop The Tape emails?</h1>
+  <p id="m">Press the button to stop the Monday email. The Tape stays on your Fairline page. Opening this link changes nothing on its own.</p>
+  <button class="btn" id="stop" type="button" hidden>Stop The Tape emails</button>
+  <a class="btn" id="go" href="/fairline/#tape" hidden>Open Fairline</a>
+  <small>Prices, not picks. 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</small>
+</main>
+<script>
+(function(){
+  var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+  var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+  var h=document.getElementById('h'), m=document.getElementById('m'), go=document.getElementById('go'), stop=document.getElementById('stop');
+  function done(title, msg, bad){ h.textContent=title; m.textContent=msg; m.className=bad?'err':''; go.hidden=false; }
+  var t=''; try{ t=(new URLSearchParams(location.search).get('t')||'').toLowerCase(); }catch(_){}
+  /* the token leaves the address bar before anything else happens */
+  try{ history.replaceState(null,'',location.pathname); }catch(_){}
+  if(!/^[0-9a-f]{64}$/.test(t)){
+    done('That link is incomplete.','Open the most recent Tape email and use its link again, or turn The Tape emails off on the Fairline page under Settings.',true);
+    return;
+  }
+  /* A BUTTON, NOT A PAGE LOAD (as email/unsubscribe/). */
+  var framed=false; try{ framed=window.top!==window.self; }catch(_){ framed=true; }
+  stop.hidden=framed;
+  stop.addEventListener('click', function(){
+    stop.disabled=true;
+    fetch(SB_URL+'/rest/v1/rpc/fairline_tape_unsubscribe',{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},body:JSON.stringify({p_token:t})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){
+        stop.hidden=true;
+        if(j&&j.ok){ done('The Tape emails are off.','You will not get the Monday email. The Tape is still on your Fairline page every Monday, and you can turn the email back on there under Settings.'); }
+        else{ done('That link has expired or was already used.','If you are still getting emails you do not want, reply to one of them and we will take care of it.',true); }
+      })
+      .catch(function(){ stop.disabled=false; done('We could not reach EdgeDesk.','Check your connection and press the button again.',true); });
+  });
+})();
+</script>
+</body>
+</html>

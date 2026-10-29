@@ -441,7 +441,7 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 @media(max-width:380px){.pm{grid-template-columns:1fr}.pm .nums{text-align:left}}
 
 /* ---------- value + pricing ---------- */
-.price{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.price{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:start}
 .hook{margin-top:30px;font-family:var(--disp);font-size:clamp(22px,2.4vw,28px);font-weight:600;letter-spacing:-.025em;line-height:1.15}
 .hook+p{margin-top:10px;font-size:15px;color:var(--dim);line-height:1.6;max-width:36em}
 .pcard{position:relative;background:var(--panel);border:1px solid rgba(47,167,154,.45);border-radius:20px;padding:30px;box-shadow:0 40px 80px -60px rgba(0,0,0,.95)}
@@ -463,8 +463,8 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .freecard .pper{font-size:14px}
 .freecard .btn{width:100%}
 /* Bet Checker: the annual figure under the price, the free tier, two doors */
-.bccard{border-color:var(--line2)}
-.bccard .btn{width:100%;min-height:44px}
+.bccard,.flcard{border-color:var(--line2)}
+.bccard .btn,.flcard .btn{width:100%;min-height:44px}
 .bccard .btn+.btn{margin-top:10px}
 .pyear{margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--dim)}
 .pfree,.pinc{margin:-6px 0 18px;padding:10px 12px;border:1px dashed var(--line2);border-radius:10px;font-size:13.5px;line-height:1.5;color:var(--dim)}
@@ -479,6 +479,7 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .timeline b{display:block;font-size:16px;font-weight:600}
 .timeline span{display:block;color:var(--dim);font-size:14px;line-height:1.5}
 .timeline .when span,.timeline b span{display:inline;color:inherit;font-size:inherit}
+@media(max-width:1180px){.price{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1020px){.price{grid-template-columns:1fr;max-width:560px;margin-left:auto;margin-right:auto}}
 @media(max-width:900px){.timeline{grid-template-columns:1fr;max-width:560px}}
 @media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}}
@@ -652,7 +653,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
     <p class="jrc">Integrated with Juice Reel</p>
 
     <!-- 2 · FREE, THEN WHAT EACH PAID PLAN COSTS, said once -->
-    <div class="strip" aria-label="What is free, and what Bet Checker and Full Access cost">
+    <div class="strip" aria-label="What is free, and what Bet Checker, Fairline and Full Access cost">
       <span class="strip-k">Free</span>
       <ul>
         <li>Game research</li>
@@ -661,6 +662,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <li>Weekly email</li>
       </ul>
       <span class="strip-p"><span class="strip-k">Bet Checker</span> <span data-ed-price="bc_monthly">$7.99/month</span></span>
+      <span class="strip-p"><span class="strip-k">Fairline</span> <span data-ed-price="fl_monthly">$19.99/month</span></span>
       <span class="strip-p"><span class="strip-k">Full Access</span> <span data-ed-price="monthly">$49.99/month</span></span>
       <a class="lnk strip-how" href="#how" data-track="how_it_works_click" data-cta="strip_how">How Full Access works</a>
     </div>
@@ -1240,8 +1242,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
      Every figure is lib/edgedesk_pricing.js (data-ed-price), the one source.
      app.html sends visitors to ./index.html#pricing and #subscribe. Free
      (lib/edgedesk_plans.js FREE), then Bet Checker (BET_CHECKER, sold on
-     /bet-checker/ behind its own renewal consent), then Full Access
-     (FEATURES); no card lists anything
+     /bet-checker/ behind its own renewal consent), then Fairline
+     (FAIRLINE), then Full Access (FEATURES); no card lists anything
      still in development. -->
 <section class="sec" id="pricing">
   <div class="wrap">
@@ -1288,6 +1290,19 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <a class="btn primary lg" href="/bet-checker/?upgrade=monthly&amp;ref=landing_pricing" data-track="pricing_bet_checker_click" data-cta="pricing_bet_checker">Get Bet Checker <span class="ar" aria-hidden="true">&rarr;</span></a>
         <a class="btn ghost" href="/bet-checker/?ref=landing_pricing" data-cta="pricing_bet_checker_free">Check a bet free</a>
         <p class="psub">NFL and college football. No picks: it grades the price you took.</p>
+        <p class="psub">No free trial. Renews automatically; cancel anytime in Settings.</p>
+      </div>
+      <div class="flcard pcard rv">
+        <span class="ptag" data-ed-price="fl_plan">EdgeDesk Fairline</span>
+        <p class="pname">Is this a good number? Where do you lose money?</p>
+        <div class="pprice"><span class="pamt" data-ed-price="fl_price">$19.99</span><span class="pper">/ month</span></div>
+        <ul class="pincl fl-incl">
+          <li>The Board: every price against EdgeDesk&rsquo;s fair, sorted by edge</li>
+          <li>The Leaks: where you lose money, and whether it is bad bets or bad luck</li>
+          <li>The Tape: your weekly recap</li>
+          <li>Bet Checker included: every bet graded, with stats and full history</li>
+        </ul>
+        <a class="btn primary lg" href="/fairline/?ref=landing_pricing" data-cta="pricing_fairline">Get Fairline</a>
         <p class="psub">No free trial. Renews automatically; cancel anytime in Settings.</p>
       </div>
       <div class="pcard rv">
@@ -1612,7 +1627,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
      rather than duplicated inline so the landing page, the reset page and
      EdgeDesk Games cannot drift apart on any of the three. -->
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
-<script src="/lib/edgedesk_pricing.js?v=20261029fl2"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261029fl5"></script>
 <!-- THE ONE ACCESS DECISION (public.my_billing_access) and the two server
      functions that change it: create_checkout_session, sync_subscription. -->
 <script src="/lib/edgedesk_access.js?v=20261029fl2"></script>
