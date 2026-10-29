@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-29 — Props capture: the odds gateway refused the GitHub jobs' credential for 19 days, and said "deferred"
+
+**Why.** Every player-props capture since the odds gateway went live (2026-10-10 14:29Z) was refused with `unauthorized`. The capture filed the refusal as `NOT_RUN / GATEWAY_DEFERRED`, so the workflow stayed green, the boards read "deferred", and no prop has been priced since 2026-10-10.
+
+- **Cause.**
+  - `supabase/functions/odds_gateway` compares the bearer byte for byte with its own `SUPABASE_SERVICE_ROLE_KEY`.
+  - The repository secret `SB_SERVICE_ROLE` is a different string, though still a valid service-role key. In the same runs PostgREST accepts it for `rpc/odds_api_dashboard` (restricted to the service role) and for the props health record.
+  - `tools/collective/odds_doctor.js` already documents this failure for a key in the newer `sb_secret_` format.
+- **Fix (code).**
+  - The three steps that call the gateway now also send the gateway's own shared secret, `ODDS_GATEWAY_SECRET`. The client already sends it as `x-odds-gateway-secret`, and the gateway already accepts it. The steps are `player-props.yml` capture, the `props-factory.yml` backfill and the `cfb-lab.yml` alternates.
+  - `football/props/capture.js` now reports a refused credential as an **ERROR** (`GATEWAY_UNAUTHORIZED`), with a `::error::` naming the secret. It is not a deferral. It is still not a provider failure: no back-off, no failure count.
+  - The credential registry in `tools/games/builder.test.js` lists the new secret, with its reason.
+- **Fix (owner).** Code alone does not restore capture:
+  1. Set `ODDS_GATEWAY_SECRET` on Supabase (Edge Functions → Secrets).
+  2. Set the same value as a GitHub repository secret.
+
+  `docs/odds-api-incident-2026-10/INCIDENT.md` §9 step 4 now says so.
+- **Not changed.** The gateway's authorization check, budget, breaker and every other guard (AGENTS.md §3).
+  - Paid retrieval stays paused until the 2026-11-01 reset and the runbook's re-enable.
+  - Until then a working credential shows `PROVIDER_PAUSED` or a budget deferral, not prices.
+
+Tests: `football/props/pipeline.test.js`.
+- Against the old `capture.js`: `FAILED player props pipeline — 153 passed, 2 failed`. The run returned `["NOT_RUN","GATEWAY_DEFERRED","The odds gateway deferred the event index (unauthorized): no prop was requested."]`.
+- After the fix: 155 passed, 0 failed.
+
 ## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
 
 - **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.

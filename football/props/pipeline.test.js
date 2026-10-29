@@ -213,6 +213,15 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
     const gIdxPaused = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw(() => ({ ok: false, source: 'none', decision: 'denied_breaker', reason: 'off' })) }));
     chk('gateway · breaker off with no stored index: NOT_RUN (PROVIDER_PAUSED), not EVENT_INDEX_FAILED', gIdxPaused.status === 'NOT_RUN' && gIdxPaused.reason === 'PROVIDER_PAUSED', [gIdxPaused.status, gIdxPaused.reason]);
 
+    /* 2026-10-10 → 10-29: the gateway refused this job's service role (unauthorized) on every run,
+       and the capture filed it as a quiet GATEWAY_DEFERRED while the workflow stayed green */
+    const gAuth = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw(() => ({ ok: false, decision: 'unauthorized', reason: 'service role or x-odds-gateway-secret required' })) }));
+    chk('gateway · a refused credential is an ERROR (GATEWAY_UNAUTHORIZED) that names the fix, not a deferral',
+      gAuth.status === 'ERROR' && gAuth.reason === 'GATEWAY_UNAUTHORIZED' && /ODDS_GATEWAY_SECRET/.test(gAuth.why) && /unauthorized/.test(gAuth.error_message || ''),
+      [gAuth.status, gAuth.reason, gAuth.why]);
+    chk('gateway · a refused credential buys nothing and is not counted as a provider failure (no back-off)',
+      !(gAuth.quotes_written > 0) && !(gAuth.events_polled > 0) && !(gAuth.credits_spent > 0) && !(gAuth.provider || {}).consecutive_failures && !(gAuth.provider || {}).rate_limited_until, gAuth.provider);
+
     const gShed = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw((q) => (q.category === 'events_index' ? idxEnv()
       : { ok: false, source: 'none', decision: 'denied_daily_budget', reason: 'daily shedding level 2 drops priority 3' })) }));
     chk('gateway · props shed by the daily budget: deferred, not a failure, the clock untouched',

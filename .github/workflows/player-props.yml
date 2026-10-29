@@ -140,6 +140,10 @@ jobs:
           # NO provider key reaches this runner (docs/odds-api-incident-2026-10)
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          # the gateway compares the service role byte for byte with its own; a
+          # secret in another valid format is refused (unauthorized), so the
+          # gateway's own shared secret is sent too (INCIDENT.md §9 step 4)
+          ODDS_GATEWAY_SECRET: ${{ secrets.ODDS_GATEWAY_SECRET }}
           PROPS_CAPTURE: ${{ vars.PROPS_CAPTURE }}
           PROPS_BOOKMAKERS: ${{ vars.PROPS_BOOKMAKERS }}
           PROPS_MARKET_GROUPS: ${{ vars.PROPS_MARKET_GROUPS }}

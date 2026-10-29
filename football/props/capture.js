@@ -580,6 +580,19 @@ async function run(opts) {
     try { ev = await getter(indexUrl, { timeout_ms: O.timeout_ms }); idxErr = null; break; }
     catch (e) { idxErr = e; if (!transient(e) || a === O.request_attempts) break; await sleep(Math.round(O.retry_delay_ms * (0.75 + 0.5 * rnd()))); }
   }
+  if (idxErr && idxErr.status === 'refused' && idxErr.decision === 'unauthorized') {
+    /* the gateway refused THIS JOB'S CREDENTIAL. That is not a deferral: no run
+       will ever succeed until a person fixes the secret, so it is an ERROR the
+       workflow annotates. The gateway compares the service role it receives
+       byte for byte with its own SUPABASE_SERVICE_ROLE_KEY, and a repository
+       secret in another valid format (sb_secret_…), which PostgREST accepts, is
+       refused. Not a provider failure: no back-off, no failure count. */
+    log(tag + ': ERROR — the odds gateway refused this job\'s credential (unauthorized): nothing requested, nothing spent');
+    const s = finish(Object.assign(base, { status: 'ERROR', reason: 'GATEWAY_UNAUTHORIZED', error_message: 'odds gateway: unauthorized',
+      why: 'The odds gateway refused this job\'s credential (unauthorized): no prop was requested. Set the repository secret ODDS_GATEWAY_SECRET to the odds_gateway function secret of the same name (docs/odds-api-incident-2026-10/INCIDENT.md §9 step 4).' }));
+    s.closed_events = archiveFinished(P, league, now, opts.dry_run);
+    return Object.assign({ skipped: 'odds gateway: unauthorized' }, s);
+  }
   if (idxErr && idxErr.status === 'refused') {
     /* the gateway declined the (free) index: the breaker is off, or nothing is
        stored yet. Not a provider failure: no back-off, no failure count. */
