@@ -233,6 +233,12 @@ The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads wi
 
 **To apply.** After merging, run **Actions → Deploy Juice Reel billing → deploy**. The function's health answer then reads build `juicereel_billing-2026-10-29-1`.
 
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
+
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
 - **Bug.** The first live wallets call (run_now, 15:06 UTC) got HTTP 504, "Request idle timeout limit (150s) reached". One run took three new wallets: up to 30 activity pages each, then every resolved bet's price history (up to 150 a wallet). That is minutes of requests, and a function must answer within 150 s. The overnight schedule runs the same calls, so it would have stalled the same way.
