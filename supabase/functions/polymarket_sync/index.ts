@@ -1145,7 +1145,9 @@ async function gradeNewBets(ctx: any, wallet: string, dryTrades: any[] | null, s
   await inChunks(missing, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) markets[m.condition_id] = fromStored(m); });
   const built = R.buildBets(trades, markets, rules);
   const have = new Set((await dbAll("poly_bets?select=token_id&wallet=eq." + wallet)).map((b: any) => String(b.token_id)));
-  const todo = built.bets.filter((b: any) => b.settle != null && !have.has(b.token_id)).sort((a: any, b: any) => b.entry_at - a.entry_at).slice(0, Math.max(0, rules.max_bets_per_wallet - have.size));
+  /* the newest first, at most a grade's worth a run: the grade reads the most recent max_bets_per_wallet, so a
+     wallet's new bets are always graded however many older ones are stored */
+  const todo = built.bets.filter((b: any) => b.settle != null && !have.has(b.token_id)).sort((a: any, b: any) => b.entry_at - a.entry_at).slice(0, rules.max_bets_per_wallet);
   let n = 0;
   for (const b of todo) {
     const r = await ask(ctx, "prices_history", { market: b.token_id, startTs: Math.floor(b.entry_at / 1000) - 900, endTs: Math.floor(b.game_start_at / 1000) + 60, fidelity: 1 });
