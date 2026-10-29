@@ -15,8 +15,8 @@
 #   browser   the terminal's Overview (Smart Money Tonight first, the trader
 #             sheet) and the public /radar/ page in Chromium at 390 px and
 #             1280 px, the doors stubbed.
-#   database  supabase/radar.sql, polymarket_sync_cron.sql and
-#             radar_registry.sql on a throwaway PostgreSQL as anon, a signed-in
+#   database  supabase/radar.sql, radar_record.sql, polymarket_sync_cron.sql
+#             and radar_registry.sql on a throwaway PostgreSQL as anon, a signed-in
 #             reader, a subscriber and the service role (public vs paid,
 #             append-only, the guards, the grading math, the schedule); then the
 #             SHIPPED polymarket_sync against that SQL through a PostgREST
@@ -39,7 +39,7 @@ on:
       - 'research/radar/**'
       - 'tools/radar/**'
       - 'supabase/radar*.sql'
-      - 'supabase/migrations/*_radar.sql'
+      - 'supabase/migrations/*_radar*.sql'
       - 'supabase/polymarket_sync_cron.sql'
       - 'supabase/functions/polymarket_sync/**'
       - 'supabase/nfl_market_structure_studies.sql'

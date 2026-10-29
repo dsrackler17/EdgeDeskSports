@@ -23,7 +23,9 @@
 //             per call, include_pnl) — only the pool's wallets are stored —
 //             and each outcome's price (Gamma's outcome prices); the
 //             resolution of matched markets whose game started in the last
-//             two days.
+//             two days; then the Radar record: every card subscribers now see
+//             published once (radar_publish_cards), every started one graded
+//             once (radar_grade_cards).
 //   pool      nightly. The sports leaderboard (all time, by volume), the top
 //             pool_size wallets marked in the pool, the rest out.
 //   wallets   every 5 minutes through the night. The pool wallets least
@@ -57,7 +59,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-29.1";
+export const BUILD = "polymarket_sync@2026-10-29.2";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -1026,6 +1028,18 @@ async function tonight(ctx: any) {
   const done = await dbAll("poly_markets?select=condition_id&event_id=not.is.null&settle=is.null&game_start_at=lt." + encodeURIComponent(at)
     + "&game_start_at=gt." + encodeURIComponent(iso(now - 2 * DAY)!) + "&order=game_start_at");
   await resolveMarkets(ctx, done.map((d: any) => d.condition_id));
+
+  /* 5. the Radar record (supabase/radar_record.sql): every card subscribers now see is published once,
+     at the price a follower could take now; every started one is graded once */
+  if (!ctx.dry) {
+    try {
+      ctx.run.details.cards_published = await rpc("radar_publish_cards", {});
+      ctx.run.details.cards_graded = await rpc("radar_grade_cards", {});
+    } catch (e) {
+      if ((e as any).status === 404 || /PGRST202|Could not find the function|does not exist/.test(msg(e))) ctx.alert("WARNING", "record_not_installed", "supabase/radar_record.sql is not applied: Smart Money Tonight is not being recorded");
+      else throw e;
+    }
+  }
 }
 
 /* Gamma, 50 condition ids a call: a resolved market gets its settlement once */

@@ -582,7 +582,7 @@ signed-in readers. Views: `bettor_decision_transitions`,
 50 settled bets) and `user_bet_clv`. Tested against a real PostgreSQL by
 `tools/bettor/bettor_sql.test.js`; the design is `docs/bettor-decision/DESIGN.md`.
 
-### `radar.sql` + `radar_registry.sql` + `polymarket_sync_cron.sql` — Prediction Radar: graded Polymarket sports bettors (EXPERIMENTAL)
+### `radar.sql` + `radar_registry.sql` + `radar_record.sql` + `polymarket_sync_cron.sql` — Prediction Radar: graded Polymarket sports bettors (EXPERIMENTAL)
 
 Run in that order. Needs capture's `signals` (it names any column it reads
 that is missing) and uses `has_active_sub()` when present. Mirrored byte for
@@ -626,6 +626,19 @@ the narrative.
     disclosure;
   - writes the report's verdict as one `research_model_results` row;
   - names the version in `radar_config`. No door shows anything without it.
+- **`radar_record.sql`** (mirrored in `migrations/20261029130000_radar_record.sql`)
+  is the Radar record. It has two append-only tables:
+  - `radar_cards`: every Smart Money Tonight card, published once per game
+    and side at the Polymarket price then, by `radar_publish_cards()`;
+  - `radar_card_results`: each card graded once after its game by
+    `radar_grade_cards()`. That covers the close, beat-close, CLV%, the result
+    from the market's resolution and the ROI of one unit at the published
+    price; void a week after the start without a resolution.
+
+  The door is `radar_record()`, for subscribers only. It is EXPERIMENTAL
+  until H-RADAR-01 passes, a small sample under 200 graded cards, and carries
+  what H-RADAR-01 found. The 10-minute `polymarket_sync` run publishes and
+  grades.
 - **`polymarket_sync_cron.sql`** pokes `polymarket_sync` through `radar_poke(mode)`
   and the Vault secret `polymarket_sync_cron_secret`:
   - `tonight` every 10 minutes;
