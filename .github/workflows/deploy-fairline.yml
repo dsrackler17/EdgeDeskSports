@@ -1,4 +1,5 @@
-# Deploy Fairline: the production paywall check, supabase/fairline.sql (The
+# Deploy Fairline: the paywall rule (supabase/paywall_rule.sql, an
+# authorization change), the production paywall check, supabase/fairline.sql (The
 # Board and The Leaks), supabase/fairline_tape.sql (The Tape),
 # supabase/fairline_tape_cron.sql (its Monday build) and, last, The Tape's own
 # email switch. docs/fairline.md › Deploying.
@@ -27,6 +28,14 @@ name: Deploy Fairline
 on:
   workflow_dispatch:
     inputs:
+      paywall_rule:
+        description: 'supabase/paywall_rule.sql (authorization change): has_active_sub() defers to the rule. dry_run compares every account before and after, then rolls back'
+        type: choice
+        default: leave
+        options:
+          - leave
+          - dry_run
+          - apply
       check_paywall:
         description: 'Read-only: production''s paywall RLS and has_active_sub() defer to the rule (docs/billing-hardening.md §11 query 10)'
         type: boolean
@@ -83,6 +92,7 @@ jobs:
           node tools/fairline/tape_sql.test.js
           node tools/fairline/tape_email.test.js
           node tools/billing/fairline_tier.test.js
+          PAYWALL_RULE_REQUIRED=1 node tools/billing/paywall_rule.test.js
 
       - name: Check the credentials exist before claiming anything
         env:
@@ -91,6 +101,25 @@ jobs:
           # Presence only. No value is ever printed.
           [ -n "$DBURL" ] || { echo "::error::SB_DB_URL is not set: paste the files into the SQL editor instead (docs/fairline.md › Deploying)"; exit 1; }
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+
+      # THE AUTHORIZATION CHANGE (supabase/paywall_rule.sql): has_active_sub()
+      # becomes the one rule. In ONE transaction: every account's answer
+      # before, the change, every account's answer after. paywall_after.psql
+      # refuses (and the transaction rolls back) if an account would lose
+      # access through something other than a subscriptions row, which the
+      # rule cannot see. Counts only in the log. dry_run always rolls back.
+      - name: The paywall rule (authorization change)
+        if: ${{ inputs.paywall_rule != 'leave' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          MODE: ${{ inputs.paywall_rule }}
+        run: |
+          set -eu
+          case "$MODE" in dry_run) end=rollback;; apply) end=commit;; *) echo "::error::unknown paywall_rule $MODE"; exit 1;; esac
+          out=$(psql "$PGURL" -X -q -At -v ON_ERROR_STOP=1 -c 'begin' -f tools/billing/sql/paywall_before.psql -f supabase/paywall_rule.sql -f tools/billing/sql/paywall_after.psql -c "$end" 2>&1) || { echo "$out" | grep -E 'PAYWALL|ERROR' || true; echo "::error::the paywall rule was refused; nothing was changed"; exit 1; }
+          echo "$out" | grep -E '^PAYWALL|^0[0-9] ' || true
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::paywall_rule.sql: a report row says CHECK THIS"; exit 1; fi
+          echo "paywall_rule: $MODE, ended with $end"
 
       - name: The paywall defers to the rule (§11 query 10, read-only)
         if: ${{ inputs.check_paywall }}
@@ -180,9 +209,9 @@ jobs:
           WANT: ${{ inputs.tape_email }}
         run: |
           set -eu
-          v=$([ "$WANT" = on ] && echo true || echo false)
-          got=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "update public.fairline_tape_settings set email_enabled = $v, updated_at = now() where id = 1 returning email_enabled")
-          [ "$got" = "$v" ] || { echo "::error::fairline_tape_settings was not updated (is fairline_tape.sql applied?)"; exit 1; }
-          pipe=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select coalesce((select sending_enabled from public.lifecycle_settings limit 1), false)")
+          v=$([ "$WANT" = on ] && echo true || echo false); want=$([ "$WANT" = on ] && echo t || echo f)
+          got=$(psql "$PGURL" -X -q -At -v ON_ERROR_STOP=1 -c "update public.fairline_tape_settings set email_enabled = $v, updated_at = now() where id = 1 returning email_enabled")
+          [ "$got" = "$want" ] || { echo "::error::fairline_tape_settings was not updated (is fairline_tape.sql applied?)"; exit 1; }
+          pipe=$(psql "$PGURL" -X -q -At -v ON_ERROR_STOP=1 -c "select coalesce((select sending_enabled from public.lifecycle_settings limit 1), false)")
           echo "The Tape's email switch: $WANT. The pipeline's own switch (lifecycle_settings.sending_enabled): $pipe."
           if [ "$WANT" = on ] && [ "$pipe" != t ]; then echo "::warning::The pipeline's switch is off, so no Tape email sends until it is on."; fi
