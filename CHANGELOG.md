@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar: Deploy Prediction Radar can run the overnight work now (run_now)
+
+- **What.** `.github/workflows/deploy-radar.yml` gains `run_now`. It calls the live `polymarket_sync` for the pool, then for wallets (3 a call) until none is due, then for the grade, instead of waiting for 06:07–10:17 UTC.
+- **One call at a time.** Each answer is awaited before the next call, as pg_cron's 5-minute spacing does overnight. Two wallet calls at once would pick the same wallets.
+- **The day's budget.** The wallet calls stop while fewer than `run_now_reserve` (default 8,000) of the day's 40,000 Polymarket requests remain, read from the gateway's own ledger. The 10-minute tonight runs keep theirs, and the 06:10 UTC schedule takes any wallets still due.
+- **Checked** against a stand-in function and a throwaway PostgreSQL before committing. A normal run went pool, wallets 3/3/2/0, then grade. With 5,000 requests left, no wallet call was made. A failing call stopped the run red. Calls never overlapped (at most one in flight).
+
 ## 2026-10-29 — Bet Checker says when sportsbook prices are paused
 
 **Why.** The odds account's October credits ran out on 2026-10-10, and paid price refresh is paused until the reset on 2026-11-01 (`docs/odds-api-incident-2026-10/INCIDENT.md`). Meanwhile most fair prices are older than the 6½ hours a grade accepts, so most bets logged on Bet Checker are saved Not graded, and nothing on the page said why. The owner asked for a notice (2026-10-29).
