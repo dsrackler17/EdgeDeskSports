@@ -36,7 +36,7 @@
 //                                                   and the one manual link.
 //   GET                             health: build and what is configured.
 
-const BUILD = 'sync_subscription-2026-10-28-tiers-2';
+const BUILD = 'sync_subscription-2026-10-28-fairline-1';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -74,7 +74,7 @@ function config() {
 // Plain JavaScript on purpose: Deno runs it as-is, and Node tests load it
 // without a build step.
 
-var CORE_VERSION = 'billing-core-2026-10-28-tiers-2';
+var CORE_VERSION = 'billing-core-2026-10-28-tiers-3';
 
 // ── THE RULE, mirrored ──────────────────────────────────────────────────────
 // The authority is public.billing_row_grants_access() in
@@ -87,8 +87,8 @@ var PAST_DUE_GRACE_DAYS = 21;
 var STRIPE_API = 'https://api.stripe.com/v1';
 var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // What a product sells, from its Stripe metadata `tier`: red = Bet Checker,
-// blue = the Research Terminal. Anything else is not a tier.
-var TIERS = ['red', 'blue'];
+// black = Fairline, blue = the Research Terminal. Anything else is not a tier.
+var TIERS = ['red', 'black', 'blue'];
 
 // public.billing_row_in_good_standing(): paid up, or comped, whatever it bought
 function inGoodStanding(row, nowMs) {
@@ -104,20 +104,37 @@ function inGoodStanding(row, nowMs) {
 }
 
 // public.billing_row_grants_access(): the Research Terminal. Bet Checker (red)
-// in good standing is paid, but not for this. An unknown tier is the terminal:
-// every price sold before Bet Checker existed was.
+// and Fairline (black) in good standing are paid, but not for this. An unknown
+// tier is the terminal: every price sold before Bet Checker existed was.
 function grantsAccess(row, nowMs) {
   return inGoodStanding(row, nowMs) && (row.tier == null || row.tier === 'blue');
 }
 
-// public.has_bet_checker_paid(): red or blue, in good standing
+// public.has_bet_checker_paid(): red, black or blue, in good standing
 function grantsBetChecker(row, nowMs) {
   return inGoodStanding(row, nowMs) && (row.tier == null || TIERS.indexOf(row.tier) >= 0);
+}
+
+// public.has_fairline_paid(): black or blue, in good standing (red is not Fairline)
+function grantsFairline(row, nowMs) {
+  return inGoodStanding(row, nowMs) && (row.tier == null || row.tier === 'black' || row.tier === 'blue');
 }
 
 function tierOf(v) {
   var t = typeof v === 'string' ? v.trim().toLowerCase() : null;
   return TIERS.indexOf(t) >= 0 ? t : null;
+}
+
+// EdgeDesk sells its two products that are NOT the terminal under lookup keys
+// it owns (create_checkout_session finds their prices by these, and by nothing
+// else). A price on one of them is that product, never the terminal — so a
+// price the product's metadata could not name is still never read as the
+// whole terminal (the rule's reading of a price it never learned).
+var LOOKUP_KEY_TIERS = [{ prefix: 'bet_checker_', tier: 'red' }, { prefix: 'fairline_', tier: 'black' }];
+function tierOfLookupKey(k) {
+  var key = typeof k === 'string' ? k.trim().toLowerCase() : '';
+  for (var i = 0; i < LOOKUP_KEY_TIERS.length; i++) if (key.indexOf(LOOKUP_KEY_TIERS[i].prefix) === 0) return LOOKUP_KEY_TIERS[i].tier;
+  return null;
 }
 
 // ── reading Stripe objects ──────────────────────────────────────────────────
@@ -189,15 +206,20 @@ function normalizeSubscription(sub) {
 }
 
 // ── WHAT EACH SUBSCRIPTION SELLS ────────────────────────────────────────────
-// Stripe's product metadata says (tier = red | blue). Read once per price per
+// Stripe's product metadata says (tier = red | black | blue). Read once per price per
 // warm instance, and written to billing_price_tiers so the database's rule
 // agrees. A restricted key without Products read is refused the product (403):
 // then the price's own metadata tier stands in. A product that was read and
-// names no tier is never overruled by its price. When Stripe cannot say at all
-// (an outage), what the database learned before is used — create_checkout_session
-// learns every Bet Checker price before anyone can pay for it. A price nobody
-// can name is left unknown (the rule treats it as the terminal, as everything
-// sold before Bet Checker was) and raised for a human.
+// names no tier is never overruled by its price's metadata. When Stripe cannot
+// say at all (an outage), what the database learned before is used —
+// create_checkout_session learns every Bet Checker and Fairline price before
+// anyone can pay for it. Still unnamed, a price is named by the price itself:
+// its own metadata tier (unless its product was read), else the EdgeDesk lookup
+// key it is sold under (bet_checker_* red, fairline_* black), and learned so the
+// database's rule agrees — a plan switch in the portal to a Bet Checker or
+// Fairline price nobody bought through checkout yet never opens the terminal.
+// A price nobody can name is left unknown (the rule treats it as the terminal,
+// as everything sold before Bet Checker was) and raised for a human.
 var TIER_CACHE = {};
 var TIER_TTL_MS = 10 * 60 * 1000;
 async function resolveTiers(ctx, subs, opts) {
@@ -227,13 +249,16 @@ async function resolveTiers(ctx, subs, opts) {
         t = s.price_tier;
       }
       if (product && product.id) s.product_id = product.id;
+      if (product) s.product_read = true;
       if (!t) continue;
       s.tier = t;
       TIER_CACHE[s.price_id] = { at: now, tier: t, product_id: s.product_id };
       if (!o.dryRun) {
         try {
-          await ctx.db.rpc('billing_learn_price_tier', { p_price_id: s.price_id, p_product_id: s.product_id || null,
+          var learned = await ctx.db.rpc('billing_learn_price_tier', { p_price_id: s.price_id, p_product_id: s.product_id || null,
             p_tier: t, p_lookup_key: s.lookup_key || null, p_livemode: s.livemode, p_source: o.source || 'sync' });
+          // a database that does not know this tier yet (billing_hardening.sql not re-applied) says so
+          if (typeof learned === 'string' && learned.indexOf('refused') === 0) throw new Error(learned);
         } catch (e) {
           logLine(ctx.svc, 'warn', 'reconcile.tier_learn_failed', { price_id: s.price_id, error: String(e.message || e).slice(0, 200) });
         }
@@ -256,6 +281,25 @@ async function resolveTiers(ctx, subs, opts) {
       logLine(ctx.svc, 'warn', 'reconcile.tier_lookup_failed', { error: String(e.message || e).slice(0, 200) });
     }
   }
+  // 2b. the price itself: its own metadata tier (never over a product that was
+  // read), else the EdgeDesk lookup key it is sold under
+  for (var j = 0; j < pending.length; j++) {
+    var q = pending[j];
+    if (q.tier) continue;
+    var from = !q.product_read && q.price_tier ? 'price_metadata' : (tierOfLookupKey(q.lookup_key) ? 'lookup_key' : null);
+    if (!from) continue;
+    q.tier = from === 'price_metadata' ? q.price_tier : tierOfLookupKey(q.lookup_key);
+    logLine(ctx.svc, 'warn', 'reconcile.tier_from_price', { price_id: q.price_id, tier: q.tier, from: from });
+    if (!o.dryRun && /^price_[A-Za-z0-9_]+$/.test(q.price_id)) {
+      try {
+        var lr = await ctx.db.rpc('billing_learn_price_tier', { p_price_id: q.price_id, p_product_id: q.product_id || null,
+          p_tier: q.tier, p_lookup_key: q.lookup_key || null, p_livemode: q.livemode, p_source: (o.source || 'sync') + ':' + from });
+        if (typeof lr === 'string' && lr.indexOf('refused') === 0) throw new Error(lr);
+      } catch (e) {
+        logLine(ctx.svc, 'error', 'reconcile.tier_learn_failed', { price_id: q.price_id, tier: q.tier, error: String(e.message || e).slice(0, 200) });
+      }
+    }
+  }
   // 3. nobody can say
   var unknown = pending.filter(function (s) { return !s.tier; });
   if (unknown.length && !o.dryRun) {
@@ -264,7 +308,7 @@ async function resolveTiers(ctx, subs, opts) {
         await ctx.db.rpc('billing_raise_alert', { p_kind: 'unknown_price_tier', p_dedupe: 'price:' + unknown[u].price_id,
           p_user: o.userId || null, p_customer: unknown[u].customer_id, p_subscription: unknown[u].id, p_event: o.eventId || null,
           p_detail: { price_id: unknown[u].price_id, product_id: unknown[u].product_id || null,
-            why: 'Stripe did not say which tier this price sells (product metadata tier = red | blue), and it was never learned' },
+            why: 'Stripe did not say which tier this price sells (product metadata tier = red | black | blue), and it was never learned' },
           p_resolved: false });
       } catch (_) { /* the log line below still says it */ }
     }
@@ -273,19 +317,20 @@ async function resolveTiers(ctx, subs, opts) {
   return subs;
 }
 
-// Paid for SOMETHING: the terminal, or Bet Checker alone. What a repair, a
-// grant or a revocation is judged by — a Bet Checker purchase landing is the
-// webhook doing its job exactly as a terminal trial is.
+// Paid for SOMETHING: the terminal, Fairline, or Bet Checker alone. What a
+// repair, a grant or a revocation is judged by — a Bet Checker or Fairline
+// purchase landing is the webhook doing its job exactly as a terminal trial is.
 function paidAccess(a) {
-  return !!(a && (a.has_access || a.bet_checker_paid));
+  return !!(a && (a.has_access || a.fairline_paid || a.bet_checker_paid));
 }
 
 var STATUS_RANK = { active: 60, trialing: 50, past_due: 40, unpaid: 30, paused: 20, incomplete: 10,
                     canceled: 0, incomplete_expired: -10 };
 
 // The subscription an account's row should describe, out of every one Stripe
-// has for it: one that grants the terminal beats one that grants only Bet
-// Checker, which beats one that grants nothing; paid beats trial; then the
+// has for it: one that grants the terminal beats one that grants Fairline,
+// which beats one that grants only Bet Checker, which beats one that grants
+// nothing; paid beats trial; then the
 // later period end, then the newest. Two in good standing — whatever each
 // sells — are a DUPLICATE purchase, returned so the caller can flag it.
 function pickBest(subs, nowMs) {
@@ -294,7 +339,7 @@ function pickBest(subs, nowMs) {
     var n = s && s.id && s.current_period_end !== undefined && s.created_ms !== undefined ? s : normalizeSubscription(s);
     if (n && n.id && !seen[n.id]) { seen[n.id] = true; list.push(n); }
   });
-  var ent = function (n) { return grantsAccess(n, nowMs) ? 2 : (inGoodStanding(n, nowMs) ? 1 : 0); };
+  var ent = function (n) { return grantsAccess(n, nowMs) ? 3 : grantsFairline(n, nowMs) ? 2 : (inGoodStanding(n, nowMs) ? 1 : 0); };
   list.sort(function (a, b) {
     var ea = ent(a), eb = ent(b);
     if (ea !== eb) return eb - ea;
@@ -795,7 +840,7 @@ function publicAccess(a) {
   return { has_access: !!a.has_access, reason: a.reason || null, offer: a.offer || null,
            status: s.status || null, current_period_end: s.current_period_end || null,
            cancel_at_period_end: !!s.cancel_at_period_end, is_comp: !!a.is_comp, is_comp_trial: !!a.is_comp_trial,
-           tier: a.tier || null, bet_checker_paid: !!a.bet_checker_paid };
+           tier: a.tier || null, bet_checker_paid: !!a.bet_checker_paid, fairline_paid: !!a.fairline_paid };
 }
 
 // ── a reader's own account ──────────────────────────────────────────────────

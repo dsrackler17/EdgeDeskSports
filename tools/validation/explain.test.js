@@ -198,16 +198,21 @@ section('the measured context rides from the terminal into the decision');
 {
   const G = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_terminal', 'games.json'), 'utf8'));
   /* The joint SD is the terminal's reconcile `combination` row, which exists only when a game has a
-     model-vs-market gap to reconcile; a game inside the threshold correctly carries none. The weekly
-     card decides which game comes first, so the game is chosen by what it carries, not by position. */
+     model-vs-market gap to reconcile; a game inside the threshold correctly carries none. The drivers
+     are the sensitivity rows of kind `mean` (rating and home-field SDs); a neutral-site game with no
+     rating dimension correctly carries none. The weekly card decides which game comes first, so the
+     game is chosen by what it carries, not by position. */
   const withSens = Object.values(G.games).filter((x) => x.sensitivity && x.sensitivity.available);
   const combOf = (x) => ((x.reconcile && x.reconcile.rows) || []).filter((r) => r.key === 'combination')[0] || null;
+  const meanRows = (x) => (x.sensitivity.rows || []).filter((r) => r && r.kind === 'mean' && Number.isFinite(Number(r.delta)));
   chk('the committed terminal carries games with sensitivity data', withSens.length > 0, withSens.length);
-  const o = withSens.find((x) => combOf(x) && Number(combOf(x).sd) > 0) || withSens[0];
+  const o = withSens.find((x) => combOf(x) && Number(combOf(x).sd) > 0 && meanRows(x).length > 0) || withSens[0];
   const f = I.factsFromTerminal(o, null, null, null);
   chk('reliability components, drivers, the joint SD and provenance come from the terminal', f.context && f.context.reliability.components.length > 0 && f.context.sensitivity_drivers.length > 0 && f.context.joint_sd > 0 && f.context.provenance.length > 0, f.context);
   const mismatched = withSens.filter((x) => { const c = combOf(x), j = I.factsFromTerminal(x, null, null, null).context.joint_sd; return c && Number(c.sd) > 0 ? j !== Number(c.sd) : j !== null; }).map((x) => x.key || (x.identity && x.identity.game_id) || '?');
   chk('every game: the joint SD is the combination row when there is one, and null (never invented) when there is not', mismatched.length === 0, mismatched.slice(0, 5));
+  const invented = withSens.filter((x) => meanRows(x).length === 0 && I.factsFromTerminal(x, null, null, null).context.sensitivity_drivers.length > 0).map((x) => x.game_id || '?');
+  chk('every game: no measured rating or home-field row means no drivers (never invented)', invented.length === 0, invented.slice(0, 5));
   chk('drivers are the measured SDs, not the labels’ ± text', f.context.sensitivity_drivers.every((x) => x.sd > 0 && !/1 SD/.test(x.label)), f.context.sensitivity_drivers);
   const inp = I.inputFromFacts(f, {}, { now: NOW });
   chk('the facts carry it into the engine input, with the newest fact time', inp.context === f.context || JSON.stringify(inp.context) === JSON.stringify(f.context));

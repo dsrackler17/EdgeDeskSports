@@ -4077,10 +4077,10 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_process.js?v=20261004b"></script>
 <script src="/lib/edgedesk_workspace_ui.js?v=20261026nav1"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
-<script src="/lib/edgedesk_pricing.js?v=20261028b"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261029fl2"></script>
 <!-- the one access decision (public.my_billing_access) and the server
      reconciliation the paywall asks for before it locks anybody out -->
-<script src="/lib/edgedesk_access.js?v=20261028a"></script>
+<script src="/lib/edgedesk_access.js?v=20261029fl2"></script>
 <!-- EdgeDesk bought through Juice Reel: the checkout, the account link and the
      return from oauth/juicereel-subscribe.html (supabase/functions/juicereel_billing) -->
 <script src="/lib/edgedesk_juicereel_billing.js?v=20261028jr1"></script>
@@ -22859,9 +22859,12 @@ function pgLockedHTML(note){
      with switch_plan). Their own product is one tap away. */
   if(acc&&acc.offer==='upgrade'){
     var portal=stripePortalHref();
-    return '<h1 class="pg-h">Your plan is Bet Checker</h1>'+
-      '<p class="pg-p">You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+'. Bet Checker grades the bets you place; the research terminal is the '+stEsc(SUB_PLAN_NAME)+' plan. '+
-      'Switch plans in the billing portal \u2014 the switch replaces Bet Checker, so you are never billed for both, and Bet Checker stays included.</p>'+
+    /* what the reader has now: Fairline (tier black) or Bet Checker (tier red) */
+    var curPlan=acc.tier==='black'?'Fairline':'Bet Checker';
+    var curWhat=acc.tier==='black'?'Fairline measures your prices and your bets (Bet Checker included)':'Bet Checker grades the bets you place';
+    return '<h1 class="pg-h">Your plan is '+curPlan+'</h1>'+
+      '<p class="pg-p">You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+'. '+curWhat+'; the research terminal is the '+stEsc(SUB_PLAN_NAME)+' plan. '+
+      'Switch plans in the billing portal \u2014 the switch replaces '+curPlan+', so you are never billed for both, and '+curPlan+' stays included.</p>'+
       (note?'<div class="pg-status">'+note+'</div>':'')+
       '<div class="pg-price"><span class="n">'+stEsc(price)+'</span><span class="per">per month for the terminal</span></div>'+
       '<ul class="pg-list two">'+((X&&X.FEATURES)||[]).map(function(f){return '<li>'+stEsc(f)+'</li>';}).join('')+'</ul>'+
