@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Prediction Radar — Polymarket's Best Sports Bettors, Graded on Skill | EdgeDesk</title>
+<meta name="description" content="EdgeDesk Prediction Radar grades Polymarket's sports bettors on skill, not just profit: closing-line value, and what someone following them at a price they could really get would have made. Every trade links to Polygon. Research, not picks.">
+<link rel="canonical" href="https://edgedesksports.com/radar/">
+<!-- noindex while Prediction Radar is not live (POLYMARKET_DATA_ENABLED is off until
+     Polymarket's terms of use are read): switched to index,follow and added to the
+     sitemap when it goes live (docs/prediction-radar.md, open items) -->
+<meta name="robots" content="noindex,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/radar/">
+<meta property="og:title" content="Prediction Radar — EdgeDesk">
+<meta property="og:description" content="Polymarket's sports bettors, graded on skill. What would following them really have made?">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<style>
+.rp-state{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:12px 14px;margin:0 0 14px;font-size:14px}
+.rp-state.warn{border-color:color-mix(in srgb,var(--warn) 55%,var(--border))}
+.rp-teaser{border:1px dashed var(--border);border-radius:12px;padding:12px 14px;background:var(--surface);margin:0 0 14px}
+.rp-teaser h3{font-size:17px;margin:4px 0 6px}
+.rp-blur{display:inline-block;min-width:7ch;border-radius:5px;background:var(--surface2);color:transparent;user-select:none}
+.btn{min-height:44px;display:inline-flex;align-items:center}
+.rp-back{display:inline-flex;align-items:center;min-height:44px}
+</style>
+</head>
+<body data-ed-page="radar">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="radar_header_trial">Start free trial</a>
+</header>
+<main class="wrap" id="main">
+  <span class="ey">EdgeDesk · Research, not picks</span>
+  <h1>Prediction Radar</h1>
+  <p class="lede">Polymarket’s sports bettors, graded on skill rather than just profit. For each one: the closing-line value of
+  their entries, and what someone following them would have made entering five minutes later, at a price they could really
+  get. Every graded bet links to its transaction on Polygon, so anyone can check it.</p>
+  <div id="rpState" class="rp-state" role="status">Loading Prediction Radar…</div>
+  <div id="rpTrader" hidden></div>
+  <div id="rpBoard">
+    <section aria-labelledby="tonight-h">
+      <h2 id="tonight-h">Smart Money Tonight</h2>
+      <div id="rpTeaser" class="rp-teaser"><p class="note">Loading…</p></div>
+    </section>
+    <section aria-labelledby="board-h">
+      <h2 id="board-h">The graded leaderboard</h2>
+      <p class="note">Ranked by Radar Score, an <b>Experimental</b> composite shown with its parts: follow ROI, closing-line value and ROI,
+      each shrunk toward zero when the sample is small. A bettor needs 50 graded bets to be ranked. Market makers are labelled and
+      never counted in Smart Money Tonight.</p>
+      <div id="rpLeaders" aria-live="polite"><noscript><p class="note">The leaderboard needs JavaScript.</p></noscript></div>
+    </section>
+  </div>
+  <section>
+    <h2>How Prediction Radar grades a bettor</h2>
+    <ul class="steps">
+      <li><b>From their own trades.</b> Profit is computed from every trade and settlement on Polymarket’s public record, never from a third-party ranking.</li>
+      <li><b>Closing-line value.</b> Did they buy below the last price before the game started?</li>
+      <li><b>Follow ROI.</b> A follower never gets the bettor’s price, so the record follows each entry at the market price five minutes later and holds it to settlement.</li>
+      <li><b>Small samples are labelled.</b> Under 50 graded bets, a bettor is listed as a small sample with no rank.</li>
+      <li><b>A registered test.</b> Whether following the top bettors would have made money was preregistered as H-RADAR-01 and run once on a holdout. What it found is reported as it is, good or bad.</li>
+    </ul>
+  </section>
+  <div id="rpLimits"></div>
+  <aside class="cta">
+    <span class="k">EdgeDesk Full Access</span>
+    <h2 style="margin-top:6px">Smart Money Tonight, every game, with the numbers.</h2>
+    <p>The side the top-graded bettors are on, how many and how much, their entry against the price now, and EdgeDesk’s own fair price beside it, in the Research Terminal.</p>
+    <div class="row"><a class="btn" href="/#subscribe" data-ed-cta="radar_trial">Start the free trial</a>
+      <a class="btn ghost" href="/app.html#overview" data-ed-cta="radar_terminal">Open the terminal</a></div>
+  </aside>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> Prediction Radar shows public trading on Polymarket and how following it has performed. Nothing here is betting advice, a prediction or a recommendation, and nothing here trades for anyone.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/articles/">Free research</a><a href="/today/">Today’s games</a><a href="/tools/">Free tools</a><a href="/methodology/">Methodology</a><a href="/performance/">Model performance</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script src="/lib/edgedesk_radar_ui.js?v=20261029rd2"></script>
+<script>
+/* THE PUBLIC PAGE, through anonymous doors only (supabase/radar.sql):
+   radar_status() (on, registered, what H-RADAR-01 found), radar_leaderboard()
+   (the graded leaderboard), radar_trader(wallet) (a trader's grade and graded
+   history; no open position for anon) and radar_teaser() (the first Smart
+   Money card's game, count and dollars; never the side). The database decides
+   what each answers; this page draws it with lib/edgedesk_radar_ui.js. */
+(function () {
+  var SB_URL = 'https://iattxbkbufslbauoumga.supabase.co';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
+  var U = window.EDRadarUI, $ = function (id) { return document.getElementById(id); };
+  U.injectStyle(document);
+  $('rpLimits').innerHTML = U.limitationsHTML();
+  function timeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
+  function rpc(name, args) {
+    return timeout(fetch(SB_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify(args || {}) })
+      .then(function (r) { return r.text().then(function (t) { if (!r.ok) { var e = new Error('db ' + r.status); e.status = r.status; e.body = t; throw e; } return t ? JSON.parse(t) : null; }); }), 8000);
+  }
+  function notDeployed(e) { return e && (e.status === 404 || /PGRST202|Could not find the function|does not exist/i.test(String(e.body || ''))); }
+  function state(html, warn) { var el = $('rpState'); el.innerHTML = html; el.className = 'rp-state' + (warn ? ' warn' : ''); }
+  function teaser(t) {
+    var el = $('rpTeaser');
+    if (!t || t.status !== 'ok') { el.innerHTML = '<p class="note">Smart Money Tonight is in the Research Terminal.</p>'; return; }
+    if (!t.card) { el.innerHTML = '<p class="note">No top-graded bettor holds a position on tonight’s covered games yet.</p>'; return; }
+    var c = t.card, n = c.n_wallets;
+    el.innerHTML = '<div class="note" style="margin:0">' + U.esc(U.gameLabel(c)) + ' ' + U.experimentalChip() + '</div>'
+      + '<h3>' + U.esc(n + ' top bettor' + (n === 1 ? '' : 's') + ', ' + U.money(c.dollars) + ', on ') + '<span class="rp-blur" aria-label="the side, in the terminal">side hidden</span></h3>'
+      + '<p class="note">The side, their entry against the price now, and EdgeDesk’s fair price are in the terminal' + (t.games > 1 ? ', with ' + U.esc(t.games - 1) + ' more game' + (t.games > 2 ? 's' : '') : '') + '.</p>'
+      + '<div class="row"><a class="btn" href="/#subscribe" data-ed-cta="radar_teaser_trial">See tonight’s cards</a></div>';
+  }
+  function finding(st) {
+    var f = st && st.h_radar_01;
+    if (!f) return '';
+    if (f.status !== 'complete') return ' The registered test of following them (H-RADAR-01) has not reported yet.';
+    var p = function (x) { return x == null ? 'n/a' : (x * 100).toFixed(1) + '%'; };
+    return ' The registered test of following them (H-RADAR-01) <b>' + (f.passed ? 'passed' : 'did not pass') + '</b>: beat the close ' + U.esc(p(f.beat_close_rate))
+      + ' of the time, follow ROI ' + U.esc(p(f.follow_roi)) + ', over ' + U.esc(f.followed) + ' followed bets.';
+  }
+  function route() {
+    var m = /^#trader\/(0x[0-9a-fA-F]{40})$/.exec(location.hash || '');
+    $('rpTrader').hidden = !m; $('rpBoard').hidden = !!m;
+    if (!m) return;
+    $('rpTrader').innerHTML = '<a class="rp-back" href="#">← The leaderboard</a><p class="note">Loading…</p>';
+    rpc('radar_trader', { p_wallet: m[1].toLowerCase() }).then(function (r) { $('rpTrader').innerHTML = '<a class="rp-back" href="#">← The leaderboard</a>' + U.traderHTML(r); })
+      .catch(function () { $('rpTrader').innerHTML = '<a class="rp-back" href="#">← The leaderboard</a>' + U.traderHTML({ status: 'error' }); });
+    try { window.scrollTo(0, 0); } catch (_) { /* no scroll */ }
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('[data-radar-wallet]') : null;
+    if (b) location.hash = '#trader/' + b.getAttribute('data-radar-wallet');
+  });
+  window.addEventListener('hashchange', route);
+  rpc('radar_status', {}).then(function (st) {
+    if (!st || !st.enabled) {
+      state('<b>Prediction Radar is not live yet.</b> Nothing is shown until it is, and nothing is invented to fill the page.', true);
+      $('rpLeaders').innerHTML = U.leaderboardHTML({ status: 'disabled' }); teaser(null); return;
+    }
+    if (!st.registered) { state('<b>Prediction Radar is being prepared.</b> Its registered test is not in the research registry yet, so nothing is shown.', true); $('rpLeaders').innerHTML = U.leaderboardHTML({ status: 'not_registered' }); teaser(null); return; }
+    state('<b>Live.</b> ' + (st.graded_at ? 'Graded ' + U.esc(U.day(st.graded_at)) + '.' : 'No grading run has finished yet.') + finding(st));
+    route();
+    return Promise.all([rpc('radar_leaderboard', { p_limit: 100 }).then(function (r) { $('rpLeaders').innerHTML = U.leaderboardHTML(r); }),
+      rpc('radar_teaser', {}).then(teaser)]);
+  }).catch(function (e) {
+    if (notDeployed(e)) { state('<b>Prediction Radar is being prepared.</b> Its database is not switched on yet, so there is nothing to show.', true); $('rpLeaders').innerHTML = ''; teaser(null); return; }
+    state('Prediction Radar could not be reached just now. Try again in a minute.', true);
+  });
+})();
+</script>
+<script src="/lib/edgedesk_track.js?v=20261024sc1" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-29T05:07:55.000Z",
+ "generated_at": "2026-10-29T12:07:48.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -53,8 +53,8 @@
     "model_version": "edgedesk_cfb_loop_v2.0.0",
     "label": "Loop v2.0.0",
     "role": "challenger",
-    "snapshots": 589,
-    "latest_snapshot_at": "2026-10-29T03:08:00.000Z",
+    "snapshots": 591,
+    "latest_snapshot_at": "2026-10-29T12:07:48.000Z",
     "upcoming_games": 111,
     "avg_confidence_upcoming": null
    },
@@ -62,40 +62,40 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 2034,
-    "latest_snapshot_at": "2026-10-29T03:08:00.000Z",
-    "upcoming_games": 108,
-    "avg_confidence_upcoming": 80.2
+    "snapshots": 2043,
+    "latest_snapshot_at": "2026-10-29T12:07:48.000Z",
+    "upcoming_games": 115,
+    "avg_confidence_upcoming": 80
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 2415,
-    "latest_snapshot_at": "2026-10-29T03:08:00.000Z",
-    "upcoming_games": 74,
-    "avg_confidence_upcoming": 75.4
+    "snapshots": 2457,
+    "latest_snapshot_at": "2026-10-29T12:07:48.000Z",
+    "upcoming_games": 114,
+    "avg_confidence_upcoming": 74.7
    },
    {
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 2414,
-    "latest_snapshot_at": "2026-10-29T03:08:00.000Z",
-    "upcoming_games": 74,
-    "avg_confidence_upcoming": 75.3
+    "snapshots": 2456,
+    "latest_snapshot_at": "2026-10-29T12:07:48.000Z",
+    "upcoming_games": 114,
+    "avg_confidence_upcoming": 74.7
    }
   ],
   "data_quality": {
-   "games": 112,
+   "games": 115,
    "counts": {
     "GREEN": 52,
-    "YELLOW": 60,
+    "YELLOW": 63,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 60,
+     "YELLOW": 63,
      "RED": 0
     },
     "pbp_freshness": {
@@ -103,7 +103,7 @@
      "RED": 0
     },
     "team_mapping": {
-     "YELLOW": 4,
+     "YELLOW": 2,
      "RED": 0
     }
    },
@@ -380,19 +380,6 @@
      ],
      "kickoff": "2026-11-07T05:00:00.000Z",
      "matchup": "Penn State @ Washington"
-    },
-    {
-     "game_id": "401864532",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-11-07T05:00:00.000Z",
-     "matchup": "Hawai'i @ UTEP"
     },
     {
      "game_id": "401856743",
@@ -768,11 +755,6 @@
      "status": "YELLOW",
      "issues": [
       {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
-      {
        "check": "odds_freshness",
        "status": "YELLOW",
        "detail": "no market quote captured yet"
@@ -798,11 +780,6 @@
      "game_id": "401871075",
      "status": "YELLOW",
      "issues": [
-      {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
       {
        "check": "odds_freshness",
        "status": "YELLOW",
@@ -912,11 +889,63 @@
      ],
      "kickoff": "2026-11-08T01:00:00.000Z",
      "matchup": "Liberty @ New Mexico State"
+    },
+    {
+     "game_id": "401864532",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-08T02:30:00.000Z",
+     "matchup": "Hawai'i @ UTEP"
+    },
+    {
+     "game_id": "401860913",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-08T02:30:00.000Z",
+     "matchup": "Fresno State @ Utah State"
+    },
+    {
+     "game_id": "401860912",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-08T03:30:00.000Z",
+     "matchup": "Texas State @ Oregon State"
+    },
+    {
+     "game_id": "401864535",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-08T03:30:00.000Z",
+     "matchup": "Wyoming @ UNLV"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-29T05:07:55.000Z",
-    "quotes_total": 28138,
+    "last_quote_at": "2026-10-29T12:07:48.000Z",
+    "quotes_total": 28339,
     "last_result_at": "2026-10-29T04:07:53.000Z"
    }
   },
@@ -959,9 +988,9 @@
    }
   ],
   "ledger": {
-   "predictions": 7962,
-   "live_predictions": 7452,
-   "quotes": 28138,
+   "predictions": 8057,
+   "live_predictions": 7547,
+   "quotes": 28339,
    "lines": 4345,
    "results": 521,
    "evaluations": 7252,
@@ -976,10 +1005,10 @@
    "home": "North Texas",
    "away": "Florida Atlantic",
    "market": {
-    "current": -13.5,
+    "current": -14.5,
     "open": -12.5,
     "books": 1,
-    "as_of": "2026-10-28T21:08:10.000Z",
+    "as_of": "2026-10-29T11:08:04.000Z",
     "sources": [
      "espn"
     ],
@@ -988,41 +1017,41 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 16.29,
      "fair": "North Texas -16.5",
      "p_home": 0.8672,
      "sigma": 14.633,
      "conf": 89,
      "dq": "GREEN",
-     "decision": "LEAN",
-     "status": "LEAN",
+     "decision": "PASS",
+     "status": "PASS",
      "side": "HOME",
-     "gap": 2.79,
-     "line": -13.5,
+     "gap": 1.79,
+     "line": -14.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 12.9,
      "fair": "North Texas -13.0",
      "p_home": 0.7689,
      "sigma": 17.661,
      "conf": 26,
      "dq": "GREEN",
-     "decision": "LEAN",
-     "status": "LEAN",
+     "decision": "PASS",
+     "status": "PASS",
      "side": "AWAY",
-     "gap": -0.6,
-     "line": 13.5,
+     "gap": -1.6,
+     "line": 14.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1031,21 +1060,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 12.63,
      "fair": "North Texas -12.5",
      "p_home": 0.7666,
      "sigma": 17.465,
      "conf": 32,
      "dq": "GREEN",
-     "decision": "LEAN",
-     "status": "LEAN",
+     "decision": "PASS",
+     "status": "PASS",
      "side": "AWAY",
-     "gap": -0.87,
-     "line": 13.5,
+     "gap": -1.87,
+     "line": 14.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1054,10 +1083,10 @@
     },
     "edgedesk_cfb_loop_v2.0.0": {
      "label": "Loop v2.0.0",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 14.56,
      "fair": "North Texas -14.5",
      "p_home": 0.8106,
@@ -1067,8 +1096,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
-     "gap": 1.06,
-     "line": -13.5,
+     "gap": 0.06,
+     "line": -14.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     }
@@ -1084,7 +1113,7 @@
     "current": -19.5,
     "open": -17.5,
     "books": 1,
-    "as_of": "2026-10-28T22:07:48.000Z",
+    "as_of": "2026-10-29T10:07:56.000Z",
     "sources": [
      "espn"
     ],
@@ -1093,10 +1122,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 24.97,
      "fair": "James Madison -25.0",
      "p_home": 0.956,
@@ -1113,10 +1142,10 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 16.49,
      "fair": "James Madison -16.5",
      "p_home": 0.8503,
@@ -1136,10 +1165,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 17.21,
      "fair": "James Madison -17.0",
      "p_home": 0.857,
@@ -1159,10 +1188,10 @@
     },
     "edgedesk_cfb_loop_v2.0.0": {
      "label": "Loop v2.0.0",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-29T00:07:54.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-29T12:07:48.000Z",
      "margin": 14.32,
      "fair": "James Madison -14.5",
      "p_home": 0.8066,
@@ -13192,8 +13221,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 291,
-  "games_with_verdict": 291,
+  "games_with_market": 293,
+  "games_with_verdict": 293,
   "raw_major_disagreements": 28,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -13202,7 +13231,7 @@
   "data_fault": 0,
   "market_fault": 28,
   "verification_not_run": 0,
-  "average_raw_gap": 3.448,
+  "average_raw_gap": 3.442,
   "average_raw_gap_7plus": 9.965,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,

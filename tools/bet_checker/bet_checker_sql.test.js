@@ -119,9 +119,9 @@ try {
   V('drop table public.signals cascade; create table public.signals (' + V9_COLS + ');');
   const v9 = db.mustFail(() => { const o = db.applyFileAtomic(FILE); throw new Error(o); }) || '';
   const v9rep = v9.split('\n').filter((l) => /^\d\d /.test(l));
-  chk('on a board without the player-prop columns it installs: eleven report rows, every one ok',
-    v9rep.length === 11 && v9rep.every((l) => /\|ok/.test(l)), v9.slice(-600));
-  if (v9rep.length === 11) {
+  chk('on a board without the player-prop columns it installs: twelve report rows, every one ok',
+    v9rep.length === 12 && v9rep.every((l) => /\|ok/.test(l)), v9.slice(-600));
+  if (v9rep.length === 12) {
     const W = uid(9), EV = 'ev_v9_nfl';
     V('insert into auth.users (id, email) values (' + lit(W) + ", 'v9@x.co');");
     const v9sig = (market, selection, point, fair) => {
@@ -156,9 +156,14 @@ try {
 
   let out = db.applyFileAtomic(FILE);
   const rep = out.split('\n').filter((l) => /^\d\d /.test(l));
-  chk('it applies over bettor_decisions.sql: eleven report rows, every one ok', rep.length === 11 && rep.every((l) => /\|ok/.test(l)), out.slice(-1200));
+  chk('it applies over bettor_decisions.sql: twelve report rows, every one ok', rep.length === 12 && rep.every((l) => /\|ok/.test(l)), out.slice(-1200));
   out = db.applyFileAtomic(FILE);
-  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d\d .*\|ok/.test(l)).length === 11);
+  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d\d .*\|ok/.test(l)).length === 12);
+  /* bettor_decisions.sql made user_bets.sport ('CFB', 'NFL'); Bet Checker also grades the NBA and the NHL */
+  const sportChecks = J("select conname, pg_get_constraintdef(oid) as def from pg_constraint where conrelid = 'public.user_bets'::regclass and contype = 'c' and pg_get_constraintdef(oid) ~ '\\msport\\M'");
+  chk('the narrow sport check is replaced by one that takes NBA and NHL bets: one sport check, every league in the rules',
+    sportChecks.length === 1 && sportChecks[0].conname === 'user_bets_sport_check' && ['CFB', 'NFL', 'NBA', 'NHL'].every((l) => sportChecks[0].def.indexOf("'" + l + "'") >= 0), sportChecks);
+  chk('and a league Bet Checker does not grade is still refused', !!db.mustFail(() => db.as(A, "insert into public.user_bets (bet_key, sport, game_id, side, odds, units) values ('mlb-1', 'MLB', 'g-mlb', 'home', -110, 1);")));
   chk('the decision card\'s bet is untouched and is not a Bet Checker bet',
     one("select event_id, entry_grade, close_status, edgedesk_flagged from public.user_bets where bet_key = 'card-1'").event_id === null &&
     one("select count(*)::int as n from public.bet_checker_bets").n === 0);
@@ -464,6 +469,38 @@ try {
   V("set session_replication_role = replica; update public.user_bets set placed_at = now() - interval '40 days' where user_id = " + lit(P) + " and id in (select id from public.user_bets where user_id = " + lit(P) + " limit 1); set session_replication_role = default;");
   const hp = JSON.parse(db.as(P, 'select public.my_bet_checker_bets();'));
   chk('a paid reader\'s list is the full history', hp.paid === true && hp.history_days === null && hp.bets.length === 12);
+
+  /* ===================================================================== */
+  /* 7b. THE NBA AND THE NHL (2026-10-29)                                  */
+  /* ===================================================================== */
+  const NBA = 'basketball_nba', NHL = 'icehockey_nhl', E5 = 'ev_nba_1', E6 = 'ev_nhl_1', N = uid(7);
+  V('insert into auth.users (id, email) values (' + lit(N) + ", 'nba@x.co');");
+  const kn = sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'spreads', 'Boston Celtics', -4.5, 0.55, null, true);
+  sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'spreads', 'New York Knicks', 4.5, 0.45, null, true);
+  sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'totals', 'Over', 221.5, 0.5, null, true);
+  sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'totals', 'Under', 221.5, 0.5, null, true);
+  sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Toronto Maple Leafs', null, 0.53, null, true);
+  const kh2 = sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Montreal Canadiens', null, 0.47, null, true);
+  sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'spreads', 'Toronto Maple Leafs', -1.5, 0.36, null, true);
+  sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'spreads', 'Montreal Canadiens', 1.5, 0.64, null, true);
+  const bg = JSON.parse(db.as(N, 'select json_agg(g) from public.bet_checker_games(null) g;'));
+  chk('NBA and NHL games are on the board, named by league', bg.some((g) => g.event_id === E5 && g.sport === 'NBA') && bg.some((g) => g.event_id === E6 && g.sport === 'NHL'), bg);
+  chk('the league filter works for both', JSON.parse(db.as(N, "select json_agg(g) from public.bet_checker_games('nba') g;")).map((g) => g.event_id).join() === E5 &&
+    JSON.parse(db.as(N, "select json_agg(g) from public.bet_checker_games('NHL') g;")).map((g) => g.event_id).join() === E6);
+  chk('MLB is still not offered', !bg.some((g) => g.event_id === E4));
+  const rn = logBet(N, E5, 'spread', 'home', -4.5, -110);
+  chk('an NBA spread logs as NBA and is graded on the same rules (-110 vs 55%: +2.62, green)',
+    rn.ok && rn.bet.sport === 'NBA' && rn.bet.entry_grade === 'green' && Number(rn.bet.entry_edge_pct) === 2.62 && rn.bet.entry_sig_key === kn, rn);
+  const rh = logBet(N, E6, 'moneyline', 'away', null, 120);
+  chk('an NHL moneyline logs as NHL (+120 vs 47%: +1.55, green)', rh.ok && rh.bet.sport === 'NHL' && rh.bet.entry_grade === 'green' && Number(rh.bet.entry_edge_pct) === 1.55, rh);
+  chk('the puck line is the board\'s line (+1.5), and its price is graded', logBet(N, E6, 'spread', 'away', 1.5, -200).bet.entry_grade === 'red');
+  chk('and NBA/NHL grades count against the free allowance like any other', JSON.parse(db.service('select public.bet_checker_usage(' + lit(N) + ');')).free_grades_used === 3);
+  V("update public.signals set closed_at = now(), closing_sharp_fair = 0.5, clv_excluded_reason = null, closing_source = 'live', result = 'win' where sig_key = " + lit(kh2) + ';');
+  kickoffPassed([rh.bet.id]);
+  grade();
+  const xh = row(rh.bet.id);
+  chk('after the close the NHL moneyline gets its CLV (2.20 x 0.50 - 1 = +10%) and settle\'s result',
+    xh.close_status === 'captured' && Number(xh.clv_pct) === 10 && xh.result === 'win' && xh.result_source === 'settle', xh);
 
   /* ===================================================================== */
   /* 8. THE SCHEDULE: after the close, with the secret from Vault          */
