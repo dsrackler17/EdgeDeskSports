@@ -1,0 +1,52 @@
+# EdgeDesk Prediction Radar — Polymarket's public APIs, read from GitHub's
+# runners (the build environment cannot reach them). docs/prediction-radar.md
+#
+# Read-only: no secret, no database, nothing committed. Each endpoint Radar
+# uses is asked once through the Radar gateway (lib/edgedesk_poly_gateway.js,
+# a budget of 80 requests) and printed whole enough to check: the URL, the
+# HTTP status, the sha256 of the body, its shape and the body with arrays cut
+# to three items. The full bodies are kept as the run's artifact, which is
+# what tools/radar/fixtures/ is recorded from. It fails when a parser in
+# lib/edgedesk_radar.js cannot read what Polymarket sent.
+#
+# An integration workflow (tools/ci/checks.json): a live source, never
+# replaced by a mock, and NOT VERIFIED by npm run verify.
+name: Radar source check
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/radar-sources.yml'
+      - 'tools/radar/fetch_sources.js'
+      - 'lib/edgedesk_radar.js'
+      - 'lib/edgedesk_poly_gateway.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request replaces its older run; a dispatch keeps its
+# own group (docs/ci/README.md).
+concurrency:
+  group: radar-sources-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Ask each Polymarket endpoint once through the Radar gateway, and read it with Radar's parsers
+        run: node tools/radar/fetch_sources.js --out tools/radar/out/sources
+      - name: Keep the fetched bodies
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-sources-${{ github.run_id }}
+          path: tools/radar/out/sources
+          if-no-files-found: ignore
+          retention-days: 30

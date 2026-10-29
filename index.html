@@ -2285,8 +2285,8 @@ async function confirmArl(){
 
   /* the funnel's checkout step, sent with keepalive so the navigation below
      cannot cancel it; it carries the plan, never anything personal */
-  edFunnel('checkout_started',{plan:(EDP&&EDP.PLAN_NAME)||'',price:PRICE_DISPLAY,promo:!!promo},{now:true,keepalive:true});
-  edGa('checkout_started',{promo:!!promo});
+  edFunnel('checkout_started',{plan:(EDP&&EDP.PLAN_NAME)||'',price:PRICE_DISPLAY,promo:!!affiliateCode},{now:true,keepalive:true});
+  edGa('checkout_started',{promo:!!affiliateCode});
   window.location.href=url;
 }
 
