@@ -1,0 +1,335 @@
+{
+ "schema": "edgedesk_radar_validation_report_v1",
+ "hypothesis_id": "H-RADAR-01",
+ "version": "0.1.0",
+ "registration_sha256": "56ca979aca235ce2dd6aceb31f0bab735f306c7a0f7e1f95f868fc900908cc5a",
+ "status": "complete",
+ "headline": "H-RADAR-01 FAILED on its registered holdout: 41 followed bets over 37 games; beat-close rate 24.4% (95% CI 10.3% to 39.0%); follow ROI -1.7% (95% CI -33.4% to 30.5%).",
+ "run": {
+  "github_run_id": "40823328433",
+  "commit": "be0ae0df6e68d5d126b306a6b832d0d1fc3cf068",
+  "started_at": "2026-10-29T05:26:25.389Z",
+  "finished_at": "2026-10-29T05:43:26.142Z",
+  "gateway": {
+   "requests": 7955,
+   "ok": 7950,
+   "retries": 0,
+   "refused": {},
+   "statuses": {
+    "200": 7950,
+    "400": 5
+   },
+   "by_endpoint": {
+    "leaderboard": 4,
+    "activity": 5586,
+    "markets": 603,
+    "prices_history": 1762
+   },
+   "breaker": false,
+   "rate_limited": 0
+  },
+  "inputs_sha256": "11d8cf133a8c1f3cfdb2208fc5bcf07391fb9e72fca83078709dabdc8c5202f0",
+  "inputs_files": 7950
+ },
+ "data": {
+  "pool": 200,
+  "pool_order_used": "VOL",
+  "wallets_read": 200,
+  "wallets_failed": 0,
+  "wallets_truncated": 172,
+  "conditions_with_league_slug": 30106,
+  "markets_read": 30083,
+  "covered_markets": 26430,
+  "bets_skipped": {
+   "in_play_entry": 38544,
+   "split_merge": 10281,
+   "not_covered": 4972,
+   "no_start": 44,
+   "no_market": 33
+  }
+ },
+ "training": {
+  "candidates": 13,
+  "ranked": 13,
+  "styles": {
+   "Hedger": 71,
+   "Directional": 123,
+   "Market Maker": 6
+  }
+ },
+ "selected": [
+  {
+   "wallet": "0x26437896ed9dfeb2f69765edcafe8fdceaab39ae",
+   "rank": 1,
+   "radar_score": 10.83,
+   "score_parts": {
+    "follow_roi": 0.1448,
+    "clv_pct": -0.004051,
+    "roi": 0.185417
+   },
+   "graded_bets": 119,
+   "roi": 0.263323,
+   "clv_pp": -0.2547,
+   "follow5_roi": 0.213753,
+   "follow5_n": 105,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0x9c16127eccf031df45461ef1e04b52ea286a09cb",
+   "rank": 2,
+   "radar_score": 5.46,
+   "score_parts": {
+    "follow_roi": 0.094765,
+    "clv_pct": 0.006997,
+    "roi": 0.025794
+   },
+   "graded_bets": 150,
+   "roi": 0.034392,
+   "clv_pp": 0.4219,
+   "follow5_roi": 0.128853,
+   "follow5_n": 139,
+   "holdout_bets": 1
+  },
+  {
+   "wallet": "0x2f09642639aedd6ced432519c1a86e7d52034632",
+   "rank": 3,
+   "radar_score": 3.17,
+   "score_parts": {
+    "follow_roi": 0.052702,
+    "clv_pct": -0.001768,
+    "roi": 0.029529
+   },
+   "graded_bets": 150,
+   "roi": 0.039372,
+   "clv_pp": -0.1143,
+   "follow5_roi": 0.071936,
+   "follow5_n": 137,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0x42592084120b0d5287059919d2a96b3b7acb936f",
+   "rank": 4,
+   "radar_score": 1.95,
+   "score_parts": {
+    "follow_roi": 0.061077,
+    "clv_pct": -0.006182,
+    "roi": -0.045852
+   },
+   "graded_bets": 73,
+   "roi": -0.077258,
+   "clv_pp": -0.4124,
+   "follow5_roi": 0.109551,
+   "follow5_n": 63,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0x492442eab586f242b53bda933fd5de859c8a3782",
+   "rank": 5,
+   "radar_score": 1.89,
+   "score_parts": {
+    "follow_roi": 0.019764,
+    "clv_pct": 0.003104,
+    "roi": 0.040465
+   },
+   "graded_bets": 150,
+   "roi": 0.053953,
+   "clv_pp": 0.1952,
+   "follow5_roi": 0.026674,
+   "follow5_n": 143,
+   "holdout_bets": 22
+  },
+  {
+   "wallet": "0x91654fd592ea5339fc0b1b2f2b30bfffa5e75b98",
+   "rank": 6,
+   "radar_score": -1.24,
+   "score_parts": {
+    "follow_roi": -0.005528,
+    "clv_pct": 0.000814,
+    "roi": -0.04928
+   },
+   "graded_bets": 150,
+   "roi": -0.065706,
+   "clv_pp": 0.0482,
+   "follow5_roi": -0.007474,
+   "follow5_n": 142,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0xdb859a551fcf56e49416160911476bea7307152f",
+   "rank": 7,
+   "radar_score": -1.29,
+   "score_parts": {
+    "follow_roi": -0.037869,
+    "clv_pct": -0.006812,
+    "roi": 0.040291
+   },
+   "graded_bets": 150,
+   "roi": 0.053722,
+   "clv_pp": -0.4197,
+   "follow5_roi": -0.051792,
+   "follow5_n": 136,
+   "holdout_bets": 19
+  },
+  {
+   "wallet": "0x8a6c6811e8937f9e8afc1b9249fa540262c30b3f",
+   "rank": 8,
+   "radar_score": -1.53,
+   "score_parts": {
+    "follow_roi": 0.019103,
+    "clv_pct": -0.010832,
+    "roi": -0.107875
+   },
+   "graded_bets": 150,
+   "roi": -0.143833,
+   "clv_pp": -0.7507,
+   "follow5_roi": 0.027063,
+   "follow5_n": 120,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0x006cc834cc092684f1b56626e23bedb3835c16ea",
+   "rank": 9,
+   "radar_score": -1.61,
+   "score_parts": {
+    "follow_roi": -0.058061,
+    "clv_pct": 0.005795,
+    "roi": 0.055998
+   },
+   "graded_bets": 150,
+   "roi": 0.074664,
+   "clv_pp": 0.2731,
+   "follow5_roi": -0.081663,
+   "follow5_n": 123,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+   "rank": 10,
+   "radar_score": -2.81,
+   "score_parts": {
+    "follow_roi": -0.04334,
+    "clv_pct": -0.008795,
+    "roi": -0.018718
+   },
+   "graded_bets": 113,
+   "roi": -0.027001,
+   "clv_pp": -0.6068,
+   "follow5_roi": -0.064177,
+   "follow5_n": 104,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0xed88d69d689f3e2f6d1f77b2e35d089c581df3c4",
+   "rank": 11,
+   "radar_score": -3.51,
+   "score_parts": {
+    "follow_roi": -0.050164,
+    "clv_pct": 0.001346,
+    "roi": -0.0521
+   },
+   "graded_bets": 150,
+   "roi": -0.069467,
+   "clv_pp": 0.0893,
+   "follow5_roi": -0.067828,
+   "follow5_n": 142,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0xcd65c3279408a33866a9129bed6943064cb6ee96",
+   "rank": 12,
+   "radar_score": -8.97,
+   "score_parts": {
+    "follow_roi": -0.130188,
+    "clv_pct": -0.01286,
+    "roi": -0.103544
+   },
+   "graded_bets": 150,
+   "roi": -0.138059,
+   "clv_pp": -0.5937,
+   "follow5_roi": -0.182683,
+   "follow5_n": 124,
+   "holdout_bets": 0
+  },
+  {
+   "wallet": "0xf29bb8e0712075041e87e8605b69833ef738dd4c",
+   "rank": 13,
+   "radar_score": -10.89,
+   "score_parts": {
+    "follow_roi": -0.145946,
+    "clv_pct": 0.002653,
+    "roi": -0.183609
+   },
+   "graded_bets": 150,
+   "roi": -0.244812,
+   "clv_pp": 0.169,
+   "follow5_roi": -0.199211,
+   "follow5_n": 137,
+   "holdout_bets": 0
+  }
+ ],
+ "holdout": {
+  "bets": 42,
+  "followed": 41,
+  "excluded": {
+   "started_before_follow": 1
+  },
+  "games": 37,
+  "beat_close": {
+   "rate": 0.243902,
+   "lo": 0.102564,
+   "hi": 0.390244,
+   "n": 41
+  },
+  "follow_roi": {
+   "mean": -0.016582,
+   "lo": -0.334453,
+   "hi": 0.305448,
+   "n": 41
+  },
+  "criteria": [
+   {
+    "id": "C1_SAMPLE",
+    "met": false,
+    "value": 41,
+    "threshold": 200
+   },
+   {
+    "id": "C2_BEAT_CLOSE",
+    "met": false,
+    "value": 0.102564,
+    "threshold": 0.5
+   },
+   {
+    "id": "C3_FOLLOW_ROI",
+    "met": false,
+    "value": -0.334453,
+    "threshold": 0
+   }
+  ],
+  "passed": false,
+  "point_estimates_support_hypothesis": false,
+  "secondary": {
+   "follow15": {
+    "n": 32,
+    "beat_close_rate": 0.25,
+    "follow_roi": 0.078502
+   },
+   "plus_one_cent": {
+    "n": 41,
+    "follow_roi": -0.035292,
+    "beat_close_rate": 0.0732
+   },
+   "wallets_own": {
+    "roi": 0.018777,
+    "clv_pct": -0.003358
+   }
+  }
+ },
+ "secondary_all_ranked_directional": {
+  "wallets": 13,
+  "followed": 41,
+  "beat_close_rate": 0.243902,
+  "follow_roi": -0.016582
+ },
+ "deviations": []
+}

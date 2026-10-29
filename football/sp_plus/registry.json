@@ -1,0 +1,43 @@
+{
+ "schema": "edgedesk_external_estimate_registry_v1",
+ "note": "External estimates: third-party models EdgeDesk shows beside its own numbers as research context. None is an EdgeDesk model, none is validated by EdgeDesk, and none feeds an EdgeDesk projection, EV, ranking or grade. The Model Lab's roles (football/cfb_lab/governance/model_roles.jsonl) never list one, so no champion, challenger or promotion can ever be one. Mirrored in public.cfb_external_estimates (supabase/cfb_sp_plus.sql).",
+ "estimates": [
+  {
+   "id": "cfbd.sp_plus_projected_line",
+   "name": "SP+ projected line",
+   "kind": "EXTERNAL_ESTIMATE",
+   "sport": "cfb",
+   "edgedesk_model": false,
+   "validated_by_edgedesk": false,
+   "provenance": {
+    "rating": { "tier": "T3", "label": "Research Model · external", "model_key": "cfbd.sp_plus" },
+    "line": { "tier": "T2", "label": "Computed", "rule": "cfb_sp_projection_v1", "form": "home SP+ − away SP+ + home field (0 at a neutral site)", "home_field": "the value EdgeDesk's CFB engine applies (football/sp_plus/lines.js appliedHomeField)", "code": "lib/cfb_sp_plus.js" }
+   },
+   "source": {
+    "rating": "SP+, ESPN's opponent-adjusted efficiency rating, created by Bill Connelly",
+    "provider": "CollegeFootballData.com",
+    "endpoint": "GET https://api.collegefootballdata.com/ratings/sp?year=<season> (Bearer key, repository secret CFBD_API_KEY)",
+    "cadence": "weekly (.github/workflows/cfb-sp-plus.yml); the endpoint serves SP+ as published at the request, with no week parameter",
+    "version": "per capture: snapshot.source_version in football/sp_plus/lines.json and source_version in public.cfb_sp_ratings (cfbd-ratings-sp:<season>:<payload sha256 prefix>)"
+   },
+   "terms": {
+    "provider_terms_url": "https://collegefootballdata.com/terms",
+    "provider_terms_dated": "2026-08-12",
+    "read_as": "quoted in a public GitHub issue (merimeesoftware/cfb-ranking-algorithm#114); collegefootballdata.com was unreachable from the build environment, so the live page was not read",
+    "commercial_use": "allowed on the standard tiers (section 3: there is no separate commercial API tier)",
+    "display": "API data may be used in free or paid websites, displaying reasonable portions of factual data as part of a larger product (section 4)",
+    "redistribution": "no standalone dataset, bulk download, raw feed or public database mirror (section 5): raw ratings are kept in public.cfb_sp_ratings (service role only) and never committed to this public repository",
+    "key": "kept server-side; never in a public repository or browser bundle (section 2)",
+    "attribution_rule": "appreciated but not required; recommended line 'Data provided by CollegeFootballData.com.' (section 6)",
+    "rating_owner": "SP+ is ESPN's (Bill Connelly). No licence for public commercial display was found or obtained; the Disney/ESPN terms that could be read limit content to personal, non-commercial use without written permission",
+    "display_decision": "the owner chose, 2026-10-29, to show the derived projected line only, publicly, with attribution, and never a raw SP+ rating or rank on a page"
+   },
+   "attribution": "Projection derived from SP+ (ESPN, Bill Connelly). Data provided by CollegeFootballData.com.",
+   "surfaces": ["the CFB board card (app.html fbGxSummary)", "the game page (lib/edgedesk_game_view.js)", "the research terminal (research/cfb/resilience_ui.js, research/cfb/terminal.js)"],
+   "never_feeds": ["the EdgeDesk CFB model (football/cfb_p4, football/cfb_v2, model_loop)", "EV (football/cfb_ev, lib/edgedesk_ev*.js)", "rankings (football/rankings, football/rating)", "grades and the record (tools/record, record/)", "the Model Lab's champion, challengers and promotion (football/cfb_lab, football/cfb_production)"],
+   "tracking": "football/sp_plus/track.js: graded against the Model Lab's close and the final beside EdgeDesk's number (football/sp_plus/reports)",
+   "registered_at": "2026-10-29",
+   "registered_by": "Claude Code, at the owner's request"
+  }
+ ]
+}

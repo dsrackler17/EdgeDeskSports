@@ -106,6 +106,29 @@
     return cache[name];
   }
 
+  /* SP+ (lib/cfb_sp_plus.js, football/sp_plus/lines.json): an EXTERNAL
+     estimate beside EdgeDesk's fair spread, never combined with it. A failed
+     read is a state: the row says unavailable, the page still renders. */
+  function spLines() {
+    var X = window.EDCfbSpPlus;
+    return X && X.fetchLines ? X.fetchLines(X.URL).catch(function () { return null; }) : Promise.resolve(null);
+  }
+  function spRow(o) {
+    var X = window.EDCfbSpPlus, g = o.game, A = o.edgedesk;
+    if (!X || !X.rowFor) return null;
+    return X.rowFor(o.game_id, { now: nowMs(), home: g.home, away: g.away,
+      edgedesk_home_margin: A && A.available && num(A.home_margin) ? A.home_margin : null });
+  }
+  function spValue(R) { return R.state === 'AVAILABLE' ? esc(R.text) : '<span class="mut">unavailable</span>'; }
+  function spNote(R) {
+    if (R.state !== 'AVAILABLE') return esc(R.reason);
+    return esc(R.tier_text + ' · ' + R.source_text) + (R.disagree ? '<br><b class="warn">Models disagree</b> · ' + esc(R.disagree_text) : '')
+      + '<br><span class="mut">' + esc(R.attribution) + '</span>';
+  }
+  function spSumCell(R) {
+    return R ? '<div class="cell"><div class="l">SP+ projection</div><div class="v">' + spValue(R) + '</div><div class="n">' + spNote(R) + '</div></div>' : '';
+  }
+
   /* ---------------------------------------------------------- tooltip */
   var tip = $('tip');
   document.addEventListener('mousemove', function (e) {
@@ -883,8 +906,8 @@
   function kv(items) { return '<div class="kv">' + items.filter(Boolean).map(function (x) { return '<div class="c"><div class="l">' + esc(x[0]) + '</div><div class="v">' + x[1] + '</div>' + (x[2] ? '<div class="n">' + x[2] + '</div>' : '') + '</div>'; }).join('') + '</div>'; }
   function renderGame(id) {
     $('view').innerHTML = '<div class="empty">Loading the research page…</div>';
-    return load('games').then(function (G) {
-      var o = G.games[id];
+    return Promise.all([load('games'), spLines()]).then(function (X) {
+      var G = X[0], o = G.games[id];
       if (!o) return renderPast(id);
       S.game = o; track('game_open', { game_id: id });
       var g = o.game, A = o.edgedesk, B = o.market, C = o.disagreement, F = o.price, St = o.status, sm = o.summary;
@@ -934,6 +957,7 @@
         + '<div class="sum-grid">'
         + '<div class="cell"><div class="l">EdgeDesk fair</div><div class="v ed">' + esc(sm.model_says) + '</div></div>'
         + '<div class="cell"><div class="l">Market</div><div class="v mk">' + esc(sm.market_says) + '</div></div>'
+        + spSumCell(spRow(o))
         + '<div class="cell"><div class="l">Model gap</div><div class="v">' + (C.available ? C.points.toFixed(1) + ' pts' : '—') + '</div></div>'
         + '<div class="cell"><div class="l">Win prob</div><div class="v">' + (A.available ? esc(A.favorite || g.home) + ' ' + pct(A.home_margin >= 0 ? A.home_win_prob : A.away_win_prob, 0) : '—') + '</div></div>'
         + '<div class="cell"><div class="l">Cover prob</div><div class="v">' + (F.available && F.current && St.key !== 'INVESTIGATE' ? pct(F.current.cover, 1) : '—') + '</div></div>'
@@ -1038,9 +1062,10 @@
     if (!A.available) return sec('a', 'A · EdgeDesk view', A.reason, '<div class="empty">' + esc(A.reason) + '</div>', true);
     /* the football lines (football_half_point_v1): the half-point fair line
        and total and the whole-number score, the unrounded numbers beside them */
-    var PD = A.projected_score && A.projected_score.display;
+    var PD = A.projected_score && A.projected_score.display, SPR = spRow(o);
     var b = kv([
       ['EdgeDesk fair', esc(A.fair_text), A.fair_display_home_line != null ? 'home line ' + bk(A.fair_display_home_line) + (A.fair_text_precise ? ' · unrounded ' + esc(A.fair_text_precise) : '') : 'home line ' + bk(A.fair_home_line)],
+      SPR ? ['SP+ projection', spValue(SPR), spNote(SPR)] : null,
       A.projected_score ? (PD ? ['Projected score', esc(PD.away + '–' + PD.home), esc(g.away + ' – ' + g.home) + ' · expected ' + esc(A.projected_score.away + '–' + A.projected_score.home) + (PD.note ? '<div class="mut" style="font-size:11px">' + esc(PD.note) + '</div>' : '')]
         : ['Projected score', esc(A.projected_score.away + '–' + A.projected_score.home), esc(g.away + ' – ' + g.home)]) : null,
       ['Win probability', esc(g.home) + ' ' + pct(A.home_win_prob, 0), esc(g.away) + ' ' + pct(A.away_win_prob, 0)],
