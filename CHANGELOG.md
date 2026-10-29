@@ -1,23 +1,6 @@
 # Changelog
 
-## 2026-10-29 — Fairline, part 3: The Tape (Monday's recap, in the app and by email)
 
-**What it is.** Every Monday morning (America/Chicago), one snapshot of each Fairline reader's last week, kept for good: the record and P/L, average CLV and the beat-close rate, the prices they got against EdgeDesk's fair, any leak that crossed the minimum sample or changed label, and the best number they got. On the Fairline page (The Tape tab, no longer Coming Soon) and in their inbox. No picks. Narrative: [docs/fairline.md](docs/fairline.md).
-
-- **`supabase/fairline_tape.sql`** (new; mirrored in `migrations/20261029120000_fairline_tape.sql`):
-  - `fairline_tapes`, **append-only**: one Tape per reader per week. Triggers refuse UPDATE, TRUNCATE and any DELETE while the reader exists, for every role; deleting the account still removes its Tapes.
-  - `fairline_tape_build()`: due Monday from 06:00 in Chicago (CDT or CST), Fairline readers only (`fairline_paid()`), once per week however often it runs.
-  - What a Tape holds is The Leaks' own arithmetic over the week, through the new `fairline_slices_at()`. Price quality uses only Bet Checker's frozen entry edge; a bet never checked is counted, never guessed. Each Tape stores the rules it was read by.
-  - The email: `fairline_tape_due()` / `fairline_tape_mark()` claim once and re-check the reader at send time (opted out, bounced, no longer Fairline, more than 48 hours after the week, a quiet week: skipped with the reason). `fairline_tape_unsubscribe(token)` and `fairline_tape_email(on)` touch only `user_preferences.fairline_tape_emails`.
-  - Nothing is emailed until `lifecycle_settings.sending_enabled` **and** the new `fairline_tape_settings.email_enabled` (**off by default**) are on. Until then the page shows the email as Coming Soon.
-- **`supabase/fairline_tape_cron.sql`** (new; mirrored in `migrations/20261029120100_fairline_tape_cron.sql`): one pg_cron job, Mondays at :23 past 11:00 and 12:00 UTC; the build decides which is 06:00 in Chicago. No HTTP call, no secret.
-- **`supabase/fairline.sql`**: `fairline_slices_at(user, from, to)`, the slices over one window of bets; `fairline_slices_for()` is now it over every bet (same answer, tested). `fairline_rules()` gains the `tape` keys (time zone, build hour, email deadline, weeks listed).
-- **The existing email pipeline sends it**: `tools/fairline/tape_send.js` reuses `tools/lifecycle/send.js` (the Resend sender) and the trial emails' copy rule, settings, tokens and bounce list. It runs in the same hourly job (`lifecycle-email.yml`), after its own tests (`tape_email.test.js`); a failure there stops only The Tape. Each email has its own Idempotency-Key (`edgedesk-lifecycle-fairline-tape-<id>`). New opt-out page: `email/tape/` (a button, never a page load).
-- **The page**: The Tape tab (the week, the numbers, price quality, what changed, the best number; past weeks; the email switch). The words are `lib/edgedesk_fairline_core.js` `tapeView()`, the same ones the email uses. A free or Bet Checker reader sees placeholders under a blur and the offer; no Tape is built for them.
-- **The landing page sells Fairline.** A Fairline card sits between Bet Checker and Full Access. It carries the price, `FAIRLINE.FEATURES` verbatim, and *Get Fairline* to `/fairline/`, where the renewal terms are shown and ticked before Stripe. The price strip names it too, cheapest first. Its figures are new `fl_` words in `lib/edgedesk_pricing.js` (`priceWords()`), so the landing page loads the pricing file under `?v=20261029fl5`. The Tape is no longer "coming soon" in `FAIRLINE.FEATURES`. The page stays under its 216 KB budget.
-- **Deploying, `deploy-fairline.yml`** (new, manual, `main` only): first a read-only check of production's paywall (docs/billing-hardening.md §11 query 10). It fails, and nothing else runs, if `has_active_sub()`, an RLS policy or a production-only function reads `subscriptions`' status without deferring to `billing_row_grants_access()`, since a Fairline subscription would then read the terminal's data. Its log prints names and verdicts only. Then, as asked: `fairline.sql`, `fairline_tape.sql`, `fairline_tape_cron.sql` and The Tape's email switch. A `CHECK THIS` report row fails the run.
-- **Tests**: `tools/fairline/tape_sql.test.js` (90, new, real PostgreSQL), `tools/fairline/tape_email.test.js` (40, new, offline), both in `fairline-tests.yml`. The page suites cover The Tape (page 40, browser 58).
-- **Not built, on purpose** (unchanged): a DK Predictions price feed; selling Fairline through Juice Reel's checkout.
 
 ## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
 

@@ -100,6 +100,7 @@ const ORPHAN = { c: cid('orphan'), start: NOW + 5 * H, tokens: [tok(cid('orphan'
 /* an alternate total of the same game, at a line the board does not carry; and a game nine days out */
 const LIVE_ALT = { c: cid('live-alt'), start: NOW + 3 * H, tokens: [tok(cid('live-alt'), 0), tok(cid('live-alt'), 1)], slug: 'nfl-kc-lv-live' };
 const FAR = { c: cid('far'), start: NOW + 9 * DAY, tokens: [tok(cid('far'), 0), tok(cid('far'), 1)], slug: 'nfl-buf-mia-far' };
+const BULK = Array.from({ length: 1200 }, (_, i) => { const c = cid('bulk' + i); return { c, start: NOW + 3 * H, tokens: [tok(c, 0), tok(c, 1)], slug: 'nfl-kc-lv-bulk' }; });
 const STARTED = { c: cid('started'), start: NOW - 20 * H, tokens: [tok(cid('started'), 0), tok(cid('started'), 1)], slug: 'nfl-den-sea-done', settle: ['1', '0'] };
 let scenario = {};
 const pmCalls = [], strays = [];
@@ -144,6 +145,9 @@ function polymarket(url) {
         gammaMarket(ORPHAN, { question: 'Patriots vs. Jets', outcomes: '["Patriots", "Jets"]', events: undefined })] },
       { id: 'e-far', slug: FAR.slug, title: 'Bills vs. Dolphins', startTime: gt(FAR.start), endDate: new Date(FAR.start).toISOString(), tags: [{ slug: 'nfl' }], markets: [
         gammaMarket(FAR, { question: 'Bills vs. Dolphins', outcomes: '["Bills", "Dolphins"]', events: undefined })] }];
+    /* a full slate: the game's alternate totals, as many as a real night carries (production's first run, 2026-10-29) */
+    if (scenario.bulk) all.push({ id: 'e-bulk', slug: 'nfl-kc-lv-bulk', title: 'Chiefs vs. Raiders', startTime: gt(LIVE.start), endDate: new Date(LIVE.start).toISOString(), tags: [{ slug: 'nfl' }],
+      markets: BULK.slice(0, scenario.bulk).map((m, i) => gammaMarket(m, { question: 'Chiefs vs. Raiders: O/U ' + (60.5 + i), outcomes: '["Over", "Under"]', sportsMarketType: 'totals', line: 60.5 + i, outcomePrices: '["0.5", "0.5"]', events: undefined })) });
     const lo = q('end_date_min') ? Date.parse(q('end_date_min')) : -Infinity, hi = q('end_date_max') ? Date.parse(q('end_date_max')) : Infinity;
     const off = +(q('offset') || 0), lim = +(q('limit') || 100);
     return ok(all.filter((e) => Date.parse(e.endDate) >= lo && Date.parse(e.endDate) <= hi).slice(off, off + lim));
@@ -177,9 +181,13 @@ let rest;
     V('insert into public.signals values ' + [s('k1', 'h2h', 'Kansas City Chiefs', null, 0.62), s('k2', 'h2h', 'Las Vegas Raiders', null, 0.38), s('k3', 'totals', 'Over', 47.5, 0.5), s('k4', 'totals', 'Under', 47.5, 0.5)].join(', ') + ';');
     db.applyFileAtomic(path.join(ROOT, 'supabase', 'radar.sql'));
     rest = REST.make(db);
+    let longestRest = 0;
     globalThis.fetch = async (url, init) => {
       url = String(url);
-      if (url.startsWith(ENV.SUPABASE_URL + '/rest/v1/')) return rest.fetch(url, init);
+      /* as Deno's fetch does: its request URI holds at most 65,534 bytes, and a longer one is refused "Invalid URL" */
+      const href = new URL(url).href;
+      if (href.length > 65534) throw new TypeError('Invalid URL: ' + href.slice(0, 120));
+      if (url.startsWith(ENV.SUPABASE_URL + '/rest/v1/')) { longestRest = Math.max(longestRest, href.length); return rest.fetch(url, init); }
       if (/\.polymarket\.com\//.test(url)) return resp(polymarket(url));
       strays.push(url);
       return resp({ status: 404, body: 'stray' });
@@ -308,6 +316,15 @@ let rest;
       && V('select follow_price from public.radar_cards') === '0.6', tn2.details);
     const tn3 = await go('tonight');
     chk('tonight: the next run publishes nothing new for the same game and side', tn3.details.cards_published === 0 && V('select count(*) from public.radar_cards') === '1');
+
+    /* ── a full slate (production's first tonight run failed "Invalid URL": every market's id in one lookup) ── */
+    scenario.bulk = 1200;
+    longestRest = 0;
+    const big = await go('tonight');
+    scenario.bulk = 0;
+    chk('tonight: a full slate of 1,200 more markets is stored and looked up in chunks, every database URL within fetch\'s 65,534 bytes',
+      big.status !== 'error' && V("select count(*) from public.poly_markets where slug = 'nfl-kc-lv-bulk' and event_id = 'ev1'") === '1200' && longestRest > 0 && longestRest <= 65534,
+      { status: big.status, message: big.message, longestRest });
 
     /* ── budget ── */
     V('update public.poly_api_days set granted = 39997');
