@@ -16,8 +16,10 @@
    a checkout, through a later account link, or through a webhook — and nobody
    else's account, nobody who did not pay, and no Stripe entitlement is touched.
 
-   THE FAKE IS NOT JUICE REEL. The subscriber-status and subscriber-list shapes
-   in it are EdgeDesk's reading of the docs (docs/juicereel-billing.md § 9).
+   THE FAKE IS NOT JUICE REEL. By default it answers in the subscriber-status,
+   subscriber-list and webhook shapes Juice Reel documents and confirmed on
+   2026-10-29 (docs/juicereel-billing.md § 9); the shapes guessed before that
+   stay available, so the reader keeps handling them.
 
    Needs PostgreSQL (skips loudly without it, like every SQL suite here).
    Run: node tools/billing/juicereel_billing.test.js
@@ -201,16 +203,16 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
     r = await call({ action: 'start', kind: 'link' }, F.token);
     r = await complete(F, J.authorize(r.body.url, '5006').url);
     chk('…and the moment the buyer links, the webhook\'s purchase opens their account', r.body.outcome === 'active' && access(F).has_access, JSON.stringify(r.body));
-    J.S.statusShape = 'flag'; J.S.ownerAccess = true;
+    J.S.statusShape = 'documented'; J.S.ownerAccess = true;
   }
 
   /* ── 6. what Juice Reel's status answer may look like ─────────────────── */
-  for (const shape of ['list', 'array', 'flag_bare']) {
+  for (const [shape, jrId] of [['flag', '5120'], ['list', '5104'], ['array', '5105'], ['flag_bare', '5109']]) {
     const U = w.user('shape-' + shape + '@example.com');
     J.S.statusShape = shape;
     J.S.ownerAccess = shape !== 'flag_bare';   // the status answer alone must do it
     let r = await call({ action: 'start', kind: 'checkout' }, U.token);
-    r = await complete(U, J.pay(r.body.url, String(5100 + shape.length)).url);
+    r = await complete(U, J.pay(r.body.url, jrId).url);
     chk('subscriber status as ' + shape + ' → access', r.body.outcome === 'active' && access(U).has_access, JSON.stringify(r.body));
     J.S.ownerAccess = true;
   }
@@ -228,7 +230,7 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
     J.S.statusShape = 'absent';
     let r = await call({ action: 'start', kind: 'checkout' }, U.token);
     r = await complete(U, J.pay(r.body.url, '5200').url);
-    chk('no subscriber-status endpoint: the owner\'s current-subscriber list (owner access, paged) confirms it → access',
+    chk('no subscriber-status endpoint: the owner\'s current-subscriber list (owner access) confirms it → access',
       r.body.outcome === 'active' && access(U).has_access && J.S.calls.some((c) => c.path === '/oauth2/subscribers/current' && c.auth === 'basic'), JSON.stringify(r.body));
     const P = w.user('pending@example.com');
     J.S.ownerAccess = false;
@@ -240,7 +242,59 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
     r = await hook(J.webhook('SUBSCRIPTION_PURCHASED', { subscriberUserId: 5201, subscriptionProductId: 'prod_edgedesk_monthly', expiresDate: paid.expiresDate }));
     chk('…then the purchase webhook lands and the pending reader is in', r.body.outcome === 'applied:updated' || r.body.outcome === 'applied:created', JSON.stringify(r.body));
     chk('…access granted', access(P).has_access === true);
-    J.S.statusShape = 'flag'; J.S.ownerAccess = true;
+    J.S.statusShape = 'documented'; J.S.ownerAccess = true;
+  }
+
+  /* ── 6b. Juice Reel's documented answers (confirmed 2026-10-29) ───────── */
+  {
+    // the owner's own Juice Reel account: status says true with no subscription; that is not a purchase
+    const O = w.user('jr-owner-account@example.com');
+    let r = await call({ action: 'start', kind: 'link' }, O.token);
+    r = await complete(O, J.authorize(r.body.url, String(J.o.ownerId)).url);
+    chk('the application owner\'s own account ({isCurrentlySubscribed: true}, no subscription) is not a buyer: no access',
+      r.body.outcome === 'not_subscribed' && !access(O).has_access, JSON.stringify(r.body));
+
+    // a refund before the paid-through date: still listed, with a future expiresDate and isCurrentlySubscribed false
+    const V = w.user('refunded@example.com');
+    J.subscribe('5701', 'prod_edgedesk_monthly', 30);
+    J.refund('5701', 'prod_edgedesk_monthly');
+    r = await call({ action: 'start', kind: 'link' }, V.token);
+    r = await complete(V, J.authorize(r.body.url, '5701').url);
+    chk('a list entry with isCurrentlySubscribed false grants nothing, whatever its expiresDate', r.body.outcome === 'not_subscribed' && !access(V).has_access, JSON.stringify(r.body));
+
+    // the list holds everyone who EVER subscribed: an older, ended entry comes first
+    const H = w.user('returning-buyer@example.com');
+    J.subscribe('5702', 'prod_edgedesk_monthly', 30);
+    J.history('5702', 'prod_edgedesk_monthly', 40);
+    J.S.statusShape = 'absent';   // so the owner list alone decides
+    r = await call({ action: 'start', kind: 'link' }, H.token);
+    r = await complete(H, J.authorize(r.body.url, '5702').url);
+    chk('a returning buyer whose ended subscription is listed before the current one is let in (the whole entry list is read)',
+      r.body.outcome === 'active' && access(H).has_access, JSON.stringify(r.body));
+    J.S.statusShape = 'documented';
+
+    // the documented webhook body
+    const W = w.user('documented-webhook@example.com');
+    r = await call({ action: 'start', kind: 'link' }, W.token);
+    await complete(W, J.authorize(r.body.url, '5703').url);
+    const until = new Date(Date.now() + 30 * dayMs).toISOString();
+    r = await hook(J.webhook('SUBSCRIPTION_PURCHASED', { subscriberUserId: 5703, subscriptionProductId: 'juice_plus_monthly', subscriptionDuration: 'MONTHLY',
+      isFreeTrial: false, revenueCentsUsd: 999, expiresDate: until, isCurrentlySubscribed: true }));
+    chk('the documented SUBSCRIPTION_PURCHASED body opens the account to its expiresDate', /^applied/.test(r.body.outcome) && access(W).has_access
+      && Math.abs(Date.parse(row(W).current_period_end) - Date.parse(until)) < 1000, JSON.stringify(r.body));
+    r = await hook(J.webhook('SUBSCRIPTION_RENEWED', { subscriberUserId: 5703, subscriptionProductId: 'juice_plus_monthly', subscriptionDuration: 'MONTHLY',
+      isFreeTrial: false, revenueCentsUsd: 999, expiresDate: until, isCurrentlySubscribed: false }, { createdAt: new Date(Date.now() + 1000).toISOString() }));
+    chk('an event that says isCurrentlySubscribed false ends access, whatever its type and expiresDate', !access(W).has_access, JSON.stringify(r.body) + ' ' + JSON.stringify(row(W)));
+
+    // the reconcile: a linked buyer EdgeDesk holds as paid whom Juice Reel lists as no longer subscribed
+    const R = w.user('refunded-later@example.com');
+    r = await call({ action: 'start', kind: 'checkout' }, R.token);
+    await complete(R, J.pay(r.body.url, '5704').url);
+    chk('(a paid buyer, in)', access(R).has_access);
+    J.refund('5704', 'prod_edgedesk_monthly');
+    r = await call({ action: 'reconcile' }, 'service-key');
+    chk('the reconcile raises a buyer Juice Reel lists as no longer subscribed for a human, and does NOT cut them off',
+      alerts('juicereel_absent_from_current').some((a) => a.user_id === R.id) && access(R).has_access, JSON.stringify(r.body));
   }
 
   /* ── 7. the webhook ───────────────────────────────────────────────────── */
@@ -344,10 +398,12 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
   /* ── 9. the reconcile ─────────────────────────────────────────────────── */
   {
     w.db.sql('update public.billing_juicereel_reconcile_state set last_run_at = null where id = 1;');
+    J.S.listShape = 'paged';   // Juice Reel returns one page; a cursor, if it ever sends one, is still followed
     let r = await call({ action: 'reconcile' });
     const r2 = await call({ action: 'reconcile' });
     chk('an unauthenticated poke (the cron job) runs once, then is debounced in the database', r.body.read_to_end === true && r2.body.skipped === 'ran_recently', JSON.stringify(r.body));
     chk('it read every page of the owner\'s list (paged two at a time here)', r.body.listed >= 5 && J.S.calls.filter((c) => c.path === '/oauth2/subscribers/current').length >= 3);
+    J.S.listShape = 'documented';
     // a renewal whose webhook was lost
     const G = w.user('lost-webhook@example.com');
     let x = await call({ action: 'start', kind: 'checkout' }, G.token);

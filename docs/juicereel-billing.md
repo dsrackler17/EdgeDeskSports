@@ -1,12 +1,12 @@
 # Juice Reel billing — EdgeDesk bought through Juice Reel
 
-**Status (2026-10-28): built, and tested here against a fake Juice Reel. Not deployed. Not yet run against Juice Reel.**
+**Status (2026-10-29): deployed with the switch on `operators`. Juice Reel accepts the credentials, owner access to the subscriber list answers, and the webhook is approved. Juice Reel confirmed its response shapes, and the function reads them (§ 9). The live test purchase (§ 3) has not been run yet.**
 
 - A reader pays for EdgeDesk on Juice Reel's hosted checkout, and the EdgeDesk account they are signed in to opens. Juice Reel takes the payment and bills, renews and cancels it.
 - A reader who bought EdgeDesk on Juice Reel's marketplace links their Juice Reel account from EdgeDesk, and their account opens.
 - The landing page shows the partnership with Juice Reel. Its "Subscribe with Juice Reel" button appears only once the switch below is **on**.
 - **Off by default.** Nothing changes for any reader until `JUICE_REEL_CHECKOUT` is set (§ 2). Stripe billing is unchanged, and the card trial stays offered.
-- **The fake is not Juice Reel.** The checkout, token, `/oauth2/me` and webhook signature follow Juice Reel's docs and its official example server. The shapes of the subscriber-status answer, the subscriber list and the webhook body are not confirmed (§ 9). Nothing here may be called working in production until the live test (§ 3) has passed.
+- **The fake is not Juice Reel.** It answers in the shapes Juice Reel documents and confirmed on 2026-10-29 (§ 9). The webhook signature's exact form is settled only by the first real delivery. Nothing here may be called working in production until the live test (§ 3) has passed.
 
 This is separate from the Juice Reel **bet sync** in Portfolio ([docs/juicereel.md](juicereel.md)). That integration reads a reader's bets. This one sells EdgeDesk. They share the OAuth application and its client id and secret, and nothing else.
 
@@ -45,7 +45,7 @@ The steps:
    ```
 
    Copy its signing secret into Supabase as `JUICE_REEL_WEBHOOK_SECRET` (§ 8).
-5. **Ask Juice Reel to confirm** the four unconfirmed points in § 9.
+5. **Ask Juice Reel to confirm** the unconfirmed points in § 9. Done on 2026-10-29: Juice Reel approved the webhook and pointed to its documented answers. Only the signature's form remains, and the first delivery settles it.
 
 ## 2. Deploy and switch on — no terminal
 
@@ -184,26 +184,39 @@ pg_cron hourly ──▶ reconcile: every page of /oauth2/subscribers/current (o
 - Revoke answers 200 for any token with good client credentials.
 - Webhooks: four event types, `X-Juice-Reel-Signature: sha256=<hex>`, the fields `subscriberUserId`, `subscriptionProductId`, `expiresDate` and `revenueCentsUsd`, and no retries.
 
-**Not confirmed. Ask Juice Reel, and settle them in the live test:**
-1. **The subscriber-status answer** (`GET /oauth2/subscribers/status` with the buyer's token): its exact shape.
-   - The function reads `isSubscribed` / `subscribed` / `status`, then `subscription` / `subscriptions` / `data` / an array, then `expiresDate` / `expiresAt` and `subscriptionProductId`.
-   - It **fails closed**: access only on a positive "subscribed".
-2. **Owner access to the subscriber list** (`GET /oauth2/subscribers/current` with Basic), and its shape. The function assumes `{subscribers | data | items, nextCursor, hasMore}`, like the bet lists.
-   - If Juice Reel refuses owner access there, `check` says `refused`, and the hourly reconcile reports `OWNER_ACCESS_REFUSED` and changes nothing.
-   - The return still works through the status read and webhooks. A renewal whose webhook was lost would then need the reader's **Re-check with Juice Reel**.
-3. **The webhook envelope**: where the event's `id`, `type` and time sit.
-   - The function reads `id` / `eventId`, `type` / `eventType` / `event`, and `createdAt` / `created` / `timestamp`. It reads the data from `data` / `payload` or the top level.
-   - An event with no id is deduplicated by its body's hash.
-4. **The signature**: HMAC-SHA256 over the raw body, the GitHub-style reading of `sha256=<hex>`. If Juice Reel signs something else (a timestamp prefix, say), every delivery is refused with 401, and the logs say "webhook signature refused".
+**Confirmed by Juice Reel on 2026-10-29** (its API docs: `api-docs/subscriber-status`, `api-docs/current-subscribers`, `api-docs/webhooks/subscription-events`). The fake answers exactly this, and the function reads it:
 
-## 10. Tests (run here, 2026-10-28)
+1. **The subscriber-status answer** (`GET /oauth2/subscribers/status`, Bearer and `X-OAuth-Client-Id`, scope `subscribers.read`):
+   - A subscribed buyer gets `{isCurrentlySubscribed: true, subscription: {subscriptionProductId, userId, expiresDate, isCurrentlySubscribed, SubscriptionProduct: {duration}}}`.
+   - An **expired or never-subscribed** buyer gets `{isCurrentlySubscribed: false}`, with **no** subscription.
+   - The application's **owner** gets `{isCurrentlySubscribed: true}`, with **no** subscription. The function treats a bare yes as no purchase, so linking the seller's own Juice Reel account opens nothing.
+2. **The subscriber list** (`GET /oauth2/subscribers/current`, HTTP Basic, no scope):
+   - `{subscribers: [{subscriptionProductId, userId, expiresDate, isCurrentlySubscribed, User: {id, displayName}, SubscriptionProduct}]}`.
+   - **Everyone who has ever subscribed**, expired and sandbox entries included. **No pagination**: the full list comes in one answer.
+   - `isCurrentlySubscribed` on each entry says who has access now. The function:
+     - grants only on `true`;
+     - reads a buyer's whole entry list, because their ended entries may come before the current one;
+     - counts as present, for the "absent" alert, only buyers whose entry says `true`.
+   - The cursor reading stays for safety but is not used.
+3. **The webhook body**:
+   - `{id: "evt_…", type: "SUBSCRIPTION_RENEWED", createdAt, data: {subscriberUserId, subscriptionProductId, subscriptionDuration, isFreeTrial, revenueCentsUsd, expiresDate, isCurrentlySubscribed}}`.
+   - An event whose data says `isCurrentlySubscribed: false` ends access, whatever its type or `expiresDate` (a refund).
+   - Juice Reel does not retry, and recommends pairing webhooks with the list. The hourly reconcile does that.
+
+**Settled by the first real delivery:**
+
+4. **The signature**: HMAC-SHA256 over the raw body, as `X-Juice-Reel-Signature: sha256=<hex>`.
+   - If Juice Reel signs something else (a timestamp prefix, say), every delivery is refused with 401, and the logs say "webhook signature refused". The reconcile still keeps access correct, hourly.
+   - Check the first delivery in the function logs, or in `billing_juicereel_events`.
+
+## 10. Tests (run here, 2026-10-28; the billing suite again on 2026-10-29)
 
 | Suite | What | Result |
 |---|---|---|
-| `tools/billing/juicereel_billing.test.js` | The shipped function in a stub Deno, over a real PostgreSQL with the shipped billing migrations and this one (applied twice), a fake Juice Reel, and the shipped Stripe functions with a fake Stripe. Covers: the switch (off, operators, on); the full checkout, with exact requests asserted; replay; CSRF with another reader; unknown and expired states; one Juice Reel account per EdgeDesk account; cancelled checkout and consent declined after paying (then webhook, then link); four status shapes, and a top-level "not subscribed" overriding an active-looking entry; no status endpoint (the owner list); neither answering (pending, then the webhook); the webhook (bad, missing, forged signatures, no secret, duplicates, renew, cancel, expire, stale, other product, unknown type); `owner_comp`; Stripe plus Juice Reel (alert); `comp_trial`; **the ended-Stripe regression and its CONTROL**; the reconcile (debounce, paging, a lost renewal, absent buyer alerted not cut, owner access refused); credentials refused; a non-Juice-Reel checkout URL; token endpoint down then retried; the rate limit; link with no subscription; the authorize URL; operators' overview and unlink; `check`; no token, code or secret in any log or table | **82 passed, 0 failed** |
+| `tools/billing/juicereel_billing.test.js` | The shipped function in a stub Deno, over a real PostgreSQL with the shipped billing migrations and this one (applied twice), a fake Juice Reel, and the shipped Stripe functions with a fake Stripe. Covers: the switch (off, operators, on); the full checkout, with exact requests asserted; replay; CSRF with another reader; unknown and expired states; one Juice Reel account per EdgeDesk account; cancelled checkout and consent declined after paying (then webhook, then link); Juice Reel's documented shapes by default (2026-10-29), and four earlier-guessed status shapes; a top-level "not subscribed" overriding an active-looking entry; the owner's own account (a bare yes) opening nothing; a refunded entry (`isCurrentlySubscribed` false, future `expiresDate`) granting nothing; a returning buyer whose ended entry is listed first; the documented webhook body, and an event saying `isCurrentlySubscribed` false ending access; the reconcile alerting on a buyer listed as no longer subscribed; no status endpoint (the owner list); neither answering (pending, then the webhook); the webhook (bad, missing, forged signatures, no secret, duplicates, renew, cancel, expire, stale, other product, unknown type); `owner_comp`; Stripe plus Juice Reel (alert); `comp_trial`; **the ended-Stripe regression and its CONTROL**; the reconcile (debounce, paging, a lost renewal, absent buyer alerted not cut, owner access refused); credentials refused; a non-Juice-Reel checkout URL; token endpoint down then retried; the rate limit; link with no subscription; the authorize URL; operators' overview and unlink; `check`; no token, code or secret in any log or table | **90 passed, 0 failed** (before the 2026-10-29 change, its 4 new checks failed: 86 passed, 4 failed) |
 | mutation checks | Clearing of the ended Stripe id removed → exactly the 4 tests written for it fail. The "only the reader who started it" check removed → exactly the 3 CSRF tests fail | as expected |
 | `tools/billing/juicereel_client.test.js` | The browser library: navigates only to Juice Reel, reads a return once, drops a stale one, one retry only when the server says so | **25 passed, 0 failed** |
-| `tools/billing/juicereel_checkout.e2e.js` | Chromium, 390 px and 1280 px, the shipped pages. Covers: the partner band (switch off and on); an abandoned Juice Reel click never hijacking the card-trial button; sign-up → Juice Reel → the callback page → the terminal open, with the address clean and the hand-off gone; no renewal consent recorded; Settings billed through Juice Reel; the paywall order; the link button; a cancelled checkout; switch off unchanged; the callback page alone | **42 passed, 0 failed** |
+| `tools/billing/juicereel_checkout.e2e.js` | Chromium, 390 px and 1280 px, the shipped pages. Covers: the partner band (switch off and on); an abandoned Juice Reel click never hijacking the card-trial button; sign-up → Juice Reel → the callback page → the terminal open, with the address clean and the hand-off gone; no renewal consent recorded; Settings billed through Juice Reel; the paywall order; the link button; a cancelled checkout; switch off unchanged; the callback page alone | **50 passed, 0 failed** |
 
 ## 11. Known limitations, and decisions for the owner
 

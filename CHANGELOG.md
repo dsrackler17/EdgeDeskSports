@@ -1,25 +1,5 @@
 # Changelog
 
-## 2026-10-29 — Deploy Fairline: a regression test for the email switch step
-
-**Why.** *Deploy Fairline*'s last step, "The Tape's email switch", read psql's answer as `t` followed by `UPDATE 1`, and compared it with the word `true`. So it reported `fairline_tape_settings was not updated` on every run, after the UPDATE had committed. The owner's run of 2026-10-29 14:19Z (run 40890282549) set the switch on and failed.
-
-The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads with `psql -X -q -At` and compares `t` / `f`. That change has no test of its own for this step.
-
-**What changed.** New `tools/fairline/deploy_switch.test.js`:
-- **What it runs:** the step's own script, read out of `deploy-fairline.yml`, with `bash`, against a real PostgreSQL carrying `fairline_tape_settings` as `fairline_tape.sql` creates it.
-- **What it checks:** `on` and `off` set the switch and pass; a warning appears only when the email pipeline's own switch is off; a missing settings row or table fails.
-- **Where it runs:** in Fairline CI's database job (the workflow now also starts on `deploy-fairline.yml`), and in Deploy Fairline's tests before anything ships.
-
-**Evidence.**
-- On the step as it was before the fix (`78a8315b4ac`), 5 checks fail, each with the production error.
-- On `main`'s fixed step it passes 10 / 0.
-
-## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
-
-- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
-- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
-- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 

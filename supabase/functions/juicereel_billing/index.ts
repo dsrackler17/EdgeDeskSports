@@ -62,7 +62,7 @@
 // tokens are used for two reads and dropped. No token, code, verifier or
 // secret is ever logged or returned.
 
-const BUILD = 'juicereel_billing-2026-10-28-1';
+const BUILD = 'juicereel_billing-2026-10-29-1';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -263,10 +263,13 @@ function errWord(b) { return b && typeof b === 'object' && typeof b.error === 's
 
 // WHAT JUICE REEL SAYS ABOUT A SUBSCRIPTION, from any of the places it says it:
 // the subscriber-status answer, an entry of the current-subscriber list, or a
-// webhook's data. The field names the docs give (subscriberUserId,
-// subscriptionProductId, expiresDate) are read first; the shapes around them
-// are not all confirmed (docs/juicereel-billing.md § 9), so this reads the
-// plausible ones and FAILS CLOSED: access only on a positive "subscribed".
+// webhook's data. Juice Reel's documented answers (confirmed 2026-10-29,
+// docs/juicereel-billing.md § 9) carry isCurrentlySubscribed, which DECIDES,
+// with subscriptionProductId, userId / subscriberUserId and expiresDate; the
+// other shapes EdgeDesk guessed before are still read. It FAILS CLOSED: access
+// only on a positive "subscribed". A bare yes with nothing to identify a
+// subscription is not one: status answers {isCurrentlySubscribed: true} with no
+// subscription to the application's OWNER, who bought nothing.
 const ACTIVE_WORDS = ['active', 'subscribed', 'trialing', 'trial', 'current', 'paid', 'renewing'];
 const CANCELLED_WORDS = ['cancelled', 'canceled', 'cancelling', 'canceling'];
 const ENDED_WORDS = ['expired', 'ended', 'inactive', 'refunded', 'unsubscribed', 'none', 'lapsed', 'revoked'];
@@ -278,7 +281,7 @@ function subscriptionOf(raw, nowMs) {
   const product = idText(first(raw, ['subscriptionProductId', 'subscription_product_id', 'productId', 'product_id']) ?? nested('subscriptionProduct') ?? nested('product'));
   const expires = iso(first(raw, ['expiresDate', 'expiresAt', 'expires_at', 'expirationDate', 'currentPeriodEnd', 'current_period_end', 'endDate']));
   const word = String(first(raw, ['status', 'subscriptionStatus', 'state']) || '').toLowerCase();
-  const flag = first(raw, ['isSubscribed', 'subscribed', 'isActive', 'active']);
+  const flag = first(raw, ['isCurrentlySubscribed', 'isSubscribed', 'subscribed', 'isActive', 'active']);
   let cancelled = CANCELLED_WORDS.indexOf(word) >= 0;
   const cflag = first(raw, ['cancelled', 'canceled', 'isCancelled', 'isCanceled', 'cancelAtPeriodEnd', 'cancel_at_period_end']);
   if (typeof cflag === 'boolean') cancelled = cancelled || cflag;
@@ -289,7 +292,7 @@ function subscriptionOf(raw, nowMs) {
   else if (cancelled) active = expires ? Date.parse(expires) > nowMs : null;
   else if (ENDED_WORDS.indexOf(word) >= 0) active = false;
   else if (!word && expires && (user || product)) active = Date.parse(expires) > nowMs;   // a list entry: paid until its expiry
-  if (user == null && product == null && expires == null && active == null) return null;
+  if (user == null && product == null && expires == null) return null;
   return { jr_user_id: user, product_id: product, expires_at: expires, active, cancelled };
 }
 // Every subscription a status answer holds, best first (paid, latest expiry).
@@ -303,7 +306,7 @@ function subscriptionsIn(body, nowMs) {
     if (!out.length) add(body);
     // a top-level yes/no speaks for entries that do not say: "no" overrides
     // every entry (fail closed), "yes" fills in an entry that only has a date
-    const top = first(body, ['isSubscribed', 'subscribed']);
+    const top = first(body, ['isCurrentlySubscribed', 'isSubscribed', 'subscribed']);
     if (typeof top === 'boolean') out.forEach((s) => { if (!top) s.active = false; else if (s.active === null) s.active = true; });
   }
   return out.sort((a, b) => (b.active === true) - (a.active === true) || String(b.expires_at || '').localeCompare(String(a.expires_at || '')));
@@ -332,7 +335,11 @@ async function recordState(db, jrUser, g, source, asOf, eventId) {
   });
 }
 
-// The application owner's current subscribers, every page (owner access).
+// The application owner's subscribers, every page (owner access). Juice Reel
+// lists everyone who EVER subscribed, one page, a buyer's older entries too:
+// isCurrentlySubscribed on each entry says who has access now. With stopAt,
+// paging stops after the page that names that buyer (the whole page is read:
+// their ended entries may come before the current one).
 async function ownerSubscribers(c, nowMs, stopAt) {
   const out = [];
   let cursor = null;
@@ -345,13 +352,15 @@ async function ownerSubscribers(c, nowMs, stopAt) {
     const items = Array.isArray(r.body) ? r.body
       : ['subscribers', 'data', 'items', 'results'].map((k) => r.body[k]).find(Array.isArray);
     if (!items) return { ok: false, code: 'JR_CONTRACT', status: r.status, list: out };
+    let named = false;
     for (const x of items) {
       const s = subscriptionOf(x, nowMs);
       if (s && s.jr_user_id) out.push(s);
-      if (stopAt && s && s.jr_user_id === stopAt) return { ok: true, done: false, list: out };
+      if (stopAt && s && s.jr_user_id === stopAt) named = true;
     }
     const next = !Array.isArray(r.body) && typeof r.body.nextCursor === 'string' && r.body.nextCursor && r.body.hasMore !== false ? r.body.nextCursor : null;
     if (!next) return { ok: true, done: true, list: out };
+    if (named) return { ok: true, done: false, list: out };
     if (seen[next] || next.length > 2000) return { ok: false, code: 'JR_CONTRACT', list: out };
     seen[next] = true; cursor = next;
   }
@@ -554,7 +563,9 @@ async function webhook(c, db, req) {
   else if (!productAllowed(c, s)) outcome = 'product_not_sold_here';
   else {
     let g;
-    if (type === 'SUBSCRIPTION_EXPIRED') g = { active: false, expires_at: s.expires_at || new Date(nowMs).toISOString(), cancelled: false, product_id: s.product_id };
+    // Juice Reel's own "no access now" decides, whatever the event's type or expiresDate (a refund)
+    if (type !== 'SUBSCRIPTION_EXPIRED' && data.isCurrentlySubscribed === false) g = { active: false, expires_at: new Date(nowMs).toISOString(), cancelled: type === 'SUBSCRIPTION_CANCELLED', product_id: s.product_id };
+    else if (type === 'SUBSCRIPTION_EXPIRED') g = { active: false, expires_at: s.expires_at || new Date(nowMs).toISOString(), cancelled: false, product_id: s.product_id };
     else if (type === 'SUBSCRIPTION_CANCELLED') g = { active: true, expires_at: s.expires_at, cancelled: true, product_id: s.product_id };
     else g = { active: true, expires_at: s.expires_at || new Date(nowMs + PROVISIONAL_MS).toISOString(), provisional: !s.expires_at, cancelled: false, product_id: s.product_id };
     const r = await recordState(db, s.jr_user_id, g, 'webhook', at, id);
@@ -577,7 +588,9 @@ async function reconcile(c, db, forced) {
   let recorded = 0, granted = 0, absent = null;
   const seen = [];
   for (const s of o.list) {
-    seen.push(s.jr_user_id);
+    // present = Juice Reel says they have access now; the list also holds
+    // everyone who ever subscribed, so being listed is not enough
+    if (s.active === true) seen.push(s.jr_user_id);
     const g = grantFrom(c, s, nowMs);
     if (!g) continue;
     const r = await recordState(db, s.jr_user_id, g, 'reconcile', null, null);
