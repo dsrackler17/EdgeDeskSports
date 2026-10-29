@@ -609,6 +609,8 @@ the narrative.
     - `radar_status()` for anyone;
     - `radar_leaderboard()` and `radar_trader()` for anyone, once on and
       registered (open positions only for a subscriber);
+    - `radar_teaser()` for anyone (the public `/radar/` page): the first card's
+      game, count and dollars, never the side;
     - `radar_tonight()`, Smart Money Tonight, for subscribers only.
 
   RLS is on everywhere. Anon and a signed-in browser read the grades only (by

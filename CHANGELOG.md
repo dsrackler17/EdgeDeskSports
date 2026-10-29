@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar 2/3: Smart Money Tonight on the Overview, trader pages, and the free /radar/ page
+
+**What a reader sees.** Nothing is drawn while Radar is off or H-RADAR-01 is not registered. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("Where it shows").
+- **Smart Money Tonight** is the first thing on the Overview, for subscribers. Each card leads with one plain sentence ("7 top bettors, $84K, on Chiefs -3"). Then come the average entry, the price now and whether it moved, EdgeDesk's fair with "Smart money agrees/disagrees with the sharp fair price" (or why there is no comparison), conviction flags, the other side, and each bettor. Cards are sorted by bettors, then dollars. A game with no graded bettor shows nothing.
+- **Trader pages** (a sheet in the terminal, a route on `/radar/`): the public name only when the wallet made it public, else a short address. They show record, ROI, CLV, follow ROI, style, sample, open positions (subscribers) and every graded bet with Polygonscan links. No bio.
+- **`/radar/`**, free: the graded leaderboard, trader pages, what H-RADAR-01 found, and a teaser of the first card that never names its side (`radar_teaser()`, new in `supabase/radar.sql`; the migration mirror stays byte-identical).
+- **Labels and limits.** Experimental, Small sample and High conviction are always visible. The Radar Score is never shown without its components. Every surface carries the Known limitations block. There are no bet or copy buttons, no affiliate links, and no promises.
+
+**Tests.** `tools/radar/radar_ui.test.js` 59, `tools/radar/radar_ui.e2e.js` 50 (Chromium at 390 and 1280 px), `radar_sql.test.js` 172 (with the teaser), `tools/site/free_access.test.js` with the new page and doors.
+
 ## 2026-10-29 — Prediction Radar 1/3: Polymarket sports bettors graded from their own trades, behind a gateway and a switch; H-RADAR-01 registered before any data and run once
 
 **What it is.** Radar grades the Polymarket sports wallets with the most volume on their own trades: record, profit, ROI, CLV, the ROI a follower would have had 5 (and 15) minutes later, conviction and a style (Directional, Market Maker, Hedger). It is research, labelled Experimental, the same for every reader, and nothing trades for anyone. No UI ships in this change. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md).

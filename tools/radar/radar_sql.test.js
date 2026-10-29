@@ -23,7 +23,8 @@
        1..n by score; at most 25 top-graded; a market maker never top-graded
      9 the doors: the leaderboard and a trader for anyone (names only when
        public, positions only for a subscriber); Smart Money Tonight for a
-       subscriber only, computed as specified
+       subscriber only, computed as specified; the public teaser without the
+       side
     10 the schedule: four jobs; a missing secret is a recorded failure
     11 the registry: H-RADAR-01 registered EXPERIMENTAL before anything is
        shown, and what the test found recorded
@@ -400,9 +401,16 @@ try {
   chk('a subscriber sees a trader\'s open positions on upcoming games', trSub.positions_locked === false && Array.isArray(trSub.positions) && trSub.positions.length === 2, trSub.positions);
   chk('everything Radar shows is the same for every subscriber (no reader input but the wallet)', !/auth\.uid\(\)/.test(live.replace(/has_active_sub\(\)[^;]*/g, '')));
 
+  /* the public teaser: the first card's game, count and dollars, never the side, a price or a wallet */
+  const tz = fn('public.radar_teaser()', db.anon);
+  chk('the teaser for anyone: the first card\'s game, count and dollars (rounded to $100)', tz.status === 'ok' && tz.games === 2 && tz.card && tz.card.n_wallets === 3
+    && Number(tz.card.dollars) === 700 && tz.card.home_team === 'Las Vegas Raiders', tz);
+  chk('…and never the side, a price, EdgeDesk\'s fair or a wallet', tz.card && ['selection', 'outcome', 'point', 'current_price', 'avg_entry', 'fair', 'agrees', 'wallets', 'condition_id', 'token_id'].every((k) => !(k in tz.card)));
+
   /* off again: everything shut at once */
   db.service("update public.radar_config set value = 'off', note = 'test' where key = 'POLYMARKET_DATA_ENABLED';");
   chk('off again: every door shuts at once and the grades disappear', fn('public.radar_tonight()', asSub).status === 'disabled' && fn('public.radar_leaderboard(5)', db.anon).status === 'disabled'
+    && fn('public.radar_teaser()', db.anon).status === 'disabled'
     && db.anon('select count(*) from public.poly_wallet_grades;') === '0');
   db.service("update public.radar_config set value = 'on', note = 'test' where key = 'POLYMARKET_DATA_ENABLED';");
 
