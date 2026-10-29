@@ -22,7 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/tools/tools.css?v=1">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261028bc1">
-<link rel="stylesheet" href="/lib/edgedesk_fairline_app.css?v=20261028fl1">
+<link rel="stylesheet" href="/lib/edgedesk_fairline_app.css?v=20261028fl2">
 </head>
 <body data-ed-page="fairline">
 <header class="th">
@@ -81,7 +81,10 @@
       <div data-fl="leaks-body"><div class="gm-empty">Reading your bets…</div></div>
     </section>
 
-    <p class="row"><button type="button" class="btn ghost" data-fl-act="signout">Sign out</button></p>
+    <section class="card" aria-labelledby="fl-set-h" id="settings">
+      <h2 id="fl-set-h" style="margin-top:0">Settings › Subscription</h2>
+      <div data-fl="settings"></div>
+    </section>
   </div>
 
   <section class="card" aria-labelledby="fl-how-h">
@@ -92,16 +95,34 @@
     <p><b>Small samples.</b> A slice of your bets gets a label only once it has enough settled bets, and its label speaks about the close only once enough of them have a captured close. Until then it says so.</p>
     <p class="fine">Fairline measures prices. It is not betting advice and it never tells you what to bet. 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</p>
   </section>
+
+  <!-- the automatic-renewal terms (California ARL): shown, ticked, recorded, then Stripe -->
+  <div class="fl-sheet" data-fl="arl" role="dialog" aria-modal="true" aria-labelledby="fl-arl-h" hidden>
+    <div class="fl-sheet-in">
+      <button type="button" class="fl-x" data-fl-act="arl-close" aria-label="Close">&times;</button>
+      <h2 id="fl-arl-h">Fairline</h2>
+      <ul class="fl-feat" data-fl="features"></ul>
+      <div class="seg" role="group" aria-label="Plan">
+        <button type="button" data-fl-plan="monthly" aria-pressed="true" class="on">Monthly</button>
+        <button type="button" data-fl-plan="annual" aria-pressed="false">Annual</button>
+      </div>
+      <div class="fl-terms"><b>AUTOMATIC RENEWAL TERMS</b><p data-fl="terms" style="margin:6px 0 0"></p></div>
+      <label class="fl-agree"><input type="checkbox" data-fl="agree"><span>I have read and <b>expressly agree to these automatic renewal terms</b>. I understand my subscription renews automatically and my card is charged until I cancel.</span></label>
+      <button type="button" class="btn" data-fl-act="arl-go" data-fl="arl-go" disabled>Subscribe</button>
+      <div class="fl-arl-msg" data-fl="arl-msg" role="status" aria-live="polite"></div>
+      <p class="fine">Billed by Rackler Tech Ventures LLC through Stripe. EdgeDesk never sees or stores your card details.</p>
+    </div>
+  </div>
 </main>
 
 <script src="/lib/edgedesk_auth.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_pricing.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_access.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261028fl2"></script>
+<script src="/lib/edgedesk_access.js?v=20261028fl2"></script>
 <script src="/games/lib/attribution.js?v=20261028bc1"></script>
 <script src="/games/lib/social.js?v=20261028bc1"></script>
 <script src="/games/lib/auth.js?v=20261028bc1"></script>
 <script src="/lib/edgedesk_fairline_core.js?v=20261028fl1"></script>
-<script src="/lib/edgedesk_fairline_app.js?v=20261028fl1"></script>
+<script src="/lib/edgedesk_fairline_app.js?v=20261028fl2"></script>
 <script>
 /* The Supabase project, from the same committed file the games pages read
    (games/data/config.json), so this page, Bet Checker and the terminal can

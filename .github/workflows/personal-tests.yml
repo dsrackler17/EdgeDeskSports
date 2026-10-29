@@ -202,6 +202,14 @@ jobs:
       # tier; what each price sells comes from its product's metadata only.
       - name: Bet Checker never opens the terminal, and a plan switch flips the tier
         run: node tools/billing/tier_flow.test.js
+      # The third product: Fairline (black) is paid for Fairline and Bet
+      # Checker but never opens the terminal — not through the rule, not
+      # through has_active_sub, not through a price the database never
+      # learned (refused at checkout; named by the price itself on a switch).
+      - name: Fairline never opens the terminal, and a price nobody learned is never sold as one
+        env:
+          FAIRLINE_TIER_REQUIRED: '1'
+        run: node tools/billing/fairline_tier.test.js
       # EdgeDesk bought through Juice Reel: the shipped juicereel_billing
       # function against the real SQL and a fake Juice Reel enforcing the
       # documented checkout and OAuth contract — checkout, account link,

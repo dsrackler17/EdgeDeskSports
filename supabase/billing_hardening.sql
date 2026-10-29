@@ -23,9 +23,12 @@
 --
 --   billing_row_grants_access()     THE rule. Every gate calls this.
 --   billing_price_tiers             what each Stripe price sells (red = Bet
---                                   Checker, blue = the Research Terminal),
---                                   learned from the product's metadata
---   has_bet_checker_paid(uuid)      Bet Checker's paid features: red OR blue
+--                                   Checker, black = Fairline, blue = the
+--                                   Research Terminal), learned from the
+--                                   product's metadata
+--   has_bet_checker_paid(uuid)      Bet Checker's paid features: red, black
+--                                   OR blue
+--   has_fairline_paid(uuid)         Fairline's paid features: black OR blue
 --   billing_access_for(uuid)        the decision for one account, as jsonb
 --   my_billing_access()             the same, for the caller only (browser)
 --   billing_apply_subscription_state()   the ONLY writer of Stripe state into
@@ -105,20 +108,24 @@ comment on function public.billing_row_in_good_standing(text, text, timestamptz,
   'A row''s standing, whatever it bought: active/trialing until current_period_end; owner_comp+active '
   'always; past_due for 21 days past current_period_end; everything else no. Pure and immutable.';
 
--- WHAT A PRICE SELLS. Two products are sold: the EdgeDesk Research Terminal
--- (tier blue, $49.99/month, the whole terminal) and Bet Checker (tier red,
--- $7.99/month, grading of the reader's own bets). Stripe says which is which:
--- each product carries metadata tier = red | blue, and the billing functions
+-- WHAT A PRICE SELLS. Three products are sold: the EdgeDesk Research Terminal
+-- (tier blue, $49.99/month, the whole terminal), Fairline (tier black,
+-- $19.99/month: Bet Checker, The Board, The Leaks, The Tape) and Bet Checker
+-- (tier red, $7.99/month, grading of the reader's own bets). Stripe says which
+-- is which: each product carries metadata tier = red | black | blue, and the
+-- billing functions
 -- copy it here for every price they meet (billing_learn_price_tier, below) —
 -- create_checkout_session before the customer pays, the reconciler on every
 -- sync. No price id is written in any file.
 --
 -- A price this table has never seen is the Research Terminal: every price sold
 -- before Bet Checker existed was, and §12 records them as such once. A Bet
--- Checker price is learned at checkout, before there is anything to grant.
+-- Checker or Fairline price is learned at checkout, before there is anything
+-- to grant, and create_checkout_session refuses to sell one it could not
+-- record (an unlearned one would be read as the terminal).
 create table if not exists public.billing_price_tiers (
   price_id     text        primary key check (price_id ~ '^price_[A-Za-z0-9_]+$'),
-  tier         text        not null check (tier in ('red', 'blue')),
+  tier         text        not null check (tier in ('red', 'black', 'blue')),
   product_id   text,
   lookup_key   text,
   livemode     boolean,
@@ -127,8 +134,19 @@ create table if not exists public.billing_price_tiers (
   updated_at   timestamptz not null default now()
 );
 comment on table public.billing_price_tiers is
-  'Stripe price -> the tier its product''s metadata names (red = Bet Checker, blue = Research Terminal). '
+  'Stripe price -> the tier its product''s metadata names (red = Bet Checker, black = Fairline, blue = Research Terminal). '
   'Written only by billing_learn_price_tier() from what Stripe says; read by the access rule.';
+-- A table created before Fairline carries the two-tier check: it is replaced
+-- (dropped and re-added in one statement) only when it does not know black.
+do $ptc$
+begin
+  if exists (select 1 from pg_constraint where conname = 'billing_price_tiers_tier_check'
+              and conrelid = 'public.billing_price_tiers'::regclass and pg_get_constraintdef(oid) not like '%black%') then
+    alter table public.billing_price_tiers drop constraint billing_price_tiers_tier_check,
+      add constraint billing_price_tiers_tier_check check (tier in ('red', 'black', 'blue'));
+  end if;
+end
+$ptc$;
 alter table public.billing_price_tiers enable row level security;
 revoke all on public.billing_price_tiers from public, anon, authenticated;
 
@@ -148,8 +166,9 @@ as $$
 $$;
 
 -- THE ACCESS RULE: the Research Terminal. A row in good standing grants it,
--- unless what the row bought is Bet Checker. Stable rather than immutable now:
--- it reads what each price sells, which is Stripe's to say, not a constant.
+-- unless what the row bought is something else: Bet Checker (red) or Fairline
+-- (black). Stable rather than immutable now: it reads what each price sells,
+-- which is Stripe's to say, not a constant.
 create or replace function public.billing_row_grants_access(
   p_status text, p_price_id text, p_current_period_end timestamptz, p_at timestamptz default now())
 returns boolean
@@ -160,9 +179,9 @@ as $$
      and coalesce(public.billing_tier_of_price(p_price_id), 'blue') = 'blue';
 $$;
 comment on function public.billing_row_grants_access(text, text, timestamptz, timestamptz) is
-  'THE access rule (the Research Terminal). billing_row_in_good_standing() and a price that is not '
-  'Bet Checker''s (billing_tier_of_price <> red). Every gate in the product calls this (or mirrors '
-  'it, tested equal).';
+  'THE access rule (the Research Terminal). billing_row_in_good_standing() and a price that sells the '
+  'terminal (billing_tier_of_price = blue, or never learned). Bet Checker (red) and Fairline (black) never '
+  'pass it. Every gate in the product calls this (or mirrors it, tested equal).';
 
 -- ── 2. RECORDS ──────────────────────────────────────────────────────────────
 
@@ -290,16 +309,22 @@ alter table public.subscriptions add column if not exists livemode         boole
 alter table public.subscriptions add column if not exists last_event_at    timestamptz;
 alter table public.subscriptions add column if not exists last_event_id    text;
 
--- WHAT THE ROW BOUGHT: red (Bet Checker) or blue (the Research Terminal),
+-- WHAT THE ROW BOUGHT: red (Bet Checker), black (Fairline) or blue (the Research Terminal),
 -- NULL while its price is unknown. Never written by hand: it follows the price,
 -- through billing_tier_of_price(), on every write — so a plan switch in Stripe
 -- (customer.subscription.updated with the other product's price) flips it with
 -- no code path of its own.
 alter table public.subscriptions add column if not exists tier             text;
+-- Added if missing; a check from before Fairline (red and blue only) is
+-- replaced, dropped and re-added in one statement, only when it lacks black.
 do $tc$
 begin
+  if exists (select 1 from pg_constraint where conname = 'subscriptions_tier_check'
+              and pg_get_constraintdef(oid) not like '%black%') then
+    alter table public.subscriptions drop constraint subscriptions_tier_check;
+  end if;
   if not exists (select 1 from pg_constraint where conname = 'subscriptions_tier_check') then
-    alter table public.subscriptions add constraint subscriptions_tier_check check (tier is null or tier in ('red', 'blue'));
+    alter table public.subscriptions add constraint subscriptions_tier_check check (tier is null or tier in ('red', 'black', 'blue'));
   end if;
 end
 $tc$;
@@ -542,8 +567,8 @@ $$;
 
 -- ── 4b. WHAT A PRICE SELLS, AS STRIPE SAYS ──────────────────────────────────
 -- The only writer of billing_price_tiers. The caller has just read the price's
--- product from Stripe and passes the product's metadata.tier; anything but red
--- or blue is refused, never guessed. A price whose tier CHANGES (somebody
+-- product from Stripe and passes the product's metadata.tier; anything but red,
+-- black or blue is refused, never guessed. A price whose tier CHANGES (somebody
 -- edited the product's metadata) is applied — Stripe is the authority — and
 -- raised for a human, because it moves every subscription on that price.
 -- Every subscription row on the price is brought into line in the same call.
@@ -560,7 +585,7 @@ declare
   v_out  text;
 begin
   if p_price_id is null or p_price_id !~ '^price_[A-Za-z0-9_]+$' then return 'refused:price'; end if;
-  if v_tier not in ('red', 'blue') then return 'refused:tier'; end if;
+  if v_tier not in ('red', 'black', 'blue') then return 'refused:tier'; end if;
   select tier into v_old from public.billing_price_tiers where price_id = p_price_id for update;
   if not found then
     insert into public.billing_price_tiers (price_id, tier, product_id, lookup_key, livemode, source)
@@ -589,7 +614,8 @@ end;
 $$;
 
 -- BET CHECKER'S PAID FEATURES. A row in good standing whose price sells red
--- (Bet Checker) or blue (the Research Terminal, which includes Bet Checker).
+-- (Bet Checker), black (Fairline, which includes Bet Checker) or blue (the
+-- Research Terminal, which includes both).
 -- The same standing rule as the terminal — so a Research Terminal customer in
 -- the past_due grace keeps Bet Checker exactly as long as the terminal.
 -- THE ONE HELPER: every Bet Checker gate calls this.
@@ -602,14 +628,37 @@ set search_path = public, pg_temp
 as $$
   select coalesce((
     select public.billing_row_in_good_standing(s.status, s.price_id, s.current_period_end, p_at)
-       and coalesce(public.billing_tier_of_price(s.price_id), 'blue') in ('red', 'blue')
+       and coalesce(public.billing_tier_of_price(s.price_id), 'blue') in ('red', 'black', 'blue')
       from public.subscriptions s
      where s.user_id = p_user
      limit 1), false);
 $$;
 comment on function public.has_bet_checker_paid(uuid, timestamptz) is
   'Bet Checker''s paid features (unlimited grades, stats, splits, full history): a subscription in '
-  'good standing that sells red (Bet Checker) or blue (Research Terminal). Every Bet Checker gate calls this.';
+  'good standing that sells red (Bet Checker), black (Fairline) or blue (Research Terminal). Every Bet Checker gate calls this.';
+
+-- FAIRLINE'S PAID FEATURES. A row in good standing whose price sells black
+-- (Fairline) or blue (the Research Terminal, which includes Fairline). Bet
+-- Checker (red) does not. The same standing rule as the terminal, and the same
+-- reading of a price never learned: the terminal, which includes Fairline.
+-- THE ONE HELPER: every Fairline gate calls fairline_paid(), which calls this.
+create or replace function public.has_fairline_paid(p_user uuid, p_at timestamptz default now())
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select coalesce((
+    select public.billing_row_in_good_standing(s.status, s.price_id, s.current_period_end, p_at)
+       and coalesce(public.billing_tier_of_price(s.price_id), 'blue') in ('black', 'blue')
+      from public.subscriptions s
+     where s.user_id = p_user
+     limit 1), false);
+$$;
+comment on function public.has_fairline_paid(uuid, timestamptz) is
+  'Fairline''s paid features (The Board, The Leaks, The Tape): a subscription in good standing that sells '
+  'black (Fairline) or blue (Research Terminal). Bet Checker (red) is not Fairline. Every Fairline gate calls this.';
 
 -- ── 5. THE ONLY WRITER OF STRIPE STATE ──────────────────────────────────────
 -- One statement's worth of decisions under one row lock, so two deliveries (or
@@ -851,12 +900,14 @@ $$;
 --   trial         never had a Stripe subscription (including an ended comp_trial)
 --   resubscribe   had one, and it ended
 --   fix_payment   has one, and the card is failing
---   upgrade       has Bet Checker (red) in good standing: the terminal is a
---                 plan switch in the billing portal, never a second checkout
+--   upgrade       has Bet Checker (red) or Fairline (black) in good standing:
+--                 the terminal is a plan switch in the billing portal, never a
+--                 second checkout
 --   none          has access
 --
--- `tier` is what the row bought (red | blue | null) and `bet_checker_paid` is
--- has_bet_checker_paid()'s answer for the same row at the same instant.
+-- `tier` is what the row bought (red | black | blue | null); `bet_checker_paid`
+-- and `fairline_paid` are has_bet_checker_paid()'s and has_fairline_paid()'s
+-- answers for the same row at the same instant.
 create or replace function public.billing_access_for(p_user uuid, p_at timestamptz default now())
 returns jsonb
 language plpgsql
@@ -869,11 +920,11 @@ declare
   v_has boolean := false; v_reason text; v_comp boolean := false; v_ctrial boolean := false;
   v_backed boolean := false; v_until timestamptz; v_offer text := 'trial'; v_sync boolean := false;
   v_last_sync timestamptz; v_evidence boolean := false;
-  v_tier text; v_standing boolean := false; v_red boolean := false;
+  v_tier text; v_standing boolean := false; v_red boolean := false; v_black boolean := false;
 begin
   if p_user is null then
     return jsonb_build_object('signed_in', false, 'has_access', false, 'reason', 'signed_out',
-                              'offer', 'trial', 'should_sync', false, 'tier', null, 'bet_checker_paid', false);
+                              'offer', 'trial', 'should_sync', false, 'tier', null, 'bet_checker_paid', false, 'fairline_paid', false);
   end if;
 
   select su.status, su.price_id, su.current_period_end, su.cancel_at_period_end, su.stripe_customer_id,
@@ -890,7 +941,7 @@ begin
     v_sync := v_evidence and (v_last_sync is null or v_last_sync < p_at - interval '5 minutes');
     return jsonb_build_object('signed_in', true, 'user_id', p_user, 'has_access', false, 'reason', 'no_subscription',
       'row_exists', false, 'offer', 'trial', 'should_sync', v_sync, 'last_sync_at', v_last_sync,
-      'tier', null, 'bet_checker_paid', false, 'subscription', null);
+      'tier', null, 'bet_checker_paid', false, 'fairline_paid', false, 'subscription', null);
   end if;
 
   v_comp   := s.status = 'active' and coalesce(s.price_id, '') = 'owner_comp';
@@ -899,11 +950,13 @@ begin
   v_has    := public.billing_row_grants_access(s.status, s.price_id, s.current_period_end, p_at);
   v_tier   := public.billing_tier_of_price(s.price_id);
   v_standing := public.billing_row_in_good_standing(s.status, s.price_id, s.current_period_end, p_at);
-  -- Bet Checker in good standing: paid, but not for the terminal
+  -- Bet Checker or Fairline in good standing: paid, but not for the terminal
   v_red    := v_standing and v_tier = 'red';
+  v_black  := v_standing and v_tier = 'black';
   v_reason := case
     when v_comp                                   then 'comp'
     when v_red                                    then 'bet_checker_only'
+    when v_black                                  then 'fairline_only'
     when v_has and s.status = 'past_due'          then 'past_due_grace'
     when v_has and v_ctrial                       then 'comp_trial'
     when v_has                                    then s.status
@@ -919,13 +972,13 @@ begin
     else s.current_period_end end;
   v_offer := case
     when v_has then 'none'
-    when v_red then 'upgrade'
+    when v_red or v_black then 'upgrade'
     when v_backed and s.status in ('past_due', 'unpaid') then 'fix_payment'
     when not v_backed and s.stripe_customer_id is null then 'trial'
     else 'resubscribe' end;
-  -- a Bet Checker row in good standing is not BEHIND Stripe: it is a
-  -- different product, and asking Stripe again on every page would not change it
-  if not v_has and not v_red then
+  -- a Bet Checker or Fairline row in good standing is not BEHIND Stripe: it is
+  -- a different product, and asking Stripe again on every page would not change it
+  if not v_has and not v_red and not v_black then
     v_sync := (v_backed or s.stripe_customer_id is not null or s.status is null or v_evidence)
               and (v_last_sync is null or v_last_sync < p_at - interval '5 minutes');
   end if;
@@ -936,7 +989,8 @@ begin
     'access_until', v_until, 'offer', v_offer, 'should_sync', v_sync,
     'last_sync_at', v_last_sync, 'stripe_synced_at', s.stripe_synced_at, 'last_event_at', s.last_event_at,
     'tier', v_tier,
-    'bet_checker_paid', v_standing and coalesce(v_tier, 'blue') in ('red', 'blue'),
+    'bet_checker_paid', v_standing and coalesce(v_tier, 'blue') in ('red', 'black', 'blue'),
+    'fairline_paid', v_standing and coalesce(v_tier, 'blue') in ('black', 'blue'),
     'subscription', jsonb_build_object(
       'status', s.status, 'price_id', s.price_id, 'current_period_end', s.current_period_end,
       'cancel_at_period_end', s.cancel_at_period_end, 'stripe_customer_id', s.stripe_customer_id));
@@ -1361,6 +1415,7 @@ revoke all on function public.billing_unresolved_events(integer) from public, an
 revoke all on function public.billing_user_report(uuid) from public, anon, authenticated;
 revoke all on function public.billing_learn_price_tier(text, text, text, text, boolean, text) from public, anon, authenticated;
 revoke all on function public.has_bet_checker_paid(uuid, timestamptz) from public, anon, authenticated;
+revoke all on function public.has_fairline_paid(uuid, timestamptz) from public, anon, authenticated;
 -- The rule runs AS THE READER inside every RLS gate, so the two pieces it calls
 -- stay callable by every role. Neither says anything about any account.
 grant execute on function public.billing_row_in_good_standing(text, text, timestamptz, timestamptz) to public;
@@ -1392,7 +1447,7 @@ begin
          || 'public.billing_sweep_admit(integer), public.billing_sweep_candidates(integer), '
          || 'public.billing_unresolved_events(integer), public.billing_user_report(uuid), '
          || 'public.billing_learn_price_tier(text, text, text, text, boolean, text), '
-         || 'public.has_bet_checker_paid(uuid, timestamptz) to service_role';
+         || 'public.has_bet_checker_paid(uuid, timestamptz), public.has_fairline_paid(uuid, timestamptz) to service_role';
     execute 'grant select on public.billing_diagnostics, public.billing_open_alerts to service_role';
   end if;
 end
@@ -1552,17 +1607,32 @@ union all select 11, 'community_is_entitled defers to the one rule (where instal
        case when to_regprocedure('public.community_is_entitled(uuid)') is null then 'ok (not installed here)'
             when pg_get_functiondef(to_regprocedure('public.community_is_entitled(uuid)')) like '%billing_row_grants_access%' then 'ok'
             else 'CHECK THIS' end
-union all select 12, 'what each price sells, learned from Stripe (red = Bet Checker, blue = Research Terminal)',
+union all select 12, 'what each price sells, learned from Stripe (red = Bet Checker, black = Fairline, blue = Research Terminal)',
        'ok (' || (select count(*) from public.billing_price_tiers where tier = 'blue')::text || ' blue, '
+              || (select count(*) from public.billing_price_tiers where tier = 'black')::text || ' black, '
               || (select count(*) from public.billing_price_tiers where tier = 'red')::text || ' red)'
 union all select 13, 'subscriptions.tier follows the price on every write',
        case when exists (select 1 from pg_trigger where tgname = 'subscriptions_tier_follows_price'
                           and tgrelid = 'public.subscriptions'::regclass and not tgisinternal)
             then 'ok' else 'CHECK THIS' end
-union all select 14, 'only the service role learns a price''s tier or asks has_bet_checker_paid for an account',
+union all select 14, 'only the service role learns a price''s tier or asks has_bet_checker_paid / has_fairline_paid for an account',
        case when not has_function_privilege('authenticated', 'public.billing_learn_price_tier(text,text,text,text,boolean,text)', 'execute')
              and not has_function_privilege('anon', 'public.billing_learn_price_tier(text,text,text,text,boolean,text)', 'execute')
              and not has_function_privilege('authenticated', 'public.has_bet_checker_paid(uuid,timestamptz)', 'execute')
              and not has_function_privilege('anon', 'public.has_bet_checker_paid(uuid,timestamptz)', 'execute')
+             and not has_function_privilege('authenticated', 'public.has_fairline_paid(uuid,timestamptz)', 'execute')
+             and not has_function_privilege('anon', 'public.has_fairline_paid(uuid,timestamptz)', 'execute')
             then 'ok' else 'CHECK THIS' end
+union all select 15, 'no Bet Checker (red) or Fairline (black) price opens the terminal; the terminal (blue) includes both',
+       case when not exists (select 1 from public.billing_price_tiers t where t.tier in ('red', 'black')
+                              and public.billing_row_grants_access('active', t.price_id, now() + interval '1 day', now()))
+             and not exists (select 1 from public.billing_price_tiers t where t.tier = 'blue'
+                              and not public.billing_row_grants_access('active', t.price_id, now() + interval '1 day', now()))
+             and pg_get_functiondef('public.has_fairline_paid(uuid,timestamptz)'::regprocedure) like '%''black'', ''blue''%'
+             and pg_get_functiondef('public.has_bet_checker_paid(uuid,timestamptz)'::regprocedure) like '%''red'', ''black'', ''blue''%'
+             and (select pg_get_constraintdef(oid) from pg_constraint where conname = 'billing_price_tiers_tier_check'
+                   and conrelid = 'public.billing_price_tiers'::regclass) like '%black%'
+             and (select pg_get_constraintdef(oid) from pg_constraint where conname = 'subscriptions_tier_check') like '%black%'
+            then 'ok (' || (select count(*) from public.billing_price_tiers where tier in ('red', 'black'))::text || ' red or black prices checked)'
+            else 'CHECK THIS' end
 order by row;

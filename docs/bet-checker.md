@@ -224,6 +224,11 @@ would have opened the $49.99 terminal. Now:
 Tested by `tools/billing/tier_flow.test.js` (made tier-blind again, it fails 8
 checks) and a 150-case grid in `tools/billing/billing_hardening_sql.test.js`.
 
+A third tier, **Fairline** (`tier = black`), includes Bet Checker:
+`has_bet_checker_paid()` is red, black or blue, and a Fairline customer is
+never sold Bet Checker (already included). See `docs/fairline.md` and
+`docs/billing-hardening.md` §15.
+
 ## Deploying
 
 1. **Billing first** — Actions → *Deploy billing* (`deploy-billing.yml`):

@@ -26,18 +26,24 @@ word and nothing else.
 
 ## Who can use it
 
+| Tier | Product | Price | Includes |
+|---|---|---|---|
+| `red` | Bet Checker | $7.99/mo, $59/yr | Bet grading |
+| `black` | **Fairline** | $19.99/mo, $159/yr | Bet Checker + The Board + The Leaks + The Tape |
+| `blue` | EdgeDesk Full Access | $49.99/mo | Everything, including Fairline |
+
 | Account | The Board | The Leaks |
 |---|---|---|
 | Signed out | sign-in card | sign-in card |
-| Free | the top 3 **fresh** rows of the whole board; the rest blurred with the offer; filters locked | the **name** of the biggest real leak's slice ("Your biggest leak is in Props"), and no number |
-| Paid | every row, filters by sport, market and book | every slice, the 3 biggest real leaks, the labels |
+| Free, or Bet Checker (`red`) | the top 3 **fresh** rows of the whole board; the rest blurred with the offer; filters locked | the **name** of the biggest real leak's slice ("Your biggest leak is in Props"), and no number |
+| Fairline (`black`) or Full Access (`blue`) | every row, filters by sport, market and book | every slice, the 3 biggest real leaks, the labels |
 
 **The gate is one helper, `fairline_paid(uuid, timestamptz)`.** Every
-Fairline door calls it and nothing else. **For now it is
-`has_bet_checker_paid()`**: Bet Checker (tier `red`) or the Research Terminal
-(tier `blue`) in good standing. The Fairline tier (`black`) is a separate
-billing change; it swaps the body of `fairline_paid()` and nothing else in
-this file.
+Fairline door calls it and nothing else, and it calls
+`has_fairline_paid()` (`supabase/billing_hardening.sql`): Fairline (`black`)
+or the Research Terminal (`blue`) in good standing. Bet Checker (`red`) alone
+is not Fairline; its offer on the page is a plan switch in the billing
+portal, never a second checkout.
 
 A free account's numbers are never sent to its browser: the blurred rows and
 figures on the page are placeholders, and the free answers carry no row
@@ -196,14 +202,60 @@ and no captured price is shown unpriced, last.
   ([juicereel-billing.md](juicereel-billing.md)); selling Fairline there needs
   a product on Juice Reel's side first.
 
+## Billing: the `black` tier
+
+Fairline is its own Stripe product, sold like Bet Checker (full detail:
+`docs/billing-hardening.md` §15):
+
+- `create_checkout_session {kind: 'fairline', plan: 'monthly' | 'annual'}`
+  finds the price by lookup key (`fairline_monthly`, `fairline_annual`),
+  refuses one whose product does not say `tier = black` or that does not
+  charge the figure the consent showed, records the tier **before** the
+  session exists, and refuses to sell (503, nothing created) if the database
+  could not record it. Success and cancel return to `/fairline/`.
+- The page shows the automatic-renewal terms (`lib/edgedesk_pricing.js`
+  `fairlineTerms()`), requires the tick, has the server create the checkout,
+  records the terms **as shown** in `billing_consents`, and only then sends the
+  browser to Stripe. Back from Stripe it asks the server until
+  `fairline_paid` (never the redirect itself).
+- A `black` subscription never passes `billing_row_grants_access()`, so it
+  never opens the terminal; `tools/billing/fairline_tier.test.js` proves it
+  through the shipped functions, including for a price nobody learned.
+
 ## Deploying
 
-Paste `supabase/fairline.sql` into the SQL editor (or `psql
---single-transaction -f`) **after** `bettor_decisions.sql`,
-`billing_hardening.sql`, `bet_checker.sql`, `portfolio.sql` and
-`bet_import.sql`; it stops with a message naming any that is missing. It ends
-in a report: every row should say `ok`. It adds functions and one view, and
-changes no table, row or policy. The page is static and ships with the site.
+In this order:
+
+1. **Billing first.** Actions → *Deploy billing* (`deploy-billing.yml`):
+   `apply_sql` (`billing_hardening.sql`, which adds the `black` tier and
+   `has_fairline_paid()`; report row 15 must say `ok`), then the three
+   functions (`sync_subscription`, `stripe_webhook`,
+   `create_checkout_session`). A checkout deployed before the SQL refuses to
+   sell Fairline rather than sell an unrecorded price.
+2. **`supabase/fairline.sql`** into the SQL editor (or `psql
+   --single-transaction -f`), **after** `bettor_decisions.sql`,
+   `billing_hardening.sql`, `bet_checker.sql`, `portfolio.sql` and
+   `bet_import.sql`; it stops with a message naming any that is missing. Every
+   report row should say `ok`. It adds functions and one view, and changes no
+   table, row or policy.
+3. The page is static and ships with the site.
+
+### Stripe dashboard
+
+- Product **Fairline**: metadata `tier = black`; prices with lookup keys
+  `fairline_monthly` ($19.99/month) and `fairline_annual` ($159/year), both
+  active, USD, no trial. Put `tier = black` in each **price's** metadata too.
+- **Customer portal**: allow switching between the Bet Checker, Fairline and
+  Research Terminal prices, so every switch is one subscription changing price.
+
+### Before going live, in production
+
+- `docs/billing-hardening.md` §11 query 10: production's `has_active_sub()`
+  and the paywall RLS that calls it are **not in this repository**. They must
+  defer to `billing_row_grants_access()` (or `community_is_entitled()`), not
+  inline statuses, or a Fairline subscription would read the terminal's data.
+  The tests prove it against a stand-in that defers to the rule; production's
+  own definition is **not verified** until that query is run there.
 
 ## Tests
 
@@ -212,4 +264,5 @@ changes no table, row or policy. The page is static and ships with the site.
 | `tools/fairline/fairline_sql.test.js` | a real PostgreSQL, as readers A and B, anon and the service role: install (twice) and missing dependencies, owner-only reads, the paid gate (free, red, blue, lapsed), one row per bet across both sources (linked, same market, same game, a different price kept apart, twins, parlays), every slice and bucket, the four labels, the minimum sample, P/L only, the top leaks, The Board (main line, fair, best price, `book_quotes` first, edge, age, stale sorted last, Kalshi only when OK, DK Predictions inactive, filters, the free three), and the page's mirrors equal to the SQL |
 | `tools/fairline/core.test.js` | the buckets at every boundary, the labels, the slice names, the verdict sentences, The Board's words |
 | `tools/fairline/page.test.js` | the page's wiring: the nav, the scripts, the two doors, prices not picks, the known limitations, Coming Soon, no typed price, escaping |
-| `tools/fairline/page.e2e.js` | Chromium against the shipped SQL: a free reader's teaser (the offer's button never cut off), a paid reader's Board and Leaks, a 390 px phone, no script error |
+| `tools/fairline/page.e2e.js` | Chromium against the shipped SQL: a free reader's teaser (the offer's button never cut off) and the upgrade (terms, consent before Stripe), a Bet Checker reader's portal switch, a Fairline reader's Board and Leaks, a 390 px phone, no script error |
+| `tools/billing/fairline_tier.test.js` | the `black` tier through the shipped billing functions and the real SQL: bought, paid for Fairline and Bet Checker, never the terminal (the rule, `community_is_entitled`, a `has_active_sub` that defers to it, signals RLS); an unlearned price refused at checkout; a portal switch to a never-learned Fairline price named black (product readable, Products refused, Stripe unreachable); switch_plan and already_entitled; blue still everything; the rule mirrored in the core and the browser on a 175-case grid; Juice Reel over a live Fairline plan raised |

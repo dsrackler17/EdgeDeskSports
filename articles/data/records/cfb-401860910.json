@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:30:00.000Z",
   "game_when_label": "2026-10-31 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-29T00:49:03.363Z",
-  "generated_at": "2026-10-29T00:49:03.363Z",
+  "updated_at": "2026-10-29T09:49:42.098Z",
+  "generated_at": "2026-10-29T09:49:42.098Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -124,22 +124,22 @@
         "note": "Quoted from Utah State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 78,
-      "inputs_reached_pct": 73,
+      "inputs_reached_pct": 81,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 21,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 13,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
+          "FETCH_FAILED": 0,
           "UNAVAILABLE": 5
         },
         "absent": [
@@ -148,18 +148,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Utah State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Colorado State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
           },
           {
             "field": "qb_availability",
@@ -1502,18 +1490,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "REGIME CHANGE (Colorado State): REGIME CHANGE: new head coach; returning roster share at the 10th percentile; returning production at the 23rd percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played.",
           "widening": null
         },
@@ -1538,14 +1514,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1641,7 +1609,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 6.4,
+            "score": 8.4,
             "max": 20
           },
           {
@@ -1653,7 +1621,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1676,18 +1644,18 @@
         "next_actions": [
           {
             "action": "Confirm Colorado State’s starting QB (Hauss Hejny)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Restore an injury/availability source for Colorado State",
-            "potential_gain": 5,
-            "text": "up to +5 once confirm Colorado State’s starting QB (Hauss Hejny) is done"
+            "action": "Confirm Colorado State’s QB availability",
+            "potential_gain": 4,
+            "text": "up to +4 once confirm Colorado State’s starting QB (Hauss Hejny) is done"
           },
           {
-            "action": "Restore an injury/availability source for Utah State",
-            "potential_gain": 5,
-            "text": "up to +5 once confirm Colorado State’s starting QB (Hauss Hejny) is done"
+            "action": "Confirm Utah State’s QB availability",
+            "potential_gain": 4,
+            "text": "up to +4 once confirm Colorado State’s starting QB (Hauss Hejny) is done"
           }
         ],
         "stability": {
@@ -1721,9 +1689,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "LINE_MOVING",
-        "label": "LINE MOVING",
-        "text": "EdgeDesk’s number is steady, but the market has moved 3.5 pts toward Utah State (espn · DraftKings)."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 20 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "MEDIUM",
@@ -1940,7 +1908,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1aqc1tr11y3axp",
+    "packet_hash": "8dacoyrolvfk",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Utah State hold Colorado State to field goals?",
@@ -1968,7 +1936,13 @@
       "K'saan Farrar has completed 91 of 146 passes (62.3%) for 948 yards, 6.5 yards per attempt, 5 touchdowns and 2 interceptions in five games for Colorado State, and has been sacked on 2 of 148 dropbacks.",
       "Hauss Hejny has completed 71 of 104 passes (68.3%) for 952 yards, 9.2 yards per attempt, 13 touchdowns and 2 interceptions in four games for Colorado State, and has been sacked on 1 of 105 dropbacks."
     ],
-    "availability": [],
+    "availability": [
+      "Utah State’s availability report lists receiver Eli Wood as questionable.",
+      "Utah State’s availability report lists receiver Rex Haynes as questionable.",
+      "Utah State’s availability report lists receiver Demick Starling as questionable.",
+      "Colorado State’s availability report lists running back Mel Brown as questionable.",
+      "Colorado State’s availability report lists tight end Juice Vereen as doubtful."
+    ],
     "script": {
       "model": [
         "Utah State’s defense has to come out ahead in the red zone: it allows success on 32.4% of opponent red-zone plays, against an offense that succeeds on 63.4% of its red-zone plays.",
@@ -1983,8 +1957,12 @@
       ]
     },
     "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Utah State and Colorado State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+      "Utah State’s availability report lists receiver Eli Wood as questionable.",
+      "Utah State’s availability report lists receiver Rex Haynes as questionable.",
+      "Utah State’s availability report lists receiver Demick Starling as questionable.",
+      "Colorado State’s availability report lists running back Mel Brown as questionable.",
+      "Colorado State’s availability report lists tight end Juice Vereen as doubtful.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Utah State and Colorado State."
     ],
     "flags": [
       {
@@ -2008,7 +1986,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-28T22:38:31.767Z",
+        "observed_at": "2026-10-29T05:52:16.383Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2017,6 +1995,13 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-28T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Pac-12 Conference availability report (Advance Report)",
+        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-29T02:02:33.330Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -2024,6 +2009,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T00:49:03.363Z"
+    "at": "2026-10-29T09:49:42.098Z"
   }
 }
