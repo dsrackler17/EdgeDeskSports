@@ -166,9 +166,10 @@ jobs:
         env:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          ODDS_GATEWAY_SECRET: ${{ secrets.ODDS_GATEWAY_SECRET }}
         run: |
-          if [ -z "$EDGD_SB_SERVICE" ]; then
-            echo "::warning::READ_ALT_CAPTURE is on but no odds gateway credential (SB_SERVICE_ROLE) reached this step: no alternate spread was captured"
+          if [ -z "$EDGD_SB_SERVICE" ] && [ -z "$ODDS_GATEWAY_SECRET" ]; then
+            echo "::warning::READ_ALT_CAPTURE is on but no odds gateway credential (SB_SERVICE_ROLE / ODDS_GATEWAY_SECRET) reached this step: no alternate spread was captured"
             echo "Alternate spreads: NOT captured (no odds gateway credential)" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
