@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-29 — Landing checkout: "Start 7 days free" reaches Stripe again (an undeclared `promo` stopped it after the consent)
+
+**What was wrong.** The landing page sends a new reader through sign-up and the renewal terms. It records their consent, then sends them to Stripe. Between those last two steps, `confirmArl()` in `index.html` sends the funnel and analytics events with `promo:!!promo`. Nothing in the page declares `promo`. The creator's code is `affiliateCode`, set a few lines earlier in the same function. The call threw `ReferenceError: promo is not defined`, so `window.location.href=url` never ran. The reader stayed on "Opening secure checkout…". Their consent was recorded, and no checkout opened. This is the path every Full Access trial takes, server checkout and Payment Link alike. Bet Checker checks out from `/bet-checker/` and was not affected. The line predates the oldest commit in this clone (2026-10-27), so it has been live at least since then.
+
+**Why nothing went red.** Only `tools/billing/checkout_flow.e2e.js` drives this flow in a browser. No workflow ran it, and it had failed at step 5 on `main` without anyone seeing.
+
+**What changed.**
+- `index.html`: `promo:!!affiliateCode` in the `checkout_started` funnel and analytics events. The events still report whether a creator's code was used.
+- `tools/billing/checkout_flow.e2e.js`: when step 5 fails, it reports the page's script errors, so this bug reads `ReferenceError: promo is not defined` instead of an empty URL. It no longer crashes on `new URL('')`. With `CHECKOUT_FLOW_UI_REQUIRED=1`, a missing browser fails rather than skips.
+- `.github/workflows/funnel-tests.yml`: the browser job runs it, with `CHECKOUT_FLOW_UI_REQUIRED=1`. The workflow also starts on `lib/edgedesk_access.js` (the checkout client) and on the test itself.
+
+**Evidence.** On `main`'s page: `FAIL 5 checkout opened the configured link — {"to":"","errors":["ReferenceError: promo is not defined"]}`. With the fix: `PASS | checkout flow | 40 passed, 0 failed`.
+
 ## 2026-10-28 — Fairline, part 1: The Board and The Leaks (behind the Bet Checker and terminal tiers)
 
 **What it is.** A new page, [`/fairline/`](fairline/index.html), that answers two questions from prices and the reader's own bets, never from picks: **"Am I getting a good number right now?"** (The Board) and **"Where am I losing money, and is it bad bets or bad luck?"** (The Leaks). The weekly recap (The Tape) shows as Coming Soon. Narrative: [docs/fairline.md](docs/fairline.md).
