@@ -12,6 +12,19 @@
 
 **Evidence.** `tools/odds/nba_nhl_lines_sql.test.js`, 24 / 0 on a real PostgreSQL. An NBA or NHL board 65 or 117 minutes old was bought before and is a free cache hit after, for capture and close alike. NFL is still bought hourly. Leaving the NBA `close` band at 60 fails 5 checks.
 
+## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
+
+**What it does.** After a reader picks a game, the board's lines show as buttons: spread, total and moneyline, away and over first. Each spread and total shows the line most books hang, or the priced line where none is modal. One tap fills the market, the side and the line. For a paid reader (Bet Checker or the terminal), it also fills the best price on EdgeDesk's board at exactly that line, and its book. A note under the form says where the price came from and how old it is, and asks the reader to change it to the price they got, because the grade is on the odds they submit. A free reader taps the line and types the odds (owner's decision, 2026-10-29: the best price across the board's books is line shopping, which the paid tiers sell). The form still works as before for any line not on the buttons.
+
+**What changed.**
+- **`supabase/bet_checker.sql`** (mirrored in `migrations/20261028120000_bet_checker.sql`), additive:
+  - `bet_checker_line_prices(p_event_id)`, a security-definer function beside `bet_checker_lines()`, which is unchanged. It answers capture's `best_dec` as American odds, `best_book` and `last_seen_at` at each line of a game that has not started. It answers only lines seen within `fair_max_age_min`, the window `priced` already uses. **A free reader gets no rows**, anon is refused, and the grant is `authenticated` and the service role.
+  - `bet_checker_decimal_to_american()`, for display.
+  - The startup guard also requires `signals.best_dec` and `signals.best_book`.
+- **The page**: `lib/edgedesk_bet_checker.js`, `lib/edgedesk_bet_checker_core.js` (`tapLines()`, `bookOption()`), `lib/edgedesk_bet_checker.css`, `bet-checker/index.html` (the buttons and the note; stamps `20261029bc1`). A book EdgeDesk's list does not carry is set to Other, and the note says so.
+- **Nothing about grading changes.** The entry grade, the CLV and the free allowance are computed as before, from the odds the reader submits.
+- **Tests**: `bet_checker_sql.test.js` 127 (a free reader gets no prices, paid readers get each line's price and book, a stale or unpriced line is left out, the conversion), `core.test.js` 53, `page.e2e.js` 59 (a free reader's tap leaves the odds empty; a paid reader's tap fills -110 at DraftKings, a book outside the list becomes Other, and an edited price is the one logged).
+
 ## 2026-10-29 — NHL: every favourite less favoured than DraftKings. The cause measured, a pre-registered shadow, a nightly spread check; no published price moves
 
 **The report.** EdgeDesk priced every favourite below DraftKings again: VAN at SJS −133 against −198, NYI at MIN −146 against −192. The hourly ESPN capture (`research/clv/openers/nhl`) confirms the pattern on the published prices. In 35 of 47 settled 2026-27 games the book's favourite was less favoured here, by 2.2 points on average. The market's logit on the model's has slope 1.215 (1.036–1.394). Both rank clubs alike (correlation 0.89). The scale differs. Full write-up: [docs/engine/NHL_LAB.md](docs/engine/NHL_LAB.md) §6.3.
