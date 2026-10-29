@@ -74,6 +74,8 @@ jobs:
         run: node tools/radar/inline_core.js --check
       - name: The H-RADAR-01 registration is the registered one, and its report (once run) says what its numbers say
         run: node research/radar/run_validation.js --check
+      - name: The H-RADAR-01 runner end to end against a scripted Polymarket (so the one live look is never spent on a bug)
+        run: node tools/radar/validation.test.js
       - name: supabase/radar_registry.sql is generated from the registration and the report, and current
         run: node tools/radar/build_registry_sql.js --check
 
