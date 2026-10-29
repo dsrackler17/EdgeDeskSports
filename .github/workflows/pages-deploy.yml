@@ -1,18 +1,30 @@
 # EdgeDesk — publish the site (edgedesksports.com) to GitHub Pages.
 #
 # Why this replaces Pages' own "Deploy from a branch" build: that build runs
-# for every push to main and CANCELS the one before it. The data jobs push
+# for every push to main and CANCELS the one in progress. The data jobs push
 # every few minutes and a build takes about four, so on 2026-10-28 23 builds
 # in a row were cancelled (19:54 to 20:38 UTC) and the site kept serving a
-# 19:49 copy through three merges. Here a new run WAITS for the one in
-# progress (cancel-in-progress: false). GitHub keeps one waiting run and
-# replaces it with the newest, so every run that starts finishes and the
-# newest main always goes out next.
+# 19:49 copy through three merges. Here the deploy in progress always
+# finishes (cancel-in-progress: false). Of the runs waiting behind it GitHub
+# keeps only the newest (the others show as cancelled), so the newest main
+# always goes out next.
 #
-# When it runs: a merge to main (push). The data jobs' own pushes start no
-# workflow (they push with GITHUB_TOKEN), so the schedule publishes their
-# data: every 10 minutes, whatever main holds then. Run it by hand
-# (workflow_dispatch) to publish now.
+# When it runs:
+#   - a merge to main (push);
+#   - when any workflow that pushes to main finishes (workflow_run). The data
+#     jobs push with GITHUB_TOKEN, which starts no workflow, and GitHub's own
+#     cron fires about once every 4 to 7 hours in this repository (the data
+#     jobs themselves are dispatched by Supabase pg_cron), so their finishing
+#     is the signal. tools/ci/pages_deploy.test.js fails when a workflow that
+#     pushes to main is missing from the list;
+#   - hourly, as a backstop GitHub may skip;
+#   - by hand (workflow_dispatch).
+#
+# This is the only workflow that deploys the site. The Pages settings screen
+# offers starter workflows ("Configure"); adding one makes two deploys race
+# in the same queue (jekyll-gh-pages.yml and static.yml, added 2026-10-28; the
+# second uploading the repository without the Jekyll build). The test fails
+# on any other workflow that deploys Pages or uses the "pages" group.
 #
 # The same build as before: actions/jekyll-build-pages over the repository
 # root, as Pages' branch build did (the repository has no .nojekyll), so the
@@ -27,8 +39,78 @@ name: Pages deploy
 on:
   push:
     branches: [main]
+  workflow_run:
+    # every workflow that pushes to main, by its name:
+    workflows:
+      - "App version"
+      - "Availability sync"
+      - "CFB Model Lab"
+      - "CFB referee sync"
+      - "CFB SP+ weekly sync"
+      - "CFB V2 shadow"
+      - "CLV live tracking"
+      - "CLV opening lines"
+      - "College baseball prices"
+      - "College baseball research build"
+      - "College baseball research validate"
+      - "Collegiate backfill (daily)"
+      - "Collegiate probe"
+      - "Collegiate rosters and portal (weekly)"
+      - "EdgeDesk features run"
+      - "Editorial system"
+      - "Football enrichment refresh"
+      - "Football feature validation"
+      - "Football model record"
+      - "Football regrade (football-v2)"
+      - "Football weekly build"
+      - "Games challenge board"
+      - "Grade published briefs"
+      - "Independent projections build"
+      - "Injury sync"
+      - "Learning loop"
+      - "Linemaker build"
+      - "Linemaker calibrate"
+      - "MLB historical archives (pitching and offense)"
+      - "Model health & daily learning"
+      - "Model loop basketball (weekly)"
+      - "Model loop CFB (weekly)"
+      - "Model loop college baseball (weekly)"
+      - "Model loop engines (weekly report)"
+      - "Model loop health"
+      - "Model loop MLB (weekly)"
+      - "Model loop NFL (weekly)"
+      - "Model loop UFC (per event)"
+      - "Model performance"
+      - "Multi-sport lab build"
+      - "Multi-sport lab validate"
+      - "NBA engine build"
+      - "NBA engine validate"
+      - "NCAAM forecast (daily)"
+      - "NCAAM forecast (weekly challengers)"
+      - "NCAAW forecast (daily)"
+      - "NCAAW forecast (weekly challengers)"
+      - "NFL Coaching Staff validation"
+      - "NFL market structure"
+      - "NFL referee assignments"
+      - "NFL referee sync"
+      - "NFL weekly loop"
+      - "NHL engine build"
+      - "NHL engine validate"
+      - "Player props"
+      - "Props factory"
+      - "Publish research articles"
+      - "Rating sync"
+      - "Record P&L"
+      - "Research newsletter"
+      - "Roster sync"
+      - "Settle finished games"
+      - "Simulator sports data"
+      - "Starter context and research profiles"
+      - "Today's Games slate"
+    types: [completed]
+    branches: [main]
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '41 * * * *'
   workflow_dispatch:
 
 permissions:

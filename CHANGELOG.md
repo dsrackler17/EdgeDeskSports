@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
+
+**What was wrong, once Pages' source was switched to GitHub Actions:**
+
+- **Three workflows deployed the site on every merge.** `jekyll-gh-pages.yml` and `static.yml`, the two starter workflows from the Pages settings screen, were added on 2026-10-28 at 21:20 UTC. They shared the `pages` queue with `pages-deploy.yml`, which keeps one waiting run, so each merge cancelled two of the three. Of 50 runs, 20 were cancelled.
+  - Whichever finished last decided the site. At 12:41 UTC that was `static.yml`, which uploads the repository without the Jekyll build.
+- **The data jobs' updates stopped reaching the site between merges.** The data jobs push with `GITHUB_TOKEN`, which starts no workflow, and `pages-deploy.yml` relied on an every-10-minutes timer.
+  - GitHub's cron fires only every 4 to 7 hours in this repository. The data jobs themselves are started by Supabase `pg_cron`.
+  - The timer ran twice in 15 hours (01:56 and 07:56 UTC). Nothing deployed between 07:59 and 12:22.
+
+**What changed:**
+- **`jekyll-gh-pages.yml` and `static.yml` are removed.** `pages-deploy.yml` is the only deployer.
+- **`pages-deploy.yml` now also runs when any of the 65 workflows that push to `main` finishes** (`workflow_run`, by name), the pattern `editorial.yml` already uses.
+  - The timer becomes an hourly backstop at :41.
+  - The comments now say what the queue really does. The deploy in progress always finishes; waiting runs are replaced by the newest and show as cancelled.
+- **`tools/ci/pages_deploy.test.js`** (Core validation) now also fails:
+  - when a workflow that pushes to `main` is missing from the list, naming it;
+  - when a listed name matches no workflow;
+  - when any other workflow deploys Pages or queues in `pages`.
+  - Results: 22 passed, 0 failed. Against `main` before this change, 17 passed, 5 failed. With one data workflow left out of the list, 21 passed, 1 failed.
+- **Docs:** `docs/ci/README.md`, "Publishing the site", and the shipping table in `docs/intelligence.md`.
+
 ## 2026-10-29 — CFB: SP+ beside EdgeDesk's number on every card, as an external estimate, graded against the close
 
 **Why.** On 2026-10-28 EdgeDesk had Middle Tennessee −4.5 against Kennesaw State. SP+ had about Middle Tennessee −1, and the game closed Kennesaw State −1.5 (KSU won 44–28). A results-based number had missed a team that was losing close games while playing efficiently. SP+ (ESPN's opponent-adjusted efficiency rating, by Bill Connelly) is now a visible second opinion, measured against the close. The full write-up is `football/sp_plus/README.md`.
