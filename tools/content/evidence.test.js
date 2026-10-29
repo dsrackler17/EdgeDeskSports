@@ -345,6 +345,48 @@ section('N a player is not a team');
   chk('N ...and Kansas is in the Big 12', e.status === 'pass', e);
 }
 
+section('R a claim and its citation round the same way');
+/* 2026-10-29: the Utah–Cincinnati matchup piece was BLOCKED, on main and in
+   the live check below, for "not in the evidence: 51.8, 44, 42.6". Utah's
+   early-down success is 0.5185 and Cincinnati's allowed rate 0.4405. The
+   claim's text rounded with toFixed (51.8%, 44.0%: 0.5185 × 100 is stored as
+   51.849999…) and its citation with EdgeDesk's rounding (51.9, 44.1), so the
+   sentence never cited the claim it was. Both now round half away from zero. */
+{
+  const unit = (off, def) => ({ performance: { offense_detail: { used: off }, defense_detail: { used: def } } });
+  const pk = FE.buildCfb({ game: { game: { id: 'r1', home: 'Cincinnati', away: 'Utah' } }, keys: { home: 'cin', away: 'uta' },
+    metrics: { away: unit([{ id: 'early_down_success', raw: 0.5185, league: 0.4264, n_obs: 314 }], []), home: unit([], [{ id: 'def_early_down_allowed', raw: 0.4405, league: 0.4264, n_obs: 300 }]) } }, { now: NOW });
+  const c = pk.claims.find((x) => x.key === 'pair:early_downs:away');
+  chk('R a percentage is printed as EdgeDesk rounds it: 0.5185 is 51.9%, 0.4405 is 44.1%', !!c && /51\.9%/.test(c.text) && /44\.1%/.test(c.text) && /51\.9%/.test(c.short) && /44\.1%/.test(c.short), c && c.text);
+  chk('R … so the claim’s own sentence cites it', !!c && FE.citedClaims(pk, c.text).some((x) => x.id === c.id), c && c.cite);
+}
+
+section('K every quarterback on the report');
+/* 2026-10-29: the Week 9 upset watch was BLOCKED, on main and in the live
+   check below, for "Kansas State at Colorado: not mentioned — Avery Johnson
+   is listed as out". Kansas State's report listed Jacob Knuth, the starter
+   EdgeDesk's model expects, as doubtful (an input conflict) and Avery Johnson
+   as out. A weekly-preview capsule stated a side's conflict and then no other
+   report line for that side (without a conflict, only the first). It now
+   states what the gate requires of a game: every conflict and every
+   quarterback on a report. Here Vanderbilt's report, beside the Curtis
+   conflict, lists a stand-in third quarterback out. */
+{
+  const ev = JSON.parse(JSON.stringify(FE.trim(OM.evidence)));
+  const curtis = ev.claims.find((c) => c.key === 'report:home:Jared Curtis');
+  ev.claims.push(Object.assign({}, curtis, { id: 'c_k_third_qb', key: 'report:home:Sam Thirdstring', subject: 'Sam Thirdstring', label: 'Sam Thirdstring (official availability)',
+    text: 'Vanderbilt’s initial SEC availability report (published Oct. 7) lists quarterback Sam Thirdstring as out.', short: 'Sam Thirdstring is listed as out on the SEC availability report',
+    cite: { nums: [], words: ['Thirdstring', 'report|lists|listed|out'], all: true }, values: { status: 'OUT', position: 'QB' }, status: 'OUT' }));
+  const o = oppFor(slateGames.map((p) => Object.assign({}, p, { evidence: p === OM ? ev : FE.trim(p.evidence) })), 'weekly_preview');
+  const a = CE.draft(o, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
+  const r = revalidate(o, a);
+  const vu = a.sections.find((s) => s.key === 'games').body.split('\n### ').find((b) => /Ole Miss at Vanderbilt/.test(b)) || '';
+  const ia = r.checks.find((c) => c.id === 'injuries_addressed' && c.game === '401856718') || {};
+  chk('K the capsule states the conflict and the other quarterback the report lists out', /The model expects Blaze Berlowitz, but Jared Curtis is listed as probable/.test(vu) && /Sam Thirdstring is listed as out/.test(vu), vu.split('\n\n').filter((l) => /Quarterbacks/.test(l)));
+  chk('K … so the game passes injuries_addressed', ia.status === 'pass', ia);
+  chk('K … and the slate still passes every hard check', r.ok, r.failed);
+}
+
 section('V generalises');
 [[GA, 'Georgia at Alabama'], [TX, 'Texas at Oklahoma'], [MZ, 'Texas A&M at Missouri'], [UC, 'UCLA at Oregon'], [NF, 'Bengals at Dolphins (NFL)']].forEach(([p, name]) => {
   ['matchup_analysis', 'edgedesk_analysis'].forEach((fmt) => {
