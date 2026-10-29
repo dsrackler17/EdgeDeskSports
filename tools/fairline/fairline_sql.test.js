@@ -88,6 +88,10 @@ const V = (q) => db.sql(q);
 const uid = (n) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 const A = uid(1), B = uid(2), P = uid(3), Q = uid(4), C = uid(5), D = uid(6), L = uid(7), RD = uid(8);
 const H = 3600 * 1000, MIN = 60 * 1000;
+/* Positions that differ only in when they were placed: the Portfolio fingerprints the placed
+   minute, and each insert reads its own now(), so rows one minute apart can share a minute when
+   the inserts drift. Two minutes apart they never do, unless two inserts are a minute apart. */
+const FP_STEP = 2 * MIN;
 const at = (ms) => "(now() + interval '" + Math.round(ms / 1000) + " seconds')";
 const asJ = (u, q) => JSON.parse(db.as(u, q) || 'null');
 const leaks = (u) => asJ(u, 'select public.fairline_leaks();');
@@ -298,20 +302,20 @@ try {
       close: 'captured', clv: 3, placedMs: -80 * H - i * MIN, kickMs: -50 * H, home: 'Ohio State Buckeyes', away: 'Michigan Wolverines' });
     /* NBA, Portfolio moneylines at +100, 10h out: 12-3, and the close beat them (2.0 x 0.45 - 1 = -10%): RUNNING HOT */
     pp(L, { type: 'MONEYLINE', sport: 'NBA', event: 'Los Angeles Lakers @ Boston Celtics', sel: 'Boston Celtics', odds: 100, stake: 50, status: i < 12 ? 'WON' : 'LOST',
-      sigKey: NBA, startMs: -H, placedMs: -11 * H - i * MIN, label: 'BetMGM', platform: 'betmgm' });
+      sigKey: NBA, startMs: -H, placedMs: -11 * H - i * FP_STEP, label: 'BetMGM', platform: 'betmgm' });
     /* NHL, Portfolio puck lines at -110, 2h out: 10-5, and they beat the close (1.9091 x 0.56 - 1 = +6.91%): A REAL EDGE */
     pp(L, { type: 'SPREAD', sport: 'NHL', event: 'Toronto Maple Leafs @ Boston Bruins', sel: 'Boston Bruins -1.5', line: -1.5, odds: -110, stake: 50, status: i < 10 ? 'WON' : 'LOST',
-      sigKey: NHL, startMs: -H, placedMs: -3 * H - i * MIN, label: 'Caesars', platform: 'caesars' });
+      sigKey: NHL, startMs: -H, placedMs: -3 * H - i * FP_STEP, label: 'Caesars', platform: 'caesars' });
   }
   for (let i = 0; i < 16; i++) {
     /* MLB props at +150, $25, no start known, no close: 4-12, LOSING, on P/L alone */
     pp(L, { type: 'PLAYER_PROP', sport: 'MLB', event: 'Yankees @ Red Sox', sel: 'Judge over 1.5 total bases', odds: 150, stake: 25, status: i < 4 ? 'WON' : 'LOST',
-      placedMs: -40 * H - i * MIN, label: 'FanDuel' });
+      placedMs: -40 * H - i * FP_STEP, label: 'FanDuel' });
   }
   for (let i = 0; i < 14; i++) {
     /* Soccer moneylines at +250, $200, placed after the start (live): 14 bets, a SMALL SAMPLE */
     pp(L, { type: 'MONEYLINE', sport: 'Soccer', event: 'Arsenal v Chelsea', sel: 'Chelsea', odds: 250, stake: 200, status: i < 2 ? 'WON' : 'LOST',
-      startMs: -30 * H, placedMs: -29 * H - i * MIN, settledMs: -27 * H, label: 'FanDuel' });
+      startMs: -30 * H, placedMs: -29 * H - i * FP_STEP, settledMs: -27 * H, label: 'FanDuel' });
   }
   ub(L, { sport: 'NFL', market: 'spread', side: 'home', team: 'Kansas City Chiefs', line: -3.5, odds: -110, book: 'DraftKings', close: 'pending', placedMs: -60 * H, kickMs: 10 * H });
   ub(L, { sport: 'NFL', market: 'spread', side: 'home', team: 'Kansas City Chiefs', line: -3.5, odds: -110, book: 'DraftKings', result: 'loss', won: -1, status: 'void', placedMs: -60 * H, kickMs: -50 * H });
