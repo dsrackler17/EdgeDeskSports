@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-29 — Landing page: "Came from Juice Reel?" in the login and sign-up window
+
+**Why.** A reader who bought EdgeDesk on Juice Reel and then tapped **Log in** on edgedesksports.com saw only an email and a password. Nothing told them their Juice Reel purchase could be linked, or that they needed an EdgeDesk account first. Linking existed, but only on the terminal's paywall and behind the landing band's **Bought on Juice Reel? Open EdgeDesk**.
+
+- **The line** (`lib/edgedesk_juicereel_billing.js`, `landing`): above the form, **Came from Juice Reel? Link your Juice Reel account**. It is shown only while the Juice Reel switch is ON, and not to a reader already headed for Juice Reel's checkout.
+- **Pressed**, the window keeps its own form and says Juice Reel opens after they log in or sign up, with **Undo**. It stands in for the lede, whose sign-up wording promises the card trial.
+- **After sign-in** (a login, a sign-up, or an email confirmation), the reader goes to Juice Reel's authorize page through `juicereel_billing` (start `link`), then back through `oauth/juicereel-subscribe.html` to the terminal, as the paywall's link button does. The card trial's renewal terms never open, and no consent is recorded.
+  - How: a `link` intent is stored beside the existing checkout intent, with the page's pending flag, so the existing `openArl` → `resume()` path carries it. **Undo** restores the pending flag as it was, so a reader who pressed **Start free trial** first still goes on to the trial.
+  - If the switch has gone off before they sign in, they go to the terminal, where the paywall decides; never to the card trial's terms.
+- **`index.html` is unchanged** apart from the library's `?v=` stamp: the page is 7 characters under its 216 KB budget. The line is drawn and styled inline by the library. `app.html` takes the same stamp; `tools/presentation/landing_asset_stamps.json` records it.
+- Docs: `docs/juicereel-billing.md` § 4 and § 10.
+
+Tests: `tools/billing/juicereel_checkout.e2e.js` gains the login window: switch OFF, then ON at 390 px and 1280 px (line → Undo → line → log in → kind `link` → terminal open), sign-up after **Start free trial**, Undo keeping the trial, the switch going off before sign-in, and a stale intent dropped.
+- Against the old library: the run stops at the first new check (`#jrAuth` does not exist), exit 1.
+- After: `89 passed, 0 failed` (was 50).
+
+
 ## 2026-10-29 — Content engine: the evidence gate refused two correct week-9 articles and passed an incomplete one, from two writer bugs
 
 **Why.** `tools/content/evidence.test.js` ("every article generated from today's research passes the gate") went red on `main` from data alone: 202 passed, 1 failed, at `c933dc468`, `adcb2b7f8` and `9957decf9`. Two articles were blocked, for two different reasons.
