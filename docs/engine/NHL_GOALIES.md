@@ -6,6 +6,10 @@
 >
 > This is a data-correctness fix. The goalie effect weights, the xG core and
 > the way edges are ranked are unchanged.
+>
+> **Since 2026-10-29 (§11, a methodology change)**, once the NHL lists both
+> dressed lineups and both starters are Confirmed, the card's headline is
+> priced by the variant that knows tonight's lineups and goalies.
 
 ## 1. What went wrong on 2026-10-25
 
@@ -131,7 +135,9 @@ The engine page's Overview opens with **Starting goalies**
 - **If the starter changed after the card first posted:** "Updated: starter
   changed from X to Y", with both versions' win % (each under the pairing it
   used).
-- **The headline:** the block says it carries no goalie term.
+- **The headline:** before lineup lock, the block says it carries no goalie
+  term. At lineup lock (§11) it shows the lock price, with the slate's price
+  before lock beside it.
 
 Without the live layer, the page shows the slate's own goalie block in the same
 shape, labelled as such. A single goalie is never shown as fact unless he is
@@ -226,11 +232,11 @@ evaluator has been written yet: the registration precedes it.
 
 | Suite | Checks |
 |---|---|
-| `node tools/hockey/nhl_goalie_core.test.js` | 83. Statuses, team identity, name matching, both parsers and their drift cases, the merge (agree, conflict, the lower status, projection fallback), exact re-pricing of the real MIN @ VAN scenarios, the card, change detection, the edge gate on all three markets, the cadence across the DST change, the inline copy |
-| `node tools/hockey/nhl_goalie_sync.test.js` | 68. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth, and the GitHub jobs' summary and verdict (`tools/hockey/nhl_goalie_run_summary.js`) on the function's real answers, its own 401 told from the gateway's, and pg_cron's pokes refused |
-| `NHL_SQL_REQUIRED=1 node tools/hockey/nhl_goalie_sql.test.js` | 78. The layer on a real PostgreSQL: roles, append-only, the supersede, card versions, the confirmation and variant rules, edges attached to the version that existed, CLV, the KPIs (confirmed by T−30 with the grace, conflicts, failures, a silent scheduler), the card's freshness, the v2 registry, cron (each poke's answer kept and read back), a re-apply over live rows, and rollback, and the two queries the GitHub job reads (`tools/hockey/sql/`) |
-| `node tools/hockey/nhl_goalie_ui.test.js` | 32. The block's badges, sources, times, range, limitations and change note; the slate fallback; the market gate; compare with and without the live card |
-| `node tools/engine/engine_ui.e2e.js` | +12, in Chromium on desktop and a 390 px phone: the block on the slate fallback, and a live card's version, change note and range |
+| `node tools/hockey/nhl_goalie_core.test.js` | 103. Statuses, team identity, name matching, both parsers and their drift cases, the merge (agree, conflict, the lower status, projection fallback), exact re-pricing of the real MIN @ VAN scenarios, the card, change detection, the edge gate on all three markets, the cadence across the DST change, the inline copy. The lineup lock (§11): the boxscore's dressed skaters, the lock price against its formula, a call-up lowering his club's price, no lock with fewer than 12 skaters, a starter not Confirmed or a conflict, the new version and its trigger, and `build_slate --check` passing real lock inputs and failing tampered ones |
+| `node tools/hockey/nhl_goalie_sync.test.js` | 76. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth, and the GitHub jobs' summary and verdict (`tools/hockey/nhl_goalie_run_summary.js`) on the function's real answers, its own 401 told from the gateway's, and pg_cron's pokes refused. After v4, the timing probe at T−30 (no lineup yet), then v5 at T−10 when both lineups post: priced at lineup lock, lower than v4 for Vancouver with a regular scratched, the gate open, and the edge judged at the lock price; T−5 writes nothing new |
+| `NHL_SQL_REQUIRED=1 node tools/hockey/nhl_goalie_sql.test.js` | 79. The layer on a real PostgreSQL: roles, append-only, the supersede, card versions, the confirmation and variant rules, edges attached to the version that existed, CLV, the KPIs (confirmed by T−30 with the grace, conflicts, failures, a silent scheduler), the card's freshness, the v2 registry, cron (each poke's answer kept and read back), a re-apply over live rows, and rollback, and the two queries the GitHub job reads (`tools/hockey/sql/`), and a lineup-lock version under `inputs_changed` |
+| `node tools/hockey/nhl_goalie_ui.test.js` | 46. The block's badges, sources, times, range, limitations and change note; the slate fallback; the market gate; compare with and without the live card; at lineup lock, the block's lock line, compare's lock price (full and compact) and the EV at it |
+| `node tools/engine/engine_ui.e2e.js` | +24, in Chromium on desktop and a 390 px phone: the block on the slate fallback, and a live card's version, change note and range. At lineup lock: the Overview headline, the block, the Markets banner, Check a price and the list card |
 
 The Daily Faceoff and NHL boxscore pages in the tests are **constructed** in
 each source's documented shape (`tools/hockey/fixtures/nhl_goalie_sources.js`).
@@ -361,4 +367,140 @@ mismatch fails within half an hour, not after a 90-minute silence.
 - **The static slate does not read the sync.** The slate's own goalie block
   (and the board and graphic built from it) still uses the usage projection
   and the manual file between builds. The engine page's live block replaces
-  it when the layer answers.
+  it when the layer answers. So do the lineup-lock prices (§11): Today's Games
+  and the graphic show the slate's price.
+
+## 11. Lineup lock: the headline at the dressed lineups (2026-10-29, methodology change)
+
+**What changes.** Until now the headline was `edgedesk_nhl_v1:xg_core` until
+puck drop. It has no goalie term and no lineup term, so a starter or a scratch
+moved the pairing numbers and the gate, never the headline. Now a card's
+headline is priced by `edgedesk_nhl_v1:xg_all_confirmed` once all of these
+hold:
+- the NHL lists both dressed lineups;
+- both starters are Confirmed;
+- no source disagrees on a starter.
+
+`xg_all_confirmed` is the xG core plus the confirmed goalie and both clubs'
+confirmed lineup value. The card gets a new version (reason `lineup_locked`,
+under the table's existing `inputs_changed` trigger). From then on these read
+that price:
+- the engine page;
+- EdgeDesk vs the market;
+- Check a price;
+- the sync's edge events.
+
+**Where the lineups come from.** In the last three hours the sync already
+reads the NHL boxscore (`api-web.nhle.com/v1/gamecenter/{id}/boxscore`) for
+the starters. Once lineups post, the same answer lists each side's dressed
+forwards and defence (`playerByGameStats`). `nhlgParseNhlBoxscore` now keeps
+those player ids, goalies excluded. A side with fewer than 12 skaters listed
+has no lineup yet. There is no new source and no new request.
+
+**The price** (`hockey/goalies/core.js` `nhlgLockPrice`):
+
+    λ_home = exp(η_home + β_goalie × r_away goalie + β_own × Δ_home + β_opp × Δ_away)
+    λ_away = exp(η_away + β_goalie × r_home goalie + β_own × Δ_away + β_opp × Δ_home)
+
+Both are then pair-calibrated with `xg_all_confirmed`'s own calibration
+(a 0.525, b 1.125, c 6.0154) and priced with the same distribution as every
+other number.
+- **Δ** is ln(lineup value / typical), from `hockey/model/lineups.js`:
+  - a skater's value is his recent time on ice a game, shrunk toward a
+    10-minute prior worth 3 games (a call-up with no history is the prior);
+  - a lineup's value is the sum over its dressed skaters;
+  - typical is the club's mean over its last 10 lineups, each re-valued
+    today.
+- **β:** goalie −0.694668, own lineup 0.870723, opponent's lineup −0.368072.
+- The slate build writes these to `hockey/goalie_inputs.json`: η (the
+  variant's linear predictor without those three terms), each club's typical
+  value and last lineup, every skater's value, and the betas. The function
+  fits nothing.
+
+**The check.** `node hockey/build_slate.js --check` re-prices every game at
+lock from the inputs, with each club's last dressed lineup and the likeliest
+starters. It fails unless the result matches the slate's own GLM path within
+0.00015. So the function's arithmetic and the build's cannot drift apart. All
+33 games on the 2026-10-29 slate pass. A club with fewer than 3 lineups on
+file has no typical value and never locks.
+
+**When.** After the T−30 final pass the sync checks every 5 minutes until
+puck drop (T−25, −20, −15, −10, −5). A lock that holds is not a new version.
+
+**The timing probe.** Every boxscore read records these in the run's
+`sources` (`nhl.games`):
+- the minutes to the start;
+- the game state;
+- the skaters listed for each side;
+- whether the starters were flagged.
+
+No live boxscore could be read from the build environment (§8), so when
+lineups post relative to the T−30 pass has not been measured yet. The probe
+measures it from the first deployed night. The walk-forward assumed about
+30 minutes before puck drop.
+
+**Evidence** (`hockey/validation/nhl_walkforward.json`, moneyline log loss,
+lower is better):
+
+| Window | Games | `xg_core` (production) | `xg_all_confirmed` (at lock) | Δ |
+|---|---|---|---|---|
+| Selection, 2014–2020 | 9,205 | 0.67459 | 0.67429 | −0.00030 |
+| Confirmation, 2021–2026 | 7,945 | 0.66286 | 0.66167 | −0.00119 |
+| Live, 2026-27 | 198 | 0.66309 | 0.66317 | +0.00008 |
+
+- On confirmation, against the goalie-only variant it would replace:
+  −0.00088 (95% −0.00167 to −0.00004).
+- Rule 1 of the lab (`docs/engine/NHL_LAB.md` §1) needs a challenger to beat
+  production by 0.001 on selection. At −0.00030 this fails it.
+- The lab also kept it out of production because its inputs exist only at
+  warmups ("not available pregame"). This change uses it only then.
+- On 198 live games it is level with production. That is within the noise of
+  198 games.
+
+**The decision.** Pricing the headline with it at lock, despite rule 1, is
+the owner's decision (2026-10-29), recorded here.
+
+**Before and after on the committed slate** (the 2026-10-29 build, 33 games;
+each club's last dressed lineup and the likeliest starters stand in for
+tonight's):
+- the lock moves the home win probability by 1.7 pp on average (median 1.2);
+- the largest move is OTT @ LAK: Los Angeles 47.6% → 42.5%;
+- it does not pull favourites away from even. The mean distance from 50% is
+  8.34 pp before and 8.46 pp after. The favourite compression measured on
+  2026-10-29 is the split factor's problem (`NHL_LAB.md` §6.3), and this
+  change does not fix it.
+
+**What does not change.**
+- The slate, its ledger and the public record: the ledger still freezes the
+  slate's `xg_core` price before puck drop, and the record grades that. The
+  lock price lives on the card version, which is append-only, and an edge
+  event at lock attaches to that version.
+- The gate: a lock needs both starters Confirmed, so the gate is already
+  open.
+- Before lock, everything is as in §§2–5.
+
+**Where it shows** (`lib/edgedesk_nhl_compare.js` rule 7):
+- the engine page Overview's big number and total;
+- the Starting goalies block: "Priced at lineup lock", with the slate's price
+  before lock, and no second goalie-only number;
+- EdgeDesk vs the market and the board row, each with an "at lineup lock"
+  chip;
+- the game's list card;
+- Markets: a banner. Its tables stay the slate's;
+- Check a price: the moneyline, puck lines and totals. Team totals stay the
+  slate's.
+
+**Limits.**
+- Today's Games, the matchup graphic and the slate's other readers do not
+  read live cards. They show the slate's price.
+- The board loads live cards only for games that start within an hour.
+- A goalie-source conflict blocks the lock even with both lineups in.
+- The lock needs a `goalie_inputs.json` built with this change. Until NHL
+  engine build runs on main, the function finds no lineup block and behaves
+  as before.
+- A skater's value is his ice time only. It knows nothing about his quality
+  beyond his minutes.
+
+**Deploy.** Merge, then run NHL engine build once, so the inputs carry the
+lineup block. Then run Deploy NHL goalie layer with `deploy_function`. The
+SQL is unchanged: the card's trigger values and columns are the same.

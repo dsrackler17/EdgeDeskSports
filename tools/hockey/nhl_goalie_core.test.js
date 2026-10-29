@@ -230,6 +230,7 @@ try {
   const lam = G.nhlgCalibrate(Math.exp(gi.lineup.eta.home + Bt.goalie * rA), Math.exp(gi.lineup.eta.away + Bt.goalie * rH), IN.model.all_pair_calibration);
   const D0 = DIST.game({ lamH: lam.lh, lamA: lam.la, effects: IN.distribution.effects, ot: IN.distribution.ot });
   chk('lock: with both typical lineups the price is the formula (both deltas 0), named and labelled', lk && near(lk.p_home, D0.p_home, 1e-4) && lk.lineup.delta.home === 0 && lk.lineup.delta.away === 0 && lk.basis === 'lineup_lock' && lk.model_id === 'edgedesk_nhl_v1:xg_all_confirmed', lk);
+  chk('lock: overtime and shootout come from the same lock distribution', lk && near(lk.p_overtime, D0.p_ot, 1e-4) && near(lk.p_shootout, D0.p_so, 1e-4) && lk.p_shootout < lk.p_overtime, lk && [lk.p_overtime, lk.p_shootout]);
   const miss = { home: full.home.slice(1).concat(['9100099']), away: full.away };
   const lk2 = G.nhlgLockPrice(gi, IN, mC, miss, DIST);
   chk('lock: a regular out for a call-up with no history (the 10-minute prior) lowers the club\'s own price', lk2 && near(lk2.lineup.delta.home, Math.log((17 * 1000 + 600) / 18000), 1e-4) && lk2.p_home < lk.p_home, lk2 && lk2.lineup);

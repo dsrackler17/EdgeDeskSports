@@ -387,7 +387,7 @@ function nhlgLockPrice(gi, inputs, merged, lineups, DIST, o) {
   const before = gi.headline || {};
   return {
     basis: 'lineup_lock', model_id: M.all_model_id || null, p_home: mk.p_home, p_away: nhlgR(1 - D.p_home), fair_home: mk.fair_home, fair_away: mk.fair_away,
-    exp_total: mk.exp_total, fair_total_line: mk.fair_total_line,
+    exp_total: mk.exp_total, fair_total_line: mk.fair_total_line, p_overtime: nhlgR(D.p_ot), p_shootout: nhlgR(D.p_so),
     puck_line: { home_minus_1_5: pl['-1.5'] ? pl['-1.5'][0] : null, away_minus_1_5: nhlgR(awayMinus), fair_home_minus_1_5: pl['-1.5'] ? DIST.probToAmerican(pl['-1.5'][0]) : null, fair_away_minus_1_5: awayMinus != null ? DIST.probToAmerican(awayMinus) : null },
     markets: { puck_line: pl, total: mk.total }, settles: before.settles || null, goalie_free: false, lambda: { home: nhlgR(lam.lh), away: nhlgR(lam.la) },
     lineup: { skaters: { home: lineups.home.length, away: lineups.away.length }, delta: { home: nhlgR(dH), away: nhlgR(dA) }, goalies: { home: merged.home.goalie_id || null, away: merged.away.goalie_id || null }, rated: { home: rh.rated, away: ra.rated } },
