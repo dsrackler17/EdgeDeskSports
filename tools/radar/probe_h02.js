@@ -12,7 +12,10 @@
                  refused or silently read as another
      Q2 volume   whether the leaderboard's recent volume is what the wallet
                  traded: its own trades summed over the rolling 1, 7, 30 and
-                 90 days and since the UTC week's and month's start
+                 90 days and since the UTC week's and month's start, for
+                 wallets ranked 100 to 500 on the 30-day board (its top is
+                 high-frequency wallets no read can cover); how deep the
+                 board goes; whether it answers for one wallet (user=)
      Q3 window   what reading a wallet's last 90 days newest first costs:
                  activity pages per wallet, for wallets high on the recent and
                  on the all-time leaderboard
@@ -86,10 +89,29 @@ const round = (x, k) => (x == null ? null : Math.round(x * Math.pow(10, k)) / Ma
   if (!PERIODS.some((p) => boards[p].rows.length)) { console.log('\nno leaderboard answered: nothing else can be asked'); process.exit(1); }
 
   /* ── Q2 and Q3: recent volume against the wallet's own trades, and the cost of a 90-day window ── */
+  /* the recent board read deeper, 50 a page, to rank 500; and how deep it goes (offset 950). The top of it is
+     high-frequency wallets whose 90 days are thousands of pages (run 40975470572), so the volume check is made on
+     ranks 100 to 500, whose last 30 days a read can cover */
+  const month = boards.MONTH.rows.slice();
+  for (let off = 50; off < 500; off += 50) {
+    const r = await ask('leaderboard SPORTS MONTH VOL offset ' + off, 'leaderboard', { category: 'SPORTS', timePeriod: 'MONTH', orderBy: 'VOL', limit: 50, offset: off }, true);
+    const rows = r.ok ? R.page(r.data).rows.map(R.leaderRow).filter(Boolean) : [];
+    if (!rows.length) break;
+    month.push(...rows);
+  }
+  const deep = await ask('leaderboard SPORTS MONTH VOL offset 950', 'leaderboard', { category: 'SPORTS', timePeriod: 'MONTH', orderBy: 'VOL', limit: 50, offset: 950 }, true);
+  F.month_board = { read: month.length, distinct: new Set(month.map((x) => x.wallet)).size, offset_950: { status: deep.status, wallets: deep.ok ? R.page(deep.data).rows.length : 0 },
+    volume_at: [1, 50, 100, 200, 300, 400, 500].map((k) => ({ rank: k, volume: month[k - 1] ? month[k - 1].volume : null })) };
+  console.log('\nMONTH BOARD ' + JSON.stringify(F.month_board));
   const picks = [];
-  const add = (board, i, source) => { const x = (boards[board] || { rows: [] }).rows[i]; if (x && !picks.some((p) => p.wallet === x.wallet)) picks.push({ source, rank: i + 1, wallet: x.wallet, lb: {} }); };
-  add('MONTH', 0, 'MONTH'); add('MONTH', 9, 'MONTH'); add('MONTH', 49, 'MONTH'); add('ALL', 0, 'ALL'); add('ALL', 49, 'ALL');
-  for (const p of picks) for (const q of PERIODS) { const x = boards[q].rows.find((y) => y.wallet === p.wallet); if (x) p.lb[q] = x.volume; }
+  for (const k of [1, 100, 200, 300, 400, 500]) { const x = month[k - 1]; if (x && !picks.some((p) => p.wallet === x.wallet)) picks.push({ source: 'MONTH', rank: k, wallet: x.wallet, lb: { MONTH: x.volume }, lb_user: {} }); }
+  /* can the board answer for one wallet (user=)? If so, its volume in every period can be compared */
+  for (const p of picks) for (const q of ['DAY', 'WEEK', 'MONTH', 'ALL']) {
+    const r = await ask('leaderboard ' + q + ' user ' + p.wallet.slice(0, 10), 'leaderboard', { category: 'SPORTS', timePeriod: q, orderBy: 'VOL', user: p.wallet, limit: 1, offset: 0 }, true);
+    const rows = r.ok ? R.page(r.data).rows.map(R.leaderRow).filter(Boolean) : [];
+    p.lb_user[q] = { status: r.status, rows: rows.length, same_wallet: !!(rows[0] && rows[0].wallet === p.wallet), volume: rows[0] ? rows[0].volume : null, rank: rows[0] ? rows[0].rank : null };
+    if (rows[0] && rows[0].wallet === p.wallet) p.lb[q] = rows[0].volume;
+  }
   const start90 = Math.floor((now - 90 * DAY) / 1000), endS = Math.floor(now / 1000);
   const d = new Date(now), weekStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - ((d.getUTCDay() + 6) % 7)), monthStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
   const spans = { d1: now - DAY, d7: now - 7 * DAY, d30: now - 30 * DAY, d90: now - 90 * DAY, week_to_date: weekStart, month_to_date: monthStart };
@@ -117,7 +139,7 @@ const round = (x, k) => (x == null ? null : Math.round(x * Math.pow(10, k)) / Ma
         for (const k of Object.keys(spans)) if (ts >= spans[k]) { trade[k] += usdc || 0; shares[k] += sz || 0; if (isCovered) covered[k] += usdc || 0; }
       }
       if (!pg.has_more) { complete = true; break; }
-      if (pages >= WINDOW_PAGES) break;
+      if (pages >= (p.rank === 1 ? 3 : WINDOW_PAGES)) break;   /* rank 1 is a high-frequency wallet: 3 pages show its pace */
       cursor = pg.next_cursor;
     }
     const reached = oldest != null ? (now - oldest) / DAY : null;
@@ -125,7 +147,7 @@ const round = (x, k) => (x == null ? null : Math.round(x * Math.pow(10, k)) / Ma
       pages_for_90d_estimate: complete ? pages : (reached ? Math.ceil(pages * 90 / reached) : null) };
     const r2 = (o) => { const x = {}; for (const k of Object.keys(o)) x[k] = round(o[k], 2); return x; };
     p.traded_usdc = r2(trade); p.traded_shares = r2(shares); p.covered_league_usdc = r2(covered);
-    p.ratio_lb_to_traded = { WEEK_vs_d7: p.lb.WEEK && trade.d7 ? round(p.lb.WEEK / trade.d7, 3) : null, WEEK_vs_wtd: p.lb.WEEK && trade.week_to_date ? round(p.lb.WEEK / trade.week_to_date, 3) : null,
+    p.ratio_lb_to_traded = { DAY_vs_d1: p.lb.DAY && trade.d1 ? round(p.lb.DAY / trade.d1, 3) : null, WEEK_vs_d7: p.lb.WEEK && trade.d7 ? round(p.lb.WEEK / trade.d7, 3) : null, WEEK_vs_wtd: p.lb.WEEK && trade.week_to_date ? round(p.lb.WEEK / trade.week_to_date, 3) : null,
       MONTH_vs_d30: p.lb.MONTH && trade.d30 ? round(p.lb.MONTH / trade.d30, 3) : null, MONTH_vs_mtd: p.lb.MONTH && trade.month_to_date ? round(p.lb.MONTH / trade.month_to_date, 3) : null };
     if (!complete) p.note = 'the 90-day read stopped at ' + WINDOW_PAGES + ' pages: the sums cover only the last ' + round(reached, 1) + ' days';
     F.wallets.push(p);
