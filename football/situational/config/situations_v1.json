@@ -1,0 +1,47 @@
+{
+  "schema": "edgedesk_fsie_situations_v1",
+  "version": "situations_v1",
+  "frozen_at": "2026-10-29",
+  "doc": "Explicit, versioned definitions of every game situation the Football Situational Intelligence Engine counts. A change to any threshold is a new version (situations_v2), never an edit to this file: tendencies and projections record the version they were built with. Win probability is NOT used: nflverse publishes a play-level wp but ESPN's college wp is a model refit on later seasons, so one score/clock/field-position definition is used for both sports and its agreement with nflverse wp is measured and published (research/situation_validation.json).",
+  "definitions": {
+    "early_down": "down is 1 or 2",
+    "passing_down": "down 2 and distance >= passing_down.second_min, or down 3/4 and distance >= passing_down.late_min",
+    "short_yardage": "down 3 or 4 and distance <= short_yardage.max_distance",
+    "third_down": "down is 3",
+    "red_zone": "yards_to_goal <= red_zone.max_yards_to_goal",
+    "goal_to_go": "the source's goal-to-go flag, or distance >= yards_to_goal",
+    "goal_line": "goal_to_go and yards_to_goal <= goal_line.max_yards_to_goal",
+    "two_minute": "seconds left in the half <= two_minute.seconds (either half)",
+    "garbage_time": "|score_diff| >= garbage.by_quarter[period] (no garbage time where the threshold is null)",
+    "late_clock": "period >= 4 and seconds left in the game <= late_clock.seconds; split by whether the offense leads (clock-killing) or trails (catch-up)",
+    "neutral": "period <= neutral.max_period, |score_diff| <= neutral.max_abs_diff, not two_minute, not garbage_time",
+    "leading": "score_diff >= script.lead_min and not garbage_time",
+    "trailing": "score_diff <= -script.lead_min and not garbage_time",
+    "first_half": "period 1 or 2",
+    "second_half": "period 3 or 4 (overtime is counted separately and excluded from both halves)"
+  },
+  "sports": {
+    "nfl": {
+      "passing_down": { "second_min": 8, "late_min": 5 },
+      "short_yardage": { "max_distance": 2 },
+      "red_zone": { "max_yards_to_goal": 20 },
+      "goal_line": { "max_yards_to_goal": 5 },
+      "two_minute": { "seconds": 120 },
+      "garbage": { "by_quarter": { "1": null, "2": null, "3": 28, "4": 22 }, "source": "score-only definition; Q4 22 is three scores, Q3 28 is four" },
+      "late_clock": { "seconds": 300 },
+      "neutral": { "max_period": 3, "max_abs_diff": 7 },
+      "script": { "lead_min": 8 }
+    },
+    "cfb": {
+      "passing_down": { "second_min": 8, "late_min": 5 },
+      "short_yardage": { "max_distance": 2 },
+      "red_zone": { "max_yards_to_goal": 20 },
+      "goal_line": { "max_yards_to_goal": 5 },
+      "two_minute": { "seconds": 120 },
+      "garbage": { "by_quarter": { "1": 43, "2": 37, "3": 27, "4": 22 }, "source": "the published cfbfastR / Connelly college garbage-time thresholds" },
+      "late_clock": { "seconds": 300 },
+      "neutral": { "max_period": 3, "max_abs_diff": 10 },
+      "script": { "lead_min": 11 }
+    }
+  }
+}

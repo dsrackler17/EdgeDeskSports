@@ -1,0 +1,1780 @@
+{
+ "code_sha256": "5c3164f06ac554d3c22c138137c8556dd493298584bfa4e01d5384d6780be884",
+ "criteria": {
+  "player": [
+   {
+    "evidence": [
+     {
+      "ci95": [
+       -1.0594,
+       -0.5536
+      ],
+      "mae_diff": -0.8086,
+      "market": "pass_att"
+     },
+     {
+      "ci95": [
+       -0.1318,
+       -0.0386
+      ],
+      "mae_diff": -0.0894,
+      "market": "rush_att"
+     },
+     {
+      "ci95": [
+       -0.0449,
+       0.014
+      ],
+      "mae_diff": -0.0145,
+      "market": "targets"
+     },
+     {
+      "ci95": [
+       -0.0948,
+       -0.0518
+      ],
+      "mae_diff": -0.0725,
+      "market": "receptions"
+     }
+    ],
+    "id": "beats_player_season_avg",
+    "pass": false,
+    "rule": "model MAE below the player's season average for every market, CI upper bound < 0"
+   },
+   {
+    "evidence": [
+     {
+      "ci95": [
+       -0.9131,
+       -0.4499
+      ],
+      "mae_diff": -0.6742,
+      "market": "pass_att"
+     },
+     {
+      "ci95": [
+       -0.0741,
+       0.0216
+      ],
+      "mae_diff": -0.0242,
+      "market": "rush_att"
+     },
+     {
+      "ci95": [
+       -0.0519,
+       0.0083
+      ],
+      "mae_diff": -0.0212,
+      "market": "targets"
+     },
+     {
+      "ci95": [
+       -0.1048,
+       -0.0629
+      ],
+      "mae_diff": -0.0844,
+      "market": "receptions"
+     }
+    ],
+    "id": "beats_player_recent_weighted",
+    "pass": false,
+    "rule": "the same against the player's recent weighted average"
+   },
+   {
+    "evidence": [
+     {
+      "market": "pass_att",
+      "p10_p90": 0.7872
+     },
+     {
+      "market": "rush_att",
+      "p10_p90": 0.8072
+     },
+     {
+      "market": "targets",
+      "p10_p90": 0.8052
+     },
+     {
+      "market": "receptions",
+      "p10_p90": 0.8417
+     }
+    ],
+    "id": "player_interval_coverage",
+    "pass": true,
+    "rule": "P10-P90 coverage in [0.70, 0.90] for every market (discrete counts)"
+   },
+   {
+    "evidence": [
+     {
+      "bias": -0.374,
+      "market": "pass_att",
+      "max": 1
+     },
+     {
+      "bias": -1.134,
+      "market": "rush_att",
+      "max": 0.5
+     },
+     {
+      "bias": -0.862,
+      "market": "targets",
+      "max": 0.5
+     },
+     {
+      "bias": -0.503,
+      "market": "receptions",
+      "max": 0.5
+     }
+    ],
+    "id": "player_bias",
+    "pass": false,
+    "rule": "|bias| <= 1.0 for pass attempts and <= 0.5 for the other markets"
+   },
+   {
+    "evidence": [
+     {
+      "market": "pass_att",
+      "min": 700,
+      "n": 1287
+     },
+     {
+      "market": "rush_att",
+      "min": 2000,
+      "n": 4329
+     },
+     {
+      "market": "targets",
+      "min": 2000,
+      "n": 6014
+     },
+     {
+      "market": "receptions",
+      "min": 2000,
+      "n": 6014
+     }
+    ],
+    "id": "player_sample",
+    "pass": true,
+    "rule": "at least 700 evaluated quarterback starts and 2000 rows per other market"
+   }
+  ],
+  "player_passed": false,
+  "team": [
+   {
+    "evidence": [
+     {
+      "ci95": [
+       -1.2733,
+       -0.869
+      ],
+      "mae_diff": -1.0703,
+      "target": "plays"
+     },
+     {
+      "ci95": [
+       -0.6343,
+       -0.331
+      ],
+      "mae_diff": -0.4783,
+      "target": "pass_att"
+     },
+     {
+      "ci95": [
+       -1.0007,
+       -0.6396
+      ],
+      "mae_diff": -0.8172,
+      "target": "rush_att"
+     }
+    ],
+    "id": "beats_season_avg",
+    "pass": true,
+    "rule": "primary MAE below season_avg on plays, pass_att and rush_att, each with the bootstrap 95% CI upper bound < 0"
+   },
+   {
+    "evidence": [
+     {
+      "ci95": [
+       -0.9898,
+       -0.6344
+      ],
+      "mae_diff": -0.808,
+      "target": "plays"
+     },
+     {
+      "ci95": [
+       -0.4283,
+       -0.1696
+      ],
+      "mae_diff": -0.3001,
+      "target": "pass_att"
+     },
+     {
+      "ci95": [
+       -0.7854,
+       -0.4951
+      ],
+      "mae_diff": -0.6388,
+      "target": "rush_att"
+     }
+    ],
+    "id": "beats_recent_weighted",
+    "pass": true,
+    "rule": "the same against recent_weighted"
+   },
+   {
+    "evidence": [
+     {
+      "ci95": [
+       -0.4811,
+       -0.2034
+      ],
+      "mae_diff": -0.3322,
+      "pct_change": -4.41,
+      "target": "plays"
+     },
+     {
+      "ci95": [
+       -0.9912,
+       -0.6294
+      ],
+      "mae_diff": -0.8067,
+      "pct_change": -11.2,
+      "target": "pass_att"
+     },
+     {
+      "ci95": [
+       -1.1939,
+       -0.8319
+      ],
+      "mae_diff": -1.0148,
+      "pct_change": -14.12,
+      "target": "rush_att"
+     }
+    ],
+    "id": "vs_market_only",
+    "pass": true,
+    "rule": "pass_att and rush_att: CI upper bound < 0 against market_only; plays: no more than 1% worse"
+   },
+   {
+    "evidence": [
+     {
+      "p10_p90": 0.612,
+      "target": "plays"
+     },
+     {
+      "p10_p90": 0.7273,
+      "target": "pass_att"
+     },
+     {
+      "p10_p90": 0.6988,
+      "target": "rush_att"
+     }
+    ],
+    "id": "interval_coverage",
+    "pass": false,
+    "rule": "P10-P90 coverage in [0.74, 0.86] for each target"
+   },
+   {
+    "evidence": [
+     {
+      "bias": -0.96,
+      "target": "plays"
+     },
+     {
+      "bias": -0.693,
+      "target": "pass_att"
+     },
+     {
+      "bias": -0.277,
+      "target": "rush_att"
+     }
+    ],
+    "id": "bias",
+    "pass": false,
+    "rule": "|bias| <= 0.75 for each target"
+   },
+   {
+    "evidence": {
+     "min": 1500,
+     "n": 1789
+    },
+    "id": "sample",
+    "pass": true,
+    "rule": "at least 1500 holdout team-games"
+   }
+  ],
+  "team_passed": false
+ },
+ "evaluated_at": "2026-10-29T15:06:37.121Z",
+ "holdout_season": 2025,
+ "n_team_games": 1789,
+ "player_rates": {
+  "active_rate": 0.8088,
+  "apply_active_uplift": false,
+  "eligible": 101529,
+  "qb_exit_rate": 0.1234,
+  "starts": 12864
+ },
+ "players": {
+  "coverage": {
+   "pass_att": {
+    "above_p90": 0.1513,
+    "below_p10": 0.0615,
+    "mean_width": 22.94,
+    "n": 423,
+    "p10_p90": 0.7872,
+    "target": 0.8
+   },
+   "receptions": {
+    "above_p90": 0.1375,
+    "below_p10": 0.0208,
+    "mean_width": 4.2,
+    "n": 1971,
+    "p10_p90": 0.8417,
+    "target": 0.8
+   },
+   "rush_att": {
+    "above_p90": 0.1524,
+    "below_p10": 0.0404,
+    "mean_width": 10.35,
+    "n": 1411,
+    "p10_p90": 0.8072,
+    "target": 0.8
+   },
+   "targets": {
+    "above_p90": 0.1684,
+    "below_p10": 0.0264,
+    "mean_width": 5.31,
+    "n": 1971,
+    "p10_p90": 0.8052,
+    "target": 0.8
+   }
+  },
+  "pass_att": {
+   "evaluated": 1287,
+   "inactive_share": 0.0807,
+   "metrics": {
+    "model": {
+     "bias": -0.374,
+     "mae": 7.199,
+     "n": 1287,
+     "rmse": 9.229
+    },
+    "recent_weighted": {
+     "bias": -0.572,
+     "mae": 7.873,
+     "n": 1287,
+     "rmse": 10.074
+    },
+    "season_avg": {
+     "bias": -1.155,
+     "mae": 8.008,
+     "n": 1287,
+     "rmse": 10.266
+    }
+   },
+   "paired": {
+    "model_vs_recent_weighted": {
+     "ci95": [
+      -0.9131,
+      -0.4499
+     ],
+     "games": 758,
+     "mae_a": 7.199,
+     "mae_b": 7.873,
+     "mae_diff": -0.6742,
+     "n": 1287,
+     "p_value": 0.0005,
+     "pct_change": -8.56
+    },
+    "model_vs_season_avg": {
+     "ci95": [
+      -1.0594,
+      -0.5536
+     ],
+     "games": 758,
+     "mae_a": 7.199,
+     "mae_b": 8.008,
+     "mae_diff": -0.8086,
+     "n": 1287,
+     "p_value": 0.0005,
+     "pct_change": -10.1
+    }
+   },
+   "projected": 1400
+  },
+  "receptions": {
+   "evaluated": 6014,
+   "inactive_share": 0.1237,
+   "metrics": {
+    "model": {
+     "bias": -0.503,
+     "mae": 1.56,
+     "n": 6014,
+     "rmse": 2.092
+    },
+    "recent_weighted": {
+     "bias": 0.084,
+     "mae": 1.645,
+     "n": 6014,
+     "rmse": 2.126
+    },
+    "season_avg": {
+     "bias": 0.04,
+     "mae": 1.633,
+     "n": 6014,
+     "rmse": 2.123
+    }
+   },
+   "paired": {
+    "model_vs_recent_weighted": {
+     "ci95": [
+      -0.1048,
+      -0.0629
+     ],
+     "games": 789,
+     "mae_a": 1.56,
+     "mae_b": 1.645,
+     "mae_diff": -0.0844,
+     "n": 6014,
+     "p_value": 0.0005,
+     "pct_change": -5.13
+    },
+    "model_vs_season_avg": {
+     "ci95": [
+      -0.0948,
+      -0.0518
+     ],
+     "games": 789,
+     "mae_a": 1.56,
+     "mae_b": 1.633,
+     "mae_diff": -0.0725,
+     "n": 6014,
+     "p_value": 0.0005,
+     "pct_change": -4.44
+    }
+   },
+   "projected": 6863
+  },
+  "rush_att": {
+   "evaluated": 4329,
+   "inactive_share": 0.1547,
+   "metrics": {
+    "model": {
+     "bias": -1.134,
+     "mae": 3.833,
+     "n": 4329,
+     "rmse": 5.116
+    },
+    "recent_weighted": {
+     "bias": -0.164,
+     "mae": 3.857,
+     "n": 4329,
+     "rmse": 5.06
+    },
+    "season_avg": {
+     "bias": -0.321,
+     "mae": 3.922,
+     "n": 4329,
+     "rmse": 5.161
+    }
+   },
+   "paired": {
+    "model_vs_recent_weighted": {
+     "ci95": [
+      -0.0741,
+      0.0216
+     ],
+     "games": 786,
+     "mae_a": 3.833,
+     "mae_b": 3.857,
+     "mae_diff": -0.0242,
+     "n": 4329,
+     "p_value": 0.0255,
+     "pct_change": -0.63
+    },
+    "model_vs_season_avg": {
+     "ci95": [
+      -0.1318,
+      -0.0386
+     ],
+     "games": 786,
+     "mae_a": 3.833,
+     "mae_b": 3.922,
+     "mae_diff": -0.0894,
+     "n": 4329,
+     "p_value": 0.0005,
+     "pct_change": -2.28
+    }
+   },
+   "projected": 5121
+  },
+  "targets": {
+   "evaluated": 6014,
+   "inactive_share": 0.1237,
+   "metrics": {
+    "model": {
+     "bias": -0.862,
+     "mae": 2.087,
+     "n": 6014,
+     "rmse": 2.794
+    },
+    "recent_weighted": {
+     "bias": 0.025,
+     "mae": 2.108,
+     "n": 6014,
+     "rmse": 2.736
+    },
+    "season_avg": {
+     "bias": -0.065,
+     "mae": 2.101,
+     "n": 6014,
+     "rmse": 2.74
+    }
+   },
+   "paired": {
+    "model_vs_recent_weighted": {
+     "ci95": [
+      -0.0519,
+      0.0083
+     ],
+     "games": 789,
+     "mae_a": 2.087,
+     "mae_b": 2.108,
+     "mae_diff": -0.0212,
+     "n": 6014,
+     "p_value": 0.0025,
+     "pct_change": -1.01
+    },
+    "model_vs_season_avg": {
+     "ci95": [
+      -0.0449,
+      0.014
+     ],
+     "games": 789,
+     "mae_a": 2.087,
+     "mae_b": 2.101,
+     "mae_diff": -0.0145,
+     "n": 6014,
+     "p_value": 0.0045,
+     "pct_change": -0.69
+    }
+   },
+   "projected": 6863
+  }
+ },
+ "preregistration_sha256": "c5744045a643a390745526ce9024eb2a4b3513bea49849008fd42fc0f936beae",
+ "primary_variant": "pace_script",
+ "schema": "edgedesk_fsie_holdout_v1",
+ "sport": "cfb",
+ "team": {
+  "breakdowns": {
+   "data_tier": {
+    "A": {
+     "n": 712,
+     "pass_att": {
+      "formation": 8.894,
+      "market_only": 7.621,
+      "recent_weighted": 6.758,
+      "season_avg": 6.723
+     },
+     "plays": {
+      "formation": 19.502,
+      "market_only": 7.456,
+      "recent_weighted": 7.623,
+      "season_avg": 7.54
+     },
+     "rush_att": {
+      "formation": 13.528,
+      "market_only": 7.146,
+      "recent_weighted": 6.606,
+      "season_avg": 6.604
+     }
+    },
+    "B": {
+     "n": 1077,
+     "pass_att": {
+      "formation": 6.25,
+      "market_only": 6.922,
+      "recent_weighted": 6.651,
+      "season_avg": 6.97
+     },
+     "plays": {
+      "formation": 7.291,
+      "market_only": 7.579,
+      "recent_weighted": 8.26,
+      "season_avg": 8.751
+     },
+     "rush_att": {
+      "formation": 6.193,
+      "market_only": 7.211,
+      "recent_weighted": 6.943,
+      "season_avg": 7.241
+     }
+    }
+   },
+   "expected_script": {
+    "close_<3": {
+     "n": 214,
+     "pass_att": {
+      "formation": 8.021,
+      "market_only": 7.751,
+      "recent_weighted": 7.108,
+      "season_avg": 6.993
+     },
+     "plays": {
+      "formation": 13.439,
+      "market_only": 7.321,
+      "recent_weighted": 7.656,
+      "season_avg": 7.834
+     },
+     "rush_att": {
+      "formation": 9.571,
+      "market_only": 7.615,
+      "recent_weighted": 6.804,
+      "season_avg": 7.015
+     }
+    },
+    "lopsided_14+": {
+     "n": 691,
+     "pass_att": {
+      "formation": 6.771,
+      "market_only": 6.922,
+      "recent_weighted": 6.651,
+      "season_avg": 6.925
+     },
+     "plays": {
+      "formation": 10.935,
+      "market_only": 7.803,
+      "recent_weighted": 8.404,
+      "season_avg": 8.757
+     },
+     "rush_att": {
+      "formation": 8.292,
+      "market_only": 6.881,
+      "recent_weighted": 6.916,
+      "season_avg": 7.099
+     }
+    },
+    "mid_3_7": {
+     "n": 444,
+     "pass_att": {
+      "formation": 7.863,
+      "market_only": 7.57,
+      "recent_weighted": 6.878,
+      "season_avg": 7.111
+     },
+     "plays": {
+      "formation": 12.473,
+      "market_only": 7.392,
+      "recent_weighted": 7.766,
+      "season_avg": 7.962
+     },
+     "rush_att": {
+      "formation": 9.107,
+      "market_only": 7.135,
+      "recent_weighted": 6.561,
+      "season_avg": 6.77
+     }
+    },
+    "wide_7_14": {
+     "n": 440,
+     "pass_att": {
+      "formation": 7.22,
+      "market_only": 6.997,
+      "recent_weighted": 6.373,
+      "season_avg": 6.489
+     },
+     "plays": {
+      "formation": 13.108,
+      "market_only": 7.344,
+      "recent_weighted": 7.795,
+      "season_avg": 8.022
+     },
+     "rush_att": {
+      "formation": 10.181,
+      "market_only": 7.504,
+      "recent_weighted": 6.894,
+      "season_avg": 7.018
+     }
+    }
+   },
+   "favorite": {
+    "favorite": {
+     "n": 841,
+     "pass_att": {
+      "formation": 6.748,
+      "market_only": 6.781,
+      "recent_weighted": 6.244,
+      "season_avg": 6.465
+     },
+     "plays": {
+      "formation": 12.128,
+      "market_only": 7.293,
+      "recent_weighted": 7.673,
+      "season_avg": 7.945
+     },
+     "rush_att": {
+      "formation": 9.508,
+      "market_only": 7.229,
+      "recent_weighted": 6.737,
+      "season_avg": 6.959
+     }
+    },
+    "pick": {
+     "n": 110,
+     "pass_att": {
+      "formation": 8.603,
+      "market_only": 8.227,
+      "recent_weighted": 7.487,
+      "season_avg": 7.354
+     },
+     "plays": {
+      "formation": 13.995,
+      "market_only": 7.578,
+      "recent_weighted": 8.022,
+      "season_avg": 8.243
+     },
+     "rush_att": {
+      "formation": 9.977,
+      "market_only": 7.272,
+      "recent_weighted": 6.762,
+      "season_avg": 6.936
+     }
+    },
+    "underdog": {
+     "n": 838,
+     "pass_att": {
+      "formation": 7.687,
+      "market_only": 7.486,
+      "recent_weighted": 7.04,
+      "season_avg": 7.217
+     },
+     "plays": {
+      "formation": 11.931,
+      "market_only": 7.762,
+      "recent_weighted": 8.339,
+      "season_avg": 8.596
+     },
+     "rush_att": {
+      "formation": 8.601,
+      "market_only": 7.13,
+      "recent_weighted": 6.888,
+      "season_avg": 7.023
+     }
+    }
+   },
+   "line": {
+    "line": {
+     "n": 1785,
+     "pass_att": {
+      "formation": 7.288,
+      "market_only": 7.188,
+      "recent_weighted": 6.685,
+      "season_avg": 6.86
+     },
+     "plays": {
+      "formation": 12.103,
+      "market_only": 7.509,
+      "recent_weighted": 7.981,
+      "season_avg": 8.239
+     },
+     "rush_att": {
+      "formation": 9.086,
+      "market_only": 7.184,
+      "recent_weighted": 6.802,
+      "season_avg": 6.98
+     }
+    },
+    "points_fallback": {
+     "n": 4,
+     "pass_att": {
+      "formation": 13.571,
+      "market_only": 12.834,
+      "recent_weighted": 10.72,
+      "season_avg": 12.333
+     },
+     "plays": {
+      "formation": 33.257,
+      "market_only": 16.989,
+      "recent_weighted": 19.251,
+      "season_avg": 21.417
+     },
+     "rush_att": {
+      "formation": 20.954,
+      "market_only": 7.858,
+      "recent_weighted": 9.9,
+      "season_avg": 10.375
+     }
+    }
+   },
+   "population": {
+    "fcs_team": {
+     "n": 168,
+     "pass_att": {
+      "formation": 6.796,
+      "market_only": 7.5,
+      "recent_weighted": 7.385,
+      "season_avg": 7.568
+     },
+     "plays": {
+      "formation": 9.155,
+      "market_only": 8.199,
+      "recent_weighted": 9.104,
+      "season_avg": 9.7
+     },
+     "rush_att": {
+      "formation": 7.483,
+      "market_only": 5.947,
+      "recent_weighted": 7.164,
+      "season_avg": 7.352
+     }
+    },
+    "group_conf": {
+     "n": 527,
+     "pass_att": {
+      "formation": 7.981,
+      "market_only": 8.18,
+      "recent_weighted": 6.697,
+      "season_avg": 6.741
+     },
+     "plays": {
+      "formation": 15.114,
+      "market_only": 7.36,
+      "recent_weighted": 7.747,
+      "season_avg": 7.852
+     },
+     "rush_att": {
+      "formation": 11.117,
+      "market_only": 7.824,
+      "recent_weighted": 6.696,
+      "season_avg": 6.796
+     }
+    },
+    "group_nonconf": {
+     "n": 229,
+     "pass_att": {
+      "formation": 7.201,
+      "market_only": 7.692,
+      "recent_weighted": 7.017,
+      "season_avg": 7.398
+     },
+     "plays": {
+      "formation": 8.768,
+      "market_only": 7.698,
+      "recent_weighted": 8.576,
+      "season_avg": 9.002
+     },
+     "rush_att": {
+      "formation": 6.394,
+      "market_only": 6.826,
+      "recent_weighted": 6.462,
+      "season_avg": 6.691
+     }
+    },
+    "power_conf": {
+     "n": 572,
+     "pass_att": {
+      "formation": 7.62,
+      "market_only": 6.511,
+      "recent_weighted": 6.678,
+      "season_avg": 6.73
+     },
+     "plays": {
+      "formation": 13.656,
+      "market_only": 7.38,
+      "recent_weighted": 7.646,
+      "season_avg": 7.705
+     },
+     "rush_att": {
+      "formation": 9.987,
+      "market_only": 6.895,
+      "recent_weighted": 6.64,
+      "season_avg": 6.699
+     }
+    },
+    "power_nonconf": {
+     "n": 169,
+     "pass_att": {
+      "formation": 5.788,
+      "market_only": 6.079,
+      "recent_weighted": 6.154,
+      "season_avg": 6.546
+     },
+     "plays": {
+      "formation": 8.098,
+      "market_only": 7.766,
+      "recent_weighted": 7.891,
+      "season_avg": 8.457
+     },
+     "rush_att": {
+      "formation": 6.677,
+      "market_only": 7.372,
+      "recent_weighted": 7.312,
+      "season_avg": 8.037
+     }
+    },
+    "vs_fcs": {
+     "n": 124,
+     "pass_att": {
+      "formation": 5.885,
+      "market_only": 6.429,
+      "recent_weighted": 5.955,
+      "season_avg": 6.608
+     },
+     "plays": {
+      "formation": 8.442,
+      "market_only": 7.413,
+      "recent_weighted": 8.387,
+      "season_avg": 9.087
+     },
+     "rush_att": {
+      "formation": 7.101,
+      "market_only": 7.894,
+      "recent_weighted": 7.546,
+      "season_avg": 7.758
+     }
+    }
+   },
+   "season": {
+    "2025": {
+     "n": 1789,
+     "pass_att": {
+      "formation": 7.302,
+      "market_only": 7.2,
+      "recent_weighted": 6.694,
+      "season_avg": 6.872
+     },
+     "plays": {
+      "formation": 12.151,
+      "market_only": 7.53,
+      "recent_weighted": 8.006,
+      "season_avg": 8.269
+     },
+     "rush_att": {
+      "formation": 9.112,
+      "market_only": 7.185,
+      "recent_weighted": 6.809,
+      "season_avg": 6.988
+     }
+    }
+   }
+  },
+  "coverage": {
+   "pass_att": {
+    "above_p90": 0.1713,
+    "below_p10": 0.1013,
+    "mean_width": 18.14,
+    "n": 1786,
+    "p10_p90": 0.7273,
+    "target": 0.8
+   },
+   "plays": {
+    "above_p90": 0.2251,
+    "below_p10": 0.1629,
+    "mean_width": 20.78,
+    "n": 1786,
+    "p10_p90": 0.612,
+    "target": 0.8
+   },
+   "rush_att": {
+    "above_p90": 0.1635,
+    "below_p10": 0.1377,
+    "mean_width": 20.03,
+    "n": 1786,
+    "p10_p90": 0.6988,
+    "target": 0.8
+   }
+  },
+  "metrics": {
+   "pass_att": {
+    "formation": {
+     "bias": -1.054,
+     "mae": 7.302,
+     "n": 1789,
+     "rmse": 9.275
+    },
+    "market_only": {
+     "bias": 0.022,
+     "mae": 7.2,
+     "n": 1789,
+     "rmse": 9.081
+    },
+    "opponent": {
+     "bias": -0.436,
+     "mae": 6.462,
+     "n": 1789,
+     "rmse": 8.086
+    },
+    "pace_script": {
+     "bias": -0.693,
+     "mae": 6.393,
+     "n": 1789,
+     "rmse": 8.025
+    },
+    "recent_weighted": {
+     "bias": 0,
+     "mae": 6.694,
+     "n": 1789,
+     "rmse": 8.352
+    },
+    "season_avg": {
+     "bias": -0.108,
+     "mae": 6.872,
+     "n": 1789,
+     "rmse": 8.595
+    },
+    "situational": {
+     "bias": -0.488,
+     "mae": 6.483,
+     "n": 1789,
+     "rmse": 8.114
+    }
+   },
+   "plays": {
+    "formation": {
+     "bias": -0.533,
+     "mae": 12.151,
+     "n": 1789,
+     "rmse": 16.94
+    },
+    "market_only": {
+     "bias": 1.687,
+     "mae": 7.53,
+     "n": 1789,
+     "rmse": 9.365
+    },
+    "opponent": {
+     "bias": -0.626,
+     "mae": 7.397,
+     "n": 1789,
+     "rmse": 9.177
+    },
+    "pace_script": {
+     "bias": -0.96,
+     "mae": 7.198,
+     "n": 1789,
+     "rmse": 8.987
+    },
+    "recent_weighted": {
+     "bias": -0.038,
+     "mae": 8.006,
+     "n": 1789,
+     "rmse": 10.005
+    },
+    "season_avg": {
+     "bias": -0.064,
+     "mae": 8.269,
+     "n": 1789,
+     "rmse": 10.419
+    },
+    "situational": {
+     "bias": -0.633,
+     "mae": 7.567,
+     "n": 1789,
+     "rmse": 9.388
+    }
+   },
+   "rush_att": {
+    "formation": {
+     "bias": 0.531,
+     "mae": 9.112,
+     "n": 1789,
+     "rmse": 12.719
+    },
+    "market_only": {
+     "bias": 1.686,
+     "mae": 7.185,
+     "n": 1789,
+     "rmse": 8.899
+    },
+    "opponent": {
+     "bias": -0.214,
+     "mae": 6.463,
+     "n": 1789,
+     "rmse": 8.029
+    },
+    "pace_script": {
+     "bias": -0.277,
+     "mae": 6.17,
+     "n": 1789,
+     "rmse": 7.751
+    },
+    "recent_weighted": {
+     "bias": 0.034,
+     "mae": 6.809,
+     "n": 1789,
+     "rmse": 8.537
+    },
+    "season_avg": {
+     "bias": 0.175,
+     "mae": 6.988,
+     "n": 1789,
+     "rmse": 8.874
+    },
+    "situational": {
+     "bias": -0.167,
+     "mae": 6.608,
+     "n": 1789,
+     "rmse": 8.207
+    }
+   }
+  },
+  "paired": {
+   "pass_att": {
+    "formation_vs_market_only": {
+     "ci95": [
+      -0.1379,
+      0.3337
+     ],
+     "games": 896,
+     "mae_a": 7.302,
+     "mae_b": 7.2,
+     "mae_diff": 0.1019,
+     "n": 1789,
+     "p_value": 0.3622,
+     "pct_change": 1.41
+    },
+    "formation_vs_recent_weighted": {
+     "ci95": [
+      0.3798,
+      0.823
+     ],
+     "games": 896,
+     "mae_a": 7.302,
+     "mae_b": 6.694,
+     "mae_diff": 0.6085,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 9.09
+    },
+    "formation_vs_season_avg": {
+     "ci95": [
+      0.1912,
+      0.6746
+     ],
+     "games": 896,
+     "mae_a": 7.302,
+     "mae_b": 6.872,
+     "mae_diff": 0.4303,
+     "n": 1789,
+     "p_value": 0.0007,
+     "pct_change": 6.26
+    },
+    "opponent_vs_market_only": {
+     "ci95": [
+      -0.9276,
+      -0.5538
+     ],
+     "games": 896,
+     "mae_a": 6.462,
+     "mae_b": 7.2,
+     "mae_diff": -0.7377,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -10.25
+    },
+    "opponent_vs_recent_weighted": {
+     "ci95": [
+      -0.3525,
+      -0.1118
+     ],
+     "games": 896,
+     "mae_a": 6.462,
+     "mae_b": 6.694,
+     "mae_diff": -0.2311,
+     "n": 1789,
+     "p_value": 0.0005,
+     "pct_change": -3.45
+    },
+    "opponent_vs_season_avg": {
+     "ci95": [
+      -0.5596,
+      -0.2684
+     ],
+     "games": 896,
+     "mae_a": 6.462,
+     "mae_b": 6.872,
+     "mae_diff": -0.4093,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -5.96
+    },
+    "pace_script_vs_market_only": {
+     "ci95": [
+      -0.9912,
+      -0.6294
+     ],
+     "games": 896,
+     "mae_a": 6.393,
+     "mae_b": 7.2,
+     "mae_diff": -0.8067,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -11.2
+    },
+    "pace_script_vs_recent_weighted": {
+     "ci95": [
+      -0.4283,
+      -0.1696
+     ],
+     "games": 896,
+     "mae_a": 6.393,
+     "mae_b": 6.694,
+     "mae_diff": -0.3001,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -4.48
+    },
+    "pace_script_vs_season_avg": {
+     "ci95": [
+      -0.6343,
+      -0.331
+     ],
+     "games": 896,
+     "mae_a": 6.393,
+     "mae_b": 6.872,
+     "mae_diff": -0.4783,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -6.96
+    },
+    "situational_vs_market_only": {
+     "ci95": [
+      -0.9221,
+      -0.5304
+     ],
+     "games": 896,
+     "mae_a": 6.483,
+     "mae_b": 7.2,
+     "mae_diff": -0.7169,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -9.96
+    },
+    "situational_vs_recent_weighted": {
+     "ci95": [
+      -0.3204,
+      -0.0911
+     ],
+     "games": 896,
+     "mae_a": 6.483,
+     "mae_b": 6.694,
+     "mae_diff": -0.2103,
+     "n": 1789,
+     "p_value": 0.0005,
+     "pct_change": -3.14
+    },
+    "situational_vs_season_avg": {
+     "ci95": [
+      -0.5281,
+      -0.2568
+     ],
+     "games": 896,
+     "mae_a": 6.483,
+     "mae_b": 6.872,
+     "mae_diff": -0.3885,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -5.65
+    },
+    "step_formation_vs_pace_script": {
+     "ci95": [
+      0.7262,
+      1.0892
+     ],
+     "games": 896,
+     "mae_a": 7.302,
+     "mae_b": 6.393,
+     "mae_diff": 0.9086,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 14.21
+    },
+    "step_opponent_vs_situational": {
+     "ci95": [
+      -0.0867,
+      0.0425
+     ],
+     "games": 896,
+     "mae_a": 6.462,
+     "mae_b": 6.483,
+     "mae_diff": -0.0208,
+     "n": 1789,
+     "p_value": 0.5186,
+     "pct_change": -0.32
+    },
+    "step_pace_script_vs_opponent": {
+     "ci95": [
+      -0.1194,
+      -0.0217
+     ],
+     "games": 896,
+     "mae_a": 6.393,
+     "mae_b": 6.462,
+     "mae_diff": -0.069,
+     "n": 1789,
+     "p_value": 0.0035,
+     "pct_change": -1.07
+    },
+    "step_situational_vs_recent_weighted": {
+     "ci95": [
+      -0.3222,
+      -0.1005
+     ],
+     "games": 896,
+     "mae_a": 6.483,
+     "mae_b": 6.694,
+     "mae_diff": -0.2103,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -3.14
+    }
+   },
+   "plays": {
+    "formation_vs_market_only": {
+     "ci95": [
+      4.013,
+      5.2743
+     ],
+     "games": 896,
+     "mae_a": 12.151,
+     "mae_b": 7.53,
+     "mae_diff": 4.6203,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 61.35
+    },
+    "formation_vs_recent_weighted": {
+     "ci95": [
+      3.4729,
+      4.8138
+     ],
+     "games": 896,
+     "mae_a": 12.151,
+     "mae_b": 8.006,
+     "mae_diff": 4.1444,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 51.76
+    },
+    "formation_vs_season_avg": {
+     "ci95": [
+      3.1969,
+      4.5758
+     ],
+     "games": 896,
+     "mae_a": 12.151,
+     "mae_b": 8.269,
+     "mae_diff": 3.8821,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 46.95
+    },
+    "opponent_vs_market_only": {
+     "ci95": [
+      -0.2852,
+      0.0213
+     ],
+     "games": 896,
+     "mae_a": 7.397,
+     "mae_b": 7.53,
+     "mae_diff": -0.1339,
+     "n": 1789,
+     "p_value": 0.097,
+     "pct_change": -1.78
+    },
+    "opponent_vs_recent_weighted": {
+     "ci95": [
+      -0.7685,
+      -0.4481
+     ],
+     "games": 896,
+     "mae_a": 7.397,
+     "mae_b": 8.006,
+     "mae_diff": -0.6098,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -7.62
+    },
+    "opponent_vs_season_avg": {
+     "ci95": [
+      -1.0649,
+      -0.6642
+     ],
+     "games": 896,
+     "mae_a": 7.397,
+     "mae_b": 8.269,
+     "mae_diff": -0.8721,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -10.55
+    },
+    "pace_script_vs_market_only": {
+     "ci95": [
+      -0.4811,
+      -0.2034
+     ],
+     "games": 896,
+     "mae_a": 7.198,
+     "mae_b": 7.53,
+     "mae_diff": -0.3322,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -4.41
+    },
+    "pace_script_vs_recent_weighted": {
+     "ci95": [
+      -0.9898,
+      -0.6344
+     ],
+     "games": 896,
+     "mae_a": 7.198,
+     "mae_b": 8.006,
+     "mae_diff": -0.808,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -10.09
+    },
+    "pace_script_vs_season_avg": {
+     "ci95": [
+      -1.2733,
+      -0.869
+     ],
+     "games": 896,
+     "mae_a": 7.198,
+     "mae_b": 8.269,
+     "mae_diff": -1.0703,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -12.94
+    },
+    "situational_vs_market_only": {
+     "ci95": [
+      -0.115,
+      0.1844
+     ],
+     "games": 896,
+     "mae_a": 7.567,
+     "mae_b": 7.53,
+     "mae_diff": 0.0368,
+     "n": 1789,
+     "p_value": 0.6093,
+     "pct_change": 0.49
+    },
+    "situational_vs_recent_weighted": {
+     "ci95": [
+      -0.565,
+      -0.3066
+     ],
+     "games": 896,
+     "mae_a": 7.567,
+     "mae_b": 8.006,
+     "mae_diff": -0.439,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -5.48
+    },
+    "situational_vs_season_avg": {
+     "ci95": [
+      -0.8667,
+      -0.5283
+     ],
+     "games": 896,
+     "mae_a": 7.567,
+     "mae_b": 8.269,
+     "mae_diff": -0.7013,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -8.48
+    },
+    "step_formation_vs_pace_script": {
+     "ci95": [
+      4.3291,
+      5.5836
+     ],
+     "games": 896,
+     "mae_a": 12.151,
+     "mae_b": 7.198,
+     "mae_diff": 4.9524,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 68.8
+    },
+    "step_opponent_vs_situational": {
+     "ci95": [
+      -0.2681,
+      -0.0718
+     ],
+     "games": 896,
+     "mae_a": 7.397,
+     "mae_b": 7.567,
+     "mae_diff": -0.1707,
+     "n": 1789,
+     "p_value": 0.0015,
+     "pct_change": -2.26
+    },
+    "step_pace_script_vs_opponent": {
+     "ci95": [
+      -0.2788,
+      -0.1186
+     ],
+     "games": 896,
+     "mae_a": 7.198,
+     "mae_b": 7.397,
+     "mae_diff": -0.1983,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -2.68
+    },
+    "step_situational_vs_recent_weighted": {
+     "ci95": [
+      -0.573,
+      -0.2994
+     ],
+     "games": 896,
+     "mae_a": 7.567,
+     "mae_b": 8.006,
+     "mae_diff": -0.439,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -5.48
+    }
+   },
+   "rush_att": {
+    "formation_vs_market_only": {
+     "ci95": [
+      1.4654,
+      2.4255
+     ],
+     "games": 896,
+     "mae_a": 9.112,
+     "mae_b": 7.185,
+     "mae_diff": 1.927,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 26.82
+    },
+    "formation_vs_recent_weighted": {
+     "ci95": [
+      1.8317,
+      2.7775
+     ],
+     "games": 896,
+     "mae_a": 9.112,
+     "mae_b": 6.809,
+     "mae_diff": 2.3029,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 33.82
+    },
+    "formation_vs_season_avg": {
+     "ci95": [
+      1.645,
+      2.6073
+     ],
+     "games": 896,
+     "mae_a": 9.112,
+     "mae_b": 6.988,
+     "mae_diff": 2.1245,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 30.4
+    },
+    "opponent_vs_market_only": {
+     "ci95": [
+      -0.9215,
+      -0.5213
+     ],
+     "games": 896,
+     "mae_a": 6.463,
+     "mae_b": 7.185,
+     "mae_diff": -0.7224,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -10.05
+    },
+    "opponent_vs_recent_weighted": {
+     "ci95": [
+      -0.4757,
+      -0.2223
+     ],
+     "games": 896,
+     "mae_a": 6.463,
+     "mae_b": 6.809,
+     "mae_diff": -0.3464,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -5.09
+    },
+    "opponent_vs_season_avg": {
+     "ci95": [
+      -0.6877,
+      -0.3766
+     ],
+     "games": 896,
+     "mae_a": 6.463,
+     "mae_b": 6.988,
+     "mae_diff": -0.5249,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -7.51
+    },
+    "pace_script_vs_market_only": {
+     "ci95": [
+      -1.1939,
+      -0.8319
+     ],
+     "games": 896,
+     "mae_a": 6.17,
+     "mae_b": 7.185,
+     "mae_diff": -1.0148,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -14.12
+    },
+    "pace_script_vs_recent_weighted": {
+     "ci95": [
+      -0.7854,
+      -0.4951
+     ],
+     "games": 896,
+     "mae_a": 6.17,
+     "mae_b": 6.809,
+     "mae_diff": -0.6388,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -9.38
+    },
+    "pace_script_vs_season_avg": {
+     "ci95": [
+      -1.0007,
+      -0.6396
+     ],
+     "games": 896,
+     "mae_a": 6.17,
+     "mae_b": 6.988,
+     "mae_diff": -0.8172,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -11.7
+    },
+    "situational_vs_market_only": {
+     "ci95": [
+      -0.7768,
+      -0.3893
+     ],
+     "games": 896,
+     "mae_a": 6.608,
+     "mae_b": 7.185,
+     "mae_diff": -0.5774,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -8.04
+    },
+    "situational_vs_recent_weighted": {
+     "ci95": [
+      -0.3177,
+      -0.0893
+     ],
+     "games": 896,
+     "mae_a": 6.608,
+     "mae_b": 6.809,
+     "mae_diff": -0.2015,
+     "n": 1789,
+     "p_value": 0.0007,
+     "pct_change": -2.96
+    },
+    "situational_vs_season_avg": {
+     "ci95": [
+      -0.5352,
+      -0.2279
+     ],
+     "games": 896,
+     "mae_a": 6.608,
+     "mae_b": 6.988,
+     "mae_diff": -0.3799,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -5.44
+    },
+    "step_formation_vs_pace_script": {
+     "ci95": [
+      2.536,
+      3.387
+     ],
+     "games": 896,
+     "mae_a": 9.112,
+     "mae_b": 6.17,
+     "mae_diff": 2.9418,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": 47.68
+    },
+    "step_opponent_vs_situational": {
+     "ci95": [
+      -0.2095,
+      -0.0762
+     ],
+     "games": 896,
+     "mae_a": 6.463,
+     "mae_b": 6.608,
+     "mae_diff": -0.145,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -2.19
+    },
+    "step_pace_script_vs_opponent": {
+     "ci95": [
+      -0.369,
+      -0.2122
+     ],
+     "games": 896,
+     "mae_a": 6.17,
+     "mae_b": 6.463,
+     "mae_diff": -0.2924,
+     "n": 1789,
+     "p_value": 0.0002,
+     "pct_change": -4.52
+    },
+    "step_situational_vs_recent_weighted": {
+     "ci95": [
+      -0.3125,
+      -0.0852
+     ],
+     "games": 896,
+     "mae_a": 6.608,
+     "mae_b": 6.809,
+     "mae_diff": -0.2015,
+     "n": 1789,
+     "p_value": 0.0005,
+     "pct_change": -2.96
+    }
+   }
+  },
+  "residual": {
+   "beta_db_margin": -0.00231,
+   "beta_share_margin": 0.000477,
+   "gamma_drives_plays": 0.149185,
+   "n_games": 7971,
+   "sigma_db_extra": 0.076814,
+   "sigma_game_drives": 3.0608,
+   "sigma_game_plays": 10.7855,
+   "sigma_margin": 15.6734,
+   "sigma_share": 0.058295
+  }
+ },
+ "trained_on": [
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024
+ ]
+}

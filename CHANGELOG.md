@@ -41,6 +41,57 @@ The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads wi
 - On the step as it was before the fix (`78a8315b4ac`), 5 checks fail, each with the production error.
 - On `main`'s fixed step it passes 10 / 0.
 
+## 2026-10-29 — Football situational intelligence (NFL + every FBS team): observed tendencies on the cards, four experimental volume models, SHADOW beside the existing models
+
+**Why.** EdgeDesk's football models price games but do not describe how each team plays by situation (down and distance, field position, clock, score, script), or how much volume a team and its players are likely to get. This engine observes that from public play-by-play, and tests whether it predicts volume better than averages. The full write-up is `football/situational/README.md`.
+
+**It changes no EdgeDesk number.**
+- Every integration target is SHADOW: a labelled block with `applied_points: 0` beside the NFL slate, the FBS slate and both simulators.
+- ACTIVE needs three locks, and no file in the repository opens the first.
+- On today's real feeds, the NFL slate builder and the FBS coverage builder produce the same artifacts with `FSIE_MODE=OFF` and in SHADOW, apart from the block and clock stamps.
+- No pricing file reads the layer (enforced by `tests/integration.test.js`).
+
+- **A · ingestion and quality** (`football/situational/{nfl,cfb}/source.js`, `core/ingest.js`, `core/quality.js`).
+  - Sources: nflverse (play-by-play, FTN charting, rosters, injury reports, team box) and the sportsdataverse ESPN college mirror. Every download is hashed and stamped, and a completed season is never fetched again.
+  - Play, game and team gates: volume, situation and player validity are judged separately, and every rejection carries its reason.
+  - NFL 2026: 107 / 107 games accepted, and pass and rush attempts match the team box on 214 / 214 team-games.
+  - CFB 2026: 138 / 138 FBS teams, 561 of 570 games accepted (7 partial, 2 rejected, 0 missing).
+  - Backfill: NFL 2015–2026, CFB 2014–2026.
+- **B · observed tendencies on the cards.** `app.html` adds a *Situational intelligence* section to NFL and FBS game cards.
+  - It shows season-to-date rates with their samples, the team's coverage tier and gaps, and a separate *Research Models (Experimental)* block with the holdout outcome.
+  - The rest of the board is unchanged (`tools/football/fsie_ui.e2e.js`).
+- **C · four EXPERIMENTAL models** (`core/volume_model.js`, `core/player_model.js`, `core/research.js`).
+  - NFL and CFB team play volume; NFL and CFB player opportunity.
+  - Preregistered and frozen before the 2025 holdout, which was evaluated once.
+  - **All four failed their criteria and stay EXPERIMENTAL.** The team models beat season and recent averages on every target. Against market-only, CFB was better on all three targets; NFL was better on plays and pass attempts, but rush attempts crossed 0.
+  - Both team models failed on bias, and the player models failed on bias and sample size.
+  - A harness defect was found after the look. The holdout's interval coverage was simulated on the `formation` rung instead of the primary `pace_script`. It is recorded, not fixed: a labelled post-hoc file (`research/posthoc_interval_variant_<sport>.json`) changes no verdict, and the fix belongs to a v2 registration.
+- **D · against the market and the existing forecast** (`core/market_study.js`).
+  - On the 2026 props the pipeline captured (NFL weeks 4–5, CFB weeks 5–6; capture has been down since Oct 10), the line was as good as or better than the model.
+  - Probability CLV was negative in every market.
+  - The existing props model, the situational model and the line could not be told apart on shared rows.
+  - Missing closes are excluded with their reason.
+- **E · database** (`supabase/football_situational.sql`, `_rollback.sql`, `_registry.sql`).
+  - 11 `fsie_` tables with write-once triggers, RLS (signed-in read, service write, no anon), pregame and CLV checks, and a shadow row that cannot apply points unless ACTIVE.
+  - The registry records the four models as EXPERIMENTAL with their holdout results.
+  - `football/situational/sync_supabase.js` copies insert-only.
+  - **Not applied to production here (no credentials): NOT VERIFIED.**
+- **F · automation.** `.github/workflows/football-situational.yml`: a daily build, an extra pass on Sun/Mon, a market refresh every 3 h, and the Tuesday prop study.
+  - The suites run first.
+  - `football-situational-tests.yml` runs every suite on a pull request (registered in `tools/ci/checks.json`).
+- **Rollback.** Set the modes in `football/situational/config/integration.json` to OFF, or set `FSIE_MODE=OFF` for one run. Then disable the workflow, remove the `app.html` section, and run the rollback SQL. The steps are in the README.
+- **The CFB freeze.** `football/fbs/build_coverage.js` is on the CFB champion freeze's pricing path. Its new guarded hook therefore gets the declared PATCH row `edgedesk_cfb_r1+p13`, appended by `football/cfb_validation/build.js`. No price moves. The validation dashboards are left as `main`'s scheduled build writes them; its next run regenerates them with `p13` in place.
+- **Next scheduled builds.** The NFL slate and the FBS slate gain the SHADOW block on their next scheduled build.
+
+Tests:
+- `football/situational/tests/core.test.js` (69)
+- `model.test.js` (44)
+- `market.test.js` (22)
+- `integration.test.js` (25)
+- `sql.test.js` (35, real PostgreSQL)
+- `tools/football/fsie_card_ui.test.js` (22)
+- `tools/football/fsie_ui.e2e.js` (14, Chromium)
+
 ## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
 
 - **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
@@ -1637,6 +1688,7 @@ Tests: `node tools/presentation/landing_positioning.test.js` (540, was 479). New
 - the sample arithmetic adds up.
 
 Twelve mutations were checked; each one turned the suite red. `node tools/presentation/landing_interaction.test.js` (217, was 215) covers the new sheet's dead classes, budget and non-blocking load. `node tools/home/landing.e2e.js` (301, was 300) covers the hero, variant `r`, and no overflow at 320 to 1280 px; it caught the Simulator table widening the phone column, which is fixed. Every other unit suite that reads `index.html`, the pricing or the plans is green. `tools/billing/checkout_flow.e2e.js` step 5 fails here identically on `main`; it needs a configured checkout link, and no workflow runs it.
+
 ## 2026-10-24 — Signal Center: men's college basketball forecast shifts held at coming soon
 
 Production has no men's college basketball forecast tables: the first live run after the deploy answered "table not found" for `ncaam_fc_runs`. The cell said operational. It now says **coming soon**, and names why: `supabase/ncaam_forecast.sql` is not deployed, and the daily job publishes only with `NCAAM_FC_PUBLISH` on. The wiring stays tested (`worker.test.js` reads staged runs through `ncaamGames` and finds the shift). Once the tables are deployed and publishing, the registry entry becomes operational.
@@ -1960,6 +2012,7 @@ Tests: `tools/intelligence/quant_ui.e2e.js` (89, with the short list, the folds 
 - **Started games keep their research.** The slate drops a game three hours after tip and prices it again before that. Each build now moves started games, exactly as priced before tip, to `nba/recent.json` for 96 hours; the panel lists them under their own heading and Today's Games links live and final games to them. `build_slate.js --check` refuses a game frozen at or after its start. No game has tipped yet this season, so the first file is empty.
 
 Tests: `node tools/nba/nba_graphic.test.js` (236), `tools/nba/nba_ui.e2e.js` (74), `node tools/slate/build.test.js` (63), `tools/slate/games_ui.e2e.js` (105), `tools/engine/engine_ui.e2e.js` (134), `node tools/hockey/nhl_graphic.test.js` (394), `node tools/football/game_research.test.js` (125).
+
 ## 2026-10-20 — An open tab picks up a new deploy by itself
 
 - **Why.** app.html is a single page: moving between games, sports and tabs never reloads it. A tab opened before a deploy kept running the old code until it was reloaded by hand. After the NHL release went live, a phone kept showing the garbled Grade Breakdown and no graphic.

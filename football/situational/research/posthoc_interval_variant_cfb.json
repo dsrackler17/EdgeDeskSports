@@ -1,0 +1,427 @@
+{
+ "code_sha256": "5c3164f06ac554d3c22c138137c8556dd493298584bfa4e01d5384d6780be884",
+ "computed_at": "2026-10-29T15:17:42.807Z",
+ "finding": "research.js simulateRows() simulates without a variant, so predictMean() used its default rung \"formation\" for the walk-forward phi choice and the holdout P10-P90 coverage; the preregistered primary variant is \"pace_script\". The live pipeline passes the primary variant explicitly and is not affected.",
+ "frozen_phi": 0.9,
+ "holdout_season": {
+  "by_variant": {
+   "formation": {
+    "coverage": {
+     "pass_att": {
+      "above_p90": 0.1713,
+      "below_p10": 0.1013,
+      "mean_width": 18.14,
+      "n": 1786,
+      "p10_p90": 0.7273,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.2251,
+      "below_p10": 0.1629,
+      "mean_width": 20.78,
+      "n": 1786,
+      "p10_p90": 0.612,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.1635,
+      "below_p10": 0.1377,
+      "mean_width": 20.03,
+      "n": 1786,
+      "p10_p90": 0.6988,
+      "target": 0.8
+     }
+    },
+    "median_minus_point_plays_mae": 1.055
+   },
+   "pace_script": {
+    "coverage": {
+     "pass_att": {
+      "above_p90": 0.1349,
+      "below_p10": 0.0885,
+      "mean_width": 18.24,
+      "n": 1786,
+      "p10_p90": 0.7766,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.1226,
+      "below_p10": 0.0868,
+      "mean_width": 21.48,
+      "n": 1786,
+      "p10_p90": 0.7906,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0941,
+      "below_p10": 0.0761,
+      "mean_width": 20.14,
+      "n": 1786,
+      "p10_p90": 0.8298,
+      "target": 0.8
+     }
+    },
+    "median_minus_point_plays_mae": 0.41
+   }
+  },
+  "n_team_games": 1789,
+  "season": 2025
+ },
+ "next": "the fix (pass the primary variant) is a code change to a frozen file; it belongs to a situational_v2 preregistration with a new untouched holdout, not to v1",
+ "preregistration_sha256": "c5744045a643a390745526ce9024eb2a4b3513bea49849008fd42fc0f936beae",
+ "recorded_holdout_coverage": {
+  "pass_att": {
+   "above_p90": 0.1713,
+   "below_p10": 0.1013,
+   "mean_width": 18.14,
+   "n": 1786,
+   "p10_p90": 0.7273,
+   "target": 0.8
+  },
+  "plays": {
+   "above_p90": 0.2251,
+   "below_p10": 0.1629,
+   "mean_width": 20.78,
+   "n": 1786,
+   "p10_p90": 0.612,
+   "target": 0.8
+  },
+  "rush_att": {
+   "above_p90": 0.1635,
+   "below_p10": 0.1377,
+   "mean_width": 20.03,
+   "n": 1786,
+   "p10_p90": 0.6988,
+   "target": 0.8
+  }
+ },
+ "recorded_reproduced_by_the_formation_column": true,
+ "schema": "edgedesk_fsie_posthoc_interval_variant_v1",
+ "sport": "cfb",
+ "status": "POST-HOC DIAGNOSTIC — computed after the one-look holdout; not a promotion criterion; changes no verdict; informs no v1 choice",
+ "validation_folds": {
+  "formation": {
+   "by_phi": {
+    "1": {
+     "pass_att": {
+      "above_p90": 0.1068,
+      "below_p10": 0.1003,
+      "mean_width": 20.29,
+      "n": 12680,
+      "p10_p90": 0.7929,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0797,
+      "below_p10": 0.0892,
+      "mean_width": 24.93,
+      "n": 12680,
+      "p10_p90": 0.8311,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0766,
+      "below_p10": 0.0843,
+      "mean_width": 22.63,
+      "n": 12680,
+      "p10_p90": 0.8391,
+      "target": 0.8
+     }
+    },
+    "0.8": {
+     "pass_att": {
+      "above_p90": 0.1401,
+      "below_p10": 0.1326,
+      "mean_width": 17.61,
+      "n": 12680,
+      "p10_p90": 0.7274,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.1258,
+      "below_p10": 0.1399,
+      "mean_width": 20,
+      "n": 12680,
+      "p10_p90": 0.7343,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.1041,
+      "below_p10": 0.1167,
+      "mean_width": 19.7,
+      "n": 12680,
+      "p10_p90": 0.7792,
+      "target": 0.8
+     }
+    },
+    "0.9": {
+     "pass_att": {
+      "above_p90": 0.1231,
+      "below_p10": 0.1148,
+      "mean_width": 18.92,
+      "n": 12680,
+      "p10_p90": 0.7621,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0999,
+      "below_p10": 0.1136,
+      "mean_width": 22.47,
+      "n": 12680,
+      "p10_p90": 0.7864,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0894,
+      "below_p10": 0.1009,
+      "mean_width": 21.13,
+      "n": 12680,
+      "p10_p90": 0.8097,
+      "target": 0.8
+     }
+    },
+    "1.1": {
+     "pass_att": {
+      "above_p90": 0.095,
+      "below_p10": 0.0868,
+      "mean_width": 21.68,
+      "n": 12680,
+      "p10_p90": 0.8182,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0635,
+      "below_p10": 0.0709,
+      "mean_width": 27.37,
+      "n": 12680,
+      "p10_p90": 0.8656,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0655,
+      "below_p10": 0.0688,
+      "mean_width": 24.14,
+      "n": 12680,
+      "p10_p90": 0.8658,
+      "target": 0.8
+     }
+    },
+    "1.25": {
+     "pass_att": {
+      "above_p90": 0.0764,
+      "below_p10": 0.0688,
+      "mean_width": 23.83,
+      "n": 12680,
+      "p10_p90": 0.8547,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0432,
+      "below_p10": 0.0475,
+      "mean_width": 31.08,
+      "n": 12680,
+      "p10_p90": 0.9093,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0495,
+      "below_p10": 0.0513,
+      "mean_width": 26.49,
+      "n": 12680,
+      "p10_p90": 0.8992,
+      "target": 0.8
+     }
+    },
+    "1.4": {
+     "pass_att": {
+      "above_p90": 0.0616,
+      "below_p10": 0.0527,
+      "mean_width": 26.03,
+      "n": 12680,
+      "p10_p90": 0.8857,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0303,
+      "below_p10": 0.033,
+      "mean_width": 34.71,
+      "n": 12680,
+      "p10_p90": 0.9368,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0369,
+      "below_p10": 0.0356,
+      "mean_width": 28.87,
+      "n": 12680,
+      "p10_p90": 0.9275,
+      "target": 0.8
+     }
+    }
+   },
+   "phi_that_would_be_chosen": 0.9
+  },
+  "pace_script": {
+   "by_phi": {
+    "1": {
+     "pass_att": {
+      "above_p90": 0.1069,
+      "below_p10": 0.1004,
+      "mean_width": 20.28,
+      "n": 12680,
+      "p10_p90": 0.7927,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0796,
+      "below_p10": 0.0893,
+      "mean_width": 24.93,
+      "n": 12680,
+      "p10_p90": 0.8312,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0774,
+      "below_p10": 0.0849,
+      "mean_width": 22.62,
+      "n": 12680,
+      "p10_p90": 0.8378,
+      "target": 0.8
+     }
+    },
+    "0.8": {
+     "pass_att": {
+      "above_p90": 0.1393,
+      "below_p10": 0.1322,
+      "mean_width": 17.6,
+      "n": 12680,
+      "p10_p90": 0.7285,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.1258,
+      "below_p10": 0.14,
+      "mean_width": 20,
+      "n": 12680,
+      "p10_p90": 0.7342,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.1039,
+      "below_p10": 0.1169,
+      "mean_width": 19.69,
+      "n": 12680,
+      "p10_p90": 0.7792,
+      "target": 0.8
+     }
+    },
+    "0.9": {
+     "pass_att": {
+      "above_p90": 0.1232,
+      "below_p10": 0.115,
+      "mean_width": 18.92,
+      "n": 12680,
+      "p10_p90": 0.7618,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0991,
+      "below_p10": 0.1139,
+      "mean_width": 22.47,
+      "n": 12680,
+      "p10_p90": 0.787,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0899,
+      "below_p10": 0.1006,
+      "mean_width": 21.13,
+      "n": 12680,
+      "p10_p90": 0.8095,
+      "target": 0.8
+     }
+    },
+    "1.1": {
+     "pass_att": {
+      "above_p90": 0.0946,
+      "below_p10": 0.0868,
+      "mean_width": 21.68,
+      "n": 12680,
+      "p10_p90": 0.8186,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0629,
+      "below_p10": 0.0706,
+      "mean_width": 27.38,
+      "n": 12680,
+      "p10_p90": 0.8666,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0655,
+      "below_p10": 0.0685,
+      "mean_width": 24.14,
+      "n": 12680,
+      "p10_p90": 0.8659,
+      "target": 0.8
+     }
+    },
+    "1.25": {
+     "pass_att": {
+      "above_p90": 0.0764,
+      "below_p10": 0.0688,
+      "mean_width": 23.82,
+      "n": 12680,
+      "p10_p90": 0.8548,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0437,
+      "below_p10": 0.0475,
+      "mean_width": 31.07,
+      "n": 12680,
+      "p10_p90": 0.9088,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0494,
+      "below_p10": 0.0514,
+      "mean_width": 26.49,
+      "n": 12680,
+      "p10_p90": 0.8991,
+      "target": 0.8
+     }
+    },
+    "1.4": {
+     "pass_att": {
+      "above_p90": 0.0614,
+      "below_p10": 0.0529,
+      "mean_width": 26.03,
+      "n": 12680,
+      "p10_p90": 0.8857,
+      "target": 0.8
+     },
+     "plays": {
+      "above_p90": 0.0304,
+      "below_p10": 0.0332,
+      "mean_width": 34.71,
+      "n": 12680,
+      "p10_p90": 0.9364,
+      "target": 0.8
+     },
+     "rush_att": {
+      "above_p90": 0.0371,
+      "below_p10": 0.0356,
+      "mean_width": 28.86,
+      "n": 12680,
+      "p10_p90": 0.9272,
+      "target": 0.8
+     }
+    }
+   },
+   "phi_that_would_be_chosen": 0.9
+  }
+ },
+ "verdict_effect": "none: the team verdict also fails on a criterion computed from pace_script point predictions (bias)"
+}

@@ -1,0 +1,10 @@
+{
+ "schema": "edgedesk_fsie_integration_v1",
+ "doc": "How the situational layer reaches existing EdgeDesk models. OFF: the adapter returns nothing and every consumer behaves exactly as before. SHADOW (default): the adapter returns a labelled block beside the existing output with applied_points 0 — what the layer WOULD change, attributed, and nothing changed. ACTIVE: refused unless all three locks are open — (1) research/promotion.json records an APPROVED integration study for this target, signed by a person; (2) points_applied below is true; (3) mode is ACTIVE. No file in this repository sets (1): promotion is a person's act after a preregistered integration study, separate from the volume-model holdout. Rollback: set every mode to OFF (or SHADOW) and commit; nothing else moves.",
+ "targets": {
+  "nfl_slate": { "mode": "SHADOW", "points_applied": false, "consumer": "tools/football/build_nfl_slate.js -> football/nfl/slate.json games[].situational" },
+  "fbs_slate": { "mode": "SHADOW", "points_applied": false, "consumer": "football/fbs/build_coverage.js -> football/fbs/slate.json games[].situational_shadow" },
+  "nfl_simulator": { "mode": "SHADOW", "points_applied": false, "consumer": "football/situational/simulator_shadow.js over the NFL simulator's input contract" },
+  "cfb_simulator": { "mode": "SHADOW", "points_applied": false, "consumer": "football/situational/simulator_shadow.js over the CFB simulator's input contract" }
+ }
+}
