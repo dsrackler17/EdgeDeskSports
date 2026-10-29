@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-29 — Authorization change: the terminal's paywall, `has_active_sub()`, defers to the one access rule
+
+**Authorization change; needs the owner's explicit review.** *Deploy Fairline*'s read-only paywall check ran against production. It reported `has_active_sub(): RESTATES THE RULE`. The function gates the Research Terminal's data (the RLS on `signals`, and the readers in `kalshi_market_data.sql`, `sharp_lag.sql` and `radar.sql`), and it read `subscriptions`' status itself. A status-only check cannot tell what a price sells, so **a Bet Checker (red) or Fairline (black) subscription would have read the terminal's data**. Stripe holds no red or black subscription (all 30 read, 8 active, all terminal prices), so nothing had leaked. The Fairline prices stay inactive until this is fixed.
+
+- **`supabase/paywall_rule.sql`** (mirror: `migrations/20261029140000_paywall_rule.sql`) replaces its body with the rule itself: a reader has the terminal when one of their `subscriptions` rows passes `billing_row_grants_access()` (blue, a comp, or a price never learned; never red or black). It is the definition `fairline_tier.test.js` has always tested against. `CREATE OR REPLACE` keeps its owner and grants, and no policy changes. It ends in a report.
+- **`deploy-fairline.yml`** gains `paywall_rule` (`dry_run` or `apply`). In one transaction it records every account's answer before (`tools/billing/sql/paywall_before.psql`), applies the fix, and records every answer after (`paywall_after.psql`). It prints counts only: granted before and after, gained, lost, and why each lost it (a Fairline row, a Bet Checker row, a lapsed or unpaid row). It refuses to commit, and changes nothing, if an account would lose access through something other than a `subscriptions` row, which the rule cannot see. A dry run always rolls back. The same file fixes the Tape email switch's check (psql answers `t`, not `true`).
+- **Tests**: `tools/billing/paywall_rule.test.js` (27, new, real PostgreSQL; in `fairline-tests.yml`).
+  - Before the fix, production's shape lets black and red read `signals`.
+  - After it, they never do. Blue, comps, an unlearned price and a `past_due` row in its 21-day grace do, as the rule says.
+  - Lapsed, cancelled and no row never do. It agrees with `community_is_entitled()` for every account, and anon still cannot run it.
+  - The comparison counts and names the losses. It refuses access the rule cannot see, and a dry run changes nothing.
+  - The deploy's paywall check fails before the fix and passes after.
+  - Mutations: the fix restating the statuses, 17 passed, 10 failed. The comparison never refusing, 25 passed, 2 failed.
+
 
 
 ## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
