@@ -1,0 +1,75 @@
+# EdgeDesk Prediction Radar — H-RADAR-01, the registered holdout test, run on
+# GitHub's runner (the build environment cannot reach Polymarket).
+# research/radar/registration_h_radar_01.json is the protocol;
+# research/radar/run_validation.js carries it out. docs/prediction-radar.md
+#
+# ONE LOOK.
+# - The runner refuses an edited registration, and fetches nothing while
+#   research/radar/H-RADAR-01/report.json holds a completed report for it.
+# - GitHub starts this workflow again on every push to the pull request,
+#   because its paths: filter reads the whole pull request's diff. So
+#   research/radar/one_look.js runs first: while no report is committed, it
+#   refuses if an earlier run already finished its live step, and names that
+#   run.
+# - Until then the first run is the test. Every Polymarket request goes
+#   through the Radar gateway, and the report is printed between BEGIN/END
+#   H-RADAR-01 REPORT markers with its sha256. It is committed exactly as
+#   printed. Everything the run read is kept, gzipped, as the run's artifact
+#   for 90 days.
+#
+# An integration workflow (tools/ci/checks.json): a live source, NOT VERIFIED
+# by npm run verify. Read-only: no secret beyond the job's own token (to read
+# this workflow's earlier runs), no database, nothing committed.
+name: Radar H-RADAR-01 validation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/radar-validation.yml'
+      - 'research/radar/run_validation.js'
+      - 'research/radar/one_look.js'
+      - 'research/radar/registration_h_radar_01.json'
+      - 'research/radar/H-RADAR-01/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+# One at a time, repository-wide, and a started run is never cancelled: it
+# may be the one look.
+concurrency:
+  group: radar-validation
+  cancel-in-progress: false
+
+jobs:
+  holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: One look across runs (an earlier run that looked, with its report not committed, stops this one)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: node research/radar/one_look.js
+      - name: H-RADAR-01 on its registered holdout, once (or, with a committed report, its check)
+        run: node research/radar/run_validation.js --live --out research/radar/out/h-radar-01
+      - name: The committed report (if any) was run against the registration and says what its numbers say
+        run: node research/radar/run_validation.js --check
+      - name: Keep everything the run read
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-h-radar-01-${{ github.run_id }}-${{ github.run_attempt }}
+          path: research/radar/out/h-radar-01
+          if-no-files-found: ignore
+          retention-days: 90
+          compression-level: 0

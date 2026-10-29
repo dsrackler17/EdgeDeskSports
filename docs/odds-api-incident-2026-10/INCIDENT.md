@@ -24,6 +24,12 @@ breaker reads on. One marked block, dated, held to its shape by
 
 
 
+**Amended 2026-10-29:** the NBA and NHL main markets have their own cadence,
+every two hours (about 2,160 credits a month for both), so Bet Checker can
+grade them. Both leagues stay disabled until the owner turns them on after the
+reset (§9 step 12;
+[METHODOLOGY-2026-10-29-nba-nhl-lines.md](METHODOLOGY-2026-10-29-nba-nhl-lines.md)).
+
 **Plan:** $59/month, 100,000 credits. On 2026-10-10 at 12:24Z the provider
 reported **99,336 used and 664 remaining**. By 13:55Z it reported **100,000
 used and 0 remaining** (the CFB props capture's own `capture_state.json`): the
@@ -435,6 +441,20 @@ The **Deploy odds gateway** workflow applies 1 (opt-in) and 2 when the
     - nothing should come from an unknown caller.
 
     The budget watch runs at :41 every hour.
+
+12. **NBA and NHL game lines** (owner-approved 2026-10-29, every two hours,
+    about 2,160 credits a month for both). Only after step 11 shows the base
+    spend tracking. Apply `supabase/odds_api_nba_nhl_lines.sql` (Deploy odds
+    gateway applies it by default), then:
+
+    ```sql
+    select public.odds_api_set_sport('basketball_nba', true);
+    select public.odds_api_set_sport('icehockey_nhl', true);
+    ```
+
+    Then check capture's `sports_list` in its next run: see
+    [METHODOLOGY-2026-10-29-nba-nhl-lines.md](METHODOLOGY-2026-10-29-nba-nhl-lines.md),
+    "Operator steps".
 
 ### No October bridge
 

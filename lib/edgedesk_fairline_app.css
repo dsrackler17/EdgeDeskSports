@@ -117,3 +117,16 @@
 .fl-agree{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;margin:10px 0}
 .fl-agree input{width:20px;height:20px;flex:none;margin-top:1px}
 .fl-auth-msg{font-size:13.5px;margin-top:8px;min-height:1em}
+
+/* ---- the renewal terms sheet, and Settings ---- */
+.fl-sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);padding:0}
+.fl-sheet-in{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--gm-s1);border:1px solid var(--gm-bd);border-radius:16px 16px 0 0;padding:16px 16px 20px}
+@media(min-width:720px){.fl-sheet{align-items:center}.fl-sheet-in{border-radius:16px}}
+.fl-sheet h2{margin:0 0 8px;font-size:19px}
+.fl-x{float:right;background:none;border:0;color:var(--gm-dim);font-size:26px;line-height:1;cursor:pointer;min-width:44px;min-height:44px}
+.fl-feat{margin:6px 0 4px;padding-left:18px;font-size:13.5px;line-height:1.5;color:var(--gm-dim)}
+.fl-terms{border:1px solid var(--gm-bd);border-radius:10px;padding:10px 12px;background:var(--gm-s2);font-size:13.5px;line-height:1.55;margin:10px 0}
+.fl-sheet .btn{width:100%;justify-content:center;min-height:48px}
+.fl-sheet .btn[disabled]{opacity:.5;cursor:not-allowed}
+.fl-arl-msg{font-size:13px;margin-top:8px;min-height:1em}
+.fl-ref{font:600 11px var(--gm-mono);color:var(--gm-faint)}

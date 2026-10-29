@@ -69,15 +69,16 @@ const key = () => crypto.randomBytes(8).toString('hex');
 
 /* the board: capture's signals, in the shape capture writes */
 const SIG_COLS = 'sig_key text primary key, event_id text, sport_key text, sport_title text, commence_time timestamptz, home_team text, away_team text, ' +
-  'market text, selection text, point numeric, sharp_fair numeric, last_seen_at timestamptz, point_is_modal boolean, is_player_prop boolean not null default false, ' +
+  'market text, selection text, point numeric, sharp_fair numeric, best_dec numeric, best_book text, last_seen_at timestamptz, point_is_modal boolean, is_player_prop boolean not null default false, ' +
   'flagged_at timestamptz, closed_at timestamptz, closing_sharp_fair numeric, clv_excluded_reason text, closing_source text, result text, ' +
   'closing_dec numeric, closing_at_observed timestamptz, clv numeric, beat_close boolean';
 function sig(ev, sport, startMs, home, away, market, selection, point, fair, seenAgoMs, modal, extra) {
   const k = ev + '|' + market + '|' + selection + '|' + (point == null ? '' : String(point));
   const e = extra || {};
-  V('insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point, sharp_fair, last_seen_at, point_is_modal, is_player_prop, flagged_at) values (' +
+  V('insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point, sharp_fair, best_dec, best_book, last_seen_at, point_is_modal, is_player_prop, flagged_at) values (' +
     [lit(k), lit(ev), lit(sport), at(startMs), lit(home), lit(away), lit(market), lit(selection), point == null ? 'null' : point,
-     fair == null ? 'null' : fair, at(-(seenAgoMs || 10 * 60 * 1000)), modal ? 'true' : 'false', e.prop ? 'true' : 'false',
+     fair == null ? 'null' : fair, e.bestDec == null ? 'null' : e.bestDec, e.bestBook == null ? 'null' : lit(e.bestBook),
+     at(-(seenAgoMs || 10 * 60 * 1000)), modal ? 'true' : 'false', e.prop ? 'true' : 'false',
      e.flaggedAgoMs != null ? at(-e.flaggedAgoMs) : 'null'].join(', ') + ');');
   return k;
 }
@@ -118,9 +119,9 @@ try {
   V('drop table public.signals cascade; create table public.signals (' + V9_COLS + ');');
   const v9 = db.mustFail(() => { const o = db.applyFileAtomic(FILE); throw new Error(o); }) || '';
   const v9rep = v9.split('\n').filter((l) => /^\d\d /.test(l));
-  chk('on a board without the player-prop columns it installs: eleven report rows, every one ok',
-    v9rep.length === 11 && v9rep.every((l) => /\|ok/.test(l)), v9.slice(-600));
-  if (v9rep.length === 11) {
+  chk('on a board without the player-prop columns it installs: twelve report rows, every one ok',
+    v9rep.length === 12 && v9rep.every((l) => /\|ok/.test(l)), v9.slice(-600));
+  if (v9rep.length === 12) {
     const W = uid(9), EV = 'ev_v9_nfl';
     V('insert into auth.users (id, email) values (' + lit(W) + ", 'v9@x.co');");
     const v9sig = (market, selection, point, fair) => {
@@ -155,9 +156,14 @@ try {
 
   let out = db.applyFileAtomic(FILE);
   const rep = out.split('\n').filter((l) => /^\d\d /.test(l));
-  chk('it applies over bettor_decisions.sql: eleven report rows, every one ok', rep.length === 11 && rep.every((l) => /\|ok/.test(l)), out.slice(-1200));
+  chk('it applies over bettor_decisions.sql: twelve report rows, every one ok', rep.length === 12 && rep.every((l) => /\|ok/.test(l)), out.slice(-1200));
   out = db.applyFileAtomic(FILE);
-  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d\d .*\|ok/.test(l)).length === 11);
+  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d\d .*\|ok/.test(l)).length === 12);
+  /* bettor_decisions.sql made user_bets.sport ('CFB', 'NFL'); Bet Checker also grades the NBA and the NHL */
+  const sportChecks = J("select conname, pg_get_constraintdef(oid) as def from pg_constraint where conrelid = 'public.user_bets'::regclass and contype = 'c' and pg_get_constraintdef(oid) ~ '\\msport\\M'");
+  chk('the narrow sport check is replaced by one that takes NBA and NHL bets: one sport check, every league in the rules',
+    sportChecks.length === 1 && sportChecks[0].conname === 'user_bets_sport_check' && ['CFB', 'NFL', 'NBA', 'NHL'].every((l) => sportChecks[0].def.indexOf("'" + l + "'") >= 0), sportChecks);
+  chk('and a league Bet Checker does not grade is still refused', !!db.mustFail(() => db.as(A, "insert into public.user_bets (bet_key, sport, game_id, side, odds, units) values ('mlb-1', 'MLB', 'g-mlb', 'home', -110, 1);")));
   chk('the decision card\'s bet is untouched and is not a Bet Checker bet',
     one("select event_id, entry_grade, close_status, edgedesk_flagged from public.user_bets where bet_key = 'card-1'").event_id === null &&
     one("select count(*)::int as n from public.bet_checker_bets").n === 0);
@@ -169,14 +175,14 @@ try {
   const E1 = 'ev_nfl_1', E2 = 'ev_cfb_1', E3 = 'ev_started', E4 = 'ev_mlb';
   const T1 = 48 * H;
   const K = {};
-  K.h35 = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3.5, 0.52, null, true);
-  K.a35 = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Buffalo Bills', 3.5, 0.48, null, true);
+  K.h35 = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3.5, 0.52, null, true, { bestDec: 1.91, bestBook: 'DraftKings' });
+  K.a35 = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Buffalo Bills', 3.5, 0.48, null, true, { bestDec: 2.05, bestBook: 'FanDuel' });
   K.h3 = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3, 0.555, null, false);
-  K.h45 = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -4.5, 0.47, 10 * H, false);
+  K.h45 = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -4.5, 0.47, 10 * H, false, { bestDec: 2.1, bestBook: 'BetMGM' });
   K.o = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'totals', 'Over', 47.5, 0.5, null, true);
   K.u = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'totals', 'Under', 47.5, 0.5, null, true);
-  K.mh = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Kansas City Chiefs', null, 0.62, null, true, { flaggedAgoMs: H });
-  K.ma = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Buffalo Bills', null, 0.38, null, true);
+  K.mh = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Kansas City Chiefs', null, 0.62, null, true, { flaggedAgoMs: H, bestDec: 1.62, bestBook: 'Pinnacle' });
+  K.ma = sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Buffalo Bills', null, 0.38, null, true, { bestDec: 2.45, bestBook: 'Bovada' });
   sig(E1, NFL, T1, 'Kansas City Chiefs', 'Buffalo Bills', 'player_pass_yds', 'Over', 250.5, 0.5, null, true, { prop: true });
   K.c = sig(E2, CFB, 30 * H, 'Ohio State Buckeyes', 'Michigan Wolverines', 'spreads', 'Ohio State Buckeyes', -7, 0.5, null, true);
   sig(E2, CFB, 30 * H, 'Ohio State Buckeyes', 'Michigan Wolverines', 'spreads', 'Michigan Wolverines', 7, 0.5, null, true);
@@ -195,6 +201,9 @@ try {
   chk('every game line, as the reader names it, and no player prop',
     lines.length === 8 && lines.every((l) => ['spread', 'total', 'moneyline'].indexOf(l.market_type) >= 0), lines);
   chk('a line no price leaves through', lines.every((l) => Object.keys(l).sort().join() === 'line,market_type,modal,priced,side,team'));
+  chk('and a FREE reader gets no prices beside them: the best price across books is the terminal\'s line shopping (owner, 2026-10-29)',
+    JSON.parse(db.as(A, 'select coalesce(json_agg(p), \'[]\') from public.bet_checker_line_prices(' + lit(E1) + ') p;')).length === 0);
+  chk('anon gets no prices either', !!db.mustFail(() => db.anon('select * from public.bet_checker_line_prices(' + lit(E1) + ');')));
   chk('priced says EdgeDesk has a CURRENT fair at that line (the stale -4.5 does not)',
     lines.find((l) => l.side === 'home' && l.line === -4.5).priced === false && lines.find((l) => l.side === 'home' && l.line === -3.5).priced === true);
   chk('a started game has no lines to pick', JSON.parse(db.as(A, 'select coalesce(json_agg(l), \'[]\') from public.bet_checker_lines(' + lit(E3) + ') l;')).length === 0);
@@ -282,6 +291,28 @@ try {
   u = JSON.parse(db.service('select public.bet_checker_usage(' + lit(P) + ');'));
   chk('Bet Checker (red): twelve bets, twelve grades, no allowance', u.paid === true && u.graded_this_month === 12 && u.free_remaining === null, u);
   chk('the terminal (blue) is paid Bet Checker too', JSON.parse(db.service('select public.bet_checker_usage(' + lit(Q) + ');')).paid === true);
+
+  /* a PAID reader gets the board's best price beside each line, as American odds */
+  const paidLines = JSON.parse(db.as(P, 'select json_agg(p) from public.bet_checker_line_prices(' + lit(E1) + ') p;'));
+  const pl = (sd, mt, ln) => paidLines.find((l) => l.side === sd && l.market_type === mt && (ln === undefined || l.line === ln)) || {};
+  chk('a paid reader (Bet Checker) gets the best price at each line: 1.91 = -110 at DraftKings, 2.05 = +105 at FanDuel',
+    pl('home', 'spread', -3.5).best_odds === -110 && pl('home', 'spread', -3.5).best_book === 'DraftKings' &&
+    pl('away', 'spread', 3.5).best_odds === 105 && pl('away', 'spread', 3.5).best_book === 'FanDuel' && !!pl('home', 'spread', -3.5).best_seen_at, paidLines);
+  chk('moneylines too: 1.62 = -161 at Pinnacle, 2.45 = +145 at Bovada',
+    pl('home', 'moneyline').best_odds === -161 && pl('home', 'moneyline').best_book === 'Pinnacle' &&
+    pl('away', 'moneyline').best_odds === 145 && pl('away', 'moneyline').best_book === 'Bovada', [pl('home', 'moneyline'), pl('away', 'moneyline')]);
+  chk('a price older than the fair window is not offered (it may no longer be hung): the -4.5 seen 10 hours ago has none',
+    !paidLines.some((l) => l.side === 'home' && l.market_type === 'spread' && l.line === -4.5), paidLines.filter((l) => l.line === -4.5));
+  chk('a line the board has no price for is left out, never guessed', !paidLines.some((l) => l.line === -3), paidLines.filter((l) => l.line === -3));
+  chk('each price row is the line, its price, its book and when it was seen, nothing else',
+    paidLines.every((l) => Object.keys(l).sort().join() === 'best_book,best_odds,best_seen_at,line,market_type,side'), paidLines[0]);
+  chk('the terminal (blue) reader gets the prices too',
+    JSON.parse(db.as(Q, 'select json_agg(p) from public.bet_checker_line_prices(' + lit(E1) + ') p;')).some((l) => l.best_odds === -110));
+  chk('and a free reader still gets none, after paid readers asked',
+    JSON.parse(db.as(A, 'select coalesce(json_agg(p), \'[]\') from public.bet_checker_line_prices(' + lit(E1) + ') p;')).length === 0);
+  chk('a started game has no prices', JSON.parse(db.as(P, 'select coalesce(json_agg(p), \'[]\') from public.bet_checker_line_prices(' + lit(E3) + ') p;')).length === 0);
+  chk('decimal to American: 2.00 = +100, 1.50 = -200, 3.40 = +240, at or below 1 = null',
+    V('select public.bet_checker_decimal_to_american(2.00), public.bet_checker_decimal_to_american(1.50), public.bet_checker_decimal_to_american(3.40), public.bet_checker_decimal_to_american(1.0);') === '100|-200|240|');
   chk('a calendar month is New York\'s: 03:00 UTC on 1 November is still October',
     V("select public.bet_checker_month_start('2026-11-01 03:00:00+00');") === '2026-10-01' && V("select public.bet_checker_month_start('2026-11-01 05:00:00+00');") === '2026-11-01');
   chk('a reader may read only their own allowance', !!db.mustFail(() => db.as(A, 'select public.bet_checker_usage(' + lit(B) + ');')));
@@ -438,6 +469,38 @@ try {
   V("set session_replication_role = replica; update public.user_bets set placed_at = now() - interval '40 days' where user_id = " + lit(P) + " and id in (select id from public.user_bets where user_id = " + lit(P) + " limit 1); set session_replication_role = default;");
   const hp = JSON.parse(db.as(P, 'select public.my_bet_checker_bets();'));
   chk('a paid reader\'s list is the full history', hp.paid === true && hp.history_days === null && hp.bets.length === 12);
+
+  /* ===================================================================== */
+  /* 7b. THE NBA AND THE NHL (2026-10-29)                                  */
+  /* ===================================================================== */
+  const NBA = 'basketball_nba', NHL = 'icehockey_nhl', E5 = 'ev_nba_1', E6 = 'ev_nhl_1', N = uid(7);
+  V('insert into auth.users (id, email) values (' + lit(N) + ", 'nba@x.co');");
+  const kn = sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'spreads', 'Boston Celtics', -4.5, 0.55, null, true);
+  sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'spreads', 'New York Knicks', 4.5, 0.45, null, true);
+  sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'totals', 'Over', 221.5, 0.5, null, true);
+  sig(E5, NBA, 26 * H, 'Boston Celtics', 'New York Knicks', 'totals', 'Under', 221.5, 0.5, null, true);
+  sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Toronto Maple Leafs', null, 0.53, null, true);
+  const kh2 = sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Montreal Canadiens', null, 0.47, null, true);
+  sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'spreads', 'Toronto Maple Leafs', -1.5, 0.36, null, true);
+  sig(E6, NHL, 28 * H, 'Toronto Maple Leafs', 'Montreal Canadiens', 'spreads', 'Montreal Canadiens', 1.5, 0.64, null, true);
+  const bg = JSON.parse(db.as(N, 'select json_agg(g) from public.bet_checker_games(null) g;'));
+  chk('NBA and NHL games are on the board, named by league', bg.some((g) => g.event_id === E5 && g.sport === 'NBA') && bg.some((g) => g.event_id === E6 && g.sport === 'NHL'), bg);
+  chk('the league filter works for both', JSON.parse(db.as(N, "select json_agg(g) from public.bet_checker_games('nba') g;")).map((g) => g.event_id).join() === E5 &&
+    JSON.parse(db.as(N, "select json_agg(g) from public.bet_checker_games('NHL') g;")).map((g) => g.event_id).join() === E6);
+  chk('MLB is still not offered', !bg.some((g) => g.event_id === E4));
+  const rn = logBet(N, E5, 'spread', 'home', -4.5, -110);
+  chk('an NBA spread logs as NBA and is graded on the same rules (-110 vs 55%: +2.62, green)',
+    rn.ok && rn.bet.sport === 'NBA' && rn.bet.entry_grade === 'green' && Number(rn.bet.entry_edge_pct) === 2.62 && rn.bet.entry_sig_key === kn, rn);
+  const rh = logBet(N, E6, 'moneyline', 'away', null, 120);
+  chk('an NHL moneyline logs as NHL (+120 vs 47%: +1.55, green)', rh.ok && rh.bet.sport === 'NHL' && rh.bet.entry_grade === 'green' && Number(rh.bet.entry_edge_pct) === 1.55, rh);
+  chk('the puck line is the board\'s line (+1.5), and its price is graded', logBet(N, E6, 'spread', 'away', 1.5, -200).bet.entry_grade === 'red');
+  chk('and NBA/NHL grades count against the free allowance like any other', JSON.parse(db.service('select public.bet_checker_usage(' + lit(N) + ');')).free_grades_used === 3);
+  V("update public.signals set closed_at = now(), closing_sharp_fair = 0.5, clv_excluded_reason = null, closing_source = 'live', result = 'win' where sig_key = " + lit(kh2) + ';');
+  kickoffPassed([rh.bet.id]);
+  grade();
+  const xh = row(rh.bet.id);
+  chk('after the close the NHL moneyline gets its CLV (2.20 x 0.50 - 1 = +10%) and settle\'s result',
+    xh.close_status === 'captured' && Number(xh.clv_pct) === 10 && xh.result === 'win' && xh.result_source === 'settle', xh);
 
   /* ===================================================================== */
   /* 8. THE SCHEDULE: after the close, with the secret from Vault          */

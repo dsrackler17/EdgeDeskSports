@@ -105,14 +105,15 @@ try {
   /* ===================================================================== */
   let out = db.applyFileAtomic(FILE);
   const rep = out.split('\n').filter((l) => /^\d+\|/.test(l));
-  chk('it applies over production-shaped data', rep.length === 14, out.slice(-1500));
+  /* 15 rows: row 15 (no red or black price opens the terminal) came with Fairline */
+  chk('it applies over production-shaped data', rep.length === 15, out.slice(-1500));
   const bad = rep.filter((l) => !/\|ok/.test(l));
   chk('and reports, honestly, exactly the two things a human must decide',
     bad.length === 2 && /^6\|/.test(bad[0]) && /sub_twice/.test(bad[0]) && /^8\|/.test(bad[1]) && /cus_shared/.test(bad[1]), bad);
   chk('a skipped unique index is a report row, not a failed migration',
     one("select to_regclass('public.subscriptions_stripe_subscription_uk') is null as skipped").skipped === true);
   out = db.applyFileAtomic(FILE);
-  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d+\|/.test(l)).length === 14);
+  chk('and applies a second time, identically', out.split('\n').filter((l) => /^\d+\|/.test(l)).length === 15);
   const after = J('select user_id, status, price_id, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id from public.subscriptions order by user_id');
   chk('no existing subscription row was changed by installing it', JSON.stringify(before) === JSON.stringify(after));
 

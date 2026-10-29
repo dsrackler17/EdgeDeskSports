@@ -7,7 +7,10 @@
 # HTTP status, the sha256 of the body, its shape and the body with arrays cut
 # to three items. The full bodies are kept as the run's artifact, which is
 # what tools/radar/fixtures/ is recorded from. It fails when a parser in
-# lib/edgedesk_radar.js cannot read what Polymarket sent.
+# lib/edgedesk_radar.js cannot read what Polymarket sent. It also asks the
+# H-RADAR-01 runner's own request forms once each
+# (research/radar/run_validation.js REQ), so the test's one look is not spent
+# on a request Polymarket refuses; it grades nothing.
 #
 # An integration workflow (tools/ci/checks.json): a live source, never
 # replaced by a mock, and NOT VERIFIED by npm run verify.
@@ -20,6 +23,7 @@ on:
       - 'tools/radar/fetch_sources.js'
       - 'lib/edgedesk_radar.js'
       - 'lib/edgedesk_poly_gateway.js'
+      - 'research/radar/run_validation.js'
   workflow_dispatch:
 
 permissions:

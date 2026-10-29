@@ -667,3 +667,50 @@ Before deploying: §11 query 10 must show that the production-only paywall
 RLS calls the rule rather than inlining statuses, or a Bet Checker
 subscription would still read the terminal's data. Full detail and tests:
 `docs/bet-checker.md`.
+
+## 15. Three tiers: Fairline (2026-10-28)
+
+A third product: **Fairline** (Stripe product metadata `tier = black`,
+$19.99/month or $159/year, sold by lookup keys `fairline_monthly` /
+`fairline_annual`): Bet Checker plus The Board, The Leaks and The Tape
+(`docs/fairline.md`). The ladder is red ⊂ black ⊂ blue:
+
+| Tier | `billing_row_grants_access()` (terminal) | `has_fairline_paid()` | `has_bet_checker_paid()` |
+|---|---|---|---|
+| red (Bet Checker) | no | no | yes |
+| black (Fairline) | **no** | yes | yes |
+| blue (Research Terminal), comps, a price never learned | yes | yes | yes |
+
+- The rule itself is unchanged: the terminal is a price that sells blue, or
+  one never learned. So a black price the database does not know **would**
+  open the terminal; everything below exists to make that impossible.
+- Both tier CHECK constraints (`billing_price_tiers`, `subscriptions`) know
+  black; each is dropped and re-added in one statement, only when it does not.
+  `billing_learn_price_tier()` accepts black.
+- `create_checkout_session {kind: 'fairline'}` sells only a price whose
+  product says black, records it **before** the session exists, and **refuses
+  to sell** (503, nothing created) when the database could not record it —
+  an error, or `refused:tier` from a database that has not had this file
+  re-applied.
+- The reconciler names a price Stripe cannot (Products refused, or Stripe not
+  reachable at all — the webhook now resolves the event's own price before its
+  fallback write): from what the database learned, else the price's own
+  metadata `tier`, else the EdgeDesk lookup key it is sold under
+  (`bet_checker_*` red, `fairline_*` black), and learns it. A plan switch in the
+  portal to a Fairline price nobody bought through checkout yet is therefore
+  black, never the terminal.
+- `billing_access_for()` adds `fairline_paid` and reason `fairline_only`; a
+  black row is offered `upgrade` (a portal switch). A Bet Checker customer
+  buying Fairline, or a Fairline customer buying the terminal's trial, gets
+  `switch_plan`, never a second subscription.
+- Juice Reel sells only the terminal. When a Juice Reel buyer's row holds a
+  live red or black Stripe plan, the terminal replaces it on the row and
+  `juicereel_and_stripe_both_paid` is raised, so a human cancels that Stripe
+  subscription.
+- Report row 15 checks every learned red and black price against the rule.
+
+Before selling Fairline: §11 query 10 again — the production-only paywall
+(`has_active_sub()` and the RLS that calls it) must defer to
+`billing_row_grants_access()`, or a Fairline subscription would read the
+terminal's data. It is not in this repository and cannot be tested here.
+Tests: `tools/billing/fairline_tier.test.js`.

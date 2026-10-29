@@ -15,6 +15,8 @@
         card is on the list, "1 of 10 grades used this month"
      3  a college football bet grades red; a line EdgeDesk never priced is
         saved "Not graded", saying it is never estimated
+     3b the NHL pill lists only NHL games, and an NHL moneyline says it
+        includes overtime and the shootout
      4  the paid stats are blurred, with no real number on the page, and an
         upgrade button
      5  the eleventh graded bet of the month is SAVED, ungraded, with the
@@ -24,7 +26,9 @@
         with those exact words BEFORE the browser goes to Stripe
      7  after the close, a card shows its CLV — and a bet whose line the
         market closed off says "No close available"
-     8  a Bet Checker subscriber sees real stats and the billing portal
+     8  a Bet Checker subscriber sees real stats and the billing portal; one tap
+        fills in the board's best price and book (a free reader's taps carry
+        no price), and the bet is graded on the odds the reader submits
      9  the landing page's ?upgrade=annual|monthly: a signed-in free reader
         sees the renewal terms OPEN on that plan (unticked, Subscribe off, no
         checkout asked for); a signed-out reader is told checkout opens after
@@ -81,17 +85,18 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
 
   /* ── the database, as shipped ───────────────────────────────────────── */
   db.sql('create table public.signals (sig_key text primary key, event_id text, sport_key text, sport_title text, commence_time timestamptz, home_team text, away_team text, ' +
-    'market text, selection text, point numeric, sharp_fair numeric, last_seen_at timestamptz, point_is_modal boolean, is_player_prop boolean not null default false, ' +
+    'market text, selection text, point numeric, sharp_fair numeric, best_dec numeric, best_book text, last_seen_at timestamptz, point_is_modal boolean, is_player_prop boolean not null default false, ' +
     'flagged_at timestamptz, closed_at timestamptz, closing_sharp_fair numeric, clv_excluded_reason text, closing_source text, result text, ' +
     'closing_dec numeric, closing_at_observed timestamptz, clv numeric, beat_close boolean);');
   for (const f of ['bankroll_and_stakes.sql', 'bettor_decisions.sql', 'billing.sql', 'stripe_webhook.sql', 'billing_hardening.sql', 'bet_checker.sql']) {
     db.applyFileAtomic(path.join(ROOT, 'supabase', f));
   }
-  const sig = (ev, sport, home, away, market, sel, point, fair, modal) => db.sql("insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point, sharp_fair, last_seen_at, point_is_modal) values (" +
+  /* bestDec / bestBook: capture's best price at that line and its book (a paid reader's one tap fills them in) */
+  const sig = (ev, sport, home, away, market, sel, point, fair, modal, bestDec, bestBook) => db.sql("insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point, sharp_fair, best_dec, best_book, last_seen_at, point_is_modal) values (" +
     [lit(ev + '|' + market + '|' + sel + '|' + (point == null ? '' : point)), lit(ev), lit(sport), "now() + interval '2 days'", lit(home), lit(away), lit(market), lit(sel),
-     point == null ? 'null' : point, fair, "now() - interval '5 minutes'", modal ? 'true' : 'false'].join(', ') + ');');
-  sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3.5, 0.52, true);
-  sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Buffalo Bills', 3.5, 0.48, true);
+     point == null ? 'null' : point, fair, bestDec == null ? 'null' : bestDec, bestBook == null ? 'null' : lit(bestBook), "now() - interval '5 minutes'", modal ? 'true' : 'false'].join(', ') + ');');
+  sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3.5, 0.52, true, 1.91, 'DraftKings');
+  sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Buffalo Bills', 3.5, 0.48, true, 2.05, 'FanDuel');
   sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3, 0.55, false);
   sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'totals', 'Over', 47.5, 0.5, true);
   sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'totals', 'Under', 47.5, 0.5, true);
@@ -99,6 +104,8 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
   sig('nfl1', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Buffalo Bills', null, 0.38, true);
   sig('cfb1', 'americanfootball_ncaaf', 'Ohio State Buckeyes', 'Michigan Wolverines', 'spreads', 'Ohio State Buckeyes', -7, 0.5, true);
   sig('cfb1', 'americanfootball_ncaaf', 'Ohio State Buckeyes', 'Michigan Wolverines', 'spreads', 'Michigan Wolverines', 7, 0.5, true);
+  sig('nhl1', 'icehockey_nhl', 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Toronto Maple Leafs', null, 0.53, true);
+  sig('nhl1', 'icehockey_nhl', 'Toronto Maple Leafs', 'Montreal Canadiens', 'h2h', 'Montreal Canadiens', null, 0.47, true);
 
   const tokens = {};
   const user = (n, email) => {
@@ -190,6 +197,17 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     chk('only NFL games, only ones that have not started', games.length === 2 && /Buffalo Bills at Kansas City Chiefs/.test(games[1]), games);
     await page.selectOption('select[name="game"]', 'nfl1');
     await eventually(async () => (await page.locator('select[name="market"] option').count()) === 4);
+    /* one tap: the board's lines as buttons; a free reader gets no price on them */
+    chk('one tap: the game\'s main lines appear as buttons (spread, total, moneyline)',
+      await eventually(async () => (await page.locator('[data-bc-tap]').count()) === 6), await text(page, '[data-bc="taps"]'));
+    chk('and a FREE reader\'s buttons carry no price: the best price across books is the terminal\'s line shopping',
+      !/-110|\+105|DraftKings|FanDuel/.test(await text(page, '[data-bc="taps"]')) && /type the odds you got/.test(await text(page, '[data-bc="taps"]')), await text(page, '[data-bc="taps"]'));
+    await page.locator('[data-bc-tap]', { hasText: 'Kansas City Chiefs −3.5' }).click();
+    chk('tapping one fills the market, side and line, and leaves the odds for the reader to type',
+      (await page.inputValue('select[name="market"]')) === 'spread' && (await page.inputValue('select[name="side"]')) === 'home' &&
+      (await page.inputValue('input[name="line"]')) === '-3.5' && (await page.inputValue('input[name="odds"]')) === '' &&
+      /Now type the odds you got/.test(await text(page, '[data-bc="prefill"]')),
+      [await page.inputValue('select[name="market"]'), await page.inputValue('select[name="side"]'), await page.inputValue('input[name="line"]'), await page.inputValue('input[name="odds"]'), await text(page, '[data-bc="prefill"]')]);
     await page.selectOption('select[name="market"]', 'spread');
     await page.selectOption('select[name="side"]', 'home');
     chk('the main line fills itself in', await page.inputValue('input[name="line"]') === '-3.5');
@@ -222,6 +240,17 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
       await eventually(async () => /Not graded/.test(await text(page, '[data-bc="result"]'))) && /never estimate/.test(await text(page, '[data-bc="result"]')));
     chk('three cards now, newest first', await page.locator('.bc-card').count() === 3 && /Not graded/.test(await text(page, '.bc-card')));
     await shot(page, '1-free-after-three-bets');
+
+    /* 3b. the NHL (2026-10-29): its own pill, and its moneyline says it includes overtime */
+    await page.click('[data-bc-sport="NHL"]');
+    const nhlGames = await page.locator('select[name="game"] option[value]:not([value=""])').allTextContents();
+    chk('the NHL pill lists only NHL games', nhlGames.length === 1 && /Montreal Canadiens at Toronto Maple Leafs/.test(nhlGames[0]), nhlGames);
+    await page.selectOption('select[name="game"]', 'nhl1');
+    await eventually(async () => (await page.locator('select[name="market"] option').count()) === 2);
+    await page.selectOption('select[name="market"]', 'moneyline');
+    await page.selectOption('select[name="side"]', 'away');
+    chk('an NHL moneyline says it includes overtime and the shootout',
+      /An NHL moneyline includes overtime and the shootout/.test(await text(page, '[data-bc="lines"]')), await text(page, '[data-bc="lines"]'));
 
     /* 4. the paid stats, blurred */
     chk('the stats are locked for a free reader, with an upgrade button', await page.locator('.bc-locked .bc-blur').count() === 1 &&
@@ -300,6 +329,39 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     await shot(page, '4-subscriber');
     chk('Settings › Subscription names the plan and links the billing portal to cancel',
       /EdgeDesk Bet Checker/.test(await text(page, '[data-bc="settings"]')) && await page.locator('[data-bc="portal"]').getAttribute('href') === PRICING.portalLink());
+
+    /* one tap, PAID: the board's best price fills in, and the grade is on the odds the reader submits.
+       nfl1 kicked off for the close above, so this is a game that has not (on the board before the page loads). */
+    await ctx.close();
+    sig('nfl2', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Kansas City Chiefs', -3.5, 0.52, true, 1.91, 'DraftKings');
+    sig('nfl2', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'spreads', 'Buffalo Bills', 3.5, 0.48, true, 2.05, 'FanDuel');
+    sig('nfl2', 'americanfootball_nfl', 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Kansas City Chiefs', null, 0.62, true);
+    ({ ctx, page } = await pageFor(PAID));
+    await page.goto(BASE + '/bet-checker/');
+    await eventually(async () => (await page.locator('select[name="game"] option[value="nfl2"]').count()) === 1);
+    await page.locator('[data-bc="form-wrap"]').evaluate((d) => { d.open = true; });
+    await page.selectOption('select[name="game"]', 'nfl2');
+    chk('a subscriber\'s buttons carry the board\'s best price and its book',
+      await eventually(async () => /-110 · DraftKings/.test(await text(page, '[data-bc="taps"]'))) && /\+105 · FanDuel/.test(await text(page, '[data-bc="taps"]')) &&
+      /best price on EdgeDesk/.test(await text(page, '[data-bc="taps"]')), await text(page, '[data-bc="taps"]'));
+    await page.locator('[data-bc-tap]', { hasText: 'Kansas City Chiefs −3.5' }).click();
+    chk('tapping one fills market, side, line, the odds (-110) and the book (DraftKings)',
+      (await page.inputValue('select[name="market"]')) === 'spread' && (await page.inputValue('select[name="side"]')) === 'home' &&
+      (await page.inputValue('input[name="line"]')) === '-3.5' && (await page.inputValue('input[name="odds"]')) === '-110' &&
+      (await page.inputValue('select[name="book"]')) === 'DraftKings',
+      [await page.inputValue('input[name="odds"]'), await page.inputValue('select[name="book"]')]);
+    chk('and says where the price came from, and to change it if the reader got another',
+      /best price on EdgeDesk’s board: -110 at DraftKings, seen \d+ min ago\. Got a different price\? Change it/.test(await text(page, '[data-bc="prefill"]')), await text(page, '[data-bc="prefill"]'));
+    await page.locator('[data-bc-tap]', { hasText: 'Buffalo Bills +3.5' }).click();
+    chk('a book outside the form\'s list (FanDuel) fills in as Other, and the note says so',
+      (await page.inputValue('input[name="odds"]')) === '+105' && (await page.inputValue('select[name="book"]')) === 'Other' &&
+      /Book is set to Other/.test(await text(page, '[data-bc="prefill"]')), [await page.inputValue('input[name="odds"]'), await page.inputValue('select[name="book"]')]);
+    await page.fill('input[name="odds"]', '+100');
+    await page.click('[data-bc="submit"]');
+    await eventually(async () => /Beat fair|Below fair|Close to fair|Not graded/.test(await text(page, '[data-bc="result"]')));
+    chk('the bet is logged at the odds the reader SUBMITTED (+100), not the pre-filled +105',
+      db.sql("select odds || '|' || book || '|' || line from public.user_bets where user_id = " + lit(PAID.id) + " and event_id = 'nfl2' order by created_at desc limit 1") === '100|Other|3.5',
+      db.sql("select odds || '|' || book || '|' || line from public.user_bets where user_id = " + lit(PAID.id) + " and event_id = 'nfl2' order by created_at desc limit 1"));
     await ctx.close();
 
     /* 8b. a stats call that FAILS is not a "not paid": a subscriber is never shown a paywall for it */

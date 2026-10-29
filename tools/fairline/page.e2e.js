@@ -15,7 +15,13 @@
         Predictions "Coming Soon" on every row, the market filter; The Leaks
         leads with the biggest real leak in one plain sentence, labels are
         chips with words, a small sample says so
-     4  at 390 px nothing scrolls sideways; no script error anywhere
+     4  the upgrade: the renewal terms ($19.99 per month, renews automatically,
+        cancel anytime in Settings) must be ticked; the server checkout is
+        Fairline's; the consent is recorded with those exact words BEFORE the
+        browser goes to Stripe
+     5  a Bet Checker reader is not paid for Fairline: the teaser, and a switch
+        in the billing portal instead of a second checkout
+     6  at 390 px nothing scrolls sideways; no script error anywhere
 
    Needs Playwright + Chromium and PostgreSQL (skips cleanly without;
    FAIRLINE_UI_REQUIRED=1 makes a missing one a failure, as CI sets it).
@@ -30,6 +36,7 @@ const crypto = require('crypto');
 const ROOT = path.join(__dirname, '..', '..');
 const PG = require(path.join(ROOT, 'tools', 'personal', '_pg.js'));
 const REST = require(path.join(ROOT, 'tools', 'billing', '_pgrest.js'));
+const PRICING = require(path.join(ROOT, 'lib', 'edgedesk_pricing.js'));
 const CFG = JSON.parse(fs.readFileSync(path.join(ROOT, 'games', 'data', 'config.json'), 'utf8'));
 const SB = CFG.supabase_url.replace(/\/+$/, '');
 const ANON = CFG.supabase_anon_key;
@@ -95,10 +102,12 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     tokens[t] = { id, email, confirmed: true };
     return { id, email, token: t, session: { access_token: t, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: { id, email } } };
   };
-  const FREE = user(1, 'free@example.com'), PAID = user(2, 'paid@example.com');
+  const FREE = user(1, 'free@example.com'), PAID = user(2, 'paid@example.com'), RED = user(3, 'red@example.com');
   db.service("select public.billing_learn_price_tier('price_red_e2e', 'prod_bc', 'red', 'bet_checker_monthly', true, 'e2e');");
+  db.service("select public.billing_learn_price_tier('price_black_e2e', 'prod_fl', 'black', 'fairline_monthly', true, 'e2e');");
   db.sql("insert into public.subscriptions (user_id, status, price_id, current_period_end, stripe_customer_id, stripe_subscription_id) values (" +
-    lit(PAID.id) + ", 'active', 'price_red_e2e', now() + interval '20 days', 'cus_e2e', 'sub_e2e');");
+    lit(PAID.id) + ", 'active', 'price_black_e2e', now() + interval '20 days', 'cus_e2e', 'sub_e2e'), (" +
+    lit(RED.id) + ", 'active', 'price_red_e2e', now() + interval '20 days', 'cus_red', 'sub_red');");
   db.sql('insert into public.bankroll_settings (user_id, base_unit_amount, unit_mode) values (' + lit(PAID.id) + ", 25, 'fixed') on conflict (user_id) do update set base_unit_amount = 25, unit_mode = 'fixed';");
   /* settled Bet Checker bets, as the grader leaves them */
   const bc = (u, sport, market, side, line, odds, book, win, clv, n) => db.sql('set session_replication_role = replica; insert into public.user_bets (user_id, bet_key, source, sport, game_id, event_id, ' +
@@ -113,6 +122,7 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
   }
   for (let i = 0; i < 4; i++) bc(PAID.id, 'NFL', 'moneyline', 'home', 'null', 150, 'Other', i < 1, 1, i);
   const rest = REST.make(db, { serviceKey: 'service-key', anonKey: ANON, tokens });
+  const checkouts = [];
 
   const { srv, port } = await serve(siteHandler);
   const BASE = 'http://127.0.0.1:' + port;
@@ -124,13 +134,21 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     await ctx.route(SB + '/**', async (route) => {
       const r = route.request();
       if (r.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }, body: '' });
-      const res = r.url().indexOf('/functions/v1/') >= 0
-        ? new Response(JSON.stringify({ ok: false }), { status: 404 })
-        : await rest.fetch(r.url(), { method: r.method(), headers: r.headers(), body: r.postData() });
+      let res;
+      if (r.url().indexOf('/functions/v1/create_checkout_session') >= 0) {
+        /* Stripe's hosted checkout is stood in for; the function itself is proven against the real SQL by tools/billing/fairline_tier.test.js */
+        checkouts.push({ body: JSON.parse(r.postData() || '{}'), consentsBefore: Number(db.sql('select count(*) from public.billing_consents;')) });
+        res = new Response(JSON.stringify({ ok: true, url: 'https://checkout.stripe.com/c/pay/cs_test_fl', session_id: 'cs_test_fl', ref: 'EDS-FL0000' }), { status: 200 });
+      } else if (r.url().indexOf('/functions/v1/') >= 0) {
+        res = new Response(JSON.stringify({ ok: false }), { status: 404 });
+      } else {
+        res = await rest.fetch(r.url(), { method: r.method(), headers: r.headers(), body: r.postData() });
+      }
       const text = await res.text();
       return route.fulfill({ status: res.status, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: text });
     });
     await ctx.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+    await ctx.route('https://checkout.stripe.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<h1>Stripe checkout (stand-in)</h1>' }));
     const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push(String(e && e.message || e)));
     page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
@@ -184,6 +202,38 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
       await clipped(page, '[data-fl="teaser"] .fl-locked'));
     chk('free: no real number on the page (the server sent none)', !/272|−5\.45|-5\.45|36\.4/.test(lockedHtml) && /00–00/.test(lockedHtml));
     await shot(page, '2-free-leaks-phone');
+
+    /* 4. the upgrade, with the automatic-renewal consent */
+    await page.click('[data-fl="teaser"] [data-fl-act="upgrade"]');
+    const terms = await text(page, '[data-fl="terms"]');
+    chk('the renewal terms: $19.99 per month, renews automatically, cancel anytime in Settings on the Fairline page', terms === PRICING.fairlineTerms('monthly') &&
+      /\$19\.99 per month, renews automatically/.test(terms) && /Settings › Subscription on the Fairline page/.test(terms), terms);
+    chk('Subscribe stays off until the terms are ticked', await page.locator('[data-fl="arl-go"]').isDisabled());
+    await page.click('[data-fl-plan="annual"]');
+    chk('the annual plan shows its own figure', /\$159\.00 per year/.test(await text(page, '[data-fl="terms"]')) && /\$159\.00\/year/.test(await text(page, '[data-fl="arl-go"]')));
+    await page.click('[data-fl-plan="monthly"]');
+    chk('at 390 px the sheet does not scroll the page sideways', (await overflow(page)) <= 0, await overflow(page));
+    await shot(page, '2b-renewal-terms-phone');
+    await page.check('[data-fl="agree"]');
+    await page.click('[data-fl="arl-go"]');
+    chk('the browser goes to Stripe', await eventually(async () => /checkout\.stripe\.com/.test(page.url()), 8000), page.url());
+    chk('the server checkout was asked for Fairline monthly at 1999 cents, no trial', checkouts.length === 1 && checkouts[0].body.kind === 'fairline' &&
+      checkouts[0].body.plan === 'monthly' && checkouts[0].body.price_cents === 1999 && checkouts[0].body.trial_days === 0, checkouts);
+    chk('no consent was written before the server checkout existed', checkouts[0].consentsBefore === 0, checkouts);
+    const consent = JSON.parse(db.sql('select row_to_json(c) from public.billing_consents c where user_id = ' + lit(FREE.id) + ' order by created_at desc limit 1;') || 'null');
+    chk('the consent is on record with the EXACT terms shown, the figure and the version', consent && consent.offer_text === PRICING.fairlineTerms('monthly') &&
+      consent.price_display === '$19.99' && consent.billing_period === 'month' && consent.trial_days === 0 && consent.consent_version === 'fairline-2026-10', consent);
+    await ctx.close();
+
+    /* 5. a Bet Checker reader: not Fairline; a switch in the portal, never a second checkout */
+    ({ ctx, page } = await pageFor(RED));
+    await page.goto(BASE + '/fairline/');
+    chk('Bet Checker alone: The Board is the teaser', await eventually(async () => (await page.locator('[data-fl="rows"] .fl-row[data-key]').count()) === 3) &&
+      await page.locator('[data-fl="board-locked"]').count() === 1);
+    const sw = page.locator('[data-fl="board-locked"] [data-fl="upgrade"]');
+    chk('…and the offer is the plan switch in the billing portal', /Switch to Fairline/.test(await sw.innerText()) && await sw.getAttribute('href') === PRICING.portalLink());
+    chk('Settings names the plan, says Fairline is not included, and links the portal', /EdgeDesk Bet Checker \(Fairline not included\)/.test(await text(page, '[data-fl="settings"]')) &&
+      await page.locator('[data-fl="portal"]').getAttribute('href') === PRICING.portalLink());
     await ctx.close();
 
     /* 3. a paid reader */
@@ -219,6 +269,8 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     chk('paid: every dimension the spec names is on the page', ['market', 'sport', 'bet_type', 'odds', 'lead', 'book', 'stake'].every((d) => dims.indexOf(d) >= 0) &&
       dims.length === 7, dims);
     chk('paid: dollars come from the unit size, and the page says so', /bankroll settings/.test(await text(page, '[data-fl="leaks-body"]')));
+    chk('paid: Settings › Subscription names Fairline and links the billing portal to cancel', /Plan: EdgeDesk Fairline/.test(await text(page, '[data-fl="settings"]')) &&
+      await page.locator('[data-fl="portal"]').getAttribute('href') === PRICING.portalLink());
     await shot(page, '4-paid-leaks');
     await ctx.close();
     ({ ctx, page } = await pageFor(PAID, 390));
