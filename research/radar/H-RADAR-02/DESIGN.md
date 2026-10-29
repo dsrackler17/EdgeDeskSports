@@ -1,0 +1,159 @@
+# H-RADAR-02: design record (draft, not registered)
+
+**Status:** DRAFT. Nothing here is registered or live. H-RADAR-02 is a
+methodology change to Prediction Radar. It needs the owner's explicit review,
+and its selection rules are frozen in a registration before any prospective
+test starts. This file records the decisions and the evidence behind them.
+
+## Why
+
+H-RADAR-01 failed on its holdout (`research/radar/H-RADAR-01/RESULTS.md`).
+Its rules also left very few bettors to show. 172 of its 200 pool wallets had
+more than 30 pages of activity, so they were excluded. That left 13 qualifying
+wallets, and 5 of the 10 best had negative Radar Scores. The best 4 by score
+placed 1 bet on a covered game in the 8-week holdout. Smart Money Tonight is
+a paid feature: it needs current research every day, without lowering any
+qualification standard.
+
+## The owner's decisions (2026-10-29)
+
+1. **Discovery is not skill.** The discovery pool is chosen by recent sports
+   activity. Volume alone never qualifies a wallet; only the registered
+   performance grade does.
+2. **The pool stays at 200 wallets.** The owner's "top 10" is a display limit
+   for qualifying wallets, not a reason to shrink discovery.
+3. **Recent volume over 90 days, measured accurately.** Candidates come from
+   Polymarket's 30-day sports leaderboard. Radar reads each candidate's own
+   last 90 days completely. The pool is the 200 eligible wallets with the most
+   dollars on covered-league games in those 90 days, each with at least a
+   minimum number of pregame bets on covered games.
+4. **Complete history before judgment.** No wallet is graded on a partial
+   history.
+5. **Grades count what a follower really gets:** CLV and follower returns net
+   of fees, the execution delay, and the prices actually available.
+6. **Featured wallets need a positive score.** At most 10 are shown, and
+   fewer when fewer qualify. The page says so.
+7. **High-frequency wallets.**
+   - The data-processing cap and the followability judgment are separate.
+   - 1,000 actions in under 3 days is a screening flag only. It does not
+     prove sustained activity over 90 days, and it does not prove a bot.
+   - When complete history cannot be read within the processing budget, the
+     wallet is labelled **insufficient history — ungraded**.
+   - A wallet is labelled **high-frequency — not followable** only when its
+     observed trading behaviour supports that. The measure is meaningful
+     position changes, not individual fills, wherever the data allows.
+   - Discovery continues down the leaderboard after exclusions, so excluded
+     wallets do not use up the pool.
+   - Every run reports how many wallets were screened, excluded and fully
+     evaluated.
+   - Excluded wallets never appear in the featured followable group. They
+     appear in Observed Activity only where that is accurate and useful.
+     Radar spends no great effort reconstructing strategies a subscriber
+     cannot follow.
+8. **Observed activity and evidence-backed signals stay distinct.** What
+   wallets hold is labelled observed activity. Only a passed registered test
+   earns the word "evidence".
+9. **Access is unchanged.** The full experience stays behind the existing
+   subscription (`has_active_sub()`).
+
+## What Polymarket's data supports (verified)
+
+The build environment cannot reach Polymarket, so these questions were asked
+from GitHub's runner by `tools/radar/probe_h02.js`, through the Radar gateway:
+[run 40975470572](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40975470572)
+and [run 40975893030](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40975893030),
+2026-10-29 around 23:50 UTC. Every body is in each run's artifact.
+
+### Leaderboard periods
+
+| `timePeriod` | Answer |
+|---|---|
+| `DAY`, `WEEK`, `MONTH`, `ALL` | HTTP 200, 50 wallets each, four different lists |
+| `QUARTER`, `YEAR`, `3M`, `90D` | HTTP 400, refused |
+
+There is no 90-day leaderboard. The board goes at least 1,000 wallets deep
+(offset 950 answered 50 wallets). It also answers for one wallet (`user=`),
+with that wallet's volume and rank in each period.
+
+### What "volume" means
+
+The board's volume is **shares traded on sports markets**, over a rolling
+window. It is not dollars.
+
+| 30-day rank | Board, 30 days | Wallet's own shares, last 30 days | Board, 7 days | Own shares, last 7 days |
+|---|---|---|---|---|
+| 100 | 7,512,274.69 | 7,512,274.69 | 2,100,700.31 | 2,100,700.31 |
+| 200 | 3,614,772.42 | 3,619,775.32 | 1,284,112.91 | 1,289,115.81 |
+
+- Rank 100 matches to the cent. Rank 200 differs in every period by the same
+  5,003 shares: one trade made after the board's last refresh.
+- A wallet that also trades non-sports markets shows less on the sports
+  board than in its own activity (rank 400: 0.26 times). That is consistent:
+  the board counts sports only.
+- Because the board counts shares, a 5-cent longshot share counts the same
+  as a 95-cent favourite. So Radar ranks the pool on its own dollar count
+  (decision 3).
+
+### What a 90-day read costs
+
+Activity read newest first, 1,000 actions a page, for 90 days:
+
+| 30-day rank | Pages for 90 days | Note |
+|---|---|---|
+| 1 | about 2,965 | 3,000 actions in its last 2.4 hours |
+| 10 | about 1,057 | |
+| 50 | about 245 | no covered-league trade in the 5.5 days read |
+| 100 | 1 | |
+| 200 | 5 | |
+| 300 | about 16 | |
+| 400 | about 29 | |
+| 500 | 11 | |
+
+The top of the 30-day board is high-frequency wallets. From about rank 100
+down, a complete 90 days is a few pages.
+
+### Fees
+
+On the three covered NBA markets probed (a moneyline, a spread and a total):
+- `feesEnabled: true`, `feeType: "zero_fees"`;
+- `feeSchedule: {rate: 0, takerOnly: true, exponent: 1}`;
+- `makerBaseFee` and `takerBaseFee` are 1000, and the CLOB's `/fee-rate`
+  says `base_fee: 1000`.
+
+The schedule's rate is 0, so these markets charge no fee today. Fees are
+switched on and the schedule can change. So the fee is read from each
+market's own schedule at the time, never assumed.
+
+### The price a follower can pay
+
+| Market | Best bid | Best ask | Midpoint | Gamma outcome price | Price history, last point |
+|---|---|---|---|---|---|
+| Kings vs. Pelicans (Kings) | 0.31 | 0.32 | 0.315 | 0.315 | 0.315 |
+| Pelicans −6.5 | 0.49 | 0.50 | 0.495 | 0.495 | 0.495 |
+| O/U 235.5 (Over) | 0.48 | 0.49 | 0.485 | 0.485 | 0.485 |
+
+- **Every price Radar records today is the midpoint.** That covers Gamma's
+  outcome price, which the Radar record's follow price uses, and the CLOB
+  price history, which the grade's follow and close use.
+- A follower buys at the ask, half a cent above the midpoint on these
+  1-cent-spread markets, with about 57,000 to 98,000 shares at the best ask.
+- The CLOB's `/price` names sides from the book's side: `side=BUY` answered
+  the best bid and `side=SELL` the best ask. The order book (`/book`) is
+  unambiguous, so the record reads the ask from there.
+- No historical ask is available. A historical grade therefore adds a cost
+  allowance to the midpoint. Prospective records take the real ask from the
+  book when a card is published.
+
+## Open, for the registration
+
+- The minimum number of covered pregame bets in 90 days (decision 3).
+- The processing cap in pages, and the observed-behaviour test for
+  "high-frequency — not followable" (decision 7). Candidates for the test:
+  - position changes a day, counting a position's first buy and its exits,
+    not its fills;
+  - the share of markets traded on both sides;
+  - median holding time.
+- The historical cost allowance over the midpoint, and the fee formula
+  applied to each market's schedule.
+- The prospective test: its window or sample, its criteria and its stopping
+  rule, fixed before it starts.
