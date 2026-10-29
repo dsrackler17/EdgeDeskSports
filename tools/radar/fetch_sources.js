@@ -205,6 +205,43 @@ function check(label, ok, detail) {
     console.log('HOLDERS v2 parsed ' + hv2.length + ' with avg price ' + hv2.filter((h) => h.avg_price != null).length + ' · v1 parsed ' + hv1.length);
   }
 
+  /* 7. polymarket_sync's own forms (the every-10-minutes job), each once:
+     how many holders one call returns and how they page, and how big an
+     open-events call for one league is with and without a time window */
+  if (target) {
+    for (const lim of [100, 500]) {
+      const hb = await ask('sync holders limit ' + lim, 'holders', { condition: target.condition_id, include_pnl: true, limit: lim });
+      const pg = hb.ok ? R.page(hb.data) : { rows: [] };
+      console.log('SYNC HOLDERS limit ' + lim + ' status ' + hb.status + ' decision ' + hb.decision + ' per side ' + JSON.stringify(pg.rows.map((g) => (g.holders || []).length))
+        + ' has_more ' + pg.has_more + ' next_cursor ' + JSON.stringify(pg.next_cursor) + (hb.reason ? ' reason ' + String(hb.reason).slice(0, 200) : ''));
+      if (hb.ok && pg.next_cursor) {
+        const hc = await ask('sync holders next page (cursor)', 'holders', { condition: target.condition_id, include_pnl: true, limit: lim, cursor: pg.next_cursor });
+        const pc = hc.ok ? R.page(hc.data) : { rows: [] };
+        console.log('SYNC HOLDERS cursor page status ' + hc.status + ' per side ' + JSON.stringify(pc.rows.map((g) => (g.holders || []).length)) + ' has_more ' + pc.has_more);
+      }
+    }
+  }
+  const iso = (t) => new Date(t).toISOString();
+  const nowMs = now * 1000;
+  for (const lg of ['nba', 'nfl']) {
+    const L = leagues.find((x) => x.sport === lg);
+    if (!L) continue;
+    const sid = String(L.series || '').split(',')[0];
+    const forms = [['as asked', { series_id: sid, closed: false, limit: 100 }],
+      ['end date window', { series_id: sid, closed: false, end_date_min: iso(nowMs - 6 * 3600e3), end_date_max: iso(nowMs + 60 * 3600e3), limit: 100 }],
+      ['start date window', { series_id: sid, closed: false, start_date_min: iso(nowMs - 30 * 86400e3), limit: 100 }]];
+    for (const [name, params] of forms) {
+      const r = await gw.get('events', params);
+      const evs = r.ok ? R.page(r.data).rows : [];
+      const starts = evs.map((e) => R.ms(e.startTime || e.start_time)).filter((t) => t != null).sort((a, b) => a - b);
+      const inWin = starts.filter((t) => t >= nowMs - 6 * 3600e3 && t <= nowMs + 60 * 3600e3).length;
+      const bytes = r.data == null ? 0 : Buffer.byteLength(JSON.stringify(r.data));
+      console.log('SYNC EVENTS ' + lg + ' ' + name + ' ' + r.url + ' status ' + r.status + ' decision ' + r.decision + ' events ' + evs.length + ' bytes ' + bytes
+        + ' markets ' + evs.reduce((a, e) => a + (e.markets || []).length, 0) + ' starts ' + (starts.length ? iso(starts[0]) + '..' + iso(starts[starts.length - 1]) : '-')
+        + ' in [now-6h, now+60h] ' + inWin + ' endDates ' + JSON.stringify(evs.slice(0, 4).map((e) => [e.startTime, e.endDate, e.startDate])));
+    }
+  }
+
   fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify({ ran_at: new Date().toISOString(), run: process.env.GITHUB_RUN_ID || null, results, gateway: gw.stats() }, null, 1));
   console.log('\nGATEWAY ' + JSON.stringify(gw.stats()));
   console.log(failed ? 'FAILED radar sources — ' + failed + ' check(s) failed' : 'ALL GREEN radar sources');
