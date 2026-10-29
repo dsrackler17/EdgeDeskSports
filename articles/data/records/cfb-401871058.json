@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-28T23:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1930,88 +1930,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "165jeef16rs1mt",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Kennesaw State contain Middle Tennessee’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Middle Tennessee, and its own breakdown accounts for about 1.3 of the 6.0 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 6,
-      "toward": "Middle Tennessee",
-      "other": "Kennesaw State"
-    },
-    "supporting": [
-      "When Middle Tennessee has the ball (pass protection against the pass rush): Middle Tennessee’s offense has allowed a sack on 3.1% of its dropbacks, and Kennesaw State’s defense sacks the quarterback on 2.3% of opponent dropbacks (FBS average 5.7%).",
-      "When Kennesaw State has the ball (big plays on the ground): Kennesaw State’s offense turns 2.8% of its runs into explosive gains, and Middle Tennessee’s defense gives up explosive gains on 6.3% of opponent runs (FBS average 6.5%).",
-      "When Middle Tennessee has the ball (big plays on the ground): Middle Tennessee’s offense turns 11.3% of its runs into explosive gains, and Kennesaw State’s defense gives up explosive gains on 3.7% of opponent runs (FBS average 6.5%).",
-      "When Kennesaw State has the ball (big plays through the air): Kennesaw State’s offense turns 6.8% of its pass plays into explosive gains, and Middle Tennessee’s defense gives up explosive gains on 9.7% of opponent pass plays (FBS average 10.2%)."
-    ],
-    "contradicting": [
-      "When Middle Tennessee has the ball (third down): Middle Tennessee’s offense converts 21.8% of its third downs, and Kennesaw State’s defense allows opponents to convert 41.2% of their third downs (FBS average 39.5%).",
-      "When Kennesaw State has the ball (pass protection against the pass rush): Kennesaw State’s offense has allowed a sack on 2.8% of its dropbacks, and Middle Tennessee’s defense sacks the quarterback on 3.1% of opponent dropbacks (FBS average 5.7%).",
-      "When Middle Tennessee has the ball (big plays through the air): Middle Tennessee’s offense turns 7.7% of its pass plays into explosive gains, and Kennesaw State’s defense gives up explosive gains on 11.8% of opponent pass plays (FBS average 10.2%).",
-      "EdgeDesk’s position-group ratings put Kennesaw State’s run defense No. 53 nationally and Middle Tennessee’s No. 132."
-    ],
-    "quarterbacks": [
-      "Roman Gagliano has completed 128 of 218 passes (58.7%) for 1,439 yards, 6.6 yards per attempt, 12 touchdowns and 2 interceptions in seven games for Middle Tennessee, and has been sacked on 7 of 225 dropbacks.",
-      "Rickie Collins has completed 145 of 214 passes (67.8%) for 1,426 yards, 6.7 yards per attempt, 4 touchdowns and 5 interceptions in seven games for Kennesaw State, and has been sacked on 6 of 220 dropbacks.",
-      "Landon Varnes has completed 15 of 22 passes (68.2%) for 154 yards, 7.0 yards per attempt, no touchdowns and no interceptions in two games for Kennesaw State, and has been sacked on 2 of 24 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Middle Tennessee’s offense has to keep winning on long runs: it turns 11.3% of its runs into explosive gains, and Kennesaw State’s defense gives up explosive gains on 3.7% of opponent runs.",
-        "Middle Tennessee’s defense has to slow Kennesaw State in the pass-rush matchup — Kennesaw State’s offense has allowed a sack on 2.8% of its dropbacks.",
-        "Middle Tennessee’s offense has to hold its own on third down against a defense that allows opponents to convert 41.2% of their third downs.",
-        "Middle Tennessee’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.1% of its dropbacks, and Kennesaw State’s defense sacks the quarterback on 2.3% of opponent dropbacks."
-      ],
-      "market": [
-        "Kennesaw State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.8% of its dropbacks, and Middle Tennessee’s defense sacks the quarterback on 3.1% of opponent dropbacks.",
-        "Kennesaw State’s defense has to come out ahead on third down: it allows opponents to convert 41.2% of their third downs, against an offense that converts 21.8% of its third downs.",
-        "Kennesaw State’s defense has to come out ahead on long runs: it gives up explosive gains on 3.7% of opponent runs, against an offense that turns 11.3% of its runs into explosive gains."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Middle Tennessee.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Middle Tennessee) and sack rate (Middle Tennessee); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-28T18:55:38.252Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-28T16:18:01.565Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-28T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-28T20:14:07.027Z"
+    "at": "2026-10-29T00:49:03.363Z"
   }
 }
