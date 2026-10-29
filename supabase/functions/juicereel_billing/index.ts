@@ -19,9 +19,14 @@
 //                               off: nobody can start a Juice Reel checkout
 //                               operators: only billing operators (the live test)
 //                               on: every signed-in reader
-//    JUICE_REEL_PRODUCT_IDS     optional: comma-separated Juice Reel subscription
-//                               product ids that open EdgeDesk. Empty: every
-//                               product the application's owner sells does
+//    (no product setting)       WHAT EACH JUICE REEL PRODUCT OPENS is mapped in
+//                               the database, billing_juicereel_products: the
+//                               terminal or Bet Checker. A product not mapped
+//                               opens nothing (Deploy Juice Reel billing →
+//                               set_product). JUICE_REEL_PRODUCT_IDS, the old
+//                               allow-list under which an empty list opened
+//                               every product, is no longer read; while it is
+//                               set the function reports it as missing
 //    JUICE_REEL_BILLING_SCOPES  optional, default subscribers.read
 //    JUICE_REEL_BILLING_REDIRECT_URI  optional, default
 //                               <SITE_URL>/oauth/juicereel-subscribe.html
@@ -62,7 +67,7 @@
 // tokens are used for two reads and dropped. No token, code, verifier or
 // secret is ever logged or returned.
 
-const BUILD = 'juicereel_billing-2026-10-29-1';
+const BUILD = 'juicereel_billing-2026-10-29-2';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -100,7 +105,7 @@ function config() {
     api: (env('JUICE_REEL_API_URL') || 'https://external-api.juicereel.com').replace(/\/+$/, ''),
     redirectUri: env('JUICE_REEL_BILLING_REDIRECT_URI') || site + '/oauth/juicereel-subscribe.html',
     scopes: (function () { const s = list(env('JUICE_REEL_BILLING_SCOPES') || 'subscribers.read'); return s.filter((x, i) => s.indexOf(x) === i); })(),
-    productIds: list(env('JUICE_REEL_PRODUCT_IDS')),
+    legacyProductIds: !!env('JUICE_REEL_PRODUCT_IDS').trim(),
     mode: MODES.indexOf(mode) >= 0 ? mode : 'off',
     modeRaw: mode,
     site,
@@ -115,6 +120,7 @@ function missing(c) {
   if (!c.webhookSecret) m.push('JUICE_REEL_WEBHOOK_SECRET');
   if (!/^https:\/\//.test(c.redirectUri) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(c.redirectUri)) m.push('JUICE_REEL_BILLING_REDIRECT_URI (must be https)');
   if (MODES.indexOf(c.modeRaw) < 0) m.push('JUICE_REEL_CHECKOUT (off | operators | on; read as off)');
+  if (c.legacyProductIds) m.push('JUICE_REEL_PRODUCT_IDS (no longer read: map each product with set_product, then remove this secret)');
   return m;
 }
 
@@ -311,13 +317,11 @@ function subscriptionsIn(body, nowMs) {
   }
   return out.sort((a, b) => (b.active === true) - (a.active === true) || String(b.expires_at || '').localeCompare(String(a.expires_at || '')));
 }
-function productAllowed(c, s) {
-  if (!c.productIds.length) return true;
-  return !!(s && s.product_id && c.productIds.indexOf(s.product_id) >= 0);
-}
-// the state to record for a positive answer, or null (nothing positive to say)
+// the state to record for a positive answer, or null (nothing positive to say).
+// Every product is recorded: what it opens (the terminal, Bet Checker or, not
+// mapped, nothing) is the database's to decide (billing_jr_project)
 function grantFrom(c, s, nowMs) {
-  if (!s || s.active !== true || !productAllowed(c, s)) return null;
+  if (!s || s.active !== true) return null;
   if (s.expires_at && Date.parse(s.expires_at) <= nowMs) return null;
   return {
     active: true,
@@ -381,6 +385,12 @@ const MESSAGES = {
   JR_CODE_INVALID: 'Juice Reel\'s sign-in code had expired or was already used. If you paid, use "I bought EdgeDesk on Juice Reel" to link your Juice Reel account. Do not pay again.',
   JR_ACCOUNT_IN_USE: 'That Juice Reel account already opens a different EdgeDesk account. Sign in to that account, or email support@edgedesksports.com to move it.',
   JR_CONTRACT: 'Juice Reel answered in a way EdgeDesk did not expect. Your payment is safe. Email support@edgedesksports.com with the reference below.',
+};
+// what a buyer is told when Juice Reel's purchase opened something other than
+// the terminal (the page shows it as it is)
+const OUTCOME_MESSAGES = {
+  bet_checker: 'Your Juice Reel purchase is Bet Checker. It opens edgedesksports.com/bet-checker/, where your bets are graded; the full research terminal is a separate plan.',
+  product_not_mapped: 'Juice Reel shows a purchase that does not open EdgeDesk, or that EdgeDesk has not been set up for yet. Your payment is safe: do not pay again. EdgeDesk has been alerted; email support@edgedesksports.com with the reference below.',
 };
 function refuse(code, status, extra) {
   return json(Object.assign({ ok: false, reason: code, message: MESSAGES[code] || 'Something went wrong.' }, extra || {}), status);
@@ -500,39 +510,51 @@ async function actComplete(c, db, user, body) {
     return refuse('JR_ACCOUNT_IN_USE', 409, { ref });
   }
 
-  // Is this buyer subscribed? Their own answer first (subscriber status, with
-  // the token Juice Reel just issued), then the owner's list, then whatever a
-  // webhook already said. Only a POSITIVE answer is written here: a "not yet"
-  // a second after paying must not outrank the purchase event on its way.
+  // What has this buyer bought? Their own answer first (subscriber status, with
+  // the token Juice Reel just issued), then, when that did not open the
+  // terminal, the owner's list: the status answer carries ONE subscription, and
+  // a buyer may hold more (Bet Checker, then the terminal). Every subscription
+  // found is recorded, and the database keeps the one that opens the most
+  // (billing_jr_record_state). Only a POSITIVE answer is written here: a "not
+  // yet" a second after paying must not outrank the purchase event on its way.
   const nowMs = Date.now();
-  let grant = null, how = null;
+  let grants = 0, how = null, rec = null;
+  const record = async (x) => {
+    const g = grantFrom(c, x, nowMs);
+    if (!g) return;
+    const r = await recordState(db, jrId, g, kind, null, null);
+    grants++; if (r && r.recorded) rec = r;
+  };
   if (c.scopes.indexOf('subscribers.read') >= 0) {
     const st = await jr(c, 'GET', '/oauth2/subscribers/status', { bearer: access });
     if (st.status >= 200 && st.status < 300 && st.body) {
-      const best = subscriptionsIn(st.body, nowMs).find((x) => (!x.jr_user_id || x.jr_user_id === jrId) && grantFrom(c, x, nowMs));
-      grant = best ? grantFrom(c, best, nowMs) : null;
+      for (const x of subscriptionsIn(st.body, nowMs)) { if (!x.jr_user_id || x.jr_user_id === jrId) await record(x); }
       how = 'status';
     } else {
       log('info', 'subscriber status unavailable', { ref, status: st.status });
     }
   }
-  if (!grant) {
+  let after = await db.rpc('billing_jr_status', { p_user: user.id });
+  if (!(after && after.access && after.access.has_access)) {
     const o = await ownerSubscribers(c, nowMs, jrId);
-    const mine = o.list.filter((x) => x.jr_user_id === jrId).map((x) => grantFrom(c, x, nowMs)).filter(Boolean)
-      .sort((a, b) => String(b.expires_at).localeCompare(String(a.expires_at)))[0];
-    if (mine) { grant = mine; how = 'owner_list'; }
+    const before = grants;
+    for (const x of o.list) { if (x.jr_user_id === jrId) await record(x); }
+    if (grants > before) how = how ? how + '+owner_list' : 'owner_list';
     else if (!o.ok) log('info', 'owner list unavailable', { ref, code: o.code, status: o.status });
+    if (!grants) await db.rpc('billing_jr_project', { p_user: user.id });   // a webhook may already have said
+    after = await db.rpc('billing_jr_status', { p_user: user.id });
   }
-  let rec = null;
-  if (grant) rec = await recordState(db, jrId, grant, kind, null, null);
-  else await db.rpc('billing_jr_project', { p_user: user.id });   // a webhook may already have said
-  const after = await db.rpc('billing_jr_status', { p_user: user.id });
-  const has = !!(after && after.access && after.access.has_access);
-  const outcome = has ? 'active' : (grant ? 'other' : (kind === 'checkout' ? 'pending' : 'not_subscribed'));
+  const acc = (after && after.access) || {};
+  const opens = after && after.juicereel ? after.juicereel.opens : null;
+  const outcome = acc.has_access ? 'active'
+    : grants && opens === 'bet_checker' && acc.bet_checker_paid ? 'bet_checker'
+    : grants && opens === 'nothing' ? 'product_not_mapped'
+    : grants ? 'other' : (kind === 'checkout' ? 'pending' : 'not_subscribed');
   await db.rpc('billing_jr_session_finish', { p_state_hash: stateHash, p_outcome: outcome });
   log('info', 'return completed', { ref, user: user.id, kind, outcome, how, linked: linked.linked,
     projection: rec && rec.projection && rec.projection.reason });
   return json({ ok: true, kind, outcome, ref, display_name: display, linked: linked.linked,
+    message: OUTCOME_MESSAGES[outcome] || null,
     projection: rec && rec.projection ? rec.projection.reason : null, access: after && after.access });
 }
 
@@ -560,7 +582,6 @@ async function webhook(c, db, req) {
   let outcome;
   if (['SUBSCRIPTION_PURCHASED', 'SUBSCRIPTION_RENEWED', 'SUBSCRIPTION_CANCELLED', 'SUBSCRIPTION_EXPIRED'].indexOf(type) < 0) outcome = 'ignored_type';
   else if (!s.jr_user_id) outcome = 'no_subscriber';
-  else if (!productAllowed(c, s)) outcome = 'product_not_sold_here';
   else {
     let g;
     // Juice Reel's own "no access now" decides, whatever the event's type or expiresDate (a refund)
@@ -606,10 +627,12 @@ async function reconcile(c, db, forced) {
 // The credentials, checked the way the code exchange will use them: a revoke
 // of a random token EdgeDesk made (200 for any token with good client
 // credentials, 401 invalid_client otherwise), then one page of the owner's
-// subscriber list (does owner access reach it?). Nothing is stored.
-async function check(c) {
+// subscriber list (does owner access reach it?). Nothing is stored. Then what
+// each product opens (the database's map), and the product ids on that page of
+// Juice Reel's list, so the owner can find theirs to map.
+async function check(c, db) {
   const out = { ok: true, mode: c.mode, missing: missing(c), redirect_uri: c.redirectUri, scopes: c.scopes,
-    products: c.productIds.length || 'every product' };
+    products: (await db.rpc('billing_jr_products', {}).catch(() => null)) || null };
   if (!c.clientId || !c.clientSecret) return json(Object.assign(out, { accepted: false, code: 'not_configured' }));
   const rv = await jr(c, 'POST', '/oauth2/revoke', { form: { token: b64url(randomBytes(32)), token_type_hint: 'access_token' } });
   out.accepted = rv.status >= 200 && rv.status < 300;
@@ -618,6 +641,12 @@ async function check(c) {
   const l = await jr(c, 'GET', '/oauth2/subscribers/current', {});
   out.owner_list = l.status >= 200 && l.status < 300 ? 'yes' : (l.status === 401 || l.status === 403 ? 'refused' : 'unavailable');
   out.owner_list_status = l.status;
+  const items = l.body && (Array.isArray(l.body) ? l.body : ['subscribers', 'data', 'items', 'results'].map((k) => l.body[k]).find(Array.isArray));
+  if (Array.isArray(items)) {
+    const by = {};
+    items.forEach((x) => { const s = subscriptionOf(x, Date.now()); if (s && s.product_id) { const b = by[s.product_id] || (by[s.product_id] = { product_id: s.product_id, entries: 0, paid_now: 0 }); b.entries++; if (s.active === true) b.paid_now++; } });
+    out.seen_on_juice_reel = Object.keys(by).sort().map((k) => by[k]);
+  }
   return json(out);
 }
 
@@ -630,7 +659,7 @@ async function handle(req) {
     // what a deploy probe and the setup workflow read: names and booleans only
     return json({ ok: true, mode: c.mode, configured: { client_id: !!c.clientId, client_secret: !!c.clientSecret,
       webhook_secret: !!c.webhookSecret, redirect_uri: c.redirectUri, scopes: c.scopes,
-      products: c.productIds.length || 'every product' }, missing: missing(c), ready: missing(c).length === 0 });
+      products: 'mapped in the database (set_product; see check)' }, missing: missing(c), ready: missing(c).length === 0 });
   }
   if (req.method !== 'POST') return json({ ok: false, reason: 'method' }, 405);
   if (!c.url || !c.serviceKey) return refuse('not_configured', 503);
@@ -648,7 +677,7 @@ async function handle(req) {
     if (action === 'check') {
       const allowed = isServiceCaller(c, req) || (await isOperator(c, await getUser(c, req)));
       if (!allowed) return json({ ok: false, reason: 'operators_only' }, 403);
-      return await check(c);
+      return await check(c, db);
     }
     const user = await getUser(c, req);
     if (!user) return json({ ok: false, reason: 'signed_out', message: 'Sign in to EdgeDesk first.' }, 401);

@@ -118,6 +118,7 @@ jobs:
         env:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          ODDS_GATEWAY_SECRET: ${{ secrets.ODDS_GATEWAY_SECRET }}
         run: node --max-old-space-size=8192 football/props/factory/run.js backfill --network --offline --from "${{ github.event.inputs.backfill_from }}" --max-games 25 $LEAGUE_ARG
 
       - name: Project upcoming games for the terminal

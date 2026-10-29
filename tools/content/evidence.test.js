@@ -124,6 +124,42 @@ chk('S … and is HELD for review, not ready (six outside reports to confirm; su
 chk('S 1 it gives the projection WITH football evidence', passed(OMP.rep, 'football_evidence') && OMP.rep.evidence_record.filter((r) => /VERIFIED_DATA|OFFICIAL_REPORT|RATING|REPORTED/.test(r.verification)).length >= 15);
 chk('S 2 it discusses recent quarterback performance for both teams', passed(OMP.rep, 'qb_discussed') && /Chambliss has completed 103 of 146/.test(OMB) && /Curtis has completed/.test(OMB) && /Berlowitz has completed/.test(OMB) && /last two games/.test(OMB));
 chk('S 3 it addresses the material injuries: Curtis’s knee and status, Lacy’s shoulder and status', passed(OMP.rep, 'injuries_addressed') && /bruised knee/.test(OMB) && /lists quarterback Jared Curtis as probable/.test(OMB) && /Lacy as questionable/.test(OMB) && /shoulder/.test(OMB));
+/* 2026-10-29 (Kansas State at Colorado, week 9): a weekly-preview capsule whose quarterback line
+   led with an input conflict printed no other official listing, so a second quarterback listed
+   OUT went unmentioned and the gate (rightly) blocked the preview. "Jordan Example" is invented. */
+chk('S 3b a weekly-preview capsule names every quarterback on the availability report, not only the one in a conflict', (() => {
+  const g = JSON.parse(JSON.stringify(OM));
+  const base = g.evidence.claims.find((c) => c.key === 'report:home:Jared Curtis');
+  g.evidence.claims.push(Object.assign({}, base, { id: 'c_test_second_qb_out', key: 'report:home:Jordan Example', subject: 'Jordan Example', status: 'OUT',
+    values: Object.assign({}, base.values, { status: 'OUT' }), label: 'Jordan Example (official availability)',
+    text: base.text.replace('Jared Curtis as probable', 'Jordan Example as out'), short: 'Jordan Example is listed as out on the SEC availability report',
+    cite: { nums: [], words: ['Example', 'report|lists|listed|out'], all: true } }));
+  const o = oppFor([g], 'upset_watch');
+  const a = CE.draft(o, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
+  const r = CE.validate(a, o, { publisher: SR, now: NOW, teamLists: TL });
+  const body = a.sections.map((s) => s.body).join('\n');
+  return /Jordan Example is listed as out/.test(body) && /Jared Curtis/.test(body) && (r.failed || []).indexOf('injuries_addressed') < 0;
+})());
+/* 2026-10-29 (Utah at Cincinnati, week 9): a claim's citation numbers were rounded apart from its
+   printed text (0.5185 printed 51.8% but was cited as 51.9), so an article quoting the claim word for
+   word failed numbers_in_evidence. Every citation number must be one the claim itself prints. */
+/* scanned on packets this code builds now; the frozen week-6 fixture keeps the citations its own
+   build wrote (it is a record, not regenerated), and S 3d proves the rounding without live data */
+chk('S 3c every claim the current build makes cites only numbers its own text prints (today’s research)', (() => {
+  const bad = [];
+  const scan = (packets) => packets.forEach((pk) => (pk.claims || []).forEach((c) => {
+    const printed = (String(c.text) + ' ' + String(c.short || '')).match(/\d+(?:\.\d+)?/g) || [];
+    ((c.cite && c.cite.nums) || []).forEach((n) => { if (!printed.some((t) => +t === +n)) bad.push(pk.game_id + ' ' + c.key + ' cites ' + n); });
+  }));
+  const live = require(path.join(__dirname, 'evidence.js')).build({ now: Date.now() });
+  scan([].concat(Object.values((live.cfb || {}).packets || {}), Object.values((live.nfl || {}).packets || {})));
+  return bad.length === 0 || (console.log('   ' + bad.slice(0, 5).join('\n   ')), false);
+})());
+/* the same defect, deterministically: a percentage on a rounding boundary is cited as printed */
+chk('S 3d a percentage on a rounding boundary (0.5185) is cited exactly as the claim prints it', (() => {
+  const t = FE.writer.metricText, n = FE.writer.metricNum;
+  return !!(t && n) && t('early_down_success', 0.5185) === '51.8%' && n('early_down_success', 0.5185) === '51.8' && n('def_early_down_allowed', 0.4405) === t('def_early_down_allowed', 0.4405).replace('%', '');
+})());
 chk('S 4 it states the evidence against EdgeDesk’s number', passed(OMP.rep, 'contrary_evidence') && /The case for Ole Miss, and against EdgeDesk’s number/.test(OMB));
 chk('S 5 it never invents why the model likes a team', passed(OMP.rep, 'causal_supported') && /mechanics, not football reasons/.test(OMB));
 chk('S 6 it does not treat the unexplained gap as an edge', passed(OMP.rep, 'unexplained_disclosed') && passed(OMP.rep, 'no_edge_language') && /not an edge/.test(OMB));
@@ -307,6 +343,48 @@ section('N a player is not a team');
   chk('N a conference claim is judged on the player’s own team: Kansas is not in the SEC', d.status === 'fail' && /SEC with Kansas/.test(d.detail), d);
   const e = gate('Isaiah Marshall is among the most efficient passers in the Big 12.', 'conference_claims');
   chk('N ...and Kansas is in the Big 12', e.status === 'pass', e);
+}
+
+section('R a claim and its citation round the same way');
+/* 2026-10-29: the Utah–Cincinnati matchup piece was BLOCKED, on main and in
+   the live check below, for "not in the evidence: 51.8, 44, 42.6". Utah's
+   early-down success is 0.5185 and Cincinnati's allowed rate 0.4405. The
+   claim's text rounded with toFixed (51.8%, 44.0%: 0.5185 × 100 is stored as
+   51.849999…) and its citation with EdgeDesk's rounding (51.9, 44.1), so the
+   sentence never cited the claim it was. Both now round half away from zero. */
+{
+  const unit = (off, def) => ({ performance: { offense_detail: { used: off }, defense_detail: { used: def } } });
+  const pk = FE.buildCfb({ game: { game: { id: 'r1', home: 'Cincinnati', away: 'Utah' } }, keys: { home: 'cin', away: 'uta' },
+    metrics: { away: unit([{ id: 'early_down_success', raw: 0.5185, league: 0.4264, n_obs: 314 }], []), home: unit([], [{ id: 'def_early_down_allowed', raw: 0.4405, league: 0.4264, n_obs: 300 }]) } }, { now: NOW });
+  const c = pk.claims.find((x) => x.key === 'pair:early_downs:away');
+  chk('R a percentage is printed as EdgeDesk rounds it: 0.5185 is 51.9%, 0.4405 is 44.1%', !!c && /51\.9%/.test(c.text) && /44\.1%/.test(c.text) && /51\.9%/.test(c.short) && /44\.1%/.test(c.short), c && c.text);
+  chk('R … so the claim’s own sentence cites it', !!c && FE.citedClaims(pk, c.text).some((x) => x.id === c.id), c && c.cite);
+}
+
+section('K every quarterback on the report');
+/* 2026-10-29: the Week 9 upset watch was BLOCKED, on main and in the live
+   check below, for "Kansas State at Colorado: not mentioned — Avery Johnson
+   is listed as out". Kansas State's report listed Jacob Knuth, the starter
+   EdgeDesk's model expects, as doubtful (an input conflict) and Avery Johnson
+   as out. A weekly-preview capsule stated a side's conflict and then no other
+   report line for that side (without a conflict, only the first). It now
+   states what the gate requires of a game: every conflict and every
+   quarterback on a report. Here Vanderbilt's report, beside the Curtis
+   conflict, lists a stand-in third quarterback out. */
+{
+  const ev = JSON.parse(JSON.stringify(FE.trim(OM.evidence)));
+  const curtis = ev.claims.find((c) => c.key === 'report:home:Jared Curtis');
+  ev.claims.push(Object.assign({}, curtis, { id: 'c_k_third_qb', key: 'report:home:Sam Thirdstring', subject: 'Sam Thirdstring', label: 'Sam Thirdstring (official availability)',
+    text: 'Vanderbilt’s initial SEC availability report (published Oct. 7) lists quarterback Sam Thirdstring as out.', short: 'Sam Thirdstring is listed as out on the SEC availability report',
+    cite: { nums: [], words: ['Thirdstring', 'report|lists|listed|out'], all: true }, values: { status: 'OUT', position: 'QB' }, status: 'OUT' }));
+  const o = oppFor(slateGames.map((p) => Object.assign({}, p, { evidence: p === OM ? ev : FE.trim(p.evidence) })), 'weekly_preview');
+  const a = CE.draft(o, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
+  const r = revalidate(o, a);
+  const vu = a.sections.find((s) => s.key === 'games').body.split('\n### ').find((b) => /Ole Miss at Vanderbilt/.test(b)) || '';
+  const ia = r.checks.find((c) => c.id === 'injuries_addressed' && c.game === '401856718') || {};
+  chk('K the capsule states the conflict and the other quarterback the report lists out', /The model expects Blaze Berlowitz, but Jared Curtis is listed as probable/.test(vu) && /Sam Thirdstring is listed as out/.test(vu), vu.split('\n\n').filter((l) => /Quarterbacks/.test(l)));
+  chk('K … so the game passes injuries_addressed', ia.status === 'pass', ia);
+  chk('K … and the slate still passes every hard check', r.ok, r.failed);
 }
 
 section('V generalises');

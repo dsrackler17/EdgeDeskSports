@@ -3273,7 +3273,9 @@
   function r1(x) { return rnd(x, 1); }
   function r2(x) { return rnd(x, 2); }
   function f1(x) { return rnd(x, 1).toFixed(1); }
-  function pct1(p) { return (p * 100).toFixed(1) + '%'; }
+  /* the same rounding as a citation's metricNum: toFixed printed 0.5185 as
+     51.8% (0.5185 * 100 is 51.849999…) against a cited 51.9 */
+  function pct1(p) { return f1(p * 100) + '%'; }
   function pct0(p) { return Math.round(p * 100) + '%'; }
   function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
   function ts(x) { var t = x ? Date.parse(x) : NaN; return isFinite(t) ? t : null; }
@@ -3397,7 +3399,12 @@
   };
 
   function metricText(id, v) { var m = METRICS[id]; return m.unit === 'pct' ? pct1(v) : f1(v); }
-  function metricNum(id, v) { var m = METRICS[id]; return m.unit === 'pct' ? f1(v * 100) : f1(v); }
+  /* the number an article must quote to cite a claim: the claim's own printed
+     figure, from the same formatter. Rounding it separately (rnd against
+     toFixed) disagreed on values at x.x5 — 0.5185 printed 51.8% but was cited
+     as 51.9 — and the gate then refused an article that quoted the claim word
+     for word. */
+  function metricNum(id, v) { return metricText(id, v).replace(/%$/, ''); }
   /* goodness of a value for its own team, relative to the league: +0.3 = 30% better */
   function goodness(id, v, lg) {
     var m = METRICS[id]; if (!isNum(v) || !isNum(lg) || lg === 0) return null;
@@ -4073,10 +4080,12 @@
         var lines = others.map(function (r) { return -r.home_margin; }).sort(function (a, b) { return a - b; });
         var medLine = lines.length % 2 ? lines[(lines.length - 1) / 2] : (lines[lines.length / 2 - 1] + lines[lines.length / 2]) / 2;
         var say = function (hl) { var fv = hl < -0.05 ? gm.home : (hl > 0.05 ? gm.away : null); return fv ? fv + ' by ' + f1(Math.abs(hl)) : 'a pick’em'; };
+        /* cite a number the text prints: a pick'em is printed in words, so its 0.0 is never in the copy */
+        var printed = lines.filter(function (hl) { return Math.abs(hl) > 0.05; });
         out.push(claim({ topic: 'model', key: 'other_models', label: 'EdgeDesk’s other models',
           text: 'EdgeDesk’s ' + numWord(others.length) + ' other, independently built models have ' + sentenceList(lines.map(say)) + '.',
           short: 'EdgeDesk’s other models: ' + sentenceList(lines.map(say)),
-          cite: { nums: [f1(Math.abs(lines[0]))], words: ['other', 'models'] }, values: { median_home_line: r1(medLine), models: others.map(function (r) { return { label: r.label, text: r.text }; }) },
+          cite: { nums: printed.length ? [f1(Math.abs(printed[0]))] : [], words: ['other', 'models'] }, values: { median_home_line: r1(medLine), models: others.map(function (r) { return { label: r.label, text: r.text }; }) },
           source: src, observed_at: A.terminal, verification: 'MODEL_OUTPUT' }));
       }
     }
@@ -5035,7 +5044,7 @@
     gate: gate, citedClaims: citedClaims, sentences: sentences,
     validateFact: validateFact, factsFor: factsFor, researchPlan: researchPlan, forWriter: forWriter,
     sourceOf: sourceOf, trim: trim, articleSummary: articleSummary, firstPartyGate: firstPartyGate,
-    writer: { pick: pick, qbSummary: qbSummary, materialInjuries: materialInjuries, byId: byIdOf, lastName: lastName, poss: poss, dayMonth: dayMonth, sentenceList: sentenceList, f1: f1 },
+    writer: { pick: pick, qbSummary: qbSummary, materialInjuries: materialInjuries, byId: byIdOf, lastName: lastName, poss: poss, dayMonth: dayMonth, sentenceList: sentenceList, f1: f1, metricText: metricText, metricNum: metricNum },
     util: { hash: hash }
   };
 });
@@ -8010,19 +8019,34 @@
     var pro = pickClaims(S.pro, per, used), con = pickClaims(S.con, per, used);
     if (pro.length) lines.push('**' + S.proLabel + ':** ' + pro.map(function (c) { return sent(cap(shortOf(c))); }).join(' '));
     if (con.length) lines.push('**' + S.conLabel + ':** ' + con.map(function (c) { return sent(cap(shortOf(c))); }).join(' '));
-    var qb = [];
+    var qb = [], told = {};
     ['away', 'home'].forEach(function (side) {
       var Q = qbOf(p, side);
       var out = Q.status.filter(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status === 'OUT'; }).map(function (c) { return c.subject; });
       var s0 = Q.season.filter(function (c) { return out.indexOf(c.subject) < 0; })[0];
       if (s0) qb.push(sent(cap(shortOf(s0))));
-      if (Q.conflict[0]) qb.push(sent(cap(Q.conflict[0].short)));
-      else Q.status.filter(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status !== 'NOT_LISTED'; }).slice(0, 1).forEach(function (st) { qb.push(sent(cap(shortOf(st)))); });
+      /* every conflict in EdgeDesk's own inputs and every quarterback on an
+         availability report, whatever the status: what the gate's
+         injuries_addressed requires (mustAddress). Week 9 2026 listed Kansas
+         State's Jacob Knuth doubtful (a conflict) and Avery Johnson out; the
+         capsule said only the conflict. A conflict already gives its own
+         quarterback's status, so his report line is not repeated */
+      var said = Q.conflict.map(function (c) { return c.subject; });
+      Q.conflict.forEach(function (c) { qb.push(sent(cap(shortOf(c)))); });
+      Q.status.filter(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status !== 'NOT_LISTED'; })
+        .concat(mustAddress(p).filter(function (c) { return c.team === p[side] && c.verification !== 'CONFLICTING'; }))
+        .forEach(function (st) { var k = st.subject || st.id; if (said.indexOf(k) < 0) { said.push(k); qb.push(sent(cap(shortOf(st)))); } });
+      if (Q.conflict[0]) { qb.push(sent(cap(Q.conflict[0].short))); told[Q.conflict[0].subject] = 1; }
+      else Q.status.filter(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status !== 'NOT_LISTED'; }).slice(0, 1).forEach(function (st) { qb.push(sent(cap(shortOf(st)))); told[st.subject] = 1; });
       if (!Q.conflict[0] && !Q.status.some(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status !== 'NOT_LISTED'; })) {
         var cont = Q.status.filter(function (c) { return c.values && c.values.contested; })[0];
         if (cont) qb.push(sent(cap(shortOf(cont))));
       }
     });
+    /* …and every other quarterback listing or input conflict the gate's injuries_addressed
+       requires (mustAddress): a conflict about one quarterback must not hide another listed out
+       (Kansas State at Colorado, 2026 week 9: Knuth's conflict hid Avery Johnson, out) */
+    mustAddress(p).forEach(function (c) { if (c.subject && told[c.subject]) return; told[c.subject] = 1; qb.push(sent(cap(shortOf(c)))); });
     if (qb.length) lines.push('**Quarterbacks:** ' + qb.join(' '));
     var inj = (fe() ? fe().writer.materialInjuries(p.evidence) : []).filter(function (c) { return c.topic === 'injury' && !(c.values && c.values.position === 'QB') && c.verification === 'OFFICIAL_REPORT' && (!opts.tight || c.status === 'DOUBTFUL' || /^report_out:/.test(c.key)); }).slice(0, opts.tight ? 1 : 2);
     if (inj.length) lines.push('**Availability:** ' + inj.map(function (c) { return sent(cap(shortOf(c))); }).join(' '));

@@ -21,6 +21,52 @@ Conflict resolutions in "Update branch" merges dropped whole entries again. Each
 - **Bug.** `run_now` graded only once, after the last wallet call. On build `.6` ([run 40916807612](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40916807612)) the wallet calls were still going after 77 minutes, at about 76 s a call, with many wallets needing several calls. GitHub stops a job at 6 hours. A job stopped there would have ended before its grade, so the site would have shown nothing from all those calls.
 - **Fix** (`.github/workflows/deploy-radar.yml`). A grade also runs after every 25 good wallet calls; it asks Polymarket nothing. The wallet calls stop after 5 hours, so the last grade runs well inside the 6-hour limit, and the 06:10 UTC schedule takes the wallets still due. A grade along the way that fails is a warning: the wallet calls go on, the last grade still runs, and the step ends red.
 - **Test.** The workflow step was run against a stand-in function and a throwaway PostgreSQL. With the job stopped by a time limit (scaled down to seconds), main's loop made 19 wallet calls and no grade; this one stopped the wallet calls at its limit and graded. 31 wallet calls graded after the 25th and at the end. A failed grade along the way went on and ended red. The 546 and three-in-a-row cases are unchanged, and at most one call was ever in flight.
+## 2026-10-29 — Props capture: the odds gateway refused the GitHub jobs' credential for 19 days, and said "deferred"
+
+**Why.** Every player-props capture since the odds gateway went live (2026-10-10 14:29Z) was refused with `unauthorized`. The capture filed the refusal as `NOT_RUN / GATEWAY_DEFERRED`, so the workflow stayed green, the boards read "deferred", and no prop has been priced since 2026-10-10.
+
+- **Cause.**
+  - `supabase/functions/odds_gateway` compares the bearer byte for byte with its own `SUPABASE_SERVICE_ROLE_KEY`.
+  - The repository secret `SB_SERVICE_ROLE` is a different string, though still a valid service-role key. In the same runs PostgREST accepts it for `rpc/odds_api_dashboard` (restricted to the service role) and for the props health record.
+  - `tools/collective/odds_doctor.js` already documents this failure for a key in the newer `sb_secret_` format.
+- **Fix (code).**
+  - The three steps that call the gateway now also send the gateway's own shared secret, `ODDS_GATEWAY_SECRET`. The client already sends it as `x-odds-gateway-secret`, and the gateway already accepts it. The steps are `player-props.yml` capture, the `props-factory.yml` backfill and the `cfb-lab.yml` alternates.
+  - `football/props/capture.js` now reports a refused credential as an **ERROR** (`GATEWAY_UNAUTHORIZED`), with a `::error::` naming the secret. It is not a deferral. It is still not a provider failure: no back-off, no failure count.
+  - The credential registry in `tools/games/builder.test.js` lists the new secret, with its reason.
+- **Fix (owner).** Code alone does not restore capture:
+  1. Set `ODDS_GATEWAY_SECRET` on Supabase (Edge Functions → Secrets).
+  2. Set the same value as a GitHub repository secret.
+
+  `docs/odds-api-incident-2026-10/INCIDENT.md` §9 step 4 now says so.
+- **Not changed.** The gateway's authorization check, budget, breaker and every other guard (AGENTS.md §3).
+  - Paid retrieval stays paused until the 2026-11-01 reset and the runbook's re-enable.
+  - Until then a working credential shows `PROVIDER_PAUSED` or a budget deferral, not prices.
+
+Tests: `football/props/pipeline.test.js`.
+- Against the old `capture.js`: `FAILED player props pipeline — 153 passed, 2 failed`. The run returned `["NOT_RUN","GATEWAY_DEFERRED","The odds gateway deferred the event index (unauthorized): no prop was requested."]`.
+- After the fix: 155 passed, 0 failed.
+- The `::error::` annotation prints the capture's error message, which first read only "odds gateway: unauthorized". It now names the secret and the runbook step. A third check failed on that (`155 passed, 1 failed`) and passes now: 156 passed, 0 failed.
+
+## 2026-10-29 — Content engine: the evidence gate refused two correct week-9 articles and passed an incomplete one, from two writer bugs
+
+**Why.** `tools/content/evidence.test.js` ("every article generated from today's research passes the gate") went red on `main` from data alone: 202 passed, 1 failed, at `c933dc468`, `adcb2b7f8` and `9957decf9`. Two articles were blocked, for two different reasons.
+
+- **A number the claim itself prints was "not in the evidence"** (Utah at Cincinnati, `numbers_in_evidence`: 51.8, 44, 42.6). The gate was wrong.
+  - A claim's printed figure and its citation number were rounded by two different functions: `pct1` (`toFixed`) for the text, `rnd` for `cite.nums`.
+  - They disagree at x.x5. For example, 0.5185 prints as 51.8% but was cited as 51.9.
+  - So an article quoting the claim word for word could not cite it, and the FBS average in the same sentence fell with it.
+  - Today's research had 71 such claims out of 4,260, across third down, red zone, explosive plays, run blocking, early downs, efficiency, protection and the metric-conflict claims. One more claim cited a pick'em's 0.0 while printing "a pick'em".
+  - Fix (`lib/football_evidence.js`): `metricNum` now derives from `metricText`, the same formatter the reader sees, so no printed number changes. `other_models` cites only a number it prints. All 4,260 claims are now consistent.
+- **A starting quarterback listed out went unmentioned** (Kansas State at Colorado, upset watch, `injuries_addressed`: "Avery Johnson is listed as out on the Big 12 availability report"). The gate was right; the writer was wrong.
+  - The weekly-preview capsule printed either a team's quarterback input conflict or its first official listing, never both. So the conflict about Jacob Knuth (doubtful) hid Avery Johnson (out).
+  - Fix (`lib/content_engine.js`, `capsuleEv`): the capsule also prints every other quarterback listing and input conflict that the gate requires (`mustAddress`), and never repeats a player it has already covered. The single-game writer already did this.
+- `supabase/functions/content_engine/index.ts` was regenerated with `node tools/content/inline.js` (its `--check` passes).
+
+Tests: `tools/content/evidence.test.js` gains S 3b (a second quarterback listed out is named, and the gate passes), S 3c (every claim the current build makes cites only numbers its text prints) and S 3d (0.5185 is cited exactly as printed).
+- Against `main`'s library logic: `FAIL | football evidence pipeline | 202 passed, 4 failed` (S 3b, S 3c, S 3d and the live check).
+- After: `206 passed, 0 failed`.
+- The frozen week-6 fixture keeps the citations its own build wrote: it is a record and is not rewritten.
+
 
 ## 2026-10-29 — Football situational intelligence (NFL + every FBS team): observed tendencies on the cards, four experimental volume models, SHADOW beside the existing models
 
@@ -109,12 +155,13 @@ The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads wi
 - **run_now** (`.github/workflows/deploy-radar.yml`) carries on after a failed wallet call, since the function now sets that wallet aside. It stops after three failures in a row, always runs the grade, reports how many wallets are set aside, and ends red if any call failed.
 - **Tests.** `tools/radar/sync_fn.test.js`: a wallet whose run died 2 minutes ago is set aside and the next wallet read; after 15 minutes it is read again, marked before the work starts, and its mark cleared when done; after three dead runs it is read only once a day. On the old code: 61 passed, 3 failed. On the fix: 64 passed, 0 failed. The workflow step was run against a stand-in function and a throwaway PostgreSQL: one HTTP 546 among the calls went on, graded and ended red; three in a row stopped, graded and ended red; a normal run ended green; at most one call was ever in flight.
 
+## 2026-10-29 — Content engine: two Week 9 articles the gate blocked on main now pass it (the writer, not the gate, was wrong)
 
-## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
-
-- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
-- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
-- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
+- **What failed.** `node tools/content/evidence.test.js`, section "L live", on `main` since the Week 9 data landed. Two of today's generated articles were BLOCKED by the editorial gate: the upset watch (`injuries_addressed`) and the Utah at Cincinnati matchup piece (`numbers_in_evidence`). The gate was right both times, so it is unchanged.
+- **Rounding** (`lib/football_evidence.js`). Utah's early-down success is 0.5185. The claim's text printed it with `toFixed` as 51.8% (0.5185 × 100 is stored as 51.849999…), but its citation used EdgeDesk's rounding, half away from zero: 51.9. So the sentence did not cite its own claim, and 51.8, 44 and 42.6 counted as numbers from nowhere. `pct1` now rounds as `f1` and the citation do.
+- **Quarterbacks** (`lib/content_engine.js`, the weekly-preview capsule). Kansas State's Big 12 report listed Jacob Knuth doubtful (the starter EdgeDesk's model expects, an input conflict) and Avery Johnson out. When a side had a conflict, the capsule wrote it and dropped every other report line for that side; otherwise it kept only the first. It now writes every conflict and every quarterback on a report, which is what the gate requires (`mustAddress`, as the upset list and the gap paragraph already did). A conflict's own quarterback is not repeated.
+- **Tests** (`tools/content/evidence.test.js`). Section R builds a packet from Utah's and Cincinnati's early-down rates and requires 51.9%/44.1% and a self-citing sentence. Section K adds a second quarterback listed out beside the Vanderbilt conflict in the frozen Week 6 slate, and requires the capsule to say so and the slate to pass. On the old code: 202 passed, 6 failed (R ×2, K ×3, L). On the fix: 208 passed, 0 failed.
+- `supabase/functions/content_engine/index.ts` carries the two libraries verbatim and was regenerated with `node tools/content/inline.js`. The editorial page (`admin/content/index.html`) loads both with new stamps, so a browser does not keep the old writer. The committed `football/evidence/packets.json` is left to its own build, the scheduled editorial job.
 
 ## 2026-10-29 — Juice Reel billing reads Juice Reel's confirmed answers: isCurrentlySubscribed decides
 

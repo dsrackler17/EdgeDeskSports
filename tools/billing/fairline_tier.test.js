@@ -366,8 +366,10 @@ chk('the server core knows three tiers, and a Fairline lookup key is black, a Be
       return { u, sub: d.subscription.id };
     })();
     chk('(a live Fairline plan on the row)', w.row(J.u.id).tier === 'black' && fl(J.u.id) && !terminal(J.u.id));
-    sql1("insert into public.billing_juicereel_links (user_id, jr_user_id) values (" + lit(J.u.id) + ", 'jr_42');" +
-      " insert into public.billing_juicereel_subscribers (jr_user_id, active, expires_at, as_of, source) values ('jr_42', true, now() + interval '30 days', now(), 'test');");
+    // a Juice Reel purchase opens what its product is mapped to (a product not mapped opens nothing): here the terminal
+    sql1("select public.billing_jr_set_product('prod_jr_terminal', 'terminal', 'test');" +
+      " insert into public.billing_juicereel_links (user_id, jr_user_id) values (" + lit(J.u.id) + ", 'jr_42');" +
+      " insert into public.billing_juicereel_subscribers (jr_user_id, active, expires_at, product_id, as_of, source) values ('jr_42', true, now() + interval '30 days', 'prod_jr_terminal', now(), 'test');");
     const jr = JSON.parse(w.db.service('select public.billing_jr_project(' + lit(J.u.id) + ');'));
     chk('the terminal bought on Juice Reel is given (it includes Fairline)', jr.applied === true && terminal(J.u.id) && fl(J.u.id), jr);
     const both = alerts('juicereel_and_stripe_both_paid').filter((a) => a.user_id === J.u.id);
