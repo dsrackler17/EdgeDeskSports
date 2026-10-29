@@ -481,6 +481,10 @@ follows' and the close's), so a bet placed days early is two short reads.
 Each wallet is marked before its work and the mark cleared after, so a wallet
 whose run dies (out of compute) is set aside for 15 minutes, and after three
 such runs read once a day: it never blocks the pool behind it.
+`run_now` also grades after every 25 good wallet calls (a grade asks
+Polymarket nothing), so the site shows what is synced so far, and it stops the
+wallet calls after 5 hours, so the last grade runs inside GitHub's 6-hour job
+limit.
 By hand instead, in order. Each SQL file ends in a report whose rows should
 read `ok`.
 

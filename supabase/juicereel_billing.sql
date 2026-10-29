@@ -22,14 +22,27 @@
 --                                  reported before the buyer links (bought on
 --                                  Juice Reel's marketplace) is waiting for them
 --   billing_juicereel_events       every webhook delivery, recorded once by id
+--   billing_juicereel_products     what each Juice Reel product opens: the
+--                                  terminal or Bet Checker. A product not in it
+--                                  opens NOTHING (the seller may sell other
+--                                  things on Juice Reel, and a cheaper product
+--                                  must never open the terminal by default)
 --
 -- THE RULES IT ENFORCES (billing_jr_project, the only writer):
---   * A Juice Reel row is price_id = 'juicereel', with no Stripe ids. It grants
---     the Research Terminal under THE access rule unchanged: 'active' until
---     current_period_end (Juice Reel's expiry). An unknown price is the
---     terminal (billing_tier_of_price), so nothing in billing_hardening.sql
---     changes. Juice Reel sells only the terminal: never Bet Checker (red) or
---     Fairline (black), which the terminal includes.
+--   * A Juice Reel row has no Stripe ids. Its price_id is what the bought
+--     product is mapped to: 'juicereel' (the terminal: an unknown price under
+--     billing_tier_of_price, so blue) or 'juicereel_bet_checker' (Bet Checker:
+--     red, by the constant in billing_tier_of_price). Either grants under THE
+--     access rule unchanged: in good standing until current_period_end (Juice
+--     Reel's expiry). A product mapped to nothing grants nothing, and a
+--     linked reader who paid for one is raised for a human
+--     (juicereel_product_not_mapped). Bet Checker is never written while the
+--     access rule does not know its price (it would read as the terminal).
+--     Juice Reel never sells Fairline (black).
+--   * A HIGHER TIER IS KEPT. A buyer holding the terminal and Bet Checker keeps
+--     the terminal; Bet Checker, or a product nobody mapped, never replaces a
+--     terminal still paid for, and Bet Checker never replaces any plan in good
+--     standing (every one of them includes it).
 --   * A LIVE STRIPE PLAN THE TERMINAL REPLACES IS RAISED. The tiers that are not
 --     the terminal — Bet Checker (red) and Fairline (black) — do not pass the
 --     access rule, so a Juice Reel buyer whose row holds one in good standing
@@ -124,17 +137,29 @@ create table if not exists public.billing_juicereel_reconcile_state (
 );
 insert into public.billing_juicereel_reconcile_state (id) values (1) on conflict (id) do nothing;
 
+-- What each Juice Reel subscription product opens: blue = the terminal, red =
+-- Bet Checker. Written only by billing_jr_set_product() (Deploy Juice Reel
+-- billing → set_product). A product not listed opens nothing.
+create table if not exists public.billing_juicereel_products (
+  product_id  text        primary key check (length(product_id) between 1 and 200),
+  tier        text        not null check (tier in ('blue', 'red')),
+  note        text,
+  set_at      timestamptz not null default now()
+);
+
 -- Nothing here is client-readable. The edge function uses the service role.
 alter table public.billing_juicereel_sessions        enable row level security;
 alter table public.billing_juicereel_links           enable row level security;
 alter table public.billing_juicereel_subscribers     enable row level security;
 alter table public.billing_juicereel_events          enable row level security;
 alter table public.billing_juicereel_reconcile_state enable row level security;
+alter table public.billing_juicereel_products        enable row level security;
 revoke all on public.billing_juicereel_sessions        from public, anon, authenticated;
 revoke all on public.billing_juicereel_links           from public, anon, authenticated;
 revoke all on public.billing_juicereel_subscribers     from public, anon, authenticated;
 revoke all on public.billing_juicereel_events          from public, anon, authenticated;
 revoke all on public.billing_juicereel_reconcile_state from public, anon, authenticated;
+revoke all on public.billing_juicereel_products        from public, anon, authenticated;
 
 comment on table public.billing_juicereel_sessions is
   'Juice Reel checkouts and account links started from EdgeDesk: SHA-256 of the OAuth state, the reader who started it, '
@@ -280,9 +305,21 @@ end;
 $$;
 
 -- ── 4. THE ONLY WRITER OF JUICE REEL STATE INTO subscriptions ───────────────
+-- What a Juice Reel product opens: 'blue' (the terminal), 'red' (Bet Checker)
+-- or NULL (not mapped: nothing).
+create or replace function public.billing_jr_tier_of_product(p_product text)
+returns text
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select p.tier from public.billing_juicereel_products p where p.product_id = p_product;
+$$;
+
 -- Under the subscriptions row lock. Refusals are answers, not errors:
 -- 'not_linked', 'no_state', 'comp', 'other_entitlement', 'nothing_to_grant',
--- 'not_ours'.
+-- 'product_not_mapped', 'not_ours'.
 create or replace function public.billing_jr_project(p_user uuid)
 returns jsonb
 language plpgsql
@@ -294,8 +331,12 @@ declare
   j public.billing_juicereel_subscribers%rowtype;
   e public.subscriptions%rowtype;
   v_now    timestamptz := now();
+  v_tier   text;
+  v_price  text;
+  v_paid   boolean;
   v_grants boolean;
   v_status text;
+  v_ours   boolean;
   v_ex_ent boolean;
   v_takeover_stripe text;
 begin
@@ -304,20 +345,42 @@ begin
   select * into j from public.billing_juicereel_subscribers where jr_user_id = l.jr_user_id;
   if not found then return jsonb_build_object('applied', false, 'reason', 'no_state'); end if;
 
+  -- WHAT THE PRODUCT OPENS: the terminal, Bet Checker, or (not mapped)
+  -- nothing. Bet Checker only once the access rule knows its price: unknown to
+  -- it, juicereel_bet_checker would read as the whole terminal.
+  v_tier := public.billing_jr_tier_of_product(j.product_id);
+  if v_tier = 'red' and public.billing_tier_of_price('juicereel_bet_checker') is distinct from 'red' then
+    v_tier := null;
+  end if;
+  v_price := case v_tier when 'blue' then 'juicereel' when 'red' then 'juicereel_bet_checker' end;
   -- Paid on Juice Reel: active, with an expiry still ahead. Never open-ended:
   -- a Juice Reel row without an expiry would grant forever under the rule.
-  v_grants := j.active and j.expires_at is not null and j.expires_at > v_now;
+  v_paid := j.active and j.expires_at is not null and j.expires_at > v_now;
+  v_grants := v_paid and v_price is not null;
   v_status := case when v_grants then 'active' else 'canceled' end;
+  if v_paid and v_price is null then
+    perform public.billing_raise_alert('juicereel_product_not_mapped', 'jr:' || l.jr_user_id || ':' || coalesce(j.product_id, 'none'),
+      p_user, null, null, null,
+      jsonb_build_object('jr_user_id', l.jr_user_id, 'product_id', j.product_id, 'expires_at', j.expires_at,
+                         'bet_checker_rule_installed', public.billing_tier_of_price('juicereel_bet_checker') = 'red',
+                         'note', 'paid on Juice Reel for a product EdgeDesk has not mapped, so nothing was opened: '
+                                 || 'map it with Deploy Juice Reel billing → set_product if EdgeDesk sells it'));
+  elsif v_grants then
+    perform public.billing_clear_alerts(p_user, array['juicereel_product_not_mapped'], 'the product was mapped');
+  end if;
 
   select * into e from public.subscriptions where user_id = p_user for update;
   if not found then
-    if not v_grants then return jsonb_build_object('applied', false, 'reason', 'nothing_to_grant'); end if;
+    if not v_grants then
+      return jsonb_build_object('applied', false, 'reason', case when v_paid then 'product_not_mapped' else 'nothing_to_grant' end,
+                                'product_id', j.product_id, 'tier', v_tier);
+    end if;
     begin
       insert into public.subscriptions
         (user_id, status, price_id, current_period_end, cancel_at_period_end, sync_source, created_at, updated_at)
-      values (p_user, 'active', 'juicereel', j.expires_at, j.cancelled, 'juicereel', v_now, v_now);
-      return jsonb_build_object('applied', true, 'reason', 'created', 'access_before', false,
-        'access_after', public.billing_row_grants_access('active', 'juicereel', j.expires_at, v_now));
+      values (p_user, 'active', v_price, j.expires_at, j.cancelled, 'juicereel', v_now, v_now);
+      return jsonb_build_object('applied', true, 'reason', 'created', 'tier', v_tier, 'access_before', false,
+        'access_after', public.billing_row_grants_access('active', v_price, j.expires_at, v_now));
     exception when unique_violation then
       select * into e from public.subscriptions where user_id = p_user for update;
     end;
@@ -328,12 +391,25 @@ begin
     return jsonb_build_object('applied', false, 'reason', 'comp', 'access_before', true, 'access_after', true);
   end if;
 
+  v_ours := coalesce(e.price_id, '') in ('juicereel', 'juicereel_bet_checker');
   v_ex_ent := public.billing_row_grants_access(e.status, e.price_id, e.current_period_end, v_now);
 
-  if coalesce(e.price_id, '') <> 'juicereel' then
+  if not v_ours then
+    -- BET CHECKER NEVER TAKES A PLAN AWAY: every plan in good standing (Stripe
+    -- Bet Checker, Fairline or the terminal, a comp, a trial) already includes it
+    if v_tier = 'red' and public.billing_row_in_good_standing(e.status, e.price_id, e.current_period_end, v_now) then
+      if v_grants and e.stripe_subscription_id is not null then
+        perform public.billing_raise_alert('juicereel_and_stripe_both_paid', 'user:' || p_user, p_user,
+          e.stripe_customer_id, e.stripe_subscription_id, null,
+          jsonb_build_object('juicereel_expires_at', j.expires_at, 'juicereel_tier', 'red', 'stripe_status', e.status,
+                             'note', 'paying for Bet Checker through Juice Reel AND a Stripe plan that includes it; the Stripe row is kept'));
+      end if;
+      return jsonb_build_object('applied', false, 'reason', 'other_entitlement', 'tier', v_tier,
+                                'access_before', v_ex_ent, 'access_after', v_ex_ent);
+    end if;
     -- JUICE REEL ONLY REVOKES WHAT JUICE REEL GRANTED, and never overwrites an
     -- entitlement it did not grant. A hand-granted trial (comp_trial) gives way
-    -- to a purchase, as it does to a Stripe one.
+    -- to a purchase of the terminal, as it does to a Stripe one.
     if v_ex_ent and coalesce(e.price_id, '') <> 'comp_trial' then
       if v_grants and e.stripe_subscription_id is not null then
         perform public.billing_raise_alert('juicereel_and_stripe_both_paid', 'user:' || p_user, p_user,
@@ -345,7 +421,8 @@ begin
                                 'access_before', true, 'access_after', true);
     end if;
     if not v_grants then
-      return jsonb_build_object('applied', false, 'reason', 'not_ours', 'access_before', v_ex_ent, 'access_after', v_ex_ent);
+      return jsonb_build_object('applied', false, 'reason', case when v_paid then 'product_not_mapped' else 'not_ours' end,
+                                'product_id', j.product_id, 'access_before', v_ex_ent, 'access_after', v_ex_ent);
     end if;
     -- taking over a row: an ended Stripe subscription's id must not stay on it
     -- (the Stripe sweep re-checks rows that carry one, and would end this one)
@@ -364,9 +441,11 @@ begin
     end if;
   end if;
 
+  -- a Juice Reel row that no longer grants keeps the price it had
+  v_price := case when v_grants then v_price else e.price_id end;
   update public.subscriptions set
     status                 = v_status,
-    price_id               = 'juicereel',
+    price_id               = v_price,
     current_period_end     = j.expires_at,
     cancel_at_period_end   = j.cancelled,
     stripe_subscription_id = case when v_takeover_stripe is not null then null else stripe_subscription_id end,
@@ -374,13 +453,14 @@ begin
     updated_at             = v_now
   where user_id = p_user;
 
-  return jsonb_build_object('applied', true, 'reason', 'updated',
-    'changed', v_status is distinct from e.status or e.price_id is distinct from 'juicereel'
+  return jsonb_build_object('applied', true, 'reason', case when v_paid and not v_grants then 'product_not_mapped' else 'updated' end,
+    'tier', v_tier,
+    'changed', v_status is distinct from e.status or e.price_id is distinct from v_price
                or j.expires_at is distinct from e.current_period_end or j.cancelled is distinct from e.cancel_at_period_end,
-    'took_over_from', case when coalesce(e.price_id, '') <> 'juicereel' then coalesce(e.price_id, 'none') end,
+    'took_over_from', case when not v_ours then coalesce(e.price_id, 'none') end,
     'cleared_stripe_subscription', v_takeover_stripe,
     'access_before', v_ex_ent,
-    'access_after', public.billing_row_grants_access(v_status, 'juicereel', j.expires_at, v_now));
+    'access_after', public.billing_row_grants_access(v_status, v_price, j.expires_at, v_now));
 end;
 $$;
 
@@ -408,7 +488,7 @@ declare
   v_asof timestamptz := coalesce(p_as_of, now());
   v_exp timestamptz; v_prod text; v_active boolean := coalesce(p_active, false);
   v_canc boolean := coalesce(p_cancelled, false); v_prov boolean := coalesce(p_provisional, false);
-  v_user uuid; v_proj jsonb;
+  v_user uuid; v_proj jsonb; v_rank_new int; v_rank_old int;
 begin
   if p_jr_user is null or length(p_jr_user) not between 1 and 200 then
     return jsonb_build_object('recorded', false, 'reason', 'bad_input');
@@ -428,9 +508,16 @@ begin
        and (v_exp is null or x.expires_at > v_exp) then
       v_exp := x.expires_at; v_prov := false; v_prod := coalesce(v_prod, x.product_id);
     end if;
-    -- ONE PRODUCT ENDING DOES NOT END ANOTHER STILL PAID FOR
+    -- ONE PRODUCT ENDING DOES NOT END ANOTHER STILL PAID FOR, AND A LOWER TIER
+    -- (Bet Checker, or a product nobody mapped) NEVER REPLACES A HIGHER ONE
+    -- STILL PAID FOR, whatever its expiry: a buyer of both keeps the terminal.
+    -- A higher tier replaces a lower one; between equals, the later expiry.
+    v_rank_new := case public.billing_jr_tier_of_product(p_product) when 'blue' then 2 when 'red' then 1 else 0 end;
+    v_rank_old := case public.billing_jr_tier_of_product(x.product_id) when 'blue' then 2 when 'red' then 1 else 0 end;
     if x.active and x.expires_at > now() and x.product_id is not null and p_product is not null
-       and p_product <> x.product_id and (not v_active or v_canc or v_exp <= x.expires_at) then
+       and p_product <> x.product_id
+       and (not v_active or v_rank_new < v_rank_old
+            or (v_rank_new = v_rank_old and (v_canc or v_exp <= x.expires_at))) then
       update public.billing_juicereel_subscribers set as_of = v_asof, last_event_id = coalesce(p_event_id, last_event_id),
              updated_at = now() where jr_user_id = p_jr_user;
       return jsonb_build_object('recorded', false, 'reason', 'other_product_still_paid');
@@ -506,7 +593,10 @@ begin
     'linked', l.user_id is not null,
     'display_name', l.jr_display_name,
     'juicereel', case when v_j then jsonb_build_object('active', j.active, 'expires_at', j.expires_at,
-                   'cancelled', j.cancelled, 'provisional', j.provisional, 'as_of', j.as_of) end,
+                   'cancelled', j.cancelled, 'provisional', j.provisional, 'as_of', j.as_of,
+                   'product_id', j.product_id,
+                   'opens', case public.billing_jr_tier_of_product(j.product_id) when 'blue' then 'terminal'
+                                 when 'red' then 'bet_checker' else 'nothing' end) end,
     'access', public.billing_access_for(p_user, now()));
 end;
 $$;
@@ -597,7 +687,8 @@ begin
     'webhooks_24h', (select count(*) from public.billing_juicereel_events where received_at > now() - interval '24 hours'),
     'last_webhook_at', (select max(received_at) from public.billing_juicereel_events),
     'reconcile', (select jsonb_build_object('last_run_at', last_run_at, 'last_result', last_result)
-                    from public.billing_juicereel_reconcile_state where id = 1));
+                    from public.billing_juicereel_reconcile_state where id = 1),
+    'products', public.billing_jr_products());
 end;
 $$;
 
@@ -617,10 +708,76 @@ begin
   if v_jr is null then return jsonb_build_object('ok', false, 'reason', 'not_linked'); end if;
   update public.subscriptions set status = 'canceled', current_period_end = least(current_period_end, now()),
          sync_source = 'juicereel_unlink', updated_at = now()
-   where user_id = p_user and price_id = 'juicereel';
+   where user_id = p_user and price_id in ('juicereel', 'juicereel_bet_checker');
   get diagnostics n = row_count;
   return jsonb_build_object('ok', true, 'jr_user_id', v_jr, 'access_ended', n = 1);
 end;
+$$;
+
+-- ── 9b. WHAT EACH PRODUCT OPENS (Deploy Juice Reel billing → set_product) ───
+-- p_tier: 'terminal', 'bet_checker' or 'none' (off the map: what it granted
+-- ends). Every linked buyer whose recorded purchase is this product is
+-- re-projected at once. Refused with an exception (the workflow's psql fails),
+-- never half done.
+create or replace function public.billing_jr_set_product(p_product text, p_tier text, p_note text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare v_id text := trim(coalesce(p_product, '')); v_tier text; v_was text; r record; n int := 0;
+begin
+  if length(v_id) not between 1 and 200 then
+    raise exception 'set_product: the Juice Reel product id is required';
+  end if;
+  v_tier := case lower(trim(coalesce(p_tier, ''))) when 'terminal' then 'blue' when 'bet_checker' then 'red' when 'none' then 'none' end;
+  if v_tier is null then
+    raise exception 'set_product: tier must be terminal, bet_checker or none (got %)', p_tier;
+  end if;
+  if v_tier = 'red' and public.billing_tier_of_price('juicereel_bet_checker') is distinct from 'red' then
+    raise exception 'set_product: the access rule does not know juicereel_bet_checker yet, so it would read a Bet Checker purchase as the whole terminal. Apply supabase/billing_hardening.sql first (Actions → Deploy billing → apply_sql), then map the product.';
+  end if;
+  select tier into v_was from public.billing_juicereel_products where product_id = v_id;
+  if v_tier = 'none' then
+    delete from public.billing_juicereel_products where product_id = v_id;
+  else
+    insert into public.billing_juicereel_products (product_id, tier, note, set_at)
+    values (v_id, v_tier, left(p_note, 200), now())
+    on conflict (product_id) do update set tier = excluded.tier, note = excluded.note, set_at = excluded.set_at;
+  end if;
+  for r in select l.user_id from public.billing_juicereel_subscribers s
+             join public.billing_juicereel_links l on l.jr_user_id = s.jr_user_id
+            where s.product_id = v_id loop
+    perform public.billing_jr_project(r.user_id);
+    n := n + 1;
+  end loop;
+  return jsonb_build_object('ok', true, 'product_id', v_id,
+    'opens', case v_tier when 'blue' then 'terminal' when 'red' then 'bet_checker' else 'nothing' end,
+    'was', case v_was when 'blue' then 'terminal' when 'red' then 'bet_checker' else 'nothing' end,
+    'reprojected', n);
+end;
+$$;
+
+-- The map, and the products bought on Juice Reel that are not on it (for check
+-- and the operator overview).
+create or replace function public.billing_jr_products()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select jsonb_build_object(
+    'terminal', coalesce((select jsonb_agg(product_id order by product_id) from public.billing_juicereel_products where tier = 'blue'), '[]'::jsonb),
+    'bet_checker', coalesce((select jsonb_agg(product_id order by product_id) from public.billing_juicereel_products where tier = 'red'), '[]'::jsonb),
+    'bet_checker_rule_installed', public.billing_tier_of_price('juicereel_bet_checker') = 'red',
+    'not_mapped', coalesce((select jsonb_agg(jsonb_build_object('product_id', q.product_id, 'buyers', q.buyers, 'paid_now', q.paid_now) order by q.product_id)
+                              from (select s.product_id, count(*) as buyers,
+                                           count(*) filter (where s.active and s.expires_at > now()) as paid_now
+                                      from public.billing_juicereel_subscribers s
+                                     where s.product_id is not null
+                                       and not exists (select 1 from public.billing_juicereel_products p where p.product_id = s.product_id)
+                                     group by s.product_id) q), '[]'::jsonb));
 $$;
 
 -- ── 10. GRANTS ──────────────────────────────────────────────────────────────
@@ -640,6 +797,9 @@ revoke all on function public.billing_jr_status(uuid) from public, anon, authent
 revoke all on function public.billing_jr_reconcile_admit(integer) from public, anon, authenticated;
 revoke all on function public.billing_jr_reconcile_done(jsonb) from public, anon, authenticated;
 revoke all on function public.billing_jr_reconcile_absent(text[]) from public, anon, authenticated;
+revoke all on function public.billing_jr_tier_of_product(text) from public, anon, authenticated;
+revoke all on function public.billing_jr_set_product(text, text, text) from public, anon, authenticated;
+revoke all on function public.billing_jr_products() from public, anon, authenticated;
 -- the operator doors: callable signed in, refused unless billing_is_admin()
 revoke all on function public.billing_admin_juicereel_overview() from public, anon;
 grant execute on function public.billing_admin_juicereel_overview() to authenticated;
@@ -655,9 +815,10 @@ begin
          || 'public.billing_jr_record_state(text, boolean, timestamptz, boolean, text, timestamptz, text, text, boolean), '
          || 'public.billing_jr_record_event(text, text, text, timestamptz, jsonb), public.billing_jr_event_outcome(text, text), '
          || 'public.billing_jr_status(uuid), public.billing_jr_reconcile_admit(integer), '
-         || 'public.billing_jr_reconcile_done(jsonb), public.billing_jr_reconcile_absent(text[]) to service_role';
+         || 'public.billing_jr_reconcile_done(jsonb), public.billing_jr_reconcile_absent(text[]), '
+         || 'public.billing_jr_tier_of_product(text), public.billing_jr_set_product(text, text, text), public.billing_jr_products() to service_role';
     execute 'grant select, insert, update, delete on public.billing_juicereel_sessions, public.billing_juicereel_links, '
-         || 'public.billing_juicereel_subscribers, public.billing_juicereel_events, public.billing_juicereel_reconcile_state to service_role';
+         || 'public.billing_juicereel_subscribers, public.billing_juicereel_events, public.billing_juicereel_reconcile_state, public.billing_juicereel_products to service_role';
   end if;
 end
 $g$;
@@ -666,8 +827,9 @@ $g$;
 select 1 as row, 'the Juice Reel billing tables exist with RLS on' as check,
        case when (select count(*) from pg_class where oid in ('public.billing_juicereel_sessions'::regclass,
                     'public.billing_juicereel_links'::regclass, 'public.billing_juicereel_subscribers'::regclass,
-                    'public.billing_juicereel_events'::regclass, 'public.billing_juicereel_reconcile_state'::regclass)
-                    and relrowsecurity) = 5
+                    'public.billing_juicereel_events'::regclass, 'public.billing_juicereel_reconcile_state'::regclass,
+                    'public.billing_juicereel_products'::regclass)
+                    and relrowsecurity) = 6
             then 'ok' else 'CHECK THIS' end as result
 union all select 2, 'no client role can read or write them, and no policy opens them',
        case when not exists (select 1 from information_schema.role_table_grants
@@ -681,7 +843,7 @@ union all select 3, 'no client role can call a billing_jr_* function (they write
                                 and (has_function_privilege('anon', p.oid, 'execute')
                                      or has_function_privilege('authenticated', p.oid, 'execute')))
              and (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-                   where n.nspname = 'public' and p.proname like 'billing\_jr\_%') = 14
+                   where n.nspname = 'public' and p.proname like 'billing\_jr\_%') = 17
             then 'ok' else 'CHECK THIS' end
 union all select 4, 'the operator functions are signed-in only and check billing_is_admin()',
        case when has_function_privilege('authenticated', 'public.billing_admin_juicereel_overview()', 'execute')
@@ -705,4 +867,15 @@ union all select 7, 'existing rows preserved',
        'ok (' || (select count(*) from public.subscriptions)::text || ' subscriptions, '
               || (select count(*) from public.billing_juicereel_links)::text || ' Juice Reel links, '
               || (select count(*) from public.billing_juicereel_subscribers)::text || ' Juice Reel buyers)'
+union all select 8, 'a Bet Checker row from Juice Reel never opens the terminal',
+       case when public.billing_tier_of_price('juicereel_bet_checker') is distinct from 'red'
+            then 'ok (not sellable yet: billing_hardening.sql does not know juicereel_bet_checker, so no product can be mapped to Bet Checker; Deploy billing → apply_sql first)'
+            when not public.billing_row_grants_access('active', 'juicereel_bet_checker', now() + interval '1 day', now())
+             and public.billing_row_in_good_standing('active', 'juicereel_bet_checker', now() + interval '1 day', now())
+            then 'ok' else 'CHECK THIS' end
+union all select 9, 'what each Juice Reel product opens (a product not mapped opens nothing)',
+       case when exists (select 1 from public.billing_juicereel_products)
+            then 'ok (' || (select count(*) from public.billing_juicereel_products where tier = 'blue')::text || ' to the terminal, '
+                        || (select count(*) from public.billing_juicereel_products where tier = 'red')::text || ' to Bet Checker)'
+            else 'NOT YET: no product is mapped, so a Juice Reel purchase opens nothing. Run Deploy Juice Reel billing → set_product' end
 order by row;

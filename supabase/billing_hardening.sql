@@ -150,7 +150,9 @@ $ptc$;
 alter table public.billing_price_tiers enable row level security;
 revoke all on public.billing_price_tiers from public, anon, authenticated;
 
--- The tier a price sells. Comps are the whole terminal. NULL: not known.
+-- The tier a price sells. Comps are the whole terminal. Bet Checker bought
+-- through Juice Reel is red (supabase/juicereel_billing.sql writes it): read
+-- as unknown it would be the terminal. NULL: not known.
 create or replace function public.billing_tier_of_price(p_price_id text)
 returns text
 language sql
@@ -161,6 +163,7 @@ as $$
   select case
     when p_price_id is null then null
     when p_price_id in ('owner_comp', 'comp_trial') then 'blue'
+    when p_price_id = 'juicereel_bet_checker' then 'red'
     else (select t.tier from public.billing_price_tiers t where t.price_id = p_price_id)
   end;
 $$;
