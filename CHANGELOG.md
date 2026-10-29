@@ -22,6 +22,7 @@
   - On the old code: 86 passed, 5 failed. The unmapped Bet Checker product, the picks package and a status answer naming no product each opened the terminal (`outcome: active`).
   - On the fix: 107 passed, 0 failed.
   - Expectations changed by design: a bare status answer that names no product now opens nothing alone, and opens with the owner's list. The documented webhook's example product is mapped, as an owner maps theirs.
+  - Fixture (`tools/billing/fairline_tier.test.js` § 7): its "terminal bought on Juice Reel" was a buyer state with no product id, which no longer represents a terminal purchase (inconsistent with the schema). It now names a product mapped to the terminal. 72 passed, 0 failed.
 - **Production, in order.**
   1. Deploy Juice Reel billing → `deploy`. From here no Juice Reel product opens anything until mapped.
   2. → `set_product` with your EdgeDesk product's id → `terminal`. `check` lists the ids.
