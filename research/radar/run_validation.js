@@ -36,6 +36,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const ROOT = path.join(__dirname, '..', '..');
 const R = require(path.join(ROOT, 'lib', 'edgedesk_radar.js'));
 const G = require(path.join(ROOT, 'lib', 'edgedesk_poly_gateway.js'));
@@ -56,6 +57,18 @@ function registration() {
   return { R: JSON.parse(raw), sha: h };
 }
 const LEAGUE_PREFIX = /^(nfl|cfb|ncaaf|college-football|nba|nhl|mlb)-/;
+/* every request the run makes, built in one place: tools/radar/fetch_sources.js
+   asks these same forms on the runner before the one look */
+const REQ = {
+  leaderboard: (order, offset, rules) => ({ category: 'SPORTS', timePeriod: rules.pool_period, orderBy: order, limit: 50, offset }),
+  activity: (wallet, fromMs, toMs, cursor) => ({ user: wallet, type: 'TRADE,REDEEM,SPLIT,MERGE', limit: 1000, sort_direction: 'ASC',
+    start: Math.floor(fromMs / 1000), end: Math.floor(toMs / 1000) - 1, cursor }),
+  /* Gamma answers a resolved market only when asked with closed=true (the
+     probe, radar-sources run 40811733314: 23 resolved markets asked without
+     it, none answered); only resolved markets can be graded */
+  markets: (conditionIds) => ({ condition_ids: conditionIds, closed: true, limit: 50 }),
+  prices: (token, fromMs, toMs) => ({ market: token, startTs: Math.floor(fromMs / 1000) - 900, endTs: Math.floor(toMs / 1000) + 60, fidelity: 1 })
+};
 
 /* ------------------------------------------------------------ the run */
 async function run(opts) {
@@ -68,10 +81,12 @@ async function run(opts) {
   fs.mkdirSync(path.join(out, 'raw'), { recursive: true });
   const manifest = [];
   let n = 0;
+  /* gzipped: one top wallet's 1,000-row activity page is about 0.9 MB
+     (radar-sources run 40811733314), and a run reads thousands */
   const keep = (label, url, data) => {
     const body = JSON.stringify(data);
-    const f = 'raw/' + String(++n).padStart(6, '0') + '_' + label + '.json';
-    fs.writeFileSync(path.join(out, f), body);
+    const f = 'raw/' + String(++n).padStart(6, '0') + '_' + label + '.json.gz';
+    fs.writeFileSync(path.join(out, f), zlib.gzipSync(body));
     manifest.push({ f, url, sha256: sha(body), bytes: body.length });
   };
   const gw = opts.gateway;
@@ -91,7 +106,7 @@ async function run(opts) {
   /* 1. the pool */
   let order = rules.pool_order, wallets = [];
   for (let off = 0; off < rules.pool_size; off += 50) {
-    const r = await get('leaderboard', 'leaderboard', { category: 'SPORTS', timePeriod: rules.pool_period, orderBy: order, limit: 50, offset: off });
+    const r = await get('leaderboard', 'leaderboard', REQ.leaderboard(order, off, rules));
     if (!r.ok && off === 0 && order === 'VOL') { order = 'PNL'; deviations.push('the leaderboard could not be ordered by volume (' + r.decision + '): the registered fallback, profit ordering, was used'); off -= 50; continue; }
     if (!r.ok) throw new Error('the leaderboard failed at offset ' + off + ': ' + r.decision + ' ' + (r.reason || ''));
     const rows = R.page(r.data).rows.map(R.leaderRow).filter(Boolean);
@@ -104,12 +119,12 @@ async function run(opts) {
 
   /* 2. activity */
   const acts = {}, trunc = {};
+  let walletsDone = 0;
   await pool({ items: wallets, width: 4 }, async (w) => {
     const rows = [];
     let cursor = null, pages = 0, ok = true;
     for (;;) {
-      const r = await get('activity', 'activity', { user: w.wallet, type: 'TRADE,REDEEM,SPLIT,MERGE', limit: 1000, sort_direction: 'ASC',
-        start: Math.floor(T0 / 1000), end: Math.floor(H1 / 1000) - 1, cursor });
+      const r = await get('activity', 'activity', REQ.activity(w.wallet, T0, H1, cursor));
       if (!r.ok) { ok = false; break; }
       pages++;
       const pg = R.page(r.data);
@@ -123,6 +138,7 @@ async function run(opts) {
       cursor = pg.next_cursor;
     }
     acts[w.wallet] = ok ? rows : null;
+    if (++walletsDone % 20 === 0) log('activity: ' + walletsDone + ' of ' + wallets.length + ' wallets read; truncated so far ' + Object.keys(trunc).length + '; requests ' + gw.stats().requests);
   });
   const failedWallets = wallets.filter((w) => acts[w.wallet] === null).map((w) => w.wallet);
   if (failedWallets.length) deviations.push(failedWallets.length + ' wallet(s) whose activity could not be read were left out: ' + failedWallets.slice(0, 10).join(', '));
@@ -133,7 +149,7 @@ async function run(opts) {
   const markets = {};
   const chunks = []; for (let i = 0; i < conds.length; i += 50) chunks.push(conds.slice(i, i + 50));
   await pool({ items: chunks, width: 3 }, async (c) => {
-    const r = await get('markets', 'markets', { condition_ids: c, limit: 50 });
+    const r = await get('markets', 'markets', REQ.markets(c));
     if (!r.ok) return;
     for (const raw of R.page(r.data).rows) { const m = R.marketRow(raw); if (m) markets[m.condition_id] = m; }
   });
@@ -148,7 +164,7 @@ async function run(opts) {
     for (const b of want) { const k = b.token_id; byTok[k] = byTok[k] || { from: b.entry_at, to: b.game_start_at }; byTok[k].from = Math.min(byTok[k].from, b.entry_at); }
     await pool({ items: Object.keys(byTok), width: 4 }, async (tok) => {
       const w = byTok[tok];
-      const r = await get('prices', 'prices_history', { market: tok, startTs: Math.floor(w.from / 1000) - 900, endTs: Math.floor(w.to / 1000) + 60, fidelity: 1 });
+      const r = await get('prices', 'prices_history', REQ.prices(tok, w.from, w.to));
       hist[tok] = r.ok ? R.priceHistory(r.data) : [];
     });
   }
@@ -260,4 +276,4 @@ async function main() {
   return 0;
 }
 if (require.main === module) main().then((c) => process.exit(c), (e) => { console.log('FAILED H-RADAR-01 run — ' + (e && e.stack || e)); process.exit(1); });
-module.exports = { run, registration, REGISTERED_SHA256 };
+module.exports = { run, registration, REGISTERED_SHA256, REQ, LEAGUE_PREFIX };

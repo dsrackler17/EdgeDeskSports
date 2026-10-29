@@ -30,7 +30,9 @@
    What Stripe itself does (the price, the trial, the product on its page) is
    tools/billing/verify_stripe_offer.js's to prove, against the live account.
 
-   Needs Playwright + Chromium (skips cleanly without). Run by hand:
+   Needs Playwright + Chromium (skips cleanly without; CI sets
+   CHECKOUT_FLOW_UI_REQUIRED, so there a missing browser fails). Runs in
+   funnel-tests.yml's browser job, and by hand:
      node tools/billing/checkout_flow.e2e.js
    =========================================================================== */
 'use strict';
@@ -150,7 +152,9 @@ async function startTrial(page) {
 (async function main() {
   let pw = null;
   try { pw = require('playwright'); } catch (_) { try { pw = require('/opt/node22/lib/node_modules/playwright'); } catch (e2) { pw = null; } }
-  if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
+  // SKIPPED is not passed: CI sets CHECKOUT_FLOW_UI_REQUIRED so a missing browser fails
+  const SKIP = process.env.CHECKOUT_FLOW_UI_REQUIRED === '1' ? 1 : 0;
+  if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(SKIP); }
   const site = await serve(siteHandler);
   const base = 'http://127.0.0.1:' + site.port;
   let browser = null;
@@ -158,7 +162,7 @@ async function startTrial(page) {
   catch (e) {
     const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
     if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe });
-    else { console.log('SKIPPED: no Chromium'); site.srv.close(); process.exit(0); }
+    else { console.log('SKIPPED: no Chromium'); site.srv.close(); process.exit(SKIP); }
   }
 
   try {
@@ -184,8 +188,11 @@ async function startTrial(page) {
       chk('  and the exact words shown, which say $49.99 and not $79.99', /\$49\.99 per month/.test(c.offer_text || '') && !/79\.99/.test(c.offer_text || ''));
       chk('  under the account that consented', c.user_id === UID && c.user_email === EMAIL);
       const to = state.stripe[0] || '';
-      chk('5 checkout opened the configured link', to.indexOf(LINK + '?') === 0, to);
-      chk('  carrying the account id and the email', new URL(to).searchParams.get('client_reference_id') === UID && new URL(to).searchParams.get('prefilled_email') === EMAIL, to);
+      /* a page that never leaves usually threw after the consent was written:
+         say what it threw, rather than only that nothing happened */
+      chk('5 checkout opened the configured link', to.indexOf(LINK + '?') === 0, { to, errors: errors.slice(0, 3) });
+      const q = to ? new URL(to).searchParams : null;
+      chk('  carrying the account id and the email', !!q && q.get('client_reference_id') === UID && q.get('prefilled_email') === EMAIL, to);
 
       await page.waitForURL(/\/app\.html/, { timeout: 30000 });
       chk('6 back from Stripe, the page waited for the row and opened the terminal', /\/app\.html/.test(page.url()), page.url());

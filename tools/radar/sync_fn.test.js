@@ -95,6 +95,9 @@ function historyFor(token, startTs, endTs) {
 const LIVE = { c: cid('live-ml'), start: NOW + 3 * H, tokens: [tok(cid('live-ml'), 0), tok(cid('live-ml'), 1)], slug: 'nfl-kc-lv-live' };
 const LIVE_TOT = { c: cid('live-tot'), start: NOW + 3 * H, tokens: [tok(cid('live-tot'), 0), tok(cid('live-tot'), 1)], slug: 'nfl-kc-lv-live' };
 const ORPHAN = { c: cid('orphan'), start: NOW + 5 * H, tokens: [tok(cid('orphan'), 0), tok(cid('orphan'), 1)], slug: 'nfl-ne-nyj-live' };
+/* an alternate total of the same game, at a line the board does not carry; and a game nine days out */
+const LIVE_ALT = { c: cid('live-alt'), start: NOW + 3 * H, tokens: [tok(cid('live-alt'), 0), tok(cid('live-alt'), 1)], slug: 'nfl-kc-lv-live' };
+const FAR = { c: cid('far'), start: NOW + 9 * DAY, tokens: [tok(cid('far'), 0), tok(cid('far'), 1)], slug: 'nfl-buf-mia-far' };
 const STARTED = { c: cid('started'), start: NOW - 20 * H, tokens: [tok(cid('started'), 0), tok(cid('started'), 1)], slug: 'nfl-den-sea-done', settle: ['1', '0'] };
 let scenario = {};
 const pmCalls = [], strays = [];
@@ -116,6 +119,8 @@ function polymarket(url) {
   }
   if (u.host === 'data-api.polymarket.com' && p === '/v2/holders') {
     const c = q('condition');
+    /* as the real one answers (radar-sources run 40812803914) */
+    if (q('include_pnl') === 'true' && +q('limit') > 100) return { status: 400, body: { error: 'limit must be at most 100 with include_pnl', code: 'invalid_request', parameter: 'limit', retryable: false } };
     if (c === LIVE.c) return ok({ data: [
       { token_id: LIVE.tokens[0], holders: [
         { proxy_wallet: W1, outcome_index: 0, amount: 1000, avg_price: 0.4, display_username_public: true, name: 'SharpAlice', pseudonym: 'Brisk-Fox', bio: 'never stored' },
@@ -127,17 +132,26 @@ function polymarket(url) {
   if (u.host === 'gamma-api.polymarket.com' && p === '/sports') return ok([{ id: 1, sport: 'nfl', series: '10187', tags: '1,450' }, { id: 2, sport: 'epl', series: '10188' }]);
   if (u.host === 'gamma-api.polymarket.com' && p === '/events') {
     if (q('series_id') !== '10187') return ok([]);
-    return ok([
-      { id: 'e-live', slug: LIVE.slug, title: 'Chiefs vs. Raiders', startTime: gt(LIVE.start), tags: [{ slug: 'nfl' }], markets: [
+    /* as the real one answers: a game event's endDate is its start, and end_date_min / end_date_max window on it (radar-sources run 40812803914) */
+    const all = [
+      { id: 'e-live', slug: LIVE.slug, title: 'Chiefs vs. Raiders', startTime: gt(LIVE.start), endDate: new Date(LIVE.start).toISOString(), tags: [{ slug: 'nfl' }], markets: [
         gammaMarket(LIVE, { outcomePrices: '["0.6", "0.4"]', events: undefined }),
-        gammaMarket(LIVE_TOT, { question: 'Chiefs vs. Raiders: O/U 47.5', outcomes: '["Over", "Under"]', sportsMarketType: 'totals', line: 47.5, outcomePrices: '["0.52", "0.48"]', events: undefined })] },
-      { id: 'e-orphan', slug: ORPHAN.slug, title: 'Patriots vs. Jets', startTime: gt(ORPHAN.start), tags: [{ slug: 'nfl' }], markets: [
-        gammaMarket(ORPHAN, { question: 'Patriots vs. Jets', outcomes: '["Patriots", "Jets"]', events: undefined })] }]);
+        gammaMarket(LIVE_TOT, { question: 'Chiefs vs. Raiders: O/U 47.5', outcomes: '["Over", "Under"]', sportsMarketType: 'totals', line: 47.5, outcomePrices: '["0.52", "0.48"]', events: undefined }),
+        gammaMarket(LIVE_ALT, { question: 'Chiefs vs. Raiders: O/U 50.5', outcomes: '["Over", "Under"]', sportsMarketType: 'totals', line: 50.5, outcomePrices: '["0.4", "0.6"]', events: undefined })] },
+      { id: 'e-orphan', slug: ORPHAN.slug, title: 'Patriots vs. Jets', startTime: gt(ORPHAN.start), endDate: new Date(ORPHAN.start).toISOString(), tags: [{ slug: 'nfl' }], markets: [
+        gammaMarket(ORPHAN, { question: 'Patriots vs. Jets', outcomes: '["Patriots", "Jets"]', events: undefined })] },
+      { id: 'e-far', slug: FAR.slug, title: 'Bills vs. Dolphins', startTime: gt(FAR.start), endDate: new Date(FAR.start).toISOString(), tags: [{ slug: 'nfl' }], markets: [
+        gammaMarket(FAR, { question: 'Bills vs. Dolphins', outcomes: '["Bills", "Dolphins"]', events: undefined })] }];
+    const lo = q('end_date_min') ? Date.parse(q('end_date_min')) : -Infinity, hi = q('end_date_max') ? Date.parse(q('end_date_max')) : Infinity;
+    const off = +(q('offset') || 0), lim = +(q('limit') || 100);
+    return ok(all.filter((e) => Date.parse(e.endDate) >= lo && Date.parse(e.endDate) <= hi).slice(off, off + lim));
   }
   if (u.host === 'gamma-api.polymarket.com' && p === '/markets') {
     const ids = u.searchParams.getAll('condition_ids');
     const all = PAST.concat([STARTED]).map((m) => gammaMarket(m)).concat([gammaMarket(EPL, { slug: 'epl-ars-che', sportsMarketType: 'moneyline', events: [{ id: 'epl', slug: 'epl-ars-che', tags: [{ slug: 'epl' }] }] })]);
-    return ok(all.filter((m) => ids.includes(m.conditionId)));
+    /* as the real Gamma does (radar-sources run 40811733314): a resolved market
+       only when asked with closed=true, an open one only without it */
+    return ok(all.filter((m) => ids.includes(m.conditionId) && m.closed === (q('closed') === 'true')));
   }
   if (u.host === 'clob.polymarket.com' && p === '/prices-history') return ok(historyFor(q('market'), +q('startTs'), +q('endTs')));
   strays.push(url);
@@ -210,6 +224,9 @@ let rest;
       && V(`select count(*) from public.poly_trades where condition_id = ${lit(EPL.c)}`) === '0');
     chk('wallets: every stored trade keeps its transaction hash', V("select count(*) from public.poly_trades where tx_hash !~ '^0x[0-9a-f]{64}$'") === '0');
     chk('wallets: the markets they traded are stored, resolutions with them', V('select count(*) from public.poly_markets where settle is not null') >= '60');
+    chk('wallets: Gamma is asked for resolved markets with closed=true, and for the rest without it (it answers each only so)',
+      pmCalls.slice(before).some((u) => /\/markets\?.*closed=true/.test(u)) && pmCalls.slice(before).some((u) => /\/markets\?.*closed=false/.test(u))
+      && V(`select count(*) from public.poly_markets where condition_id = ${lit(EPL.c)}`) === '1');
     const bets = J(`select * from public.poly_bets where wallet = ${lit(W1)} order by entry_at`);
     chk('wallets: 60 resolved bets graded once each', bets.length === 60, bets.length);
     const b0 = bets[0];
@@ -264,6 +281,14 @@ let rest;
     chk('tonight: the total\'s Over and Under too', JSON.parse(V(`select sides from public.poly_markets where condition_id = ${lit(LIVE_TOT.c)}`)).map((x) => x.sig_key).join() === 'k3,k4');
     chk('tonight: a game whose teams are not the board\'s nearby game stays pending, with its reason, and is warned about (it starts within 12 hours)',
       V(`select match_status || ':' || match_reason from public.poly_markets where condition_id = ${lit(ORPHAN.c)}`) === 'pending:team_unresolved' && tn.alerts.some((a) => a.code === 'unmapped_markets' && a.severity === 'WARNING'));
+    const evCalls = pmCalls.filter((u) => /gamma-api\.polymarket\.com\/events\?/.test(u)), hoCalls = pmCalls.filter((u) => /\/v2\/holders\?/.test(u));
+    chk('tonight: open events are asked in a window around the next games, a few a page (one unwindowed page of 100 NFL events was 48 MB)',
+      evCalls.length > 0 && evCalls.every((u) => /end_date_min=/.test(u) && /end_date_max=/.test(u) && +new URL('https://' + u).searchParams.get('limit') <= 10)
+      && V(`select count(*) from public.poly_markets where condition_id = ${lit(FAR.c)}`) === '0', evCalls);
+    chk('tonight: holders are asked 100 at most (Gamma refuses more with include_pnl)', hoCalls.length > 0 && hoCalls.every((u) => /[?&]limit=100(&|$)/.test(u)), hoCalls);
+    chk('tonight: holders only for markets at the board\'s own lines (the alternate total at 50.5 has no fair to compare with)',
+      V(`select event_id from public.poly_markets where condition_id = ${lit(LIVE_ALT.c)}`) === 'ev1' && !hoCalls.some((u) => u.indexOf(LIVE_ALT.c) >= 0)
+      && hoCalls.some((u) => u.indexOf(LIVE.c) >= 0) && hoCalls.some((u) => u.indexOf(LIVE_TOT.c) >= 0), hoCalls);
     chk('tonight: holders are stored for pool wallets only (the outsider is not)', V(`select count(*) from public.poly_holder_snapshots where condition_id = ${lit(LIVE.c)}`) === '3'
       && V(`select count(*) from public.poly_holder_snapshots where wallet = ${lit(OUTSIDER)}`) === '0');
     chk('tonight: a name is stored only when the wallet made it public; no bio', V(`select display_name || ':' || display_public from public.poly_wallets where wallet = ${lit(W1)}`) === 'SharpAlice:true'

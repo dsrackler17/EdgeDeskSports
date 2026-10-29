@@ -257,7 +257,9 @@ export const BUILD = "polymarket_sync@2026-10-29.1";
       event_slug: (ev && ev.slug) || pick(m, ['eventSlug', 'event_slug']) || null, event_ref: ev && ev.id != null ? String(ev.id) : null,
       event_title: (ev && ev.title) || null, league: lg.league, league_source: lg.source,
       market_type: type, type_source: typeSource, raw_type: rawType || null,
-      line: num(pick(m, ['line', 'spread', 'total'])),
+      /* Gamma's point is "line"; its "spread" is the order book's bid-ask
+         spread (0.001 on a moneyline), never a point */
+      line: num(pick(m, ['line'])),
       outcomes: outcomes.map(String), token_ids: tokens, game_start_at: start,
       closed: closed, settle: settle,
       last_prices: closed ? null : prices.map(price),
@@ -831,6 +833,12 @@ const H = 3600e3, MIN = 60e3, DAY = 864e5;
 /* the run's budget: requests it asks poly_api_acquire for, by mode */
 export const ASK: Record<string, number> = { tonight: 400, pool: 20, wallets: 900, grade: 0 };
 const WALLETS_PER_RUN = 3;
+/* what Polymarket accepts (radar-sources run 40812803914): /v2/holders answers
+   at most 100 holders a side with include_pnl (500 is refused, HTTP 400), and
+   one unwindowed page of 100 open NFL events was 48 MB, so events are asked
+   in a window on their end date (a game event's end date is its start),
+   EVENTS_PER_PAGE at a time, at most EVENT_PAGES pages a series */
+const HOLDERS_LIMIT = 100, EVENTS_PER_PAGE = 5, EVENT_PAGES = 16;
 
 /* tests stand in for the clock between retries */
 export const hooks: any = { sleep: (ms: number) => new Promise((r) => setTimeout(r, ms)) };
@@ -931,19 +939,25 @@ async function leagueSeries(ctx: any): Promise<Record<string, string[]>> {
 async function tonight(ctx: any) {
   const now = ctx.nowMs, rules = ctx.rules;
   const horizon = now + rules.upcoming_hours * H;
-  /* 1. the covered leagues' open game events, and their markets */
+  /* 1. the covered leagues' open game events in the window, and their markets */
   const series = await leagueSeries(ctx);
   const seen: Record<string, any> = {};
+  const from = iso(now - 6 * H)!, to = iso(horizon + DAY)!;
   for (const lg of Object.keys(series)) {
     for (const sid of series[lg].slice(0, 2)) {
-      const r = await ask(ctx, "events", { series_id: sid, closed: false, limit: 100 });
-      if (!r.ok) continue;
-      for (const e of R.page(r.data).rows) for (const m of e.markets || []) {
-        const x = R.marketRow(m, e);
-        if (!x) { ctx.drift++; continue; }
-        if (!R.covered(x, rules) || x.game_start_at == null) continue;
-        if (x.game_start_at < now - 6 * H || x.game_start_at > horizon + DAY) continue;
-        seen[x.condition_id] = x;
+      for (let page = 0; page < EVENT_PAGES; page++) {
+        const r = await ask(ctx, "events", { series_id: sid, closed: false, end_date_min: from, end_date_max: to, limit: EVENTS_PER_PAGE, offset: page * EVENTS_PER_PAGE });
+        if (!r.ok) break;
+        const rows = R.page(r.data).rows;
+        for (const e of rows) for (const m of e.markets || []) {
+          const x = R.marketRow(m, e);
+          if (!x) { ctx.drift++; continue; }
+          if (!R.covered(x, rules) || x.game_start_at == null) continue;
+          if (x.game_start_at < now - 6 * H || x.game_start_at > horizon + DAY) continue;
+          seen[x.condition_id] = x;
+        }
+        if (rows.length < EVENTS_PER_PAGE) break;
+        if (page === EVENT_PAGES - 1) ctx.alert("WARNING", "events_capped", lg + " series " + sid + ": more than " + EVENT_PAGES * EVENTS_PER_PAGE + " open events in the window; the rest were not read");
       }
     }
   }
@@ -993,15 +1007,18 @@ async function tonight(ctx: any) {
   if (soon.length) ctx.alert("WARNING", "unmapped_markets", soon.length + " Polymarket game market(s) starting within 12 hours could not be matched to one EdgeDesk game: "
     + soon.slice(0, 5).map((u: any) => (u.question || u.condition_id) + " (" + u.reason + ")").join("; "), { markets: soon.slice(0, 20) });
 
-  /* 3. holders and prices of the matched markets of upcoming games */
-  const live = markets.filter((m: any) => byId[m.condition_id] && byId[m.condition_id].event_id && m.game_start_at > now && m.game_start_at <= horizon);
+  /* 3. holders and prices of the matched markets of upcoming games, at the
+     board's own lines: an alternate line has no EdgeDesk fair to compare with */
+  const upcoming = markets.filter((m: any) => byId[m.condition_id] && byId[m.condition_id].event_id && m.game_start_at > now && m.game_start_at <= horizon);
+  const live = upcoming.filter((m: any) => (byId[m.condition_id].sides || []).some((s: any) => s && s.sig_key));
   ctx.run.details.markets_live = live.length;
+  ctx.run.details.markets_alt_lines = upcoming.length - live.length;
   const pool = new Set((await dbAll("poly_wallets?select=wallet&in_pool=is.true")).map((w: any) => w.wallet));
   const at = iso(now)!;
   const holders: any[] = [], prices: any[] = [], names: Record<string, any> = {};
   for (const m of live) {
     m.last_prices && m.last_prices.forEach((p: any, i: number) => { if (p != null) prices.push({ run_id: ctx.run.run_id, captured_at: at, condition_id: m.condition_id, token_id: m.token_ids[i], outcome_index: i, price: p, source: "gamma_outcome_prices" }); });
-    const r = await ask(ctx, "holders", { condition: m.condition_id, include_pnl: true, limit: 500 });
+    const r = await ask(ctx, "holders", { condition: m.condition_id, include_pnl: true, limit: HOLDERS_LIMIT });
     if (!r.ok) continue;
     const rows = R.holderRows(r.data, m.condition_id);
     if (!rows.length) ctx.drift++;
@@ -1028,18 +1045,30 @@ async function tonight(ctx: any) {
   await resolveMarkets(ctx, done.map((d: any) => d.condition_id));
 }
 
-/* Gamma, 50 condition ids a call: a resolved market gets its settlement once */
+/* Gamma by condition id, 50 a call. Gamma answers a resolved market only when
+   asked with closed=true, and an open one only without it (radar-sources run
+   40811733314), so the closed ones are asked first and, unless only resolved
+   markets are wanted, the rest after */
+async function gammaMarkets(ctx: any, ids: string[], resolvedOnly: boolean) {
+  const out: Record<string, any> = {};
+  for (const closed of resolvedOnly ? [true] : [true, false]) {
+    const left = ids.filter((c) => !out[c]);
+    for (let i = 0; i < left.length; i += 50) {
+      const r = await ask(ctx, "markets", { condition_ids: left.slice(i, i + 50), closed, limit: 50 });
+      if (!r.ok) continue;
+      for (const raw of R.page(r.data).rows) { const m = R.marketRow(raw); if (m) out[m.condition_id] = m; }
+    }
+  }
+  return out;
+}
+
+/* a resolved market gets its settlement once */
 async function resolveMarkets(ctx: any, ids: string[]) {
   let resolved = 0;
-  for (let i = 0; i < ids.length; i += 50) {
-    const r = await ask(ctx, "markets", { condition_ids: ids.slice(i, i + 50), limit: 50 });
-    if (!r.ok) continue;
-    for (const raw of R.page(r.data).rows) {
-      const m = R.marketRow(raw);
-      if (!m || !m.settle) continue;
-      if (!ctx.dry) await patch("poly_markets?condition_id=eq." + m.condition_id + "&settle=is.null", { settle: m.settle, closed: true, resolved_at: iso(ctx.nowMs) });
-      resolved++;
-    }
+  for (const m of Object.values(await gammaMarkets(ctx, ids, true)) as any[]) {
+    if (!m.settle) continue;
+    if (!ctx.dry) await patch("poly_markets?condition_id=eq." + m.condition_id + "&settle=is.null", { settle: m.settle, closed: true, resolved_at: iso(ctx.nowMs) });
+    resolved++;
   }
   ctx.run.details.resolved = (ctx.run.details.resolved || 0) + resolved;
 }
@@ -1096,12 +1125,7 @@ async function wallets(ctx: any) {
     const known: Record<string, any> = {};
     await inChunks(conds, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) known[m.condition_id] = m; });
     const want = conds.filter((c) => !known[c] || (!known[c].settle && known[c].game_start_at && R.ms(known[c].game_start_at)! < now));
-    const fresh: Record<string, any> = {};
-    for (let i = 0; i < want.length; i += 50) {
-      const r = await ask(ctx, "markets", { condition_ids: want.slice(i, i + 50), limit: 50 });
-      if (!r.ok) continue;
-      for (const raw of R.page(r.data).rows) { const m = R.marketRow(raw); if (m) fresh[m.condition_id] = m; }
-    }
+    const fresh: Record<string, any> = await gammaMarkets(ctx, want, false);
     const newMarkets = Object.values(fresh).filter((m: any) => !known[m.condition_id]);
     if (!ctx.dry && newMarkets.length) await inChunks(newMarkets.map((m: any) => marketRecord(m, true)), 200, (c) => insertOnce("poly_markets", c, "condition_id"));
     for (const m of Object.values(fresh) as any[]) if (known[m.condition_id] && m.settle && !known[m.condition_id].settle && !ctx.dry) {

@@ -18,6 +18,12 @@
                   deterministic; the promotion rule refuses small gains
      props        distributions normalise; shots, goals and points agree;
                   the mean recalibration is the identity without history
+     shadow       the split-factor shadow: the moneyline fit recovers a known
+                  split, the shadow moves only the split, DraftKings closes
+                  are read and matched exactly, the spread monitor reads
+                  narrow, wide and consistent, the shadow ledger is
+                  append-only and hash-checked, the pre-registered rule
+                  decides once on 1,000 games
      data         period rows reconcile; the box-score reconciliation counts
                   disagreements; the warehouse sync is off by default and
                   idempotent; the registry never calls an unwired source
@@ -290,8 +296,85 @@ const live = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'model', 'para
   chk('registry: MoneyPuck, Natural Stat Trick, Evolving-Hockey and HockeyViz are not wired, and each has a drafted request', ['moneypuck', 'natural_stat_trick', 'evolving_hockey', 'hockeyviz'].every((id) => { const p = reg.providers.find((x) => x.id === id); return p && !p.wired && p.data_permission === 'AWAITING_PERMISSION'; }) && ['moneypuck', 'natural-stat-trick', 'evolving-hockey', 'hockeyviz'].every((f) => fs.existsSync(path.join(ROOT, 'docs', 'engine', 'access-requests', f + '.md'))));
   chk('registry: the odds feed waits for the owner\'s authorisation', reg.providers.find((x) => x.id === 'odds_gateway_nhl').status === 'AWAITING_AUTHORISATION');
 
+  /* ---------------- the split-factor shadow (hockey/model/split_shadow.js) ---------------- */
+  {
+    const SH = R('hockey/model/split_shadow.js');
+    const os = require('os');
+    const G = SH.grid();
+    chk('shadow: the grid is glm.js\'s split grid, 0.7 to 1.6 by 0.025, and holds the frozen b', G.length === 37 && G[0] === 0.7 && G[36] === 1.6 && G.indexOf(SH.PROTOCOL.b) >= 0, G);
+    chk('shadow: only the registered season carries it', SH.active(SH.PROTOCOL.season) && !SH.active(SH.PROTOCOL.season + 1));
+    /* the fit recovers a known split: outcomes drawn at b = 1.2 from a goal-share logit */
+    const rnd = ST.rng(20261029); const sig = (z) => 1 / (1 + Math.exp(-z)); const iTrue = G.indexOf(1.2);
+    const synth = []; for (let i = 0; i < 40000; i++) { const z = (rnd() - 0.5) * 1.6; const ps = G.map((b) => sig(b * z)); synth.push({ ps, y: rnd() < ps[iTrue] ? 1 : 0 }); }
+    const fit = SH.fitMoneylineSplit(synth);
+    chk('shadow: the moneyline fit recovers a known split factor (1.2)', Math.abs(fit.b - 1.2) <= 0.05, fit);
+    chk('shadow: fewer than 500 earlier games give the identity, as glm.js does', SH.fitMoneylineSplit(synth.slice(0, 499)).b === 1);
+    /* the shadow changes the split only: same total, wider goal share, production's a and c kept */
+    const cal = { a: 0.5, b: 0.9, c: 6.0464 };
+    const sc = SH.shadowCal(cal);
+    chk('shadow: the recalibration keeps production\'s a and c and takes the frozen b', sc.a === 0.5 && sc.c === 6.0464 && sc.b === SH.PROTOCOL.b && cal.b === 0.9);
+    const pr = GLM.applyPairCalibration(3.3, 2.9, cal), sl = SH.shadowLambda(3.3, 2.9, cal);
+    chk('shadow: the expected total is production\'s (the split factor moves only who scores)', near(pr.lh + pr.la, sl.lh + sl.la, 1e-12));
+    chk('shadow: a wider split gives the stronger side a larger share', sl.lh / (sl.lh + sl.la) > pr.lh / (pr.lh + pr.la));
+    chk('shadow: at production\'s own b the shadow is production', (() => { const same = Object.assign({}, cal, { b: SH.PROTOCOL.b }); const a = GLM.applyPairCalibration(3.3, 2.9, same), b = SH.shadowLambda(3.3, 2.9, same); return a.lh === b.lh && a.la === b.la; })());
+    const Dp = DIST.game({ lamH: pr.lh, lamA: pr.la, effects: live.effects, ot: OT }), Ds = DIST.game({ lamH: sl.lh, lamA: sl.la, effects: live.effects, ot: OT });
+    chk('shadow: the favourite is more favoured, and the moneyline still sums to one', Ds.p_home > Dp.p_home && near(Ds.p_home + Ds.p_away, 1, 1e-9), [Dp.p_home, Ds.p_home]);
+    /* DraftKings closes from the ESPN capture */
+    chk('shadow: no-vig of a −110/−110 market is one half', near(SH.noVigHome({ home: -110, away: -110 }), 0.5, 1e-12));
+    chk('shadow: no-vig removes the margin proportionally', near(SH.noVigHome({ home: -218, away: 180 }), (218 / 318) / (218 / 318 + 100 / 280), 1e-12));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nhl-closes-'));
+    const ev = (cid, h, a, t) => JSON.stringify({ kind: 'event', cid, start_utc: t, home: { abbr: h }, away: { abbr: a } });
+    const settle = (cid, book, ml, done) => JSON.stringify({ kind: 'settle', cid, completed: done, books: [{ book, close: { ml } }] });
+    fs.writeFileSync(path.join(dir, '2026-10.jsonl'), [ev('1', 'NJ', 'TB', '2026-10-30T23:00:00Z'), settle('1', 'DraftKings', { home: -150, away: 130 }, true),
+      ev('2', 'SJ', 'LA', '2026-10-31T02:00:00Z'), settle('2', 'FanDuel', { home: -150, away: 130 }, true),
+      ev('3', 'UTAH', 'BOS', '2026-10-31T01:00:00Z'), settle('3', 'DraftKings', { home: -120, away: 100 }, false)].join('\n') + '\n');
+    const cl = SH.readCloses(dir);
+    chk('shadow: only completed games with DraftKings\' close are read, under the NHL\'s abbreviations', cl.length === 1 && cl[0].home === 'NJD' && cl[0].away === 'TBL' && near(cl[0].p_home, SH.noVigHome({ home: -150, away: 130 }), 1e-12), cl);
+    chk('shadow: a close matches its game within six hours of the start, not beyond', !!SH.matchClose(cl, '2026-10-31T04:59:00Z', 'NJD', 'TBL') && !SH.matchClose(cl, '2026-10-31T05:01:00Z', 'NJD', 'TBL') && !SH.matchClose(cl, '2026-10-30T23:00:00Z', 'TBL', 'NJD'));
+    chk('shadow: a missing capture folder reads as no closes', SH.readCloses(path.join(dir, 'none')).length === 0);
+    /* the spread monitor: a model whose logits are a fixed share of the market's */
+    const pairsAt = (k) => { const q = ST.rng(7); const out = []; for (let i = 0; i < 400; i++) { const z = (q() - 0.5) * 1.4; out.push({ p: sig(z), m: sig(k * z + (q() - 0.5) * 0.05) }); } return out; };
+    const narrow = SH.spreadStats(pairsAt(1.3)), wide = SH.spreadStats(pairsAt(0.75)), same = SH.spreadStats(pairsAt(1));
+    chk('shadow: a model narrower than the market reads NARROWER_THAN_MARKET, slope ≈ 1.3', narrow.reading === 'NARROWER_THAN_MARKET' && near(narrow.slope, 1.3, 0.03) && narrow.mean_favourite_gap_pp < 0 && narrow.favourites_less_favoured > 300, narrow);
+    chk('shadow: a model wider than the market reads WIDER_THAN_MARKET', wide.reading === 'WIDER_THAN_MARKET' && near(wide.slope, 0.75, 0.03) && wide.mean_favourite_gap_pp > 0, wide);
+    chk('shadow: equally spread reads CONSISTENT', same.reading === 'CONSISTENT', same);
+    chk('shadow: under 30 games the reading is TOO_EARLY', SH.spreadStats(pairsAt(1.3).slice(0, 29)).reading === 'TOO_EARLY');
+    /* the shadow ledger: append-only, hash-checked, frozen before the start */
+    const lf = path.join(dir, 'split_shadow_test.jsonl');
+    const game = (id, start, p, ps) => ({ game_id: id, start_utc: start, type: 'R', home: 'NJD', away: 'TBL', prices: { moneyline: { home: p }, puck_line: { home_minus_1_5: p - 0.2 } }, calibration_shadow: { b: SH.PROTOCOL.b, production_b: 0.9, p_home: ps, pl_home_minus_1_5: ps - 0.2 } });
+    const now = Date.parse('2026-10-30T12:00:00Z');
+    const slateAt = (t, games) => ({ generated_at: new Date(t).toISOString(), model: { id: 'edgedesk_nhl_v1:xg_core' }, games });
+    const a1 = SH.ledgerAppend(slateAt(now, [game(1, '2026-10-30T23:00:00Z', 0.6, 0.62), game(2, '2026-10-30T11:00:00Z', 0.55, 0.56)]), now, lf);
+    const a2 = SH.ledgerAppend(slateAt(now + 3600e3, [game(1, '2026-10-30T23:00:00Z', 0.603, 0.622)]), now + 3600e3, lf);
+    const a3 = SH.ledgerAppend(slateAt(now + 7200e3, [game(1, '2026-10-30T23:00:00Z', 0.61, 0.63)]), now + 7200e3, lf);
+    chk('shadow ledger: a started game is never recorded, a small move adds nothing, a half-point move adds a row', a1 === 1 && a2 === 0 && a3 === 1, [a1, a2, a3]);
+    const recs = SH.readJsonl(lf);
+    chk('shadow ledger: each row freezes the shadow and production at the same moment', recs.every((x) => x.production.p_home != null && x.shadow.p_home != null && x.shadow.b === SH.PROTOCOL.b && x.production.b === 0.9 && x.production.model === 'edgedesk_nhl_v1:xg_core'));
+    chk('shadow ledger: the untouched file passes its check', SH.checkLedger(lf).length === 0, SH.checkLedger(lf));
+    fs.writeFileSync(lf, fs.readFileSync(lf, 'utf8').replace('"p_home":0.61', '"p_home":0.62'));
+    chk('shadow ledger: an edited row fails its check', SH.checkLedger(lf).some((f) => /was edited/.test(f)), SH.checkLedger(lf));
+    chk('shadow ledger: the last record before the start is the one graded', SH.lastPregame(recs).get(1).production.p_home === 0.61);
+    /* the rule */
+    const ruleRows = (n, shadowP, seed) => { const q = ST.rng(seed); const out = []; for (let i = 0; i < n; i++) { const z = (q() - 0.5) * 3.2; const truth = sig(z); const y = q() < truth ? 1 : 0; const day = new Date(Date.parse('2026-11-01T00:00:00Z') + Math.floor(i / 8) * 86400e3); out.push({ date: day.toISOString().slice(0, 10), start_utc: new Date(+day + (i % 8) * 600e3).toISOString(), y, margin: y ? 2 : -1, prod: { p: sig(0.5 * z), pl: 0.3 }, shadow: { p: shadowP(z), pl: 0.3 } }); } return out; };
+    const early = SH.verdict(ruleRows(999, (z) => sig(z), 3));
+    chk('rule: before 1,000 graded games the record is IN_PROGRESS, whatever it shows', early.status === 'IN_PROGRESS' && early.n === 999, early.status);
+    const better = SH.verdict(ruleRows(1200, (z) => sig(z), 3));
+    chk('rule: a shadow at the truth against a compressed production is ELIGIBLE, read on the first 1,000 games only', better.status === 'ELIGIBLE' && better.n === 1000 && better.moneyline.shadow_minus_production.ci95[1] < 0, better.checks);
+    const tied = SH.verdict(ruleRows(1000, (z) => sig(0.5 * z), 3));
+    chk('rule: a shadow no better than production is NOT_CONFIRMED', tied.status === 'NOT_CONFIRMED' && !tied.checks.moneyline_interval_below_zero, tied.checks);
+    const overshoot = SH.verdict(ruleRows(1000, (z) => sig(2.2 * z), 3));
+    chk('rule: a shadow that overshoots fails on calibration even when it might beat production', overshoot.status === 'NOT_CONFIRMED' && !overshoot.checks.calibration, overshoot.moneyline.shadow);
+    const plWorse = SH.verdict(ruleRows(1000, (z) => sig(z), 3).map((x) => Object.assign({}, x, { shadow: { p: x.shadow.p, pl: x.margin >= 2 ? 0.2 : 0.4 } })));
+    chk('rule: a puck line worse by more than 0.001 blocks it', plWorse.status === 'NOT_CONFIRMED' && plWorse.checks.moneyline_interval_below_zero && !plWorse.checks.puck_line_not_worse, plWorse.checks);
+    /* the live record from injected inputs */
+    const tg = [{ home: 1, game_id: 1, date: '2026-10-30', win: 1, gf: 3, ga: 1 }];
+    const gr = SH.grade({ season: SH.PROTOCOL.season, teamGames: tg, closes: cl, shadowRecs: recs, productionRecs: [{ game_id: 1, start_utc: '2026-10-30T23:00:00Z', recorded_at: '2026-10-30T12:00:00Z', home: 'NJD', away: 'TBL', p_home: 0.6 }] });
+    chk('rule: the live record grades the shadow ledger against the finals and the closes', gr.games_graded === 1 && gr.verdict.status === 'IN_PROGRESS' && gr.verdict.draftkings_close.n === 1 && gr.market_spread.n === 1 && gr.market_spread.reading === 'TOO_EARLY', gr.verdict.draftkings_close);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
   /* ---------------- committed artifacts ---------------- */
-  for (const cmd of ['hockey/lab/run.js --check', 'hockey/props/validate.js --check', 'hockey/props/slate.js --check', 'hockey/crosscheck/boxscore.js --check', 'hockey/model/diagnostics.js --check', 'hockey/sources/registry.js --check']) {
+  for (const cmd of ['hockey/lab/split_shadow.js --check', 'hockey/lab/run.js --check', 'hockey/props/validate.js --check', 'hockey/props/slate.js --check', 'hockey/crosscheck/boxscore.js --check', 'hockey/model/diagnostics.js --check', 'hockey/sources/registry.js --check']) {
     let ok = true, out = '';
     try { out = cp.execSync('node ' + path.join(ROOT, cmd), { cwd: ROOT, stdio: 'pipe', encoding: 'utf8' }); } catch (e) { ok = false; out = String(e.stdout || '') + String(e.stderr || ''); }
     chk('artifacts: ' + cmd, ok, out.slice(0, 300));
@@ -300,6 +383,7 @@ const live = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'model', 'para
   chk('artifacts: every slate game carries an exact explanation, the full market sheet, re-pricing inputs and a market check', slate.games.every((g) => g.explanation && g.explanation.check.exact && g.markets && g.markets.first_period && g.repricing && g.market_check));
   chk('artifacts: the slate prices with the production model the record chose', slate.model.chosen === JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_walkforward.json'), 'utf8')).selection.chosen);
   chk('artifacts: value claims stay disabled for the NHL', slate.readiness.value_claims.state === 'DISABLED');
+  chk('artifacts: a game\'s split-factor shadow is the registered one and never its price', slate.games.every((g) => !g.calibration_shadow || (g.calibration_shadow.status === 'SHADOW' && g.calibration_shadow.b === R('hockey/model/split_shadow.js').PROTOCOL.b && g.calibration_shadow.p_home !== undefined)));
 
   failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 400) : '')));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'NHL engine v2 — ' + pass + ' passed, ' + fail + ' failed');

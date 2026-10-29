@@ -1,5 +1,92 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar 1/3: Polymarket sports bettors graded from their own trades, behind a gateway and a switch; H-RADAR-01 registered before any data and run once
+
+**What it is.** Radar grades the Polymarket sports wallets with the most volume on their own trades: record, profit, ROI, CLV, the ROI a follower would have had 5 (and 15) minutes later, conviction and a style (Directional, Market Maker, Hedger). It is research, labelled Experimental, the same for every reader, and nothing trades for anyone. No UI ships in this change. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md).
+
+**What changed.**
+- **The grading core** (`lib/edgedesk_radar.js`). Every rule comes from one constant, `public.radar_rules()`, and nothing runs without it. P&L is computed from trades; Polymarket's P&L and rankings hosts are never read.
+- **The gateway** (`lib/edgedesk_poly_gateway.js`), the only Radar client of Polymarket: the `POLYMARKET_DATA_ENABLED` switch (off by default, one SQL statement turns it on or off, no deploy), a budget granted under a row lock, pacing, bounded backoff, a breaker. `tools/radar/no_bypass.test.js` fails if any other file names a Polymarket host.
+- **The data** (`supabase/radar.sql`, mirrored in `supabase/migrations/20261029120000_radar.sql`): append-only trades with transaction hashes, bets, versioned grades, holder and price snapshots. Anon reads the graded leaderboard and trader pages once Radar is on and H-RADAR-01 is registered; Smart Money Tonight and open positions are for subscribers (`has_active_sub()`). No existing policy changes.
+- **The job** (`supabase/functions/polymarket_sync`, schedules in `supabase/polymarket_sync_cron.sql`): holders every 10 minutes, the pool and wallet histories nightly, then a regrade.
+- **H-RADAR-01** (`research/radar/registration_h_radar_01.json`), committed before any Polymarket response was read: the top 25 directional wallets, followed 5 minutes after entry, must beat the close more than half the time and make money, each with a game-clustered 95% interval. The runner (`research/radar/run_validation.js`) runs it once, on GitHub's runner (`.github/workflows/radar-validation.yml`), and `research/radar/one_look.js` stops any later run from looking again until its report is committed.
+
+**What the live probe found before the look** (`.github/workflows/radar-sources.yml`, each fixed with a regression test shown failing on the old code):
+- Gamma answers a resolved market only when asked with `closed=true`. Without it the H-RADAR-01 run would have read no market and spent its one look on an empty report.
+- `/v2/holders` refuses more than 100 holders with `include_pnl`, so Smart Money Tonight would never have shown a card.
+- One unwindowed page of open NFL events was 48 MB; events are now asked in a window, 5 a page.
+- Gamma's `spread` is the order book's spread, not a point; the line is read from `line` only.
+
+**Tests.** `tools/radar/`: core 96, fixtures 43 (recorded from the live probe), gateway 29, no-bypass 11, the runner and the one-look guard 30, the SQL on a real PostgreSQL as anon, a signed-in reader, a subscriber and the service role, and the shipped function against it 51. All run by `.github/workflows/radar-tests.yml`.
+
+## 2026-10-29 — NHL: every favourite less favoured than DraftKings. The cause measured, a pre-registered shadow, a nightly spread check; no published price moves
+
+**The report.** EdgeDesk priced every favourite below DraftKings again: VAN at SJS −133 against −198, NYI at MIN −146 against −192. The hourly ESPN capture (`research/clv/openers/nhl`) confirms the pattern on the published prices. In 35 of 47 settled 2026-27 games the book's favourite was less favoured here, by 2.2 points on average. The market's logit on the model's has slope 1.215 (1.036–1.394). Both rank clubs alike (correlation 0.89). The scale differs. Full write-up: [docs/engine/NHL_LAB.md](docs/engine/NHL_LAB.md) §6.3.
+
+**What causes it.**
+- **This season's split factor.** The pair recalibration (`hockey/model/glm.js`) refits a home/away split factor `b` each season on the regulation goal split of the three seasons before. For 2026-27 it is 0.90, the lowest since 2013-14 (0.975–1.175 before). It pulls every goal share 10% toward even.
+- **Fitted on goals, not on what is published.** On the goal split the right `b` is 1.025 in both windows. On the two-way moneyline it is 1.125 (2014-20) and 1.15 (2021-26).
+- **Club information.** Most of the two named games' gap is not scale. Model and market rate SJS the same. The market rates VAN the league's weakest club and MIN much higher than the model does. No calibration closes that part.
+
+**Why production keeps its price.** Every fix was walked forward through the production pipeline, and none passes the lab's promotion rule (§1). On 2021-26 every variant is worse:
+- `b` = 1: +0.00057 log loss.
+- `b` fitted on the goal split over every earlier season: +0.00036, interval above zero.
+- `b` fitted on the moneyline: +0.00027 (−0.00013 to +0.00063).
+
+The 2026-27 games so far and DraftKings both favour the moneyline fit, but the live season never chooses, and no market archive is licensed.
+
+**What changed.**
+- **The shadow** (`hockey/model/split_shadow.js`, protocol `nhl_split_ml_v1`). It is production with `b` fitted on the moneyline of every earlier out-of-sample game: 1.125 for 2026-27, frozen.
+  - Every slate game carries `calibration_shadow`, labelled SHADOW, never the price. In it VAN at SJS reads −142 and NYI at MIN −161.
+  - Each build freezes it beside production's price in its own append-only, hash-checked ledger, `hockey/ledger/split_shadow_2027.jsonl`. `build_slate.js --check` verifies it. The production ledger is untouched.
+- **The rule, written before that ledger held a row.**
+  - It is read once, on the first 1,000 graded games.
+  - `ELIGIBLE` needs three things: the shadow-minus-production moneyline log loss interval wholly below zero, calibration slope 0.85–1.15 with |mean p − mean y| ≤ 0.02, and a home −1.5 log loss at most 0.001 worse.
+  - DraftKings' closes are reported, never deciding.
+  - Promotion is a methodology-change pull request.
+  - **Power, stated now:** an effect the size seen so far needs about 810 games, one of 0.001 about 5,700, so `NOT_CONFIRMED` is the likeliest end.
+- **The study and the live record** (`hockey/lab/split_shadow.js` → `hockey/validation/nhl_split_shadow.json`).
+  - The study reproduces the production record on both completed windows and every variant scored.
+  - `--live` grades the shadow ledger and writes `market_spread`, production against DraftKings' closes (`NARROWER_THAN_MARKET` today). The NHL build and validate jobs run it.
+  - `--check` fails if the frozen 1.125 is not what the rule gives.
+- `hockey/lab/base.js` `glmPredictions` also returns the raw λ.
+
+**Evidence that no published number moves.** The slate was built with the old and the new code at its own `generated_at` (2026-10-28T22:50:39Z). With `calibration_shadow` removed, the two builds are byte-identical. Every production moneyline equals the committed slate's. `goalie_inputs.json` is identical.
+
+**Tests.** `tools/hockey/nhl_v2.test.js` gains 31 checks (142 pass), on synthetic data where the answer is known:
+- the moneyline fit recovers a known split, and the shadow moves the split, never the total;
+- DraftKings closes are read and matched exactly;
+- the spread monitor reads narrow, wide, consistent and too early;
+- the shadow ledger refuses a started game and catches an edited row;
+- the rule decides once, on 1,000 games, and refuses a shadow that is no better, overshoots, or worsens the puck line.
+
+## 2026-10-29 — Landing checkout: "Start 7 days free" reaches Stripe again (an undeclared `promo` stopped it after the consent)
+
+**What was wrong.** The landing page sends a new reader through sign-up and the renewal terms. It records their consent, then sends them to Stripe. Between those last two steps, `confirmArl()` in `index.html` sends the funnel and analytics events with `promo:!!promo`. Nothing in the page declares `promo`. The creator's code is `affiliateCode`, set a few lines earlier in the same function. The call threw `ReferenceError: promo is not defined`, so `window.location.href=url` never ran. The reader stayed on "Opening secure checkout…". Their consent was recorded, and no checkout opened. This is the path every Full Access trial takes, server checkout and Payment Link alike. Bet Checker checks out from `/bet-checker/` and was not affected. The line predates the oldest commit in this clone (2026-10-27), so it has been live at least since then.
+
+**Why nothing went red.** Only `tools/billing/checkout_flow.e2e.js` drives this flow in a browser. No workflow ran it, and it had failed at step 5 on `main` without anyone seeing.
+
+**What changed.**
+- `index.html`: `promo:!!affiliateCode` in the `checkout_started` funnel and analytics events. The events still report whether a creator's code was used.
+- `tools/billing/checkout_flow.e2e.js`: when step 5 fails, it reports the page's script errors, so this bug reads `ReferenceError: promo is not defined` instead of an empty URL. It no longer crashes on `new URL('')`. With `CHECKOUT_FLOW_UI_REQUIRED=1`, a missing browser fails rather than skips.
+- `.github/workflows/funnel-tests.yml`: the browser job runs it, with `CHECKOUT_FLOW_UI_REQUIRED=1`. The workflow also starts on `lib/edgedesk_access.js` (the checkout client) and on the test itself.
+
+**Evidence.** On `main`'s page: `FAIL 5 checkout opened the configured link — {"to":"","errors":["ReferenceError: promo is not defined"]}`. With the fix: `PASS | checkout flow | 40 passed, 0 failed`.
+
+## 2026-10-28 — Fairline, part 1: The Board and The Leaks (behind the Bet Checker and terminal tiers)
+
+**What it is.** A new page, [`/fairline/`](fairline/index.html), that answers two questions from prices and the reader's own bets, never from picks: **"Am I getting a good number right now?"** (The Board) and **"Where am I losing money, and is it bad bets or bad luck?"** (The Leaks). The weekly recap (The Tape) shows as Coming Soon. Narrative: [docs/fairline.md](docs/fairline.md).
+
+- **`supabase/fairline.sql`** (new, additive; mirrored in `migrations/20261028180000_fairline.sql`). Functions and one view; no table, row or policy changes. `signals` keeps its terminal-only RLS.
+  - `fairline_rules()`: the one constant (a label from 15 settled bets; a label about the close from 15 captured closes; the odds, lead-time and stake buckets; capture's own freshness limits).
+  - `fairline_paid()`: the one gate. Today it is `has_bet_checker_paid()` (Bet Checker `red` or the terminal `blue`). No billing change in this part.
+  - `fairline_bets_for()` / `fairline_my_bets()` / view `fairline_bets`: the reader's bets from Bet Checker and the Portfolio, one row per bet. A bet in both is counted once (linked, same market key, or same game), keeping the book's money and Bet Checker's close.
+  - `fairline_leaks()`: every slice by sport, market, bet type, odds range, lead time, book and stake vs median, with bets, record, units and dollars P/L, ROI, average CLV and beat-close rate, and a label: real leak, bad luck, running hot, real edge; P/L only when too few closes were captured; none below the sample. Free: the biggest leak's slice name, no number.
+  - `fairline_board()`: a security-definer door. Fair (probability and odds), best price (`book_quotes` where present, else `signals`), edge vs fair, quote age with stale rows greyed and sorted last, Kalshi only when its card says OK, DK Predictions marked inactive. Free: the top 3 fresh rows.
+- **The page**: `fairline/index.html`, `lib/edgedesk_fairline_app.js`, `lib/edgedesk_fairline_app.css`, `lib/edgedesk_fairline_core.js`. Mobile first, on the tools frame and the game cards. Each leak card leads with one plain sentence; labels are chips with words. The Board says it is prices, not picks, and carries a Known limitations block. Added to `sitemap-pages.xml`.
+- **Tests** (`.github/workflows/fairline-tests.yml`, in `tools/ci/checks.json` under Frontend and navigation): `fairline_sql.test.js` (115, real PostgreSQL), `core.test.js` (55), `page.test.js` (27), `page.e2e.js` (30, Chromium).
+- **Out of scope, noted in the docs:** a DK Predictions price feed (no source exists), and selling Fairline through Juice Reel's checkout (that sells only the terminal today).
+
 ## 2026-10-28 — Deploying Bet Checker: the checkout stage probes Bet Checker's purchase too
 
 **What was missing.** `create_checkout_session` was deployed to production at 20:33 (`create_checkout_session-2026-10-28-bet-checker-2`). Its Phase 8 probes (`tools/billing/prod_probe.js checkout`) never asked for a Bet Checker checkout. They also stop early while `STRIPE_PRICE_ID` is unset, and it is unset in production, so the terminal keeps its Payment Link. Bet Checker needs no `STRIPE_PRICE_ID`: its prices are found by Stripe lookup key. So nothing had shown that the live Stripe key can read `bet_checker_monthly` and `bet_checker_annual` and open a checkout for them.
