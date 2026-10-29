@@ -26,8 +26,8 @@
   - `lib/edgedesk_access.js` gains `fairline()`, and black in `betChecker()` and `offerFor()`.
   - The Fairline page sells Fairline with the automatic-renewal consent, in Bet Checker's order. It gains Settings › Subscription. A Bet Checker reader is offered the portal switch.
   - The terminal's paywall and the Bet Checker page name a Fairline plan as Fairline.
-  - `index.html` and `app.html` load the changed `edgedesk_pricing.js` and `edgedesk_access.js` under a new stamp (`?v=20261029fl2`), recorded in `tools/presentation/landing_asset_stamps.json`, so a returning browser cannot keep the old copies. The landing page's stamp check failed until this was done.
-- **Tests**: `tools/billing/fairline_tier.test.js` (72, new; in `personal-tests.yml`, `fairline-tests.yml` and `deploy-billing.yml`). The Fairline suites now run with black as paid and red as free (SQL 116, page 36, browser 42). `billing_hardening_sql.test.js` expects 15 report rows instead of 14.
+  - `index.html`, `app.html` and `bet-checker/index.html` load the changed `edgedesk_pricing.js`, `edgedesk_access.js` (and, on Bet Checker, `edgedesk_bet_checker.js`) under a new stamp (`?v=20261029fl2`), so a returning browser cannot keep the old copies. On Bet Checker an old `edgedesk_access.js` would show a Fairline customer as free. The landing page's stamp check failed until this was done; a new check in `tools/fairline/page.test.js` fails on any of these pages loading a stamp from before the `black` tier.
+- **Tests**: `tools/billing/fairline_tier.test.js` (72, new; in `personal-tests.yml`, `fairline-tests.yml` and `deploy-billing.yml`). The Fairline suites now run with black as paid and red as free (SQL 116, page 37, browser 42). `billing_hardening_sql.test.js` expects 15 report rows instead of 14.
 - **Not verified here:** production's `has_active_sub()` and paywall RLS are not in this repository. Run `docs/billing-hardening.md` §11 query 10 before selling Fairline.
 
 ## 2026-10-29 — Landing checkout: "Start 7 days free" reaches Stripe again (an undeclared `promo` stopped it after the consent)

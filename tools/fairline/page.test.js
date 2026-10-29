@@ -58,6 +58,21 @@ const inline = [...PAGE.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[
 chk('the inline boot parses', inline.length === 1 && (() => { try { new Function(inline[0]); return true; } catch (_) { return false; } })());
 chk('mobile first: the viewport, and no fixed width wider than a phone', /width=device-width/.test(PAGE) &&
   !/(^|[^-a-z])width:\s*(4[2-9]\d|[5-9]\d\d|\d{4,})px/.test(CSS) && !/min-width:\s*(4[2-9]\d|[5-9]\d\d)px;/.test(CSS.replace(/@media\([^)]*\)/g, '')));
+/* The pages that gate or sell on the tier load the copies of these files that
+   know the Fairline tier (black). A stamp set before it would let a returning
+   browser keep the old file: on Bet Checker, a Fairline customer shown as free. */
+(() => {
+  const PRE_BLACK = ['20261028a', '20261028b', '20261028bc1', '20261028bc3', '20261028fl1'];
+  const stale = [];
+  ['index.html', 'app.html', 'bet-checker/index.html', 'fairline/index.html'].forEach((pg) => {
+    const html = read(pg);
+    ['edgedesk_access.js', 'edgedesk_pricing.js', 'edgedesk_bet_checker.js'].forEach((lib) => {
+      const m = new RegExp('/lib/' + lib.replace('.', '\\.') + '\\?v=([0-9a-z]+)').exec(html);
+      if (m && PRE_BLACK.indexOf(m[1]) >= 0) stale.push(pg + ' ' + lib + '?v=' + m[1]);
+    });
+  });
+  chk('every page that gates or sells on the tier loads the tier-aware copies (no stamp from before black)', stale.length === 0, stale);
+})();
 chk('the page is in the sitemap', /https:\/\/edgedesksports\.com\/fairline\//.test(read('sitemap-pages.xml')));
 
 /* ── the doors ─────────────────────────────────────────────────────────── */
