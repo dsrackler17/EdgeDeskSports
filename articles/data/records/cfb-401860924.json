@@ -21,8 +21,8 @@
   "game_time": "2026-11-01T03:00:00.000Z",
   "game_when_label": "2026-11-01 03:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-29T00:49:03.363Z",
-  "generated_at": "2026-10-29T00:49:03.363Z",
+  "updated_at": "2026-10-29T09:49:42.098Z",
+  "generated_at": "2026-10-29T09:49:42.098Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -124,23 +124,23 @@
         "note": "Quoted from Fresno State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 84,
-      "inputs_reached_pct": 69,
+      "inputs_reached_pct": 77,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 18,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 20,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 13,
           "RESEARCH_ONLY": 7,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 0,
-          "UNAVAILABLE": 4
+          "UNAVAILABLE": 6
         },
         "absent": [
           {
@@ -148,6 +148,18 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -1468,18 +1480,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
@@ -1498,14 +1498,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1583,11 +1575,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Oregon State’s availability report is not due yet",
-        "score": 88,
+        "text": "87 · STRONG",
+        "sub": "main deduction: no market quote is joined to this game",
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1601,7 +1593,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 11.3,
             "max": 20
           },
           {
@@ -1629,23 +1621,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Oregon State’s availability report is not due yet; the impact of Oregon State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "no market quote is joined to this game",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Oregon State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Confirm Oregon State’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
-            "action": "Re-read availability inside the filing window (Fresno State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Confirm Fresno State’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
             "action": "Capture a market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1898,7 +1890,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "zkra601cmdul6",
+    "packet_hash": "1pe286f1mkdkn9",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Fresno State’s pass rush get to Braden Atkinson?",
@@ -1922,7 +1914,9 @@
       "Jayden Mandal has completed 123 of 198 passes (62.1%) for 1,393 yards, 7.0 yards per attempt, 8 touchdowns and 1 interception in seven games for Fresno State, and has been sacked on 13 of 211 dropbacks.",
       "Braden Atkinson has completed 190 of 274 passes (69.3%) for 2,628 yards, 9.6 yards per attempt, 26 touchdowns and 2 interceptions in seven games for Oregon State, and has been sacked on 9 of 283 dropbacks."
     ],
-    "availability": [],
+    "availability": [
+      "Oregon State’s availability report lists receiver Eddie Freauff as questionable."
+    ],
     "script": {
       "model": [
         "Fresno State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.8% of opponent dropbacks, against an offense that has allowed a sack on 3.0% of its dropbacks.",
@@ -1937,9 +1931,9 @@
       ]
     },
     "unknown": [
-      "Weather: 66 degrees, overcast.",
+      "Oregon State’s availability report lists receiver Eddie Freauff as questionable.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Fresno State and Oregon State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
     ],
     "flags": [
       {
@@ -1953,7 +1947,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-28T22:38:31.767Z",
+        "observed_at": "2026-10-29T05:52:16.383Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1969,6 +1963,13 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-28T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Pac-12 Conference availability report (Advance Report)",
+        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-29T02:04:52.293Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1976,6 +1977,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T00:49:03.363Z"
+    "at": "2026-10-29T09:49:42.098Z"
   }
 }
