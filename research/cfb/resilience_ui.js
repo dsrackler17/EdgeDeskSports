@@ -26,6 +26,9 @@
   'use strict';
   var RE = window.EDResearchEngine, MSX = window.EDMarketState;
   var MODE_K = 'edgedesk.cfb.research_mode';
+  /* the clock the last build() ran on (the terminal's, pinned when it is): the
+     SP+ row in section 1 is judged fresh or stale on it */
+  var NOW_MS = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function num(x) { return typeof x === 'number' && isFinite(x); }
@@ -48,6 +51,7 @@
   }
 
   function build(o, board, now) {
+    NOW_MS = num(now) ? now : null;
     if (!RE || !o) return null;
     try {
       return RE.build(o, o.market_state || null, { now: now, mode: mode(), carryover: o.carryover || null,
@@ -73,11 +77,24 @@
   function unavailable(text) { return '<span class="rz-na">' + esc(text || 'Unavailable') + '</span>'; }
 
   /* ----------------------------------------------------------- sections */
+  /* SP+ (lib/cfb_sp_plus.js): an EXTERNAL estimate beside the fair spread,
+     labelled as such and never combined with it; unavailable with its reason
+     rather than a stale number. Absent the library, no row. */
+  function spRow(o, P, g) {
+    var X = window.EDCfbSpPlus;
+    if (!X || !X.rowFor) return null;
+    var R = X.rowFor(o.game_id, { now: NOW_MS == null ? undefined : NOW_MS, home: g.home, away: g.away,
+      edgedesk_home_margin: num(P.fair_home_line) ? -P.fair_home_line : null });
+    return R.state === 'AVAILABLE'
+      ? ['SP+ projection', esc(R.text), esc(R.tier_text + ' · ' + R.source_text) + (R.disagree ? '<br><b>Models disagree</b> · ' + esc(R.disagree_text) : '') + '<br>' + esc(R.attribution)]
+      : ['SP+ projection', unavailable('Unavailable'), esc(R.reason)];
+  }
   function s1(o, R) {
     var P = R.sections.projection, g = o.game;
     if (!P.available) return sec(1, 'projection', 'EdgeDesk Projection', 'not projected', '<div class="empty">' + esc(P.reason) + '</div>', true);
     var b = kv([
       ['Fair spread', esc(P.fair_text), 'home line ' + sgn(P.fair_home_line)],
+      spRow(o, P, g),
       P.projected_score ? ['Projected score', esc(g.away + ' ' + f1(P.projected_score.away) + ' – ' + g.home + ' ' + f1(P.projected_score.home)), null] : null,
       ['Fair total', num(P.fair_total) ? P.fair_total.toFixed(1) : unavailable('not projected'), null],
       ['Win probability', esc(g.home) + ' ' + pct(P.win_prob.home) + ' · ' + esc(g.away) + ' ' + pct(P.win_prob.away), null],

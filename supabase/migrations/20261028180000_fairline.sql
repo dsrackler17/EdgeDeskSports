@@ -53,8 +53,10 @@
 --                    the name of the biggest leak's slice, and no number.
 --   fairline_board() The Board. Paid: every row, with filters. Free: the
 --                    top three fresh rows, and how many more there are.
---   fairline_bets_for(uuid) / fairline_slices_for(uuid)  the same, for one
---                    named account: the caller themselves or the service role.
+--   fairline_bets_for(uuid) / fairline_slices_for(uuid) / fairline_slices_at()
+--                    the same, for one named account: the caller themselves
+--                    or the service role. fairline_slices_at() is one window
+--                    of bets (The Tape's week).
 --
 -- REQUIRES bettor_decisions.sql (user_bets, bankroll_settings),
 -- billing_hardening.sql (has_fairline_paid), bet_checker.sql (the Bet
@@ -139,6 +141,14 @@ $req$;
 --                    in minutes, by sport group and hours to the start. A row
 --                    past it is greyed out and sorted after every fresh row.
 --   free_board_rows  what a free account sees of The Board.
+-- THE TAPE (fairline_tape.sql)
+--   tape.time_zone   the week is Monday 00:00 to Monday 00:00 here.
+--   tape.build_hour  built on Monday from this local hour (the cron job
+--                    fires in both UTC hours that can be it; the build decides).
+--   tape.email_within_hours  a Tape not emailed this long after its week
+--                    ended is not emailed at all (a recap that arrives on
+--                    Thursday is noise); it stays in the app.
+--   tape.history_weeks  how many past Tapes the page lists.
 create or replace function public.fairline_rules()
 returns jsonb
 language sql
@@ -171,6 +181,7 @@ as $$
     'board_days_ahead',      7,
     'board_max_rows',        1500,
     'free_board_rows',       3,
+    'tape', jsonb_build_object('time_zone', 'America/Chicago', 'build_hour', 6, 'email_within_hours', 48, 'history_weeks', 12),
     'freshness_hours', jsonb_build_array(
       jsonb_build_object('name', 'imminent', 'to_hours', 0.5),
       jsonb_build_object('name', 'close',    'to_hours', 2),
@@ -536,7 +547,13 @@ comment on view public.fairline_bets is
 -- A return of exactly zero counts as not losing.
 --
 -- Void bets are left out. A cash-out is settled, with the money it paid.
-create or replace function public.fairline_slices_for(p_user uuid)
+--
+-- fairline_slices_at(user, from, to) is the same over the bets whose game
+-- started in [from, to) (a bet with no known start: when it was placed); a
+-- null end is open. The Tape (fairline_tape.sql) reads one week of bets, and
+-- the slices as they stood before and after that week, through it, so a
+-- weekly figure is the same arithmetic as The Leaks', never a second copy.
+create or replace function public.fairline_slices_at(p_user uuid, p_from timestamptz, p_to timestamptz)
 returns jsonb
 language plpgsql
 stable
@@ -552,7 +569,9 @@ begin
     raise exception 'fairline: a reader may only read their own leaks' using errcode = '42501';
   end if;
   with b as (
-    select * from public.fairline_bets_for(p_user)
+    select * from public.fairline_bets_for(p_user) f
+     where (p_from is null or coalesce(f.starts_at, f.placed_at) >= p_from)
+       and (p_to is null or coalesce(f.starts_at, f.placed_at) < p_to)
   ), med as (
     select percentile_cont(0.5) within group (order by b.stake_dollars) filter (where b.stake_dollars > 0) as md,
            percentile_cont(0.5) within group (order by b.stake_units) filter (where b.stake_units > 0) as mu
@@ -629,6 +648,22 @@ begin
     into v_out
     from lab l;
   return v_out;
+end;
+$$;
+
+create or replace function public.fairline_slices_for(p_user uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if p_user is null then return '[]'::jsonb; end if;
+  if auth.uid() is distinct from p_user and not public.bet_checker_trusted() then
+    raise exception 'fairline: a reader may only read their own leaks' using errcode = '42501';
+  end if;
+  return public.fairline_slices_at(p_user, null, null);
 end;
 $$;
 
@@ -858,6 +893,7 @@ $$;
 revoke all on function public.fairline_paid(uuid, timestamptz) from public, anon, authenticated;
 revoke all on function public.fairline_bets_for(uuid) from public, anon, authenticated;
 revoke all on function public.fairline_slices_for(uuid) from public, anon, authenticated;
+revoke all on function public.fairline_slices_at(uuid, timestamptz, timestamptz) from public, anon, authenticated;
 revoke all on function public.fairline_my_bets() from public, anon;
 revoke all on function public.fairline_leaks() from public, anon;
 revoke all on function public.fairline_board(text, text, text) from public, anon;
@@ -869,7 +905,8 @@ do $g$
 begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.fairline_paid(uuid, timestamptz), public.fairline_bets_for(uuid), '
-         || 'public.fairline_slices_for(uuid), public.fairline_board(text, text, text), public.fairline_rules() to service_role';
+         || 'public.fairline_slices_for(uuid), public.fairline_slices_at(uuid, timestamptz, timestamptz), '
+         || 'public.fairline_board(text, text, text), public.fairline_rules() to service_role';
   end if;
 end
 $g$;
@@ -894,6 +931,7 @@ select piece, state from (
          case when not has_function_privilege('authenticated', 'public.fairline_bets_for(uuid)', 'execute')
                and not has_function_privilege('anon', 'public.fairline_bets_for(uuid)', 'execute')
                and not has_function_privilege('authenticated', 'public.fairline_slices_for(uuid)', 'execute')
+               and not has_function_privilege('authenticated', 'public.fairline_slices_at(uuid,timestamptz,timestamptz)', 'execute')
                and not has_function_privilege('authenticated', 'public.fairline_paid(uuid,timestamptz)', 'execute')
               then 'ok' else 'CHECK THIS' end
   union all select '04 anon reads no bet, no leak and no board',

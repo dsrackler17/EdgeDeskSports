@@ -45,7 +45,155 @@ The published slate changes at the next NHL engine build after merge. The model 
 - Promoting twice keeps the first goal-split value.
 - The committed live parameters publish 1.125 for every model the slate prices with.
 
+## 2026-10-29 — Bet Checker says when sportsbook prices are paused
 
+**Why.** The odds account's October credits ran out on 2026-10-10, and paid price refresh is paused until the reset on 2026-11-01 (`docs/odds-api-incident-2026-10/INCIDENT.md`). Meanwhile most fair prices are older than the 6½ hours a grade accepts, so most bets logged on Bet Checker are saved Not graded, and nothing on the page said why. The owner asked for a notice (2026-10-29).
+
+**What changed.**
+- **The page** reads the public `odds_feed_status()`, the same read the terminal's banner uses. While it says `paused`, a notice above the sign-in and the form tells everyone, signed in or not, what that means for a bet logged now:
+  - it is still saved;
+  - it is graded only on a fair price under the rules' age;
+  - otherwise it is Not graded, which uses no free grade;
+  - a game that starts before prices refresh may show No close available.
+- **The title** names November 1 only while that date is ahead.
+- **It goes away on its own** when the feed is live again, whenever buying resumes.
+- **It fails soft:** a failed read shows no notice, never an error.
+- **Files:** `lib/edgedesk_bet_checker_core.js` (`feedNotice()`, `hoursText()`), `lib/edgedesk_bet_checker.js`, `bet-checker/index.html` (stamps `20261029bc4`), `lib/edgedesk_bet_checker.css`, `docs/bet-checker.md`.
+
+**Tests.**
+- `core.test.js` 60 / 0.
+- `page.test.js` 52 / 0: read with the page's key, never a token; live, a 404 and a network failure show none.
+- `page.e2e.js` 64 / 0: a signed-out visitor and a signed-in reader see it while paused, and it is gone after a reload once the feed is live.
+- On `main`'s page code the core suite crashes (no `feedNotice`), the wiring suite throws (no `loadFeed`), and the browser suite fails 2.
+
+
+
+## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
+
+**What was wrong, once Pages' source was switched to GitHub Actions:**
+
+- **Three workflows deployed the site on every merge.** `jekyll-gh-pages.yml` and `static.yml`, the two starter workflows from the Pages settings screen, were added on 2026-10-28 at 21:20 UTC. They shared the `pages` queue with `pages-deploy.yml`, which keeps one waiting run, so each merge cancelled two of the three. Of 50 runs, 20 were cancelled.
+  - Whichever finished last decided the site. At 12:41 UTC that was `static.yml`, which uploads the repository without the Jekyll build.
+- **The data jobs' updates stopped reaching the site between merges.** The data jobs push with `GITHUB_TOKEN`, which starts no workflow, and `pages-deploy.yml` relied on an every-10-minutes timer.
+  - GitHub's cron fires only every 4 to 7 hours in this repository. The data jobs themselves are started by Supabase `pg_cron`.
+  - The timer ran twice in 15 hours (01:56 and 07:56 UTC). Nothing deployed between 07:59 and 12:22.
+
+**What changed:**
+- **`jekyll-gh-pages.yml` and `static.yml` are removed.** `pages-deploy.yml` is the only deployer.
+- **`pages-deploy.yml` now also runs when any of the 65 workflows that push to `main` finishes** (`workflow_run`, by name), the pattern `editorial.yml` already uses.
+  - The timer becomes an hourly backstop at :41.
+  - The comments now say what the queue really does. The deploy in progress always finishes; waiting runs are replaced by the newest and show as cancelled.
+- **`tools/ci/pages_deploy.test.js`** (Core validation) now also fails:
+  - when a workflow that pushes to `main` is missing from the list, naming it;
+  - when a listed name matches no workflow;
+  - when any other workflow deploys Pages or queues in `pages`.
+  - Results: 22 passed, 0 failed. Against `main` before this change, 17 passed, 5 failed. With one data workflow left out of the list, 21 passed, 1 failed.
+- **Docs:** `docs/ci/README.md`, "Publishing the site", and the shipping table in `docs/intelligence.md`.
+
+## 2026-10-29 — CFB: SP+ beside EdgeDesk's number on every card, as an external estimate, graded against the close
+
+**Why.** On 2026-10-28 EdgeDesk had Middle Tennessee −4.5 against Kennesaw State. SP+ had about Middle Tennessee −1, and the game closed Kennesaw State −1.5 (KSU won 44–28). A results-based number had missed a team that was losing close games while playing efficiently. SP+ (ESPN's opponent-adjusted efficiency rating, by Bill Connelly) is now a visible second opinion, measured against the close. The full write-up is `football/sp_plus/README.md`.
+
+**It changes no EdgeDesk number.** SP+ feeds no projection, EV, ranking, grade or record, and it can never be a Model Lab role or a promotion candidate. `football/sp_plus/registry.test.js` fails if any of that code reads it.
+
+- **A · the weekly capture** (`football/sp_plus/sync.js`, `.github/workflows/cfb-sp-plus.yml`: Monday, retried Tuesday and Wednesday, plus a manual run).
+  - It reads CollegeFootballData `/ratings/sp` with `CFBD_API_KEY` and maps teams through the identity master. An unmapped or prefix-only name is logged, never guessed.
+  - Each team's overall, offense and defense are stored in `public.cfb_sp_ratings`: append-only by trigger, row level security with no policy, service role only (`supabase/cfb_sp_plus.sql`). Every attempt goes to `cfb_sp_sync_runs`.
+  - UNCHANGED when CFBD still serves last week's numbers. The sync fails closed. **No rating is ever committed:** the repository is public, CFBD's terms forbid a public mirror (§5), and SP+ is ESPN's.
+- **B · the projected line** (`lib/cfb_sp_plus.js`). A T2 transform of the T3 rating: home SP+ − away SP+ + the home field the CFB engine applies (2.8 today), 0 at a neutral site. It is pure and deterministic. `football/sp_plus/lines.json` publishes the derived line per game of the captured week.
+- **C · on the cards.**
+  - Where it appears:
+    - the board card, beside EdgeDesk fair and the market;
+    - the game page, after Fair spread;
+    - the research terminal: section 1 after Fair spread, the summary strip, and section A.
+  - Each row shows the SP+ line, "T3 external model · T2 computed line", the SP+ week, and the attribution "Projection derived from SP+ (ESPN, Bill Connelly). Data provided by CollegeFootballData.com."
+  - A 3+ point gap to EdgeDesk adds a plain "Models disagree" note. The two numbers are never combined.
+  - The line shows only from a capture of the game's own week, no older than 8 days. Otherwise the row reads unavailable, with the reason.
+- **D · tracking** (`football/sp_plus/track.js`, in the hourly Model Lab job).
+  - For every upcoming game: EdgeDesk's fair line, the SP+ line and the Lab's consensus market at the same moment, appended on change.
+  - Each game is graded once against the Lab's close and the final: MAE against each, the right side of the close, and whether the close moved toward it.
+  - A weekly and season report. Append-only, and checked before publish.
+- **E · the registry** (`football/sp_plus/registry.json`, `public.cfb_external_estimates`).
+  - *SP+ projected line* is registered as an `EXTERNAL_ESTIMATE` with its source, version and terms.
+  - The server refuses to mark it an EdgeDesk model or validated.
+  - The page pins its badge to "External" ahead of the model registry.
+- **Terms.** CFBD's terms (2026-08-12, read as quoted; the site was unreachable from the build environment) allow commercial use and reasonable portions of factual data in a larger product, and recommend the attribution line. **No licence from ESPN for SP+ was found or obtained.** The owner chose to show the derived projected line only, publicly, with attribution.
+- **To switch it on.**
+  1. Apply `supabase/cfb_sp_plus.sql`.
+  2. Add the repository secret `CFBD_API_KEY`.
+  3. Run *CFB SP+ weekly sync*.
+
+  Until then every card reads "SP+ has not been synced yet".
+
+Tests:
+- `football/sp_plus/ingest.test.js` (66, mocked CFBD and Supabase)
+- `projection.test.js` (42)
+- `display.test.js` (39)
+- `card_ui.test.js` (23, the real football module)
+- `ui.e2e.js` (22, Chromium)
+- `track.test.js` (38)
+- `registry.test.js` (22)
+- `sql.test.js` (46, a real PostgreSQL)
+
+All run in `cfb-sp-plus-tests.yml`.
+
+## 2026-10-29 — Prediction Radar: radar_registry.sql applies on the production registry (games_tested), and Deploy Prediction Radar
+
+- **Bug.** Applying `supabase/radar_registry.sql` in production stopped with "research_model_results requires games_tested and this file has nothing to put there". The registry's tables exist only in production. That table requires `games_tested`, and the generator had no mapping for it, so nothing was registered.
+- **Fix.** `tools/radar/build_registry_sql.js` fills `games_tested`, or the first of `n_games`, `holdout_games` and `games` that exists, with the report's holdout games (37). It fills a followed-bets column (`bets_tested`, `n_bets`, `n_followed` or `sample_size`) with the report's followed bets (41). `supabase/radar_registry.sql` is regenerated from it. The report and the verdict are unchanged (FAILED).
+- **Test.** `tools/radar/radar_sql.test.js`'s stand-in registry now requires `games_tested`, as production does. On the old SQL: 131 passed, 1 failed, with the production error. On the fix: 199 passed, 0 failed.
+- **Deploy Prediction Radar** (`.github/workflows/deploy-radar.yml`, run by hand, the `deploy-bet-checker.yml` pattern) runs the runbook in order with the repository's Supabase secrets, after the Radar suites pass:
+  - `apply_sql`: radar.sql, then radar_registry.sql, then radar_record.sql;
+  - `deploy_function`: `polymarket_sync`, checked by the build it serves;
+  - `set_cron_secret`: the function's and Vault's secrets made one value, never printed, and proved by a dry probe;
+  - `data_enabled`: both halves of the switch; `on` records `enable_note` in `radar_config`;
+  - `apply_cron`: the four schedules.
+
+  A report row that says CHECK THIS fails the run.
+
+## 2026-10-28 — Billing change: the Fairline tier (`black`), and Fairline gated on it
+
+**Authorization change; needs the owner's explicit review.** A third Stripe product, Fairline (`tier = black`, $19.99/month or $159/year, lookup keys `fairline_monthly` / `fairline_annual`). It includes Bet Checker and never opens the Research Terminal. The ladder is red ⊂ black ⊂ blue. Detail: [docs/billing-hardening.md §15](docs/billing-hardening.md), [docs/fairline.md](docs/fairline.md).
+
+- **`supabase/billing_hardening.sql`**:
+  - Both tier CHECK constraints know `black`. Each is dropped and re-added in one statement, and only when it does not.
+  - `billing_learn_price_tier()` accepts `black`.
+  - `has_bet_checker_paid()` is red, black or blue.
+  - New `has_fairline_paid(uuid, timestamptz)`: black or blue in good standing. Service role only.
+  - `billing_access_for()` adds `fairline_paid` and reason `fairline_only`, and offers a black row `upgrade` (a portal switch).
+  - Report row 15 checks every learned red and black price against the rule.
+  - The access rule itself is unchanged.
+- **`supabase/fairline.sql`**: `fairline_paid()` now calls `has_fairline_paid()`. Bet Checker alone is no longer Fairline.
+- **`create_checkout_session`**: `{kind: 'fairline'}`. It sells only a price whose product says `black` at the consented figure, and records the tier before the session exists. It **refuses to sell** (503, nothing created) when the database could not record it: an error, or `refused:tier` from a database without this SQL. Bet Checker's checkout now refuses that answer too. A Bet Checker customer buying Fairline, or a Fairline customer buying the terminal's trial, gets `switch_plan`.
+- **The billing core** (`tools/billing/billing_core.js`, inlined into the three functions):
+  - The tier list knows `black`.
+  - A price Stripe cannot name is named by the price itself: its metadata, else the EdgeDesk lookup key (`bet_checker_*` red, `fairline_*` black). It is then learned.
+  - The webhook does this for the event's own price before its Stripe-down fallback write.
+  - Without this, a portal switch to a never-learned Fairline price during a Stripe outage opened the terminal (`has_access: true`, mutation-tested).
+- **`supabase/juicereel_billing.sql`**: when a Juice Reel buyer's row holds a live red or black Stripe plan, the terminal still replaces it. `juicereel_and_stripe_both_paid` is now raised, so a human cancels the Stripe plan. Before, it was orphaned silently.
+- **`sync_subscription`**: its access answer carries `fairline_paid`.
+- **Pages**:
+  - `lib/edgedesk_pricing.js` gains a `FAIRLINE` block (the one place the price is written), `fairlineOffer()` and `fairlineTerms()`.
+  - `lib/edgedesk_access.js` gains `fairline()`, and black in `betChecker()` and `offerFor()`.
+  - The Fairline page sells Fairline with the automatic-renewal consent, in Bet Checker's order. It gains Settings › Subscription. A Bet Checker reader is offered the portal switch.
+  - The terminal's paywall and the Bet Checker page name a Fairline plan as Fairline.
+  - `index.html`, `app.html` and `bet-checker/index.html` load the changed `edgedesk_pricing.js`, `edgedesk_access.js` (and, on Bet Checker, `edgedesk_bet_checker.js`, at `?v=20261029fl4` since it merged with main's own Bet Checker changes) under a new stamp (`?v=20261029fl2`), so a returning browser cannot keep the old copies. On Bet Checker an old `edgedesk_access.js` would show a Fairline customer as free. The landing page's stamp check failed until this was done; a new check in `tools/fairline/page.test.js` fails on any of these pages loading a stamp from before the `black` tier.
+- **Tests**: `tools/billing/fairline_tier.test.js` (72, new; in `personal-tests.yml`, `fairline-tests.yml` and `deploy-billing.yml`). The Fairline suites now run with black as paid and red as free (SQL 116, page 37, browser 42). `billing_hardening_sql.test.js` expects 15 report rows instead of 14.
+- **Not verified here:** production's `has_active_sub()` and paywall RLS are not in this repository. Run `docs/billing-hardening.md` §11 query 10 before selling Fairline.
+
+## 2026-10-29 — Bet Checker grades the NBA and the NHL (once their odds are on)
+
+**What changed.**
+- **`supabase/bet_checker.sql`** (mirrored in `migrations/20261028120000_bet_checker.sql`):
+  - `bet_checker_rules().sports` adds `basketball_nba` → NBA and `icehockey_nhl` → NHL. The grade thresholds, the fair-price freshness, the free allowance and the CLV formula are unchanged.
+  - `user_bets.sport`'s check (`bettor_decisions.sql`: CFB, NFL) is replaced by one that takes all four leagues, in the same transaction. Every existing row passes it.
+  - Report row 12 says the check takes every league in the rules.
+- **The page**: NBA and NHL pills. An NHL moneyline says it includes overtime and the shootout, because the board carries no 60-minute line.
+- **`docs/bet-checker.md`**: "The leagues", including where results come from. For these two leagues that is only `settle`'s word on the signal.
+
+**When it shows.** Only when capture prices the leagues. Both are off in the odds gateway until the owner turns them on after the November reset, every two hours ([METHODOLOGY-2026-10-29-nba-nhl-lines.md](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md)). Until then the page offers no NBA or NHL game.
+
+**Tests.** `bet_checker_sql.test.js` 137 / 0: the widened check, MLB still refused, NBA and NHL games offered and filtered, an NBA spread and an NHL moneyline graded on the same rules, the puck line, the free allowance, and an NHL close and result. On the previous SQL, 5 fail and the suite stops. `page.e2e.js` 61 / 0: the NHL pill, and the overtime note.
 
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 

@@ -59,7 +59,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-29.2";
+export const BUILD = "polymarket_sync@2026-10-29.3";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -969,8 +969,11 @@ async function tonight(ctx: any) {
   if (!ctx.dry && markets.length) await inChunks(markets.map((m: any) => marketRecord(m, false)), 200, (c) => upsert("poly_markets", c, "condition_id"));
 
   /* 2. match each pending market to ONE EdgeDesk game */
+  /* 100 ids a lookup, as everywhere else here: a night's full slate in one URL
+     is longer than fetch takes (65,534 bytes), and it refuses it "Invalid URL" */
   const ids = markets.map((m: any) => m.condition_id);
-  const stored: any[] = ids.length ? await dbAll("poly_markets?select=condition_id,event_id,match_status,sides,game_start_at&condition_id=in." + inList(ids)) : [];
+  const stored: any[] = [];
+  await inChunks(ids, 100, async (c) => { stored.push(...(await dbAll("poly_markets?select=condition_id,event_id,match_status,sides,game_start_at&condition_id=in." + inList(c)))); });
   const byId: Record<string, any> = {};
   for (const s of stored) byId[s.condition_id] = s;
   const pending = markets.filter((m: any) => !byId[m.condition_id] || !byId[m.condition_id].event_id);

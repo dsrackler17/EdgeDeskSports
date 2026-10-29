@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_split_shadow_v1",
- "generated_at": "2026-10-29T13:28:17.485Z",
+ "generated_at": "2026-10-29T15:10:38.433Z",
  "protocol": {
   "id": "nhl_split_ml_v1",
   "registered": "2026-10-29",
@@ -576,9 +576,9 @@
  "live": {
   "season": 2027,
   "protocol": "nhl_split_ml_v1",
-  "generated_at": "2026-10-29T13:28:17.499Z",
+  "generated_at": "2026-10-29T15:10:38.450Z",
   "shadow_ledger": "hockey/ledger/split_shadow_2027.jsonl",
-  "shadow_ledger_records": 33,
+  "shadow_ledger_records": 42,
   "games_graded": 0,
   "verdict": {
    "status": "PROMOTED",
@@ -620,17 +620,17 @@
   },
   "market_spread": {
    "basis": "production's last pregame ledger price (hockey/ledger/2027.jsonl) for every graded game with a DraftKings close; the slope is the market's logit on the model's (1 = equally spread; above 1 = the model is narrower, every favourite less favoured)",
-   "n": 47,
-   "slope": 1.215,
+   "n": 51,
+   "slope": 1.171,
    "ci95": [
-    1.036,
-    1.394
+    0.999,
+    1.343
    ],
-   "reading": "NARROWER_THAN_MARKET",
-   "mean_favourite_gap_pp": -2.17,
-   "favourites_less_favoured": 35,
-   "model_logit_sd": 0.272,
-   "market_logit_sd": 0.369
+   "reading": "CONSISTENT",
+   "mean_favourite_gap_pp": -2.06,
+   "favourites_less_favoured": 37,
+   "model_logit_sd": 0.285,
+   "market_logit_sd": 0.377
   }
  }
 }

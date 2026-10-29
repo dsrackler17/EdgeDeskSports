@@ -10,7 +10,10 @@
    hosted checkout is stood in for (create_checkout_session is proven against
    the real SQL by tools/billing/tier_flow.test.js).
 
-     1  a signed-out visitor sees the free sign-in, not an error
+     1  a signed-out visitor sees the free sign-in, not an error, and, while
+        sportsbook price refresh is paused, the notice that says what that
+        means for a bet logged now (a signed-in reader sees it too; it goes
+        when the feed is live again)
      2  a free reader logs an NFL bet: the grade appears AT ONCE (green), the
         card is on the list, "1 of 10 grades used this month"
      3  a college football bet grades red; a line EdgeDesk never priced is
@@ -177,18 +180,30 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
   const SHOTS = process.env.BET_CHECKER_SHOTS || '';
   const shot = async (page, name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true }); } };
 
+  /* the odds gateway's public feed state (supabase/odds_api_gateway.sql
+     odds_feed_status), stood in: paused, as production is until the reset */
+  const feedState = (state) => db.sql("create or replace function public.odds_feed_status() returns jsonb language sql stable as $$ select jsonb_build_object('state', " +
+    lit(state) + ", 'paused_by', " + (state === 'paused' ? "'breaker_off'" : 'null') + ") $$; grant execute on function public.odds_feed_status() to anon, authenticated;");
+  feedState('paused');
+
   try {
     /* 1. signed out */
     let { ctx, page } = await pageFor(null);
     await page.goto(BASE + '/bet-checker/');
     chk('signed out: the free sign-in is shown, not an error', await eventually(async () => page.locator('[data-bc="out"]').isVisible()));
     chk('and it offers a free account', /Create a free account/.test(await text(page, '[data-bc="out"]')));
+    chk('price refresh paused: a visitor deciding whether to buy is told what that means for a bet logged now',
+      await eventually(async () => page.locator('[data-bc="feed"]').isVisible()) &&
+      /Sportsbook prices are paused/.test(await text(page, '[data-bc="feed"]')) && /saved as Not graded/.test(await text(page, '[data-bc="feed"]')),
+      await text(page, '[data-bc="feed"]'));
     await ctx.close();
 
     /* 2. a free reader logs an NFL bet */
     ({ ctx, page } = await pageFor(FREE));
     await page.goto(BASE + '/bet-checker/');
     chk('signed in: the page opens on the reader\'s account', await eventually(async () => /Signed in as free@example.com/.test(await text(page, '[data-bc="who"]'))));
+    chk('and a signed-in reader sees the paused notice too', await page.locator('[data-bc="feed"]').isVisible());
+    feedState('live');   // the next load reads a live feed
     chk('no bets yet: the form is open and the list says how it works', await eventually(async () => page.locator('[data-bc="form-wrap"]').evaluate((d) => d.open)) &&
       /No bets logged yet/.test(await text(page, '[data-bc="bets"]')));
     chk('"0 of 10 grades used this month"', /0 of 10 grades used this month/.test(await text(page, '[data-bc="usage"]')));
@@ -262,6 +277,7 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     for (let i = 0; i < 8; i++) db.service('select public.bet_checker_log_bet(' + lit(FREE.id) + ", 'nfl1', 'spread', 'away', 3.5, -110, 'DraftKings', 1, " + lit(crypto.randomBytes(8).toString('hex')) + ');');
     await page.reload();
     await eventually(async () => /10 of 10 grades used this month/.test(await text(page, '[data-bc="usage"]')));
+    chk('prices live again: the notice is gone, with nothing to switch off by hand', await page.locator('[data-bc="feed"]').isHidden());
     chk('ten used: the usage line says so, and what happens next', /10 of 10 grades used this month/.test(await text(page, '[data-bc="usage"]')) &&
       /saved without a grade/.test(await text(page, '[data-bc="usage"]')));
     await page.click('[data-bc="form-wrap"] summary');

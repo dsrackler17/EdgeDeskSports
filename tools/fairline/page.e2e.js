@@ -10,11 +10,15 @@
      1  a signed-out visitor sees the free sign-in, not an error
      2  a free reader: The Board's top three rows and a blurred offer, with the
         filters locked; The Leaks names the biggest leak's slice and shows no
-        real number; The Tape is visibly Coming Soon
+        real number; The Tape is placeholders under a blur, with the offer
      3  a paid reader: every row, a stale row greyed and saying "Stale", DK
         Predictions "Coming Soon" on every row, the market filter; The Leaks
         leads with the biggest real leak in one plain sentence, labels are
-        chips with words, a small sample says so
+        chips with words, a small sample says so; The Tape (fairline_tape.sql,
+        built here by its own build function) leads with the week in one
+        sentence, lists the leaks that crossed into a label, the best number,
+        says its email is Coming Soon while delivery is off, switches weeks,
+        and turns its email off and on
      4  the upgrade: the renewal terms ($19.99 per month, renews automatically,
         cancel anytime in Settings) must be ticked; the server checkout is
         Fairline's; the consent is recorded with those exact words BEFORE the
@@ -78,7 +82,8 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     'flagged_at timestamptz, closed_at timestamptz, closing_sharp_fair numeric, clv_excluded_reason text, closing_source text, result text, ' +
     'closing_dec numeric, closing_at_observed timestamptz, clv numeric, beat_close boolean, best_dec numeric, best_book text, best_quote_age_s integer, n_books integer);');
   for (const f of ['bankroll_and_stakes.sql', 'bettor_decisions.sql', 'billing.sql', 'stripe_webhook.sql', 'billing_hardening.sql', 'bet_checker.sql',
-    'portfolio.sql', 'bet_import.sql', 'fairline.sql']) {
+    'portfolio.sql', 'bet_import.sql', 'fairline.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'funnel.sql',
+    'lifecycle_email.sql', 'fairline_tape.sql']) {
     db.applyFileAtomic(path.join(ROOT, 'supabase', f));
   }
   const sig = (ev, sport, title, home, away, market, sel, point, fair, best, book, seenMin, startH) => db.sql('insert into public.signals (sig_key, event_id, sport_key, sport_title, ' +
@@ -121,6 +126,10 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     bc(PAID.id, 'CFB', 'total', 'over', 55.5, -110, 'Kalshi', i < 5, 3, i);
   }
   for (let i = 0; i < 4; i++) bc(PAID.id, 'NFL', 'moneyline', 'home', 'null', 150, 'Other', i < 1, 1, i);
+  /* The Tape, by its own build: the week the bets' games started in (built
+     "a week later"), and the quiet week before it */
+  db.sql("select public.fairline_tape_build(now() - interval '5 hours' + interval '7 days', true);");
+  db.sql("select public.fairline_tape_build(now() - interval '5 hours', true);");
   const rest = REST.make(db, { serviceKey: 'service-key', anonKey: ANON, tokens });
   const checkouts = [];
 
@@ -188,8 +197,7 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     chk('free: at 390 px the offer\'s button sits wholly inside the locked Board (never cut off)', (await clipped(page, '[data-fl="board-locked"]')) === 0,
       await clipped(page, '[data-fl="board-locked"]'));
     chk('free: the filters are locked, and say so', await page.locator('select[name="sport"]').isDisabled() && /Filters are part of Fairline/.test(await text(page, '[data-fl="filters"]')));
-    chk('The Tape is visibly Coming Soon, not hidden', await page.locator('[data-fl-tab="tape"]').isVisible() && await page.locator('[data-fl-tab="tape"]').isDisabled() &&
-      /Coming Soon/.test(await text(page, '[data-fl-tab="tape"]')));
+    chk('The Tape is a live tab', await page.locator('[data-fl-tab="tape"]').isVisible() && !(await page.locator('[data-fl-tab="tape"]').isDisabled()));
     chk('The Board says plainly it is prices, not picks, and names its limits', /Prices, not picks/.test(await text(page, '[data-fl="board"]')) &&
       /actionable lines only/.test(await text(page, '[data-fl="limits"]')));
     chk('at 390 px nothing scrolls sideways (The Board)', (await overflow(page)) <= 0, await overflow(page));
@@ -202,6 +210,16 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
       await clipped(page, '[data-fl="teaser"] .fl-locked'));
     chk('free: no real number on the page (the server sent none)', !/272|−5\.45|-5\.45|36\.4/.test(lockedHtml) && /00–00/.test(lockedHtml));
     await shot(page, '2-free-leaks-phone');
+    await page.click('[data-fl-tab="tape"]');
+    chk('free: The Tape is the offer, with placeholders only (the server sent no Tape)',
+      await eventually(async () => /The Tape arrives every Monday morning with Fairline/.test(await text(page, '[data-fl="tape-teaser"]'))) &&
+      !/[1-9]/.test(await page.locator('[data-fl="tape-teaser"] .fl-blur').innerHTML()) && await page.locator('[data-fl="tape-teaser"] [data-fl="upgrade"]').isVisible() &&
+      await page.locator('[data-fl="tape-card"]').count() === 0);
+    chk('at 390 px nothing scrolls sideways (the free Tape)', (await overflow(page)) <= 0, await overflow(page));
+    chk('free: Settings offers no Tape email (a free reader gets no Tape)', !/The Tape by email/.test(await text(page, '[data-fl="settings"]')) &&
+      await page.locator('[data-fl="tape-mail"]').count() === 0);
+    await shot(page, '2c-free-tape-phone');
+    await page.click('[data-fl-tab="leaks"]');
 
     /* 4. the upgrade, with the automatic-renewal consent */
     await page.click('[data-fl="teaser"] [data-fl-act="upgrade"]');
@@ -272,6 +290,37 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     chk('paid: Settings › Subscription names Fairline and links the billing portal to cancel', /Plan: EdgeDesk Fairline/.test(await text(page, '[data-fl="settings"]')) &&
       await page.locator('[data-fl="portal"]').getAttribute('href') === PRICING.portalLink());
     await shot(page, '4-paid-leaks');
+    await page.click('[data-fl-tab="tape"]');
+    chk('paid: The Tape leads with the week in one sentence: the record, the dollars, the close',
+      await eventually(async () => /^Last week: 11–23 on 34 bets settled, down \$325\. You beat the close on 19 of 34\.$/.test(await text(page, '[data-fl="tape-card"] .fl-verdict'))),
+      await text(page, '[data-fl="tape-card"]'));
+    chk('paid: the leaks that crossed into a label, a real leak first, with its chip',
+      /^Real leak\s+NFL reached 19 bets settled, enough for a label: Real leak\. This one’s real\./.test(await text(page, '[data-fl="tape-changes"] li')), await text(page, '[data-fl="tape-changes"]'));
+    chk('paid: six changes are said, the rest counted, with a way to The Leaks', (await page.locator('[data-fl="tape-changes"] li').count()) === 6 &&
+      /more slices changed\. Every one is in The Leaks\./.test(await text(page, '[data-fl-goto="leaks"]')));
+    chk('paid: the best number (no fair at entry: the best close)', /^Best number: Over 55\.5 at −110 \(Kalshi\), Buffalo Bills at Kansas City Chiefs — it beat the close by 3\.0%\.$/.test(await text(page, '[data-fl="tape-best"]')),
+      await text(page, '[data-fl="tape-best"]'));
+    chk('paid: price quality says no bet was checked against fair, rather than guess', /none of last week’s 34 bets was checked against EdgeDesk’s fair/.test(await text(page, '[data-fl="tape-price"]')));
+    chk('paid: the email is Coming Soon while delivery is off, and the card says it was not emailed', /The Tape by email:\s*Coming Soon/.test(await text(page, '[data-fl="tape-mail"]')) &&
+      /Email delivery is not switched on yet/.test(await text(page, '[data-fl="tape-card"] .fl-tape-top')));
+    chk('paid: two weeks on file, newest first; the older one is quiet and says so', await page.locator('[data-fl-week]').count() === 2 &&
+      (await page.locator('[data-fl-week]').first().getAttribute('aria-pressed')) === 'true');
+    await page.locator('[data-fl-week]').nth(1).click();
+    chk('…switching weeks shows that week\'s Tape', await eventually(async () => (await page.locator('[data-fl="tape-card"]').getAttribute('data-quiet')) === 'true') &&
+      /No bets on last week’s games, and nothing changed in your leaks\./.test(await text(page, '[data-fl="tape-card"] .fl-verdict')));
+    await shot(page, '4b-paid-tape');
+    await page.locator('[data-fl-week]').first().click();
+    await page.locator('[data-fl-goto="leaks"]').click();
+    chk('…and that link opens The Leaks', await eventually(async () => page.locator('[data-fl="leaks"]').isVisible()) &&
+      (await page.locator('[data-fl-tab="leaks"]').getAttribute('aria-selected')) === 'true');
+    await page.click('[data-fl-tab="tape"]');
+    await page.locator('[data-fl="tape-body"] [data-fl-act="tape-email-off"]').click();
+    chk('paid: the reader turns The Tape emails off, and the database has it',
+      await eventually(async () => /The Tape emails are off/.test(await text(page, '[data-fl="status"]'))) &&
+      db.sql('select fairline_tape_emails from public.user_preferences where user_id = ' + lit(PAID.id) + ';') === 'f' &&
+      /Turn the email on/.test(await text(page, '[data-fl="tape-body"] [data-fl="tape-mail"]')));
+    await page.locator('[data-fl="tape-body"] [data-fl-act="tape-email-on"]').click();
+    chk('…and back on', await eventually(async () => db.sql('select fairline_tape_emails from public.user_preferences where user_id = ' + lit(PAID.id) + ';') === 't'));
     await ctx.close();
     ({ ctx, page } = await pageFor(PAID, 390));
     await page.goto(BASE + '/fairline/#leaks');
@@ -283,6 +332,13 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     await eventually(async () => (await page.locator('[data-fl="rows"] .fl-row[data-key]').count()) === 8);
     chk('at 390 px nothing scrolls sideways (the paid Board)', (await overflow(page)) <= 0, await overflow(page));
     await shot(page, '6-paid-board-phone');
+    await ctx.close();
+    ({ ctx, page } = await pageFor(PAID, 390));
+    await page.goto(BASE + '/fairline/#tape');
+    await eventually(async () => (await page.locator('[data-fl="tape-card"]').count()) > 0);
+    chk('a link to #tape (the email\'s button) opens The Tape', await page.locator('[data-fl="tape"]').isVisible());
+    chk('at 390 px nothing scrolls sideways (The Tape)', (await overflow(page)) <= 0, await overflow(page));
+    await shot(page, '7-paid-tape-phone');
     await ctx.close();
 
     chk('no script error on any page load', errors.length === 0, errors.slice(0, 4));
