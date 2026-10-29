@@ -724,3 +724,5 @@ first `dry_run`, then `apply`. In one transaction, it records every account's
 answer before, makes the change, and records every answer after. It prints
 counts only, and it refuses to commit if an account would lose access through
 anything but a `subscriptions` row. Tests: `tools/billing/paywall_rule.test.js`.
+The first dry run refused: one account had the terminal without a row. EdgeDesk's
+operators (`billing_is_admin()`) now keep it by the same function.
