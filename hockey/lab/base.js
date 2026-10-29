@@ -13,7 +13,8 @@
      prepare()                 games, per-season params, snapshots (+ context
                                features from hockey/lab/context.js)
      glmPredictions(base, C)   calibrated regulation λ for every scored game
-                               under each named feature list in C
+                               under each named feature list in C (and the
+                               raw λ before the pair recalibration)
 
    Time: snapshots are built before each game date from earlier dates only;
    every fit for season S reads seasons before S only.
@@ -92,7 +93,7 @@ function glmPredictions(base, cands, o) {
     for (const c of names) { const x = GLM.applyPairCalibration(r[c].lh, r[c].la, cal[g.season][c]); v[c] = { lh: x.lh, la: x.la }; }
     out.set(g.game_id, v);
   }
-  return { lam: out, fits, cal };
+  return { lam: out, fits, cal, raw };
 }
 
 module.exports = { prepare, glmPredictions, FIRST_SCORED, GLM_WINDOW, SELECTION, CONFIRMATION, LIVE, inWin, windowOf, seasonsAll };

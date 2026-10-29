@@ -1,0 +1,623 @@
+{
+ "schema": "edgedesk_nhl_split_shadow_v1",
+ "generated_at": "2026-10-29T03:01:02.607Z",
+ "protocol": {
+  "id": "nhl_split_ml_v1",
+  "registered": "2026-10-29",
+  "season": 2027,
+  "b": 1.125,
+  "grid": [
+   0.7,
+   1.6,
+   0.025
+  ],
+  "min_fit_games": 500,
+  "decision_n": 1000,
+  "production": "pair recalibration (hockey/model/glm.js): the split factor b is the maximum-likelihood fit of the regulation goal split on the three seasons before (0.9 for 2026-27)",
+  "candidate": "the same pair recalibration with a and c unchanged and b fitted on the moneyline (two-way, overtime and the shootout included) log-likelihood of every earlier out-of-sample game since 2013-14, each priced as production priced it but for b (1.125 for 2026-27, frozen)",
+  "rule": [
+   "Population: every game whose last record in the shadow ledger was written before puck drop, graded against the official final. The shadow ledger starts with this change, so no game read for the registration is in it.",
+   "The decision is read once, on the first 1,000 graded games by start time. Before that the record is IN_PROGRESS and its numbers are interim, not a decision. If the 2026-27 season ends first, the result is NOT_CONFIRMED.",
+   "ELIGIBLE only if, on those games: (a) the moneyline log loss of the shadow minus production has a paired block-bootstrap 95% interval over dates (1,000 resamples, seed 20261013) wholly below zero; (b) the shadow's moneyline calibration slope is between 0.85 and 1.15 and |mean p − mean y| is at most 0.02; (c) the shadow's home −1.5 puck-line log loss is at most 0.001 above production's. Otherwise NOT_CONFIRMED.",
+   "DraftKings' closing prices (research/clv/openers/nhl) are reported beside the result. They never decide it.",
+   "ELIGIBLE changes nothing by itself: promotion is a methodology-change pull request carrying this record, reviewed by the owner."
+  ]
+ },
+ "history": {
+  "generated_at": "2026-10-29T03:01:02.607Z",
+  "model": "edgedesk_nhl_v1:xg_core",
+  "reproduces_production": {
+   "ok": true,
+   "windows": {
+    "selection": {
+     "log_loss": 0.67459,
+     "record": 0.67459,
+     "ok": true
+    },
+    "confirmation": {
+     "log_loss": 0.66286,
+     "record": 0.66286,
+     "ok": true
+    }
+   }
+  },
+  "b_by_season": {
+   "2014": {
+    "production": 1,
+    "shadow": 1
+   },
+   "2015": {
+    "production": 1,
+    "shadow": 1.05
+   },
+   "2016": {
+    "production": 1.025,
+    "shadow": 1.125
+   },
+   "2017": {
+    "production": 0.975,
+    "shadow": 1.075
+   },
+   "2018": {
+    "production": 1.025,
+    "shadow": 1.125
+   },
+   "2019": {
+    "production": 1,
+    "shadow": 1.15
+   },
+   "2020": {
+    "production": 1.075,
+    "shadow": 1.15
+   },
+   "2021": {
+    "production": 1.025,
+    "shadow": 1.125
+   },
+   "2022": {
+    "production": 1.175,
+    "shadow": 1.175
+   },
+   "2023": {
+    "production": 1.15,
+    "shadow": 1.2
+   },
+   "2024": {
+    "production": 1.15,
+    "shadow": 1.175
+   },
+   "2025": {
+    "production": 1.075,
+    "shadow": 1.175
+   },
+   "2026": {
+    "production": 1,
+    "shadow": 1.175
+   },
+   "2027": {
+    "production": 0.9,
+    "shadow": 1.125
+   }
+  },
+  "windows": {
+   "selection": {
+    "seasons": [
+     2014,
+     2020
+    ],
+    "n": 9205,
+    "production": {
+     "log_loss": 0.67459,
+     "calibration_slope": 1.231,
+     "calibration_in_the_large": 0.0073
+    },
+    "shadow": {
+     "log_loss": 0.67442,
+     "calibration_slope": 1.142,
+     "calibration_in_the_large": 0.011
+    },
+    "shadow_minus_production": {
+     "n": 9205,
+     "blocks": 1544,
+     "mean_diff": -0.000173,
+     "ci95": [
+      -0.000493,
+      0.00011
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "puck_line_home_minus_1_5": {
+     "production_log_loss": 0.60743,
+     "shadow_log_loss": 0.60727
+    }
+   },
+   "confirmation": {
+    "seasons": [
+     2021,
+     2026
+    ],
+    "n": 7945,
+    "production": {
+     "log_loss": 0.66286,
+     "calibration_slope": 1.064,
+     "calibration_in_the_large": 0.0088
+    },
+    "shadow": {
+     "log_loss": 0.66312,
+     "calibration_slope": 1.002,
+     "calibration_in_the_large": 0.0115
+    },
+    "shadow_minus_production": {
+     "n": 7945,
+     "blocks": 1288,
+     "mean_diff": 0.000268,
+     "ci95": [
+      -0.000128,
+      0.000627
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "puck_line_home_minus_1_5": {
+     "production_log_loss": 0.61247,
+     "shadow_log_loss": 0.61299
+    }
+   },
+   "live": {
+    "seasons": [
+     2027,
+     2027
+    ],
+    "n": 198,
+    "production": {
+     "log_loss": 0.66574,
+     "calibration_slope": 1.445,
+     "calibration_in_the_large": -0.0374
+    },
+    "shadow": {
+     "log_loss": 0.66309,
+     "calibration_slope": 1.155,
+     "calibration_in_the_large": -0.031
+    },
+    "shadow_minus_production": {
+     "n": 198,
+     "blocks": 29,
+     "mean_diff": -0.002648,
+     "ci95": [
+      -0.007357,
+      0.002782
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "puck_line_home_minus_1_5": {
+     "production_log_loss": 0.59581,
+     "shadow_log_loss": 0.59504
+    }
+   }
+  },
+  "by_season": [
+   {
+    "season": 2014,
+    "n": 1323,
+    "b_production": 1,
+    "b_shadow": 1,
+    "goal_split_b_in_season": 1,
+    "moneyline_b_in_season": 1.05,
+    "log_loss_production": 0.67527,
+    "log_loss_shadow": 0.67527,
+    "shadow_minus_production": 0
+   },
+   {
+    "season": 2015,
+    "n": 1319,
+    "b_production": 1,
+    "b_shadow": 1.05,
+    "goal_split_b_in_season": 1.075,
+    "moneyline_b_in_season": 1.225,
+    "log_loss_production": 0.66882,
+    "log_loss_shadow": 0.66849,
+    "shadow_minus_production": -0.00033
+   },
+   {
+    "season": 2016,
+    "n": 1321,
+    "b_production": 1.025,
+    "b_shadow": 1.125,
+    "goal_split_b_in_season": 0.875,
+    "moneyline_b_in_season": 0.95,
+    "log_loss_production": 0.67974,
+    "log_loss_shadow": 0.68007,
+    "shadow_minus_production": 0.00033
+   },
+   {
+    "season": 2017,
+    "n": 1317,
+    "b_production": 0.975,
+    "b_shadow": 1.075,
+    "goal_split_b_in_season": 1.15,
+    "moneyline_b_in_season": 1.225,
+    "log_loss_production": 0.67129,
+    "log_loss_shadow": 0.6707,
+    "shadow_minus_production": -0.00059
+   },
+   {
+    "season": 2018,
+    "n": 1355,
+    "b_production": 1.025,
+    "b_shadow": 1.125,
+    "goal_split_b_in_season": 0.925,
+    "moneyline_b_in_season": 1.325,
+    "log_loss_production": 0.67041,
+    "log_loss_shadow": 0.66979,
+    "shadow_minus_production": -0.00063
+   },
+   {
+    "season": 2019,
+    "n": 1358,
+    "b_production": 1,
+    "b_shadow": 1.15,
+    "goal_split_b_in_season": 1.15,
+    "moneyline_b_in_season": 1.15,
+    "log_loss_production": 0.67679,
+    "log_loss_shadow": 0.67655,
+    "shadow_minus_production": -0.00024
+   },
+   {
+    "season": 2020,
+    "n": 1212,
+    "b_production": 1.075,
+    "b_shadow": 1.15,
+    "goal_split_b_in_season": 0.975,
+    "moneyline_b_in_season": 0.95,
+    "log_loss_production": 0.68031,
+    "log_loss_shadow": 0.68061,
+    "shadow_minus_production": 0.0003
+   },
+   {
+    "season": 2021,
+    "n": 952,
+    "b_production": 1.025,
+    "b_shadow": 1.125,
+    "goal_split_b_in_season": 1.375,
+    "moneyline_b_in_season": 1.5,
+    "log_loss_production": 0.66262,
+    "log_loss_shadow": 0.66142,
+    "shadow_minus_production": -0.00121
+   },
+   {
+    "season": 2022,
+    "n": 1401,
+    "b_production": 1.175,
+    "b_shadow": 1.175,
+    "goal_split_b_in_season": 1.15,
+    "moneyline_b_in_season": 1.425,
+    "log_loss_production": 0.64821,
+    "log_loss_shadow": 0.64821,
+    "shadow_minus_production": 0
+   },
+   {
+    "season": 2023,
+    "n": 1400,
+    "b_production": 1.15,
+    "b_shadow": 1.2,
+    "goal_split_b_in_season": 1.075,
+    "moneyline_b_in_season": 1.075,
+    "log_loss_production": 0.65932,
+    "log_loss_shadow": 0.65959,
+    "shadow_minus_production": 0.00027
+   },
+   {
+    "season": 2024,
+    "n": 1400,
+    "b_production": 1.15,
+    "b_shadow": 1.175,
+    "goal_split_b_in_season": 1,
+    "moneyline_b_in_season": 1.075,
+    "log_loss_production": 0.6592,
+    "log_loss_shadow": 0.6593,
+    "shadow_minus_production": 0.0001
+   },
+   {
+    "season": 2025,
+    "n": 1398,
+    "b_production": 1.075,
+    "b_shadow": 1.175,
+    "goal_split_b_in_season": 0.9,
+    "moneyline_b_in_season": 1.15,
+    "log_loss_production": 0.66255,
+    "log_loss_shadow": 0.66246,
+    "shadow_minus_production": -0.00009
+   },
+   {
+    "season": 2026,
+    "n": 1394,
+    "b_production": 1,
+    "b_shadow": 1.175,
+    "goal_split_b_in_season": 0.775,
+    "moneyline_b_in_season": 0.725,
+    "log_loss_production": 0.68527,
+    "log_loss_shadow": 0.68733,
+    "shadow_minus_production": 0.00206
+   },
+   {
+    "season": 2027,
+    "n": 198,
+    "b_production": 0.9,
+    "b_shadow": 1.125,
+    "goal_split_b_in_season": 1,
+    "moneyline_b_in_season": null,
+    "log_loss_production": 0.66574,
+    "log_loss_shadow": 0.66309,
+    "shadow_minus_production": -0.00265
+   }
+  ],
+  "pooled_in_sample": {
+   "selection": {
+    "n": 9205,
+    "goal_split_b": 1.025,
+    "moneyline_b": 1.125
+   },
+   "confirmation": {
+    "n": 7945,
+    "goal_split_b": 1.025,
+    "moneyline_b": 1.15
+   }
+  },
+  "variants": {
+   "b_one": {
+    "b_2026_27": 1,
+    "windows": {
+     "selection": {
+      "log_loss": 0.67457,
+      "calibration_slope": 1.25,
+      "calibration_in_the_large": 0.0067,
+      "shadow_minus_production": {
+       "n": 9205,
+       "blocks": 1544,
+       "mean_diff": -0.000021,
+       "ci95": [
+        -0.000122,
+        0.000086
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     },
+     "confirmation": {
+      "log_loss": 0.66343,
+      "calibration_slope": 1.184,
+      "calibration_in_the_large": 0.005,
+      "shadow_minus_production": {
+       "n": 7945,
+       "blocks": 1288,
+       "mean_diff": 0.000573,
+       "ci95": [
+        -0.000033,
+        0.00114
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     },
+     "live": {
+      "log_loss": 0.66437,
+      "calibration_slope": 1.3,
+      "calibration_in_the_large": -0.0345,
+      "shadow_minus_production": {
+       "n": 198,
+       "blocks": 29,
+       "mean_diff": -0.001374,
+       "ci95": [
+        -0.003471,
+        0.001044
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     }
+    }
+   },
+   "goal_split_every_earlier_season": {
+    "b_2026_27": 1.025,
+    "windows": {
+     "selection": {
+      "log_loss": 0.67458,
+      "calibration_slope": 1.241,
+      "calibration_in_the_large": 0.007,
+      "shadow_minus_production": {
+       "n": 9205,
+       "blocks": 1544,
+       "mean_diff": -0.000015,
+       "ci95": [
+        -0.000076,
+        0.000044
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     },
+     "confirmation": {
+      "log_loss": 0.66321,
+      "calibration_slope": 1.115,
+      "calibration_in_the_large": 0.0071,
+      "shadow_minus_production": {
+       "n": 7945,
+       "blocks": 1288,
+       "mean_diff": 0.000355,
+       "ci95": [
+        0.000011,
+        0.000692
+       ],
+       "a_better": false,
+       "b_better": true
+      }
+     },
+     "live": {
+      "log_loss": 0.66407,
+      "calibration_slope": 1.268,
+      "calibration_in_the_large": -0.0338,
+      "shadow_minus_production": {
+       "n": 198,
+       "blocks": 29,
+       "mean_diff": -0.001668,
+       "ci95": [
+        -0.004286,
+        0.001354
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     }
+    }
+   },
+   "moneyline_three_seasons": {
+    "b_2026_27": 1.025,
+    "windows": {
+     "selection": {
+      "log_loss": 0.67446,
+      "calibration_slope": 1.122,
+      "calibration_in_the_large": 0.0118,
+      "shadow_minus_production": {
+       "n": 9205,
+       "blocks": 1544,
+       "mean_diff": -0.00013,
+       "ci95": [
+        -0.000525,
+        0.000228
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     },
+     "confirmation": {
+      "log_loss": 0.66327,
+      "calibration_slope": 0.964,
+      "calibration_in_the_large": 0.0126,
+      "shadow_minus_production": {
+       "n": 7945,
+       "blocks": 1288,
+       "mean_diff": 0.000413,
+       "ci95": [
+        -0.000145,
+        0.000959
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     },
+     "live": {
+      "log_loss": 0.66407,
+      "calibration_slope": 1.268,
+      "calibration_in_the_large": -0.0338,
+      "shadow_minus_production": {
+       "n": 198,
+       "blocks": 29,
+       "mean_diff": -0.001668,
+       "ci95": [
+        -0.004286,
+        0.001354
+       ],
+       "a_better": false,
+       "b_better": false
+      }
+     }
+    }
+   }
+  },
+  "draftkings_2026_27_to_date": {
+   "n": 47,
+   "production": {
+    "n": 47,
+    "slope": 1.215,
+    "ci95": [
+     1.039,
+     1.39
+    ],
+    "reading": "NARROWER_THAN_MARKET",
+    "mean_favourite_gap_pp": -2.17,
+    "favourites_less_favoured": 37,
+    "model_logit_sd": 0.273,
+    "market_logit_sd": 0.369
+   },
+   "shadow": {
+    "n": 47,
+    "slope": 0.971,
+    "ci95": [
+     0.831,
+     1.111
+    ],
+    "reading": "CONSISTENT",
+    "mean_favourite_gap_pp": -0.92,
+    "favourites_less_favoured": 25,
+    "model_logit_sd": 0.341,
+    "market_logit_sd": 0.369
+   },
+   "basis": "walk-forward prices of 2026-27 games with a DraftKings close in research/clv/openers/nhl (the capture began 2026-10-21); read before the registration"
+  },
+  "power": {
+   "per_game_sd_2026_27": 0.0384,
+   "games_for_95_half_width": {
+    "0.001": 5657,
+    "0.002": 1415,
+    "observed": 807
+   },
+   "observed_mean_diff": -0.00265,
+   "reading": "the interval of the shadow-minus-production log loss is about ±1.96·sd/√n; with this season's spread an effect the size seen so far needs about 807 games, one of 0.001 about 5657"
+  }
+ },
+ "live": {
+  "season": 2027,
+  "protocol": "nhl_split_ml_v1",
+  "generated_at": "2026-10-29T03:01:02.614Z",
+  "shadow_ledger": "hockey/ledger/split_shadow_2027.jsonl",
+  "shadow_ledger_records": 0,
+  "games_graded": 0,
+  "verdict": {
+   "status": "IN_PROGRESS",
+   "n": 0,
+   "needed": 1000,
+   "decision_set": "interim: every graded game so far (not a decision)",
+   "draftkings_close": {
+    "n": 0,
+    "production": {
+     "n": 0,
+     "slope": null,
+     "ci95": null,
+     "reading": "TOO_EARLY",
+     "mean_favourite_gap_pp": null,
+     "favourites_less_favoured": null,
+     "model_logit_sd": null,
+     "market_logit_sd": null
+    },
+    "shadow": {
+     "n": 0,
+     "slope": null,
+     "ci95": null,
+     "reading": "TOO_EARLY",
+     "mean_favourite_gap_pp": null,
+     "favourites_less_favoured": null,
+     "model_logit_sd": null,
+     "market_logit_sd": null
+    },
+    "close_log_loss": null,
+    "note": "no-vig DraftKings close from ESPN (research/clv/openers/nhl); reported beside the rule, never deciding it"
+   }
+  },
+  "market_spread": {
+   "basis": "production's last pregame ledger price (hockey/ledger/2027.jsonl) for every graded game with a DraftKings close; the slope is the market's logit on the model's (1 = equally spread; above 1 = the model is narrower, every favourite less favoured)",
+   "n": 47,
+   "slope": 1.215,
+   "ci95": [
+    1.036,
+    1.394
+   ],
+   "reading": "NARROWER_THAN_MARKET",
+   "mean_favourite_gap_pp": -2.17,
+   "favourites_less_favoured": 35,
+   "model_logit_sd": 0.272,
+   "market_logit_sd": 0.369
+  }
+ }
+}
