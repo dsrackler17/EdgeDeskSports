@@ -1,0 +1,52 @@
+# EdgeDesk Prediction Radar — the checks that gate every change to how
+# Polymarket bettors are graded and shown (docs/prediction-radar.md).
+#
+#   tests  all offline: no Polymarket call (the gateway's fetch is a stand-in,
+#          and the fixtures were recorded from the live probe, never edited).
+#          The grading core (bets, CLV, the 5- and 15-minute follow,
+#          conviction, the market-maker rule, the Radar Score, the bootstrap,
+#          the H-RADAR-01 verdict, market matching); the gateway (the switch,
+#          the budget, the backoff, the breaker).
+# The live source is .github/workflows/radar-sources.yml (integration).
+name: Radar tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_radar.js'
+      - 'lib/edgedesk_poly_gateway.js'
+      - 'research/radar/**'
+      - 'tools/radar/**'
+      - '.github/workflows/radar-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_radar.js'
+      - 'lib/edgedesk_poly_gateway.js'
+      - 'research/radar/**'
+      - 'tools/radar/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: radar-tests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The grading core — bets, CLV, follow ROI, conviction, market makers, the Radar Score, the H-RADAR-01 verdict, matching
+        run: node tools/radar/core.test.js
+      - name: The gateway — the switch, the budget, the backoff, the breaker, the endpoints
+        run: node tools/radar/gateway.test.js

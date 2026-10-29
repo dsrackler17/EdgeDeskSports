@@ -57,8 +57,8 @@ jobs:
           EDGD_SB_URL: ${{ vars.NHL_PRICES == 'on' && secrets.SB_URL || '' }}
           EDGD_SB_SERVICE: ${{ vars.NHL_PRICES == 'on' && secrets.SB_SERVICE_ROLE || '' }}
         run: node hockey/market/fetch_quotes.js
-      - name: Price the slate, grade the ledger, rebuild the registry and the board
-        run: node hockey/build_slate.js && node hockey/grade_ledger.js && node engine/build_registry.js && node engine/build_board.js
+      - name: Price the slate, grade the ledger and the split-factor shadow, rebuild the registry and the board
+        run: node hockey/build_slate.js && node hockey/grade_ledger.js && node hockey/lab/split_shadow.js --live && node engine/build_registry.js && node engine/build_board.js
       - name: Player research, the drift monitor and the data-source registry
         run: node --max-old-space-size=6144 hockey/props/slate.js && node --max-old-space-size=6144 hockey/model/diagnostics.js && node hockey/sources/registry.js
       - name: The suites and checks pass before anything is written
@@ -78,4 +78,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "nhl: slate, ledger and the cross-sport board" -- \
-            hockey/data hockey/slate.json hockey/recent.json hockey/goalie_inputs.json hockey/ledger hockey/market/quotes.json hockey/props/slate.json hockey/sources/registry.json hockey/validation/nhl_diagnostics.json engine/registry.json engine/board.json
+            hockey/data hockey/slate.json hockey/recent.json hockey/goalie_inputs.json hockey/ledger hockey/market/quotes.json hockey/props/slate.json hockey/sources/registry.json hockey/validation/nhl_diagnostics.json hockey/validation/nhl_split_shadow.json engine/registry.json engine/board.json
