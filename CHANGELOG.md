@@ -21,6 +21,8 @@
 - **The job** (`supabase/functions/polymarket_sync`, schedules in `supabase/polymarket_sync_cron.sql`): holders every 10 minutes, the pool and wallet histories nightly, then a regrade.
 - **H-RADAR-01** (`research/radar/registration_h_radar_01.json`), committed before any Polymarket response was read: the top 25 directional wallets, followed 5 minutes after entry, must beat the close more than half the time and make money, each with a game-clustered 95% interval. The runner (`research/radar/run_validation.js`) runs it once, on GitHub's runner (`.github/workflows/radar-validation.yml`), and `research/radar/one_look.js` stops any later run from looking again until its report is committed.
 
+**What H-RADAR-01 found** (run 40823328433, `research/radar/H-RADAR-01/RESULTS.md`): **FAILED** on all three criteria. 41 followed bets over 37 games; beat-close rate 24.4% (95% CI 10.3% to 39.0%); follow ROI −1.7% (95% CI −33.4% to +30.5%). 172 of the 200 pool wallets had more than 30 pages of history and were excluded by the registered rule, so only 13 qualified, and 3 of them bet in the holdout. Radar stays Experimental; `supabase/radar_registry.sql` records the result with `passed = false`.
+
 **What the live probe found before the look** (`.github/workflows/radar-sources.yml`, each fixed with a regression test shown failing on the old code):
 - Gamma answers a resolved market only when asked with `closed=true`. Without it the H-RADAR-01 run would have read no market and spent its one look on an empty report.
 - `/v2/holders` refuses more than 100 holders with `include_pnl`, so Smart Money Tonight would never have shown a card.
