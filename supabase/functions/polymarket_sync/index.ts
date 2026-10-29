@@ -833,6 +833,12 @@ const H = 3600e3, MIN = 60e3, DAY = 864e5;
 /* the run's budget: requests it asks poly_api_acquire for, by mode */
 export const ASK: Record<string, number> = { tonight: 400, pool: 20, wallets: 900, grade: 0 };
 const WALLETS_PER_RUN = 3;
+/* what Polymarket accepts (radar-sources run 40812803914): /v2/holders answers
+   at most 100 holders a side with include_pnl (500 is refused, HTTP 400), and
+   one unwindowed page of 100 open NFL events was 48 MB, so events are asked
+   in a window on their end date (a game event's end date is its start),
+   EVENTS_PER_PAGE at a time, at most EVENT_PAGES pages a series */
+const HOLDERS_LIMIT = 100, EVENTS_PER_PAGE = 5, EVENT_PAGES = 16;
 
 /* tests stand in for the clock between retries */
 export const hooks: any = { sleep: (ms: number) => new Promise((r) => setTimeout(r, ms)) };
@@ -933,19 +939,25 @@ async function leagueSeries(ctx: any): Promise<Record<string, string[]>> {
 async function tonight(ctx: any) {
   const now = ctx.nowMs, rules = ctx.rules;
   const horizon = now + rules.upcoming_hours * H;
-  /* 1. the covered leagues' open game events, and their markets */
+  /* 1. the covered leagues' open game events in the window, and their markets */
   const series = await leagueSeries(ctx);
   const seen: Record<string, any> = {};
+  const from = iso(now - 6 * H)!, to = iso(horizon + DAY)!;
   for (const lg of Object.keys(series)) {
     for (const sid of series[lg].slice(0, 2)) {
-      const r = await ask(ctx, "events", { series_id: sid, closed: false, limit: 100 });
-      if (!r.ok) continue;
-      for (const e of R.page(r.data).rows) for (const m of e.markets || []) {
-        const x = R.marketRow(m, e);
-        if (!x) { ctx.drift++; continue; }
-        if (!R.covered(x, rules) || x.game_start_at == null) continue;
-        if (x.game_start_at < now - 6 * H || x.game_start_at > horizon + DAY) continue;
-        seen[x.condition_id] = x;
+      for (let page = 0; page < EVENT_PAGES; page++) {
+        const r = await ask(ctx, "events", { series_id: sid, closed: false, end_date_min: from, end_date_max: to, limit: EVENTS_PER_PAGE, offset: page * EVENTS_PER_PAGE });
+        if (!r.ok) break;
+        const rows = R.page(r.data).rows;
+        for (const e of rows) for (const m of e.markets || []) {
+          const x = R.marketRow(m, e);
+          if (!x) { ctx.drift++; continue; }
+          if (!R.covered(x, rules) || x.game_start_at == null) continue;
+          if (x.game_start_at < now - 6 * H || x.game_start_at > horizon + DAY) continue;
+          seen[x.condition_id] = x;
+        }
+        if (rows.length < EVENTS_PER_PAGE) break;
+        if (page === EVENT_PAGES - 1) ctx.alert("WARNING", "events_capped", lg + " series " + sid + ": more than " + EVENT_PAGES * EVENTS_PER_PAGE + " open events in the window; the rest were not read");
       }
     }
   }
@@ -995,15 +1007,18 @@ async function tonight(ctx: any) {
   if (soon.length) ctx.alert("WARNING", "unmapped_markets", soon.length + " Polymarket game market(s) starting within 12 hours could not be matched to one EdgeDesk game: "
     + soon.slice(0, 5).map((u: any) => (u.question || u.condition_id) + " (" + u.reason + ")").join("; "), { markets: soon.slice(0, 20) });
 
-  /* 3. holders and prices of the matched markets of upcoming games */
-  const live = markets.filter((m: any) => byId[m.condition_id] && byId[m.condition_id].event_id && m.game_start_at > now && m.game_start_at <= horizon);
+  /* 3. holders and prices of the matched markets of upcoming games, at the
+     board's own lines: an alternate line has no EdgeDesk fair to compare with */
+  const upcoming = markets.filter((m: any) => byId[m.condition_id] && byId[m.condition_id].event_id && m.game_start_at > now && m.game_start_at <= horizon);
+  const live = upcoming.filter((m: any) => (byId[m.condition_id].sides || []).some((s: any) => s && s.sig_key));
   ctx.run.details.markets_live = live.length;
+  ctx.run.details.markets_alt_lines = upcoming.length - live.length;
   const pool = new Set((await dbAll("poly_wallets?select=wallet&in_pool=is.true")).map((w: any) => w.wallet));
   const at = iso(now)!;
   const holders: any[] = [], prices: any[] = [], names: Record<string, any> = {};
   for (const m of live) {
     m.last_prices && m.last_prices.forEach((p: any, i: number) => { if (p != null) prices.push({ run_id: ctx.run.run_id, captured_at: at, condition_id: m.condition_id, token_id: m.token_ids[i], outcome_index: i, price: p, source: "gamma_outcome_prices" }); });
-    const r = await ask(ctx, "holders", { condition: m.condition_id, include_pnl: true, limit: 500 });
+    const r = await ask(ctx, "holders", { condition: m.condition_id, include_pnl: true, limit: HOLDERS_LIMIT });
     if (!r.ok) continue;
     const rows = R.holderRows(r.data, m.condition_id);
     if (!rows.length) ctx.drift++;

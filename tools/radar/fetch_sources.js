@@ -205,15 +205,16 @@ function check(label, ok, detail) {
     console.log('HOLDERS v2 parsed ' + hv2.length + ' with avg price ' + hv2.filter((h) => h.avg_price != null).length + ' · v1 parsed ' + hv1.length);
   }
 
-  /* 7. polymarket_sync's own forms (the every-10-minutes job), each once:
-     how many holders one call returns and how they page, and how big an
-     open-events call for one league is with and without a time window */
+  /* 7. polymarket_sync's own forms (the every-10-minutes job): holders 100 a
+     call (500 was refused, run 40812803914), and one league's open events in
+     a window on their end date, 5 a page, paged by offset */
   if (target) {
-    for (const lim of [100, 500]) {
+    for (const lim of [100]) {
       const hb = await ask('sync holders limit ' + lim, 'holders', { condition: target.condition_id, include_pnl: true, limit: lim });
       const pg = hb.ok ? R.page(hb.data) : { rows: [] };
       console.log('SYNC HOLDERS limit ' + lim + ' status ' + hb.status + ' decision ' + hb.decision + ' per side ' + JSON.stringify(pg.rows.map((g) => (g.holders || []).length))
         + ' has_more ' + pg.has_more + ' next_cursor ' + JSON.stringify(pg.next_cursor) + (hb.reason ? ' reason ' + String(hb.reason).slice(0, 200) : ''));
+      check('polymarket_sync\'s holders form (limit ' + lim + ', include_pnl) answers with holders', hb.ok && R.holderRows(hb.data, target.condition_id).length > 0, { status: hb.status, reason: hb.reason });
       if (hb.ok && pg.next_cursor) {
         const hc = await ask('sync holders next page (cursor)', 'holders', { condition: target.condition_id, include_pnl: true, limit: lim, cursor: pg.next_cursor });
         const pc = hc.ok ? R.page(hc.data) : { rows: [] };
@@ -227,9 +228,9 @@ function check(label, ok, detail) {
     const L = leagues.find((x) => x.sport === lg);
     if (!L) continue;
     const sid = String(L.series || '').split(',')[0];
-    const forms = [['as asked', { series_id: sid, closed: false, limit: 100 }],
-      ['end date window', { series_id: sid, closed: false, end_date_min: iso(nowMs - 6 * 3600e3), end_date_max: iso(nowMs + 60 * 3600e3), limit: 100 }],
-      ['start date window', { series_id: sid, closed: false, start_date_min: iso(nowMs - 30 * 86400e3), limit: 100 }]];
+    const win = { series_id: sid, closed: false, end_date_min: iso(nowMs - 6 * 3600e3), end_date_max: iso(nowMs + 60 * 3600e3) };
+    const forms = [['window, page 1', Object.assign({ limit: 5, offset: 0 }, win)], ['window, page 2', Object.assign({ limit: 5, offset: 5 }, win)]];
+    const pageIds = [];
     for (const [name, params] of forms) {
       const r = await gw.get('events', params);
       const evs = r.ok ? R.page(r.data).rows : [];
@@ -239,7 +240,10 @@ function check(label, ok, detail) {
       console.log('SYNC EVENTS ' + lg + ' ' + name + ' ' + r.url + ' status ' + r.status + ' decision ' + r.decision + ' events ' + evs.length + ' bytes ' + bytes
         + ' markets ' + evs.reduce((a, e) => a + (e.markets || []).length, 0) + ' starts ' + (starts.length ? iso(starts[0]) + '..' + iso(starts[starts.length - 1]) : '-')
         + ' in [now-6h, now+60h] ' + inWin + ' endDates ' + JSON.stringify(evs.slice(0, 4).map((e) => [e.startTime, e.endDate, e.startDate])));
+      check('polymarket_sync\'s events form (' + lg + ', ' + name + ') answers, every event inside the window', r.ok && starts.length === inWin && evs.length <= 5, { status: r.status, events: evs.length, inWin });
+      pageIds.push(evs.map((e) => String(e.id)));
     }
+    check('polymarket_sync\'s events pages (' + lg + ') do not overlap', pageIds.length === 2 && pageIds[1].every((id) => pageIds[0].indexOf(id) < 0), pageIds);
   }
 
   fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify({ ran_at: new Date().toISOString(), run: process.env.GITHUB_RUN_ID || null, results, gateway: gw.stats() }, null, 1));
