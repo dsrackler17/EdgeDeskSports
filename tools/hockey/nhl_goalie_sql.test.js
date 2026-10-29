@@ -94,10 +94,10 @@ try {
 
   /* ---- cards ---- */
   const LIM = "'[\"Starter not confirmed. Numbers may change.\"]'";
-  const card = (o) => `insert into public.nhl_game_cards (game_id, version, game_start_utc, home, away, generated_at, trigger, supersedes_id, goalie_pairing_used, goalie_status_home, goalie_status_away, home_goalie_name, away_goalie_name, home_starter_row_id, away_starter_row_id, conflict,
+  const card = (o) => `insert into public.nhl_game_cards (game_id, version, game_start_utc, home, away, generated_at, trigger, reasons, supersedes_id, goalie_pairing_used, goalie_status_home, goalie_status_away, home_goalie_name, away_goalie_name, home_starter_row_id, away_starter_row_id, conflict,
       headline, pairing_price, pairing_range, show_range, edge_gate, edge_gate_state, known_limitations, change_note, model_id, goalie_variant, inputs_hash, core_version)
-    values (${lit(o.game || 'g1')}, ${o.version || 1}, ${o.start || START}, 'VAN', 'MIN', ${o.at || 'now()'}, ${lit(o.trigger || 'initial')}, ${o.supersedes || 'null'}, '{"home":{"goalie_name":"K. Lankinen"},"away":{"goalie_name":"C. Pickard"}}',
-      ${lit(o.sh || 'projected')}, ${lit(o.sa || 'projected')}, 'K. Lankinen', 'C. Pickard', ${o.hrow || 'null'}, ${o.arow || 'null'}, ${o.conflict ? 'true' : 'false'}, '{"p_home":0.4174,"model_id":"edgedesk_nhl_v1:xg_core"}', '{"p_home":0.4117}',
+    values (${lit(o.game || 'g1')}, ${o.version || 1}, ${o.start || START}, 'VAN', 'MIN', ${o.at || 'now()'}, ${lit(o.trigger || 'initial')}, ${lit(JSON.stringify(o.reasons || []))}, ${o.supersedes || 'null'}, '{"home":{"goalie_name":"K. Lankinen"},"away":{"goalie_name":"C. Pickard"}}',
+      ${lit(o.sh || 'projected')}, ${lit(o.sa || 'projected')}, 'K. Lankinen', 'C. Pickard', ${o.hrow || 'null'}, ${o.arow || 'null'}, ${o.conflict ? 'true' : 'false'}, ${o.headline ? lit(JSON.stringify(o.headline)) : `'{"p_home":0.4174,"model_id":"edgedesk_nhl_v1:xg_core"}'`}, '{"p_home":0.4117}',
       '[{"p_home":0.4117},{"p_home":0.3935}]', ${o.show === false ? 'false' : 'true'}, '{"state":"x"}', ${lit(o.gate || 'GATED')}, ${o.lim || LIM}, ${o.note ? lit(JSON.stringify(o.note)) : 'null'},
       ${lit(o.model || 'edgedesk_nhl_v1:xg_core')}, ${lit(o.variant || 'xg_goalie_confirmed')}, 'h', 'edgedesk_nhl_goalie_core_v1') returning id;`;
   const v1 = last(db.service(card({ at: "now() - interval '5 hours'", hrow: c1, arow: cA })));
@@ -113,6 +113,14 @@ try {
   T.chk('cards: a card naming another model than edgedesk_nhl_v1 is refused', fails(() => db.service(card({ game: 'g3', model: 'edgedesk_nhl_v2:xg' }))));
   const v2 = last(db.service(card({ version: 2, supersedes: v1, trigger: 'starter_changed', at: "now() - interval '1 hour'", hrow: c2, arow: cA, note: { text: 'Updated: starter changed from K. Lankinen to L. Meriläinen', first_p_home: 0.4117, current_p_home: 0.4243 } })));
   T.chk('cards: version 2 supersedes version 1, which stays for audit', db.sql("select string_agg(version::text, ',' order by version) from public.nhl_game_cards where game_id = 'g1'") === '1,2' && db.anon("select version from public.nhl_game_cards_current where game_id = 'g1';") === '2');
+  /* the lineup lock (hockey/goalies/core.js nhlgLockPrice): a later version whose headline was priced at lock, under the inputs_changed trigger */
+  const both = { sh: 'confirmed', sa: 'confirmed', gate: 'OPEN', show: false, lim: "'[]'" };
+  const k1 = last(db.service(card(Object.assign({ game: 'g7', at: "now() - interval '40 minutes'" }, both))));
+  const k2why = why(() => db.service(card(Object.assign({ game: 'g7', version: 2, supersedes: k1, trigger: 'inputs_changed', reasons: ['lineup_locked', 'inputs_changed'], at: "now() - interval '10 minutes'",
+    headline: { basis: 'lineup_lock', model_id: 'edgedesk_nhl_v1:xg_all_confirmed', p_home: 0.4051, before: { model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.4174 } } }, both))));
+  const k2 = db.sql("select id from public.nhl_game_cards where game_id = 'g7' and version = 2");
+  T.chk('cards: a lineup-lock version is stored as the sync writes it (inputs_changed, reason lineup_locked, the lock headline), the live variant and production model id unchanged', /^\d+$/.test(k1) && /^\d+$/.test(k2)
+    && db.sql("select headline->>'basis' || ' ' || (reasons ? 'lineup_locked')::text from public.nhl_game_cards where game_id = 'g7' and version = 2") === 'lineup_lock true', k2why);
   T.chk('cards: no update, no delete, no truncate', fails(() => db.service(`update public.nhl_game_cards set trigger = 'initial' where id = ${v2};`)) && fails(() => db.service('delete from public.nhl_game_cards;')) && fails(() => db.sql('truncate public.nhl_game_cards cascade;')));
 
   /* ---- edges and CLV, attached to the version that existed ---- */

@@ -1,40 +1,26 @@
 # Changelog
 
-## 2026-10-29 — Authorization change: each Juice Reel product opens only what it is mapped to (terminal, Bet Checker, or nothing)
+Tests:
+- `football/situational/tests/core.test.js` (69)
+- `model.test.js` (44)
+- `market.test.js` (22)
+- `integration.test.js` (25)
+- `sql.test.js` (35, real PostgreSQL)
+- `tools/football/fsie_card_ui.test.js` (22)
+- `tools/football/fsie_ui.e2e.js` (14, Chromium)
 
-**Authorization change; needs the owner's explicit review.** Until now every product the seller had on Juice Reel opened the whole Research Terminal (`JUICE_REEL_PRODUCT_IDS` empty: "every product"). A cheaper Bet Checker product created there would have sold the terminal for its price, and so would anything else sold on Juice Reel (a picks package).
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
 
-- **The map** (`supabase/juicereel_billing.sql`). The new table `billing_juicereel_products` maps a Juice Reel product id to the terminal (blue) or Bet Checker (red). **A product not mapped opens nothing.** A linked reader who paid for one is told their payment is safe and not to pay again, and `juicereel_product_not_mapped` is raised with the product id. `billing_jr_set_product(product, terminal | bet_checker | none)` writes it and re-checks that product's buyers at once.
-- **Bet Checker's price** (`supabase/billing_hardening.sql`, one line). `billing_tier_of_price('juicereel_bet_checker')` is red, a constant next to `owner_comp` and `comp_trial`. Unknown, the rule would read it as the terminal. So a product cannot be mapped to Bet Checker, and no Bet Checker row is written, until this file is applied (Deploy billing → `apply_sql`).
-- **A higher tier is kept** (`billing_jr_record_state`, `billing_jr_project`).
-  - A buyer of both keeps the terminal.
-  - Bet Checker, or an unmapped product, never replaces a terminal still paid for.
-  - A Bet Checker purchase never writes over any plan in good standing (each includes it).
-  - When the terminal ends, the next reconcile opens the Bet Checker still paid for.
-- **The function** (`supabase/functions/juicereel_billing/index.ts`, build `juicereel_billing-2026-10-29-2`).
-  - It records every product and lets the database decide.
-  - On a return whose status answer (one subscription) did not open the terminal, it reads the owner's list for the buyer's others.
-  - It tells a Bet Checker buyer where it opens.
-  - `check` lists the map, the products bought but not mapped, and the product ids on Juice Reel's list.
-  - `JUICE_REEL_PRODUCT_IDS` is no longer read, and is reported as missing while set.
-- **The workflow** (`deploy-juicereel-billing.yml`). The new `set_product` step takes the product id as a psql variable, never spliced into SQL. `set_mode on` is refused while no product opens the terminal. Both were run against a throwaway PostgreSQL before committing: refused with nothing mapped, then mapped, then passed; an injection-shaped id refused; `bet_checker` refused before the rule and accepted after; `none` unmapped.
-- **Tests** (`tools/billing/juicereel_billing.test.js`, new § 13).
-  - On the old code: 86 passed, 5 failed. The unmapped Bet Checker product, the picks package and a status answer naming no product each opened the terminal (`outcome: active`).
-  - On the fix: 107 passed, 0 failed.
-  - Expectations changed by design: a bare status answer that names no product now opens nothing alone, and opens with the owner's list. The documented webhook's example product is mapped, as an owner maps theirs.
-  - Fixture (`tools/billing/fairline_tier.test.js` § 7): its "terminal bought on Juice Reel" was a buyer state with no product id, which no longer represents a terminal purchase (inconsistent with the schema). It now names a product mapped to the terminal. 72 passed, 0 failed.
-- **Production, in order.**
-  1. Deploy Juice Reel billing → `deploy`. From here no Juice Reel product opens anything until mapped.
-  2. → `set_product` with your EdgeDesk product's id → `terminal`. `check` lists the ids.
-  3. For Bet Checker later: Deploy billing → `apply_sql`, then `set_product` → `bet_checker`.
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
 
-## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
 
-- **Bug.** `run_now` on build `.5` ([run 40905865196](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40905865196)) made 32 wallet calls in about 76 s each, all HTTP 200. The 33rd got HTTP 546, out of compute. A run that dies cannot record anything, so that wallet stayed first in line, and every later call, the 06:10 UTC schedule included, would have died on it. `run_now` also stopped before its grade, so nothing reached the site.
-- **Fix** (`supabase/functions/polymarket_sync/index.ts`, build `polymarket_sync@2026-10-29.6`). Each wallet is marked (`attempt_at`, `attempts` in its cursor) before its work, and the mark is cleared when the work ends. A wallet still marked was in a run that died, or one in flight: it is set aside for 15 minutes, and after 3 such runs read only once a day. A WARNING `wallet_skipped` names it.
-- **run_now** (`.github/workflows/deploy-radar.yml`) carries on after a failed wallet call, since the function now sets that wallet aside. It stops after three failures in a row, always runs the grade, reports how many wallets are set aside, and ends red if any call failed.
-- **Tests.** `tools/radar/sync_fn.test.js`: a wallet whose run died 2 minutes ago is set aside and the next wallet read; after 15 minutes it is read again, marked before the work starts, and its mark cleared when done; after three dead runs it is read only once a day. On the old code: 61 passed, 3 failed. On the fix: 64 passed, 0 failed. The workflow step was run against a stand-in function and a throwaway PostgreSQL: one HTTP 546 among the calls went on, graded and ended red; three in a row stopped, graded and ended red; a normal run ended green; at most one call was ever in flight.
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
 
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
@@ -155,6 +141,53 @@ All run in `cfb-sp-plus-tests.yml`.
   - `apply_cron`: the four schedules.
 
   A report row that says CHECK THIS fails the run.
+
+## 2026-10-29 — Prediction Radar 3/3: the Radar record, "How following has done", append-only and graded against the close and the result
+
+**What it is.** A record of every Smart Money Tonight card, kept so nobody can edit it, and graded the way a follower would have done. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("The Radar record").
+- **`radar_cards`.** Every card is published once per game and side, at the Polymarket price at that moment, by the same function that draws Smart Money Tonight (`radar_publish_cards()`).
+- **`radar_card_results`.** Each card is graded once after its game (`radar_grade_cards()`):
+  - the close, whether the card beat it, and its CLV%;
+  - the result, from the market's own resolution;
+  - the ROI of one unit at the published price.
+
+  A card with no resolution a week after its start is void. Both tables are append-only. Their guards refuse a grade whose arithmetic is not the database's own.
+- **`radar_record()`**, for subscribers. It reports record, ROI and beat-close rate, plus a small-sample flag under 200 graded cards. It stays labelled **Experimental** until H-RADAR-01 passes its criteria, and quotes what H-RADAR-01 found verbatim.
+- **"How following has done"** sits under Smart Money Tonight on the Overview.
+- **`polymarket_sync`** publishes and grades in the 10-minute run, after it stores holders, prices and resolutions. While the record is not installed it raises a warning.
+
+**Tests.** `radar_sql.test.js` 198, `sync_fn.test.js` with the record, `radar_ui.test.js` 72, `radar_ui.e2e.js` 54.
+
+## 2026-10-29 — Prediction Radar 2/3: Smart Money Tonight on the Overview, trader pages, and the free /radar/ page
+
+**What a reader sees.** Nothing is drawn while Radar is off or H-RADAR-01 is not registered. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("Where it shows").
+- **Smart Money Tonight** is the first thing on the Overview, for subscribers. Each card leads with one plain sentence ("7 top bettors, $84K, on Chiefs -3"). Then come the average entry, the price now and whether it moved, EdgeDesk's fair with "Smart money agrees/disagrees with the sharp fair price" (or why there is no comparison), conviction flags, the other side, and each bettor. Cards are sorted by bettors, then dollars. A game with no graded bettor shows nothing.
+- **Trader pages** (a sheet in the terminal, a route on `/radar/`): the public name only when the wallet made it public, else a short address. They show record, ROI, CLV, follow ROI, style, sample, open positions (subscribers) and every graded bet with Polygonscan links. No bio.
+- **`/radar/`**, free: the graded leaderboard, trader pages, what H-RADAR-01 found, and a teaser of the first card that never names its side (`radar_teaser()`, new in `supabase/radar.sql`; the migration mirror stays byte-identical).
+- **Labels and limits.** Experimental, Small sample and High conviction are always visible. The Radar Score is never shown without its components. Every surface carries the Known limitations block. There are no bet or copy buttons, no affiliate links, and no promises.
+
+**Tests.** `tools/radar/radar_ui.test.js` 59, `tools/radar/radar_ui.e2e.js` 50 (Chromium at 390 and 1280 px), `radar_sql.test.js` 172 (with the teaser), `tools/site/free_access.test.js` with the new page and doors.
+
+## 2026-10-29 — Prediction Radar 1/3: Polymarket sports bettors graded from their own trades, behind a gateway and a switch; H-RADAR-01 registered before any data and run once
+
+**What it is.** Radar grades the Polymarket sports wallets with the most volume on their own trades: record, profit, ROI, CLV, the ROI a follower would have had 5 (and 15) minutes later, conviction and a style (Directional, Market Maker, Hedger). It is research, labelled Experimental, the same for every reader, and nothing trades for anyone. No UI ships in this change. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md).
+
+**What changed.**
+- **The grading core** (`lib/edgedesk_radar.js`). Every rule comes from one constant, `public.radar_rules()`, and nothing runs without it. P&L is computed from trades; Polymarket's P&L and rankings hosts are never read.
+- **The gateway** (`lib/edgedesk_poly_gateway.js`), the only Radar client of Polymarket: the `POLYMARKET_DATA_ENABLED` switch (off by default, one SQL statement turns it on or off, no deploy), a budget granted under a row lock, pacing, bounded backoff, a breaker. `tools/radar/no_bypass.test.js` fails if any other file names a Polymarket host.
+- **The data** (`supabase/radar.sql`, mirrored in `supabase/migrations/20261029120000_radar.sql`): append-only trades with transaction hashes, bets, versioned grades, holder and price snapshots. Anon reads the graded leaderboard and trader pages once Radar is on and H-RADAR-01 is registered; Smart Money Tonight and open positions are for subscribers (`has_active_sub()`). No existing policy changes.
+- **The job** (`supabase/functions/polymarket_sync`, schedules in `supabase/polymarket_sync_cron.sql`): holders every 10 minutes, the pool and wallet histories nightly, then a regrade.
+- **H-RADAR-01** (`research/radar/registration_h_radar_01.json`), committed before any Polymarket response was read: the top 25 directional wallets, followed 5 minutes after entry, must beat the close more than half the time and make money, each with a game-clustered 95% interval. The runner (`research/radar/run_validation.js`) runs it once, on GitHub's runner (`.github/workflows/radar-validation.yml`), and `research/radar/one_look.js` stops any later run from looking again until its report is committed.
+
+**What H-RADAR-01 found** (run 40823328433, `research/radar/H-RADAR-01/RESULTS.md`): **FAILED** on all three criteria. 41 followed bets over 37 games; beat-close rate 24.4% (95% CI 10.3% to 39.0%); follow ROI −1.7% (95% CI −33.4% to +30.5%). 172 of the 200 pool wallets had more than 30 pages of history and were excluded by the registered rule, so only 13 qualified, and 3 of them bet in the holdout. Radar stays Experimental; `supabase/radar_registry.sql` records the result with `passed = false`.
+
+**What the live probe found before the look** (`.github/workflows/radar-sources.yml`, each fixed with a regression test shown failing on the old code):
+- Gamma answers a resolved market only when asked with `closed=true`. Without it the H-RADAR-01 run would have read no market and spent its one look on an empty report.
+- `/v2/holders` refuses more than 100 holders with `include_pnl`, so Smart Money Tonight would never have shown a card.
+- One unwindowed page of open NFL events was 48 MB; events are now asked in a window, 5 a page.
+- Gamma's `spread` is the order book's spread, not a point; the line is read from `line` only.
+
+**Tests.** `tools/radar/`: core 96, fixtures 43 (recorded from the live probe), gateway 29, no-bypass 11, the runner and the one-look guard 30, the SQL on a real PostgreSQL as anon, a signed-in reader, a subscriber and the service role, and the shipped function against it 51. All run by `.github/workflows/radar-tests.yml`.
 
 ## 2026-10-28 — Billing change: the Fairline tier (`black`), and Fairline gated on it
 

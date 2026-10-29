@@ -121,6 +121,29 @@ const out = CMP.compare(CMP.view(sg, SLATE, { goalies: live(c1, 1) }), mk, { now
 const allSides = out.markets.reduce((a, m) => a.concat(m.sides), []);
 chk('compare: every side of the moneyline, puck line and total carries the goalie gate', out.markets.length === 3 && allSides.every((x) => x.gates.some((y) => y.gate === 'goalie_gate')), out.markets.map((m) => m.kind));
 
+/* ---------------------------------------------------------------- the lineup lock: the card's headline replaces the slate's */
+{
+  const SRC = require(path.join(__dirname, 'fixtures', 'nhl_goalie_sources.js'));
+  const IL = SRC.withLineups(INPUTS), giL = IL.games[0];
+  const mC = merged([o('nhl_api_boxscore', '8482447', 'L. Meriläinen', 'confirmed')], [o('nhl_api_boxscore', '8475717', 'C. Pickard', 'confirmed')]);
+  const lineups = { home: SRC.skaterIds('VAN', 17, 2).concat(['9100099']), away: SRC.skaterIds('MIN') };
+  const c5 = G.nhlgBuildCard(giL, IL, mC, DIST, { now: '2026-10-26T01:50:10Z', first: r1, lineups });
+  const c4b = G.nhlgBuildCard(giL, IL, mC, DIST, { now: '2026-10-26T01:30:15Z', first: r1 });
+  const hL = GL.html(live(c5, 5), g), tL = text(hL);
+  chk('block at lock: "Priced at lineup lock", the lock price, its fair line, and the slate\'s price before lock', /Priced at lineup lock\./.test(tL) && tL.indexOf('VAN ' + (Math.round(c5.headline.p_home * 1000) / 10).toFixed(1) + '%') >= 0 && /before lock: VAN 41\.7%/.test(tL), tL);
+  chk('block at lock: no second, goalie-only "With these starters" number beside it', !/With these starters/.test(tL));
+  chk('block before lock (both Confirmed): the goalie-only number, and no lock line', /With these starters/.test(text(GL.html(live(c4b, 4), g))) && !/Priced at lineup lock/.test(text(GL.html(live(c4b, 4), g))));
+  let vl = CMP.view(sg, SLATE, { goalies: live(c5, 5) });
+  chk('compare at lock: the moneyline is the card\'s lock price, and the view says it is (priced_at, card version, before lock)', vl.priced_at === 'lineup_lock' && vl.moneyline.home === c5.headline.p_home && vl.lineup_lock.card_version === 5 && vl.lineup_lock.before_p_home === 0.4174, [vl.priced_at, vl.moneyline, vl.lineup_lock]);
+  chk('compare at lock: puck lines and totals come from the same lock distribution, each with its push', vl.puck_line.length === 4 && vl.puck_line.find((x) => x.home_line === -1.5).home === c5.headline.markets.puck_line['-1.5'][0] && vl.total.lines.length === 5 && vl.total.expected === c5.headline.exp_total && vl.total.lines.every((x) => Math.abs(x.over + x.under + x.push - 1) < 1e-6), vl.total);
+  vl = CMP.view(sg, SLATE, { goalies: live(c5, 5), compact: true });
+  chk('compare at lock, compact (Today\'s Games): only the ±1.5 puck lines', vl.puck_line.length === 2 && vl.puck_line.every((x) => Math.abs(Math.abs(x.home_line) - 1.5) < 1e-9));
+  chk('compare before lock: the slate\'s numbers, said to be the slate\'s', CMP.view(sg, SLATE, { goalies: live(c4b, 4) }).priced_at === 'slate' && CMP.view(sg, SLATE, { goalies: live(c4b, 4) }).moneyline.home === sg.prices.moneyline.home);
+  const outL = CMP.compare(CMP.view(sg, SLATE, { goalies: live(c5, 5) }), mk, { now: Date.parse('2026-10-26T01:51:00Z') });
+  const mlL = outL.markets.find((m) => m.kind === 'moneyline');
+  chk('compare at lock: EdgeDesk\'s side of the moneyline and its EV at the book are the lock price\'s', mlL && Math.abs(mlL.sides.find((x) => x.key === 'home' || x.side === 'home' || x.name === 'VAN').edgedesk_pct - c5.headline.p_home * 100) < 0.051, mlL && mlL.sides);
+}
+
 /* ================================================ the live read: load() and its errors
    Every answer becomes the card's state or its error, never a rejection. Before 2026-10-26 an answer
    with no state was thrown inside .then(ok, fail)'s ok, where fail never sees it: load() rejected, the

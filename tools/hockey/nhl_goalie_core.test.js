@@ -200,7 +200,11 @@ d = G.nhlgIsDue(Date.parse('2026-10-26T01:30:10Z'), '2026-10-26T01:15:05Z', MV);
 chk('due: the T-30 poke is the final pass for the game', d.due && d.kinds.join() === 'final_pass' && d.final_pass_games.join() === '2026020184', d);
 d = G.nhlgIsDue(Date.parse('2026-10-25T20:00:00Z'), '2026-10-25T14:00:00Z', MV);
 chk('due: a missed slot within 90 minutes is run once; older ones are not chased', d.due && d.kinds.join() === 'two_hour' && !G.nhlgIsDue(Date.parse('2026-10-25T21:45:00Z'), '2026-10-25T14:00:00Z', MV).due);
-chk('cadence: an afternoon game adds its own 15-minute window', G.nhlgDueTimes([{ game_id: 'x', start_utc: '2026-10-25T17:00:00Z' }]).filter((x) => x.kind !== 'two_hour').length === 12);
+chk('cadence: an afternoon game adds its own 15-minute window', G.nhlgDueTimes([{ game_id: 'x', start_utc: '2026-10-25T17:00:00Z' }]).filter((x) => x.kind === 'pre_game' || x.kind === 'final_pass').length === 12);
+{
+  const s = Date.parse('2026-10-25T17:00:00Z'), lock = G.nhlgDueTimes([{ game_id: 'x', start_utc: '2026-10-25T17:00:00Z' }]).filter((x) => x.kind === 'lineup_lock').map((x) => (s - x.at) / 60000);
+  chk('cadence: after the T-30 final pass, a lineup-lock check every 5 minutes until puck drop (T-25 ... T-5)', lock.join() === '25,20,15,10,5', lock);
+}
 chk('Eastern time: 8 AM on 2026-11-01 (standard time) is 13:00 UTC; on 2026-10-25 (daylight) 12:00 UTC', new Date(G.nhlgEtToUtc('2026-11-01', 8, 0)).toISOString() === '2026-11-01T13:00:00.000Z' && new Date(G.nhlgEtToUtc('2026-10-25', 8, 0)).toISOString() === '2026-10-25T12:00:00.000Z');
 chk('Eastern date: a 10 PM ET puck drop belongs to its Eastern day', G.nhlgEtDate(Date.parse('2026-10-26T02:00:00Z')) === '2026-10-25');
 chk('due: no games, nothing is due', !G.nhlgIsDue(Date.now(), null, []).due && G.nhlgIsDue(Date.now(), null, []).next_due_at === null);
@@ -211,6 +215,48 @@ try {
   const INL = require(path.join(ROOT, 'tools', 'hockey', 'inline_goalie_core.js'));
   chk('the edge function carries hockey/goalies/core.js and hockey/model/distribution.js verbatim (node tools/hockey/inline_goalie_core.js)', INL.current());
 } catch (e) { chk('the inline check loads', false, e.message); }
+/* ---------------------------------------------------------------- the lineup lock */
+{
+  const IN = FX.withLineups(INPUTS), gi = IN.games[0];
+  const starters = { homeGoalies: [{ id: 8482447, name: 'L. Meriläinen', starter: true }], awayGoalies: [{ id: 8475717, name: 'C. Pickard', starter: true }] };
+  const bx = G.nhlgParseNhlBoxscore(FX.boxscore(Object.assign({ id: 2026020184, home: 'VAN', away: 'MIN', homeSkaters: FX.skaterIds('VAN'), awaySkaters: FX.skaterIds('MIN') }, starters)), {});
+  chk('lock: the boxscore\'s dressed skaters are read, forwards and defence, never the goalies', bx.lineups.home.length === 18 && bx.lineups.away.length === 18 && bx.lineups.home.indexOf('8482447') < 0 && bx.rows.length === 2, bx.lineups);
+  chk('lock: before lineups post the boxscore lists no lineup', G.nhlgParseNhlBoxscore(FX.boxscore({ id: 2026020184, home: 'VAN', away: 'MIN' }), {}).lineups.home === null);
+  const side = (id, name) => ({ goalie_id: id, goalie_name: name, status: 'confirmed', source: 'nhl_api_boxscore', conflict: false });
+  const mC = { home: side('8482447', 'L. Meriläinen'), away: side('8475717', 'C. Pickard') };
+  const full = { home: FX.skaterIds('VAN'), away: FX.skaterIds('MIN') };
+  const lk = G.nhlgLockPrice(gi, IN, mC, full, DIST);
+  const Bt = IN.model.all_beta, rH = G.nhlgRate(IN, '8482447', gi).rate, rA = G.nhlgRate(IN, '8475717', gi).rate;
+  const lam = G.nhlgCalibrate(Math.exp(gi.lineup.eta.home + Bt.goalie * rA), Math.exp(gi.lineup.eta.away + Bt.goalie * rH), IN.model.all_pair_calibration);
+  const D0 = DIST.game({ lamH: lam.lh, lamA: lam.la, effects: IN.distribution.effects, ot: IN.distribution.ot });
+  chk('lock: with both typical lineups the price is the formula (both deltas 0), named and labelled', lk && near(lk.p_home, D0.p_home, 1e-4) && lk.lineup.delta.home === 0 && lk.lineup.delta.away === 0 && lk.basis === 'lineup_lock' && lk.model_id === 'edgedesk_nhl_v1:xg_all_confirmed', lk);
+  chk('lock: overtime and shootout come from the same lock distribution', lk && near(lk.p_overtime, D0.p_ot, 1e-4) && near(lk.p_shootout, D0.p_so, 1e-4) && lk.p_shootout < lk.p_overtime, lk && [lk.p_overtime, lk.p_shootout]);
+  const miss = { home: full.home.slice(1).concat(['9100099']), away: full.away };
+  const lk2 = G.nhlgLockPrice(gi, IN, mC, miss, DIST);
+  chk('lock: a regular out for a call-up with no history (the 10-minute prior) lowers the club\'s own price', lk2 && near(lk2.lineup.delta.home, Math.log((17 * 1000 + 600) / 18000), 1e-4) && lk2.p_home < lk.p_home, lk2 && lk2.lineup);
+  chk('lock: fewer than 12 listed skaters a side is not a lineup yet', G.nhlgLockPrice(gi, IN, mC, { home: full.home.slice(0, 11), away: full.away }, DIST) === null);
+  const mL = JSON.parse(JSON.stringify(mC)); mL.away.status = 'likely';
+  chk('lock: a starter not Confirmed is not a lock', G.nhlgLockPrice(gi, IN, mL, full, DIST) === null);
+  const mX = JSON.parse(JSON.stringify(mC)); mX.home.conflict = true;
+  chk('lock: sources disagreeing on a starter is not a lock', G.nhlgLockPrice(gi, IN, mX, full, DIST) === null);
+  chk('lock: inputs built before this change (no lineup block) never lock', G.nhlgLockPrice(GI, INPUTS, mC, full, DIST) === null);
+  const cU = G.nhlgBuildCard(gi, IN, mC, DIST, { now: '2026-10-26T01:31:00Z' });
+  const cL = G.nhlgBuildCard(gi, IN, mC, DIST, { now: '2026-10-26T01:50:00Z', lineups: miss });
+  chk('lock: before lock the headline is the slate\'s, unchanged', !cU.lineup_locked && cU.headline.p_home === GI.headline.p_home && !cU.headline.basis && /until lineup lock/.test(cU.notes[0]));
+  chk('lock: at lock the headline is the lock price, with the slate\'s price before it, and the gate open', cL.lineup_locked && cL.headline.basis === 'lineup_lock' && cL.headline.p_home === lk2.p_home && cL.headline.before.p_home === GI.headline.p_home && cL.edge_gate.state === 'OPEN' && /^Priced at lineup lock/.test(cL.notes[0]), cL.headline);
+  chk('lock: the headline carries every line the card prices, from one distribution', cL.headline.markets.puck_line['-1.5'][0] === cL.headline.puck_line.home_minus_1_5 && Object.keys(cL.headline.markets.total).length === 5 && near(cL.headline.p_home + cL.headline.p_away, 1, 1e-4) && cL.headline.fair_home === DIST.probToAmerican(cL.headline.p_home));
+  const chL = G.nhlgCardChange(cU, cL);
+  chk('lock: a new version, reason lineup_locked, under the table\'s inputs_changed trigger', chL.changed && chL.reasons.indexOf('lineup_locked') >= 0 && chL.trigger === 'inputs_changed', chL);
+  chk('lock: the card keeps the lineups it locked with, and a run with no lineup read re-locks from them unchanged', G.nhlgLockedLineups && JSON.stringify(G.nhlgLockedLineups(cL)) === JSON.stringify(miss)
+    && !G.nhlgCardChange(cL, G.nhlgBuildCard(gi, IN, mC, DIST, { now: '2026-10-26T01:58:00Z', lineups: G.nhlgLockedLineups(cL) })).changed && G.nhlgLockedLineups(cU) === null, G.nhlgLockedLineups && G.nhlgLockedLineups(cL));
+  chk('lock: the same lock five minutes later is not a new version', !G.nhlgCardChange(cL, G.nhlgBuildCard(gi, IN, mC, DIST, { now: '2026-10-26T01:55:00Z', lineups: miss })).changed);
+  const mS = { home: Object.assign({}, mC.home, { status: 'likely' }), away: mC.away };
+  const chS = G.nhlgCardChange(G.nhlgBuildCard(gi, IN, mS, DIST, { now: '2026-10-26T01:31:00Z' }), cL);
+  chk('lock: a lock in the same run as a confirmation keeps the status_changed trigger and records both', chS.trigger === 'status_changed' && chS.reasons.indexOf('lineup_locked') >= 0, chS);
+  const gate = G.nhlgEdgeGate(cL, { market: 'moneyline', side: 'home', american: 150 });
+  chk('lock: an edge at lock is judged with both starters Confirmed (OPEN)', gate.flag_allowed && gate.basis === 'BOTH_CONFIRMED');
+}
+
 try {
   const B = require(path.join(ROOT, 'hockey', 'build_slate.js'));
   chk('the slate build exports the inputs writer and its check', typeof B.goalieInputsFile === 'function' && typeof B.checkGoalieInputs === 'function');
@@ -218,6 +264,15 @@ try {
   chk('build_slate --check: the fixture inputs re-price the slate scenarios', B.checkGoalieInputs(fakeSlate, INPUTS).length === 0, B.checkGoalieInputs(fakeSlate, INPUTS));
   const bad = JSON.parse(JSON.stringify(INPUTS)); bad.games[0].eta.home += 0.01;
   chk('build_slate --check: inputs that no longer re-price the scenarios fail', B.checkGoalieInputs(fakeSlate, bad).length > 0);
+  /* the lineup lock's own check: each club's previous lineup with the likeliest starters re-prices to the build's number */
+  const IL = FX.withLineups(INPUTS), L = IL.games[0].lineup;
+  const both = { home: { status: 'confirmed', goalie_id: L.check.home_goalie_id, goalie_name: 'x' }, away: { status: 'confirmed', goalie_id: L.check.away_goalie_id, goalie_name: 'x' } };
+  L.check.p_home = G.nhlgLockPrice(IL.games[0], IL, both, L.last, DIST).p_home;
+  chk('build_slate --check: lineup-lock inputs that re-price the build\'s number pass', B.checkGoalieInputs(fakeSlate, IL).length === 0, B.checkGoalieInputs(fakeSlate, IL));
+  const IL2 = JSON.parse(JSON.stringify(IL)); IL2.games[0].lineup.typical.home *= 1.05;
+  chk('build_slate --check: lineup-lock inputs that no longer re-price it fail', B.checkGoalieInputs(fakeSlate, IL2).some((f) => /lineup lock re-prices/.test(f)), B.checkGoalieInputs(fakeSlate, IL2));
+  const IL3 = JSON.parse(JSON.stringify(IL)); IL3.games[0].lineup.last.home = IL3.games[0].lineup.last.home.slice(0, 5);
+  chk('build_slate --check: a lineup block that cannot price at all fails', B.checkGoalieInputs(fakeSlate, IL3).some((f) => /do not price/.test(f)));
 } catch (e) { chk('the slate build loads', false, e.message); }
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 600) : '')));
