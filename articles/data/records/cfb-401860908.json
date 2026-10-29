@@ -21,8 +21,8 @@
   "game_time": "2026-11-01T02:00:00.000Z",
   "game_when_label": "2026-11-01 02:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-29T00:49:03.363Z",
-  "generated_at": "2026-10-29T00:49:03.363Z",
+  "updated_at": "2026-10-29T09:49:42.098Z",
+  "generated_at": "2026-10-29T09:49:42.098Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -124,23 +124,23 @@
         "note": "Quoted from Boise State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 82,
-      "inputs_reached_pct": 73,
+      "inputs_reached_pct": 81,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 21,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 13,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,18 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -1460,18 +1472,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
@@ -1490,14 +1490,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1575,11 +1567,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: Texas State’s availability report is not due yet",
-        "score": 89,
+        "text": "87 · STRONG",
+        "sub": "main deduction: no market quote is joined to this game",
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1593,7 +1585,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.2,
+            "score": 10.7,
             "max": 20
           },
           {
@@ -1621,9 +1613,25 @@
             "max": 10
           }
         ],
-        "main_deduction": "Texas State’s availability report is not due yet; the impact of Texas State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "no market quote is joined to this game",
         "capped_by": [],
-        "next_actions": [],
+        "next_actions": [
+          {
+            "action": "Confirm Texas State’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Confirm Boise State’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 0.81,
@@ -1655,9 +1663,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "LINE_MOVING",
-        "label": "LINE MOVING",
-        "text": "EdgeDesk’s number is steady, but the market has moved 1.0 pts toward Texas State (espn · DraftKings)."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 14 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "LOW",
@@ -1874,50 +1882,58 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "19oxmmehnuplw",
+    "packet_hash": "d164ol1wbkm1j",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Texas State win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.2 points.",
     "gap": {
-      "points": 0.8,
-      "toward": "Texas State",
-      "other": "Boise State"
+      "points": 0.2,
+      "toward": "Boise State",
+      "other": "Texas State"
     },
     "supporting": [
-      "When Boise State has the ball (big plays through the air): Boise State’s offense turns 9.2% of its pass plays into explosive gains, and Texas State’s defense gives up explosive gains on 8.0% of opponent pass plays (FBS average 10.2%).",
-      "When Boise State has the ball (big plays on the ground): Boise State’s offense turns 8.3% of its runs into explosive gains, and Texas State’s defense gives up explosive gains on 2.9% of opponent runs (FBS average 6.5%).",
-      "When Texas State has the ball (the run game against the run defense): Texas State’s offense averages 6.1 yards per carry, and Boise State’s defense allows 5.0 yards per carry (FBS average 5.0).",
-      "When Texas State has the ball (third down): Texas State’s offense converts 52.8% of its third downs, and Boise State’s defense allows opponents to convert 35.9% of their third downs (FBS average 39.5%)."
-    ],
-    "contradicting": [
       "When Boise State has the ball (pass protection against the pass rush): Boise State’s offense has allowed a sack on 2.6% of its dropbacks, and Texas State’s defense sacks the quarterback on 3.1% of opponent dropbacks (FBS average 5.7%).",
       "When Texas State has the ball (pass protection against the pass rush): Texas State’s offense has allowed a sack on 3.9% of its dropbacks, and Boise State’s defense sacks the quarterback on 10.3% of opponent dropbacks (FBS average 5.7%).",
       "When Texas State has the ball (the line of scrimmage on running plays): Texas State’s offense is stopped at or behind the line on 13.7% of its runs, and Boise State’s defense stops 25.9% of opponent runs at or behind the line (FBS average 17.5%).",
       "In his last two games (Colorado State and Utah State), Jackson averaged 6.7 yards per attempt, against 8.9 in his five games before that."
     ],
+    "contradicting": [
+      "When Boise State has the ball (big plays through the air): Boise State’s offense turns 9.2% of its pass plays into explosive gains, and Texas State’s defense gives up explosive gains on 8.0% of opponent pass plays (FBS average 10.2%).",
+      "When Boise State has the ball (big plays on the ground): Boise State’s offense turns 8.3% of its runs into explosive gains, and Texas State’s defense gives up explosive gains on 2.9% of opponent runs (FBS average 6.5%).",
+      "When Texas State has the ball (the run game against the run defense): Texas State’s offense averages 6.1 yards per carry, and Boise State’s defense allows 5.0 yards per carry (FBS average 5.0).",
+      "When Texas State has the ball (third down): Texas State’s offense converts 52.8% of its third downs, and Boise State’s defense allows opponents to convert 35.9% of their third downs (FBS average 39.5%)."
+    ],
     "quarterbacks": [
       "Maddux Madsen has completed 124 of 190 passes (65.3%) for 1,445 yards, 7.6 yards per attempt, 14 touchdowns and no interceptions in seven games for Boise State, and has been sacked on 5 of 195 dropbacks.",
       "Brad Jackson has completed 133 of 195 passes (68.2%) for 1,606 yards, 8.2 yards per attempt, 14 touchdowns and 4 interceptions in seven games for Texas State, and has been sacked on 8 of 203 dropbacks."
     ],
-    "availability": [],
+    "availability": [
+      "Boise State’s availability report lists receiver Ben Ford as questionable.",
+      "Boise State’s availability report lists running back Sire Gaines as questionable.",
+      "Boise State’s availability report lists tight end Austin Terry as questionable.",
+      "Texas State’s availability report lists running back Davian Jackson as questionable."
+    ],
     "script": {
       "model": [
-        "Texas State’s defense has to come out ahead at the line of scrimmage: it stops 24.6% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 8.6% of its runs.",
-        "Texas State’s defense has to slow Boise State in the pass-rush matchup — Boise State’s offense has allowed a sack on 2.6% of its dropbacks.",
-        "Texas State’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 10.3% of opponent dropbacks.",
-        "Texas State’s offense has to keep winning on third down: it converts 52.8% of its third downs, and Boise State’s defense allows opponents to convert 35.9% of their third downs."
+        "Boise State’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 8.6% of its runs, and Texas State’s defense stops 24.6% of opponent runs at or behind the line.",
+        "Boise State’s defense has to slow Texas State on third down — Texas State’s offense converts 52.8% of its third downs.",
+        "Boise State’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 8.0% of opponent pass plays.",
+        "Boise State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.6% of its dropbacks, and Texas State’s defense sacks the quarterback on 3.1% of opponent dropbacks."
       ],
       "market": [
-        "Boise State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.6% of its dropbacks, and Texas State’s defense sacks the quarterback on 3.1% of opponent dropbacks.",
-        "Boise State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.3% of opponent dropbacks, against an offense that has allowed a sack on 3.9% of its dropbacks.",
-        "Boise State’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 8.6% of its runs, and Texas State’s defense stops 24.6% of opponent runs at or behind the line."
+        "Texas State’s offense has to keep winning on third down: it converts 52.8% of its third downs, and Boise State’s defense allows opponents to convert 35.9% of their third downs.",
+        "Texas State’s defense has to come out ahead on big pass plays: it gives up explosive gains on 8.0% of opponent pass plays, against an offense that turns 9.2% of its pass plays into explosive gains.",
+        "Texas State’s defense has to come out ahead at the line of scrimmage: it stops 24.6% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 8.6% of its runs."
       ]
     },
     "unknown": [
-      "Weather: 52 degrees, drizzle.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Boise State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, injuries and personnel and penalty rate."
+      "Boise State’s availability report lists receiver Ben Ford as questionable.",
+      "Boise State’s availability report lists running back Sire Gaines as questionable.",
+      "Boise State’s availability report lists tight end Austin Terry as questionable.",
+      "Texas State’s availability report lists running back Davian Jackson as questionable.",
+      "Weather: 49 degrees, showers.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Boise State."
     ],
     "flags": [
       {
@@ -1928,10 +1944,10 @@
     ],
     "sources": [
       {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-28T22:38:31.767Z",
+        "observed_at": "2026-10-29T05:52:16.383Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1940,6 +1956,13 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-28T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Pac-12 Conference availability report (Advance Report)",
+        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-29T02:18:42.222Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1947,6 +1970,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T00:49:03.363Z"
+    "at": "2026-10-29T09:49:42.098Z"
   }
 }

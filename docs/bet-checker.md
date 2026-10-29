@@ -54,8 +54,8 @@ Nothing here is a second copy of something that exists.
 | spec | column | note |
 |---|---|---|
 | id, user_id | `id`, `user_id` | `user_id` now a foreign key to `auth.users` (validated when every old row names an account) |
-| event_id | `event_id` (new) | `signals.event_id`; checked by trigger: on the board, NFL or CFB, not started |
-| sport | `sport` | `NFL` / `CFB` (the existing check) |
+| event_id | `event_id` (new) | `signals.event_id`; checked by trigger: on the board, in a league Bet Checker grades, not started |
+| sport | `sport` | `NFL` / `CFB` / `NBA` / `NHL`. `bettor_decisions.sql` created the check for football; `bet_checker.sql` widens it to every league in `bet_checker_rules().sports` |
 | market | `market_type` | spread / total / moneyline (the existing check) |
 | side | `side` | home / away / over / under; `team` carries the team name |
 | line | `line` | NULL for a moneyline |
@@ -113,12 +113,31 @@ A **free** reader gets no rows from `bet_checker_line_prices()`, taps the
 line and types the odds. The best price across the board's books is line
 shopping, which the paid tiers sell (owner's decision, 2026-10-29).
 
+## The leagues
+
+The NFL, college football, the NBA and the NHL: `bet_checker_rules().sports`
+maps capture's sport keys to them, and the page has a pill for each. The NBA
+and the NHL were added on 2026-10-29, with the same grading rules. The board
+carries them only once their odds are bought. Both leagues are off in the
+odds gateway until the owner turns them on after the November reset, every
+two hours (`docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md`).
+Until then no NBA or NHL game is offered.
+
+- **An NHL moneyline is the game's**, overtime and the shootout included. The
+  board carries no 60-minute line, and the page says so on an NHL moneyline.
+  The puck line (±1.5) is graded like any spread.
+- **Results.** For the NBA and the NHL a result comes only from `settle`'s
+  word on the signal. The final-score fallback reads the Collective's football
+  settlement. If `settle` does not settle a league, its bets keep their entry
+  grade and their CLV, and show no result.
+
 ## Logging a bet (`log_user_bet` → `bet_checker_log_bet()`)
 
 One transaction, so the free count cannot race:
 
-1. the caller is the token's (Supabase Auth); the game is on the board, NFL or
-   college football, and **not started**;
+1. the caller is the token's (Supabase Auth); the game is on the board, in a
+   league Bet Checker grades (NFL, college football, NBA, NHL), and **not
+   started**;
 2. the free allowance, under a per-reader advisory lock. Over it, the bet is
    **saved, ungraded** (`free_limit_reached`), with an upgrade prompt — and
    EdgeDesk's fair is not even looked up, so it cannot leak;
