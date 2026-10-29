@@ -1,0 +1,90 @@
+# EdgeDesk CFB — the weekly SP+ capture (football/sp_plus/README.md).
+#
+# SP+ is ESPN's opponent-adjusted efficiency rating, created by Bill Connelly,
+# read from CollegeFootballData.com (/ratings/sp). It is an EXTERNAL estimate:
+# shown beside EdgeDesk's own number and graded against the close, never fed
+# into EdgeDesk's model, EV, rankings or grades.
+#
+# Once a week, Monday, with a retry on Tuesday and Wednesday (a run in a week
+# already captured does nothing), this job:
+#   1. runs the SP+ suites on the rules it is about to apply;
+#   2. reads SP+ for the season, maps every team through the identity master
+#      (an unmapped name is logged, never guessed), stores one row per team in
+#      public.cfb_sp_ratings (append-only, service role only) and records the
+#      attempt in public.cfb_sp_sync_runs;
+#   3. publishes football/sp_plus/lines.json, the capture's metadata and the
+#      derived projected line per game. No rating is ever committed:
+#      CollegeFootballData's terms forbid a public mirror (§5), and SP+ is
+#      ESPN's.
+#
+# It fails closed. A failed attempt is still published (lines.json names it),
+# the capture is not, and the run fails so the failure is seen.
+#
+# Secrets: CFBD_API_KEY (CollegeFootballData, free tier), SB_URL and
+# SB_SERVICE_ROLE (the append-only table). Manual run: Actions -> "CFB SP+
+# weekly sync" -> Run workflow (force=true takes a second capture in the same
+# week, appended beside the first).
+name: CFB SP+ weekly sync
+
+on:
+  schedule:
+    - cron: '17 15 * 8-12,1 1,2,3'   # Mon/Tue/Wed 15:17 UTC, August through January
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'true: take a new capture even if this week was already captured'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cfb-sp-plus
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: SP+ suites (mocked sources; the rules the sync is about to apply)
+        run: node football/sp_plus/ingest.test.js
+
+      - name: Sync SP+ (CollegeFootballData -> public.cfb_sp_ratings, football/sp_plus/lines.json)
+        id: sync
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
+        run: |
+          set +e
+          if [ "$FORCE" = "true" ]; then node football/sp_plus/sync.js --write --force; else node football/sp_plus/sync.js --write; fi
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # a failed attempt is published below; the last step fails the run
+          exit 0
+
+      - name: Publish football/sp_plus/lines.json
+        run: |
+          if git diff --quiet -- football/sp_plus/lines.json; then
+            echo "lines.json unchanged: nothing to publish"
+            exit 0
+          fi
+          git config user.name "edgedesk-bot"
+          git config user.email "edgedesk-bot@users.noreply.github.com"
+          tools/ci/push_generated.sh main "cfb sp+: weekly capture" -- football/sp_plus/lines.json
+
+      - name: Fail the run if the sync failed
+        if: ${{ steps.sync.outputs.status != '0' }}
+        run: |
+          echo "the SP+ sync failed; the reason is in the step summary and in football/sp_plus/lines.json (last_attempt)" >&2
+          exit 1

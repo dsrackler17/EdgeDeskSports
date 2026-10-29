@@ -1,0 +1,56 @@
+# EdgeDesk CFB SP+ — run the SP+ suites on the pull request.
+#
+# The weekly sync (cfb-sp-plus.yml) runs the mocked suite before it writes,
+# but only on main. A change that breaks the parse, the team map, the
+# append-only table or its privileges has to fail on the PR that makes it.
+#
+# Offline: every external API is mocked; the Postgres contract runs on a
+# throwaway local cluster. No credentials, nothing written outside temp dirs.
+name: CFB SP+ tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/sp_plus/**'
+      - 'supabase/cfb_sp_plus.sql'
+      # the identity master and alias table every SP+ team name maps through
+      - 'football/cfb_lab/identity.js'
+      - 'football/fbs/fbs.js'
+      - 'football/fbs_epa/teams.json'
+      # the insert-only writer and the table-missing check the sync uses
+      - 'football/cfb_production/db.js'
+      - 'football/cfb_lab/sync_supabase.js'
+      - 'tools/games/sql/supabase_shim.sql'
+      - 'package.json'
+      - '.github/workflows/cfb-sp-plus.yml'
+      - '.github/workflows/cfb-sp-plus-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/sp_plus/*.js'
+      - 'supabase/cfb_sp_plus.sql'
+      - '.github/workflows/cfb-sp-plus-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-sp-plus-tests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Ingest (request, parse, team map, weekly sync; mocked CFBD and Supabase)
+        run: node football/sp_plus/ingest.test.js
+      - name: The SP+ tables on a real PostgreSQL (append-only, service role only)
+        env:
+          CFB_SP_SQL_REQUIRED: '1'
+        run: node football/sp_plus/sql.test.js
