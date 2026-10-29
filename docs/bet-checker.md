@@ -20,6 +20,19 @@ cannot open the terminal (`app.html` is behind the paywall). It signs in through
 the Games door (`games/lib/auth.js`, configured to return here), the same
 `edgedesk_session` the terminal keeps.
 
+**Where it is sold.** The landing page's `#pricing` shows it between Free and
+Full Access, with every figure a `data-ed-price` word that
+`lib/edgedesk_pricing.js` derives from `BET_CHECKER` (`bc_plan`, `bc_price`,
+`bc_monthly`, `bc_annual`, `bc_free`).
+Its **Get Bet Checker** button is `/bet-checker/?upgrade=monthly&ref=landing_pricing`;
+`?upgrade=annual` works the same. The page keeps that plan in the tab's
+`sessionStorage` (`bc_upgrade_intent`) through the sign-in round trip, and
+takes it off the address. Once the reader is signed in and the plan is read,
+a reader already on Bet Checker or the terminal is told so; anyone else gets
+the renewal-terms sheet **open** on that plan, unticked. The deep link never
+skips the consent. A confirmation email opened in a new tab starts without the
+intent, and the reader presses Upgrade there.
+
 ## What it builds on
 
 Nothing here is a second copy of something that exists.

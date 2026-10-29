@@ -95,6 +95,30 @@ const WORD = { price: X.PRICE_DISPLAY, monthly: X.PRICE_DISPLAY + '/' + X.BILLIN
 const bound = [...IDX.matchAll(/data-ed-price="(price|monthly|plan)">([^<]+)</g)];
 chk('the price, the monthly figure and the plan name are bound on the landing page', bound.length >= 10, bound.length);
 chk('and every bound static copy equals the one source', bound.every((m) => m[2] === WORD[m[1]]), bound.filter((m) => m[2] !== WORD[m[1]]).map((m) => m[0]));
+/* BET CHECKER'S WORDS (2026-10-28): the landing page sells Bet Checker
+   beside Full Access, so its figures are data-ed-price words too, DERIVED in
+   the pricing file from BET_CHECKER, never typed twice */
+const PW = X.priceWords();
+const BCP = X.BET_CHECKER.PLANS;
+chk('Bet Checker\'s words are derived from BET_CHECKER', PW.bc_plan === X.BET_CHECKER.PLAN_NAME && PW.bc_price === X.formatCents(BCP.monthly.PRICE_CENTS)
+  && PW.bc_monthly === X.formatCents(BCP.monthly.PRICE_CENTS) + '/' + BCP.monthly.BILLING_PERIOD
+  && PW.bc_annual === X.formatCents(BCP.annual.PRICE_CENTS) + '/' + BCP.annual.BILLING_PERIOD && PW.bc_free === String(X.BET_CHECKER.FREE_MONTHLY_GRADES), PW);
+chk('and say $7.99, $7.99/month, $59.00/year and 10 free grades: the consent sheet\'s own figures', PW.bc_price === '$7.99' && PW.bc_monthly === '$7.99/month'
+  && PW.bc_annual === '$59.00/year' && PW.bc_free === '10' && PW.bc_monthly === X.betCheckerOffer('monthly').short && PW.bc_annual === X.betCheckerOffer('annual').short, PW);
+chk('apply() fills a page from those same words, Full Access\'s and Bet Checker\'s', () => {
+  const keys = ['plan', 'price', 'monthly', 'bc_plan', 'bc_price', 'bc_monthly', 'bc_annual', 'bc_free', 'not_a_word'];
+  const els = keys.map((k) => ({ k, textContent: 'typed', getAttribute: () => k }));
+  const n = X.apply({ querySelectorAll: () => els });
+  return n === keys.length - 1 && els.every((e) => (e.k === 'not_a_word' ? e.textContent === 'typed' : e.textContent === PW[e.k]));
+});
+const bcBound = [...IDX.matchAll(/data-ed-price="(bc_[a-z]+)">([^<]*)</g)];
+chk('the landing page binds Bet Checker\'s plan, price, both plans and free grades', ['bc_plan', 'bc_price', 'bc_monthly', 'bc_annual', 'bc_free'].every((k) => bcBound.some((m) => m[1] === k)), bcBound.map((m) => m[1]));
+chk('and every bound static copy equals the one source (no-JS readers see the same figures)', bcBound.length >= 7 && bcBound.every((m) => m[2] === PW[m[1]]), bcBound.filter((m) => m[2] !== PW[m[1]]).map((m) => m[0]));
+chk('no Bet Checker figure is typed on the landing page outside its word', () => {
+  const rest = IDX.replace(/<!--[\s\S]*?-->/g, '').replace(/data-ed-price="bc_[a-z]+">[^<]*</g, '');
+  const typed = rest.match(/\$\s?7\.99|\$\s?59(?:\.00)?\b|\b799\b|\b5900\b/);
+  return !typed || (console.log('   typed:', rest.slice(Math.max(0, typed.index - 60), typed.index + 20)), false);
+});
 /* the consent text is what is recorded with the consent, so its figures are
    bound and its static copy is the price */
 const ARL_TERMS = (IDX.match(/<p id="arlTerms">([\s\S]*?)<\/p>/) || [])[1] || '';

@@ -43,6 +43,8 @@
   <section class="card bc-auth" data-bc="out" hidden aria-labelledby="bc-auth-h">
     <h2 id="bc-auth-h" style="margin-top:0">Sign in to check your bets</h2>
     <p class="note">Free: log every bet, an instant grade on ten bets a month, and CLV on all of them after the close. Your EdgeDesk account works here.</p>
+    <!-- arrived from "Get Bet Checker" (?upgrade=): where signing in leads -->
+    <p class="bc-status ok" data-bc="intent" hidden></p>
     <form data-bc="auth" onsubmit="return false">
       <label class="fl">Email<input type="email" name="email" autocomplete="email" required></label>
       <label class="fl">Password<input type="password" name="password" autocomplete="current-password" required minlength="6"></label>
@@ -136,13 +138,13 @@
 </main>
 
 <script src="/lib/edgedesk_auth.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_pricing.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261028b"></script>
 <script src="/lib/edgedesk_access.js?v=20261028bc1"></script>
 <script src="/games/lib/attribution.js?v=20261028bc1"></script>
 <script src="/games/lib/social.js?v=20261028bc1"></script>
 <script src="/games/lib/auth.js?v=20261028bc1"></script>
 <script src="/lib/edgedesk_bet_checker_core.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_bet_checker.js?v=20261028bc2"></script>
+<script src="/lib/edgedesk_bet_checker.js?v=20261028bc3"></script>
 <script>
 /* The Supabase project, from the same committed file the games pages read
    (games/data/config.json, written from app.html by the build), so this page
