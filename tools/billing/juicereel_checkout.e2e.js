@@ -22,6 +22,12 @@
         below it, and can link a Juice Reel purchase made elsewhere
      6  a cancelled checkout is told not to pay again; switch OFF leaves the
         paywall exactly as before
+     7  the login and sign-up window: switch ON, "Came from Juice Reel? Link
+        your Juice Reel account" sends a reader, once signed in, to Juice
+        Reel's authorize page (start 'link'), never to a checkout or the card
+        trial's terms; Undo puts the window and the pending flag back; the
+        line is not offered to a reader headed for Juice Reel's checkout, nor
+        with the switch OFF
 
    What the server does with the code (the exchange, Juice Reel's answer, the
    database) is tools/billing/juicereel_billing.test.js's to prove.
@@ -81,12 +87,14 @@ function supabase(state) {
       if (b.action === 'status') return json(200, { ok: true, mode: state.mode, available: on, linked: state.paid, access: { has_access: state.paid } });
       if (b.action === 'start') {
         if (!on) return json(403, { ok: false, reason: 'off', message: 'Subscribing through Juice Reel is not open yet.' });
-        return json(200, { ok: true, kind: b.kind, url: 'https://www.juicereel.com/checkout/sessions/e2e-' + b.kind });
+        state.kind = b.kind;
+        return json(200, { ok: true, kind: b.kind, url: b.kind === 'link' ? 'https://www.juicereel.com/oauth2/authorize?e2e=link' : 'https://www.juicereel.com/checkout/sessions/e2e-' + b.kind });
       }
       if (b.action === 'complete') {
+        const kind = state.kind || 'checkout';
         if (b.state !== state.issuedState) return json(400, { ok: false, reason: 'JR_STATE_INVALID', message: 'not matched' });
-        if (b.error) return json(200, { ok: true, kind: 'checkout', outcome: 'cancelled' });
-        if (b.code === CODE) { state.paid = true; return json(200, { ok: true, kind: 'checkout', outcome: 'active', display_name: 'JR Buyer', access: { has_access: true } }); }
+        if (b.error) return json(200, { ok: true, kind, outcome: 'cancelled' });
+        if (b.code === CODE) { state.paid = true; return json(200, { ok: true, kind, outcome: 'active', display_name: 'JR Buyer', access: { has_access: true } }); }
         return json(400, { ok: false, reason: 'JR_CODE_INVALID', message: 'code' });
       }
       return json(400, { ok: false, reason: 'unknown_action' });
@@ -192,6 +200,7 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       await page.click('#jrBtn');
       await page.waitForSelector('#authModal.on');
       await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'aEmail');
+      chk('  the sign-up window does not offer "Came from Juice Reel?" to a reader already headed for its checkout', !(await page.isVisible('#jrAuth')));
       await page.fill('#aEmail', EMAIL);
       await page.fill('#aPass', 'correct horse battery staple');
       await page.check('#aConsent');
@@ -228,6 +237,127 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       chk('  the card-trial button opens the card trial\'s terms, not Juice Reel', await page.evaluate(() => document.getElementById('arlModal').classList.contains('on'))
         && !state.fn.some((b) => b.action === 'start') && state.jr.length === 0);
       chk('  and the stale Juice Reel intent is gone', await page.evaluate(() => localStorage.getItem('edgedesk_pending_jr') === null));
+      chk('  no script errors', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ── 7. the login and sign-up window ────────────────────────────────── */
+    const seed = (ctx, kv) => ctx.addInitScript((kv) => { try { if (!sessionStorage.getItem('seeded')) { Object.keys(kv).forEach((k) => localStorage.setItem(k, kv[k])); sessionStorage.setItem('seeded', '1'); } } catch (_) {} }, kv);
+    const flags = (page) => page.evaluate(() => ({ jr: localStorage.getItem('edgedesk_pending_jr'), sub: localStorage.getItem('edgedesk_pending_sub') }));
+    async function logIn(page, width) {
+      if (width < 900) await page.click('[aria-controls="navMenu"]');
+      await page.click('#navLogin');
+      await page.waitForSelector('#authModal.on');
+    }
+    {
+      console.log('\nthe login window, Juice Reel switch OFF');
+      const { ctx, page, errors } = await open(browser, base, { mode: 'off' });
+      await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(800);
+      await logIn(page, 390);
+      chk('7 switch OFF: the login window says nothing about Juice Reel', !(await page.isVisible('#jrAuth')) && !/Juice Reel/.test(await page.innerText('#authModal .sheet')));
+      chk('  and keeps its lede', await page.isVisible('#authLede'));
+      chk('  no script errors', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+    for (const width of [390, 1280]) {
+      console.log('\n' + width + 'px, switch ON, a reader who bought EdgeDesk on Juice Reel logs in');
+      const { ctx, page, state, errors } = await open(browser, base, { mode: 'on', width });
+      await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      await eventually(() => page.isVisible('#jrBtn'), 6000);
+      await logIn(page, width);
+      chk('7 switch ON: the login window offers "Came from Juice Reel? Link your Juice Reel account"', (await page.isVisible('#jrAuthOn'))
+        && /^Came from Juice Reel\? Link your Juice Reel account$/.test((await page.innerText('#jrAuth')).trim()), await page.innerText('#jrAuth'));
+      const box = await page.evaluate(() => { const a = document.getElementById('jrAuth').getBoundingClientRect(), e = document.getElementById('aEmail').getBoundingClientRect(),
+        sh = document.querySelector('#authModal .sheet').getBoundingClientRect(); return { above: a.bottom <= e.top, inside: a.left >= sh.left && a.right <= sh.right }; });
+      chk('  above the form, so it is read before Log in, and inside the window', box.above && box.inside, box);
+      await page.click('#jrAuthOn');
+      chk('  pressed: it says Juice Reel opens after log in or sign up, with Undo', (await page.isVisible('#jrAuthSet')) && (await page.isVisible('#jrAuthOff'))
+        && /After you log in or sign up, Juice Reel opens so you can link your account/.test(await page.innerText('#jrAuth')));
+      chk('  the lede steps aside, and the email field has focus', !(await page.isVisible('#authLede')) && await page.evaluate(() => document.activeElement.id === 'aEmail'));
+      chk('  the link intent and the pending flag are stored', await flags(page).then((f) => f.jr === 'link' && f.sub === '1'));
+      await page.click('#jrAuthOff');
+      chk('  Undo puts the window back, and keeps no intent or pending flag', (await page.isVisible('#jrAuthOn')) && (await page.isVisible('#authLede'))
+        && await flags(page).then((f) => f.jr === null && f.sub === null));
+      await page.click('#jrAuthOn');
+      await page.click('#authToggle > button');
+      chk('  switching to Sign up keeps it set, and the sign-up lede\'s card-trial promise stays hidden', (await page.isVisible('#jrAuthSet')) && !(await page.isVisible('#authLede')));
+      await page.click('#authToggle > button');
+      await page.fill('#aEmail', EMAIL);
+      await page.fill('#aPass', 'correct horse battery staple');
+      await page.click('#authSubmit');
+      await page.waitForURL(/\/app\.html/, { timeout: 30000 });
+      chk('  after log in the reader went to Juice Reel\'s authorize page through the function (kind link), never to a checkout',
+        state.jr.length === 1 && state.jr[0] === 'https://www.juicereel.com/oauth2/authorize?e2e=link'
+          && state.fn.some((b) => b.action === 'start' && b.kind === 'link') && !state.fn.some((b) => b.action === 'start' && b.kind === 'checkout'), state.jr);
+      chk('  the card trial\'s renewal terms never opened, and no consent was recorded', state.consents.length === 0);
+      await eventually(async () => !(await gateOn(page)) && state.paid, 20000);
+      const done = state.fn.find((b) => b.action === 'complete') || {};
+      chk('  back from Juice Reel, the app sent the state and code to the server, and the terminal opened',
+        done.state === state.issuedState && done.code === CODE && !(await gateOn(page)), done);
+      chk('  nothing is left behind: no intent and no pending flag', await flags(page).then((f) => f.jr === null && f.sub === null));
+      chk('  no script errors on the way', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+    {
+      console.log('\nswitch ON, "Start free trial", then "Came from Juice Reel?", then sign up');
+      const { ctx, page, state, errors } = await open(browser, base, { mode: 'on' });
+      await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      await eventually(() => page.isVisible('#jrBtn'), 6000);
+      await page.click('#heroCta');
+      await page.waitForSelector('#authModal.on');
+      await page.click('#jrAuthOn');
+      await page.fill('#aEmail', EMAIL);
+      await page.fill('#aPass', 'correct horse battery staple');
+      await page.check('#aConsent');
+      await page.click('#authSubmit');
+      await page.waitForURL(/\/app\.html/, { timeout: 30000 });
+      chk('  a new account goes on to link Juice Reel, not to the card trial it first pressed', state.fn.some((b) => b.action === 'start' && b.kind === 'link')
+        && state.consents.length === 0 && /^https:\/\/www\.juicereel\.com\/oauth2\/authorize/.test(state.jr[0] || ''), state.jr);
+      chk('  no script errors', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+    {
+      console.log('\nswitch ON, "Start free trial", "Came from Juice Reel?", then Undo');
+      const { ctx, page, state, errors } = await open(browser, base, { mode: 'on' });
+      await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      await eventually(() => page.isVisible('#jrBtn'), 6000);
+      await page.click('#heroCta');
+      await page.waitForSelector('#authModal.on');
+      await page.click('#jrAuthOn');
+      await page.click('#jrAuthOff');
+      chk('  Undo keeps the card trial\'s pending flag the reader set first', await flags(page).then((f) => f.jr === null && f.sub === '1'));
+      await page.fill('#aEmail', EMAIL);
+      await page.fill('#aPass', 'correct horse battery staple');
+      await page.check('#aConsent');
+      await page.click('#authSubmit');
+      await page.waitForSelector('#arlModal.on', { timeout: 10000 }).catch(() => null);
+      chk('  so sign-up goes on to the card trial\'s terms, and Juice Reel is not started', await page.evaluate(() => document.getElementById('arlModal').classList.contains('on'))
+        && !state.fn.some((b) => b.action === 'start') && state.jr.length === 0);
+      chk('  no script errors', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+    {
+      console.log('\na link chosen, then the switch went OFF before the reader signed in');
+      const { ctx, page, state, errors } = await open(browser, base, { mode: 'off', signedIn: true });
+      await seed(ctx, { edgedesk_pending_jr: 'link', edgedesk_pending_sub: '1' });
+      await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      await page.waitForURL(/\/app\.html/, { timeout: 15000 }).catch(() => null);
+      chk('  the reader goes to the terminal, where the paywall decides; never to the card trial\'s terms', /\/app\.html/.test(page.url())
+        && state.consents.length === 0 && !state.fn.some((b) => b.action === 'start') && state.jr.length === 0, page.url());
+      chk('  and the intent and the pending flag are gone', await flags(page).then((f) => f.jr === null && f.sub === null));
+      chk('  no script errors', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+    {
+      console.log('\na link intent left without its pending flag (signed out since)');
+      const { ctx, page, errors } = await open(browser, base, { mode: 'on' });
+      await seed(ctx, { edgedesk_pending_jr: 'link' });
+      await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      await eventually(() => page.isVisible('#jrBtn'), 6000);
+      await logIn(page, 390);
+      chk('  is dropped: the window offers the line again, and promises no link the next sign-in would not run', (await page.isVisible('#jrAuthOn')) && !(await page.isVisible('#jrAuthSet'))
+        && await flags(page).then((f) => f.jr === null));
       chk('  no script errors', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
     }
