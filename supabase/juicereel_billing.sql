@@ -306,7 +306,10 @@ $$;
 
 -- ── 4. THE ONLY WRITER OF JUICE REEL STATE INTO subscriptions ───────────────
 -- What a Juice Reel product opens: 'blue' (the terminal), 'red' (Bet Checker)
--- or NULL (not mapped: nothing).
+-- or NULL (not mapped: nothing). Its own row first, then the row '*' (every
+-- product of this seller: Juice Reel sells one subscription per seller and
+-- shows its id nowhere before someone buys it). A purchase naming no product
+-- is not covered by '*'.
 create or replace function public.billing_jr_tier_of_product(p_product text)
 returns text
 language sql
@@ -314,7 +317,9 @@ stable
 security definer
 set search_path = public, pg_temp
 as $$
-  select p.tier from public.billing_juicereel_products p where p.product_id = p_product;
+  select coalesce(
+    (select p.tier from public.billing_juicereel_products p where p.product_id = p_product and p_product <> '*'),
+    (select p.tier from public.billing_juicereel_products p where p.product_id = '*' and p_product is not null));
 $$;
 
 -- Under the subscriptions row lock. Refusals are answers, not errors:
@@ -716,8 +721,9 @@ $$;
 
 -- ── 9b. WHAT EACH PRODUCT OPENS (Deploy Juice Reel billing → set_product) ───
 -- p_tier: 'terminal', 'bet_checker' or 'none' (off the map: what it granted
--- ends). Every linked buyer whose recorded purchase is this product is
--- re-projected at once. Refused with an exception (the workflow's psql fails),
+-- ends). p_product '*' is every product of this seller that has no row of its
+-- own. Every linked buyer whose recorded purchase is this product (for '*',
+-- every one) is re-projected at once. Refused with an exception (the workflow's psql fails),
 -- never half done.
 create or replace function public.billing_jr_set_product(p_product text, p_tier text, p_note text default null)
 returns jsonb
@@ -747,7 +753,7 @@ begin
   end if;
   for r in select l.user_id from public.billing_juicereel_subscribers s
              join public.billing_juicereel_links l on l.jr_user_id = s.jr_user_id
-            where s.product_id = v_id loop
+            where s.product_id = v_id or (v_id = '*' and s.product_id is not null) loop
     perform public.billing_jr_project(r.user_id);
     n := n + 1;
   end loop;
@@ -776,7 +782,7 @@ as $$
                                            count(*) filter (where s.active and s.expires_at > now()) as paid_now
                                       from public.billing_juicereel_subscribers s
                                      where s.product_id is not null
-                                       and not exists (select 1 from public.billing_juicereel_products p where p.product_id = s.product_id)
+                                       and public.billing_jr_tier_of_product(s.product_id) is null
                                      group by s.product_id) q), '[]'::jsonb));
 $$;
 
@@ -875,7 +881,9 @@ union all select 8, 'a Bet Checker row from Juice Reel never opens the terminal'
             then 'ok' else 'CHECK THIS' end
 union all select 9, 'what each Juice Reel product opens (a product not mapped opens nothing)',
        case when exists (select 1 from public.billing_juicereel_products)
-            then 'ok (' || (select count(*) from public.billing_juicereel_products where tier = 'blue')::text || ' to the terminal, '
-                        || (select count(*) from public.billing_juicereel_products where tier = 'red')::text || ' to Bet Checker)'
+            then 'ok (' || coalesce((select 'every product (*) to ' || case tier when 'blue' then 'the terminal' else 'Bet Checker' end || '; '
+                                       from public.billing_juicereel_products where product_id = '*'), '')
+                        || (select count(*) from public.billing_juicereel_products where tier = 'blue' and product_id <> '*')::text || ' named to the terminal, '
+                        || (select count(*) from public.billing_juicereel_products where tier = 'red' and product_id <> '*')::text || ' to Bet Checker)'
             else 'NOT YET: no product is mapped, so a Juice Reel purchase opens nothing. Run Deploy Juice Reel billing → set_product' end
 order by row;

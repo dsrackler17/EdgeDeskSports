@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-29 — Authorization change: Juice Reel `set_product *` opens every product of the seller, so buyers get access without its id
+
+**Authorization change; needs the owner's explicit review.**
+
+- **The problem.** After #906, a Juice Reel purchase opens only a product that is mapped by its id. Juice Reel shows a subscription product's id nowhere until someone has bought it. `check` on production reads "Product ids on Juice Reel's subscriber list: none yet", so EdgeDesk could not be mapped, and so could not be sold, without a purchase first.
+- **The fix** (`supabase/juicereel_billing.sql`).
+  - `billing_jr_tier_of_product` reads a product's own row first, then the row `*`: every product of this seller.
+  - `billing_jr_set_product('*', …)` re-checks every linked buyer at once.
+  - `billing_jr_products` no longer lists products that `*` covers as not mapped.
+  - Report row 9 names `*`.
+  - A product's own row still wins: a Bet Checker product mapped by its id never opens the terminal. A purchase naming no product is not covered.
+- **The workflow** (`deploy-juicereel-billing.yml`).
+  - `set_product` accepts `*` as the product id. Anything else outside letters, digits and `_ . : -` is still refused (`**`, `prod*`, quotes).
+  - The summary shows "every product (*)".
+  - Run against a throwaway PostgreSQL before committing: `*` → terminal mapped, and `set_mode on` then passes; `**` and `prod*` refused.
+- **Tests** (`tools/billing/juicereel_billing.test.js` § 13).
+  - `*` opens a buyer of an id nobody knew, at once and on a later return.
+  - A product's own Bet Checker row wins over `*`.
+  - `check` lists `*`.
+  - Unmapping `*` ends what it alone granted.
+  - On the old code: 110 passed, 3 failed. On the fix: 113 passed, 0 failed.
+- **Production.** Deploy Juice Reel billing → `deploy`, then `set_product` with `product_id` `*` and `opens` `terminal`, then `set_mode` → `on`.
+
 ## 2026-10-29 — Content engine: the evidence gate refused two correct week-9 articles and passed an incomplete one, from two writer bugs
 
 **Why.** `tools/content/evidence.test.js` ("every article generated from today's research passes the gate") went red on `main` from data alone: 202 passed, 1 failed, at `c933dc468`, `adcb2b7f8` and `9957decf9`. Two articles were blocked, for two different reasons.

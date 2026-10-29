@@ -58,6 +58,7 @@ The steps:
    - whether owner access reaches the subscriber list;
    - the redirect URI and webhook URL to register.
 5. **`set_product`.** Map each product: `product_id` (Juice Reel's subscription product id), `opens` = `terminal`, `bet_checker` or `none`. Every linked buyer of that product is re-checked at once.
+   - **`product_id` = `*`** is every product of this seller that has no row of its own. Juice Reel sells one subscription per seller (EdgeDeskSports), and shows its id nowhere until someone has bought it, so `*` → `terminal` opens it without the id. A product's own row still wins over `*`: map a cheaper product to `bet_checker` by its id and it never opens the terminal. Only a purchase that names no product at all is outside `*`.
    - To find the id: `check` lists the product ids on Juice Reel's subscriber list, and the products bought but not mapped. A purchase of an unmapped product is recorded, opens nothing, tells the buyer not to pay again, and raises `juicereel_product_not_mapped`. Mapping the product then opens their access at once.
    - `bet_checker` is refused until **Deploy billing → `apply_sql`** has installed `billing_hardening.sql` with the rule that knows `juicereel_bet_checker`. Without that rule, a Bet Checker row would read as the terminal.
    - `none` takes a product off the map. The access it granted ends.
@@ -70,7 +71,7 @@ The steps:
 
 With the switch on `operators`, signed in to EdgeDesk as a billing operator, on an account with no access.
 
-**Map the product first** (§ 2, `set_product` → `terminal`). If you do not know its Juice Reel id yet, buy anyway. The return then says the purchase does not open EdgeDesk yet, and not to pay again. Run `check`: the summary lists the id under "Bought on Juice Reel but NOT mapped". Map it, and the access opens at once.
+**Map the product first** (§ 2, `set_product` → `terminal`; `*` if you do not know its id). If you would rather map it by its id, buy anyway. The return then says the purchase does not open EdgeDesk yet, and not to pay again. Run `check`: the summary lists the id under "Bought on Juice Reel but NOT mapped". Map it, and the access opens at once.
 
 | # | Do | Expect |
 |---|---|---|
