@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-29 — NHL goalie sync: the job lists every game's card, and whether the lineup lock priced it
+
+- **Why.** On the first night of the lineup lock (#902), nothing on GitHub could say whether a game had locked. The job summary listed only the cards a run wrote, and pg_cron writes the lock. A dry run at 22:54 UTC, six minutes before the 7 PM ET games, changed none of the 14 cards: either they had locked already or they never would. And Supabase could not be reached from the agent's environment to read the cards directly.
+- **What.** A read-only query, `tools/hockey/sql/nhl_goalie_cards_check.sql`, returns the current version of every game from 6 hours ago to 24 hours ahead (`public.nhl_game_cards_current`). NHL goalie sync runs it in a new step, and `tools/hockey/nhl_goalie_run_summary.js` lists the cards.
+  - Each row has the puck drop, the version and when it was written (T−minutes), both statuses, the gate, the headline's home win %, and what priced it: "lineup lock" with the skaters listed and the slate's price before lock, or "slate" with its model.
+  - Above the table: the started games, and how many were priced at lineup lock before puck drop.
+  - The watchdog runs every half hour, so the night's locks can be read from it. Cards that cannot be read fail the job, as readiness does.
+- **Tests.** On the code before this change, `nhl_goalie_sync.test.js` passed 78 and failed 3 (no cards table, an unreadable result passing, no empty-window line), and `nhl_goalie_sql.test.js` crashed (no query file). On the change: sync 81/0, and SQL 81/0 on a real PostgreSQL. The SQL suite checks that a locked game reads as "lineup lock" with its price before lock, that a slate card reads as the slate, that each game appears once, and that nothing over a day ahead is listed.
+
 ## 2026-10-29 — Content engine: a capsule says each quarterback listing once (two merged fixes said it up to three times)
 
 **Why.** #904 and #907 fixed the same weekly-preview capsule in parallel, and the conflict resolution in `329df540e` kept both. Each quarterback listing was then printed up to three times, `no_repetition` blocked the Week 9 preview, and four content suites went red on `main`: evidence 209/2, core 331/5, edge function 21/8, weekly job 27/3.

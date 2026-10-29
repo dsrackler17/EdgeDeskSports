@@ -1,11 +1,12 @@
 // The NHL goalie sync as a GitHub job summary: what one run of the deployed
-// nhl_goalie_sync function wrote, whether pg_cron is calling it, and the
-// readiness KPIs (public.nhl_goalie_readiness), with the verdict the job exits
-// on. Read by .github/workflows/nhl-goalie-sync.yml and by the first run in
+// nhl_goalie_sync function wrote, whether pg_cron is calling it, the
+// readiness KPIs (public.nhl_goalie_readiness) and each game's current card
+// with what its headline is priced by (the slate, or the lineup lock), with the
+// verdict the job exits on. Read by .github/workflows/nhl-goalie-sync.yml and by the first run in
 // deploy-nhl-goalie.yml. docs/engine/NHL_GOALIES.md §9.
 //
 //   node tools/hockey/nhl_goalie_run_summary.js --title "NHL goalie sync"
-//        [--run run.json --http 200] [--cron cron.json] [--readiness readiness.json]
+//        [--run run.json --http 200] [--cron cron.json] [--readiness readiness.json] [--cards cards.json]
 //        [--cron-stale-min 15]
 //
 // Prints the markdown, appends it to $GITHUB_STEP_SUMMARY when that is set,
@@ -19,6 +20,7 @@ const cell = (v) => (v == null || v === '' ? '—' : String(v).replace(/\|/g, '\
 const pct = (p) => (p == null ? '—' : (p * 100).toFixed(1) + '%');
 const yesNo = (b) => (b === true ? 'yes' : b === false ? 'no' : '—');
 const ageMin = (iso, nowMs) => (iso ? Math.round((nowMs - Date.parse(iso)) / 60000) : null);
+const utc = (iso, withDate) => { const t = Date.parse(iso); return isFinite(t) ? new Date(t).toISOString().slice(withDate ? 0 : 11, 16).replace('T', ' ') + ' UTC' : '—'; };
 
 /** a JSON file: the value, null when empty, or { _unreadable } */
 function readJson(file) {
@@ -90,6 +92,7 @@ function verdict(o, nowMs) {
     else if (R.state === 'error') errors.push('readiness: ' + (R.state_reason || 'error'));
     else if (R.state === 'warn') warnings.push('readiness: ' + (R.state_reason || 'warn (see nhl_goalie_alerts and System health)'));
   }
+  if (o.cards !== undefined && !Array.isArray(o.cards)) errors.push('public.nhl_game_cards_current could not be read' + (o.cards && o.cards._unreadable ? ': ' + o.cards._unreadable : ''));
   return { errors, warnings };
 }
 
@@ -144,6 +147,25 @@ function render(o, nowMs) {
       '| Sync failures, last 24h | ' + cell(R.sync_failures_24h) + ' of ' + cell(R.runs_24h) + ' runs |',
       '| Next slot | ' + cell(R.next_due_at) + ' |', '');
   }
+  const K = o.cards;
+  if (K !== undefined) {
+    // each game's current card (tools/hockey/sql/nhl_goalie_cards_check.sql): its headline, and whether the lineup lock priced it (docs/engine/NHL_GOALIES.md §11)
+    L.push('**The cards** (each game\'s current version, from 6 hours ago to 24 hours ahead)', '');
+    if (!Array.isArray(K)) L.push('Could not be read.', '');
+    else if (!K.length) L.push('No game in the window.', '');
+    else {
+      const started = K.filter((k) => Date.parse(k.start_utc) <= nowMs), locked = started.filter((k) => k.basis === 'lineup_lock');
+      if (started.length) L.push('Started: ' + started.length + ' game' + (started.length === 1 ? '' : 's') + ', ' + locked.length + ' priced at lineup lock before puck drop.', '');
+      L.push('| Game | Puck drop | v | Written | Status (home / away) | Gate | Headline home win % | Priced at |', '|---|---|---|---|---|---|---|---|');
+      for (const k of K) {
+        const sk = k.skaters && k.skaters.home != null ? ', ' + k.skaters.home + ' / ' + k.skaters.away + ' skaters' : '';
+        const at = k.basis === 'lineup_lock' ? 'lineup lock' + sk + (k.before_p_home != null ? ' (before lock ' + pct(k.before_p_home) + ')' : '') : 'slate (' + (k.model_id || '—') + ')';
+        L.push('| ' + [k.matchup, utc(k.start_utc, true), k.version, utc(k.generated_at) + ' (T−' + Math.round((Date.parse(k.start_utc) - Date.parse(k.generated_at)) / 60000) + ' min)',
+          (k.status || []).join(' / ') + (k.conflict ? ', conflict' : ''), k.gate, pct(k.p_home), at].map(cell).join(' | ') + ' |');
+      }
+      L.push('');
+    }
+  }
   const v = verdict(o, nowMs);
   L.push(v.errors.length ? '**Failed:** ' + v.errors.map(cell).join('; ') : v.warnings.length ? '**Passed with warnings.**' : '**Passed.**', '');
   return { markdown: L.join('\n'), verdict: v };
@@ -154,7 +176,7 @@ const annotation = (s) => String(s).replace(/%/g, '%25').replace(/\r/g, '%0D').r
 function main(argv) {
   const a = {};
   for (let i = 0; i < argv.length; i++) if (argv[i].startsWith('--')) { a[argv[i].slice(2)] = argv[i + 1] !== undefined && !argv[i + 1].startsWith('--') ? argv[++i] : true; }
-  const o = { title: a.title, http: a.http, run: readJson(a.run), cron: readJson(a.cron), readiness: readJson(a.readiness), cronStaleMin: a['cron-stale-min'] ? Number(a['cron-stale-min']) : undefined };
+  const o = { title: a.title, http: a.http, run: readJson(a.run), cron: readJson(a.cron), readiness: readJson(a.readiness), cards: readJson(a.cards), cronStaleMin: a['cron-stale-min'] ? Number(a['cron-stale-min']) : undefined };
   const out = render(o, Date.now());
   console.log(out.markdown);
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.markdown + '\n');

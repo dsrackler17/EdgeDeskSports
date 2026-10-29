@@ -47,7 +47,7 @@ T.chk('the layer never grants a client write', !/grant\s+(insert|update|delete|a
 T.chk('the migration copy is the same file', fs.readFileSync(path.join(ROOT, 'supabase', 'migrations', '20261025230000_nhl_goalie_layer.sql'), 'utf8') === LAYER);
 T.chk('the v2 registry file is current (node tools/hockey/build_goalie_v2_registry_sql.js)', require(path.join(ROOT, 'tools', 'hockey', 'build_goalie_v2_registry_sql.js')).build() === fs.readFileSync(F('nhl_goalie_v2_registry.sql'), 'utf8'));
 T.chk('no psql meta-command in any file', ['nhl_goalie_layer.sql', 'nhl_goalie_v2_registry.sql', 'nhl_goalie_cron.sql', 'nhl_goalie_layer_rollback.sql'].every((n) => !/^\s*\\/m.test(fs.readFileSync(F(n), 'utf8'))));
-T.chk('no psql meta-command in the job\'s checks', ['nhl_goalie_readiness_check.sql', 'nhl_goalie_cron_check.sql'].every((n) => !/^\s*\\/m.test(fs.readFileSync(path.join(__dirname, 'sql', n), 'utf8'))));
+T.chk('no psql meta-command in the job\'s checks', ['nhl_goalie_readiness_check.sql', 'nhl_goalie_cron_check.sql', 'nhl_goalie_cards_check.sql'].every((n) => !/^\s*\\/m.test(fs.readFileSync(path.join(__dirname, 'sql', n), 'utf8'))));
 
 const db = PG.start('nhlgoal');
 if (db.skip) {
@@ -275,6 +275,21 @@ try {
   rk = J(db.sql(CHECK('nhl_goalie_readiness_check.sql')));
   let vk = S.verdict({ readiness: rk }, Date.now());
   T.chk('job: a last check that failed only because no outside source answered is a warning, not a failure', rk.state === 'error' && rk.last_check_alerts.join() === 'DEGRADED:daily_faceoff_unavailable,FAILURE:sources_down' && vk.errors.length === 0 && /outside source/.test(vk.warnings[0] || ''), [rk, vk]);
+  /* the cards: each game's current version and what its headline is priced by (nhl_goalie_cards_check.sql), a day ahead at most */
+  // j1: version 1 with both starters Confirmed, then version 2 priced at lineup lock; j2: the slate's headline; g9: over a day ahead
+  const jboth = { sh: 'confirmed', sa: 'confirmed', gate: 'OPEN', show: false, lim: "'[]'" };
+  const j1 = last(db.service(card(Object.assign({ game: 'j1', at: "now() - interval '40 minutes'" }, jboth))));
+  db.service(card(Object.assign({ game: 'j1', version: 2, supersedes: j1, trigger: 'inputs_changed', reasons: ['lineup_locked', 'inputs_changed'], at: "now() - interval '10 minutes'",
+    headline: { basis: 'lineup_lock', model_id: 'edgedesk_nhl_v1:xg_all_confirmed', p_home: 0.4051, before: { model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.4174 }, lineup: { skaters: { home: 18, away: 18 } } } }, jboth)));
+  db.service(card({ game: 'j2' }));
+  db.service(card({ game: 'g9', start: "now() + interval '30 hours'" }));
+  const kc = J(db.sql(CHECK('nhl_goalie_cards_check.sql')));
+  const kg = (id) => (Array.isArray(kc) ? kc.find((x) => x.game_id === id) : null) || null, kj1 = kg('j1'), kj2 = kg('j2');
+  T.chk('job: the cards list each game\'s current version once: the lock at lineup lock with the slate\'s price before it, the others at the slate, nothing over a day ahead', Array.isArray(kc) && new Set(kc.map((x) => x.game_id)).size === kc.length && !kg('g9')
+    && kj1 && kj1.version === 2 && kj1.basis === 'lineup_lock' && Number(kj1.p_home) === 0.4051 && Number(kj1.before_p_home) === 0.4174 && kj1.gate === 'OPEN' && kj1.matchup === 'MIN@VAN' && kj1.skaters.home === 18
+    && kj2 && kj2.version === 1 && kj2.basis === 'slate' && Number(kj2.p_home) === 0.4174 && kj2.gate === 'GATED', kc);
+  const smk = S.render({ cards: kc }, Date.now());
+  T.chk('job: the summary lists the cards, the lock marked "lineup lock" with its price before lock, and passes', /\| MIN@VAN \| [^|\n]+ \| 2 \|[^\n]*\| OPEN \| 40\.5% \| lineup lock[^|\n]*before lock 41\.7%/.test(smk.markdown) && /\| 41\.7% \| slate/.test(smk.markdown) && smk.verdict.errors.length === 0, smk.markdown);
   // Deploy NHL goalie layer re-applies all three files over the live tables (apply_sql): nothing kept may move
   // (the registry may add its own goalie_v2_* keys; every key already there keeps its value)
   const kept = () => ['nhl_goalie_sync_runs', 'nhl_goalie_alerts', 'nhl_goalie_pokes'].map((t) => t + '=' + db.sql('select count(*) from public.' + t)).join(' ');
