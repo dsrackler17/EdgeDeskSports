@@ -3,7 +3,7 @@
    PREDICTION RADAR — Polymarket's public APIs, read from GitHub's runner.
 
    The build environment cannot reach Polymarket (its network policy refuses
-   data-api, gamma-api and clob.polymarket.com), so this is how the response
+   all three of Polymarket's API hosts), so this is how the response
    shapes the parsers in lib/edgedesk_radar.js read are checked against the
    real thing. Run by .github/workflows/radar-sources.yml (an integration
    workflow: a live source, never replaced by a mock).

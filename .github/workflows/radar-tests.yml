@@ -1,12 +1,20 @@
 # EdgeDesk Prediction Radar — the checks that gate every change to how
 # Polymarket bettors are graded and shown (docs/prediction-radar.md).
 #
-#   tests  all offline: no Polymarket call (the gateway's fetch is a stand-in,
-#          and the fixtures were recorded from the live probe, never edited).
-#          The grading core (bets, CLV, the 5- and 15-minute follow,
-#          conviction, the market-maker rule, the Radar Score, the bootstrap,
-#          the H-RADAR-01 verdict, market matching); the gateway (the switch,
-#          the budget, the backoff, the breaker).
+#   tests     all offline: no Polymarket call (the gateway's fetch is a
+#             stand-in; recorded responses under tools/radar/fixtures/).
+#             The grading core (bets, CLV, the 5- and 15-minute follow,
+#             conviction, the market-maker rule, the Radar Score, the
+#             bootstrap, the H-RADAR-01 verdict, market matching); the gateway
+#             (the switch, the budget, the backoff, the breaker); no Radar file
+#             reaching Polymarket but through the gateway; the generated and
+#             inlined files current; the H-RADAR-01 registration unedited.
+#   database  supabase/radar.sql, polymarket_sync_cron.sql and
+#             radar_registry.sql on a throwaway PostgreSQL as anon, a signed-in
+#             reader, a subscriber and the service role (public vs paid,
+#             append-only, the guards, the grading math, the schedule); then the
+#             SHIPPED polymarket_sync against that SQL through a PostgREST
+#             stand-in, Polymarket scripted.
 # The live source is .github/workflows/radar-sources.yml (integration).
 name: Radar tests
 
@@ -17,6 +25,13 @@ on:
       - 'lib/edgedesk_poly_gateway.js'
       - 'research/radar/**'
       - 'tools/radar/**'
+      - 'supabase/radar*.sql'
+      - 'supabase/migrations/*_radar.sql'
+      - 'supabase/polymarket_sync_cron.sql'
+      - 'supabase/functions/polymarket_sync/**'
+      - 'supabase/nfl_market_structure_studies.sql'
+      - 'tools/personal/_pg.js'
+      - 'tools/games/sql/supabase_shim.sql'
       - '.github/workflows/radar-tests.yml'
   push:
     branches: [main]
@@ -25,6 +40,9 @@ on:
       - 'lib/edgedesk_poly_gateway.js'
       - 'research/radar/**'
       - 'tools/radar/**'
+      - 'supabase/radar*.sql'
+      - 'supabase/polymarket_sync_cron.sql'
+      - 'supabase/functions/polymarket_sync/**'
   workflow_dispatch:
 
 permissions:
@@ -50,3 +68,30 @@ jobs:
         run: node tools/radar/core.test.js
       - name: The gateway — the switch, the budget, the backoff, the breaker, the endpoints
         run: node tools/radar/gateway.test.js
+      - name: No Radar file reaches Polymarket but through the gateway; no P&L or rankings host
+        run: node tools/radar/no_bypass.test.js
+      - name: polymarket_sync carries lib/edgedesk_radar.js and the gateway byte for byte
+        run: node tools/radar/inline_core.js --check
+      - name: The H-RADAR-01 registration is the registered one, and its report (once run) says what its numbers say
+        run: node research/radar/run_validation.js --check
+      - name: supabase/radar_registry.sql is generated from the registration and the report, and current
+        run: node tools/radar/build_registry_sql.js --check
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL on the runner
+        run: sudo apt-get install -y -qq postgresql >/dev/null
+      - name: radar.sql as anon, a signed-in reader, a subscriber and the service role — access, append-only, the guards, the grading math, the schedule, the registry
+        env:
+          RADAR_SQL_REQUIRED: '1'
+        run: node tools/radar/radar_sql.test.js
+      - name: The shipped polymarket_sync against that SQL — pool, wallets, grade, tonight, the budget, the breaker
+        env:
+          RADAR_SQL_REQUIRED: '1'
+        run: node tools/radar/sync_fn.test.js
