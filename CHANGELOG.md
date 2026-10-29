@@ -2,11 +2,19 @@
 
 
 
-## 2026-10-29 — Prediction Radar: radar_registry.sql applies on the production registry (games_tested)
+## 2026-10-29 — Prediction Radar: radar_registry.sql applies on the production registry (games_tested), and Deploy Prediction Radar
 
 - **Bug.** Applying `supabase/radar_registry.sql` in production stopped with "research_model_results requires games_tested and this file has nothing to put there". The registry's tables exist only in production. That table requires `games_tested`, and the generator had no mapping for it, so nothing was registered.
 - **Fix.** `tools/radar/build_registry_sql.js` fills `games_tested`, or the first of `n_games`, `holdout_games` and `games` that exists, with the report's holdout games (37). It fills a followed-bets column (`bets_tested`, `n_bets`, `n_followed` or `sample_size`) with the report's followed bets (41). `supabase/radar_registry.sql` is regenerated from it. The report and the verdict are unchanged (FAILED).
 - **Test.** `tools/radar/radar_sql.test.js`'s stand-in registry now requires `games_tested`, as production does. On the old SQL: 131 passed, 1 failed, with the production error. On the fix: 199 passed, 0 failed.
+- **Deploy Prediction Radar** (`.github/workflows/deploy-radar.yml`, run by hand, the `deploy-bet-checker.yml` pattern) runs the runbook in order with the repository's Supabase secrets, after the Radar suites pass:
+  - `apply_sql`: radar.sql, then radar_registry.sql, then radar_record.sql;
+  - `deploy_function`: `polymarket_sync`, checked by the build it serves;
+  - `set_cron_secret`: the function's and Vault's secrets made one value, never printed, and proved by a dry probe;
+  - `data_enabled`: both halves of the switch; `on` records `enable_note` in `radar_config`;
+  - `apply_cron`: the four schedules.
+
+  A report row that says CHECK THIS fails the run.
 
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 

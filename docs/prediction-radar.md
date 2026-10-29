@@ -461,7 +461,14 @@ The `security definer` doors return only what a page needs.
 
 ## Operator runbook
 
-In order. Each SQL file ends in a report whose rows should read `ok`.
+**Deploy Prediction Radar** (`.github/workflows/deploy-radar.yml`, run by hand)
+does every step below in this order with the repository's Supabase secrets:
+`apply_sql`, `deploy_function`, `set_cron_secret` (the function's and Vault's
+halves made one value, never printed), `data_enabled` (`on` needs
+`enable_note`: who read the terms, when, the clause) and `apply_cron`. The
+Radar suites run first, and a report row that says CHECK THIS fails the run.
+By hand instead, in order. Each SQL file ends in a report whose rows should
+read `ok`.
 
 1. Apply `supabase/radar.sql`. Row 6 reads `pending: off` and row 7 `pending`
    until steps 2 and 6.
