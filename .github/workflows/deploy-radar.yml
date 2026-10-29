@@ -27,7 +27,8 @@
 # 06:07-10:17 UTC: the pool, then the wallets (3 a call) until none is due,
 # then the grade. ONE CALL AT A TIME, each answer awaited before the next, as
 # pg_cron's 5-minute spacing does overnight: two wallet calls at once would
-# pick the same wallets. The wallet calls stop while fewer than
+# pick the same wallets. Each call answers within its 75 s time budget and
+# may finish only part of a wallet; the next call carries on. The wallet calls stop while fewer than
 # run_now_reserve of today's Polymarket requests remain, so the 10-minute
 # tonight runs keep theirs; the 06:10 UTC schedule takes the wallets left.
 name: Deploy Prediction Radar
@@ -304,7 +305,7 @@ jobs:
             if [ "$st" = error ]; then echo "::error::wallet call $n ended in error: $(field message)"; exit 1; fi
             if [ "$st" = skipped ]; then echo "Stopping the wallet calls: call $n was skipped ($(field message))."; break; fi
             if [ "$(field details.wallets)" = 0 ]; then echo "Every pool wallet is synced."; break; fi
-            if [ "$n" -ge 100 ]; then echo "Stopping after 100 wallet calls."; break; fi
+            if [ "$n" -ge 300 ]; then echo "Stopping after 300 wallet calls."; break; fi
           done
 
           echo "== the grade"

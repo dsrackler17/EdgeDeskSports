@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
+
+- **Bug.** The first live wallets call (run_now, 15:06 UTC) got HTTP 504, "Request idle timeout limit (150s) reached". One run took three new wallets: up to 30 activity pages each, then every resolved bet's price history (up to 150 a wallet). That is minutes of requests, and a function must answer within 150 s. The overnight schedule runs the same calls, so it would have stalled the same way.
+- **Fix** (`supabase/functions/polymarket_sync/index.ts`, build `polymarket_sync@2026-10-29.4`). After 75 s a wallets run starts no new wallet, activity page or graded bet. A wallet it did not finish stays due, with its place kept: the activity cursor, plus `first_pages` while the first read is cut. The next run carries on. The 30-page cap counts pages across runs, so a history is still marked truncated only when it really passes 30. Trades and bets are still stored once each.
+- **Test** (`tools/radar/sync_fn.test.js`). A fake clock, where every Polymarket request costs 4 s. A wallet joining with 63 bets to grade must be graded over several runs, each within 79 s, ending with all 63. A history that never ends, cut by time, must keep its page count and be marked truncated only at 30 pages. On the old code: 55 passed, 4 failed (one run took 256 s; 30 pages read at once). On the fix: 59 passed, 0 failed.
+- **run_now** allows up to 300 wallet calls, since a call may now finish only part of a wallet. The day's request reserve still stops it first.
+
 ## 2026-10-29 — Prediction Radar: Deploy Prediction Radar can run the overnight work now (run_now)
 
 - **What.** `.github/workflows/deploy-radar.yml` gains `run_now`. It calls the live `polymarket_sync` for the pool, then for wallets (3 a call) until none is due, then for the grade, instead of waiting for 06:07–10:17 UTC.
