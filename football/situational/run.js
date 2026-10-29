@@ -7,6 +7,7 @@
      node football/situational/run.js freeze                               freeze research/preregistration.json (once)
      node football/situational/run.js holdout     --sport nfl|cfb          the one-look holdout (refuses a second look)
      node football/situational/run.js fit         --sport nfl|cfb          production parameters (after the holdout)
+     node football/situational/run.js posthoc     --sport nfl|cfb          labelled post-hoc diagnostics (after the holdout)
      node football/situational/run.js study       --sport nfl|cfb [--season Y]   prop-market study and CLV
      node football/situational/run.js build       [--sport all] [--season Y] [--now ISO] [--offline]
                                                   ingest -> quality -> tendencies -> projections -> market ->
@@ -96,6 +97,14 @@ async function cmdFit(a) {
   for (const sp of sports(a)) { const p = await R.productionFit(sp, { now: a.now }); log('params_written', { sport: sp, model_version: p.model_version, fitted_on: p.fitted_on }); }
   return 0;
 }
+async function cmdPosthoc(a) {
+  const PH = require('./core/posthoc.js');
+  for (const sp of sports(a)) {
+    const r = await PH.intervalVariant(sp, { now: a.now, draws: +a.draws || 1000 });
+    log('posthoc_written', { sport: sp, reproduces_record: r.recorded_reproduced_by_the_formation_column });
+  }
+  return 0;
+}
 async function cmdStudy(a) {
   const season = +a.season || currentSeason(a.now);
   for (const sp of sports(a)) {
@@ -154,8 +163,8 @@ async function cmdBuild(a) {
 async function main() {
   const a = args(process.argv.slice(2));
   const cmd = a._[0];
-  const map = { ingest: cmdIngest, walkforward: cmdWalkForward, freeze: cmdFreeze, holdout: cmdHoldout, fit: cmdFit, study: cmdStudy, build: cmdBuild };
-  if (!map[cmd]) { process.stderr.write('usage: run.js ingest|walkforward|freeze|holdout|fit|study|build [options] (see the header)\n'); return 2; }
+  const map = { ingest: cmdIngest, walkforward: cmdWalkForward, freeze: cmdFreeze, holdout: cmdHoldout, fit: cmdFit, posthoc: cmdPosthoc, study: cmdStudy, build: cmdBuild };
+  if (!map[cmd]) { process.stderr.write('usage: run.js ingest|walkforward|freeze|holdout|fit|posthoc|study|build [options] (see the header)\n'); return 2; }
   return map[cmd](a);
 }
 if (require.main === module) main().then((c) => { process.exitCode = c; }, (e) => { process.stderr.write(String(e && e.stack || e) + '\n'); process.exitCode = 1; });

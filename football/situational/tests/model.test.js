@@ -96,10 +96,23 @@ chk('the QB early-exit tail produces low-attempt draws', (() => { const q = psim
   fs.writeFileSync(path.join(tmp, 'holdout_nfl.json'), '{}');
   await T.achk('a second look at the holdout is refused', async () => { try { await R.holdout('nfl', { research_dir: tmp }); return false; } catch (e) { return /evaluated once/.test(e.message); } });
   await T.achk('production parameters are refused before the holdout', async () => { try { await R.productionFit('cfb', { research_dir: tmp }); return false; } catch (e) { return /holdout has not been evaluated/.test(e.message); } });
+  await T.achk('post-hoc diagnostics are refused before the holdout', async () => { try { await require('../core/posthoc.js').intervalVariant('cfb', { research_dir: tmp }); return false; } catch (e) { return /holdout has not been evaluated/.test(e.message); } });
   const leak = JSON.parse(JSON.stringify(frozen)); leak.sports.nfl.seasons.validation = [2024, 2025];
   R.withPrereg(leak);
   await T.achk('walk-forward refuses to read the holdout season', async () => { try { await R.walkForward('nfl', { cache_dir: tmp }); return false; } catch (e) { return /may not read the holdout/.test(e.message); } });
   R.withPrereg(null);
+  /* the committed record: frozen, its code unchanged since, every later file tied to it */
+  const real = R.checkFrozen(); const RD = R.RESEARCH; const rj = (f) => JSON.parse(fs.readFileSync(path.join(RD, f), 'utf8'));
+  chk('the committed preregistration is frozen and the model code still matches its fingerprint', real.ok, real.why);
+  chk('the walk-forward evidence files are the ones the freeze hashed', ['nfl', 'cfb'].every((sp) => { const e = real.prereg.walkforward_evidence[sp]; return require('../core/util.js').sha256(fs.readFileSync(path.join(__dirname, '..', '..', '..', e.file))) === e.sha256; }));
+  ['nfl', 'cfb'].forEach((sp) => {
+    if (!fs.existsSync(path.join(RD, 'holdout_' + sp + '.json'))) return;
+    const h = rj('holdout_' + sp + '.json');
+    chk(sp + ': the holdout record names the frozen preregistration and code', h.preregistration_sha256 === real.prereg.content_sha256 && h.code_sha256 === real.code.sha256);
+    chk(sp + ': the holdout evaluated after the freeze', Date.parse(h.evaluated_at) > Date.parse(real.prereg.frozen_at));
+    if (fs.existsSync(path.join(RD, 'params_' + sp + '.json'))) { const q = rj('params_' + sp + '.json'); chk(sp + ': production parameters fitted after the holdout, from the frozen code, through the holdout season', q.code_sha256 === real.code.sha256 && Date.parse(q.fitted_at) > Date.parse(h.evaluated_at) && q.fitted_on.indexOf(h.holdout_season) >= 0); }
+    if (fs.existsSync(path.join(RD, 'posthoc_interval_variant_' + sp + '.json'))) { const x = rj('posthoc_interval_variant_' + sp + '.json'); chk(sp + ': the post-hoc file says so, reproduces the record, and changes no verdict', /^POST-HOC/.test(x.status) && x.recorded_reproduced_by_the_formation_column === true && /^none/.test(x.verdict_effect) && Date.parse(x.computed_at) > Date.parse(h.evaluated_at)); }
+  });
   /* the judge */
   const crit = frozen.sports.nfl.promotion_criteria;
   const good = { primary_variant: 'pace_script', n_team_games: 570, team: { paired: {}, metrics: {}, coverage: {} }, players: { coverage: {} } };

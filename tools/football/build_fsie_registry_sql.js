@@ -76,7 +76,16 @@ function results() {
     const pv = H.primary_variant;
     const team = {}; ['plays', 'pass_att', 'rush_att'].forEach((t) => { team[t] = { mae: H.team.metrics[t][pv].mae, bias: H.team.metrics[t][pv].bias, season_avg_mae: H.team.metrics[t].season_avg.mae, recent_weighted_mae: H.team.metrics[t].recent_weighted.mae, market_only_mae: H.team.metrics[t].market_only.mae, coverage_p10_p90: H.team.coverage[t].p10_p90 }; });
     const pl = {}; ['pass_att', 'rush_att', 'targets', 'receptions'].forEach((m) => { const x = H.players[m]; pl[m] = { n: x.evaluated, mae: x.metrics.model.mae, bias: x.metrics.model.bias, season_avg_mae: x.metrics.season_avg.mae, recent_weighted_mae: x.metrics.recent_weighted.mae, coverage_p10_p90: H.players.coverage[m].p10_p90 }; });
-    out.push({ study_id: 'fsie_' + sp + '_team_volume', version: 'situational_v1', passed: H.criteria.team_passed, metrics: { holdout_season: H.holdout_season, n_team_games: H.n_team_games, targets: team, criteria: H.criteria.team, preregistration_sha256: H.preregistration_sha256, code_sha256: H.code_sha256 }, notes: 'holdout ' + H.holdout_season + ' evaluated once at ' + H.evaluated_at + '; research/holdout_' + sp + '.json' });
+    const tm = { holdout_season: H.holdout_season, n_team_games: H.n_team_games, targets: team, criteria: H.criteria.team, preregistration_sha256: H.preregistration_sha256, code_sha256: H.code_sha256 };
+    /* the recorded team coverage was simulated on the harness's default rung, not the primary
+       variant; the labelled post-hoc file says so, and the row carries both, never a replacement */
+    const ph = path.join(ROOT, 'football', 'situational', 'research', 'posthoc_interval_variant_' + sp + '.json');
+    if (fs.existsSync(ph)) {
+      const X = JSON.parse(fs.readFileSync(ph, 'utf8'));
+      tm.coverage_note = 'coverage_p10_p90 above was simulated on the "formation" rung (a harness default), not the primary variant "' + pv + '"; ' + X.verdict_effect + '. Post-hoc, not a criterion: research/posthoc_interval_variant_' + sp + '.json';
+      tm.posthoc_primary_variant_coverage = {}; ['plays', 'pass_att', 'rush_att'].forEach((t) => { tm.posthoc_primary_variant_coverage[t] = X.holdout_season.by_variant[pv].coverage[t].p10_p90; });
+    }
+    out.push({ study_id: 'fsie_' + sp + '_team_volume', version: 'situational_v1', passed: H.criteria.team_passed, metrics: tm, notes: 'holdout ' + H.holdout_season + ' evaluated once at ' + H.evaluated_at + '; research/holdout_' + sp + '.json' });
     out.push({ study_id: 'fsie_' + sp + '_player_volume', version: 'situational_v1', passed: H.criteria.player_passed, metrics: { holdout_season: H.holdout_season, markets: pl, criteria: H.criteria.player, preregistration_sha256: H.preregistration_sha256, code_sha256: H.code_sha256 }, notes: 'holdout ' + H.holdout_season + ' evaluated once at ' + H.evaluated_at + '; research/holdout_' + sp + '.json' });
   });
   return out;
