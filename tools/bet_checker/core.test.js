@@ -91,5 +91,29 @@ chk('a client key is what log_user_bet accepts, and new each time', /^[A-Za-z0-9
 chk('a stats row prints its numbers', JSON.stringify(C.statRow({ val: 'spread', bets: 4, graded: 3, clv_rate_pct: 75, avg_entry_edge_pct: -0.02, avg_clv_pct: 1.84, clv_bets: 4 })) ===
   JSON.stringify({ label: 'spread', bets: 4, graded: 3, clv_rate: '75%', avg_edge: '−0.02 pts', avg_clv: '+1.84%', clv_bets: 4 }));
 
+/* one tap: which lines become buttons, and the price beside them */
+const LN = [
+  { market_type: 'spread', side: 'home', team: 'Kansas City Chiefs', line: -3.5, modal: true, priced: true },
+  { market_type: 'spread', side: 'home', team: 'Kansas City Chiefs', line: -3, modal: false, priced: true },
+  { market_type: 'spread', side: 'away', team: 'Buffalo Bills', line: 3.5, modal: true, priced: true },
+  { market_type: 'total', side: 'over', team: null, line: 47.5, modal: true, priced: true },
+  { market_type: 'total', side: 'under', team: null, line: 47.5, modal: false, priced: true },
+  { market_type: 'total', side: 'under', team: null, line: 48, modal: false, priced: false },
+  { market_type: 'moneyline', side: 'home', team: 'Kansas City Chiefs', line: null, modal: true, priced: true }
+];
+const PR = [{ market_type: 'spread', side: 'home', line: -3.5, best_odds: -110, best_book: 'DraftKings', best_seen_at: '2026-10-29T01:00:00Z' }];
+const taps = C.tapLines(LN, PR, { home_team: 'Kansas City Chiefs', away_team: 'Buffalo Bills' });
+chk('one tap offers the main line of each side (the -3 alternative is typed), away before home',
+  JSON.stringify(taps.map((t) => t.label)) === JSON.stringify(['Buffalo Bills +3.5', 'Kansas City Chiefs −3.5', 'Over 47.5', 'Under 47.5', 'Kansas City Chiefs ML']), taps.map((t) => t.label));
+chk('a side with no main line offers the lines EdgeDesk grades (Under 47.5), never an ungraded one (48)', !taps.some((t) => t.line === 48));
+chk('the price rides on its own line only: -110 at DraftKings on Chiefs -3.5, nothing elsewhere',
+  taps[1].odds === -110 && taps[1].book === 'DraftKings' && taps.filter((t) => t.odds != null).length === 1);
+chk('with no price rows (a free reader), no button carries a price', C.tapLines(LN, [], {}).every((t) => t.odds === null && t.book === null));
+chk('a moneyline button carries no line', taps[4].market === 'moneyline' && taps[4].line === null);
+chk('nothing in, nothing out', C.tapLines(null, null, null).length === 0);
+chk('the board\'s book maps to the form\'s list, else Other',
+  C.bookOption('DraftKings') === 'DraftKings' && C.bookOption('draftkings') === 'DraftKings' && C.bookOption('kalshi') === 'Kalshi' &&
+  C.bookOption('FanDuel') === 'Other' && C.bookOption('') === 'Other' && C.bookOption(null) === 'Other');
+
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'bet checker core — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

@@ -103,3 +103,15 @@
 .bc-auth input[type=email],.bc-auth input[type=password]{width:100%;min-height:44px;font-size:16px}
 .bc-auth .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .bc-auth-msg{font-size:13.5px;margin-top:8px;min-height:1em}
+/* one tap: the board's lines as buttons (lib/edgedesk_bet_checker.js renderTaps) */
+.bc-taps{display:grid;gap:10px}
+.bc-taphint{margin:0;color:var(--gm-dim);font-size:13px}
+.bc-tapgroup{display:grid;gap:6px}
+.bc-tapk{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gm-dim)}
+.bc-taprow{display:flex;flex-wrap:wrap;gap:8px}
+.bc-tap{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;max-width:100%;padding:8px 12px;border:1px solid var(--gm-bd);border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.bc-tap b{font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.bc-tap span{font-size:12px;color:var(--gm-dim)}
+.bc-tap[aria-pressed="true"]{border-color:var(--gm-ac);box-shadow:0 0 0 1px var(--gm-ac) inset}
+.bc-tap:focus-visible{outline:2px solid var(--gm-ac);outline-offset:2px}
+.bc-prefill{color:var(--gm-tx)}
