@@ -37,7 +37,7 @@ The steps:
 
    It is the checkout's **success URL**, its **cancel URL**, and the **redirect URI** of an account link. One URI serves all three. Juice Reel compares it character for character: same scheme, host and path, no trailing slash. Add the bet sync's own URI too, `https://edgedesksports.com/oauth/juicereel-callback.html`.
 2. **Scope.** Have `subscribers.read` approved. The checkout asks for it, and it is what lets EdgeDesk ask Juice Reel whether the buyer is subscribed.
-3. **What is sold.** Create the EdgeDesk subscription product(s) on EdgeDesk's Juice Reel seller account (the plan, price and duration). EdgeDesk sends no product id: the buyer chooses on Juice Reel's checkout. To let only some of the seller's products open EdgeDesk, set `JUICE_REEL_PRODUCT_IDS` (§ 8). By default, every product this seller sells opens it.
+3. **What is sold.** Create the EdgeDesk subscription product(s) on EdgeDesk's Juice Reel seller account (the plan, price and duration). EdgeDesk sends no product id: the buyer chooses on Juice Reel's checkout. **Each product opens only what it is mapped to** (§ 2, `set_product`): the terminal, or Bet Checker. **A product not mapped opens nothing**, so a cheaper product, or anything else the seller sells on Juice Reel, never opens the terminal by default. Until 2026-10-29 every product opened the terminal.
 4. **Webhook.** Subscribe the **SUBSCRIPTION_EVENTS** bucket (purchased, renewed, cancelled, expired) to:
 
    ```
@@ -57,14 +57,20 @@ The steps:
    - whether Juice Reel accepts EdgeDesk's credentials;
    - whether owner access reaches the subscriber list;
    - the redirect URI and webhook URL to register.
-5. **`set_mode` → `operators`.** Only billing operators see Juice Reel on the paywall. Run the live test (§ 3).
-6. **`set_mode` → `on`.** Every reader's paywall offers Juice Reel first, and the landing page's partner band shows "Subscribe with Juice Reel". This is refused while a setting is missing.
+5. **`set_product`.** Map each product: `product_id` (Juice Reel's subscription product id), `opens` = `terminal`, `bet_checker` or `none`. Every linked buyer of that product is re-checked at once.
+   - To find the id: `check` lists the product ids on Juice Reel's subscriber list, and the products bought but not mapped. A purchase of an unmapped product is recorded, opens nothing, tells the buyer not to pay again, and raises `juicereel_product_not_mapped`. Mapping the product then opens their access at once.
+   - `bet_checker` is refused until **Deploy billing → `apply_sql`** has installed `billing_hardening.sql` with the rule that knows `juicereel_bet_checker`. Without that rule, a Bet Checker row would read as the terminal.
+   - `none` takes a product off the map. The access it granted ends.
+6. **`set_mode` → `operators`.** Only billing operators see Juice Reel on the paywall. Run the live test (§ 3).
+7. **`set_mode` → `on`.** Every reader's paywall offers Juice Reel first, and the landing page's partner band shows "Subscribe with Juice Reel". This is refused while a setting is missing, and while no product opens the terminal.
 
 **Rolling back:** `set_mode` → `off`. Nobody can start a Juice Reel checkout. Every reader who already paid keeps access to the expiry Juice Reel stated, and webhooks are still recorded.
 
 ## 3. The live test (an operator, with a real Juice Reel account)
 
-With the switch on `operators`, signed in to EdgeDesk as a billing operator, on an account with no access:
+With the switch on `operators`, signed in to EdgeDesk as a billing operator, on an account with no access.
+
+**Map the product first** (§ 2, `set_product` → `terminal`). If you do not know its Juice Reel id yet, buy anyway. The return then says the purchase does not open EdgeDesk yet, and not to pay again. Run `check`: the summary lists the id under "Bought on Juice Reel but NOT mapped". Map it, and the access opens at once.
 
 | # | Do | Expect |
 |---|---|---|
@@ -83,14 +89,15 @@ Then compare the Supabase function logs with § 9, and record what Juice Reel ac
 | Where | Switch off | Switch on |
 |---|---|---|
 | **Landing page** (`#juicereel`, in Pricing) | "EdgeDesk × Juice Reel — EdgeDesk is working with Juice Reel" | The same, plus how it works and **Get EdgeDesk on Juice Reel** / **Bought on Juice Reel? Open EdgeDesk**. The card trial stays offered as before |
+| **Login and sign-up window** (landing page) | unchanged | Above the form: **Came from Juice Reel? Link your Juice Reel account**. Pressed, it says Juice Reel opens after they log in or sign up, with **Undo**, and stands in for the lede (whose sign-up wording promises the card trial). Once signed in, the reader goes to Juice Reel's authorize page (start `link`), never to a checkout or the card trial's terms. Not shown to a reader already headed for Juice Reel's checkout |
 | **Paywall** | unchanged | First: what Juice Reel's checkout does, **Subscribe with Juice Reel** and **I bought EdgeDesk on Juice Reel — link my account**. Then "Or with a card:" and the card trial, unchanged |
 | **Back from Juice Reel** | — | "Confirming your Juice Reel checkout…", then open. A cancelled checkout: "If you did pay on Juice Reel, do not pay again — link your account". Not yet confirmed: "Your payment is safe… Do not pay again", with a reference |
 | **Settings → Subscription** (a Juice Reel row) | — | "Billed through Juice Reel", the paid-through date, **Manage on Juice Reel**, **Renewed? Re-check with Juice Reel**. No Stripe price, charge or portal |
 | **Header and account menu** (a Juice Reel row) | — | **Back to Juice Reel ↗** in the account menu at every width, and a **↗ Juice Reel** chip in the header from 600 px. Both open juicereel.com in a new tab. Nobody else sees them |
 
-Under `operators`, only operators see the paywall's Juice Reel buttons, and the landing page shows the partnership only.
+Under `operators`, only operators see the paywall's Juice Reel buttons, and the landing page shows the partnership only: no band button, and no line in the login window.
 
-The landing band is drawn by `lib/edgedesk_juicereel_billing.js` (`landing`), and styled in `lib/edgedesk_landing_desk.css`. `index.html` has a hard size budget (`tools/presentation/landing_interaction.test.js`), so it carries only a placeholder and three hooks. Its button does not say "Subscribe": the landing page keeps one call-to-action verb, "Start free trial" (`landing_positioning.test.js`).
+The landing band is drawn by `lib/edgedesk_juicereel_billing.js` (`landing`), and styled in `lib/edgedesk_landing_desk.css`. The login window's line is drawn and styled (inline) by the same function: it adds nothing to `index.html`. Its link intent is stored with the page's pending flag, so the sign-in that follows, including one after an email confirmation, resumes into the link as a Juice Reel purchase does. If the switch has gone off by then, that reader goes to the terminal instead. `index.html` has a hard size budget (`tools/presentation/landing_interaction.test.js`), so it carries only a placeholder and three hooks. Its button does not say "Subscribe": the landing page keeps one call-to-action verb, "Start free trial" (`landing_positioning.test.js`).
 
 ## 5. How it works
 
@@ -124,9 +131,14 @@ pg_cron hourly ──▶ reconcile: every page of /oauth2/subscribers/current (o
 
 ## 6. The access rules (`supabase/juicereel_billing.sql`, `billing_jr_project`)
 
-- **The row.** A Juice Reel purchase is the reader's `subscriptions` row with `price_id = 'juicereel'`, `status = 'active'` and `current_period_end` set to Juice Reel's expiry. It carries no Stripe ids.
-  - The existing access rule grants it the Research Terminal until that date, and nothing after: `billing_row_grants_access`, unchanged; an unknown price is the terminal.
-  - Every gate already reads that row: the paywall, `my_billing_access`, and every RLS gate. Nothing in `billing_hardening.sql` changes.
+- **The row.** A Juice Reel purchase is the reader's `subscriptions` row, `status = 'active'` and `current_period_end` set to Juice Reel's expiry, with no Stripe ids. Its `price_id` is what the bought product is mapped to (`billing_juicereel_products`):
+  - `'juicereel'`: the Research Terminal. The access rule (`billing_row_grants_access`, unchanged) reads an unknown price as the terminal.
+  - `'juicereel_bet_checker'`: Bet Checker only. `billing_tier_of_price` reads it as red, by a constant next to `owner_comp` and `comp_trial` (the one change in `billing_hardening.sql`). It never passes the terminal's rule, and `has_bet_checker_paid` is true.
+  - **A product not mapped grants nothing.** A linked reader who paid for one raises `juicereel_product_not_mapped`; mapping it re-checks them at once.
+  - Every gate already reads that row: the paywall, `my_billing_access`, Bet Checker's gates, and every RLS gate.
+- **A higher tier is kept.** A buyer of the terminal and Bet Checker keeps the terminal. Bet Checker, or a product nobody mapped, never replaces a terminal still paid for, whatever its expiry. A terminal replaces Bet Checker. When the terminal ends, the next reconcile opens the Bet Checker still paid for.
+- **Bet Checker never takes a plan away.** Every plan in good standing (Stripe Bet Checker, Fairline or the terminal, a comp, a trial) already includes it, so a Bet Checker purchase never writes over one; with Stripe it raises `juicereel_and_stripe_both_paid`.
+- **The status answer carries one subscription.** On a return, when Juice Reel's status answer did not open the terminal, the owner's list is read for the buyer's other subscriptions, and each is recorded.
 - **Never open-ended.** A Juice Reel row always has an expiry. If Juice Reel says "subscribed" without a date, access runs 3 days, and each later confirmation renews it. That horizon never shortens a date Juice Reel did state.
 - **Juice Reel only revokes what Juice Reel granted.**
   - It never writes over `owner_comp`.
@@ -168,7 +180,7 @@ pg_cron hourly ──▶ reconcile: every page of /oauth2/subscribers/current (o
 | `JUICE_REEL_CLIENT_SECRET` | its client secret | yes (already set) |
 | `JUICE_REEL_WEBHOOK_SECRET` | the SUBSCRIPTION_EVENTS webhook's signing secret | yes |
 | `JUICE_REEL_CHECKOUT` | `off` (default) · `operators` · `on`. Set it with the `set_mode` step | to switch on |
-| `JUICE_REEL_PRODUCT_IDS` | comma-separated Juice Reel product ids that open EdgeDesk. Empty means every product of the seller | no |
+| `JUICE_REEL_PRODUCT_IDS` | **no longer read** (until 2026-10-29: an allow-list, empty meaning every product). Products are mapped in the database with `set_product`. While it is set, the function reports it as missing, so the switch cannot go on: remove it | must not be set |
 | `JUICE_REEL_BILLING_SCOPES` | default `subscribers.read` | no |
 | `JUICE_REEL_BILLING_REDIRECT_URI` | default `https://edgedesksports.com/oauth/juicereel-subscribe.html` | no |
 
@@ -209,14 +221,14 @@ pg_cron hourly ──▶ reconcile: every page of /oauth2/subscribers/current (o
    - If Juice Reel signs something else (a timestamp prefix, say), every delivery is refused with 401, and the logs say "webhook signature refused". The reconcile still keeps access correct, hourly.
    - Check the first delivery in the function logs, or in `billing_juicereel_events`.
 
-## 10. Tests (run here, 2026-10-28; the billing suite again on 2026-10-29)
+## 10. Tests (run here, 2026-10-28; the billing suite again on 2026-10-29, twice)
 
 | Suite | What | Result |
 |---|---|---|
-| `tools/billing/juicereel_billing.test.js` | The shipped function in a stub Deno, over a real PostgreSQL with the shipped billing migrations and this one (applied twice), a fake Juice Reel, and the shipped Stripe functions with a fake Stripe. Covers: the switch (off, operators, on); the full checkout, with exact requests asserted; replay; CSRF with another reader; unknown and expired states; one Juice Reel account per EdgeDesk account; cancelled checkout and consent declined after paying (then webhook, then link); Juice Reel's documented shapes by default (2026-10-29), and four earlier-guessed status shapes; a top-level "not subscribed" overriding an active-looking entry; the owner's own account (a bare yes) opening nothing; a refunded entry (`isCurrentlySubscribed` false, future `expiresDate`) granting nothing; a returning buyer whose ended entry is listed first; the documented webhook body, and an event saying `isCurrentlySubscribed` false ending access; the reconcile alerting on a buyer listed as no longer subscribed; no status endpoint (the owner list); neither answering (pending, then the webhook); the webhook (bad, missing, forged signatures, no secret, duplicates, renew, cancel, expire, stale, other product, unknown type); `owner_comp`; Stripe plus Juice Reel (alert); `comp_trial`; **the ended-Stripe regression and its CONTROL**; the reconcile (debounce, paging, a lost renewal, absent buyer alerted not cut, owner access refused); credentials refused; a non-Juice-Reel checkout URL; token endpoint down then retried; the rate limit; link with no subscription; the authorize URL; operators' overview and unlink; `check`; no token, code or secret in any log or table | **90 passed, 0 failed** (before the 2026-10-29 change, its 4 new checks failed: 86 passed, 4 failed) |
+| `tools/billing/juicereel_billing.test.js` | The shipped function in a stub Deno, over a real PostgreSQL with the shipped billing migrations and this one (applied twice), a fake Juice Reel, and the shipped Stripe functions with a fake Stripe. Covers: the switch (off, operators, on); the full checkout, with exact requests asserted; replay; CSRF with another reader; unknown and expired states; one Juice Reel account per EdgeDesk account; cancelled checkout and consent declined after paying (then webhook, then link); Juice Reel's documented shapes by default (2026-10-29), and four earlier-guessed status shapes; a top-level "not subscribed" overriding an active-looking entry; the owner's own account (a bare yes) opening nothing; a refunded entry (`isCurrentlySubscribed` false, future `expiresDate`) granting nothing; a returning buyer whose ended entry is listed first; the documented webhook body, and an event saying `isCurrentlySubscribed` false ending access; the reconcile alerting on a buyer listed as no longer subscribed; no status endpoint (the owner list); neither answering (pending, then the webhook); the webhook (bad, missing, forged signatures, no secret, duplicates, renew, cancel, expire, stale, other product, unknown type); `owner_comp`; Stripe plus Juice Reel (alert); `comp_trial`; **the ended-Stripe regression and its CONTROL**; the reconcile (debounce, paging, a lost renewal, absent buyer alerted not cut, owner access refused); credentials refused; a non-Juice-Reel checkout URL; token endpoint down then retried; the rate limit; link with no subscription; the authorize URL; operators' overview and unlink; `check`; no token, code or secret in any log or table; **what each product opens (§ 13):** an unmapped product, a picks package and a status answer naming no product open nothing and are said plainly, Bet Checker refused until the rule knows it, mapped Bet Checker never opens the terminal, an upgrade through a one-subscription status answer, both products keep the terminal, the terminal ending leaves the Bet Checker still paid for, a trial is never replaced by Bet Checker, `check` lists the map, unmapping ends access | **107 passed, 0 failed** (the product map's checks on the old code: 86 passed, 5 failed: every unmapped product opened the terminal) |
 | mutation checks | Clearing of the ended Stripe id removed → exactly the 4 tests written for it fail. The "only the reader who started it" check removed → exactly the 3 CSRF tests fail | as expected |
 | `tools/billing/juicereel_client.test.js` | The browser library: navigates only to Juice Reel, reads a return once, drops a stale one, one retry only when the server says so | **25 passed, 0 failed** |
-| `tools/billing/juicereel_checkout.e2e.js` | Chromium, 390 px and 1280 px, the shipped pages. Covers: the partner band (switch off and on); an abandoned Juice Reel click never hijacking the card-trial button; sign-up → Juice Reel → the callback page → the terminal open, with the address clean and the hand-off gone; no renewal consent recorded; Settings billed through Juice Reel; the paywall order; the link button; a cancelled checkout; switch off unchanged; the callback page alone | **50 passed, 0 failed** |
+| `tools/billing/juicereel_checkout.e2e.js` | Chromium, 390 px and 1280 px, the shipped pages. Covers: the partner band (switch off and on); an abandoned Juice Reel click never hijacking the card-trial button; sign-up → Juice Reel → the callback page → the terminal open, with the address clean and the hand-off gone; no renewal consent recorded; Settings billed through Juice Reel; the paywall order; the link button; a cancelled checkout; switch off unchanged; the callback page alone. **The login window (2026-10-29):** no line with the switch off, or for a reader headed for the checkout; "Came from Juice Reel?" → log in → Juice Reel's authorize page (kind `link`) → the terminal open, at both widths; Undo; Sign up after the card trial was pressed goes on to the link, and Undo keeps the card trial; the switch going off before sign-in sends that reader to the terminal; a link intent left without its pending flag is dropped | **89 passed, 0 failed** (on the old library the run stops at the first new check: the line does not exist) |
 
 ## 11. Known limitations, and decisions for the owner
 

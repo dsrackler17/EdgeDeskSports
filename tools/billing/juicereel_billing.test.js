@@ -47,6 +47,9 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
   chk('…and applies again unchanged (idempotent)', !/CHECK THIS/.test(String(again)));
   // an operator, by billing_is_admin()'s own table
   w.db.sql('create table if not exists public.issue_report_admins (user_id uuid primary key);');
+  // what the fake seller's EdgeDesk product opens (§ 13 tests the mapping
+  // itself): the terminal. A product nobody mapped opens nothing.
+  w.db.sql("select public.billing_jr_set_product('prod_edgedesk_monthly', 'terminal', 'the test seller''s EdgeDesk product');");
 
   const J = FJ.make();
   const route = (url, init) => (String(url).indexOf(FJ.API) === 0 ? J.api(url, init) : w.route(url, init));
@@ -207,14 +210,27 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
   }
 
   /* ── 6. what Juice Reel's status answer may look like ─────────────────── */
-  for (const [shape, jrId] of [['flag', '5120'], ['list', '5104'], ['array', '5105'], ['flag_bare', '5109']]) {
+  for (const [shape, jrId] of [['flag', '5120'], ['list', '5104'], ['array', '5105']]) {
     const U = w.user('shape-' + shape + '@example.com');
     J.S.statusShape = shape;
-    J.S.ownerAccess = shape !== 'flag_bare';   // the status answer alone must do it
     let r = await call({ action: 'start', kind: 'checkout' }, U.token);
     r = await complete(U, J.pay(r.body.url, jrId).url);
     chk('subscriber status as ' + shape + ' → access', r.body.outcome === 'active' && access(U).has_access, JSON.stringify(r.body));
+  }
+  {
+    // a bare "subscribed" that names no product: what was bought is unknown, so
+    // alone it opens nothing (it used to open the terminal: an unknown product
+    // was the terminal); the owner's list, which names the product, opens it
+    const U = w.user('shape-flag_bare@example.com');
+    J.S.statusShape = 'flag_bare'; J.S.ownerAccess = false;   // the status answer alone
+    let r = await call({ action: 'start', kind: 'checkout' }, U.token);
+    r = await complete(U, J.pay(r.body.url, '5109').url);
+    chk('subscriber status as flag_bare (no product named), alone → nothing opens, said plainly', r.body.outcome === 'product_not_mapped' && !access(U).has_access, JSON.stringify(r.body));
     J.S.ownerAccess = true;
+    const U2 = w.user('shape-flag_bare-list@example.com');
+    r = await call({ action: 'start', kind: 'checkout' }, U2.token);
+    r = await complete(U2, J.pay(r.body.url, '5110').url);
+    chk('subscriber status as flag_bare, with the owner\'s list naming the product → access', r.body.outcome === 'active' && access(U2).has_access, JSON.stringify(r.body));
   }
   {
     // Juice Reel's own "no" wins over an entry that looks active; the owner list is not consulted to overrule it here
@@ -273,7 +289,8 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
       r.body.outcome === 'active' && access(H).has_access, JSON.stringify(r.body));
     J.S.statusShape = 'documented';
 
-    // the documented webhook body
+    // the documented webhook body (its example product, mapped as the owner maps theirs)
+    w.db.sql("select public.billing_jr_set_product('juice_plus_monthly', 'terminal', 'the documented example product');");
     const W = w.user('documented-webhook@example.com');
     r = await call({ action: 'start', kind: 'link' }, W.token);
     await complete(W, J.authorize(r.body.url, '5703').url);
@@ -330,10 +347,11 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
       { createdAt: new Date(Date.now() + 1000).toISOString() });
     r = await hook(exp);
     chk('EXPIRED ends access: the row reads canceled, and the paywall closes', !access(A).has_access && row(A).status === 'canceled' && row(A).price_id === 'juicereel', JSON.stringify(row(A)));
-    const other = J.webhook('SUBSCRIPTION_PURCHASED', { subscriberUserId: 5009, subscriptionProductId: 'prod_some_picks_package', expiresDate: renewTo });
-    const only = load({ JUICE_REEL_PRODUCT_IDS: 'prod_edgedesk_monthly' });
-    r = await hook(other, null, only);
-    chk('JUICE_REEL_PRODUCT_IDS set: a purchase of another product of the seller opens nothing', r.body.outcome === 'product_not_sold_here');
+    // products are mapped in the database now (§ 13); the old allow-list is not read, and is named so it gets removed
+    const legacy = load({ JUICE_REEL_PRODUCT_IDS: 'prod_edgedesk_monthly' });
+    const hl = await (await legacy(new Request('https://fn.test/functions/v1/juicereel_billing'))).json();
+    chk('JUICE_REEL_PRODUCT_IDS is no longer read: health names it as a setting to remove, so the switch cannot go on with it set',
+      (hl.missing || []).some((m) => /JUICE_REEL_PRODUCT_IDS/.test(m)) && hl.ready === false, JSON.stringify(hl.missing));
     r = await hook(J.webhook('SOMETHING_ELSE', { subscriberUserId: 5001 }));
     chk('an event type this does not know is recorded and ignored', r.body.outcome === 'ignored_type');
   }
@@ -478,6 +496,107 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
     chk('check with a wrong secret: not accepted, JR_CLIENT_REFUSED', r.body.accepted === false && r.body.code === 'JR_CLIENT_REFUSED');
     r = await call({ action: 'check' }, U.token);
     chk('check is refused to a reader', r.status === 403);
+  }
+
+  /* ── 13. what each Juice Reel product opens ───────────────────────────── */
+  // 2026-10-29: every product the seller had on Juice Reel opened the whole
+  // terminal (JUICE_REEL_PRODUCT_IDS empty: "every product"). A cheaper Bet
+  // Checker product there would have sold the terminal for its price. A
+  // product now opens what billing_juicereel_products maps it to: the terminal,
+  // Bet Checker, or (not mapped) nothing.
+  {
+    const BC = 'prod_bet_checker_monthly', PICKS = 'prod_some_picks_package', TERM = 'prod_edgedesk_monthly';
+    const soon = (s) => new Date(Date.now() + s * 1000).toISOString();
+    const betChecker = (u) => w.q('select public.has_bet_checker_paid(' + PG.lit(u.id) + ') as p')[0].p === true;
+    const setProduct = (p, t) => JSON.parse(w.db.sql('select public.billing_jr_set_product(' + PG.lit(p) + ', ' + PG.lit(t) + ", 'test');"));
+    const detail = (a) => (typeof a.detail === 'string' ? JSON.parse(a.detail) : a.detail) || {};
+
+    // a product nobody mapped: nothing, said plainly, and a human is told
+    const N = w.user('cheap-product@example.com');
+    let r = await call({ action: 'start', kind: 'checkout' }, N.token);
+    r = await complete(N, J.pay(r.body.url, '5900', { productId: BC }).url);
+    chk('a purchase of a product nobody mapped opens NOTHING: not the terminal, not Bet Checker (it used to open the terminal)',
+      !access(N).has_access && !betChecker(N) && r.body.outcome === 'product_not_mapped', JSON.stringify(r.body));
+    chk('…the buyer is told the payment is safe and not to pay again, and operators are alerted with the product id',
+      /do not pay again/i.test(r.body.message || '') && alerts('juicereel_product_not_mapped').some((a) => a.user_id === N.id && detail(a).product_id === BC),
+      JSON.stringify(r.body));
+    const K = w.user('picks-buyer@example.com');
+    r = await call({ action: 'start', kind: 'link' }, K.token);
+    J.subscribe('5901', PICKS, 30);
+    r = await complete(K, J.authorize(r.body.url, '5901').url);
+    chk('a buyer of something else the seller sells on Juice Reel (a picks package) who links an account gets nothing',
+      !access(K).has_access && !betChecker(K) && r.body.outcome === 'product_not_mapped', JSON.stringify(r.body));
+
+    // Bet Checker waits for the access rule to know its price (production before Deploy billing → apply_sql)
+    const rule = fs.readFileSync(path.join(ROOT, 'supabase', 'billing_hardening.sql'), 'utf8')
+      .match(/create or replace function public\.billing_tier_of_price[\s\S]*?\n\$\$;/)[0];
+    const ruleBefore = rule.split('\n').filter((l) => l.indexOf("'juicereel_bet_checker'") < 0).join('\n');
+    w.db.sql(ruleBefore);
+    let refused = null;
+    try { setProduct(BC, 'bet_checker'); } catch (e) { refused = String(e.message || e); }
+    chk('mapping a product to Bet Checker is REFUSED while the access rule does not know juicereel_bet_checker (it would read it as the terminal)',
+      ruleBefore !== rule && !!refused && /billing_hardening\.sql/.test(refused) && !betChecker(N) && !access(N).has_access, refused);
+    w.db.sql(rule);
+
+    // mapped to Bet Checker: its buyers get Bet Checker at once, never the terminal
+    const m = setProduct(BC, 'bet_checker');
+    chk('mapping the product to Bet Checker re-projects its buyers at once: Bet Checker paid, the terminal still closed',
+      m.ok && m.reprojected >= 1 && betChecker(N) && !access(N).has_access && row(N).price_id === 'juicereel_bet_checker' && row(N).status === 'active',
+      JSON.stringify(m) + ' ' + JSON.stringify(row(N)));
+    chk('the access rule reads juicereel_bet_checker as Bet Checker (red): it never opens the terminal',
+      w.db.sql("select public.billing_tier_of_price('juicereel_bet_checker');") === 'red'
+        && w.db.sql("select public.billing_row_grants_access('active', 'juicereel_bet_checker', now() + interval '1 day', now());") === 'f');
+    const B = w.user('bc-buyer@example.com');
+    r = await call({ action: 'start', kind: 'checkout' }, B.token);
+    r = await complete(B, J.pay(r.body.url, '5902', { productId: BC }).url);
+    chk('a Bet Checker buyer through the checkout: outcome bet_checker, told it opens Bet Checker, and the terminal stays closed',
+      r.body.outcome === 'bet_checker' && /bet-checker/.test(r.body.message || '') && betChecker(B) && !access(B).has_access, JSON.stringify(r.body));
+
+    // a Bet Checker buyer who buys the terminal gets it, though Juice Reel's
+    // status answer carries ONE subscription (here the Bet Checker one)
+    r = await call({ action: 'start', kind: 'checkout' }, B.token);
+    r = await complete(B, J.pay(r.body.url, '5902').url);
+    chk('a Bet Checker buyer who then buys the terminal on Juice Reel gets the terminal (a higher tier replaces a lower one)',
+      r.body.outcome === 'active' && access(B).has_access && row(B).price_id === 'juicereel', JSON.stringify(r.body));
+
+    // both products: the terminal is kept, and Bet Checker outlives it
+    const T2 = w.user('both-products@example.com');
+    r = await call({ action: 'start', kind: 'checkout' }, T2.token);
+    await complete(T2, J.pay(r.body.url, '5903').url);
+    const bcEnd = J.subscribe('5903', BC, 60);
+    r = await hook(J.webhook('SUBSCRIPTION_PURCHASED', { subscriberUserId: 5903, subscriptionProductId: BC, expiresDate: bcEnd, isCurrentlySubscribed: true }));
+    chk('a terminal buyer who also buys Bet Checker keeps the terminal: a lower tier never replaces a higher one still paid for, even with a later expiry',
+      access(T2).has_access && row(T2).price_id === 'juicereel', JSON.stringify(r.body) + ' ' + JSON.stringify(row(T2)));
+    r = await hook(J.webhook('SUBSCRIPTION_PURCHASED', { subscriberUserId: 5903, subscriptionProductId: PICKS, expiresDate: soon(90 * 86400), isCurrentlySubscribed: true }));
+    chk('…nor does a product nobody mapped', access(T2).has_access && row(T2).price_id === 'juicereel', JSON.stringify(r.body));
+    J.refund('5903', TERM);
+    r = await hook(J.webhook('SUBSCRIPTION_EXPIRED', { subscriberUserId: 5903, subscriptionProductId: TERM, isCurrentlySubscribed: false }));
+    chk('the terminal ending ends the terminal', !access(T2).has_access, JSON.stringify(row(T2)));
+    r = await call({ action: 'reconcile' }, 'service-key');
+    chk('…and the reconcile then opens the Bet Checker still paid for', betChecker(T2) && !access(T2).has_access && row(T2).price_id === 'juicereel_bet_checker', JSON.stringify(r.body) + ' ' + JSON.stringify(row(T2)));
+
+    // Bet Checker never takes a better plan away
+    const Q2 = w.user('trial-then-bc@example.com');
+    w.db.sql("insert into public.subscriptions (user_id, status, price_id, current_period_end) values (" + PG.lit(Q2.id) + ", 'trialing', 'comp_trial', now() + interval '5 days');");
+    r = await call({ action: 'start', kind: 'link' }, Q2.token);
+    J.subscribe('5904', BC, 30);
+    r = await complete(Q2, J.authorize(r.body.url, '5904').url);
+    chk('a Bet Checker purchase never replaces a plan in good standing that already includes it (a running terminal trial)',
+      row(Q2).price_id === 'comp_trial' && access(Q2).has_access, JSON.stringify(r.body) + ' ' + JSON.stringify(row(Q2)));
+
+    // what check shows the owner
+    r = await call({ action: 'check' }, 'service-key');
+    const pr = r.body.products || {};
+    chk('check lists what each product opens, and the products bought on Juice Reel that are not mapped',
+      (pr.terminal || []).indexOf(TERM) >= 0 && (pr.bet_checker || []).indexOf(BC) >= 0 && (pr.not_mapped || []).some((x) => x.product_id === PICKS),
+      JSON.stringify(pr));
+
+    // off the map: what it granted ends
+    const off = setProduct(BC, 'none');
+    chk('taking a product off the map ends the access it granted, at once', off.ok && !betChecker(N) && !access(N).has_access, JSON.stringify(off));
+    let bad = null;
+    try { setProduct(BC, 'fairline'); } catch (e) { bad = String(e.message || e); }
+    chk('a product can be mapped only to terminal, bet_checker or none', !!bad, bad);
   }
 
   /* ── 12. nothing secret anywhere ──────────────────────────────────────── */
