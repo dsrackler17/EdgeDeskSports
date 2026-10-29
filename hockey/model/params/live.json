@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_live_params_v1",
- "generated_at": "2026-10-27T16:00:46.326Z",
+ "generated_at": "2026-10-29T13:26:41.104Z",
  "for_season": 2027,
  "model": "xg_core",
  "confirmed_variant": "xg_goalie_confirmed",
@@ -303,66 +303,84 @@
  "pair_calibration": {
   "const_home": {
    "a": 0.3,
-   "b": 0.85,
+   "b": 1.125,
    "c": 6.0241,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.85,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "goals_only": {
    "a": 0.45,
-   "b": 0.925,
+   "b": 1.125,
    "c": 6.023,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.925,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "xg_no_goalie": {
    "a": 0.5,
-   "b": 0.9,
+   "b": 1.125,
    "c": 6.0197,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.9,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "xg_goalie_projected": {
    "a": 0.5,
-   "b": 0.9,
+   "b": 1.125,
    "c": 6.0178,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.9,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "xg_goalie_confirmed": {
    "a": 0.525,
-   "b": 0.9,
+   "b": 1.125,
    "c": 6.0154,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.9,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "xg_lineup_projected": {
    "a": 0.525,
-   "b": 0.9,
+   "b": 1.125,
    "c": 6.0202,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.9,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "xg_lineup_confirmed": {
    "a": 0.5,
-   "b": 0.9,
+   "b": 1.125,
    "c": 6.0194,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.9,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "xg_all_confirmed": {
    "a": 0.525,
-   "b": 0.9,
+   "b": 1.125,
    "c": 6.0154,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.9,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   },
   "xg_core": {
    "a": 0.5,
-   "b": 0.9,
+   "b": 1.125,
    "c": 6.0464,
    "n": 4192,
-   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions",
+   "goal_split_b": 0.9,
+   "split_basis": "nhl_split_ml_v1 promoted 2026-10-29: b fitted on the moneyline of every earlier out-of-sample game (hockey/model/split_shadow.js)"
   }
  },
  "score_weights": {

@@ -52,6 +52,15 @@
    the simpler model first applies that rule to it. Declared after both
    windows had been read; the 2026-27 season is the clean test.
 
+   AMENDMENT 2026-10-29 (methodology change, directed by the owner;
+   hockey/model/split_shadow.js, docs/engine/NHL_LAB.md §6.3): for the season
+   in progress the pair recalibration's split factor b is the one fitted on
+   the MONEYLINE of every earlier out-of-sample game (1.125 for 2026-27), not
+   on the goal split of the three seasons before (0.9). a and c are unchanged
+   and the goal-split b is kept as goal_split_b. Completed seasons keep the
+   original rule, so the selection and confirmation records are unchanged.
+   This does not pass rule 4's bar: on 2021-26 it is +0.00027 log loss.
+
    Writes hockey/validation/nhl_walkforward.json and hockey/model/params/live.json.
    =========================================================================== */
 const fs = require('fs');
@@ -64,6 +73,7 @@ const { LineupState } = require('./lineups');
 const { loadLineups } = require('../ingest/lineups');
 const GLM = require('./glm');
 const DIST = require('./distribution');
+const SH = require('./split_shadow');
 
 /* every completed season after 2020 joins CONFIRMATION; the season in progress is LIVE */
 const SELECTION = [2014, 2020], CONFIRMATION = [2021, C.CURRENT_SEASON - 1], LIVE = [C.CURRENT_SEASON, C.CURRENT_SEASON];
@@ -310,7 +320,8 @@ function main() {
     cal[S] = {};
     for (const c of cands) {
       const rowsCal = games.filter((g) => g.season >= Math.max(FIRST_SCORED, S - 3) && g.season < S && raw.has(g.game_id)).map((g) => ({ lh: raw.get(g.game_id)[c].lh, la: raw.get(g.game_id)[c].la, gh: g.reg_home, ga: g.reg_away }));
-      cal[S][c] = GLM.fitPairCalibration(rowsCal);
+      /* the season in progress takes the promoted split factor (AMENDMENT 2026-10-29) */
+      cal[S][c] = SH.promote(GLM.fitPairCalibration(rowsCal), S);
     }
     P[S].pair_calibration = cal[S].xg_goalie_projected;
   }
