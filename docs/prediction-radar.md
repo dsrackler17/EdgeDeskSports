@@ -30,8 +30,8 @@ It answers three questions:
 | The scheduled job | `supabase/functions/polymarket_sync` (carries both libraries verbatim: `tools/radar/inline_core.js`) |
 | The schedules | `supabase/polymarket_sync_cron.sql` |
 | The H-RADAR-01 registration | `research/radar/registration_h_radar_01.json`, generated into `supabase/radar_registry.sql` |
-| The H-RADAR-01 runner and report | `research/radar/run_validation.js`, `research/radar/H-RADAR-01/` |
-| Tests (offline) | `tools/radar/*.test.js`, run by `.github/workflows/radar-tests.yml` |
+| The H-RADAR-01 runner and report | `research/radar/run_validation.js`, `research/radar/one_look.js`, `research/radar/H-RADAR-01/`, run by `.github/workflows/radar-validation.yml` |
+| Tests (offline) | `tools/radar/*.test.js`, with recorded responses in `tools/radar/fixtures/`, run by `.github/workflows/radar-tests.yml` |
 | The live source check | `tools/radar/fetch_sources.js`, run by `.github/workflows/radar-sources.yml` |
 
 ## Data sources
@@ -42,7 +42,7 @@ All of them are Polymarket's public APIs. None needs a key.
 |---|---|
 | Data API `https://data-api.polymarket.com` `/v1/leaderboard` | The candidate pool: category `SPORTS`, all time, ordered by volume. |
 | Data API `/v2/activity` | Each wallet's trades, redemptions, splits and merges. This is the history Radar grades. |
-| Data API `/v2/holders?condition=…&include_pnl=true` | Who holds each side of one market, with their average entry. One condition per call. |
+| Data API `/v2/holders?condition=…&include_pnl=true&limit=100` | Who holds each side of one market, with their average entry. One condition per call, at most 100 holders a side (Polymarket refuses more with `include_pnl`). |
 | Gamma API `https://gamma-api.polymarket.com` `/sports`, `/events`, `/markets` | The leagues and their series, the game events, and each market's metadata: outcomes, tokens, start time and resolution. Gamma is how a Polymarket market is matched to an EdgeDesk game (`signals.event_id`). |
 | CLOB `https://clob.polymarket.com` `/prices-history` | One outcome's price over time, at 1-minute fidelity. It gives the follow price and the close. |
 | RTDS `wss://ws-live-data.polymarket.com` | **Not used in v1.** It is the public trade stream, kept for real-time alerts later. |
@@ -75,8 +75,23 @@ All of them are Polymarket's public APIs. None needs a key.
     Radar (see [Open items](#open-items)).
 - **Response shapes.** Polymarket cannot be reached from the build environment.
   `.github/workflows/radar-sources.yml` asks each endpoint once from GitHub's
-  runner, prints what came back and fails if a parser cannot read it.
-  `tools/radar/fixtures/` holds responses recorded from those runs.
+  runner, prints what came back and fails if a parser cannot read it. It also
+  asks the exact request forms of the H-RADAR-01 runner (`run_validation.js`
+  `REQ`) and of `polymarket_sync`. `tools/radar/fixtures/` holds eleven
+  responses recorded from run
+  [40812412377](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40812412377),
+  read by `tools/radar/fixtures.test.js`.
+- **What the live probe taught** (each is fixed and has a regression test):
+  - Gamma's `/markets?condition_ids=…` answers a **resolved** market only when
+    asked with `closed=true`, and an open one only without it. Without this
+    the H-RADAR-01 run would have read no market and spent its one look on an
+    empty report, and the job would never have recorded a settlement.
+  - `/v2/holders` refuses `limit` above 100 with `include_pnl` (HTTP 400).
+  - One unwindowed page of 100 open NFL events was 48 MB (15,400 markets,
+    player props included). The job asks events in a window on their end date
+    (a game event's end date is its start), 5 a page.
+  - A Gamma market's `spread` is its order book's bid-ask spread, not a
+    point. The line is read from `line` only.
 
 ## The rules: one constant
 
@@ -205,7 +220,7 @@ The rules:
 
 | Job | When | What |
 |---|---|---|
-| `tonight` | every 10 minutes | Reads the covered leagues' open game events and upserts their markets, matching each once. For the matched markets of games within 36 hours, it stores who holds each side (pool wallets only) and each outcome's price. It also stores the resolution of matched markets whose game started in the last two days. |
+| `tonight` | every 10 minutes | Reads the covered leagues' open game events starting within the next 60 hours (5 a page, at most 16 pages a series) and upserts their markets, matching each once. For the matched markets of games within 36 hours **at the board's own lines**, it stores who holds each side (pool wallets only) and each outcome's price. An alternate line is matched but not read for holders: it has no EdgeDesk fair to compare with. It also stores the resolution of matched markets whose game started in the last two days. |
 | `pool` | 06:07 | Puts the sports leaderboard's top 200 by volume in the pool. Every other wallet leaves it. |
 | `wallets` | every 5 minutes, 06:10 to 09:55 | Takes three pool wallets a run, least recently read first. It reads their activity since the cursor, the markets they traded, and their covered trades with hashes. Each newly resolved bet is graded once: its close, CLV and the 5- and 15-minute follow. |
 | `grade` | 10:17 | Regrades every pool wallet as one versioned run. |
@@ -264,7 +279,17 @@ The `security definer` doors return only what a page needs.
   it.
 - **Where it ran.** On a GitHub runner (`.github/workflows/radar-validation.yml`),
   because the build environment cannot reach Polymarket. Everything it read is
-  that run's artifact, and its sha256 is in the report.
+  that run's artifact, gzipped, and its sha256 is in the report.
+- **One look, enforced twice.**
+  - The runner fetches nothing while a completed report is committed.
+  - GitHub starts the workflow on every push to the pull request. So before
+    the runner, `research/radar/one_look.js` reads the workflow's earlier runs
+    with the job's own token. While no report is committed, it stops the job
+    if any earlier run or attempt finished its live step, and names that run:
+    its report is the one to commit.
+- **Checked before the look.** Every request form the runner makes was first
+  asked once by the live probe, on data outside the holdout. That is how the
+  `closed=true` bug above was found before it could spend the look.
 - **The result** is in `research/radar/H-RADAR-01/RESULTS.md` and is written
   into the registry. The Radar record section quotes it verbatim, good or bad.
 
@@ -292,8 +317,10 @@ The `security definer` doors return only what a page needs.
 - Some large traders may have information others do not.
 - The pool is drawn from today's leaderboard, so it can favour wallets that
   survived or grew.
-- The holders list is Polymarket's top holders of each market. A top-graded
-  wallet with a small position may not appear.
+- The holders list is Polymarket's top 100 holders of each side of a market.
+  A top-graded wallet with a small position may not appear.
+- Smart Money Tonight reads holders only at the board's own lines. Money on an
+  alternate spread or total is not counted.
 - Matching covers moneylines, spreads and totals of NFL, college football,
   NBA, NHL and MLB games that are on EdgeDesk's board. MMA is not matched in v1.
 
@@ -340,6 +367,8 @@ In order. Each SQL file ends in a report whose rows should read `ok`.
 - `tools/radar/core.test.js` — the grading core on worked examples: CLV, the
   follow, conviction, the market-maker rule, the score, the bootstrap, the
   H-RADAR-01 verdict and matching.
+- `tools/radar/fixtures.test.js` — the parsers against responses recorded from
+  the live probe (`tools/radar/fixtures/`).
 - `tools/radar/gateway.test.js` — the switch, the budget, the backoff, the
   breaker and the endpoints.
 - `tools/radar/no_bypass.test.js` — every Polymarket request goes through the
@@ -349,5 +378,8 @@ In order. Each SQL file ends in a report whose rows should read `ok`.
 - `tools/radar/sync_fn.test.js` — the shipped function against that SQL.
 - `.github/workflows/radar-tests.yml` runs them all; it is in
   `tools/ci/checks.json` (Research and signals).
+- `tools/radar/validation.test.js` — the H-RADAR-01 runner end to end against
+  a scripted Polymarket, and the one-look guard.
 - `.github/workflows/radar-sources.yml` is the live check (Integration), never
-  replaced by a mock.
+  replaced by a mock. `.github/workflows/radar-validation.yml` is the
+  H-RADAR-01 run (Integration).

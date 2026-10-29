@@ -145,6 +145,21 @@ async function fetchStub(url) {
     try { fs.writeFileSync(regFile, raw.replace('"min_graded": 50', '"min_graded": 40')); V.registration(); } catch (e) { refused = e.message; } finally { fs.writeFileSync(regFile, raw); }
     chk('an edited registration is refused before anything is asked', /edited after it was registered/.test(refused || ''), refused);
     chk('(the registration is restored, byte for byte)', crypto.createHash('sha256').update(fs.readFileSync(regFile, 'utf8')).digest('hex') === V.REGISTERED_SHA256);
+    /* the one look across runs (research/radar/one_look.js): GitHub starts the workflow on every push */
+    const L = require(path.join(ROOT, 'research', 'radar', 'one_look.js'));
+    const self = { run_id: 900, run_attempt: 2 };
+    const liveStep = (conclusion) => [{ name: 'One look across runs', conclusion: 'success' }, { name: L.LIVE_STEP + ', once (or, with a committed report, its check)', conclusion }];
+    chk('one look: with a report committed, the runner only checks it', L.decide([{ run_id: 1, run_attempt: 1, steps: liveStep('success') }], self, true).ok === true);
+    chk('one look: no earlier run, this run is the look', L.decide([], self, false).ok === true);
+    const spentBy = L.decide([{ run_id: 7, run_attempt: 1, steps: liveStep('success') }], self, false);
+    chk('one look: an earlier run that finished its live step, with no report committed, stops this one and names it', spentBy.ok === false && /run 7 \(attempt 1\)/.test(spentBy.why), spentBy);
+    chk('one look: this run\'s own earlier attempt counts too (a re-run is a second look)', L.decide([{ run_id: 900, run_attempt: 1, steps: liveStep('success') }], self, false).ok === false);
+    chk('one look: this attempt itself does not', L.decide([{ run_id: 900, run_attempt: 2, steps: liveStep('in_progress') }], self, false).ok === true);
+    chk('one look: an earlier run whose live step failed or was stopped by the guard printed no report, so it was no look',
+      L.decide([{ run_id: 5, run_attempt: 1, steps: liveStep('failure') }, { run_id: 6, run_attempt: 1, steps: [{ name: 'One look across runs', conclusion: 'failure' }, { name: L.LIVE_STEP + ', once', conclusion: 'skipped' }] }], self, false).ok === true);
+    const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'radar-validation.yml'), 'utf8');
+    chk('one look: the workflow\'s live step is the one the guard reads, and the guard runs before it',
+      wf.indexOf('- name: ' + L.LIVE_STEP) > 0 && wf.indexOf('node research/radar/one_look.js') > 0 && wf.indexOf('node research/radar/one_look.js') < wf.indexOf('run_validation.js --live'));
   } catch (e) {
     chk('the suite ran to the end', false, String(e && e.stack || e).slice(0, 1200));
   }
