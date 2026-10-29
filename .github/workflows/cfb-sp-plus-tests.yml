@@ -37,6 +37,24 @@ on:
       - 'research/cfb/terminal.js'
       - 'research/cfb/resilience_ui.js'
       - 'tools/football/_module.js'
+      # the code SP+ must never feed (registry.test.js fails if any of it reads SP+)
+      - 'football/cfb_p4/*.js'
+      - 'football/cfb_v2/*.js'
+      - 'football/cfb_ev/*.js'
+      - 'football/cfb_lab/*.js'
+      - 'football/cfb_lab/governance/**'
+      - 'football/cfb_production/*.js'
+      - 'football/cfb_production/compatibility.json'
+      - 'football/cfb_decision/*.js'
+      - 'football/cfb_market/*.js'
+      - 'football/rankings/*.js'
+      - 'football/rating/*.js'
+      - 'model_loop/**.py'
+      - 'tools/record/**'
+      - 'lib/edgedesk_ev*.js'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_decision*.js'
+      - 'lib/cfb_champion.js'
       - 'package.json'
       - '.github/workflows/cfb-sp-plus.yml'
       - '.github/workflows/cfb-sp-plus-tests.yml'
@@ -76,6 +94,8 @@ jobs:
         env:
           CFB_SP_SQL_REQUIRED: '1'
         run: node football/sp_plus/sql.test.js
+      - name: SP+ stays external (registry, never a Lab role, never read by model, EV, rankings or grades)
+        run: node football/sp_plus/registry.test.js
       - name: Tracking (capture, grade once against the Lab's close and final, report, append-only)
         run: node football/sp_plus/track.test.js
       - name: The display rule (fresh, stale, failed, missing, another week; Models disagree at 3+ points)

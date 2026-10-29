@@ -39,7 +39,7 @@ function done(note) {
 chk('both tables are declared', /create table if not exists public\.cfb_sp_ratings/.test(SQL) && /create table if not exists public\.cfb_sp_sync_runs/.test(SQL));
 chk('the ratings table has every column the sync writes', ['rating_id', 'snapshot_id', 'season', 'week', 'week_key', 'season_type', 'team_id', 'source_team',
   'sp_overall', 'sp_off', 'sp_def', 'source', 'source_version', 'payload_sha256', 'captured_at'].every((c) => new RegExp('\\n  ' + c + '\\s').test(SQL)));
-chk('no read policy exists for anyone', !/create policy/i.test(SQL));
+chk('the only read policy is the registry’s (the raw tables have none)', (SQL.match(/create policy/gi) || []).length === 1 && /create policy cfb_external_estimates_read/.test(SQL));
 
 /* ═══ LIVE ═══════════════════════════════════════════════════════════════ */
 function findPgBin() {
@@ -150,6 +150,25 @@ try {
   chk('refused: a FAILED run without a reason', /cfb_sp_run_reason/.test(mustFail(`insert into public.cfb_sp_sync_runs select * from jsonb_populate_record(null::public.cfb_sp_sync_runs, ${J(Object.assign(runRow({ run_id: 'cfbsr_' + '2'.repeat(24), status: 'FAILED', snapshot_id: null, reason: null }), { recorded_at: new Date().toISOString() }))})`, { role: 'service_role' }) || ''));
   ins('cfb_sp_sync_runs', runRow({ run_id: 'cfbsr_' + '3'.repeat(24), status: 'FAILED', snapshot_id: null, reason: 'CollegeFootballData answered HTTP 500', unmapped: [{ source_team: 'Narnia Tech', reason: 'does not resolve' }] }), { role: 'service_role' });
   chk('a FAILED run with its reason and its unmapped names is stored', psql(`select unmapped->0->>'source_team' from public.cfb_sp_sync_runs where status = 'FAILED'`) === 'Narnia Tech');
+
+  /* the registry: SP+ is an external estimate, and the server keeps it one */
+  const REG = JSON.parse(fs.readFileSync(path.join(__dirname, 'registry.json'), 'utf8')).estimates[0];
+  chk('the registry is seeded with SP+’s projected line, once (the migration ran three times)',
+    psql(`select count(*) from public.cfb_external_estimates where estimate_id = 'cfbd.sp_plus_projected_line'`) === '1');
+  chk('seeded as external: not an EdgeDesk model, not validated, T3 rating, T2 line',
+    psql(`select edgedesk_model::text || validated_by_edgedesk::text || rating_tier || line_tier || kind from public.cfb_external_estimates`) === 'falsefalseT3T2EXTERNAL_ESTIMATE');
+  chk('with the same attribution as registry.json and the cards', psql(`select attribution from public.cfb_external_estimates`) === REG.attribution);
+  chk('with its source, version and terms', psql(`select (length(source) > 0 and length(source_version) > 0 and terms_url = 'https://collegefootballdata.com/terms' and length(terms_summary) > 40)::text from public.cfb_external_estimates`) === 'true');
+  const ext = (over) => `insert into public.cfb_external_estimates (estimate_id, name, kind, sport, edgedesk_model, validated_by_edgedesk, rating_tier, line_tier, source, provider, source_version, terms_url, terms_summary, attribution, registered_at)
+    values ('x.${Object.keys(over).join('_')}', 'X', ${over.kind || "'EXTERNAL_ESTIMATE'"}, 'cfb', ${over.edgedesk_model || 'false'}, ${over.validated || 'false'}, ${over.rating_tier || "'T3'"}, 'T2', 's', 'p', 'v', 'u', 't', 'a', now())`;
+  chk('refused: an external estimate marked as an EdgeDesk model', /cfb_ext_not_edgedesk/.test(mustFail(ext({ edgedesk_model: 'true' })) || ''));
+  chk('refused: an external estimate marked validated by EdgeDesk', /cfb_ext_not_edgedesk/.test(mustFail(ext({ validated: 'true' })) || ''));
+  chk('refused: any other kind', /cfb_ext_kind/.test(mustFail(ext({ kind: "'EDGEDESK_MODEL'" })) || ''));
+  chk('refused: a rating tier other than T3', /cfb_ext_rating_tier/.test(mustFail(ext({ rating_tier: "'T1'" })) || ''));
+  chk('refused: flipping the seeded row to validated, even for the owner', /append-only/.test(mustFail(`update public.cfb_external_estimates set validated_by_edgedesk = true`) || ''));
+  chk('anon reads the registry (public metadata)', psql(`select count(*) from public.cfb_external_estimates`, { role: 'anon' }) === '1');
+  chk('authenticated reads it too', psql(`select count(*) from public.cfb_external_estimates`, { role: 'authenticated' }) === '1');
+  chk('anon cannot write it', /permission denied/.test(mustFail(ext({ anon: 'x' }), { role: 'anon' }) || ''));
 } catch (e) {
   chk('the live layer ran without an unexpected error', false, String(e.stderr || e.message).slice(0, 600));
 } finally {

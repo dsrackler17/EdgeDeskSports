@@ -132,6 +132,7 @@ select option:checked{background-color:var(--surface2,#221c15);color:var(--text,
 .rs-mat-exp{color:var(--warn);border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07)}
 .rs-mat-val{color:#5bbf87;border-color:rgba(91,191,135,.35);background:rgba(91,191,135,.07)}
 .rs-mat-na{color:var(--faint)}
+.rs-mat-ext{color:var(--dim);border-color:var(--border);background:transparent}
 .rs-prov{border:1px solid var(--border);border-radius:11px;background:var(--surface);margin-bottom:12px;overflow:hidden}
 .rs-prov summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:7px}
 .rs-prov summary::-webkit-details-marker{display:none}
@@ -6294,7 +6295,8 @@ var RS_PROV={
   cfb:[
     {nm:'Scores, records, season totals, recruiting, AP poll, roster',tier:'T0',src:'CollegeFootballData ingest (cfb.games / records / team_season_stats / recruiting / rankings / roster)'},
     {nm:'Book line (spread, total, moneyline)',tier:'T0',src:'cfb.lines — consensus book numbers, not Pinnacle'},
-    {nm:'SP+ rating, ranking, SOS',tier:'T3',model:'cfbd.sp_plus',src:'Third-party opponent-adjusted model, ingested from CollegeFootballData'},
+    {nm:'SP+ rating, ranking, SOS',tier:'T3',model:'cfbd.sp_plus',src:'Third-party opponent-adjusted model (ESPN, Bill Connelly), ingested from CollegeFootballData. External: never an EdgeDesk model (football/sp_plus/registry.json)'},
+    {nm:'SP+ projected line on CFB cards',tier:'T2',src:'football/sp_plus/lines.json: home SP+ − away SP+ + EdgeDesk’s home field (cfb_sp_projection_v1), from the weekly CollegeFootballData capture; shown beside EdgeDesk’s number, never combined with it'},
     {nm:'Pregame Elo',tier:'T3',model:'cfbd.elo',src:'Third-party rating model, ingested from CollegeFootballData (cfb.games.*_pregame_elo)'},
     {nm:'SP+ favourite margin shown on game rows',tier:'T2',src:'Computed in the browser as home SP+ minus away SP+'},
     {nm:'Analyst flag drivers and flag-to-close CLV',tier:'T2',src:'cfb.analyst_flags — deterministic rules computed server-side from stored drivers'},
@@ -6412,6 +6414,11 @@ var RS_LIMITS={
    is no validation report to show. */
 var RS_MODELS={rows:null,state:'unread',at:0,loading:null};
 var RS_NO_REPORT='No validation report exists for this model.';
+/* EXTERNAL models (football/sp_plus/registry.json): a third party's model, shown
+   as research context and never as EdgeDesk's. Pinned here, ahead of the
+   registry, so no registry row can ever present one as Validated. */
+var RS_EXTERNAL={'cfbd.sp_plus':{owner:'ESPN (Bill Connelly)',via:'CollegeFootballData.com',registry:'football/sp_plus/registry.json',
+  note:'SP+ is ESPN’s opponent-adjusted efficiency rating. EdgeDesk shows a line derived from it beside its own number and grades both against the close; it feeds no EdgeDesk projection, EV, ranking or grade.'}};
 function rsModelsLoad(force){
   if(!force&&RS_MODELS.state!=='unread'&&(Date.now()-RS_MODELS.at)<300000)return Promise.resolve(RS_MODELS);
   if(RS_MODELS.loading)return RS_MODELS.loading;
@@ -6436,6 +6443,8 @@ function rsModelRow(key){
 /* maturity NEVER upgrades on missing evidence: no row => Experimental. */
 function rsMaturity(key){
   if(!key)return null;
+  var ext=RS_EXTERNAL[String(key).toLowerCase()];
+  if(ext)return {label:'External',cls:'rs-mat-ext',hasReport:false,row:null,external:ext};
   var row=rsModelRow(key);
   if(!row)return {label:'Experimental',cls:'rs-mat-exp',hasReport:false,row:null};
   var st=String(rsField(row,['status','model_status'])||'').toLowerCase();
@@ -6470,6 +6479,8 @@ function rsDossierHTML(tier,key){
   if(!key){
     return head+'<div class="rs-none">Maturity is a property of models. This value is not a model output, so there is no model record to show.</div>';
   }
+  var ext=RS_EXTERNAL[String(key).toLowerCase()];
+  if(ext)return head+'<div class="rs-none"><b>External model — not EdgeDesk’s, and not validated by EdgeDesk.</b><br>'+stEsc(ext.note)+' Source: '+stEsc(ext.owner)+', via '+stEsc(ext.via)+'.</div>';
   if(RS_MODELS.state==='unread')return head+'<div class="rs-none">Reading the model registry…</div>';
   var m=rsMaturity(key),row=m&&m.row;
   if(!row){

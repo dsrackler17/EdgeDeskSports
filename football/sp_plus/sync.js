@@ -65,7 +65,7 @@ function emptyDoc(season) {
     schema: SCHEMA, generated_at: null, season: season == null ? null : season,
     status: 'NEVER_SYNCED', last_attempt: null, snapshot: null, projection: null,
     provenance: { rating_tier: 'T3', rating_tier_label: 'Research Model · external (not EdgeDesk’s)', line_tier: 'T2', line_tier_label: 'Computed from a T3 input',
-      external: true, edgedesk_model: false, validated_by_edgedesk: false },
+      external: true, edgedesk_model: false, validated_by_edgedesk: false, registry: 'football/sp_plus/registry.json' },
     attribution: ATTRIBUTION,
     note: 'Derived values only. No SP+ rating is stored in this repository: the raw weekly ratings live in the append-only table public.cfb_sp_ratings (supabase/cfb_sp_plus.sql).',
     games: {}

@@ -192,3 +192,24 @@ node football/sp_plus/track.js run [--write] [--now ISO]
 node football/sp_plus/track.js verify --base HEAD
 node football/sp_plus/track.test.js
 ```
+
+## E · The registry: external, and kept that way
+
+- **`football/sp_plus/registry.json`** registers *SP+ projected line* as an
+  `EXTERNAL_ESTIMATE` with `edgedesk_model: false` and
+  `validated_by_edgedesk: false`. It records the T3 rating and T2 line, the
+  source and endpoint, the version per capture, the terms as read (with
+  their date), the display decision and the attribution.
+- **`public.cfb_external_estimates`** (`supabase/cfb_sp_plus.sql`) mirrors it.
+  A check constraint refuses to record an external estimate as an EdgeDesk
+  model or as validated, and the table is append-only.
+- **The page.** `RS_EXTERNAL` in `app.html` pins `cfbd.sp_plus` to the
+  **External** maturity badge ahead of the model registry, so no registry row
+  can ever present SP+ as Validated. The provenance table lists the SP+ rating
+  (T3, external) and the projected line (T2).
+- **Never a participant.** SP+ is not a Model Lab role (champion, challenger
+  or candidate), has no compatibility entry, and can never be promoted.
+  `registry.test.js` fails if any EdgeDesk model, EV, ranking, grade, record,
+  decision or Lab file reads SP+'s module or file. It also fails if `app.html`
+  reads SP+ anywhere but the board card, the game page's hook and the football
+  loader.
