@@ -1,0 +1,244 @@
+# Deploy Prediction Radar: the polymarket_sync edge function and (optionally)
+# its SQL, in the runbook's order (docs/prediction-radar.md, Operator runbook):
+# supabase/radar.sql, supabase/radar_registry.sql, supabase/radar_record.sql,
+# then the cron secret, then the switch, then supabase/polymarket_sync_cron.sql.
+#
+# MANUAL ON PURPOSE, as every deploy-*.yml here: tests first, then the
+# function, then the SQL in dependency order. A report row that says CHECK THIS
+# fails the job (radar.sql's "pending: off" and "pending: apply ..." rows are
+# not one: they are the switch and the registry, set by the later steps).
+#
+# SECRETS (the same ones the other deploy-*.yml use):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
+#   SB_DB_URL                                     to apply the SQL (optional;
+#                                                 or paste the files into the SQL editor)
+# THE CRON SECRET (set_cron_secret, on by default): polymarket_sync's
+# POLYMARKET_SYNC_SECRET and the Vault secret polymarket_sync_cron_secret are
+# one value. This run makes them exist and agree, the deploy-bet-checker.yml
+# way: generated on this runner when Vault has none, masked, sent only to
+# Supabase, never printed or stored in GitHub; then a probe proves the function
+# accepts it. NEVER SET ONE SIDE BY HAND.
+# THE SWITCH (data_enabled, "leave" by default): POLYMARKET_DATA_ENABLED has two
+# halves, public.radar_config and the function's environment, and Radar asks
+# Polymarket nothing unless both say on. "on" sets both and records
+# enable_note (who read Polymarket's terms, when, and the clause) in
+# radar_config, whose audit log keeps every change. "off" turns both off.
+name: Deploy Prediction Radar
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/polymarket_sync (JWT verification OFF: pg_cron sends no JWT)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply radar.sql, radar_registry.sql and radar_record.sql (needs has_active_sub() and the research registry)'
+        type: boolean
+        default: false
+      set_cron_secret:
+        description: 'Make the sync''s cron secret exist in Vault and on the function, and prove they agree'
+        type: boolean
+        default: true
+      data_enabled:
+        description: 'POLYMARKET_DATA_ENABLED, both halves: leave as it is, on, or off'
+        type: choice
+        options: ['leave', 'on', 'off']
+        default: 'leave'
+      enable_note:
+        description: 'Required for on: who read Polymarket''s terms of use, when, and the clause that permits display'
+        type: string
+        default: ''
+      apply_cron:
+        description: 'Apply polymarket_sync_cron.sql (the four schedules; needs pg_cron, pg_net and the cron secret)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-radar
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # the deployed function is imported by sync_fn.test.js (type stripping),
+      # against the shipped SQL: what ships is what was tested
+      - name: The grading core, the gateway, the SQL, the function and the pages must pass before anything ships
+        env:
+          RADAR_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/radar/core.test.js
+          node tools/radar/fixtures.test.js
+          node tools/radar/gateway.test.js
+          node tools/radar/no_bypass.test.js
+          node tools/radar/inline_core.js --check
+          node research/radar/run_validation.js --check
+          node tools/radar/build_registry_sql.js --check
+          node tools/radar/radar_ui.test.js
+          node tools/radar/radar_sql.test.js
+          node tools/radar/sync_fn.test.js
+
+      - name: Check the credentials and the inputs before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+          WANT_FN: ${{ inputs.deploy_function }}
+          WANT_SQL: ${{ inputs.apply_sql }}
+          WANT_SECRET: ${{ inputs.set_cron_secret }}
+          WANT_SWITCH: ${{ inputs.data_enabled }}
+          NOTE: ${{ inputs.enable_note }}
+          WANT_CRON: ${{ inputs.apply_cron }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          # A part that was asked for and cannot run fails the run: a green run
+          # that deployed nothing would be a false claim (AGENTS.md §4).
+          bad=0
+          if { [ "$WANT_FN" = "true" ] || [ "$WANT_SECRET" = "true" ] || [ "$WANT_SWITCH" != "leave" ]; } && { [ -z "$TOKEN" ] || [ -z "$REF" ]; }; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the function cannot be deployed or configured from CI."; bad=1; fi
+          if { [ "$WANT_SQL" = "true" ] || [ "$WANT_SECRET" = "true" ] || [ "$WANT_SWITCH" != "leave" ] || [ "$WANT_CRON" = "true" ]; } && [ -z "$DBURL" ]; then
+            echo "::error::SB_DB_URL is not set — paste radar.sql, radar_registry.sql, radar_record.sql, then polymarket_sync_cron.sql, into the SQL editor instead."; bad=1; fi
+          if [ "$WANT_SWITCH" = "on" ] && [ -z "$(printf '%s' "$NOTE" | tr -d '[:space:]')" ]; then
+            echo "::error::data_enabled = on needs enable_note: who read Polymarket's terms of use, when, and the clause. It is recorded in radar_config."; bad=1; fi
+          exit $bad
+
+      - name: Install the Supabase CLI
+        if: ${{ (inputs.deploy_function || inputs.set_cron_secret || inputs.data_enabled != 'leave') && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt IS LOAD-BEARING: pg_cron sends the x-cron-secret header,
+      # not a JWT. A POST without the secret is refused by the function itself;
+      # a GET is its public health probe (the build only).
+      - name: Deploy polymarket_sync
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase functions deploy polymarket_sync --project-ref "$PROJECT_REF" --no-verify-jwt
+
+      # A deploy is verified by what the function SERVES, not by the CLI's exit
+      # code: a bundle that fails leaves the previous version serving.
+      - name: The function serves this build
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -eu
+          ANON=$(node -e "process.stdout.write(require('./games/data/config.json').supabase_anon_key||'')")
+          want=$(sed -n 's/^export const BUILD = "\([^"]*\)";.*/\1/p' supabase/functions/polymarket_sync/index.ts | head -1)
+          got=""
+          for i in $(seq 1 24); do
+            got=$(curl -sS -m 15 -H "apikey: $ANON" -H "authorization: Bearer $ANON" "https://$PROJECT_REF.supabase.co/functions/v1/polymarket_sync" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{process.stdout.write(JSON.parse(s).build||'')}catch(_){}})" || true)
+            [ "$got" = "$want" ] && break
+            sleep 5
+          done
+          if [ "$got" != "$want" ]; then echo "::error::polymarket_sync is serving '${got:-nothing}', not '$want', two minutes after the deploy"; exit 1; fi
+          echo "polymarket_sync is serving $want"
+
+      - name: Apply radar.sql, radar_registry.sql and radar_record.sql
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          for f in supabase/radar.sql supabase/radar_registry.sql supabase/radar_record.sql; do
+            # one transaction a file: a statement that fails rolls that file back
+            # (the suites apply it the same way, applyFileAtomic)
+            out=$(psql "$PGURL" --single-transaction -v ON_ERROR_STOP=1 -f "$f") || { echo "$out" | tail -20; echo "::error::$f did not apply"; exit 1; }
+            echo "== $f"; echo "$out" | tail -14
+            if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::$f: a report row says CHECK THIS"; exit 1; fi
+          done
+
+      # Before the cron: the poke sends the Vault value, so it must exist and the function must accept it.
+      - name: The cron secret exists in Vault and on the function, and they agree
+        if: ${{ inputs.set_cron_secret && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -eu
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          FN="https://$PROJECT_REF.supabase.co/functions/v1/polymarket_sync"
+          supabase secrets list --project-ref "$PROJECT_REF" > "$RUNNER_TEMP/names.txt" 2>"$RUNNER_TEMP/err.txt" || { cat "$RUNNER_TEMP/err.txt"; echo "::error::supabase secrets list failed: is SUPABASE_ACCESS_TOKEN still valid?"; exit 1; }
+          fn_has=no; grep -qw POLYMARKET_SYNC_SECRET "$RUNNER_TEMP/names.txt" && fn_has=yes; rm -f "$RUNNER_TEMP/names.txt"
+          vault=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select decrypted_secret from vault.decrypted_secrets where name = 'polymarket_sync_cron_secret' limit 1")
+          if [ -n "$vault" ]; then echo "::add-mask::$vault"; fi
+          setfn() { umask 077; f="$RUNNER_TEMP/rd.env"; printf 'POLYMARKET_SYNC_SECRET=%s\n' "$1" > "$f"; supabase secrets set --project-ref "$PROJECT_REF" --env-file "$f" >/dev/null || { rm -f "$f"; echo "::error::supabase secrets set failed"; exit 1; }; rm -f "$f"; }
+          if [ -z "$vault" ]; then
+            vault=$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))")
+            echo "::add-mask::$vault"
+            echo "select vault.create_secret(:'sec', 'polymarket_sync_cron_secret');" | psql "$PGURL" -q -v ON_ERROR_STOP=1 -v sec="$vault" >/dev/null
+            setfn "$vault"
+            echo "Vault had no polymarket_sync_cron_secret: a new one was generated on this runner and set in Vault and on the function (never printed)."
+          elif [ "$fn_has" = no ]; then
+            setfn "$vault"
+            echo "The function had no POLYMARKET_SYNC_SECRET: it was set to the Vault value."
+          else
+            echo "Vault and the function both hold a cron secret: checking that they agree."
+          fi
+          # a probe with the Vault value: 401 means the two disagree. A dry run
+          # writes no market, trade or bet; while the switch is off it asks
+          # Polymarket nothing. A run_id in the answer means the secret was accepted.
+          probe() { curl -sS -o "$RUNNER_TEMP/probe.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $vault" -d '{"mode":"tonight","dry":true}' || true; }
+          ok=no; code=000
+          for i in $(seq 1 15); do
+            code=$(probe)
+            if { [ "$code" = 200 ] || [ "$code" = 500 ]; } && grep -q '"run_id"' "$RUNNER_TEMP/probe.json"; then ok=yes; break; fi
+            if [ "$code" = 401 ] && [ "$i" = 4 ]; then setfn "$vault"; echo "The function refused the Vault value: its secret was set to it."; fi
+            sleep 6
+          done
+          vault=""
+          if [ "$ok" != yes ]; then echo "::error::polymarket_sync did not accept the cron secret (last answer HTTP $code)"; head -c 400 "$RUNNER_TEMP/probe.json"; echo; exit 1; fi
+          echo "polymarket_sync accepts the cron secret (probe answered HTTP $code):"
+          node -e "const j=require(process.argv[1]);console.log(JSON.stringify({ok:j.ok,build:j.build,mode:j.mode,dry:j.dry,status:j.status,message:j.message}))" "$RUNNER_TEMP/probe.json" || true
+          rm -f "$RUNNER_TEMP/probe.json"
+
+      # Both halves, the function's first: Radar asks nothing unless both say on,
+      # so turning on is safe in this order and turning off takes effect at the
+      # database half at once.
+      - name: Set POLYMARKET_DATA_ENABLED (both halves)
+        if: ${{ inputs.data_enabled != 'leave' && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+          VAL: ${{ inputs.data_enabled }}
+          NOTE: ${{ inputs.enable_note }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -eu
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          supabase secrets set --project-ref "$PROJECT_REF" "POLYMARKET_DATA_ENABLED=$VAL" >/dev/null
+          note="${NOTE:-turned $VAL} (deploy-radar.yml, $RUN)"
+          out=$(echo "update public.radar_config set value = :'val', note = :'note', updated_at = now() where key = 'POLYMARKET_DATA_ENABLED' returning key, value;" \
+            | psql "$PGURL" -qAt -v ON_ERROR_STOP=1 -v val="$VAL" -v note="$note")
+          if [ "$out" != "POLYMARKET_DATA_ENABLED|$VAL" ]; then echo "::error::radar_config has no POLYMARKET_DATA_ENABLED row (apply supabase/radar.sql first): got '$out'"; exit 1; fi
+          now=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select public.radar_enabled()")
+          echo "POLYMARKET_DATA_ENABLED is $VAL on the function and in radar_config (radar_enabled() = $now)."
+
+      - name: Apply the cron (the four schedules)
+        if: ${{ inputs.apply_cron && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/polymarket_sync_cron.sql) || { echo "$out" | tail -20; echo "::error::polymarket_sync_cron.sql did not apply"; exit 1; }
+          echo "== supabase/polymarket_sync_cron.sql"; echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::polymarket_sync_cron.sql: a report row says CHECK THIS"; exit 1; fi
