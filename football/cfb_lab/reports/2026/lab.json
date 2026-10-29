@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-29T06:07:56.000Z",
+ "generated_at": "2026-10-29T07:08:03.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -62,10 +62,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 2034,
-    "latest_snapshot_at": "2026-10-29T03:08:00.000Z",
-    "upcoming_games": 108,
-    "avg_confidence_upcoming": 80.2
+    "snapshots": 2041,
+    "latest_snapshot_at": "2026-10-29T07:08:03.000Z",
+    "upcoming_games": 115,
+    "avg_confidence_upcoming": 80
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -87,15 +87,15 @@
    }
   ],
   "data_quality": {
-   "games": 112,
+   "games": 115,
    "counts": {
     "GREEN": 52,
-    "YELLOW": 60,
+    "YELLOW": 63,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 60,
+     "YELLOW": 63,
      "RED": 0
     },
     "pbp_freshness": {
@@ -103,7 +103,7 @@
      "RED": 0
     },
     "team_mapping": {
-     "YELLOW": 4,
+     "YELLOW": 2,
      "RED": 0
     }
    },
@@ -768,11 +768,6 @@
      "status": "YELLOW",
      "issues": [
       {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
-      {
        "check": "odds_freshness",
        "status": "YELLOW",
        "detail": "no market quote captured yet"
@@ -798,11 +793,6 @@
      "game_id": "401871075",
      "status": "YELLOW",
      "issues": [
-      {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
       {
        "check": "odds_freshness",
        "status": "YELLOW",
@@ -912,11 +902,50 @@
      ],
      "kickoff": "2026-11-08T01:00:00.000Z",
      "matchup": "Liberty @ New Mexico State"
+    },
+    {
+     "game_id": "401860913",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-08T02:30:00.000Z",
+     "matchup": "Fresno State @ Utah State"
+    },
+    {
+     "game_id": "401860912",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-08T03:30:00.000Z",
+     "matchup": "Texas State @ Oregon State"
+    },
+    {
+     "game_id": "401864535",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-08T03:30:00.000Z",
+     "matchup": "Wyoming @ UNLV"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-29T06:07:56.000Z",
-    "quotes_total": 28149,
+    "last_quote_at": "2026-10-29T07:08:03.000Z",
+    "quotes_total": 28219,
     "last_result_at": "2026-10-29T04:07:53.000Z"
    }
   },
@@ -959,9 +988,9 @@
    }
   ],
   "ledger": {
-   "predictions": 7962,
-   "live_predictions": 7452,
-   "quotes": 28149,
+   "predictions": 7969,
+   "live_predictions": 7459,
+   "quotes": 28219,
    "lines": 4345,
    "results": 521,
    "evaluations": 7252,
@@ -13192,8 +13221,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 291,
-  "games_with_verdict": 291,
+  "games_with_market": 293,
+  "games_with_verdict": 293,
   "raw_major_disagreements": 28,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -13202,7 +13231,7 @@
   "data_fault": 0,
   "market_fault": 28,
   "verification_not_run": 0,
-  "average_raw_gap": 3.448,
+  "average_raw_gap": 3.446,
   "average_raw_gap_7plus": 9.965,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,

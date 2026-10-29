@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-29T06:08:20.947Z",
- "board_generated_at": "2026-10-29T06:08:12.042Z",
+ "generated_at": "2026-10-29T07:08:35.655Z",
+ "board_generated_at": "2026-10-29T07:08:24.227Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -212,72 +212,6 @@
    ],
    "consistent": true,
    "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
-  },
-  {
-   "game_id": "401858503",
-   "game": "Illinois @ Maryland",
-   "kickoff": "2026-10-31T16:00:00.000Z",
-   "named": false,
-   "edgedesk": "Illinois −10.0",
-   "market": "Illinois −2.5",
-   "books": 1,
-   "gap": 7.4,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-31T16:00:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (SECU Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.6 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Maryland: Malik Washington (previous game) · WARN: Illinois: starter unresolved (competition)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "FAIL",
-     "detail": "FAIL: Maryland: availability feed fetch failed — abnormal missing data · FAIL: Illinois: availability feed fetch failed — abnormal missing data"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "WARN: the matchup term alone (-2.2 pts) lifts the gap over 7: without it the gap is 5.2 — historically informative, flagged for scrutiny"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.2 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.1"
-    }
-   ],
-   "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail."
   }
  ],
  "inconsistent": [],
