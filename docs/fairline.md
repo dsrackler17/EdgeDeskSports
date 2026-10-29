@@ -291,8 +291,14 @@ In this order:
    functions (`sync_subscription`, `stripe_webhook`,
    `create_checkout_session`). A checkout deployed before the SQL refuses to
    sell Fairline rather than sell an unrecorded price.
-2. **`supabase/fairline.sql`** into the SQL editor (or `psql
-   --single-transaction -f`), **after** `bettor_decisions.sql`,
+2. **Actions → *Deploy Fairline*** (`deploy-fairline.yml`, from `main`) runs
+   steps 2–4 with the production database's own credentials. It first checks
+   production's paywall (`check_paywall`, read-only, on by default; see
+   *Before going live* below) and stops if the paywall restates the rule. Then
+   it applies what was asked for (`apply_sql`, `apply_tape_sql`,
+   `apply_tape_cron`, `tape_email`). Any report row that says `CHECK THIS`
+   fails the run. By hand instead: **`supabase/fairline.sql`** into the SQL
+   editor (or `psql --single-transaction -f`), **after** `bettor_decisions.sql`,
    `billing_hardening.sql`, `bet_checker.sql`, `portfolio.sql` and
    `bet_import.sql`; it stops with a message naming any that is missing. Every
    report row should say `ok`. It adds functions and one view, and changes no
