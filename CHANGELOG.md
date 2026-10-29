@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-29 — Deploy Fairline: the email switch step no longer fails after setting the switch
+
+**What was wrong.** *Deploy Fairline*'s last step, "The Tape's email switch", sets `fairline_tape_settings.email_enabled` and then checks the answer.
+- It read the answer with `psql -At`. That prints the value as `t` and then the command tag, so the answer was `t` followed by `UPDATE 1` on a second line.
+- It compared that with the word `true`, so the check failed on every run.
+- **The UPDATE had already committed by then.** The owner's run of 2026-10-29 14:19Z (run 40890282549) set the switch on, then reported `fairline_tape_settings was not updated (is fairline_tape.sql applied?)`.
+- Every earlier step of that run had passed, with every report row ok.
+
+**What changed.**
+- **`.github/workflows/deploy-fairline.yml`:** the step reads with `psql -qAt` (the value alone) and compares `t` / `f`. A missing settings row still fails with the same message. The deploy's test step also runs the new suite.
+- **`.github/workflows/fairline-tests.yml`:** the database job runs the new suite, and the workflow now also starts on changes to `deploy-fairline.yml`.
+- **New `tools/fairline/deploy_switch.test.js`:** it reads the step's script out of the workflow and runs it with `bash` against a real PostgreSQL, using the table `fairline_tape.sql` creates.
+
+**Evidence.** On the old step the suite fails 5 checks, each with the production error. With the fix it passes 10 / 0:
+- `on` and `off` set the switch and pass;
+- a warning appears only when the pipeline's switch is off;
+- a missing row or table fails.
+
+No SQL, billing or email logic changes.
+
 ## 2026-10-29 — Bet Checker says when sportsbook prices are paused
 
 **Why.** The odds account's October credits ran out on 2026-10-10, and paid price refresh is paused until the reset on 2026-11-01 (`docs/odds-api-incident-2026-10/INCIDENT.md`). Meanwhile most fair prices are older than the 6½ hours a grade accepts, so most bets logged on Bet Checker are saved Not graded, and nothing on the page said why. The owner asked for a notice (2026-10-29).

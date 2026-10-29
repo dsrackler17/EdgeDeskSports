@@ -82,6 +82,7 @@ jobs:
           FAIRLINE_SQL_REQUIRED=1 node tools/fairline/fairline_sql.test.js
           node tools/fairline/tape_sql.test.js
           node tools/fairline/tape_email.test.js
+          FAIRLINE_SQL_REQUIRED=1 node tools/fairline/deploy_switch.test.js
           node tools/billing/fairline_tier.test.js
 
       - name: Check the credentials exist before claiming anything
@@ -181,8 +182,14 @@ jobs:
         run: |
           set -eu
           v=$([ "$WANT" = on ] && echo true || echo false)
-          got=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "update public.fairline_tape_settings set email_enabled = $v, updated_at = now() where id = 1 returning email_enabled")
-          [ "$got" = "$v" ] || { echo "::error::fairline_tape_settings was not updated (is fairline_tape.sql applied?)"; exit 1; }
+          # psql prints a boolean as t / f, and without -q it adds the command
+          # tag (UPDATE 1) to the answer. Compare what it prints: before
+          # 2026-10-29 this compared "t\nUPDATE 1" with "true", so every run
+          # failed here after the switch had already been set.
+          # tools/fairline/deploy_switch.test.js runs this step on PostgreSQL.
+          want=$([ "$v" = true ] && echo t || echo f)
+          got=$(psql "$PGURL" -qAt -v ON_ERROR_STOP=1 -c "update public.fairline_tape_settings set email_enabled = $v, updated_at = now() where id = 1 returning email_enabled")
+          [ "$got" = "$want" ] || { echo "::error::fairline_tape_settings was not updated (is fairline_tape.sql applied?)"; exit 1; }
           pipe=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select coalesce((select sending_enabled from public.lifecycle_settings limit 1), false)")
           echo "The Tape's email switch: $WANT. The pipeline's own switch (lifecycle_settings.sending_enabled): $pipe."
           if [ "$WANT" = on ] && [ "$pipe" != t ]; then echo "::warning::The pipeline's switch is off, so no Tape email sends until it is on."; fi

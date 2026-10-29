@@ -83,6 +83,7 @@ on:
       - 'tools/billing/_pgrest.js'
       - 'tools/games/sql/supabase_shim.sql'
       - '.github/workflows/fairline-tests.yml'
+      - '.github/workflows/deploy-fairline.yml'
   push:
     branches: [main]
     paths:
@@ -92,6 +93,7 @@ on:
       - 'supabase/migrations/*_fairline.sql'
       - 'supabase/migrations/*_fairline_tape*.sql'
       - 'tools/fairline/**'
+      - '.github/workflows/deploy-fairline.yml'
   workflow_dispatch:
 
 permissions:
@@ -142,6 +144,10 @@ jobs:
         env:
           FAIRLINE_SQL_REQUIRED: '1'
         run: node tools/fairline/tape_sql.test.js
+      - name: Deploy Fairline's email switch, its own script on PostgreSQL — on and off set it and pass, a missing settings row fails
+        env:
+          FAIRLINE_SQL_REQUIRED: '1'
+        run: node tools/fairline/deploy_switch.test.js
 
   browser:
     runs-on: ubuntu-latest
