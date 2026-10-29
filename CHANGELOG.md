@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-29 — Methodology change: NBA and NHL game lines every two hours in the odds gateway (both leagues still off)
+
+**Why.** Bet Checker can grade only what EdgeDesk prices, and the NBA and NHL are registered with the odds gateway disabled. The owner approved buying their main markets (h2h, spreads, totals) every **two hours**, about **2,160 credits a month for both leagues**, instead of the gateway's hourly default (about 4,320). Narrative, evidence and budget: [METHODOLOGY-2026-10-29-nba-nhl-lines.md](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md).
+
+**What changed.**
+- **`supabase/odds_api_nba_nhl_lines.sql`** (new, idempotent): cadence rows for the groups `nba` and `nhl` in `featured` (capture) and `close` (close), which share one fingerprint. They are 120 minutes up to 72 h from the next start and 360 minutes beyond. It also registers both leagues **disabled**, as their own files do. Every other sport, category, the floor, the breaker and the budget are untouched.
+- **`.github/workflows/deploy-odds-gateway.yml`**: input `apply_nba_nhl_lines` (default on), and the suite runs before anything ships. **`odds-gateway-tests.yml`** runs it on every pull request.
+- **`.github/workflows/capture.yml`** prints capture's `sports_list`, so the switch-on can show whether the production `CAPTURE_SPORTS` asks for the two leagues.
+- **`INCIDENT.md`** §9 step 12: the owner's switch-on (`odds_api_set_sport`), after the November reset and only once base spend tracks.
+
+**Evidence.** `tools/odds/nba_nhl_lines_sql.test.js`, 24 / 0 on a real PostgreSQL. An NBA or NHL board 65 or 117 minutes old was bought before and is a free cache hit after, for capture and close alike. NFL is still bought hourly. Leaving the NBA `close` band at 60 fails 5 checks.
+
 ## 2026-10-29 — Landing checkout: "Start 7 days free" reaches Stripe again (an undeclared `promo` stopped it after the consent)
 
 **What was wrong.** The landing page sends a new reader through sign-up and the renewal terms. It records their consent, then sends them to Stripe. Between those last two steps, `confirmArl()` in `index.html` sends the funnel and analytics events with `promo:!!promo`. Nothing in the page declares `promo`. The creator's code is `affiliateCode`, set a few lines earlier in the same function. The call threw `ReferenceError: promo is not defined`, so `window.location.href=url` never ran. The reader stayed on "Opening secure checkout…". Their consent was recorded, and no checkout opened. This is the path every Full Access trial takes, server checkout and Payment Link alike. Bet Checker checks out from `/bet-checker/` and was not affected. The line predates the oldest commit in this clone (2026-10-27), so it has been live at least since then.
