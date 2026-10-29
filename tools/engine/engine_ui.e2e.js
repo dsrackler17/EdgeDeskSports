@@ -47,7 +47,27 @@ const BOARD = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json')
    changed after first posting, now Likely per Daily Faceoff); every other game answers NO_CARD, so its page
    shows the slate's own goalie block */
 const GLIB = require(path.join(ROOT, 'lib', 'edgedesk_nhl_goalies.js'));
+/* a lineup-lock card for the fourth game (version 3): both starters Confirmed by the NHL boxscore and both dressed
+   lineups in, so the card's headline is the lineup-and-goalie variant's price (hockey/goalies/core.js nhlgLockPrice),
+   here the home side's expected goals 6% under the slate's, priced with the slate's own distribution */
+const GC = require(path.join(ROOT, 'hockey', 'goalies', 'core.js'));
+const DIST = require(path.join(ROOT, 'hockey', 'model', 'distribution.js'));
+const GIN = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'goalie_inputs.json'), 'utf8'));
+function lockCard(g) {
+  const res = GLIB.fromSlate(g, SLATE), c = res.card, hb = g.prices.moneyline, at = new Date(Date.parse(NOW) - 5 * 60000).toISOString();
+  ['home', 'away'].forEach((sd) => Object.assign(c.goalie_pairing_used[sd], { status: 'confirmed', source: 'nhl_api_boxscore', source_label: 'NHL API boxscore', basis: 'report', as_of: at }));
+  Object.assign(c, { version: 3, generated_at: at, goalie_status_home: 'confirmed', goalie_status_away: 'confirmed', show_range: false, edge_gate_state: 'OPEN', known_limitations: [], lineup_locked: true });
+  const D = DIST.game({ lamH: g.lambda.home * 0.94, lamA: g.lambda.away, effects: GIN.distribution.effects, ot: GIN.distribution.ot, periods: false }), mk = GC.nhlgMarkets(D, DIST), pl = mk.puck_line;
+  const awayMinus = 1 - pl['1.5'][0] - pl['1.5'][1];
+  c.headline = { basis: 'lineup_lock', model_id: 'edgedesk_nhl_v1:xg_all_confirmed', p_home: mk.p_home, p_away: GC.nhlgR(1 - D.p_home), fair_home: mk.fair_home, fair_away: mk.fair_away,
+    exp_total: mk.exp_total, fair_total_line: mk.fair_total_line, p_overtime: GC.nhlgR(D.p_ot), p_shootout: GC.nhlgR(D.p_so),
+    puck_line: { home_minus_1_5: pl['-1.5'][0], away_minus_1_5: GC.nhlgR(awayMinus), fair_home_minus_1_5: DIST.probToAmerican(pl['-1.5'][0]), fair_away_minus_1_5: DIST.probToAmerican(awayMinus) },
+    markets: { puck_line: pl, total: mk.total }, settles: hb.settles, lineup: { skaters: { home: 18, away: 18 } }, before: { model_id: SLATE.model.id, p_home: hb.home, fair_home: hb.fair_home, fair_away: hb.fair_away } };
+  return Object.assign(res, { state: 'CARD', freshness: 'FRESH', versions: 3 });
+}
+const LOCKED = SLATE.games[3] || null;
 function goalieLive(gameId) {
+  if (LOCKED && String(gameId) === String(LOCKED.game_id)) return lockCard(LOCKED);
   const g = SLATE.games[2];
   if (!g || String(gameId) !== String(g.game_id) || g.goalies.home.length < 2) return { state: 'NO_CARD', freshness: 'FRESH', versions: 0 };
   const res = GLIB.fromSlate(g, SLATE), c = res.card, alt = g.goalies.home[1], top = g.goalies.home[0];
@@ -286,6 +306,32 @@ const TODAY = (() => {
         chk(label + ': no horizontal scroll on an unpriced game', await noHScroll(page), await overflowers(page));
         await page.click('[data-act="back"]');
         await page.waitForSelector('#nhlHost .xe-game');
+      }
+      if (LOCKED) {
+        /* lineup lock: the live card's headline replaces the slate's numbers on the game's page and its list card */
+        const L = lockCard(LOCKED).card.headline, fav = L.p_home >= 0.5, P = (v) => (Math.round(v * 1000) / 10) + '%';
+        await page.click('#nhlHost table.xe-vs .xe-lnk[data-game="' + LOCKED.game_id + '"]');
+        await page.waitForSelector('#nhlHost .xe-detail');
+        await page.waitForFunction(() => /Priced at lineup lock/.test((document.querySelector('#nhlHost .xe-goalies') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});
+        const big = await page.textContent('#nhlHost .xe-big').catch(() => ''), ovL = await page.textContent('#nhlHost .xe-tabp');
+        chk(label + ': at lineup lock the Overview headline is the lock price, chip and the slate\'s price before lock beside it', big.indexOf(P(fav ? L.p_home : 1 - L.p_home)) >= 0 && big.indexOf(String(L.exp_total)) >= 0 && /at lineup lock/.test(ovL)
+          && ovL.indexOf('Before lock: ' + LOCKED.home + ' ' + P(LOCKED.prices.moneyline.home)) >= 0, [big, ovL.slice(0, 500)]);
+        const glL = await page.textContent('#nhlHost .xe-goalies').catch(() => '');
+        chk(label + ': at lineup lock the goalie block says so, with no second goalie-only number', /Priced at lineup lock\./.test(glL) && !/With these starters/.test(glL) && !/Starter not confirmed/.test(glL), glL.slice(0, 500));
+        await page.click('#nhlHost .xe-tabs button[data-tab="markets"]');
+        const mkL = await page.textContent('#nhlHost .xe-tabp');
+        chk(label + ': at lineup lock Markets says its tables are the slate\'s, from before lock', /Priced at lineup lock\./.test(mkL) && /tables below are the slate’s numbers from before lock/.test(mkL), mkL.slice(0, 400));
+        await page.waitForFunction(() => !!window.EDNHLMarket && !!window.EDNHLCompare, null, { timeout: 15000 }).catch(() => {});
+        await page.selectOption('.xe-pc select[name="market"]', 'moneyline:home');
+        await page.fill('.xe-pc input[name="price"]', '-110');
+        await page.click('.xe-pc button[type="submit"]');
+        const resL = await page.textContent('.xe-pc-res');
+        chk(label + ': at lineup lock the price check uses the lock price', resL.indexOf('EdgeDesk ' + P(L.p_home) + ' at lineup lock') >= 0, resL);
+        chk(label + ': no horizontal scroll at lineup lock', await noHScroll(page), await overflowers(page));
+        await page.click('[data-act="back"]');
+        await page.waitForSelector('#nhlHost .xe-game');
+        const cardL = await page.textContent('#nhlHost .xe-game[data-game="' + LOCKED.game_id + '"]').catch(() => '');
+        chk(label + ': the list card shows the lock price, marked', cardL.indexOf(P(fav ? L.p_home : 1 - L.p_home)) >= 0 && /at lineup lock/.test(cardL), cardL);
       }
       await page.click('[data-act="record"]');
       /* the list already carries captioned tables, so wait for the record's own caption, not any caption */

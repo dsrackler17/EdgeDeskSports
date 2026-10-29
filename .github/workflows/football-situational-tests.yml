@@ -1,0 +1,71 @@
+# Football Situational Intelligence Engine — every suite, on the pull request.
+#
+# Offline: every source download is served by an injected transport, the SQL
+# runs on a throwaway local PostgreSQL, the NFL slate builder runs on fixture
+# feeds. The browser suite reads the COMMITTED cards.json with the clock pinned
+# to its build time; Chromium is installed so the suite cannot quietly skip.
+name: Football situational tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/situational/**'
+      - 'supabase/football_situational*.sql'
+      - 'supabase/nfl_market_structure_studies.sql'
+      - 'tools/football/build_fsie_registry_sql.js'
+      - 'tools/football/fsie_card_ui.test.js'
+      - 'tools/football/fsie_ui.e2e.js'
+      - 'tools/personal/_pg.js'
+      - 'tools/games/sql/supabase_shim.sql'
+      # the two builders that append the SHADOW block, and the board that renders the section
+      - 'tools/football/build_nfl_slate.js'
+      - 'football/fbs/build_coverage.js'
+      - 'app.html'
+      # what the engine reads from elsewhere
+      - 'lib/edgedesk_props.js'
+      - 'football/props/sources/nfl.js'
+      - 'football/props/factory/lib/io.js'
+      - 'football/data/feed_cache.js'
+      - 'hockey/tools/parquet_select.py'
+      - '.github/workflows/football-situational.yml'
+      - '.github/workflows/football-situational-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: football-situational-tests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Core (situations, both sources, quality gates, aggregation, downloads, checkpointed ingestion, coverage, point-in-time features)
+        run: node football/situational/tests/core.test.js
+      - name: Models (reconciliation on every draw, coherent possessions, players within team volume, the research guards, the criteria judge)
+        run: node football/situational/tests/model.test.js
+      - name: Markets (consensus, disagreement not edge, CLV with missing closes excluded, timestamps, event and player mapping)
+        run: node football/situational/tests/market.test.js
+      - name: Integration (the real NFL slate builder OFF vs SHADOW byte-identical, the adapter's locks, the simulator shadow, pricing isolation)
+        run: node football/situational/tests/integration.test.js
+      - name: The registry file is current with the frozen preregistration
+        run: node tools/football/build_fsie_registry_sql.js --check
+      - name: Add postgres to PATH for the SQL suite
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: SQL on a real PostgreSQL (RLS, write-once, pregame, CLV reasons, rollback, the registry)
+        run: node football/situational/tests/sql.test.js
+      - name: The card section, cut out of app.html
+        run: node tools/football/fsie_card_ui.test.js
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: NFL and FBS cards in Chromium (desktop, 390 px phone, frozen lines)
+        run: node tools/football/fsie_ui.e2e.js

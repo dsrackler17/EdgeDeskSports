@@ -1,0 +1,102 @@
+# Football Situational Intelligence Engine — the scheduled pipeline.
+#
+#   ingest (incremental) -> quality gates -> coverage -> tendencies ->
+#   projections -> player projections -> market comparisons -> SHADOW blocks
+#   -> simulator shadow -> cards.json -> commit -> insert-only Supabase copy
+#
+# Schedules (UTC), separated so nothing expensive runs more often than its
+# inputs change:
+#   daily 10:47   after nflverse (~09:00) and the ESPN college mirror (~10:00)
+#                 publish: ingest + the full build
+#   Sun/Mon 16:47 an extra pass after the weekend's games are published
+#   every 3 h     market refresh only (--offline: no download, no retraining;
+#                 re-reads the props board and the CFB quote store)
+#   Tue 13:17     the prop-market study and CLV over the props close archive
+# Nothing here retrains: parameters are fitted once by `run.js fit` after the
+# preregistered holdout and committed (research/params_<sport>.json).
+name: Football situational pipeline
+
+on:
+  schedule:
+    - cron: '47 10 * 8-12,1 *'
+    - cron: '47 16 * 8-12,1 0,1'
+    - cron: '23 */3 * 8-12,1 *'
+    - cron: '17 13 * 8-12,1 2'
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'build | market | study | backfill'
+        default: 'build'
+      sport:
+        description: 'all | nfl | cfb'
+        default: 'all'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-situational
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: pyarrow (reads the ESPN college play-by-play parquet; the 26 other football jobs install it the same way)
+        run: pip install --quiet pyarrow
+      - name: Cached source downloads (completed seasons never change)
+        uses: actions/cache@v4
+        with:
+          path: football/situational/.cache
+          key: fsie-feeds-${{ github.run_id }}
+          restore-keys: fsie-feeds-
+      - name: Choose the stage
+        id: stage
+        run: |
+          s='${{ github.event.inputs.stage }}'
+          if [ -z "$s" ]; then
+            case '${{ github.event.schedule }}' in
+              '23 */3 * 8-12,1 *') s=market ;;
+              '17 13 * 8-12,1 2') s=study ;;
+              *) s=build ;;
+            esac
+          fi
+          echo "stage=$s" >> "$GITHUB_OUTPUT"
+      - name: Suites first (a broken engine publishes nothing)
+        run: |
+          node football/situational/tests/core.test.js
+          node football/situational/tests/model.test.js
+          node football/situational/tests/market.test.js
+      - name: Backfill (checkpointed; finished seasons are skipped)
+        if: steps.stage.outputs.stage == 'backfill'
+        run: |
+          node football/situational/run.js ingest --sport '${{ github.event.inputs.sport || 'all' }}' --backfill 2014-2025
+      - name: Build (ingest, quality, coverage, tendencies, projections, market, shadow, cards)
+        if: steps.stage.outputs.stage == 'build' || steps.stage.outputs.stage == 'backfill'
+        run: node football/situational/run.js build --sport '${{ github.event.inputs.sport || 'all' }}'
+      - name: Market refresh (no download, no retraining)
+        if: steps.stage.outputs.stage == 'market'
+        run: node football/situational/run.js build --sport all --offline
+      - name: Prop-market study and CLV
+        if: steps.stage.outputs.stage == 'study'
+        run: node football/situational/run.js study --sport all
+      - name: Commit the artifacts
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh "${{ github.ref_name }}" \
+            'situational intelligence: tendencies, projections, market comparisons, shadow' -- \
+            football/situational/data/
+      - name: Insert-only copy to Supabase (NOT VERIFIED without the secrets, and it says so)
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node football/situational/sync_supabase.js

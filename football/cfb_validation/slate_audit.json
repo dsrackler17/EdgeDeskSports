@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-29T16:08:38.473Z",
- "board_generated_at": "2026-10-29T16:08:26.905Z",
+ "generated_at": "2026-10-29T19:08:25.159Z",
+ "board_generated_at": "2026-10-29T19:08:15.176Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -22,15 +22,15 @@
    "named": false,
    "edgedesk": "Arizona −4.0",
    "market": "Texas Tech −3.5",
-   "books": 1,
+   "books": 2,
    "gap": 7.3,
    "gap_class": "MAJOR",
    "favorite_flip": true,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "TEAM_RATING_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -44,8 +44,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
     },
     {
      "requirement": "current team states",
@@ -79,7 +79,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "INVESTIGATE is correct: submodel support fail."
   },
   {
    "game_id": "401859185",

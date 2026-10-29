@@ -59,7 +59,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-29.5";
+export const BUILD = "polymarket_sync@2026-10-29.6";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -860,6 +860,11 @@ const WALLETS_TIME_MS = 75000;
 /* and holds at most WALLET_PAGES_PER_RUN activity pages (1,000 rows each) at once: a production run with a
    whole 30-page history ran out of compute (HTTP 546). The 30-page cap still counts across runs */
 const WALLET_PAGES_PER_RUN = 10;
+/* a run that dies part way (out of compute, HTTP 546: production, 2026-10-29 16:38 UTC) cannot record anything,
+   so each wallet is marked (attempt_at, attempts) BEFORE its work and the mark cleared when its work ends. A
+   marked wallet is in another run or killed one: it is set aside for ATTEMPT_COOLDOWN_MS, and after
+   MAX_ATTEMPTS marks only read once a day, so one wallet never blocks the pool behind it */
+const ATTEMPT_COOLDOWN_MS = 15 * 60e3, MAX_ATTEMPTS = 3, DUE_LOOKAHEAD = 20;
 /* what Polymarket accepts (radar-sources run 40812803914): /v2/holders answers
    at most 100 holders a side with include_pnl (500 is refused, HTTP 400), and
    one unwindowed page of 100 open NFL events was 48 MB, so events are asked
@@ -1139,8 +1144,19 @@ async function pool(ctx: any) {
 /* ---------------------------------------------------------------- wallets */
 async function wallets(ctx: any) {
   const rules = ctx.rules, now = ctx.nowMs;
-  const due = await db("poly_wallets?select=wallet,activity_cursor,history_truncated&in_pool=is.true&or=(activity_synced_at.is.null,activity_synced_at.lt."
-    + encodeURIComponent(iso(now - 20 * H)!) + ")&order=activity_synced_at.asc.nullsfirst,pool_rank.asc&limit=" + WALLETS_PER_RUN);
+  const listed = await db("poly_wallets?select=wallet,activity_cursor,history_truncated&in_pool=is.true&or=(activity_synced_at.is.null,activity_synced_at.lt."
+    + encodeURIComponent(iso(now - 20 * H)!) + ")&order=activity_synced_at.asc.nullsfirst,pool_rank.asc&limit=" + DUE_LOOKAHEAD);
+  const skipped: string[] = [];
+  const due = (listed || []).filter((w: any) => {
+    const c = w.activity_cursor || {}, at = c.attempt_at ? R.ms(c.attempt_at) : null;
+    if (at == null || !(now - at < ATTEMPT_COOLDOWN_MS || (Number(c.attempts || 0) >= MAX_ATTEMPTS && now - at < DAY))) return true;
+    skipped.push(w.wallet);
+    return false;
+  }).slice(0, WALLETS_PER_RUN);
+  if (skipped.length) {
+    ctx.run.details.skipped = skipped;
+    ctx.alert("WARNING", "wallet_skipped", skipped.length + " wallet(s) set aside: a run died part way through them (each is read again later)", { wallets: skipped });
+  }
   const late = () => hooks.now() - ctx.t0 > WALLETS_TIME_MS;
   ctx.run.details.wallets = [];
   for (const w of due || []) {
@@ -1150,6 +1166,8 @@ async function wallets(ctx: any) {
     /* 1. activity since the cursor (the window's start the first time). A first read cut by time keeps
        first_pages in the cursor, so the next run carries on and the page cap counts both */
     const cur = w.activity_cursor || {};
+    /* the attempt mark, before any work: if this run dies, the next one sets this wallet aside */
+    if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: Object.assign({}, cur, { attempt_at: iso(now), attempts: Number(cur.attempts || 0) + 1 }), updated_at: iso(now) });
     const first = cur.ts_s == null || cur.first_pages != null, before = first ? Number(cur.first_pages || 0) : 0;
     let start = cur.ts_s == null ? Math.floor((now - 400 * DAY) / 1000) : Math.max(1, cur.ts_s - 1), cursor: any = null, pages = 0, last = cur.ts_s || null, truncated = !!w.history_truncated, ok = true, actCut = false;
     const rows: any[] = [];
@@ -1166,7 +1184,7 @@ async function wallets(ctx: any) {
       cursor = pg.next_cursor;
     }
     d.pages = pages; d.rows = rows.length; d.truncated = truncated;
-    if (!ok) { d.status = "activity_failed"; continue; }
+    if (!ok) { d.status = "activity_failed"; if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: cur, updated_at: iso(now) }); continue; }
     /* 2. the markets: the new ones, and stored ones not resolved yet */
     const conds = Array.from(new Set(rows.map((t: any) => t.condition_id)));
     const known: Record<string, any> = {};
