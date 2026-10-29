@@ -3273,7 +3273,9 @@
   function r1(x) { return rnd(x, 1); }
   function r2(x) { return rnd(x, 2); }
   function f1(x) { return rnd(x, 1).toFixed(1); }
-  function pct1(p) { return (p * 100).toFixed(1) + '%'; }
+  /* the same rounding as a citation's metricNum: toFixed printed 0.5185 as
+     51.8% (0.5185 * 100 is 51.849999…) against a cited 51.9 */
+  function pct1(p) { return f1(p * 100) + '%'; }
   function pct0(p) { return Math.round(p * 100) + '%'; }
   function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
   function ts(x) { var t = x ? Date.parse(x) : NaN; return isFinite(t) ? t : null; }
@@ -8016,8 +8018,17 @@
       var out = Q.status.filter(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status === 'OUT'; }).map(function (c) { return c.subject; });
       var s0 = Q.season.filter(function (c) { return out.indexOf(c.subject) < 0; })[0];
       if (s0) qb.push(sent(cap(shortOf(s0))));
-      if (Q.conflict[0]) qb.push(sent(cap(Q.conflict[0].short)));
-      else Q.status.filter(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status !== 'NOT_LISTED'; }).slice(0, 1).forEach(function (st) { qb.push(sent(cap(shortOf(st)))); });
+      /* every conflict in EdgeDesk's own inputs and every quarterback on an
+         availability report, whatever the status: what the gate's
+         injuries_addressed requires (mustAddress). Week 9 2026 listed Kansas
+         State's Jacob Knuth doubtful (a conflict) and Avery Johnson out; the
+         capsule said only the conflict. A conflict already gives its own
+         quarterback's status, so his report line is not repeated */
+      var said = Q.conflict.map(function (c) { return c.subject; });
+      Q.conflict.forEach(function (c) { qb.push(sent(cap(shortOf(c)))); });
+      Q.status.filter(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status !== 'NOT_LISTED'; })
+        .concat(mustAddress(p).filter(function (c) { return c.team === p[side] && c.verification !== 'CONFLICTING'; }))
+        .forEach(function (st) { var k = st.subject || st.id; if (said.indexOf(k) < 0) { said.push(k); qb.push(sent(cap(shortOf(st)))); } });
       if (!Q.conflict[0] && !Q.status.some(function (c) { return c.verification === 'OFFICIAL_REPORT' && c.status !== 'NOT_LISTED'; })) {
         var cont = Q.status.filter(function (c) { return c.values && c.values.contested; })[0];
         if (cont) qb.push(sent(cap(shortOf(cont))));

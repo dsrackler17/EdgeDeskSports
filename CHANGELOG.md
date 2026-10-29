@@ -1,6 +1,14 @@
 # Changelog
 
 
+## 2026-10-29 — Content engine: two Week 9 articles the gate blocked on main now pass it (the writer, not the gate, was wrong)
+
+- **What failed.** `node tools/content/evidence.test.js`, section "L live", on `main` since the Week 9 data landed. Two of today's generated articles were BLOCKED by the editorial gate: the upset watch (`injuries_addressed`) and the Utah at Cincinnati matchup piece (`numbers_in_evidence`). The gate was right both times, so it is unchanged.
+- **Rounding** (`lib/football_evidence.js`). Utah's early-down success is 0.5185. The claim's text printed it with `toFixed` as 51.8% (0.5185 × 100 is stored as 51.849999…), but its citation used EdgeDesk's rounding, half away from zero: 51.9. So the sentence did not cite its own claim, and 51.8, 44 and 42.6 counted as numbers from nowhere. `pct1` now rounds as `f1` and the citation do.
+- **Quarterbacks** (`lib/content_engine.js`, the weekly-preview capsule). Kansas State's Big 12 report listed Jacob Knuth doubtful (the starter EdgeDesk's model expects, an input conflict) and Avery Johnson out. When a side had a conflict, the capsule wrote it and dropped every other report line for that side; otherwise it kept only the first. It now writes every conflict and every quarterback on a report, which is what the gate requires (`mustAddress`, as the upset list and the gap paragraph already did). A conflict's own quarterback is not repeated.
+- **Tests** (`tools/content/evidence.test.js`). Section R builds a packet from Utah's and Cincinnati's early-down rates and requires 51.9%/44.1% and a self-citing sentence. Section K adds a second quarterback listed out beside the Vanderbilt conflict in the frozen Week 6 slate, and requires the capsule to say so and the slate to pass. On the old code: 202 passed, 6 failed (R ×2, K ×3, L). On the fix: 208 passed, 0 failed.
+- `supabase/functions/content_engine/index.ts` carries the two libraries verbatim and was regenerated with `node tools/content/inline.js`. The editorial page (`admin/content/index.html`) loads both with new stamps, so a browser does not keep the old writer. The committed `football/evidence/packets.json` is left to its own build, the scheduled editorial job.
+
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
 - **Bug.** The first live wallets call (run_now, 15:06 UTC) got HTTP 504, "Request idle timeout limit (150s) reached". One run took three new wallets: up to 30 activity pages each, then every resolved bet's price history (up to 150 a wallet). That is minutes of requests, and a function must answer within 150 s. The overnight schedule runs the same calls, so it would have stalled the same way.
