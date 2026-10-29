@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-29 — Bet Checker grades the NBA and the NHL (once their odds are on)
+
+**What changed.**
+- **`supabase/bet_checker.sql`** (mirrored in `migrations/20261028120000_bet_checker.sql`):
+  - `bet_checker_rules().sports` adds `basketball_nba` → NBA and `icehockey_nhl` → NHL. The grade thresholds, the fair-price freshness, the free allowance and the CLV formula are unchanged.
+  - `user_bets.sport`'s check (`bettor_decisions.sql`: CFB, NFL) is replaced by one that takes all four leagues, in the same transaction. Every existing row passes it.
+  - Report row 12 says the check takes every league in the rules.
+- **The page**: NBA and NHL pills. An NHL moneyline says it includes overtime and the shootout, because the board carries no 60-minute line.
+- **`docs/bet-checker.md`**: "The leagues", including where results come from. For these two leagues that is only `settle`'s word on the signal.
+
+**When it shows.** Only when capture prices the leagues. Both are off in the odds gateway until the owner turns them on after the November reset, every two hours ([METHODOLOGY-2026-10-29-nba-nhl-lines.md](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md)). Until then the page offers no NBA or NHL game.
+
+**Tests.** `bet_checker_sql.test.js` 137 / 0: the widened check, MLB still refused, NBA and NHL games offered and filtered, an NBA spread and an NHL moneyline graded on the same rules, the puck line, the free allowance, and an NHL close and result. On the previous SQL, 5 fail and the suite stops. `page.e2e.js` 61 / 0: the NHL pill, and the overtime note.
+
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 
 **What it does.** After a reader picks a game, the board's lines show as buttons: spread, total and moneyline, away and over first. Each spread and total shows the line most books hang, or the priced line where none is modal. One tap fills the market, the side and the line. For a paid reader (Bet Checker or the terminal), it also fills the best price on EdgeDesk's board at exactly that line, and its book. A note under the form says where the price came from and how old it is, and asks the reader to change it to the price they got, because the grade is on the odds they submit. A free reader taps the line and types the odds (owner's decision, 2026-10-29: the best price across the board's books is line shopping, which the paid tiers sell). The form still works as before for any line not on the buttons.
