@@ -7,11 +7,13 @@
        dependency order, and reads its Supabase project from the same
        committed config the games pages read — no key of its own
      * it calls the database's doors and nothing that could bypass the gate:
-       fairline_board and fairline_leaks, never signals or a table
+       fairline_board, fairline_leaks and fairline_tapes (and the reader's own
+       Tape email switch), never signals or a table
      * it says plainly that it shows prices, not picks; it names its known
        limitations, including that per-book quotes cover actionable lines only
-     * what is not built is shown inactive, never hidden or faked: The Tape
-       and DK Predictions say Coming Soon
+     * what is not built is shown inactive, never hidden or faked: DK
+       Predictions says Coming Soon, and so does The Tape's email until its
+       delivery is switched on
      * no price is typed in the page: the offer is lib/edgedesk_pricing.js's
      * the consent order is Bet Checker's: the server checkout first, then the
        terms AS SHOWN recorded, then — only then — Stripe; a Bet Checker
@@ -77,16 +79,17 @@ chk('the page is in the sitemap', /https:\/\/edgedesksports\.com\/fairline\//.te
 
 /* ── the doors ─────────────────────────────────────────────────────────── */
 const rpcs = [...MOD.matchAll(/rpc\('([a-z_]+)'/g)].map((m) => m[1]).sort();
-chk('the page calls the two Fairline doors and nothing else', JSON.stringify([...new Set(rpcs)]) === JSON.stringify(['fairline_board', 'fairline_leaks']), rpcs);
+chk('the page calls the Fairline doors and nothing else', JSON.stringify([...new Set(rpcs)]) === JSON.stringify(['fairline_board', 'fairline_leaks', 'fairline_tape_email', 'fairline_tapes']), rpcs);
 const tables = [...MOD.matchAll(/\/rest\/v1\/(?!rpc\/)([a-z_]+)/g)].map((m) => m[1]);
 chk('it reads no table directly (signals stays the terminal\'s); the one table it touches is its own consent record, by insert',
   JSON.stringify([...new Set(tables)]) === JSON.stringify(['billing_consents']) && /'\/rest\/v1\/billing_consents', \{ method: 'POST'/.test(MOD) && !/signals\?/.test(MOD), tables);
 chk('the free sign-in is the Games door, configured to come back here', /configure\(S\.url, S\.key, \{ returnPath: '\/fairline\/', surface: 'fairline' \}\)/.test(MOD));
 chk('a confirmation link lands here and is consumed (lib/edgedesk_auth.js)', /S\.edauth\.consume\(\{ url: S\.url, key: S\.key \}\)/.test(MOD));
 const fnBody = (name) => { const a = MOD.indexOf('function ' + name + '('); const b = MOD.indexOf('\n    function ', a + 10); return a < 0 ? '' : MOD.slice(a, b < 0 ? undefined : b); };
-chk('the page decides no gate: what The Board and The Leaks show comes from their answers, never from the plan in the browser',
-  /S\.board && S\.board\.paid/.test(MOD) && fnBody('renderBoard').length > 200 && fnBody('renderLeaks').length > 200 &&
-  !/S\.acc/.test(fnBody('renderBoard')) && !/S\.acc/.test(fnBody('renderLeaks')) && /if \(!b\.paid\)/.test(fnBody('renderBoard')) && /if \(!L\.paid\)/.test(fnBody('renderLeaks')));
+chk('the page decides no gate: what The Board, The Leaks and The Tape show comes from their answers, never from the plan in the browser',
+  /S\.board && S\.board\.paid/.test(MOD) && fnBody('renderBoard').length > 200 && fnBody('renderLeaks').length > 200 && fnBody('renderTape').length > 200 &&
+  !/S\.acc/.test(fnBody('renderBoard')) && !/S\.acc/.test(fnBody('renderLeaks')) && !/S\.acc/.test(fnBody('renderTape')) &&
+  /if \(!b\.paid\)/.test(fnBody('renderBoard')) && /if \(!L\.paid\)/.test(fnBody('renderLeaks')) && /if \(!T\.paid\)/.test(fnBody('renderTape')));
 
 /* ── what it says ──────────────────────────────────────────────────────── */
 chk('it says plainly: prices, not picks; it never tells you what to bet', /Prices, not picks/.test(PAGE) && /never tells you what to bet/.test(PAGE) &&
@@ -95,7 +98,15 @@ chk('Known limitations, consistent with the MLB card: coverage is what capture r
   /Known limitations/.test(PAGE) && /Coverage is whatever capture recorded/.test(UI.BOARD_LIMITS.join(' ')) && /actionable lines only/.test(UI.BOARD_LIMITS.join(' ')));
 chk('…and Kalshi\'s own limits (5-minute snapshots, the 6¢ spread rule, before fees)', /5-minute snapshots/.test(UI.BOARD_LIMITS.join(' ')) && /6¢/.test(UI.BOARD_LIMITS.join(' ')) &&
   /fees/.test(UI.BOARD_LIMITS.join(' ')));
-chk('The Tape is visible and inactive: Coming Soon, disabled', /data-fl-tab="tape"[^>]*disabled[^>]*>The Tape <span class="fl-chip soon">Coming Soon<\/span>/.test(PAGE));
+chk('The Tape is a tab of its own, and opens from #tape', /data-fl-tab="tape" aria-selected="false" aria-controls="fl-tape">The Tape<\/button>/.test(PAGE) &&
+  !/data-fl-tab="tape"[^>]*disabled/.test(PAGE) && /data-fl="tape" role="tabpanel"/.test(PAGE) && /h === 'leaks' \|\| h === 'tape'/.test(MOD));
+chk('The Tape\'s email says Coming Soon until delivery is switched on, and never claims to be sent before then',
+  /e\.delivering \? [\s\S]{0,120}'<span class="fl-chip soon">Coming Soon<\/span> '/.test(fnBody('tapeEmailHTML')) &&
+  /if \(!d \|\| !d\.delivering\) return 'Email delivery is not switched on yet\.'/.test(fnBody('emailWords')));
+chk('a Tape card is the core\'s words for the stored Tape (the email\'s words), escaped', /var v = C\.tapeView\(t\.tape\)/.test(fnBody('tapeCard')) &&
+  /esc\(v\.headline\)/.test(fnBody('tapeCard')) && /esc\(v\.best\)/.test(fnBody('tapeCard')) && /esc\(c\.text\)/.test(fnBody('tapeCard')));
+chk('the free Tape is placeholders under a blur (aria-hidden), with the offer', /fl-blur" aria-hidden="true"><p class="fl-verdict">Last week: 00–00/.test(fnBody('renderTape')) &&
+  /offerHTML\('Every Monday:/.test(fnBody('renderTape')));
 chk('DK Predictions is a column, Coming Soon, with no data source', /cell\('DK Predictions', '<span class="fl-chip soon">Coming Soon<\/span>', 'inactive'/.test(MOD) &&
   /no price feed exists yet/.test(UI.BOARD_LIMITS.join(' ')) && !/dk_predictions_price|dk_price/.test(MOD + CORE));
 chk('no price is typed in the page or the module: the offer is the pricing file\'s', !/\$[1-9]/.test(PAGE) && !/\$[1-9]/.test(MOD) && /P\.fairlineOffer\('monthly'\)/.test(MOD));

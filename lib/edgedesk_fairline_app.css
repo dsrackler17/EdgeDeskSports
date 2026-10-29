@@ -5,7 +5,8 @@
    (lib/edgedesk_games.css .gm-page, .gm-lg, .gm-empty). This file adds what
    Fairline has that they do not: the board rows (stacked cells on a phone, one
    dense line on a desk), the label chips (always text, never colour alone),
-   the leak verdicts, the slice rows and the blurred teaser. Mobile first.
+   the leak verdicts, the slice rows, The Tape's week card and the blurred
+   teaser. Mobile first.
    =========================================================================== */
 .fl{--fl-pos:var(--gm-pos,#76bd3e);--fl-neg:var(--gm-neg,#e26044);--fl-warn:var(--gm-warn,#d99a2b);--fl-mdl:var(--mdl,#d274b0)}
 .fl [hidden]{display:none!important}
@@ -110,6 +111,20 @@
 .fl-legend li{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
 .fl-limits ul{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55;color:var(--gm-dim)}
 .fl-limits li{margin:4px 0}
+
+/* ---- The Tape: one stored week; past weeks as chips that wrap ---- */
+.fl-tape-weeks{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.fl-wk{min-height:36px;padding:0 11px;border-radius:999px;border:1px solid var(--gm-bd);background:transparent;color:var(--gm-tx);
+  font:700 12.5px var(--gm-mono);cursor:pointer;white-space:nowrap}
+.fl-wk.on{border-color:var(--gm-ac);background:rgba(47,167,154,.12)}
+.fl-tape-card{display:grid;gap:8px}
+.fl-tape-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.fl-tape-top .fl-sub{white-space:normal}
+.fl-tape-card .fl-h3{margin:10px 0 0}
+.fl-tape-p{margin:0;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.fl-changes{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:14px;line-height:1.45}
+.fl-changes li{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;overflow-wrap:anywhere}
+.fl-tape-mail{font-size:13.5px;line-height:1.5;margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 
 /* ---- sign-in ---- */
 .fl-auth .fl-f{display:block;margin:8px 0;font-size:12px;font-weight:600;color:var(--gm-dim)}

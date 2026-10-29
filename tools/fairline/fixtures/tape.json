@@ -1,0 +1,163 @@
+{
+  "best": {
+    "line": 44.5,
+    "event": "Green Bay Packers at Detroit Lions",
+    "sport": "NFL",
+    "market": "total",
+    "result": "loss",
+    "clv_pct": 1.5,
+    "measure": "fair",
+    "edge_pts": 2.5,
+    "platform": "DraftKings",
+    "selection": "Over 44.5",
+    "starts_at": "2026-10-20T11:00:01.829248+00:00",
+    "odds_american": -105
+  },
+  "week": {
+    "end": "2026-10-25",
+    "start": "2026-10-19",
+    "ends_at": "2026-10-26T05:00:00+00:00",
+    "starts_at": "2026-10-19T05:00:00+00:00",
+    "time_zone": "America/Chicago"
+  },
+  "price": {
+    "bets": 12,
+    "priced": 3,
+    "avg_edge_pts": 0.17,
+    "worse_than_fair": 2,
+    "better_than_fair": 1
+  },
+  "quiet": false,
+  "rules": {
+    "version": "fairline-v1",
+    "lead_buckets": [
+      {
+        "to": null,
+        "key": "48h_plus",
+        "from": 48
+      },
+      {
+        "to": 48,
+        "key": "24_48h",
+        "from": 24
+      },
+      {
+        "to": 24,
+        "key": "6_24h",
+        "from": 6
+      },
+      {
+        "to": 6,
+        "key": "under_6h",
+        "from": 0
+      }
+    ],
+    "min_clv_bets": 15,
+    "odds_buckets": [
+      {
+        "to": -200,
+        "key": "le_m200",
+        "from": null
+      },
+      {
+        "to": -121,
+        "key": "m199_m121",
+        "from": -199
+      },
+      {
+        "to": 120,
+        "key": "m120_p120",
+        "from": -120
+      },
+      {
+        "to": 200,
+        "key": "p121_p200",
+        "from": 121
+      },
+      {
+        "to": null,
+        "key": "gt_p200",
+        "from": 201
+      }
+    ],
+    "stake_buckets": [
+      {
+        "to": 0.75,
+        "key": "small",
+        "from": null
+      },
+      {
+        "to": 1.25,
+        "key": "typical",
+        "from": 0.75
+      },
+      {
+        "to": 2,
+        "key": "large",
+        "from": 1.25
+      },
+      {
+        "to": null,
+        "key": "oversized",
+        "from": 2
+      }
+    ],
+    "min_sample_bets": 15
+  },
+  "changes": [
+    {
+      "to": "real_leak",
+      "dim": "market",
+      "val": "spread",
+      "bets": 16,
+      "from": null,
+      "kind": "crossed",
+      "roi_pct": -100,
+      "clv_bets": 16,
+      "roi_basis": "units",
+      "avg_clv_pct": -1,
+      "bets_before": 14,
+      "label_basis": "clv",
+      "pl_basis_value": -16
+    },
+    {
+      "to": "bad_luck",
+      "dim": "market",
+      "val": "total",
+      "bets": 23,
+      "from": "real_edge",
+      "kind": "changed",
+      "roi_pct": -17,
+      "clv_bets": 23,
+      "roi_basis": "units",
+      "avg_clv_pct": 1.5,
+      "bets_before": 15,
+      "label_basis": "clv",
+      "pl_basis_value": -3.91
+    }
+  ],
+  "version": "fairline-tape-v1",
+  "week_stats": {
+    "bets": 11,
+    "wins": 1,
+    "losses": 10,
+    "pushes": 0,
+    "pending": 1,
+    "roi_pct": -80,
+    "cashouts": 0,
+    "clv_bets": 10,
+    "no_close": 0,
+    "pl_units": -10,
+    "roi_basis": "flat",
+    "beat_close": 8,
+    "pl_dollars": 60,
+    "units_bets": 10,
+    "avg_clv_pct": 1,
+    "dollars_bets": 1,
+    "staked_units": 10,
+    "beat_close_pct": 80,
+    "pl_basis_value": -8.8,
+    "staked_dollars": 50
+  },
+  "rules_version": "fairline-v1"
+}
