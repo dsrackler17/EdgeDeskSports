@@ -1,11 +1,5 @@
 # Changelog
 
-## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
-
-- **Bug.** `run_now` on build `.5` ([run 40905865196](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40905865196)) made 32 wallet calls in about 76 s each, all HTTP 200. The 33rd got HTTP 546, out of compute. A run that dies cannot record anything, so that wallet stayed first in line, and every later call, the 06:10 UTC schedule included, would have died on it. `run_now` also stopped before its grade, so nothing reached the site.
-- **Fix** (`supabase/functions/polymarket_sync/index.ts`, build `polymarket_sync@2026-10-29.6`). Each wallet is marked (`attempt_at`, `attempts` in its cursor) before its work, and the mark is cleared when the work ends. A wallet still marked was in a run that died, or one in flight: it is set aside for 15 minutes, and after 3 such runs read only once a day. A WARNING `wallet_skipped` names it.
-- **run_now** (`.github/workflows/deploy-radar.yml`) carries on after a failed wallet call, since the function now sets that wallet aside. It stops after three failures in a row, always runs the grade, reports how many wallets are set aside, and ends red if any call failed.
-- **Tests.** `tools/radar/sync_fn.test.js`: a wallet whose run died 2 minutes ago is set aside and the next wallet read; after 15 minutes it is read again, marked before the work starts, and its mark cleared when done; after three dead runs it is read only once a day. On the old code: 61 passed, 3 failed. On the fix: 64 passed, 0 failed. The workflow step was run against a stand-in function and a throwaway PostgreSQL: one HTTP 546 among the calls went on, graded and ended red; three in a row stopped, graded and ended red; a normal run ended green; at most one call was ever in flight.
 
 
 ## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
