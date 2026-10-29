@@ -139,3 +139,56 @@ node football/sp_plus/display.test.js     # every state of the rule
 node football/sp_plus/card_ui.test.js     # the board card, through the real football module
 node football/sp_plus/ui.e2e.js           # the game page and the terminal in Chromium
 ```
+
+## D · Tracking: which number tracks the close (`track.js`)
+
+Run every hour by the CFB Model Lab job (`.github/workflows/cfb-lab.yml`),
+which is the only writer of `football/sp_plus/ledger/` and
+`football/sp_plus/reports/`.
+
+- **Capture** (`ledger/<season>/captures.jsonl`). For every upcoming CFB game
+  on the slate, three numbers at the same moment:
+  - EdgeDesk's published fair line (`football/fbs/slate.json`);
+  - the SP+ projected line as a card shows it (unavailable included, with its
+    reason);
+  - the market: the Model Lab's consensus, the median of each book's latest
+    pregame quote (`lab_core.marketAt`).
+
+  A row is appended for a game's first capture and whenever one of the three
+  changes.
+- **Grade** (`ledger/<season>/grades.jsonl`). Once per game, after the Lab has
+  the final and its consensus close (`cfb_lab_close_v1`). Each source is
+  graded on its last pregame number. A grade is written once and never edited;
+  a later result correction does not change it.
+- **Report** (`reports/<season>/week_NN.{json,md}`, `season.{json,md}`),
+  rebuilt from the grades and dated by the newest one:
+
+| metric | definition |
+|---|---|
+| MAE vs close | \|source home line − closing home line\| |
+| MAE vs final | \|source home margin − final margin\| |
+| right side of the close | the source's side against the close (home when its line is below the closing home line), right when the final covered the close on that side; pushes and no-side are not counted |
+| close moved toward it | from the market at the game's first capture to the close: toward the side the source leaned, away, or no move |
+
+  Each report also compares the two sources on the games both priced, with
+  the close's own MAE against the final as the benchmark.
+- **Append-only.** `track.js verify --base HEAD`: every committed ledger file
+  must be a prefix of the working file, ids unique and each id matching its
+  row's content. The hourly run checks itself before anything is published.
+  A violation restores the committed files and warns; it never costs the
+  Lab's own publish.
+
+The worked case, 2026-10-28, Kennesaw State at Middle Tennessee:
+
+| | line | off the close (KSU −1.5) | off the final (KSU by 16) | close moved |
+|---|---|---|---|---|
+| EdgeDesk | MTSU −4.5 | 6.0 | 20.5 | away from it |
+| SP+ | MTSU −1.3 | 2.8 | 17.3 | toward it |
+
+One game proves nothing; the season table is the evidence.
+
+```
+node football/sp_plus/track.js run [--write] [--now ISO]
+node football/sp_plus/track.js verify --base HEAD
+node football/sp_plus/track.test.js
+```

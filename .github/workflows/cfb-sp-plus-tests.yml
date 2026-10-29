@@ -25,6 +25,10 @@ on:
       # the insert-only writer and the table-missing check the sync uses
       - 'football/cfb_production/db.js'
       - 'football/cfb_lab/sync_supabase.js'
+      # tracking reads the Lab's quotes, closes and results through its own rules
+      - 'football/cfb_lab/lab_core.js'
+      - 'football/cfb_lab/ledger.js'
+      - '.github/workflows/cfb-lab.yml'
       - 'tools/games/sql/supabase_shim.sql'
       # the three surfaces that show the SP+ line, and the harness that runs the board card
       - 'app.html'
@@ -72,6 +76,8 @@ jobs:
         env:
           CFB_SP_SQL_REQUIRED: '1'
         run: node football/sp_plus/sql.test.js
+      - name: Tracking (capture, grade once against the Lab's close and final, report, append-only)
+        run: node football/sp_plus/track.test.js
       - name: The display rule (fresh, stale, failed, missing, another week; Models disagree at 3+ points)
         run: node football/sp_plus/display.test.js
       - name: The board card, through the real football module
