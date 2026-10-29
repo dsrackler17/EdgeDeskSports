@@ -16,13 +16,22 @@
      POST /oauth2/revoke       Basic; 200 {} for any token, 401 invalid_client
      GET  /oauth2/me           Bearer → {id (integer), displayName}
      GET  /oauth2/subscribers/status    Bearer + subscribers.read
-     GET  /oauth2/subscribers/current   owner access (Basic), paged by nextCursor
+     GET  /oauth2/subscribers/current   owner access (Basic)
 
-   THE SHAPES OF THE LAST TWO ARE EDGEDESK'S READING, NOT CONFIRMED
-   (docs/juicereel-billing.md § 9). `statusShape` switches between the
-   plausible forms so the normalizer is exercised on each; the field names the
-   docs give for the webhook (subscriberUserId, subscriptionProductId,
-   expiresDate) are used throughout.
+   THE LAST TWO ANSWER AS JUICE REEL DOCUMENTS THEM (confirmed by Juice Reel
+   on 2026-10-29; juicereel.com/api-docs/subscriber-status and
+   /current-subscribers), by default:
+     status   {isCurrentlySubscribed: true, subscription: {subscriptionProductId,
+              userId, expiresDate, isCurrentlySubscribed, SubscriptionProduct}};
+              an expired or never-subscribed buyer gets {isCurrentlySubscribed:
+              false} with NO subscription; the application's owner gets
+              {isCurrentlySubscribed: true} with NO subscription
+     list     {subscribers: [...]}: everyone who has EVER subscribed (expired
+              and refunded entries too, a buyer's older entries first), each
+              {subscriptionProductId, userId, expiresDate, isCurrentlySubscribed,
+              User: {id, displayName}, SubscriptionProduct}; no pagination
+   `statusShape` and `listShape` still switch to the forms EdgeDesk guessed
+   before that, so the reader keeps being exercised on each.
 
    The buyer's side is driven by the test: pay() and cancel() for a checkout,
    authorize() for a plain account link, and webhook() for a signed delivery.
@@ -42,7 +51,8 @@ function make(opts) {
   const S = {
     sessions: {}, codes: {}, tokens: {}, subs: {},   // subs[jrUserId] = [{productId, expiresDate, status}]
     users: {}, calls: [],
-    statusShape: 'flag',          // flag | list | array | flag_bare | contradiction | absent (404) | not_subscribed
+    statusShape: 'documented',    // documented | flag | list | array | flag_bare | contradiction | absent (404) | not_subscribed
+    listShape: 'documented',      // documented (everyone ever, one page) | paged (current only, nextCursor)
     ownerAccess: true,            // false: /subscribers/current refuses Basic
     down: {},                     // path -> true: answer 503
     checkoutUrlHost: 'https://www.juicereel.com',
@@ -93,6 +103,21 @@ function make(opts) {
   }
   function currentOf(jrUserId) {
     return (S.subs[jrUserId] || []).filter((x) => x.status === 'active' && Date.parse(x.expiresDate) > S.nowMs());
+  }
+  /* an older subscription of the same buyer, ended: listed BEFORE the current one */
+  function history(jrUserId, productId, endedDaysAgo) {
+    S.subs[jrUserId] = [{ productId, expiresDate: new Date(S.nowMs() - endedDaysAgo * 86400000).toISOString(), status: 'ended' }].concat(S.subs[jrUserId] || []);
+  }
+  /* Juice Reel takes access away before the paid-through date (a refund): the
+     entry stays listed with its future expiresDate and isCurrentlySubscribed false */
+  function refund(jrUserId, productId) {
+    (S.subs[jrUserId] || []).forEach((x) => { if (x.productId === productId) x.status = 'refunded'; });
+  }
+
+  /* one subscription as Juice Reel documents it */
+  function documented(jrUserId, x) {
+    return { subscriptionProductId: x.productId, userId: Number(jrUserId), expiresDate: x.expiresDate,
+      isCurrentlySubscribed: x.status === 'active' && Date.parse(x.expiresDate) > S.nowMs(), SubscriptionProduct: { duration: 'MONTHLY' } };
   }
 
   async function api(url, init) {
@@ -151,6 +176,11 @@ function make(opts) {
       if (t.scopes.indexOf('subscribers.read') < 0) return res(403, { error: 'insufficient_scope' });
       const cur = currentOf(t.jrUserId);
       const entry = (x) => ({ subscriptionProductId: x.productId, expiresDate: x.expiresDate, status: x.status });
+      if (S.statusShape === 'documented') {
+        if (String(t.jrUserId) === String(o.ownerId)) return res(200, { isCurrentlySubscribed: true });
+        if (!cur.length) return res(200, { isCurrentlySubscribed: false });
+        return res(200, { isCurrentlySubscribed: true, subscription: documented(t.jrUserId, cur[0]) });
+      }
       if (S.statusShape === 'not_subscribed' || !cur.length) return res(200, { isSubscribed: false, subscriptions: [] });
       if (S.statusShape === 'list') return res(200, { subscriptions: cur.map(entry) });
       if (S.statusShape === 'array') return res(200, cur.map(entry));
@@ -161,6 +191,12 @@ function make(opts) {
 
     if (u.pathname === '/oauth2/subscribers/current' && method === 'GET') {
       if (!S.ownerAccess || !basicOk(init)) return res(401, { error: 'invalid_client' });
+      if (S.listShape === 'documented') {
+        const ever = [];
+        Object.keys(S.subs).sort().forEach((id) => (S.subs[id] || []).forEach((x) => ever.push(Object.assign(documented(id, x),
+          { User: { id: Number(id), displayName: (S.users[id] && S.users[id].displayName) || null } }))));
+        return res(200, { subscribers: ever });
+      }
       const all = [];
       Object.keys(S.subs).sort().forEach((id) => currentOf(id).forEach((x) => all.push({
         subscriberUserId: Number(id), subscriptionProductId: x.productId, expiresDate: x.expiresDate })));
@@ -214,7 +250,7 @@ function make(opts) {
     return { raw, sig, ev };
   }
 
-  return { api, S, o, API, buyer, subscribe, pay, cancel, authorize, webhook, issueCode };
+  return { api, S, o, API, buyer, subscribe, history, refund, pay, cancel, authorize, webhook, issueCode };
 }
 
 module.exports = { make, API };
