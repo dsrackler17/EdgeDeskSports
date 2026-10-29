@@ -59,7 +59,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-29.4";
+export const BUILD = "polymarket_sync@2026-10-29.5";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -381,6 +381,23 @@ export const BUILD = "polymarket_sync@2026-10-29.4";
       g['beat_close' + L[1]] = p != null && c ? c.p > p : null;
     });
     return g;
+  };
+
+  /* the stretches of a bet's price history its grade reads. R.priceAt takes the
+     last point at or before its moment, at most a gap older, so the follows read
+     [entry + 5 - 10, entry + 15] minutes and the close [start - 60, start]:
+     these alone give the same grade as the whole history (core.test.js), and a
+     bet placed days early is two short reads, not a point a minute for days.
+     Stretches that meet are one read, 15 minutes before the entry to a minute
+     after the start, as before. Times in ms, a minute's margin each side. */
+  R.gradeWindows = function (bet, rules) {
+    rules = R.rules(rules);
+    var e = bet.entry_at, s = bet.game_start_at;
+    var lagLo = Math.min(rules.follow_lag_min, rules.follow_lag_alt_min), lagHi = Math.max(rules.follow_lag_min, rules.follow_lag_alt_min);
+    var whole = { from: e - 15 * MIN, to: s + MIN };
+    var follow = { from: Math.max(whole.from, e + (lagLo - rules.follow_max_gap_min - 1) * MIN), to: e + (lagHi + 1) * MIN };
+    var close = { from: s - (rules.close_max_gap_min + 1) * MIN, to: s + MIN };
+    return follow.to >= close.from ? [whole] : [follow, close];
   };
 
   /* ------------------------------------------------------------ style */
@@ -840,6 +857,9 @@ const WALLETS_PER_RUN = 3;
    starts no new wallet, activity page or graded bet; a wallet it did not finish
    stays due with its place kept, and the next run carries on from there */
 const WALLETS_TIME_MS = 75000;
+/* and holds at most WALLET_PAGES_PER_RUN activity pages (1,000 rows each) at once: a production run with a
+   whole 30-page history ran out of compute (HTTP 546). The 30-page cap still counts across runs */
+const WALLET_PAGES_PER_RUN = 10;
 /* what Polymarket accepts (radar-sources run 40812803914): /v2/holders answers
    at most 100 holders a side with include_pnl (500 is refused, HTTP 400), and
    one unwindowed page of 100 open NFL events was 48 MB, so events are asked
@@ -1142,6 +1162,7 @@ async function wallets(ctx: any) {
       for (const a of pg.rows) { const x = R.activityRow(a, w.wallet); if (x) rows.push(x); else ctx.drift++; }
       if (!pg.has_more) break;
       if (before + pages >= rules.wallet_max_pages) { if (first) truncated = true; break; }
+      if (pages >= WALLET_PAGES_PER_RUN) { actCut = true; break; }
       cursor = pg.next_cursor;
     }
     d.pages = pages; d.rows = rows.length; d.truncated = truncated;
@@ -1194,9 +1215,17 @@ async function gradeNewBets(ctx: any, wallet: string, dryTrades: any[] | null, s
   let n = 0, cut = false;
   for (const b of todo) {
     if (late && late()) { cut = true; break; }
-    const r = await ask(ctx, "prices_history", { market: b.token_id, startTs: Math.floor(b.entry_at / 1000) - 900, endTs: Math.floor(b.game_start_at / 1000) + 60, fidelity: 1 });
-    if (!r.ok) { if (r.decision === "budget_exhausted" || r.decision === "breaker_open") break; continue; }
-    const g = R.gradeBet(b, R.priceHistory(r.data), rules);
+    /* only the stretches the grade reads (R.gradeWindows): the same grade, without a point a minute for days */
+    let hist: any[] = [], failed = false, stop = false;
+    for (const w of R.gradeWindows(b, rules)) {
+      const r = await ask(ctx, "prices_history", { market: b.token_id, startTs: Math.floor(w.from / 1000), endTs: Math.floor(w.to / 1000), fidelity: 1 });
+      if (!r.ok) { failed = true; stop = r.decision === "budget_exhausted" || r.decision === "breaker_open"; break; }
+      hist = hist.concat(R.priceHistory(r.data));
+    }
+    if (stop) break;
+    if (failed) continue;
+    hist.sort((x: any, y: any) => x.t - y.t);
+    const g = R.gradeBet(b, hist, rules);
     if (!ctx.dry) await insertOnce("poly_bets", [betRecord(g, ctx.run.run_id)], "wallet,token_id");
     n++;
   }
