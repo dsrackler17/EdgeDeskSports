@@ -597,6 +597,28 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
     let bad = null;
     try { setProduct(BC, 'fairline'); } catch (e) { bad = String(e.message || e); }
     chk('a product can be mapped only to terminal, bet_checker or none', !!bad, bad);
+
+    // '*': every product of this seller. 2026-10-29: Juice Reel sells one
+    // subscription per seller (EdgeDeskSports, $49.99/mo) and shows its id
+    // nowhere until someone has bought it, so the owner maps it without the id.
+    const S2 = w.user('star-buyer@example.com');
+    r = await call({ action: 'start', kind: 'checkout' }, S2.token);
+    r = await complete(S2, J.pay(r.body.url, '5905', { productId: 'prod_id_nobody_knew' }).url);
+    chk("(before '*': a product nobody named opens nothing)", !access(S2).has_access && r.body.outcome === 'product_not_mapped', JSON.stringify(r.body));
+    const star = setProduct('*', 'terminal');
+    chk("'*' maps every product of the seller to the terminal, and re-checks every linked buyer at once",
+      star.ok && star.opens === 'terminal' && access(S2).has_access && row(S2).price_id === 'juicereel' && access(K).has_access, JSON.stringify(star) + ' ' + JSON.stringify(row(S2)));
+    const B2 = w.user('star-later@example.com');
+    r = await call({ action: 'start', kind: 'checkout' }, B2.token);
+    r = await complete(B2, J.pay(r.body.url, '5906', { productId: 'prod_id_nobody_knew' }).url);
+    chk("…and a later buyer is opened on the return", r.body.outcome === 'active' && access(B2).has_access, JSON.stringify(r.body));
+    setProduct(BC, 'bet_checker');
+    chk("a product's own mapping wins over '*': a Bet Checker product still never opens the terminal", betChecker(N) && !access(N).has_access && row(N).price_id === 'juicereel_bet_checker', JSON.stringify(row(N)));
+    r = await call({ action: 'check' }, 'service-key');
+    chk("check lists '*' with the terminal, and nothing it covers as not mapped",
+      (r.body.products.terminal || []).indexOf('*') >= 0 && !(r.body.products.not_mapped || []).length, JSON.stringify(r.body.products));
+    const unstar = setProduct('*', 'none');
+    chk("'*' off the map: what it alone granted ends", unstar.ok && !access(S2).has_access && !access(K).has_access && betChecker(N), JSON.stringify(unstar));
   }
 
   /* ── 12. nothing secret anywhere ──────────────────────────────────────── */

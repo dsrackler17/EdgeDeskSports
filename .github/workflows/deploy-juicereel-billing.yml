@@ -23,7 +23,9 @@
 #                          page offer Juice Reel
 #             'on' is refused while the function reports a missing secret,
 #             or while no Juice Reel product opens the terminal.
-#   set_product  what the Juice Reel product `product_id` opens (`opens`):
+#   set_product  what the Juice Reel product `product_id` opens (`opens`);
+#             `*` is every product of this seller without a row of its own
+#             (Juice Reel shows a product's id nowhere until someone buys it):
 #               terminal     the Research Terminal
 #               bet_checker  Bet Checker only (refused until Deploy billing →
 #                            apply_sql has installed the rule that knows it)
@@ -65,7 +67,7 @@ on:
           - 'on'
         default: operators
       product_id:
-        description: 'set_product only: the Juice Reel subscription product id (check lists the ones on Juice Reel)'
+        description: 'set_product only: the Juice Reel subscription product id, or * for every product you sell on Juice Reel (check lists the ids it has seen)'
         type: string
         default: ''
       opens:
@@ -188,7 +190,7 @@ jobs:
           ACTOR: ${{ github.actor }}
         run: |
           if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set (Settings > Secrets and variables > Actions)."; exit 1; fi
-          if ! printf '%s' "$PRODUCT_ID" | grep -Eq '^[A-Za-z0-9_.:-]{1,200}$'; then echo "::error::product_id must be the Juice Reel product id (letters, digits, _ . : -); check lists them"; exit 1; fi
+          if ! printf '%s' "$PRODUCT_ID" | grep -Eq '^([A-Za-z0-9_.:-]{1,200}|[*])$'; then echo "::error::product_id must be the Juice Reel product id (letters, digits, _ . : -) or * for every product; check lists the ids"; exit 1; fi
           case "$OPENS" in terminal|bet_checker|none) ;; *) echo "::error::opens must be terminal, bet_checker or none"; exit 1;; esac
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
           # the values reach SQL as psql variables (:'name' quotes them), never spliced into the statement
@@ -247,7 +249,7 @@ jobs:
               '| Register at Juice Reel as success URL, cancel URL and redirect URI | ' + r.redirect_uri + ' |',
               '| Scopes to have approved | ' + (r.scopes || []).join(' ') + ' |',
               '| Webhook URL to register at Juice Reel (SUBSCRIPTION_EVENTS) | https://' + process.env.SUPABASE_PROJECT_REF + '.supabase.co/functions/v1/juicereel_billing/webhook |',
-              '| Products that open the terminal | ' + (((r.products || {}).terminal || []).join(', ') || '**none**') + ' |',
+              '| Products that open the terminal | ' + (((r.products || {}).terminal || []).map((x) => x === '*' ? '**every product (*)**' : x).join(', ') || '**none**') + ' |',
               '| Products that open Bet Checker | ' + (((r.products || {}).bet_checker || []).join(', ') || 'none') + ((r.products || {}).bet_checker_rule_installed ? '' : ' (not mappable until Deploy billing → apply_sql)') + ' |',
               '| Bought on Juice Reel but NOT mapped (they open nothing) | ' + (((r.products || {}).not_mapped || []).map((x) => x.product_id + ' (' + x.paid_now + ' paid now)').join(', ') || 'none') + ' |',
               '| Product ids on Juice Reel\'s subscriber list | ' + ((r.seen_on_juice_reel || []).map((x) => x.product_id + ' (' + x.paid_now + ' paid now of ' + x.entries + ')').join(', ') || 'none yet') + ' |', ''];
