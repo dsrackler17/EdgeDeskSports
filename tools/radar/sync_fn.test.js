@@ -57,6 +57,7 @@ const gt = (ms) => new Date(ms).toISOString().replace('T', ' ').replace(/\.\d+Z$
 const POOL = [1, 2, 3, 4, 5, 6].map(w);
 const [W1, W2, W3, W4, W5, W6] = POOL;
 const OUTSIDER = w(99);
+const W7 = w(7);   /* joins the pool late, for the time-budget checks */
 /* 60 past NFL games, each a moneyline resolved for its first outcome when g is even */
 const PAST = [];
 for (let g = 0; g < 60; g++) {
@@ -74,7 +75,7 @@ function activityFor(user) {
   const tr = (m, oi, side, size, price, at, k) => rows.push({ proxy_wallet: user, type: 'TRADE', side, size: String(size), price: String(price), usdc_size: String(size * price),
     timestamp: Math.floor(at / 1000), transaction_hash: txh(user + m.c + oi + side + k), condition_id: m.c, asset: m.tokens[oi], outcome_index: oi,
     outcome: oi ? 'Raiders' : 'Chiefs', title: 'Chiefs vs. Raiders', slug: m.slug, event_slug: m.slug });
-  if ([W1, W2, W3].includes(user)) PAST.forEach((m, g) => tr(m, 0, 'BUY', 100 + (user === W1 ? 10 * g : 0), 0.5, m.start - 2 * H, 'a'));
+  if ([W1, W2, W3, W7].includes(user)) PAST.forEach((m, g) => tr(m, 0, 'BUY', 100 + (user === W1 ? 10 * g : 0), 0.5, m.start - 2 * H, 'a'));
   if (user === W5) PAST.forEach((m) => { for (let k = 0; k < 4; k++) { tr(m, 0, 'BUY', 100, 0.5, m.start - (3 - k * 0.1) * H, 'm' + k); tr(m, 1, 'BUY', 95, 0.5, m.start - (3 - k * 0.1) * H, 'n' + k); } });
   if (user === W6) PAST.slice(0, 10).forEach((m) => tr(m, 1, 'BUY', 50, 0.5, m.start - H, 'b'));
   if (user === W1) rows.push({ proxy_wallet: user, type: 'TRADE', side: 'BUY', size: '10', price: '0.4', timestamp: Math.floor((EPL.start - H) / 1000), transaction_hash: txh('epl'),
@@ -103,10 +104,12 @@ const FAR = { c: cid('far'), start: NOW + 9 * DAY, tokens: [tok(cid('far'), 0), 
 const BULK = Array.from({ length: 1200 }, (_, i) => { const c = cid('bulk' + i); return { c, start: NOW + 3 * H, tokens: [tok(c, 0), tok(c, 1)], slug: 'nfl-kc-lv-bulk' }; });
 const STARTED = { c: cid('started'), start: NOW - 20 * H, tokens: [tok(cid('started'), 0), tok(cid('started'), 1)], slug: 'nfl-den-sea-done', settle: ['1', '0'] };
 let scenario = {};
+let fake = 0;   /* fake milliseconds the function's clock is ahead of the real one: scenario.costMs per Polymarket request */
 const pmCalls = [], strays = [];
 function polymarket(url) {
   const u = new URL(url), p = u.pathname, q = (k) => u.searchParams.get(k);
   pmCalls.push(u.host + p + u.search);
+  fake += scenario.costMs || 0;
   const ok = (b) => ({ status: 200, body: b });
   if (scenario.rateLimit && scenario.rateLimit.test(p)) return { status: 429, body: { error: 'rate limited' }, headers: { 'retry-after': '1' } };
   if (u.host === 'data-api.polymarket.com' && p === '/v1/leaderboard') {
@@ -196,6 +199,7 @@ let rest;
     try { F = await import(path.join(ROOT, 'supabase', 'functions', 'polymarket_sync', 'index.ts')); }
     catch (e) { chk('the shipped function imports under Node\'s type stripping (Node 22+)', false, e && e.message); throw e; }
     F.hooks.sleep = async () => {};
+    F.hooks.now = () => Date.now() + fake;
     const post = (body, secret) => F.handle(new Request('https://fn.local/polymarket_sync', { method: 'POST', headers: { 'x-cron-secret': secret == null ? 'cron-secret' : secret }, body: JSON.stringify(body) }));
     const go = async (mode) => (await post({ mode })).json();
 
@@ -325,6 +329,30 @@ let rest;
     chk('tonight: a full slate of 1,200 more markets is stored and looked up in chunks, every database URL within fetch\'s 65,534 bytes',
       big.status !== 'error' && V("select count(*) from public.poly_markets where slug = 'nfl-kc-lv-bulk' and event_id = 'ev1'") === '1200' && longestRest > 0 && longestRest <= 65534,
       { status: big.status, message: big.message, longestRest });
+
+    /* ── time: a wallets run answers within Supabase's 150 s request limit (production's first one did not, 2026-10-29) ── */
+    scenario.costMs = 4000;   /* every Polymarket request takes 4 s */
+    scenario.leaderboard = POOL.concat([W7]);
+    await go('pool');
+    const runs7 = [];
+    for (let i = 0; i < 8; i++) {
+      const f0 = fake, r = await go('wallets');
+      runs7.push({ s: (fake - f0) / 1000, status: r.status, wallets: (r.details.wallets || []).map((x) => x.wallet.slice(-1) + ':' + x.status + ':' + x.graded).join() });
+      if (V(`select activity_synced_at is not null from public.poly_wallets where wallet = ${lit(W7)}`) === 't') break;
+    }
+    chk('time: a new wallet too big for one run is graded over several, each run within its time budget (75 s of requests, far under the 150 s limit)',
+      runs7.length > 1 && runs7.every((r) => r.status !== 'error' && r.s <= 79) && V(`select count(*) from public.poly_bets where wallet = ${lit(W7)}`) === '63', runs7);
+    chk('time: a run that stops early says so, and leaves the wallet due for the next', /^7:partial:\d+$/.test(runs7[0].wallets) && /^7:done:\d+$/.test(runs7[runs7.length - 1].wallets), runs7);
+    V(`update public.poly_wallets set activity_synced_at = null, activity_cursor = null, history_truncated = false where wallet = ${lit(W4)}`);
+    const w4a = await go('wallets'), p4a = ((w4a.details.wallets || []).find((x) => x.wallet === W4) || {}).pages;
+    chk('time: an activity read cut by time keeps its place and its page count, and is not called truncated yet',
+      p4a > 0 && p4a < 30 && V(`select activity_synced_at is null and not history_truncated and (activity_cursor ->> 'first_pages')::int = ${p4a || 0} from public.poly_wallets where wallet = ${lit(W4)}`) === 't', { p4a, row: V(`select activity_cursor::text from public.poly_wallets where wallet = ${lit(W4)}`) });
+    const w4b = await go('wallets'), p4b = ((w4b.details.wallets || []).find((x) => x.wallet === W4) || {}).pages;
+    chk('time: the next run reads the rest of the 30 pages, and only then marks the history truncated',
+      p4a + p4b === 30 && V(`select history_truncated and activity_synced_at is not null from public.poly_wallets where wallet = ${lit(W4)}`) === 't', { p4a, p4b });
+    scenario.costMs = 0;
+    scenario.leaderboard = POOL;
+    await go('pool');
 
     /* ── budget ── */
     V('update public.poly_api_days set granted = 39997');

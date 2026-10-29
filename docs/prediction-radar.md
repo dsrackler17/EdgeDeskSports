@@ -472,6 +472,9 @@ until none is due, then the grade, one call at a time, each answer awaited
 before the next. It stops the wallet calls while fewer than
 `run_now_reserve` (8,000) of the day's 40,000 Polymarket requests remain, so
 the 10-minute tonight runs keep theirs; the 06:10 UTC schedule takes the rest.
+Every wallets run answers within Supabase's 150 s request limit: after 75 s
+it starts no new wallet, activity page or graded bet, and a wallet it did not
+finish stays due with its place kept (the 30-page cap counts across runs).
 By hand instead, in order. Each SQL file ends in a report whose rows should
 read `ok`.
 

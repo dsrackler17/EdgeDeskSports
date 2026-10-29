@@ -1,49 +1,6 @@
 # Changelog
 
-## 2026-10-29 — Methodology change (owner's decision): NHL favourites priced with the split factor fitted on the moneyline (b 0.90 → 1.125)
 
-**What changes for readers.** Every 2026-27 NHL price now uses the pair recalibration's split factor fitted on the moneyline. Favourites move up 1.58 points on average across the 33 games on the slate. Examples (fair price, before → after):
-
-| Game | Favourite | Before | After |
-|---|---|---|---|
-| VAN at SJS | SJS | −133 | −142 |
-| NYI at MIN | MIN | −146 | −161 |
-| CBJ at CAR | CAR | −186 | −218 |
-| CGY at COL | COL | −262 | −335 |
-
-Near-even games barely move (PIT −104 → −105). Expected totals move by at most 0.01 goals.
-
-**Why.** This is the cause measured in the entry below. The goal-split fit gave 2026-27 a split factor of 0.90, the lowest since 2013-14. It priced every favourite short of DraftKings: 35 of 47 settled games, mean gap 2.2 points, market slope 1.215 (1.036–1.394). The owner directed the switch the same day.
-
-**What it does not meet.** It is a methodology change against the out-of-sample record:
-- On 2021-26 the moneyline fit is +0.00027 log loss (−0.00013 to +0.00063) against the rule it replaces.
-- It fails the lab's promotion rule (§1).
-- It was promoted before its own pre-registered rule could decide (`rule_status` IN_PROGRESS).
-
-The record says all of this. It does not close the club-strength gaps either: Vancouver and Minnesota are rated differently by the market, and that is most of the SJS and MIN distance from DraftKings.
-
-**What changed.**
-- `hockey/model/split_shadow.js`: `PROTOCOL.promoted` and `promote()`. The shadow stops pricing, since it is now the price. Its 33 frozen ledger rows stay and are graded. The live record reads PROMOTED.
-- `hockey/model/walkforward.js` (amendment in its header): the season in progress takes the promoted `b` for every model, keeping `a`, `c` and the goal-split value as `goal_split_b`. Completed seasons keep the goal-split rule.
-- `hockey/lab/base.js`: the live season is priced the same way, so the lab and the diagnostics match production.
-- Rebuilt with their own builds: `hockey/model/params/live.json` and `hockey/validation/nhl_walkforward.json` (`walkforward.js --no-cache`, after `ingest/lineups.js`).
-  - `live.json` differs only in `generated_at` and the nine `b` values (0.85–0.925 → 1.125).
-  - Selection, confirmation, every completed season, the model choice, the comparisons and every market status are byte-identical. The live window (198 games) moves from LL 0.66324 to 0.66309, slope 1.452 to 1.155.
-- `simulator/data/nhl_strength_uncertainty.json`, re-run (`simulator/src/research/nhl_strength_uncertainty.ts`): it is tied to `live.json`'s hash.
-- `hockey/validation/nhl_split_shadow.json` (`--live`): PROMOTED.
-- `docs/engine/NHL_LAB.md` §6.3: the amendment.
-
-**Evidence.** The slate was built before and after at its own `generated_at` (2026-10-29T06:25:48Z):
-- every new production moneyline and home −1.5 equals, to the digit, the shadow price main already published for that game;
-- the old build equals the committed slate.
-
-The published slate changes at the next NHL engine build after merge. The model id stays `edgedesk_nhl_v1:xg_core`, because the goalie layer enforces that prefix. The switch shows in `slate.model.pair_calibration` (`b` 1.125, `goal_split_b` 0.9, `split_basis`).
-
-**Tests.** `tools/hockey/nhl_v2.test.js`: 147 pass (5 new checks). The rule tests now read `rule_status`.
-- The season in progress takes 1.125 and keeps `a` and `c`.
-- A completed season and an identity calibration are untouched.
-- Promoting twice keeps the first goal-split value.
-- The committed live parameters publish 1.125 for every model the slate prices with.
 
 ## 2026-10-29 — Authorization change: EdgeDesk's operators keep the terminal under the paywall rule
 
