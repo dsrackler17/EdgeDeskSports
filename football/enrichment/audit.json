@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-29T19:30:10.063Z",
+ "generated_at": "2026-10-29T22:54:00.628Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-29T19:30:10.063Z",
-  "reliability_generated_at": "2026-10-29T19:30:10.063Z",
-  "enrichment_generated_at": "2026-10-29T19:30:01.733Z",
+  "at": "2026-10-29T22:54:00.628Z",
+  "reliability_generated_at": "2026-10-29T22:54:00.628Z",
+  "enrichment_generated_at": "2026-10-29T22:53:53.301Z",
   "counts": {
    "games": 115,
    "mean": 85.9,
@@ -20,7 +20,7 @@
    "missing_qb_status": 184,
    "qb_conflicts_open": 17,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 25,
+   "games_lacking_injury_information": 28,
    "unrated_meaningful_absences": 314,
    "fcs_games_thin_data": 1,
    "games_under_two_market_sources": 115,
@@ -796,12 +796,12 @@
    },
    "401858284": {
     "game": "Virginia @ Wake Forest",
-    "score": 89,
+    "score": 88,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
-     "starters": 0.6,
+     "availability": 6,
+     "qb_status": 4,
+     "starters": 0.8,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
@@ -810,8 +810,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858285": {
@@ -1503,8 +1503,8 @@
     "score": 89,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 0.9,
      "transfer_turnover": 0.3
     },
@@ -1513,8 +1513,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401862813": {
@@ -1747,12 +1747,12 @@
     "score": 79,
     "grade": "ADEQUATE",
     "fam": {
+     "availability": 6,
      "qb_identity": 3.2,
-     "availability": 4.6,
+     "qb_status": 4,
      "qb_conflict": 2.6,
+     "starters": 1.5,
      "contract_conflicts": 1.4,
-     "starters": 1.2,
-     "qb_status": 2,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -1760,8 +1760,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401864530": {
@@ -2411,70 +2411,37 @@
   }
  },
  "previous": {
-  "at": "2026-10-29T16:27:20.682Z",
+  "at": "2026-10-29T19:30:10.063Z",
   "counts": {
    "games": 115,
-   "mean": 85.8,
+   "mean": 85.9,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 13,
+    "VERY_STRONG": 15,
     "ADEQUATE": 36,
     "CAUTION": 2,
-    "STRONG": 63,
+    "STRONG": 61,
     "LOW": 1
    },
-   "missing_qb_status": 190,
+   "missing_qb_status": 184,
    "qb_conflicts_open": 17,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 26,
-   "unrated_meaningful_absences": 270,
+   "games_lacking_injury_information": 25,
+   "unrated_meaningful_absences": 314,
    "fcs_games_thin_data": 1,
    "games_under_two_market_sources": 115,
-   "stale_evidence_records": 50,
+   "stale_evidence_records": 56,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
- "what_improved": [
-  "+0.1 mean reliability (85.8 → 85.9)",
-  "-6 QB statuses missing (190 → 184)",
-  "-1 games lacking injury information (26 → 25)",
-  "2 games moved STRONG → VERY STRONG"
- ],
+ "what_improved": [],
  "what_degraded": [
-  "+44 unrated meaningful absences (270 → 314)",
-  "+6 stale evidence records (50 → 56)"
+  "+3 games lacking injury information (25 → 28)"
  ],
- "why": [
-  "California @ NC State: STRONG → VERY STRONG (89 → 96); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Boston College @ Duke: STRONG → VERY STRONG (88 → 96); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL"
- ],
+ "why": [],
  "history": [
-  {
-   "at": "2026-10-23T11:15:31.691Z",
-   "counts": {
-    "games": 105,
-    "mean": 87.4,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 20,
-     "ADEQUATE": 22,
-     "STRONG": 61,
-     "CAUTION": 2
-    },
-    "missing_qb_status": 155,
-    "qb_conflicts_open": 10,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 22,
-    "unrated_meaningful_absences": 398,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 105,
-    "stale_evidence_records": 4,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-23T11:51:03.820Z",
    "counts": {
@@ -3851,6 +3818,31 @@
     "qb_conflicts_open": 17,
     "qb_confirmed": 0,
     "games_lacking_injury_information": 25,
+    "unrated_meaningful_absences": 314,
+    "fcs_games_thin_data": 1,
+    "games_under_two_market_sources": 115,
+    "stale_evidence_records": 56,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-29T22:54:00.628Z",
+   "counts": {
+    "games": 115,
+    "mean": 85.9,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 15,
+     "ADEQUATE": 36,
+     "CAUTION": 2,
+     "STRONG": 61,
+     "LOW": 1
+    },
+    "missing_qb_status": 184,
+    "qb_conflicts_open": 17,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 28,
     "unrated_meaningful_absences": 314,
     "fcs_games_thin_data": 1,
     "games_under_two_market_sources": 115,
