@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-29T13:41:29.156Z",
+ "evaluated_at": "2026-10-29T15:33:28.345Z",
  "verdict": "PASS",
  "best": null,
  "why": [
@@ -3551,80 +3551,6 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
-   "id": "16de9e0f",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020205",
-   "event": {
-    "home": "PIT",
-    "away": "UTA",
-    "start_utc": "2026-10-29T23:00:00Z",
-    "label": "UTA @ PIT"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "UTA",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "UTA @ PIT — UTA +1.5",
-   "quote": null,
-   "fair_american": -228,
-   "break_even": null,
-   "prob": {
-    "model": 0.6951,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6951,
-    "sd": 0.0234,
-    "conservative": 0.6651,
-    "components": {
-     "model_sd": 0.0134,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -187,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -187 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.1577 (PIT) vs 3.1052 (UTA) regulation goals",
-    "PIT 5v5 xG for 1.0574× league, UTA 5v5 xG for 1.0693×",
-    "goalies: projected uncertain (A. Silovs 70% / K. Vejmelka 83%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
    "id": "3262c481",
    "status": "RESEARCH",
    "sport_id": "nhl",
@@ -3644,18 +3570,18 @@
    },
    "label": "CBJ @ CAR — CAR moneyline",
    "quote": null,
-   "fair_american": -186,
+   "fair_american": -218,
    "break_even": null,
    "prob": {
-    "model": 0.6508,
+    "model": 0.6854,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6508,
-    "sd": 0.0173,
-    "conservative": 0.6286,
+    "posterior": 0.6854,
+    "sd": 0.018,
+    "conservative": 0.6623,
     "components": {
-     "model_sd": 0.0055,
+     "model_sd": 0.0075,
      "calibration_sd": 0.0112,
      "lineup_sd": 0.012
     }
@@ -3663,7 +3589,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -161,
+   "min_acceptable_american": -185,
    "disagreement": null,
    "gates": [
     {
@@ -3676,15 +3602,89 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -161 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -185 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.5245 (CAR) vs 2.5667 (CBJ) regulation goals",
+    "λ 3.6415 (CAR) vs 2.4497 (CBJ) regulation goals",
     "CAR 5v5 xG for 1.1653× league, CBJ 5v5 xG for 1.0054×",
     "goalies: projected uncertain (P. Kochetkov 72% / C. Talbot 60%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "16de9e0f",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020205",
+   "event": {
+    "home": "PIT",
+    "away": "UTA",
+    "start_utc": "2026-10-29T23:00:00Z",
+    "label": "UTA @ PIT"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "UTA",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "UTA @ PIT — UTA +1.5",
+   "quote": null,
+   "fair_american": -226,
+   "break_even": null,
+   "prob": {
+    "model": 0.6933,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6933,
+    "sd": 0.0254,
+    "conservative": 0.6608,
+    "components": {
+     "model_sd": 0.0166,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -184,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -184 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.1642 (PIT) vs 3.0986 (UTA) regulation goals",
+    "PIT 5v5 xG for 1.0574× league, UTA 5v5 xG for 1.0693×",
+    "goalies: projected uncertain (A. Silovs 70% / K. Vejmelka 83%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -3718,18 +3718,18 @@
    },
    "label": "WPG @ TBL — TBL moneyline",
    "quote": null,
-   "fair_american": -160,
+   "fair_american": -179,
    "break_even": null,
    "prob": {
-    "model": 0.6148,
+    "model": 0.6419,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6148,
-    "sd": 0.0187,
-    "conservative": 0.5909,
+    "posterior": 0.6419,
+    "sd": 0.0199,
+    "conservative": 0.6164,
     "components": {
-     "model_sd": 0.0089,
+     "model_sd": 0.0113,
      "calibration_sd": 0.0112,
      "lineup_sd": 0.012
     }
@@ -3737,7 +3737,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -138,
+   "min_acceptable_american": -153,
    "disagreement": null,
    "gates": [
     {
@@ -3750,13 +3750,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -138 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -153 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3231 (TBL) vs 2.6116 (WPG) regulation goals",
+    "λ 3.4108 (TBL) vs 2.5238 (WPG) regulation goals",
     "TBL 5v5 xG for 1.0466× league, WPG 5v5 xG for 0.9609×",
     "goalies: projected uncertain (A. Vasilevskiy 64% / S. Skinner 61%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -3792,18 +3792,18 @@
    },
    "label": "WPG @ TBL — WPG +1.5",
    "quote": null,
-   "fair_american": -153,
+   "fair_american": -137,
    "break_even": null,
    "prob": {
-    "model": 0.605,
+    "model": 0.5777,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.605,
-    "sd": 0.0216,
-    "conservative": 0.5774,
+    "posterior": 0.5777,
+    "sd": 0.0229,
+    "conservative": 0.5484,
     "components": {
-     "model_sd": 0.0098,
+     "model_sd": 0.0124,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3811,7 +3811,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -130,
+   "min_acceptable_american": -116,
    "disagreement": null,
    "gates": [
     {
@@ -3824,13 +3824,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -130 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -116 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3231 (TBL) vs 2.6116 (WPG) regulation goals",
+    "λ 3.4108 (TBL) vs 2.5238 (WPG) regulation goals",
     "TBL 5v5 xG for 1.0466× league, WPG 5v5 xG for 0.9609×",
     "goalies: projected uncertain (A. Vasilevskiy 64% / S. Skinner 61%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -3866,18 +3866,18 @@
    },
    "label": "CBJ @ CAR — CBJ +1.5",
    "quote": null,
-   "fair_american": -130,
+   "fair_american": -112,
    "break_even": null,
    "prob": {
-    "model": 0.5649,
+    "model": 0.5282,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5649,
-    "sd": 0.0201,
-    "conservative": 0.5391,
+    "posterior": 0.5282,
+    "sd": 0.0209,
+    "conservative": 0.5014,
     "components": {
-     "model_sd": 0.0061,
+     "model_sd": 0.0083,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3885,7 +3885,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -112,
+   "min_acceptable_american": 103,
    "disagreement": null,
    "gates": [
     {
@@ -3898,13 +3898,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -112 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.5245 (CAR) vs 2.5667 (CBJ) regulation goals",
+    "λ 3.6415 (CAR) vs 2.4497 (CBJ) regulation goals",
     "CAR 5v5 xG for 1.1653× league, CBJ 5v5 xG for 1.0054×",
     "goalies: projected uncertain (P. Kochetkov 72% / C. Talbot 60%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -3940,18 +3940,18 @@
    },
    "label": "UTA @ PIT — PIT moneyline",
    "quote": null,
-   "fair_american": -104,
+   "fair_american": -105,
    "break_even": null,
    "prob": {
-    "model": 0.5093,
+    "model": 0.5113,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5093,
-    "sd": 0.0196,
-    "conservative": 0.4842,
+    "posterior": 0.5113,
+    "sd": 0.0215,
+    "conservative": 0.4838,
     "components": {
-     "model_sd": 0.0122,
+     "model_sd": 0.0151,
      "calibration_sd": 0.0095,
      "lineup_sd": 0.012
     }
@@ -3978,7 +3978,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1577 (PIT) vs 3.1052 (UTA) regulation goals",
+    "λ 3.1642 (PIT) vs 3.0986 (UTA) regulation goals",
     "PIT 5v5 xG for 1.0574× league, UTA 5v5 xG for 1.0693×",
     "goalies: projected uncertain (A. Silovs 70% / K. Vejmelka 83%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4052,7 +4052,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1577 (PIT) vs 3.1052 (UTA) regulation goals",
+    "λ 3.1642 (PIT) vs 3.0986 (UTA) regulation goals",
     "PIT 5v5 xG for 1.0574× league, UTA 5v5 xG for 1.0693×",
     "goalies: projected uncertain (A. Silovs 70% / K. Vejmelka 83%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4126,7 +4126,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1577 (PIT) vs 3.1052 (UTA) regulation goals",
+    "λ 3.1642 (PIT) vs 3.0986 (UTA) regulation goals",
     "PIT 5v5 xG for 1.0574× league, UTA 5v5 xG for 1.0693×",
     "goalies: projected uncertain (A. Silovs 70% / K. Vejmelka 83%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4162,18 +4162,18 @@
    },
    "label": "UTA @ PIT — UTA moneyline",
    "quote": null,
-   "fair_american": 104,
+   "fair_american": 105,
    "break_even": null,
    "prob": {
-    "model": 0.4907,
+    "model": 0.4887,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4907,
-    "sd": 0.0228,
-    "conservative": 0.4615,
+    "posterior": 0.4887,
+    "sd": 0.0244,
+    "conservative": 0.4574,
     "components": {
-     "model_sd": 0.0122,
+     "model_sd": 0.0151,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4181,7 +4181,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 121,
+   "min_acceptable_american": 123,
    "disagreement": null,
    "gates": [
     {
@@ -4194,15 +4194,89 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +121 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1577 (PIT) vs 3.1052 (UTA) regulation goals",
+    "λ 3.1642 (PIT) vs 3.0986 (UTA) regulation goals",
     "PIT 5v5 xG for 1.0574× league, UTA 5v5 xG for 1.0693×",
     "goalies: projected uncertain (A. Silovs 70% / K. Vejmelka 83%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "c07cb42b",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020206",
+   "event": {
+    "home": "CAR",
+    "away": "CBJ",
+    "start_utc": "2026-10-29T23:00:00Z",
+    "label": "CBJ @ CAR"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "CAR",
+    "line": -1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "CBJ @ CAR — CAR -1.5",
+   "quote": null,
+   "fair_american": 112,
+   "break_even": null,
+   "prob": {
+    "model": 0.4718,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4718,
+    "sd": 0.0209,
+    "conservative": 0.445,
+    "components": {
+     "model_sd": 0.0083,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 129,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +129 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.6415 (CAR) vs 2.4497 (CBJ) regulation goals",
+    "CAR 5v5 xG for 1.1653× league, CBJ 5v5 xG for 1.0054×",
+    "goalies: projected uncertain (P. Kochetkov 72% / C. Talbot 60%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -4236,16 +4310,16 @@
    },
    "label": "CBJ @ CAR — over 6",
    "quote": null,
-   "fair_american": -111,
+   "fair_american": -110,
    "break_even": null,
    "prob": {
-    "model": 0.4672,
-    "push": 0.1123,
+    "model": 0.4652,
+    "push": 0.1138,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4672,
+    "posterior": 0.4652,
     "sd": 0.0277,
-    "conservative": 0.4317,
+    "conservative": 0.4297,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4255,7 +4329,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 110,
+   "min_acceptable_american": 111,
    "disagreement": null,
    "gates": [
     {
@@ -4268,13 +4342,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +111 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.5245 (CAR) vs 2.5667 (CBJ) regulation goals",
+    "λ 3.6415 (CAR) vs 2.4497 (CBJ) regulation goals",
     "CAR 5v5 xG for 1.1653× league, CBJ 5v5 xG for 1.0054×",
     "goalies: projected uncertain (P. Kochetkov 72% / C. Talbot 60%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4313,13 +4387,13 @@
    "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4462,
-    "push": 0.1114,
+    "model": 0.4465,
+    "push": 0.1124,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4462,
+    "posterior": 0.4465,
     "sd": 0.0277,
-    "conservative": 0.4107,
+    "conservative": 0.411,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4348,83 +4422,9 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3231 (TBL) vs 2.6116 (WPG) regulation goals",
+    "λ 3.4108 (TBL) vs 2.5238 (WPG) regulation goals",
     "TBL 5v5 xG for 1.0466× league, WPG 5v5 xG for 0.9609×",
     "goalies: projected uncertain (A. Vasilevskiy 64% / S. Skinner 61%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "c07cb42b",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020206",
-   "event": {
-    "home": "CAR",
-    "away": "CBJ",
-    "start_utc": "2026-10-29T23:00:00Z",
-    "label": "CBJ @ CAR"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "CAR",
-    "line": -1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "CBJ @ CAR — CAR -1.5",
-   "quote": null,
-   "fair_american": 130,
-   "break_even": null,
-   "prob": {
-    "model": 0.4351,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4351,
-    "sd": 0.0201,
-    "conservative": 0.4093,
-    "components": {
-     "model_sd": 0.0061,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 149,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +149 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.5245 (CAR) vs 2.5667 (CBJ) regulation goals",
-    "CAR 5v5 xG for 1.1653× league, CBJ 5v5 xG for 1.0054×",
-    "goalies: projected uncertain (P. Kochetkov 72% / C. Talbot 60%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -4461,13 +4461,13 @@
    "fair_american": 101,
    "break_even": null,
    "prob": {
-    "model": 0.4424,
-    "push": 0.1114,
+    "model": 0.4412,
+    "push": 0.1124,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4424,
+    "posterior": 0.4412,
     "sd": 0.0277,
-    "conservative": 0.4069,
+    "conservative": 0.4057,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4477,7 +4477,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 123,
+   "min_acceptable_american": 124,
    "disagreement": null,
    "gates": [
     {
@@ -4490,13 +4490,87 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3231 (TBL) vs 2.6116 (WPG) regulation goals",
+    "λ 3.4108 (TBL) vs 2.5238 (WPG) regulation goals",
+    "TBL 5v5 xG for 1.0466× league, WPG 5v5 xG for 0.9609×",
+    "goalies: projected uncertain (A. Vasilevskiy 64% / S. Skinner 61%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "3e17e8a5",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020204",
+   "event": {
+    "home": "TBL",
+    "away": "WPG",
+    "start_utc": "2026-10-29T23:00:00Z",
+    "label": "WPG @ TBL"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "TBL",
+    "line": -1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "WPG @ TBL — TBL -1.5",
+   "quote": null,
+   "fair_american": 137,
+   "break_even": null,
+   "prob": {
+    "model": 0.4223,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4223,
+    "sd": 0.0229,
+    "conservative": 0.393,
+    "components": {
+     "model_sd": 0.0124,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 160,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +160 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.4108 (TBL) vs 2.5238 (WPG) regulation goals",
     "TBL 5v5 xG for 1.0466× league, WPG 5v5 xG for 0.9609×",
     "goalies: projected uncertain (A. Vasilevskiy 64% / S. Skinner 61%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4535,13 +4609,13 @@
    "fair_american": 111,
    "break_even": null,
    "prob": {
-    "model": 0.4206,
-    "push": 0.1123,
+    "model": 0.4209,
+    "push": 0.1138,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4206,
+    "posterior": 0.4209,
     "sd": 0.0277,
-    "conservative": 0.3851,
+    "conservative": 0.3854,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4551,7 +4625,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 136,
+   "min_acceptable_american": 135,
    "disagreement": null,
    "gates": [
     {
@@ -4564,89 +4638,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +136 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +135 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.5245 (CAR) vs 2.5667 (CBJ) regulation goals",
+    "λ 3.6415 (CAR) vs 2.4497 (CBJ) regulation goals",
     "CAR 5v5 xG for 1.1653× league, CBJ 5v5 xG for 1.0054×",
     "goalies: projected uncertain (P. Kochetkov 72% / C. Talbot 60%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "3e17e8a5",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020204",
-   "event": {
-    "home": "TBL",
-    "away": "WPG",
-    "start_utc": "2026-10-29T23:00:00Z",
-    "label": "WPG @ TBL"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "TBL",
-    "line": -1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "WPG @ TBL — TBL -1.5",
-   "quote": null,
-   "fair_american": 153,
-   "break_even": null,
-   "prob": {
-    "model": 0.395,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.395,
-    "sd": 0.0216,
-    "conservative": 0.3674,
-    "components": {
-     "model_sd": 0.0098,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 178,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +178 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.3231 (TBL) vs 2.6116 (WPG) regulation goals",
-    "TBL 5v5 xG for 1.0466× league, WPG 5v5 xG for 0.9609×",
-    "goalies: projected uncertain (A. Vasilevskiy 64% / S. Skinner 61%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -4680,18 +4680,18 @@
    },
    "label": "WPG @ TBL — WPG moneyline",
    "quote": null,
-   "fair_american": 160,
+   "fair_american": 179,
    "break_even": null,
    "prob": {
-    "model": 0.3852,
+    "model": 0.3581,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3852,
-    "sd": 0.0212,
-    "conservative": 0.3581,
+    "posterior": 0.3581,
+    "sd": 0.0223,
+    "conservative": 0.3295,
     "components": {
-     "model_sd": 0.0089,
+     "model_sd": 0.0113,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4699,7 +4699,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 185,
+   "min_acceptable_american": 210,
    "disagreement": null,
    "gates": [
     {
@@ -4712,13 +4712,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +185 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +210 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3231 (TBL) vs 2.6116 (WPG) regulation goals",
+    "λ 3.4108 (TBL) vs 2.5238 (WPG) regulation goals",
     "TBL 5v5 xG for 1.0466× league, WPG 5v5 xG for 0.9609×",
     "goalies: projected uncertain (A. Vasilevskiy 64% / S. Skinner 61%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4754,18 +4754,18 @@
    },
    "label": "CBJ @ CAR — CBJ moneyline",
    "quote": null,
-   "fair_american": 186,
+   "fair_american": 218,
    "break_even": null,
    "prob": {
-    "model": 0.3492,
+    "model": 0.3146,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3492,
-    "sd": 0.02,
-    "conservative": 0.3236,
+    "posterior": 0.3146,
+    "sd": 0.0206,
+    "conservative": 0.2882,
     "components": {
-     "model_sd": 0.0055,
+     "model_sd": 0.0075,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4773,7 +4773,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 215,
+   "min_acceptable_american": 254,
    "disagreement": null,
    "gates": [
     {
@@ -4786,13 +4786,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +215 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +254 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.5245 (CAR) vs 2.5667 (CBJ) regulation goals",
+    "λ 3.6415 (CAR) vs 2.4497 (CBJ) regulation goals",
     "CAR 5v5 xG for 1.1653× league, CBJ 5v5 xG for 1.0054×",
     "goalies: projected uncertain (P. Kochetkov 72% / C. Talbot 60%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4828,18 +4828,18 @@
    },
    "label": "UTA @ PIT — PIT -1.5",
    "quote": null,
-   "fair_american": 228,
+   "fair_american": 226,
    "break_even": null,
    "prob": {
-    "model": 0.3049,
+    "model": 0.3067,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3049,
-    "sd": 0.0234,
-    "conservative": 0.2749,
+    "posterior": 0.3067,
+    "sd": 0.0254,
+    "conservative": 0.2742,
     "components": {
-     "model_sd": 0.0134,
+     "model_sd": 0.0166,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4847,7 +4847,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 271,
+   "min_acceptable_american": 272,
    "disagreement": null,
    "gates": [
     {
@@ -4860,13 +4860,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +271 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +272 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1577 (PIT) vs 3.1052 (UTA) regulation goals",
+    "λ 3.1642 (PIT) vs 3.0986 (UTA) regulation goals",
     "PIT 5v5 xG for 1.0574× league, UTA 5v5 xG for 1.0693×",
     "goalies: projected uncertain (A. Silovs 70% / K. Vejmelka 83%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4902,18 +4902,18 @@
    },
    "label": "CHI @ DET — DET moneyline",
    "quote": null,
-   "fair_american": -159,
+   "fair_american": -179,
    "break_even": null,
    "prob": {
-    "model": 0.6141,
+    "model": 0.6411,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6141,
-    "sd": 0.0192,
-    "conservative": 0.5895,
+    "posterior": 0.6411,
+    "sd": 0.0209,
+    "conservative": 0.6143,
     "components": {
-     "model_sd": 0.0099,
+     "model_sd": 0.0129,
      "calibration_sd": 0.0112,
      "lineup_sd": 0.012
     }
@@ -4921,7 +4921,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -137,
+   "min_acceptable_american": -151,
    "disagreement": null,
    "gates": [
     {
@@ -4934,13 +4934,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -137 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -151 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3407 (DET) vs 2.6314 (CHI) regulation goals",
+    "λ 3.4282 (DET) vs 2.5439 (CHI) regulation goals",
     "DET 5v5 xG for 0.9803× league, CHI 5v5 xG for 0.9074×",
     "goalies: projected uncertain (J. Gibson 68% / S. Knight 94%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -4976,18 +4976,18 @@
    },
    "label": "CHI @ DET — CHI +1.5",
    "quote": null,
-   "fair_american": -153,
+   "fair_american": -137,
    "break_even": null,
    "prob": {
-    "model": 0.6048,
+    "model": 0.5777,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6048,
-    "sd": 0.0221,
-    "conservative": 0.5765,
+    "posterior": 0.5777,
+    "sd": 0.0239,
+    "conservative": 0.5471,
     "components": {
-     "model_sd": 0.0109,
+     "model_sd": 0.0142,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4995,7 +4995,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -130,
+   "min_acceptable_american": -116,
    "disagreement": null,
    "gates": [
     {
@@ -5008,13 +5008,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -130 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -116 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3407 (DET) vs 2.6314 (CHI) regulation goals",
+    "λ 3.4282 (DET) vs 2.5439 (CHI) regulation goals",
     "DET 5v5 xG for 0.9803× league, CHI 5v5 xG for 0.9074×",
     "goalies: projected uncertain (J. Gibson 68% / S. Knight 94%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -5053,13 +5053,13 @@
    "fair_american": -102,
    "break_even": null,
    "prob": {
-    "model": 0.4487,
-    "push": 0.1114,
+    "model": 0.4476,
+    "push": 0.1123,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4487,
+    "posterior": 0.4476,
     "sd": 0.0277,
-    "conservative": 0.4132,
+    "conservative": 0.4121,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -5088,7 +5088,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3407 (DET) vs 2.6314 (CHI) regulation goals",
+    "λ 3.4282 (DET) vs 2.5439 (CHI) regulation goals",
     "DET 5v5 xG for 0.9803× league, CHI 5v5 xG for 0.9074×",
     "goalies: projected uncertain (J. Gibson 68% / S. Knight 94%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -5127,13 +5127,13 @@
    "fair_american": 102,
    "break_even": null,
    "prob": {
-    "model": 0.4399,
-    "push": 0.1114,
+    "model": 0.4402,
+    "push": 0.1123,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4399,
+    "posterior": 0.4402,
     "sd": 0.0277,
-    "conservative": 0.4044,
+    "conservative": 0.4047,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -5143,7 +5143,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 125,
+   "min_acceptable_american": 124,
    "disagreement": null,
    "gates": [
     {
@@ -5156,13 +5156,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3407 (DET) vs 2.6314 (CHI) regulation goals",
+    "λ 3.4282 (DET) vs 2.5439 (CHI) regulation goals",
     "DET 5v5 xG for 0.9803× league, CHI 5v5 xG for 0.9074×",
     "goalies: projected uncertain (J. Gibson 68% / S. Knight 94%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -5198,18 +5198,18 @@
    },
    "label": "CHI @ DET — DET -1.5",
    "quote": null,
-   "fair_american": 153,
+   "fair_american": 137,
    "break_even": null,
    "prob": {
-    "model": 0.3952,
+    "model": 0.4223,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3952,
-    "sd": 0.0221,
-    "conservative": 0.3669,
+    "posterior": 0.4223,
+    "sd": 0.0239,
+    "conservative": 0.3917,
     "components": {
-     "model_sd": 0.0109,
+     "model_sd": 0.0142,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -5217,7 +5217,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 178,
+   "min_acceptable_american": 160,
    "disagreement": null,
    "gates": [
     {
@@ -5230,13 +5230,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +178 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +160 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3407 (DET) vs 2.6314 (CHI) regulation goals",
+    "λ 3.4282 (DET) vs 2.5439 (CHI) regulation goals",
     "DET 5v5 xG for 0.9803× league, CHI 5v5 xG for 0.9074×",
     "goalies: projected uncertain (J. Gibson 68% / S. Knight 94%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -5272,18 +5272,18 @@
    },
    "label": "CHI @ DET — CHI moneyline",
    "quote": null,
-   "fair_american": 159,
+   "fair_american": 179,
    "break_even": null,
    "prob": {
-    "model": 0.3859,
+    "model": 0.3589,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3859,
-    "sd": 0.0216,
-    "conservative": 0.3582,
+    "posterior": 0.3589,
+    "sd": 0.0231,
+    "conservative": 0.3292,
     "components": {
-     "model_sd": 0.0099,
+     "model_sd": 0.0129,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -5291,7 +5291,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 185,
+   "min_acceptable_american": 210,
    "disagreement": null,
    "gates": [
     {
@@ -5304,13 +5304,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +185 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +210 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3407 (DET) vs 2.6314 (CHI) regulation goals",
+    "λ 3.4282 (DET) vs 2.5439 (CHI) regulation goals",
     "DET 5v5 xG for 0.9803× league, CHI 5v5 xG for 0.9074×",
     "goalies: projected uncertain (J. Gibson 68% / S. Knight 94%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
@@ -5766,7 +5766,7 @@
    "ladder": {
     "data_loaded": {
      "done": true,
-     "detail": "17337 games (2011-2027), retrospective; second source 2024-25: 1398/1398 matched, every final agrees"
+     "detail": "17348 games (2011-2027), retrospective; second source 2024-25: 1398/1398 matched, every final agrees"
     },
     "model_trained": {
      "done": true,
@@ -6153,12 +6153,12 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-29T13:41:29.121Z",
-  "nhl_slate_generated_at": "2026-10-29T13:41:19.665Z",
+  "registry_generated_at": "2026-10-29T15:33:28.313Z",
+  "nhl_slate_generated_at": "2026-10-29T15:32:54.796Z",
   "basketball_slate_generated_at": "2026-10-28T17:32:40.761Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-10-29T13:41:19.603Z",
+   "generated_at": "2026-10-29T15:32:54.732Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
   "football_sheets_generated_at": "2026-10-29T10:11:58.103Z",
