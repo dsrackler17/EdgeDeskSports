@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_ledger_v1",
  "season": 2026,
- "generated_at": "2026-10-28T22:11:19.739Z",
+ "generated_at": "2026-10-29T00:10:22.412Z",
  "what": "Every EdgeDesk recommendation with a side, one row each, with its settlement and its profit and loss at the price recorded when it was made. Written by tools/record/pnl_ledger.js; nobody edits it by hand.",
  "sources": [
   {
@@ -23,8 +23,8 @@
   {
    "source": "bettor_decision",
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "snapshots": 5368,
-   "rows": 381,
+   "snapshots": 5384,
+   "rows": 382,
    "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
   },
   {
@@ -633390,7 +633390,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "UPCOMING"
+   "pending_reason": "IN_PROGRESS"
   },
   {
    "recommendation_id": "bd:bds_3fe55b38",
@@ -633465,7 +633465,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "UPCOMING"
+   "pending_reason": "IN_PROGRESS"
   },
   {
    "recommendation_id": "bd:bds_9c659a53",
@@ -633540,7 +633540,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "UPCOMING"
+   "pending_reason": "IN_PROGRESS"
   },
   {
    "recommendation_id": "bd:bds_502e4471",
@@ -638251,6 +638251,81 @@
    "beat_close": null,
    "settled_at": null,
    "first_recorded_at": "2026-10-25T10:11:08.919Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": false,
+   "implied_prob": 0.5238,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "PENDING",
+   "pnl_eligible": false,
+   "pnl_note": "Pending",
+   "record_state": "PENDING",
+   "state_reason": null,
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "missing_settlement",
+   "pending_reason": "UPCOMING"
+  },
+  {
+   "recommendation_id": "bd:bds_07870c93",
+   "source": "bettor_decision",
+   "source_ref": {
+    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
+    "id": "bds_07870c93"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 10,
+   "event_id": "401858288",
+   "home": "SMU",
+   "away": "Virginia Tech",
+   "event_label": "Virginia Tech @ SMU",
+   "game_date": "2026-11-07T00:00:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": "edgedesk_football_decision_v2",
+   "market_group": "game",
+   "market_type": "spread",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "team": "Virginia Tech",
+   "opponent": "SMU",
+   "position": null,
+   "side": "away",
+   "selection": "Virginia Tech +7.5",
+   "model_line": -6.71,
+   "entry_line": 7.5,
+   "entry_odds": -110,
+   "entry_book": "draftkings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_prob": 0.5017,
+   "model_edge_pct": -2.22,
+   "ev_pct": -4.23,
+   "rec_class": "PASS",
+   "confidence": 83,
+   "stage": "CONSERVATIVE_DEFAULT_UNVALIDATED",
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": "decision",
+   "price_ref": null,
+   "recommended_at": "2026-10-28T23:08:03.708Z",
+   "odds_captured_at": "2026-10-28T23:07:50.000Z",
+   "odds_captured_basis": "quote capture",
+   "evaluation_mode": "LIVE",
+   "result": "pending",
+   "result_value": null,
+   "result_detail": null,
+   "final_score": null,
+   "closing_line": null,
+   "closing_odds": null,
+   "clv_points": null,
+   "clv_prob_pp": null,
+   "beat_close": null,
+   "settled_at": null,
+   "first_recorded_at": "2026-10-28T23:10:47.504Z",
    "corrections": [],
    "corrected": false,
    "flat_stake_units": 1,

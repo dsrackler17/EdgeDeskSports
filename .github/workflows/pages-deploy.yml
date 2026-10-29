@@ -1,0 +1,93 @@
+# EdgeDesk — publish the site (edgedesksports.com) to GitHub Pages.
+#
+# Why this replaces Pages' own "Deploy from a branch" build: that build runs
+# for every push to main and CANCELS the one before it. The data jobs push
+# every few minutes and a build takes about four, so on 2026-10-28 23 builds
+# in a row were cancelled (19:54 to 20:38 UTC) and the site kept serving a
+# 19:49 copy through three merges. Here a new run WAITS for the one in
+# progress (cancel-in-progress: false). GitHub keeps one waiting run and
+# replaces it with the newest, so every run that starts finishes and the
+# newest main always goes out next.
+#
+# When it runs: a merge to main (push). The data jobs' own pushes start no
+# workflow (they push with GITHUB_TOKEN), so the schedule publishes their
+# data: every 10 minutes, whatever main holds then. Run it by hand
+# (workflow_dispatch) to publish now.
+#
+# The same build as before: actions/jekyll-build-pages over the repository
+# root, as Pages' branch build did (the repository has no .nojekyll), so the
+# site's files and paths do not change.
+#
+# Inert until Settings > Pages > Source is "GitHub Actions": the first job
+# reads the Pages source and, while it is still the branch, deploys nothing
+# and says so in the run's summary (Pages refuses an Actions deploy then).
+# docs/ci/README.md, "Publishing the site".
+name: Pages deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      pages: read
+    outputs:
+      actions: ${{ steps.src.outputs.actions }}
+    steps:
+      - name: Read the Pages source
+        id: src
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          type=$(gh api "repos/$REPO/pages" --jq '.build_type')
+          if [ "$type" = "workflow" ]; then
+            echo "actions=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "actions=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing deployed: Pages still builds from the branch (build_type: $type). Set Settings > Pages > Source to GitHub Actions (docs/ci/README.md, Publishing the site)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  build:
+    needs: source
+    if: needs.source.outputs.actions == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build with Jekyll, as Pages' branch build did
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

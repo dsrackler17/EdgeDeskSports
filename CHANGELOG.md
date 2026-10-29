@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026-10-28 — main is red: the "Integrated with Juice Reel" line pushed the free calculator off a short phone's first screen (#864)
+
+**What failed.** Funnel tests, browser job, `tools/home/landing.e2e.js`: "first visit: the top of the free calculator shows, labelled Free". On a 375×548 screen (an iPhone SE inside X's in-app browser), the calculator's top bar ended at 581 px on the runner, past the 548 px fold. #864 added the hero line inside the text column, and on phones that column stacks above the calculator, so the line pushed the calculator down by 43 px.
+- On this machine, the same layout put the bar at exactly 548 of 548 px, which is why the full local `verify` passed. The runner's fallback fonts set the hero 33 px taller.
+
+**The fix** (`index.html`, `lib/edgedesk_landing_desk.css`):
+- The line moves out of the text column to right after the hero's two columns.
+- On a wide screen, the text column is the taller one, so the line sits in the same place as before: under the hero's text, on the first screen (1024 to 1440 px measured).
+- Where the columns stack, it follows the calculator. The calculator's top bar is back where it was before #864: 505 of 548 px here.
+- Stylesheet stamp `20261028jr3`, recorded.
+
+**Tests:**
+- `tools/home/landing.e2e.js`: 327 passed, 0 failed.
+- `tools/billing/juicereel_checkout.e2e.js` now checks both placements: under the text at 1280 px, and right after the calculator at 390 px. With the fix, 50 passed, 0 failed. With #864's layout, 49 passed, 1 failed.
+
+## 2026-10-28 — The site's deploy is no longer cancelled by the next push (inert until Pages' source is switched)
+
+**Why.** Pages' own "Deploy from a branch" build cancels the build before it on every push. The data jobs push every few minutes, and a build takes about four. On 2026-10-28, 23 builds in a row were cancelled (19:54 to 20:38 UTC). The site served a 19:49 copy through the merges of #860, #861 and #862.
+
+**What changed:**
+- **`.github/workflows/pages-deploy.yml`** (new).
+  - The build is the same one Pages ran: Jekyll over the repository root, then deployed to the `github-pages` environment.
+  - A new run waits for the one in progress (`cancel-in-progress: false`), so every run that starts finishes.
+  - It runs on a merge to `main`, every 10 minutes (the data jobs' pushes start no workflow), and by hand.
+  - While Settings › Pages › Source is still "Deploy from a branch", it deploys nothing and says so in the run's summary.
+- **To switch on:** set Settings › Pages › Source to **GitHub Actions**, then run **Pages deploy** once by hand. Steps and undo: `docs/ci/README.md`, "Publishing the site".
+- **`tools/ci/pages_deploy.test.js`** (new, run by Core validation): 18 passed, 0 failed. It fails without the workflow (2 passed, 16 failed), with `cancel-in-progress: true` (17 passed, 1 failed) and without the schedule (17 passed, 1 failed).
+  - It also runs the source check against a stand-in `gh`. "workflow" deploys. "legacy" deploys nothing and says why. A failed read fails the job.
+- `docs/intelligence.md`: the shipping table names the new run.
+
+## 2026-10-28 — The landing page's hero says "Integrated with Juice Reel"
+
+**Why.** The Juice Reel integration matters most as a credential. Until now the landing page said so only in the partner band, eleven sections down, and only once a script had drawn it.
+
+**What changed:**
+- `index.html`: a line, **Integrated with Juice Reel**, sits under the hero's audience line. The words are in the page itself, so a reader without the script, or a crawler, sees them too. It is on the first screen at phone and desktop widths.
+- `lib/edgedesk_landing_desk.css`: its pill style, kept out of the page's own sheet for the 216 KB budget. The stamp moves to `20261028jr2` and is recorded in `tools/presentation/landing_asset_stamps.json`.
+- A shared link's preview leads with it too. `og:description` (LinkedIn, Slack) and `twitter:description` (X) now open with "Integrated with Juice Reel.", because previews cut long text.
+  - To fit the budget, "the whole terminal:" and "the whole desk:" left those two lines. Every feature they list is still listed.
+  - The search description (`<meta name="description">`) is unchanged.
+- The page now has 20 characters of room under the budget (it had 56).
+- `tools/billing/juicereel_checkout.e2e.js` gains four checks: the line is in the hero's HTML, it is on the first screen at 390 px and at 1280 px, and both share descriptions lead with it. With these changes, 50 passed, 0 failed. Without the hero line, its three checks fail (46 passed, 3 failed). Without the preview change, its check fails (49 passed, 1 failed).
+
 ## 2026-10-28 — main is red: Personal research CI after the Juice Reel merge (#860)
 
 **What was wrong.** #860 merged with Personal research CI red, and `main` has stayed red since. Two checks fail there, both in tests, not in what a reader sees:
@@ -187,8 +230,8 @@ New suites: `tools/bet_checker/bet_checker_sql.test.js` (110), `functions.test.j
 - `lib/edgedesk_pricing.js`: `priceWords()` is the one map `apply()` fills from. The new words `bc_plan`, `bc_price`, `bc_monthly`, `bc_annual` and `bc_free` are derived from `BET_CHECKER` through `betCheckerOffer()`, so the landing page types no figure. The annual figure keeps its cents ("$59.00/year"), as the consent sheet shows it.
 - `lib/edgedesk_bet_checker.js`: `/bet-checker/?upgrade=monthly|annual` (the card's button) is kept in `sessionStorage` through the sign-in round trip. After sign-in it opens the renewal-terms sheet on that plan, unticked, or tells a reader whose plan already includes Bet Checker. It never skips the consent. A signed-out reader sees a line by the sign-in door saying checkout opens next.
 - `/bet-checker/`, seen on production before `bet_checker.sql` was applied: a stats call that FAILS used to read as "not paid", so a paying or comped reader was shown the blurred stats and an upgrade button. It now says the stats could not be loaded. A comped account (`owner_comp`) is now named complimentary in Settings, with no billing portal and nothing to cancel.
-- The page's 216 KB weight budget is unchanged. The new card's few rules stay inline, because app.html sends readers straight to `#subscribe`. To make room, `#trust`'s styles (3.9 KB, below the fold, linked from nowhere) moved to `lib/edgedesk_landing_desk.css`, which loads the same way. A "Which one do I need?" table was built and then left out: with it the page needed 221 KB, and the owner chose to keep the budget.
-- `?v=20261028b` for `lib/edgedesk_pricing.js` (index.html, app.html, bet-checker/, methodology/, research/sample/); `?v=20261028bc3` for `lib/edgedesk_bet_checker.js` (after #857's `bc2`); `?v=20261028d` for `lib/edgedesk_landing_desk.css` (after #860's `jr1`).
+- The page's 216 KB weight budget is unchanged. The new card's few rules stay inline, because app.html sends readers straight to `#subscribe`. To make room, `#trust`'s styles (3.9 KB, below the fold, linked from nowhere) moved out of the page into the two stylesheets that already load the same way: the press list (`.press`, 1.2 KB) went to `lib/edgedesk_landing_pictures.css`, the rest to `lib/edgedesk_landing_desk.css`. Juice Reel's hero line took the desk sheet's room, and each sheet stays under its 12 KB budget (11.1 KB and 9.9 KB). A "Which one do I need?" table was built and then left out: with it the page needed 221 KB, and the owner chose to keep the budget.
+- `?v=20261028b` for `lib/edgedesk_pricing.js` (index.html, app.html, bet-checker/, methodology/, research/sample/); `?v=20261028bc3` for `lib/edgedesk_bet_checker.js` (after #857's `bc2`); `?v=20261029a` for `lib/edgedesk_landing_desk.css` and `lib/edgedesk_landing_pictures.css`.
 
 Tests: `landing_positioning.test.js` covers the card, its FEATURES lines, both links and the strip. Its "one plan card" and Free-card checks were updated for the deliberate third card. `personal_wiring.test.js` checks the derived words, `apply()` and the static copies. `bet_checker/page.test.js` checks the deep link in Node with blocked or missing storage. `bet_checker/page.e2e.js` covers a signed-in free reader on `?upgrade=annual`, the signed-out round trip and an already-paid reader. `home/landing.e2e.js` checks the filled words at six widths. `billing/juicereel_checkout.e2e.js` and `billing/checkout_flow.e2e.js` took the first non-Free card to be Full Access's, which is now Bet Checker's (no trial). They select `.pcard:not(.freecard):not(.bccard)`.
 

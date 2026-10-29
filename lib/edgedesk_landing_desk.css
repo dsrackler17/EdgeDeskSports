@@ -120,19 +120,6 @@
 .lnote{padding:12px 2px 0;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--faint)}
 .relia{display:block;width:100%;max-width:320px;margin:6px auto 2px}
 @media(max-width:560px){.rf{grid-template-columns:1fr;gap:5px}}
-.press{margin-top:52px;padding-top:36px;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:24px 40px;align-items:start}
-.press h3{font-size:19px;margin-top:12px}
-.press p{color:var(--dim);font-size:14.5px;line-height:1.6;margin-top:8px}
-.press q{color:var(--text)}
-.press-list{display:grid;gap:10px}
-.press-card{display:block;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel);transition:border-color .15s}
-.press-card:hover{border-color:rgba(47,167,154,.45)}
-.press-card .pub{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.press-card .pub b{color:var(--text);font-weight:700}
-.press-card .hl{display:block;font-size:14.5px;font-weight:600;line-height:1.4;margin-top:6px}
-.press-card .cr{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--obs)}
-.press .press-note{grid-column:1/-1;margin-top:0;font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--faint);max-width:90ch}
-@media(max-width:900px){.press{grid-template-columns:1fr}}
 /* the Juice Reel partner band (#juicereel, in #pricing), drawn by
    lib/edgedesk_juicereel_billing.js (landing); docs/juicereel-billing.md */
 .jr-band{max-width:1040px;margin:40px auto 0;padding:24px 22px;border:1px solid var(--line2);border-radius:16px;background:var(--panel);text-align:center}
@@ -144,3 +131,12 @@
 .jr-band p a{color:var(--obs);font-weight:600;text-decoration:none}
 #jrAct{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}
 .jr-band .auth-msg{max-width:640px;margin-left:auto;margin-right:auto;text-align:left}
+/* the hero's credential (index.html .jrc), right after the hero's two columns:
+   on a wide screen it sits under the text column; where the columns stack it
+   follows the calculator, so a short phone's first screen still shows the
+   calculator's top (tools/home/landing.e2e.js, 375x548). Its words are in the
+   page, so a reader without the script sees them too; the pill is drawn here,
+   off the first screen's path, for the page's weight budget. */
+.jrc{display:flex;align-items:center;gap:8px;width:fit-content;margin:14px 0 0;padding:6px 13px;border:1px solid var(--line2);border-radius:999px;background:var(--panel);font-size:13px;font-weight:600;color:var(--text)}
+.jrc::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--obs)}
+@media(max-width:560px){.jrc{margin:16px auto 0;font-size:12px}}

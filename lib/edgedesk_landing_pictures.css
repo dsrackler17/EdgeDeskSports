@@ -106,3 +106,18 @@
 .conn .flow i{font-style:normal}
 @media(max-width:980px){.hist{grid-template-columns:1fr}}
 @media(max-width:560px){.cal-t{border-spacing:2px;padding:6px 6px 0}.cal-t td{height:42px;padding:3px 4px;font-size:9.5px}.cal-t .pl{font-size:9.5px;margin-top:3px}.cal-day{margin:6px 8px 10px}.cal-day .cells{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* #trust's press list (.press), below the first screen like the pictures;
+   the rest of #trust is in edgedesk_landing_desk.css */
+.press{margin-top:52px;padding-top:36px;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:24px 40px;align-items:start}
+.press h3{font-size:19px;margin-top:12px}
+.press p{color:var(--dim);font-size:14.5px;line-height:1.6;margin-top:8px}
+.press q{color:var(--text)}
+.press-list{display:grid;gap:10px}
+.press-card{display:block;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel);transition:border-color .15s}
+.press-card:hover{border-color:rgba(47,167,154,.45)}
+.press-card .pub{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.press-card .pub b{color:var(--text);font-weight:700}
+.press-card .hl{display:block;font-size:14.5px;font-weight:600;line-height:1.4;margin-top:6px}
+.press-card .cr{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--obs)}
+.press .press-note{grid-column:1/-1;margin-top:0;font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--faint);max-width:90ch}
+@media(max-width:900px){.press{grid-template-columns:1fr}}
