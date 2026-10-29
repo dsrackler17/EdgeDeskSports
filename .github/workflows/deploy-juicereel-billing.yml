@@ -21,9 +21,19 @@
 #               operators  only billing operators (the live test, § 3)
 #               on         every signed-in reader: the paywall and the landing
 #                          page offer Juice Reel
-#             'on' is refused while the function reports a missing secret.
+#             'on' is refused while the function reports a missing secret,
+#             or while no Juice Reel product opens the terminal.
+#   set_product  what the Juice Reel product `product_id` opens (`opens`):
+#               terminal     the Research Terminal
+#               bet_checker  Bet Checker only (refused until Deploy billing →
+#                            apply_sql has installed the rule that knows it)
+#               none         nothing: off the map; what it granted ends
+#             A product not mapped opens NOTHING. Its buyers are re-checked at
+#             once. check lists the map, products bought but not mapped, and
+#             the product ids on Juice Reel's subscriber list.
 #
-# deploy and set_mode change production: type the step name into confirm.
+# deploy, set_mode and set_product change production: type the step name into
+# confirm.
 #
 # SECRETS (Settings → Secrets and variables → Actions; the Portfolio and
 # billing deploys use the same ones):
@@ -38,12 +48,13 @@ on:
   workflow_dispatch:
     inputs:
       step:
-        description: 'check (read-only) · deploy (SQL, function, hourly reconcile; the switch is left as it is) · set_mode (JUICE_REEL_CHECKOUT)'
+        description: 'check (read-only) · deploy (SQL, function, hourly reconcile; the switch is left as it is) · set_mode (JUICE_REEL_CHECKOUT) · set_product (what a Juice Reel product opens)'
         type: choice
         options:
           - check
           - deploy
           - set_mode
+          - set_product
         default: check
       mode:
         description: 'set_mode only: off · operators (only billing operators: the live test) · on (every reader)'
@@ -53,8 +64,20 @@ on:
           - operators
           - 'on'
         default: operators
+      product_id:
+        description: 'set_product only: the Juice Reel subscription product id (check lists the ones on Juice Reel)'
+        type: string
+        default: ''
+      opens:
+        description: 'set_product only: terminal · bet_checker · none (a product not mapped opens nothing)'
+        type: choice
+        options:
+          - terminal
+          - bet_checker
+          - none
+        default: terminal
       confirm:
-        description: 'deploy and set_mode change production: type the step name again'
+        description: 'deploy, set_mode and set_product change production: type the step name again'
         type: string
         default: ''
 
@@ -156,12 +179,40 @@ jobs:
             console.log('missing:          ' + ((h.missing || []).join(', ') || 'nothing'));
           "
 
+      - name: Map a Juice Reel product (billing_jr_set_product; its buyers are re-checked at once)
+        if: ${{ inputs.step == 'set_product' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          PRODUCT_ID: ${{ inputs.product_id }}
+          OPENS: ${{ inputs.opens }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set (Settings > Secrets and variables > Actions)."; exit 1; fi
+          if ! printf '%s' "$PRODUCT_ID" | grep -Eq '^[A-Za-z0-9_.:-]{1,200}$'; then echo "::error::product_id must be the Juice Reel product id (letters, digits, _ . : -); check lists them"; exit 1; fi
+          case "$OPENS" in terminal|bet_checker|none) ;; *) echo "::error::opens must be terminal, bet_checker or none"; exit 1;; esac
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          # the values reach SQL as psql variables (:'name' quotes them), never spliced into the statement
+          if ! out=$(printf "select public.billing_jr_set_product(:'pid', :'opens', :'note');\n" \
+                | psql "$PGURL" -X -q -t -A -1 -v ON_ERROR_STOP=1 -v pid="$PRODUCT_ID" -v opens="$OPENS" -v note="set_product by $ACTOR" -f - 2>&1); then
+            echo "$out" | tail -5; echo "::error::set_product was refused and nothing changed (above)"; exit 1
+          fi
+          echo "$out"
+          echo "Juice Reel product $PRODUCT_ID now opens: $OPENS" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Set the switch (JUICE_REEL_CHECKOUT)
         if: ${{ inputs.step == 'set_mode' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
         run: |
           case "$MODE" in off|operators|on) ;; *) echo "::error::mode must be off, operators or on"; exit 1;; esac
           if [ "$MODE" = "on" ]; then
             node -e "const h=JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8'));if((h.missing||[]).length){console.log('::error::Not switched on: the function still reports missing: '+h.missing.join(', '));process.exit(1)}"
+            # every reader is offered a checkout that buys a product: one must open the terminal
+            if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set, so the product map cannot be read; not switched on."; exit 1; fi
+            sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+            n=$(psql "$PGURL" -X -q -t -A -v ON_ERROR_STOP=1 -c "select count(*) from public.billing_juicereel_products where tier = 'blue'" 2>&1) \
+              || { echo "$n" | tail -3; echo "::error::the product map could not be read; not switched on (run deploy first)"; exit 1; }
+            if [ "$n" = "0" ]; then echo "::error::Not switched on: no Juice Reel product opens the terminal yet, so every purchase would open nothing. Run set_product first."; exit 1; fi
           fi
           umask 077
           envfile="$RUNNER_TEMP/jrb.env"
@@ -196,7 +247,10 @@ jobs:
               '| Register at Juice Reel as success URL, cancel URL and redirect URI | ' + r.redirect_uri + ' |',
               '| Scopes to have approved | ' + (r.scopes || []).join(' ') + ' |',
               '| Webhook URL to register at Juice Reel (SUBSCRIPTION_EVENTS) | https://' + process.env.SUPABASE_PROJECT_REF + '.supabase.co/functions/v1/juicereel_billing/webhook |',
-              '| Products that open EdgeDesk | ' + r.products + ' |', ''];
+              '| Products that open the terminal | ' + (((r.products || {}).terminal || []).join(', ') || '**none**') + ' |',
+              '| Products that open Bet Checker | ' + (((r.products || {}).bet_checker || []).join(', ') || 'none') + ((r.products || {}).bet_checker_rule_installed ? '' : ' (not mappable until Deploy billing → apply_sql)') + ' |',
+              '| Bought on Juice Reel but NOT mapped (they open nothing) | ' + (((r.products || {}).not_mapped || []).map((x) => x.product_id + ' (' + x.paid_now + ' paid now)').join(', ') || 'none') + ' |',
+              '| Product ids on Juice Reel\'s subscriber list | ' + ((r.seen_on_juice_reel || []).map((x) => x.product_id + ' (' + x.paid_now + ' paid now of ' + x.entries + ')').join(', ') || 'none yet') + ' |', ''];
             require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, sum.join('\n') + '\n');
             console.log(sum.join('\n'));
             if (!r.accepted) console.log('::warning::Juice Reel did not accept the credentials: ' + r.code);

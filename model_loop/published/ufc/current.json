@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_model_loop_ufc_current_v1",
- "generated_at": "2026-10-25T17:58:23Z",
+ "generated_at": "2026-10-29T20:46:24Z",
  "status": "EXPERIMENTAL",
  "data_status": {
   "status": "OK",
@@ -35,8 +35,8 @@
     "on those bouts the model's log loss 0.6540 is worse than the closing line's 0.5797: 903 resolved in the market's favour, 505 in the model's"
    ]
   },
-  "disagreements": 5,
-  "with_market": 10,
+  "disagreements": 4,
+  "with_market": 12,
   "config": "docs/model-loop/ufc/guard.json"
  },
  "bouts": [
@@ -76,13 +76,13 @@
    "p_b": 0.7923,
    "basis": "debut: priced from the prior (the pre-UFC record when on file)",
    "market": {
-    "p_a": 0.1881,
-    "p_b": 0.8119,
-    "price_a": 410,
-    "price_b": -550,
+    "p_a": 0.16,
+    "p_b": 0.84,
+    "price_a": 500,
+    "price_b": -700,
     "book": "DraftKings",
-    "observed_at": "2026-10-25T00:32:59Z",
-    "overround": 0.0422,
+    "observed_at": "2026-10-27T16:53:05Z",
+    "overround": 0.0417,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
@@ -90,7 +90,7 @@
     "status": "AGREES",
     "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": 2.0,
+    "gap_pp": 4.8,
     "signal_allowed": false,
     "factors": [],
     "certified": false,
@@ -137,13 +137,13 @@
    "p_b": 0.4211,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.7258,
-    "p_b": 0.2742,
-    "price_a": -310,
-    "price_b": 250,
+    "p_a": 0.7409,
+    "p_b": 0.2591,
+    "price_a": -340,
+    "price_b": 270,
     "book": "DraftKings",
-    "observed_at": "2026-10-24T16:16:21Z",
-    "overround": 0.0418,
+    "observed_at": "2026-10-28T00:45:32Z",
+    "overround": 0.043,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
@@ -151,7 +151,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -14.7,
+    "gap_pp": -16.2,
     "signal_allowed": false,
     "factors": [
      {
@@ -232,13 +232,13 @@
    "p_b": 0.4091,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.6908,
-    "p_b": 0.3092,
-    "price_a": -258,
-    "price_b": 210,
+    "p_a": 0.718,
+    "p_b": 0.282,
+    "price_a": -298,
+    "price_b": 240,
     "book": "DraftKings",
-    "observed_at": "2026-10-24T16:16:21Z",
-    "overround": 0.0433,
+    "observed_at": "2026-10-27T16:53:05Z",
+    "overround": 0.0429,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
@@ -246,7 +246,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -10.0,
+    "gap_pp": -12.7,
     "signal_allowed": false,
     "factors": [
      {
@@ -305,12 +305,12 @@
    "p_b": 0.5974,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.3836,
-    "p_b": 0.6164,
-    "price_a": 150,
-    "price_b": -180,
+    "p_a": 0.3962,
+    "p_b": 0.6038,
+    "price_a": 142,
+    "price_b": -170,
     "book": "DraftKings",
-    "observed_at": "2026-10-24T16:16:21Z",
+    "observed_at": "2026-10-26T20:10:30Z",
     "overround": 0.0429,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
@@ -319,7 +319,7 @@
     "status": "AGREES",
     "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": 1.9,
+    "gap_pp": 0.6,
     "signal_allowed": false,
     "factors": [],
     "certified": false,
@@ -328,68 +328,6 @@
    "compare": {
     "version": "1.1.0",
     "p_a": 0.5005
-   }
-  },
-  {
-   "bout_id": "401928108",
-   "event_id": "600061420",
-   "event": "UFC Fight Night: Moicano vs. Nolan",
-   "start": "2026-10-31T21:00Z",
-   "weight_class": "Middleweight",
-   "fighter_a": {
-    "id": "4697476",
-    "name": "Andre Petroski",
-    "ufc_bouts_in_data": 14,
-    "factors": {
-     "ufc_bouts": 14,
-     "days_off": 168.0,
-     "age": 35.38672142368241,
-     "div_step": 0.0,
-     "pre_w": 5.0,
-     "pre_l": 1.0
-    }
-   },
-   "fighter_b": {
-    "id": "5123963",
-    "name": "Azamat Bekoev",
-    "ufc_bouts_in_data": 4,
-    "factors": {
-     "ufc_bouts": 4,
-     "days_off": 210.0,
-     "age": 30.836413415468858,
-     "div_step": 0.0,
-     "pre_w": 18.0,
-     "pre_l": 3.0
-    }
-   },
-   "p_a": 0.4212,
-   "p_b": 0.5788,
-   "basis": "Elo from every earlier UFC bout in the data",
-   "market": null,
-   "guard": {
-    "status": "NO_MARKET",
-    "label": "No market price on file",
-    "threshold_pp": 8,
-    "gap_pp": null,
-    "signal_allowed": false,
-    "factors": [
-     {
-      "code": "age",
-      "fighter": "Andre Petroski",
-      "text": "Andre Petroski is 35.4, past 35: how much age has taken is where the model and the market most often differ",
-      "record": {
-       "n": 613,
-       "model_said": 0.3968,
-       "close_said": 0.4175,
-       "won": 0.3768
-      }
-     }
-    ],
-    "certified": false
-   },
-   "compare": {
-    "version": "1.1.0",
-    "p_a": 0.5194
    }
   },
   {
@@ -428,52 +366,90 @@
    "p_b": 0.5417,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.3775,
-    "p_b": 0.6225,
-    "price_a": 154,
-    "price_b": -185,
+    "p_a": 0.3962,
+    "p_b": 0.6038,
+    "price_a": 142,
+    "price_b": -170,
     "book": "DraftKings",
-    "observed_at": "2026-10-25T00:32:59Z",
-    "overround": 0.0428,
+    "observed_at": "2026-10-28T00:45:32Z",
+    "overround": 0.0429,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
    "guard": {
-    "status": "DISAGREES",
-    "label": "Model disagrees with market",
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": 8.1,
+    "gap_pp": 6.2,
     "signal_allowed": false,
-    "factors": [
-     {
-      "code": "layoff",
-      "fighter": "JeongYeong Lee",
-      "text": "JeongYeong Lee returns after 538 days out",
-      "record": {
-       "n": 446,
-       "model_said": 0.4497,
-       "close_said": 0.462,
-       "won": 0.4395
-      }
-     },
-     {
-      "code": "age",
-      "fighter": "Julian Erosa",
-      "text": "Julian Erosa is 37.3, past 35: how much age has taken is where the model and the market most often differ",
-      "record": {
-       "n": 578,
-       "model_said": 0.3691,
-       "close_said": 0.3839,
-       "won": 0.3356
-      }
-     }
-    ],
+    "factors": [],
     "certified": false,
-    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
+    "note": null
    },
    "compare": {
     "version": "1.1.0",
     "p_a": 0.577
+   }
+  },
+  {
+   "bout_id": "401931615",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "Featherweight",
+   "fighter_a": {
+    "id": "4898914",
+    "name": "Dakota Hope",
+    "ufc_bouts_in_data": 1,
+    "factors": {
+     "ufc_bouts": 1,
+     "days_off": 210.0,
+     "age": 29.752224503764545,
+     "div_step": -1.0,
+     "pre_w": 11.0,
+     "pre_l": 1.0
+    }
+   },
+   "fighter_b": {
+    "id": "5060394",
+    "name": "Francis Marshall",
+    "ufc_bouts_in_data": 8,
+    "factors": {
+     "ufc_bouts": 8,
+     "days_off": 189.0,
+     "age": 27.66324435318275,
+     "div_step": -1.0,
+     "pre_w": 5.0,
+     "pre_l": 0.0
+    }
+   },
+   "p_a": 0.3656,
+   "p_b": 0.6344,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.331,
+    "p_b": 0.669,
+    "price_a": 190,
+    "price_b": -230,
+    "book": "DraftKings",
+    "observed_at": "2026-10-28T00:45:32Z",
+    "overround": 0.0418,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
+    "threshold_pp": 8,
+    "gap_pp": 3.5,
+    "signal_allowed": false,
+    "factors": [],
+    "certified": false,
+    "note": null
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.349
    }
   },
   {
@@ -511,38 +487,26 @@
    "p_a": 0.2961,
    "p_b": 0.7039,
    "basis": "Elo from every earlier UFC bout in the data",
-   "market": null,
+   "market": {
+    "p_a": 0.2665,
+    "p_b": 0.7335,
+    "price_a": 260,
+    "price_b": -325,
+    "book": "DraftKings",
+    "observed_at": "2026-10-28T00:45:32Z",
+    "overround": 0.0425,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
    "guard": {
-    "status": "NO_MARKET",
-    "label": "No market price on file",
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": null,
+    "gap_pp": 3.0,
     "signal_allowed": false,
-    "factors": [
-     {
-      "code": "layoff",
-      "fighter": "Mickey Gall",
-      "text": "Mickey Gall returns after 713 days out",
-      "record": {
-       "n": 297,
-       "model_said": 0.4284,
-       "close_said": 0.4278,
-       "won": 0.3939
-      }
-     },
-     {
-      "code": "weight_change",
-      "fighter": "Mickey Gall",
-      "text": "Mickey Gall moves up 1 division: the rating was earned at another weight",
-      "record": {
-       "n": 210,
-       "model_said": 0.496,
-       "close_said": 0.489,
-       "won": 0.481
-      }
-     }
-    ],
-    "certified": false
+    "factors": [],
+    "certified": false,
+    "note": null
    },
    "compare": {
     "version": "1.1.0",
@@ -585,13 +549,13 @@
    "p_b": 0.6263,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.4573,
-    "p_b": 0.5427,
-    "price_a": 110,
-    "price_b": -130,
+    "p_a": 0.5261,
+    "p_b": 0.4739,
+    "price_a": -122,
+    "price_b": 102,
     "book": "DraftKings",
-    "observed_at": "2026-10-25T00:32:59Z",
-    "overround": 0.0414,
+    "observed_at": "2026-10-27T16:53:05Z",
+    "overround": 0.0446,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
@@ -599,7 +563,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -8.4,
+    "gap_pp": -15.2,
     "signal_allowed": false,
     "factors": [
      {
@@ -658,13 +622,13 @@
    "p_b": 0.7203,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.325,
-    "p_b": 0.675,
-    "price_a": 195,
-    "price_b": -238,
+    "p_a": 0.3092,
+    "p_b": 0.6908,
+    "price_a": 210,
+    "price_b": -258,
     "book": "DraftKings",
-    "observed_at": "2026-10-25T00:32:59Z",
-    "overround": 0.0431,
+    "observed_at": "2026-10-27T16:53:05Z",
+    "overround": 0.0433,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
@@ -672,7 +636,7 @@
     "status": "AGREES",
     "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": -4.5,
+    "gap_pp": -3.0,
     "signal_allowed": false,
     "factors": [],
     "certified": false,
@@ -711,21 +675,21 @@
      "days_off": 126.0,
      "age": 31.252566735112936,
      "div_step": 0.0,
-     "pre_w": 5.0,
+     "pre_w": 4.0,
      "pre_l": 0.0
     }
    },
-   "p_a": 0.5744,
-   "p_b": 0.4256,
+   "p_a": 0.5971,
+   "p_b": 0.4029,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.6908,
-    "p_b": 0.3092,
-    "price_a": -258,
-    "price_b": 210,
+    "p_a": 0.718,
+    "p_b": 0.282,
+    "price_a": -298,
+    "price_b": 240,
     "book": "DraftKings",
-    "observed_at": "2026-10-25T00:32:59Z",
-    "overround": 0.0433,
+    "observed_at": "2026-10-26T20:10:30Z",
+    "overround": 0.0429,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
@@ -733,7 +697,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -11.6,
+    "gap_pp": -12.1,
     "signal_allowed": false,
     "factors": [
      {
@@ -750,7 +714,7 @@
      {
       "code": "short_sample",
       "fighter": "Farman Hasanov",
-      "text": "Farman Hasanov has 1 UFC bout in the data (pro record before the UFC 5-0): a short sample",
+      "text": "Farman Hasanov has 1 UFC bout in the data (pro record before the UFC 4-0): a short sample",
       "record": {
        "n": 1033,
        "model_said": 0.5345,
@@ -799,17 +763,17 @@
      "pre_l": 2.0
     }
    },
-   "p_a": 0.4829,
-   "p_b": 0.5171,
+   "p_a": 0.5289,
+   "p_b": 0.4711,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
-    "p_a": 0.5325,
-    "p_b": 0.4675,
-    "price_a": -125,
-    "price_b": 105,
+    "p_a": 0.4926,
+    "p_b": 0.5074,
+    "price_a": -108,
+    "price_b": -115,
     "book": "DraftKings",
-    "observed_at": "2026-10-24T16:16:21Z",
-    "overround": 0.0434,
+    "observed_at": "2026-10-28T00:45:32Z",
+    "overround": 0.0541,
     "no_vig": "multiplicative",
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
@@ -817,7 +781,7 @@
     "status": "AGREES",
     "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": -5.0,
+    "gap_pp": 3.6,
     "signal_allowed": false,
     "factors": [],
     "certified": false,
@@ -825,68 +789,7 @@
    },
    "compare": {
     "version": "1.1.0",
-    "p_a": 0.4821
-   }
-  },
-  {
-   "bout_id": "401931615",
-   "event_id": "600061420",
-   "event": "UFC Fight Night: Moicano vs. Nolan",
-   "start": "2026-11-01T00:00Z",
-   "weight_class": "Featherweight",
-   "fighter_a": {
-    "id": "4898914",
-    "name": "Dakota Hope",
-    "ufc_bouts_in_data": 1,
-    "factors": {
-     "ufc_bouts": 1,
-     "days_off": 210.0,
-     "age": 29.754962354551676,
-     "div_step": -1.0,
-     "pre_w": 11.0,
-     "pre_l": 1.0
-    }
-   },
-   "fighter_b": {
-    "id": "5060394",
-    "name": "Francis Marshall",
-    "ufc_bouts_in_data": 8,
-    "factors": {
-     "ufc_bouts": 8,
-     "days_off": 189.0,
-     "age": 27.665982203969882,
-     "div_step": -1.0,
-     "pre_w": 5.0,
-     "pre_l": 0.0
-    }
-   },
-   "p_a": 0.3656,
-   "p_b": 0.6344,
-   "basis": "Elo from every earlier UFC bout in the data",
-   "market": {
-    "p_a": 0.3194,
-    "p_b": 0.6806,
-    "price_a": 200,
-    "price_b": -245,
-    "book": "DraftKings",
-    "observed_at": "2026-10-25T00:32:59Z",
-    "overround": 0.0435,
-    "no_vig": "multiplicative",
-    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
-   },
-   "guard": {
-    "status": "AGREES",
-    "label": "Model and market agree within the threshold",
-    "threshold_pp": 8,
-    "gap_pp": 4.6,
-    "signal_allowed": false,
-    "factors": [],
-    "certified": false,
-    "note": null
-   },
-   "compare": {
-    "version": "1.1.0",
-    "p_a": 0.349
+    "p_a": 0.5282
    }
   },
   {
@@ -924,27 +827,26 @@
    "p_a": 0.269,
    "p_b": 0.731,
    "basis": "Elo from every earlier UFC bout in the data",
-   "market": null,
+   "market": {
+    "p_a": 0.2905,
+    "p_b": 0.7095,
+    "price_a": 230,
+    "price_b": -285,
+    "book": "DraftKings",
+    "observed_at": "2026-10-28T00:45:32Z",
+    "overround": 0.0433,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
    "guard": {
-    "status": "NO_MARKET",
-    "label": "No market price on file",
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": null,
+    "gap_pp": -2.1,
     "signal_allowed": false,
-    "factors": [
-     {
-      "code": "age",
-      "fighter": "Randy Brown",
-      "text": "Randy Brown is 36.3, past 35: how much age has taken is where the model and the market most often differ",
-      "record": {
-       "n": 613,
-       "model_said": 0.3968,
-       "close_said": 0.4175,
-       "won": 0.3768
-      }
-     }
-    ],
-    "certified": false
+    "factors": [],
+    "certified": false,
+    "note": null
    },
    "compare": {
     "version": "1.1.0",

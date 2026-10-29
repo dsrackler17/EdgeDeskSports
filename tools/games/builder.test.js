@@ -298,7 +298,18 @@ if (good.json) {
        run summary and to football/sp_plus/lines.json (last_attempt), and the
        workflow's last step then fails the run. Nothing is captured or
        published without it. */
-    'CFBD_API_KEY'];
+    'CFBD_API_KEY',
+    /* The odds gateway's own shared secret (supabase/functions/odds_gateway,
+       x-odds-gateway-secret), sent beside SB_SERVICE_ROLE by the three steps
+       that call the gateway (player-props.yml capture, props-factory.yml
+       backfill, cfb-lab.yml alternates). The gateway compares the service role
+       byte for byte with its own, so a repository secret in another valid
+       format is refused. It must equal the function secret of the same name
+       (docs/odds-api-incident-2026-10/INCIDENT.md §9 step 4). Never silent when
+       absent: a refused credential is an ERROR (GATEWAY_UNAUTHORIZED) with a
+       ::error:: naming this secret (football/props/capture.js), and the
+       alternates step checks for either credential before it runs. */
+    'ODDS_GATEWAY_SECRET'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));
