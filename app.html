@@ -52081,7 +52081,7 @@ function fbGameCardNfl(u){
   var p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season));
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div></div>'
-      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+'</div>';
+      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+(window.fbSituationalHTML?window.fbSituationalHTML('nfl',g.game_id):'')+'</div>';
   var mdl=p.model;
   var cov=p.cover,ov=p.over;
   var lines='';
@@ -52120,7 +52120,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
     +fbGameResearchLead('nfl',g.game_id,homeName,awayName,mdl.fair_spread,mdl.fair_total,mdl.home_win_prob,u.t!=null&&u.t<=Date.now())
-    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+(window.fbSituationalHTML?window.fbSituationalHTML('nfl',g.game_id):'')+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -57151,7 +57151,7 @@ function fbPropsBody(lg,gid,ko){
 function fbPropsSecHTML(lg,gid,ko){return '<details class="qev-more fb-props" open><summary>Player prop research</summary>'+fbPropsBody(lg,gid,ko)+'</details>';}
 window.fbPropsSecHTML=fbPropsSecHTML; /* the NFL card's section, for tools/props/props_ui.e2e.js */
 var FB_GX_DEFAULT={props:true,why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
-  research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true,grade:false};
+  research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true,grade:false,situational:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -58931,6 +58931,8 @@ function fbP4Card(u){
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
     +fbGxSec(gid,'wrong','Why this number could be wrong',fbGxWrong(p),true)
     +fbGxSec(gid,'personnel','Personnel availability',fbPersonnelHTML(gid),true,fbPersonnelNote(gid))
+    +fbGxSec(gid,'situational','Situational intelligence',(window.fbSituationalHTML?window.fbSituationalHTML('cfb',gid,{bare:true}):''),false,
+      'observed tendencies · experimental volume model (research, moves no number)')
     +fbGxSec(gid,'qb','The quarterbacks · measured',fbGxQb(u),true,
       'passing EPA per dropback, with the sample it came off — research context, not priced')
     +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
@@ -66961,6 +66963,182 @@ try{
     try{return cardHTML(sport,g,t,ev,opts);}
     catch(e){try{console.error('EdgeDesk Kalshi: the section failed in the page',e);}catch(_){}return '';}
   };
+})();
+</script>
+<!-- ═══ ADDED: FOOTBALL SITUATIONAL INTELLIGENCE (football/situational/README.md) ═══
+     A "Situational Intelligence" section on every NFL and FBS game card in the
+     upcoming window: each team's OBSERVED situational tendencies (season-to-date
+     rates from quality-accepted play-by-play, with sample, window and coverage
+     tier — facts, never graded) and, apart from them, "Research Models
+     (Experimental)": projected plays, pass rate, pass and rush attempts with
+     P10–P90, eligible player opportunities, market disagreement, the holdout
+     summary and the known limitations. It reads ONE committed artifact
+     (football/situational/data/cards.json), computes nothing, and changes no
+     projection, spread, total, probability, EV, ranking or grade: the football
+     module calls window.fbSituationalHTML() from guarded one-line hooks and
+     appends what it returns. -->
+<style id="fsie-styles">
+.fsie-wrap{margin:8px 12px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface,rgba(255,255,255,.015))}
+.fsie-wrap>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;font-size:11px;color:var(--dim)}
+.fsie-wrap>summary::-webkit-details-marker{display:none}
+.fsie-wrap>summary>b{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--text);margin-right:2px}
+.fsie-wrap>summary .fsie-chev{margin-left:auto;color:var(--faint);transition:transform .15s}
+.fsie-wrap[open]>summary .fsie-chev{transform:rotate(90deg)}
+.fsie-body{padding:0 10px 9px}
+.fsie-bare{padding:2px 0 4px}
+.fsie-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0 4px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.fsie-team{margin:6px 0 2px;font-size:11.5px;color:var(--text);font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fsie-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:4px 16px}
+.fsie-bar{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(40px,1fr) auto;align-items:center;gap:8px;padding:3px 0;font-size:11px}
+.fsie-bar .k{color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsie-bar .t{height:6px;border-radius:3px;background:var(--surface2,rgba(255,255,255,.06));overflow:hidden}
+.fsie-bar .t>i{display:block;height:100%;background:var(--accent,#5b8def);border-radius:3px}
+.fsie-bar .v{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text);text-align:right;white-space:nowrap}
+.fsie-bar .v .n{color:var(--faint);font-size:9.5px;margin-left:4px}
+.fsie-miss{color:var(--faint);font-style:italic}
+.fsie-chip{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--dim);white-space:nowrap}
+.fsie-chip.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.fsie-chip.ok{color:var(--pos);border-color:rgba(91,191,135,.4)}
+.fsie-t{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:10.5px;margin:2px 0 4px}
+.fsie-t th{color:var(--faint);font-weight:600;text-align:right;padding:3px 4px;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.fsie-t th:first-child,.fsie-t td:first-child{text-align:left;font-family:'Inter',sans-serif;color:var(--dim)}
+.fsie-t td{padding:3px 4px;text-align:right;border-top:1px dashed var(--border);color:var(--text);white-space:nowrap}
+.fsie-note{font-size:10.5px;color:var(--faint);line-height:1.45;margin:3px 0 4px}
+.fsie-lim{font-size:10.5px;color:var(--faint);margin-top:8px;padding-top:7px;border-top:1px solid var(--border);line-height:1.45}
+.fsie-lim b{color:var(--dim);font-weight:600}
+.fsie-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:560px){.fsie-wrap{margin:8px 8px 10px}.fsie-t{font-size:10px}.fsie-bar{grid-template-columns:minmax(0,1.4fr) minmax(30px,.8fr) auto}}
+</style>
+<script>
+/* ═══ FOOTBALL SITUATIONAL INTELLIGENCE ═══════════════════════════════════════
+   GLUE ONLY: reads /football/situational/data/cards.json (built by
+   football/situational/run.js build) and renders it. Observed numbers are
+   season-to-date rates with their sample; research numbers are labelled
+   experimental with their model version and as-of time. A missing value is
+   an explanation, never a zero. */
+(function(){
+  'use strict';
+  if(window.__edFsie)return;
+  window.__edFsie=true;
+  var ART='/football/situational/data/cards.json';
+  var TTL=10*60e3;
+  var S={data:null,st:'idle',at:0,err:null};
+  var OPEN={};
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function isNum(x){return typeof x==='number'&&isFinite(x);}
+  function pct(x){return isNum(x)?Math.round(100*x)+'%':'—';}
+  function f1(x){return isNum(x)?(Math.round(x*10)/10).toFixed(1):'—';}
+  function int(x){return isNum(x)?String(Math.round(x)):'—';}
+  function day(iso){try{return iso?new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';}catch(_){return '—';}}
+  function stamp(iso){try{return iso?new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—';}catch(_){return '—';}}
+  function chip(t,cls,title){return '<span class="fsie-chip'+(cls?' '+cls:'')+'"'+(title?' title="'+esc(title)+'"':'')+'>'+esc(t)+'</span>';}
+  function badge(cls,label){return '<span class="rs-badge '+cls+'" style="cursor:default"><span class="dot"></span>'+esc(label)+'</span>';}
+
+  function repaint(){setTimeout(function(){try{if(window.FB&&(window.FB.sport==='nfl'||window.FB.sport==='p4')&&typeof window.renderFootball==='function')window.renderFootball();}catch(_){}} ,60);}
+  function ensure(){
+    if(S.st==='loading')return;
+    if(S.at&&Date.now()-S.at<TTL)return;
+    S.st='loading';
+    fetch(ART,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(j){
+      if(!j||j.schema!=='edgedesk_fsie_cards_v1')throw new Error('unexpected artifact');
+      S.data=j;S.err=null;S.st='ok';S.at=Date.now();repaint();
+    },function(e){S.err=String(e&&e.message||e).slice(0,140);S.st='error';S.at=Date.now();});
+  }
+
+  /* one observed rate as a bar; a missing rate says why */
+  function bar(label,x,why){
+    if(!x||!isNum(x.v))return '<div class="fsie-bar"><span class="k">'+esc(label)+'</span><span class="t"></span><span class="v fsie-miss">'+esc(why||'not observed')+'</span></div>';
+    return '<div class="fsie-bar"><span class="k">'+esc(label)+'</span><span class="t"><i style="width:'+Math.max(2,Math.min(100,Math.round(100*x.v)))+'%"></i></span><span class="v">'+pct(x.v)+'<span class="n">n '+int(x.n)+'</span></span></div>';
+  }
+  function val(label,x,unit,why){
+    if(!x||!isNum(x.v))return '<div class="fsie-bar"><span class="k">'+esc(label)+'</span><span class="t"></span><span class="v fsie-miss">'+esc(why||'not observed')+'</span></div>';
+    return '<div class="fsie-bar"><span class="k">'+esc(label)+'</span><span class="t"></span><span class="v">'+f1(x.v)+(unit?' '+esc(unit):'')+'<span class="n">n '+int(x.n)+'</span></span></div>';
+  }
+  function observedTeam(sport,side){
+    var o=side.observed||{},of=o.offense,df=o.defense,nm=(side.team&&side.team.name)||'';
+    var head='<div class="fsie-team">'+esc(nm)+' '+chip('tier '+(o.tier||'—'),o.tier==='A'||o.tier==='B'?'ok':'warn','A: play-by-play + observed formation · B: play-by-play · C: box only · D: insufficient')
+      +(o.sample?chip((o.sample.games||0)+' games · '+(o.sample.plays||0)+' plays'):'')
+      +(o.sample&&o.sample.window?chip(day(o.sample.window.first)+' – '+day(o.sample.window.last)):'')+'</div>';
+    if(!of)return head+'<div class="fsie-note">No accepted play-by-play this season'+(o.missing_fields&&o.missing_fields.length?': '+esc(o.missing_fields.join('; ')):'')+'.</div>';
+    var noForm=sport==='cfb'?'no college feed':'charting not on file';
+    var off='<div class="fsie-h">Offense · how it plays</div><div class="fsie-grid">'
+      +bar('Early-down pass rate',of.early_down_pass_rate)+bar('Neutral-script pass rate',of.neutral_pass_rate)
+      +bar('Third-down pass rate',of.third_down_pass_rate)+bar('Red-zone pass rate',of.red_zone_pass_rate)
+      +bar('Trailing pass rate',of.trailing_pass_rate,'no trailing snaps')+bar('Leading run rate',of.leading_run_rate,'no leading snaps')
+      +val('Plays per game',of.plays_per_game)+val('Neutral pace',of.neutral_seconds_per_play,'sec/play')
+      +bar('Shotgun (charted plays)',of.shotgun_rate,noForm)+bar('No-huddle (charted plays)',of.no_huddle_rate,noForm)
+      +(sport==='nfl'?bar('Play action',of.play_action_rate,'no FTN charting')+bar('Pre-snap motion',of.motion_rate,'no FTN charting'):'')
+      +'</div>';
+    var def='<div class="fsie-h">Defense · what it faces</div><div class="fsie-grid">'
+      +bar('Pass rate faced',df&&df.pass_rate_faced)+bar('Rush rate faced',df&&df.rush_rate_faced)+bar('Neutral pass rate faced',df&&df.neutral_pass_rate_faced)
+      +val('Plays allowed per game',df&&df.plays_per_game_allowed)
+      +(sport==='nfl'?val('Box count (observed)',df&&df.box_count_avg,'defenders','no FTN charting')+bar('8+ box vs run (observed)',df&&df.eight_plus_box_rate_vs_run,'no FTN charting')
+        :'<div class="fsie-bar"><span class="k">Box / coverage</span><span class="t"></span><span class="v fsie-miss">not observed in any college feed</span></div>')
+      +'</div>';
+    var miss=o.missing_fields&&o.missing_fields.length?'<div class="fsie-note">Missing: '+esc(o.missing_fields.join('; '))+'</div>':'';
+    return head+off+def+miss;
+  }
+  function rng(p,k){if(!p||!p.p10)return '—';return int(p.p10[k])+'–'+int(p.p90[k]);}
+  function researchTeam(side){
+    var p=side.projection,nm=(side.team&&side.team.name)||'';
+    if(!p)return '<div class="fsie-note">'+esc(nm)+': no projection.</div>';
+    return '<tr><td>'+esc(nm)+'</td><td>'+f1(p.point.plays)+'<br><span class="fsie-miss">'+rng(p,'plays')+'</span></td><td>'+pct(p.point.pass_rate)+'</td><td>'+f1(p.point.pass_att)+'<br><span class="fsie-miss">'+rng(p,'pass_att')+'</span></td><td>'+f1(p.point.rush_att)+'<br><span class="fsie-miss">'+rng(p,'rush_att')+'</span></td><td>'+f1(p.point.drives)+'</td></tr>';
+  }
+  function players(side){
+    var ps=(side.players||[]).slice();
+    if(!ps.length)return side.players_note?'<div class="fsie-note">'+esc((side.team&&side.team.name)||'')+': no player projections — '+esc(side.players_note)+'.</div>':'';
+    var w=function(x){var m=x.markets||{};return (m.pass_att?m.pass_att.p50*2:0)+(m.rush_att?m.rush_att.p50:0)+(m.targets?m.targets.p50:0);};
+    ps.sort(function(a,b){return w(b)-w(a);});
+    var cell=function(m){return m?int(m.p50)+' <span class="fsie-miss">'+int(m.p10)+'–'+int(m.p90)+'</span>':'—';};
+    return '<div class="fsie-scroll"><table class="fsie-t"><tr><th>'+esc((side.team&&side.team.name)||'')+'</th><th>Pass att</th><th>Rush att</th><th>Targets</th><th>Rec</th></tr>'
+      +ps.slice(0,6).map(function(x){return '<tr><td>'+esc(x.name||x.id)+(x.availability&&x.availability!=='NO_REPORT_LISTING'?' '+chip(x.availability==='UNVERIFIED'?'avail. unverified':x.availability,'warn'):'')+'</td><td>'+cell(x.markets.pass_att)+'</td><td>'+cell(x.markets.rush_att)+'</td><td>'+cell(x.markets.targets)+'</td><td>'+cell(x.markets.receptions)+'</td></tr>';}).join('')
+      +'</table></div>';
+  }
+  function research(sport,g){
+    var r=g.research||{};
+    var head='<div class="fsie-h">Research Models (Experimental) '+badge('rs-t3','Research model')+' '+badge('rs-mat-exp','Experimental')+'</div>';
+    if(r.status!=='projected')return head+'<div class="fsie-note">'+esc(r.note||'No projection for this game.')+'</div>';
+    var meta='<div class="fsie-note">Model '+esc(r.model_version||'—')+' · as of '+esc(stamp(r.as_of))+' · P10–P90 shown under each median. SHADOW: moves no EdgeDesk number.</div>';
+    var dq=[];[g.home,g.away].forEach(function(s){var p=s.projection;if(p&&p.missing_reasons&&p.missing_reasons.length)dq.push(((s.team&&s.team.name)||'')+': '+p.missing_reasons.join('; '));});
+    var team='<div class="fsie-scroll"><table class="fsie-t"><tr><th>Team</th><th>Plays</th><th>Pass rate</th><th>Pass att</th><th>Rush att</th><th>Drives</th></tr>'+researchTeam(g.home)+researchTeam(g.away)+'</table></div>'
+      +(dq.length?'<div class="fsie-note">'+esc(dq.join(' · '))+'</div>':'');
+    var sc=g.home.projection&&g.home.projection.script;
+    var script=sc?'<div class="fsie-note">'+esc((g.home.team&&g.home.team.name)||'Home')+' script mix: competitive '+pct(sc.competitive)+' · leading '+pct(sc.leading)+' · trailing '+pct(sc.trailing)+' · garbage '+pct(sc.garbage)+' · two-minute '+pct(sc.two_minute)+'</div>':'';
+    var mk=r.market||[];
+    var ms=r.market_state||{};
+    var market='<div class="fsie-h">Model vs market · projection disagreement, not an edge</div>'
+      +(mk.length?'<div class="fsie-scroll"><table class="fsie-t"><tr><th>Player</th><th>Market</th><th>Model</th><th>Line</th><th>Diff</th><th>Line at</th></tr>'
+        +mk.map(function(c){return '<tr><td>'+esc(c.player||'')+'</td><td>'+esc(c.market)+'</td><td>'+int(c.model_median)+'</td><td>'+esc(c.line)+'</td><td>'+(isNum(c.difference)?(c.difference>0?'+':'')+c.difference:'—')+'</td><td>'+esc(stamp(c.market_at))+'</td></tr>';}).join('')+'</table></div>'
+        :'<div class="fsie-note">No captured price for these markets'+(ms.capture&&ms.capture.reason?' (the props capture reports '+esc(ms.capture.status||'')+': '+esc(ms.capture.reason)+')':'')+'. Nothing is compared without a real line.</div>');
+    var v=r.validation||{};
+    var valid='<div class="fsie-h">Validation</div>'+(v.state==='holdout_evaluated'
+      ?'<div class="fsie-note">Untouched '+esc(v.holdout_season)+' holdout, '+int(v.n_team_games)+' team-games. Plays MAE '+f1(v.plays.model_mae)+' vs season average '+f1(v.plays.season_avg_mae)+' and market-only '+f1(v.plays.market_only_mae)+'; pass attempts '+f1(v.pass_att.model_mae)+' vs '+f1(v.pass_att.season_avg_mae)+' / '+f1(v.pass_att.market_only_mae)+'; rush attempts '+f1(v.rush_att.model_mae)+' vs '+f1(v.rush_att.season_avg_mae)+' / '+f1(v.rush_att.market_only_mae)+'. Preregistered team criteria '+(v.team_criteria_passed?'met':'NOT met')+'; player criteria '+(v.player_criteria_passed?'met':'NOT met')+'.</div>'
+      :'<div class="fsie-note">Holdout not yet evaluated.</div>');
+    var lim='<div class="fsie-lim"><b>Known limitations.</b> '+esc((r.limitations||[]).join(' '))+'</div>';
+    return head+meta+team+script+'<div class="fsie-h">Player opportunity · eligible players only</div>'+players(g.home)+players(g.away)+market+valid+lim;
+  }
+
+  /* fbSituationalHTML(sport, gameId, {bare}) -> '' when there is nothing to show */
+  window.fbSituationalHTML=function(sport,gameId,opts){
+    try{
+      ensure();
+      if(!S.data||!S.data.games)return '';
+      var g=S.data.games[String(gameId)];
+      if(!g||g.sport!==sport)return '';
+      var o=g.home.observed||{},a=g.away.observed||{};
+      var body='<div class="fsie-h">Observed · season to date, accepted play-by-play only</div>'
+        +observedTeam(sport,g.home)+observedTeam(sport,g.away)
+        +'<div class="fsie-note">Last updated '+esc(stamp(g.updated_at))+'. Observed tendencies are facts from validated data; they carry no grade.</div>'
+        +research(sport,g);
+      if(opts&&opts.bare)return '<div class="fsie-bare">'+body+'</div>';
+      var gid=String(gameId);
+      var sum='<summary><b>Situational Intelligence</b>'+chip('tier '+(o.tier||'—')+' / '+(a.tier||'—'))+chip('experimental','warn')+'<span class="fsie-chev">›</span></summary>';
+      return '<details class="fsie-wrap" data-fsie="'+esc(gid)+'"'+(OPEN[gid]?' open':'')+' ontoggle="window.__fsieToggle&&window.__fsieToggle(this)">'+sum+'<div class="fsie-body">'+body+'</div></details>';
+    }catch(_){return '';}
+  };
+  window.__fsieToggle=function(el){try{OPEN[el.getAttribute('data-fsie')]=el.open;}catch(_){}};
+  window.__fsieState=function(){return {st:S.st,err:S.err,games:S.data&&S.data.games?Object.keys(S.data.games).length:0};};
 })();
 </script>
 <!-- =====================================================================
