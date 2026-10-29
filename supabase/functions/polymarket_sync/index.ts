@@ -257,7 +257,9 @@ export const BUILD = "polymarket_sync@2026-10-29.1";
       event_slug: (ev && ev.slug) || pick(m, ['eventSlug', 'event_slug']) || null, event_ref: ev && ev.id != null ? String(ev.id) : null,
       event_title: (ev && ev.title) || null, league: lg.league, league_source: lg.source,
       market_type: type, type_source: typeSource, raw_type: rawType || null,
-      line: num(pick(m, ['line', 'spread', 'total'])),
+      /* Gamma's point is "line"; its "spread" is the order book's bid-ask
+         spread (0.001 on a moneyline), never a point */
+      line: num(pick(m, ['line'])),
       outcomes: outcomes.map(String), token_ids: tokens, game_start_at: start,
       closed: closed, settle: settle,
       last_prices: closed ? null : prices.map(price),
