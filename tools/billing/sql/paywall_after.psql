@@ -1,0 +1,42 @@
+-- Deploy Fairline, paywall_rule: what has_active_sub() answers for every account
+-- AFTER supabase/paywall_rule.sql, against paywall_before. Counts only (the
+-- repository's logs are public). An account that loses access although it has
+-- no subscriptions row had access through something the rule cannot see: that
+-- is refused, and the transaction is rolled back.
+create temp table paywall_after (user_id uuid primary key, granted boolean not null, why text) on commit drop;
+do $pa$
+declare r record; v boolean; t text; lost_norow int;
+begin
+  for r in select user_id, granted from paywall_before loop
+    perform set_config('request.jwt.claim.sub', r.user_id::text, true);
+    perform set_config('request.jwt.claims', json_build_object('sub', r.user_id, 'role', 'authenticated')::text, true);
+    v := coalesce(public.has_active_sub(), false);
+    t := null;
+    if r.granted and not v then
+      select case when count(*) = 0 then 'no subscription row'
+                  when bool_or(coalesce(pt.tier, 'blue') = 'black') then 'a Fairline (black) row'
+                  when bool_or(coalesce(pt.tier, 'blue') = 'red') then 'a Bet Checker (red) row'
+                  else 'a lapsed or unpaid row' end
+        into t
+        from public.subscriptions s left join public.billing_price_tiers pt on pt.price_id = s.price_id
+       where s.user_id = r.user_id;
+    end if;
+    insert into paywall_after values (r.user_id, v, t);
+  end loop;
+  select count(*) into lost_norow from paywall_after where why = 'no subscription row';
+  if lost_norow > 0 then
+    raise exception 'PAYWALL: % account(s) had the terminal through something other than a subscriptions row, which the rule cannot see. Nothing was changed.', lost_norow;
+  end if;
+end
+$pa$;
+select 'PAYWALL accounts ' || count(*)
+       || ' · granted before ' || count(*) filter (where b.granted)
+       || ' · after ' || count(*) filter (where a.granted)
+       || ' · gained ' || count(*) filter (where a.granted and not b.granted)
+       || ' · lost ' || count(*) filter (where b.granted and not a.granted)
+  from paywall_before b join paywall_after a using (user_id)
+union all
+select 'PAYWALL lost: ' || why || ' ' || count(*) from paywall_after where why is not null group by why
+union all
+select 'PAYWALL after: has_active_sub() ' ||
+       case when pg_get_functiondef(to_regprocedure('public.has_active_sub()')) like '%billing_row_grants_access%' then 'defers to the rule' else 'RESTATES THE RULE' end;
