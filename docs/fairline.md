@@ -329,8 +329,11 @@ In this order:
   and the paywall RLS that calls it are **not in this repository**. They must
   defer to `billing_row_grants_access()` (or `community_is_entitled()`), not
   inline statuses, or a Fairline subscription would read the terminal's data.
-  The tests prove it against a stand-in that defers to the rule; production's
-  own definition is **not verified** until that query is run there.
+  The tests prove it against a stand-in that defers to the rule. Deploy
+  Fairline's check found that production's copy did **not** defer
+  (2026-10-29). `supabase/paywall_rule.sql` fixes it: Deploy Fairline,
+  `paywall_rule` = `dry_run`, then `apply`, then `check_paywall`. The Fairline
+  prices stay inactive in Stripe until that check passes.
 
 ## Tests
 

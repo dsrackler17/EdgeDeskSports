@@ -16,7 +16,9 @@
 #             the page's mirrors of the rules held equal to the SQL. Then the
 #             Fairline tier (black) through the shipped billing functions: paid
 #             for Fairline, never the terminal (tools/billing/fairline_tier.test.js,
-#             also run by personal-tests.yml with the other billing suites).
+#             also run by personal-tests.yml with the other billing suites),
+#             and the terminal's paywall on the one rule
+#             (tools/billing/paywall_rule.test.js, supabase/paywall_rule.sql).
 #             Then supabase/fairline_tape.sql (and its cron file) over
 #             fairline.sql and the email pipeline (lifecycle_email.sql): the
 #             week in Chicago across DST, only Fairline readers, append-only,
@@ -78,6 +80,12 @@ on:
       - 'tools/billing/_harness.js'
       - 'tools/billing/_fake_stripe.js'
       - 'tools/billing/fairline_tier.test.js'
+      - 'supabase/paywall_rule.sql'
+      - 'supabase/community_posts.sql'
+      - 'supabase/site_articles.sql'
+      - 'tools/billing/paywall_rule.test.js'
+      - 'tools/billing/sql/paywall_*.psql'
+      - '.github/workflows/deploy-fairline.yml'
       - 'tools/fairline/**'
       - 'tools/personal/_pg.js'
       - 'tools/billing/_pgrest.js'
@@ -140,6 +148,10 @@ jobs:
         env:
           FAIRLINE_TIER_REQUIRED: '1'
         run: node tools/billing/fairline_tier.test.js
+      - name: The terminal's paywall defers to the one rule (supabase/paywall_rule.sql) — black and red never read signals, blue and comps still do, refused when the rule cannot see an account's access
+        env:
+          PAYWALL_RULE_REQUIRED: '1'
+        run: node tools/billing/paywall_rule.test.js
       - name: fairline_tape.sql and its cron — the Chicago week across DST, Fairline readers only, append-only, what a Tape holds, the email's switches and opt-outs, the sender
         env:
           FAIRLINE_SQL_REQUIRED: '1'

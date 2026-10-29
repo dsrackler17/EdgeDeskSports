@@ -121,6 +121,36 @@ chk('the follower beat the close: 0.50 > 0.44', g1.beat_close5 === true);
   chk('a close equal to the follow price is not beating it', tie.beat_close5 === false);
 }
 
+/* ── the stretches a grade reads (production: a whole history a minute apart for every bet was too much for one run) ── */
+{
+  const inW = (ws) => (x) => ws.some((w) => x.t >= w.from && x.t <= w.to);
+  let seed = 20261029;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  let same = 0, n = 0, twoReads = 0, biggest = 0, firstDiff = null;
+  for (let i = 0; i < 3000; i++) {
+    const entry = T0 - Math.floor(rnd() * 20 * 24 * 60) * MIN, start = entry + Math.floor(rnd() * 20 * 24 * 60 + 1) * MIN;
+    const bet = Object.assign({}, b1, { entry_at: entry, game_start_at: start, settle: rnd() < 0.5 ? 1 : 0 });
+    /* a history from 15 minutes before the entry to a minute after the start, with gaps of up to 2 hours, so the
+       gap rules (10 minutes for a follow, 60 for the close) are crossed both ways, and points on the bounds */
+    const h = [];
+    for (let t = entry - 15 * MIN; t <= start + MIN; t += Math.floor(1 + rnd() * (rnd() < 0.1 ? 120 : 6)) * MIN) h.push({ t, p: Math.round((0.05 + rnd() * 0.9) * 100) / 100 });
+    [entry + 5 * MIN, entry + 15 * MIN, start, start - 60 * MIN, entry - 5 * MIN].forEach((t) => { if (rnd() < 0.3 && t >= entry - 15 * MIN && t <= start + MIN) h.push({ t, p: 0.5 }); });
+    h.sort((a, b) => a.t - b.t);
+    const ws = R.gradeWindows(bet, RULES);
+    const full = R.gradeBet(bet, h, RULES), part = R.gradeBet(bet, h.filter(inW(ws)), RULES);
+    n++; if (JSON.stringify(full) === JSON.stringify(part)) same++; else if (!firstDiff) firstDiff = { i, ws, full, part };
+    if (ws.length === 2) { twoReads++; biggest = Math.max(biggest, ...ws.map((w) => w.to - w.from)); }
+  }
+  chk('gradeWindows: 3,000 random bets graded from only the stretches they read come out exactly as from the whole history', same === n, firstDiff);
+  chk('gradeWindows: a bet held long is two short reads (at most 62 minutes each), never its whole history', twoReads > 2000 && biggest <= 62 * MIN, { twoReads, biggest: biggest / MIN });
+  const near0 = R.gradeWindows(Object.assign({}, b1, { entry_at: T0 - 40 * MIN, game_start_at: T0 }), RULES);
+  chk('gradeWindows: a bet placed shortly before its game is one read, 15 minutes before the entry to a minute after the start, as before',
+    near0.length === 1 && near0[0].from === T0 - 55 * MIN && near0[0].to === T0 + MIN, near0);
+  const far = R.gradeWindows(Object.assign({}, b1, { entry_at: T0 - 10 * 24 * H, game_start_at: T0 }), RULES);
+  chk('gradeWindows: ten days early: [entry - 6, entry + 16] and [start - 61, start + 1] minutes',
+    far.length === 2 && far[0].from === T0 - 10 * 24 * H - 6 * MIN && far[0].to === T0 - 10 * 24 * H + 16 * MIN && far[1].from === T0 - 61 * MIN && far[1].to === T0 + MIN, far);
+}
+
 /* ── conviction ──────────────────────────────────────────────────────── */
 chk('conviction = stake / median stake (300 / 100 = 3)', R.conviction(300, 100) === 3);
 chk('no median, no conviction', R.conviction(300, 0) === null && R.conviction(0, 100) === null);

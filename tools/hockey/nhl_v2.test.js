@@ -302,7 +302,15 @@ const live = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'model', 'para
     const os = require('os');
     const G = SH.grid();
     chk('shadow: the grid is glm.js\'s split grid, 0.7 to 1.6 by 0.025, and holds the frozen b', G.length === 37 && G[0] === 0.7 && G[36] === 1.6 && G.indexOf(SH.PROTOCOL.b) >= 0, G);
-    chk('shadow: only the registered season carries it', SH.active(SH.PROTOCOL.season) && !SH.active(SH.PROTOCOL.season + 1));
+    chk('shadow: promoted, it no longer prices beside production, in any season', SH.PROTOCOL.promoted && !SH.active(SH.PROTOCOL.season) && !SH.active(SH.PROTOCOL.season + 1));
+    /* the promotion: the season in progress publishes the moneyline-fitted split, every other season keeps the goal-split rule */
+    const pc = SH.promote({ a: 0.5, b: 0.9, c: 6.0464, n: 4192 }, SH.PROTOCOL.season);
+    chk('promotion: the season in progress takes b = 1.125, keeps a and c, and records the goal-split b', pc.b === SH.PROTOCOL.b && pc.a === 0.5 && pc.c === 6.0464 && pc.goal_split_b === 0.9 && /promoted/.test(pc.split_basis), pc);
+    chk('promotion: a completed season keeps the goal-split rule', SH.promote({ a: 0.5, b: 0.9, c: 6 }, SH.PROTOCOL.season - 1).b === 0.9 && SH.promotedSplit(SH.PROTOCOL.season - 1) === null);
+    chk('promotion: an identity calibration (no earlier record) is left alone', SH.promote({ a: 1, b: 1, c: null }, SH.PROTOCOL.season).b === 1);
+    chk('promotion: applying it twice keeps the goal-split b of the first fit', SH.promote(pc, SH.PROTOCOL.season).goal_split_b === 0.9);
+    const liveP = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'model', 'params', 'live.json'), 'utf8'));
+    chk('promotion: the live parameters publish b = 1.125 for the chosen model and every variant the slate prices with', liveP.for_season !== SH.PROTOCOL.season || ['xg_core', 'xg_goalie_confirmed', 'goals_only'].every((k) => liveP.pair_calibration[k] && liveP.pair_calibration[k].b === SH.PROTOCOL.b && liveP.pair_calibration[k].goal_split_b != null), Object.fromEntries(Object.entries(liveP.pair_calibration).map(([k, v]) => [k, [v.b, v.goal_split_b]])));
     /* the fit recovers a known split: outcomes drawn at b = 1.2 from a goal-share logit */
     const rnd = ST.rng(20261029); const sig = (z) => 1 / (1 + Math.exp(-z)); const iTrue = G.indexOf(1.2);
     const synth = []; for (let i = 0; i < 40000; i++) { const z = (rnd() - 0.5) * 1.6; const ps = G.map((b) => sig(b * z)); synth.push({ ps, y: rnd() < ps[iTrue] ? 1 : 0 }); }
@@ -357,19 +365,19 @@ const live = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'model', 'para
     /* the rule */
     const ruleRows = (n, shadowP, seed) => { const q = ST.rng(seed); const out = []; for (let i = 0; i < n; i++) { const z = (q() - 0.5) * 3.2; const truth = sig(z); const y = q() < truth ? 1 : 0; const day = new Date(Date.parse('2026-11-01T00:00:00Z') + Math.floor(i / 8) * 86400e3); out.push({ date: day.toISOString().slice(0, 10), start_utc: new Date(+day + (i % 8) * 600e3).toISOString(), y, margin: y ? 2 : -1, prod: { p: sig(0.5 * z), pl: 0.3 }, shadow: { p: shadowP(z), pl: 0.3 } }); } return out; };
     const early = SH.verdict(ruleRows(999, (z) => sig(z), 3));
-    chk('rule: before 1,000 graded games the record is IN_PROGRESS, whatever it shows', early.status === 'IN_PROGRESS' && early.n === 999, early.status);
+    chk('rule: before 1,000 graded games the record is IN_PROGRESS, whatever it shows', early.rule_status === 'IN_PROGRESS' && early.status === 'PROMOTED' && early.n === 999, early);
     const better = SH.verdict(ruleRows(1200, (z) => sig(z), 3));
-    chk('rule: a shadow at the truth against a compressed production is ELIGIBLE, read on the first 1,000 games only', better.status === 'ELIGIBLE' && better.n === 1000 && better.moneyline.shadow_minus_production.ci95[1] < 0, better.checks);
+    chk('rule: a shadow at the truth against a compressed production is ELIGIBLE, read on the first 1,000 games only', better.rule_status === 'ELIGIBLE' && better.n === 1000 && better.moneyline.shadow_minus_production.ci95[1] < 0, better.checks);
     const tied = SH.verdict(ruleRows(1000, (z) => sig(0.5 * z), 3));
-    chk('rule: a shadow no better than production is NOT_CONFIRMED', tied.status === 'NOT_CONFIRMED' && !tied.checks.moneyline_interval_below_zero, tied.checks);
+    chk('rule: a shadow no better than production is NOT_CONFIRMED', tied.rule_status === 'NOT_CONFIRMED' && !tied.checks.moneyline_interval_below_zero, tied.checks);
     const overshoot = SH.verdict(ruleRows(1000, (z) => sig(2.2 * z), 3));
-    chk('rule: a shadow that overshoots fails on calibration even when it might beat production', overshoot.status === 'NOT_CONFIRMED' && !overshoot.checks.calibration, overshoot.moneyline.shadow);
+    chk('rule: a shadow that overshoots fails on calibration even when it might beat production', overshoot.rule_status === 'NOT_CONFIRMED' && !overshoot.checks.calibration, overshoot.moneyline.shadow);
     const plWorse = SH.verdict(ruleRows(1000, (z) => sig(z), 3).map((x) => Object.assign({}, x, { shadow: { p: x.shadow.p, pl: x.margin >= 2 ? 0.2 : 0.4 } })));
-    chk('rule: a puck line worse by more than 0.001 blocks it', plWorse.status === 'NOT_CONFIRMED' && plWorse.checks.moneyline_interval_below_zero && !plWorse.checks.puck_line_not_worse, plWorse.checks);
+    chk('rule: a puck line worse by more than 0.001 blocks it', plWorse.rule_status === 'NOT_CONFIRMED' && plWorse.checks.moneyline_interval_below_zero && !plWorse.checks.puck_line_not_worse, plWorse.checks);
     /* the live record from injected inputs */
     const tg = [{ home: 1, game_id: 1, date: '2026-10-30', win: 1, gf: 3, ga: 1 }];
     const gr = SH.grade({ season: SH.PROTOCOL.season, teamGames: tg, closes: cl, shadowRecs: recs, productionRecs: [{ game_id: 1, start_utc: '2026-10-30T23:00:00Z', recorded_at: '2026-10-30T12:00:00Z', home: 'NJD', away: 'TBL', p_home: 0.6 }] });
-    chk('rule: the live record grades the shadow ledger against the finals and the closes', gr.games_graded === 1 && gr.verdict.status === 'IN_PROGRESS' && gr.verdict.draftkings_close.n === 1 && gr.market_spread.n === 1 && gr.market_spread.reading === 'TOO_EARLY', gr.verdict.draftkings_close);
+    chk('rule: the live record grades the shadow ledger against the finals and the closes', gr.games_graded === 1 && gr.verdict.status === 'PROMOTED' && gr.verdict.rule_status === 'IN_PROGRESS' && gr.verdict.draftkings_close.n === 1 && gr.market_spread.n === 1 && gr.market_spread.reading === 'TOO_EARLY', gr.verdict.draftkings_close);
     fs.rmSync(dir, { recursive: true, force: true });
   }
 

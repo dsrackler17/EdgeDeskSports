@@ -1,45 +1,60 @@
 # Changelog
 
-## 2026-10-29 — Deploy Fairline: the email switch step no longer fails after setting the switch
+## 2026-10-29 — Deploy Fairline: a regression test for the email switch step
 
-**What was wrong.** *Deploy Fairline*'s last step, "The Tape's email switch", sets `fairline_tape_settings.email_enabled` and then checks the answer.
-- It read the answer with `psql -At`. That prints the value as `t` and then the command tag, so the answer was `t` followed by `UPDATE 1` on a second line.
-- It compared that with the word `true`, so the check failed on every run.
-- **The UPDATE had already committed by then.** The owner's run of 2026-10-29 14:19Z (run 40890282549) set the switch on, then reported `fairline_tape_settings was not updated (is fairline_tape.sql applied?)`.
-- Every earlier step of that run had passed, with every report row ok.
+**Why.** *Deploy Fairline*'s last step, "The Tape's email switch", read psql's answer as `t` followed by `UPDATE 1`, and compared it with the word `true`. So it reported `fairline_tape_settings was not updated` on every run, after the UPDATE had committed. The owner's run of 2026-10-29 14:19Z (run 40890282549) set the switch on and failed.
 
-**What changed.**
-- **`.github/workflows/deploy-fairline.yml`:** the step reads with `psql -qAt` (the value alone) and compares `t` / `f`. A missing settings row still fails with the same message. The deploy's test step also runs the new suite.
-- **`.github/workflows/fairline-tests.yml`:** the database job runs the new suite, and the workflow now also starts on changes to `deploy-fairline.yml`.
-- **New `tools/fairline/deploy_switch.test.js`:** it reads the step's script out of the workflow and runs it with `bash` against a real PostgreSQL, using the table `fairline_tape.sql` creates.
+The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads with `psql -X -q -At` and compares `t` / `f`. That change has no test of its own for this step.
 
-**Evidence.** On the old step the suite fails 5 checks, each with the production error. With the fix it passes 10 / 0:
-- `on` and `off` set the switch and pass;
-- a warning appears only when the pipeline's switch is off;
-- a missing row or table fails.
+**What changed.** New `tools/fairline/deploy_switch.test.js`:
+- **What it runs:** the step's own script, read out of `deploy-fairline.yml`, with `bash`, against a real PostgreSQL carrying `fairline_tape_settings` as `fairline_tape.sql` creates it.
+- **What it checks:** `on` and `off` set the switch and pass; a warning appears only when the email pipeline's own switch is off; a missing settings row or table fails.
+- **Where it runs:** in Fairline CI's database job (the workflow now also starts on `deploy-fairline.yml`), and in Deploy Fairline's tests before anything ships.
 
-No SQL, billing or email logic changes.
+**Evidence.**
+- On the step as it was before the fix (`78a8315b4ac`), 5 checks fail, each with the production error.
+- On `main`'s fixed step it passes 10 / 0.
+
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
+
+## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
+
+- **Bug.** The first live wallets call (run_now, 15:06 UTC) got HTTP 504, "Request idle timeout limit (150s) reached". One run took three new wallets: up to 30 activity pages each, then every resolved bet's price history (up to 150 a wallet). That is minutes of requests, and a function must answer within 150 s. The overnight schedule runs the same calls, so it would have stalled the same way.
+- **Fix** (`supabase/functions/polymarket_sync/index.ts`, build `polymarket_sync@2026-10-29.4`). After 75 s a wallets run starts no new wallet, activity page or graded bet. A wallet it did not finish stays due, with its place kept: the activity cursor, plus `first_pages` while the first read is cut. The next run carries on. The 30-page cap counts pages across runs, so a history is still marked truncated only when it really passes 30. Trades and bets are still stored once each.
+- **Test** (`tools/radar/sync_fn.test.js`). A fake clock, where every Polymarket request costs 4 s. A wallet joining with 63 bets to grade must be graded over several runs, each within 79 s, ending with all 63. A history that never ends, cut by time, must keep its page count and be marked truncated only at 30 pages. On the old code: 55 passed, 4 failed (one run took 256 s; 30 pages read at once). On the fix: 59 passed, 0 failed.
+- **run_now** allows up to 300 wallet calls, since a call may now finish only part of a wallet. The day's request reserve still stops it first.
+
+## 2026-10-29 — Prediction Radar: Deploy Prediction Radar can run the overnight work now (run_now)
+
+- **What.** `.github/workflows/deploy-radar.yml` gains `run_now`. It calls the live `polymarket_sync` for the pool, then for wallets (3 a call) until none is due, then for the grade, instead of waiting for 06:07–10:17 UTC.
+- **One call at a time.** Each answer is awaited before the next call, as pg_cron's 5-minute spacing does overnight. Two wallet calls at once would pick the same wallets.
+- **The day's budget.** The wallet calls stop while fewer than `run_now_reserve` (default 8,000) of the day's 40,000 Polymarket requests remain, read from the gateway's own ledger. The 10-minute tonight runs keep theirs, and the 06:10 UTC schedule takes any wallets still due.
+- **Checked** against a stand-in function and a throwaway PostgreSQL before committing. A normal run went pool, wallets 3/3/2/0, then grade. With 5,000 requests left, no wallet call was made. A failing call stopped the run red. Calls never overlapped (at most one in flight).
+
+## 2026-10-29 — Prediction Radar: the tonight sync looks markets up 100 at a time (production failed "Invalid URL")
+
+- **Bug.** The first production `tonight` runs (13:50 UTC on) ended in `error`: "tonight error: Invalid URL https://…/rest/v1/poly_markets?select=…&condition_id=in.(…)". The run looked up every market it saw in one request. On a full slate that URL is longer than fetch takes (65,534 bytes), so nothing was matched, no holders were read and no card was drawn.
+- **Fix.** `supabase/functions/polymarket_sync/index.ts` makes that lookup 100 ids a request, as the run's two other lookups already did. Build `polymarket_sync@2026-10-29.3`.
+- **Test.** `tools/radar/sync_fn.test.js`'s fake network now refuses a URL over 65,534 bytes, as Deno's fetch does. A new check runs `tonight` on a full slate of 1,200 more markets. On the old code: 54 passed, 1 failed, with production's error. On the fix: 55 passed, 0 failed.
+
+
+
+## 2026-10-29 — Authorization change: EdgeDesk's operators keep the terminal under the paywall rule
+
+**Authorization change; needs the owner's explicit review.** The first `paywall_rule = dry_run` against production refused, and nothing changed. One account had the terminal through production's old `has_active_sub()` without a `subscriptions` row, and the rule alone would have locked it out. The owner chose to keep operators in.
+
+- **`supabase/paywall_rule.sql`** (and its mirror): `has_active_sub()` is the rule **or** `billing_is_admin()`, the business consoles' existing operator list (the partner-program admins, else the problem-report admins, else the founding operator). It is still never red or black for anyone else. A new report row 04 checks it.
+- **`tools/billing/sql/paywall_after.psql`**: a refusal now also names the accounts it protects, masked as the billing logs mask them (the first 8 characters). If the account is not an operator, the next dry run refuses again and says which.
+- **Tests**: `paywall_rule.test.js` 29 / 0. An operator with no row keeps the terminal and reads `signals`; everything else is as before. Mutation: the fix without the operator clause, 26 passed, 3 failed.
 
 ## 2026-10-29 — Bet Checker says when sportsbook prices are paused
 
-**Why.** The odds account's October credits ran out on 2026-10-10, and paid price refresh is paused until the reset on 2026-11-01 (`docs/odds-api-incident-2026-10/INCIDENT.md`). Meanwhile most fair prices are older than the 6½ hours a grade accepts, so most bets logged on Bet Checker are saved Not graded, and nothing on the page said why. The owner asked for a notice (2026-10-29).
 
-**What changed.**
-- **The page** reads the public `odds_feed_status()`, the same read the terminal's banner uses. While it says `paused`, a notice above the sign-in and the form tells everyone, signed in or not, what that means for a bet logged now:
-  - it is still saved;
-  - it is graded only on a fair price under the rules' age;
-  - otherwise it is Not graded, which uses no free grade;
-  - a game that starts before prices refresh may show No close available.
-- **The title** names November 1 only while that date is ahead.
-- **It goes away on its own** when the feed is live again, whenever buying resumes.
-- **It fails soft:** a failed read shows no notice, never an error.
-- **Files:** `lib/edgedesk_bet_checker_core.js` (`feedNotice()`, `hoursText()`), `lib/edgedesk_bet_checker.js`, `bet-checker/index.html` (stamps `20261029bc4`), `lib/edgedesk_bet_checker.css`, `docs/bet-checker.md`.
 
-**Tests.**
-- `core.test.js` 60 / 0.
-- `page.test.js` 52 / 0: read with the page's key, never a token; live, a 404 and a network failure show none.
-- `page.e2e.js` 64 / 0: a signed-out visitor and a signed-in reader see it while paused, and it is gone after a reload once the feed is live.
-- On `main`'s page code the core suite crashes (no `feedNotice`), the wiring suite throws (no `loadFeed`), and the browser suite fails 2.
 
 
 
