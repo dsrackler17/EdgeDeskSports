@@ -1,0 +1,363 @@
+{
+ "baselines": {
+  "existing_edgedesk": "the props pipeline's team volume (football/props/model.js) has no historical replay, so it is compared on the live 2026 games it built, not on the holdout",
+  "market_only": "ridge on the pregame spread, total, |spread|, home and a no-line flag only - the market-informed baseline, reported separately from the season-only baselines",
+  "recent_weighted": "exponentially weighted mean, half-life 3 games, seeded with last season's mean as one game",
+  "season_avg": "the team's (player's) mean over this season's earlier games; last season's mean before its first game"
+ },
+ "code_fingerprint": {
+  "files": {
+   "cfb/source.js": "c02f169a38591bfd286301a45fe577a38a96a52bcb68d5b1750c34756f361036",
+   "config/features_v1.json": "46ac63adee935cce7cc5853fff910ea61fcbfcc48d9667fca2a6a78b77facf94",
+   "config/quality_v1.json": "91be4436e1a9ee33cacb539c7e32506893c74bdeb042bbad2861a6edf15d225b",
+   "config/situations_v1.json": "d8edb7ac1def9821e508bb565a2e6ccaa304ba3d5067f44aa2660c675fe174a4",
+   "core/aggregate.js": "d80f2d3a5b8a8de2bdb6ed546d92f0b0b5f1286e1911c6d965ee8ff276add401",
+   "core/evaluate.js": "3502c4c939441a75097af7a0ac28258532d61e10b025788d21e650b1cf327a6a",
+   "core/features.js": "c13009b5a365c780cbd53b4871d8cd5f51a2f45b2b90e777e0765437b6c1fe76",
+   "core/panel.js": "a86d7c1460e8d6ea142f626f1c0b55beea981bb29f2e4e232a9ccfbf0bb5928a",
+   "core/player_model.js": "9e2cac8f2d2d03b262add186629cbe472a438b54862095f34e98a91c620906ad",
+   "core/quality.js": "87b7a824c52c47e083095466ff34771f7e33aa00b18f1d920dbe38cf7619b6a2",
+   "core/research.js": "93a0c29de3f83af61ea68dff491c1771ddb26d0f96d46e2b8e1af90bfd99fd80",
+   "core/situations.js": "0cdfeda7f906e6697d4af16ed681fd2a4e7bda7d305a742ce9ba4a29e8c1b8af",
+   "core/volume_model.js": "023cb35eab8315d8f97000b44ebb4197981d0eb6fcbc39a64a42d6d77aaa7bcd",
+   "nfl/source.js": "86531775c9e00c71d100fa146d9f25f5dbdbb4d2cbee78fe1c560d188300ad00"
+  },
+  "sha256": "5c3164f06ac554d3c22c138137c8556dd493298584bfa4e01d5384d6780be884"
+ },
+ "content_sha256": "c5744045a643a390745526ce9024eb2a4b3513bea49849008fd42fc0f936beae",
+ "data_already_seen": "All seasons 2014-2026 (CFB) and 2015-2026 (NFL) were ingested and passed through the quality gates before this registration, so game counts and acceptance rates of the holdout season were seen. No model was trained on, predicted or scored against a holdout-season label before the freeze: walkForward() refuses any fold at or after the holdout season. The 2026 season (live) and the props pipeline's 2026 captured prices were used to build and smoke-test the live path (projections and the market study) with a provisional fit on train+validation seasons; no 2026 result informed a model choice.",
+ "disclosure_rules": "Holdout results are published whatever they show, beside the walk-forward evidence. The holdout is evaluated once (run.js holdout refuses a second look, and refuses if this file or the model code changed after the freeze). Failing any criterion keeps the model EXPERIMENTAL and its outputs labelled research. Passing makes it eligible for a SEPARATE preregistered integration study only; it is never promoted by this registration, and VALIDATED is never written by a file. Market comparisons are projection disagreements, never betting edges.",
+ "feature_families": {
+  "formation": "+ observed formation/charting as a deviation from the league (0 where unobserved): shotgun and no-huddle (NFL pbp all seasons; CFB play-text tokens only from 2025), FTN motion / play action / RPO / screen / box count / blitzers (NFL 2022+)",
+  "opponent": "+ the opponent defence's faced rates, plays and plays-per-drive allowed, the opponent offence's volume, opponent-adjustment terms",
+  "pace_script": "+ pregame expected margin and total (market), |margin|, home, rest, both teams' pace, and the script MIXTURE (P(script | expected margin) x matchup rate per script)",
+  "situational": "team-only situation-normalised rates (neutral, early-down, passing-down pass rates; script-state rates mixed with league script shares), plays/drives per game, plays per drive, neutral and overall seconds per play, the league's point-in-time level"
+ },
+ "forking_paths": {
+  "alternatives_considered_not_tried": [
+   "play-level win probability for script states (point-in-time validity not established for the college feed)",
+   "gradient-boosted trees (no dependency may be added)"
+  ],
+  "candidates_tried_on_validation": [
+   "simulation residual structure: independent possessions x plays-per-drive (P10-P90 coverage 0.97, rejected) -> game plays total + team split + possessions conditional on plays (0.81)",
+   "a point-in-time league-level feature (removed a -0.5 play trend bias)",
+   "player share shrinkage: toward a 2% prior (QB bias -5.1, rejected) -> toward last season's share / the player's own share",
+   "projected starter's pass share: history over all appearances (bias -1.7, rejected) -> share in games started, shrunk to a starter share by expected margin",
+   "NFL evaluation with pregame availability (roster status + injury report) applied, as production does",
+   "a starting-QB early-exit tail in the player simulation (pass-attempt coverage 0.74 -> 0.77 NFL, 0.71 -> 0.81 CFB)",
+   "a conditional-on-active share uplift (lower bias, higher MAE in both sports; rejected on the primary metric)",
+   "primary variant: pace_script chosen over formation, which did not improve validation MAE in either sport (NFL plays significantly worse)"
+  ],
+  "choice_and_reason": "pace_script as primary for both sports: best pooled validation MAE on all three team targets; formation is reported as a secondary ablation."
+ },
+ "frozen_at": "2026-10-29T15:02:55.791Z",
+ "hypothesis": "Team play volume and its pass/run split, and the player opportunities allocated from it, are predicted better out of sample by situation-normalised tendencies (down, distance, field position, clock, score), opponent adjustment, pace and a script mixture driven by the pregame expected margin than by season or recent averages.",
+ "missing_data_policy": "A play with an impossible down/distance/yard line/clock/score counts toward volume and is excluded from situational cells. A game failing a game-level gate is rejected with its reasons. A team whose attribution fails the player gate gets no player projections. Unobserved formation enters as 0 deviation, never imputed. A game with no market line uses a points-based expectation and a no-line flag (live: the EdgeDesk model's own number, labelled). College availability is unverified and widens player intervals; NFL availability uses the weekly roster and injury report as known before kickoff.",
+ "model_version": "situational_v1",
+ "models": [
+  {
+   "model_key": "fsie_nfl_team_volume",
+   "name": "NFL situational team play volume",
+   "sport": "nfl",
+   "targets": [
+    "plays",
+    "pass_att",
+    "rush_att"
+   ],
+   "unit": "team-game"
+  },
+  {
+   "model_key": "fsie_nfl_player_volume",
+   "name": "NFL situational player opportunity",
+   "sport": "nfl",
+   "targets": [
+    "pass_att",
+    "rush_att",
+    "targets",
+    "receptions"
+   ],
+   "unit": "player-game"
+  },
+  {
+   "model_key": "fsie_cfb_team_volume",
+   "name": "CFB situational team play volume (all FBS)",
+   "sport": "cfb",
+   "targets": [
+    "plays",
+    "pass_att",
+    "rush_att"
+   ],
+   "unit": "team-game"
+  },
+  {
+   "model_key": "fsie_cfb_player_volume",
+   "name": "CFB situational player opportunity (all FBS)",
+   "sport": "cfb",
+   "targets": [
+    "pass_att",
+    "rush_att",
+    "targets",
+    "receptions"
+   ],
+   "unit": "player-game"
+  }
+ ],
+ "primary_metric": "MAE on the untouched holdout season (team: plays, official pass attempts, official rush attempts; player: pass attempts, rush attempts, targets, receptions)",
+ "provenance": "T3",
+ "registered_at": "2026-10-29",
+ "schema": "edgedesk_fsie_preregistration_v1",
+ "secondary_metrics": [
+  "RMSE",
+  "bias (mean signed error)",
+  "P10-P90 interval coverage (target 0.80)",
+  "paired MAE difference vs each baseline with a game-clustered bootstrap 95% CI and a sign-flip permutation p-value",
+  "breakdowns by favourite/underdog, expected script, data-quality tier, population (CFB power/group, conference/non-conference, vs FCS), season"
+ ],
+ "sports": {
+  "cfb": {
+   "apply_active_uplift": false,
+   "frozen_choices": {
+    "chosen_on": "walk-forward validation folds 2017,2018,2019,2020,2021,2022,2023,2024",
+    "phi": 0.9,
+    "player_kappa_multiplier": {
+     "pass_att": 2,
+     "receptions": 8,
+     "rush_att": 1,
+     "targets": 8
+    }
+   },
+   "interval_phi_grid": [
+    0.8,
+    0.9,
+    1,
+    1.1,
+    1.25,
+    1.4
+   ],
+   "player_kappa_grid": [
+    0.25,
+    0.5,
+    1,
+    2,
+    4,
+    8
+   ],
+   "primary_variant": "pace_script",
+   "promotion_criteria": {
+    "player": [
+     {
+      "id": "beats_player_season_avg",
+      "rule": "model MAE below the player's season average for every market, CI upper bound < 0"
+     },
+     {
+      "id": "beats_player_recent_weighted",
+      "rule": "the same against the player's recent weighted average"
+     },
+     {
+      "id": "player_interval_coverage",
+      "max": 0.9,
+      "min": 0.7,
+      "rule": "P10-P90 coverage in [0.70, 0.90] for every market (discrete counts)"
+     },
+     {
+      "id": "player_bias",
+      "max_abs_other": 0.5,
+      "max_abs_pass_att": 1,
+      "rule": "|bias| <= 1.0 for pass attempts and <= 0.5 for the other markets"
+     },
+     {
+      "id": "player_sample",
+      "min_other": 2000,
+      "min_qb_starts": 700,
+      "rule": "at least 700 evaluated quarterback starts and 2000 rows per other market"
+     }
+    ],
+    "team": [
+     {
+      "id": "beats_season_avg",
+      "rule": "primary MAE below season_avg on plays, pass_att and rush_att, each with the bootstrap 95% CI upper bound < 0"
+     },
+     {
+      "id": "beats_recent_weighted",
+      "rule": "the same against recent_weighted"
+     },
+     {
+      "id": "vs_market_only",
+      "plays_max_pct_worse": 1,
+      "rule": "pass_att and rush_att: CI upper bound < 0 against market_only; plays: no more than 1% worse"
+     },
+     {
+      "id": "interval_coverage",
+      "max": 0.86,
+      "min": 0.74,
+      "rule": "P10-P90 coverage in [0.74, 0.86] for each target"
+     },
+     {
+      "id": "bias",
+      "max_abs": 0.75,
+      "rule": "|bias| <= 0.75 for each target"
+     },
+     {
+      "id": "sample",
+      "min_team_games": 1500,
+      "rule": "at least 1500 holdout team-games"
+     }
+    ]
+   },
+   "ridge_lambda": 5,
+   "seasons": {
+    "holdout": 2025,
+    "live": 2026,
+    "prior_only": [
+     2014
+    ],
+    "shrinkage_estimation": [
+     2015,
+     2016
+    ],
+    "train": [
+     2015,
+     2016
+    ],
+    "validation": [
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   }
+  },
+  "nfl": {
+   "apply_active_uplift": false,
+   "frozen_choices": {
+    "chosen_on": "walk-forward validation folds 2019,2020,2021,2022,2023,2024",
+    "phi": 1,
+    "player_kappa_multiplier": {
+     "pass_att": 8,
+     "receptions": 8,
+     "rush_att": 0.25,
+     "targets": 8
+    }
+   },
+   "interval_phi_grid": [
+    0.8,
+    0.9,
+    1,
+    1.1,
+    1.25,
+    1.4
+   ],
+   "player_kappa_grid": [
+    0.25,
+    0.5,
+    1,
+    2,
+    4,
+    8
+   ],
+   "primary_variant": "pace_script",
+   "promotion_criteria": {
+    "player": [
+     {
+      "id": "beats_player_season_avg",
+      "rule": "model MAE below the player's season average for every market, CI upper bound < 0"
+     },
+     {
+      "id": "beats_player_recent_weighted",
+      "rule": "the same against the player's recent weighted average"
+     },
+     {
+      "id": "player_interval_coverage",
+      "max": 0.9,
+      "min": 0.7,
+      "rule": "P10-P90 coverage in [0.70, 0.90] for every market (discrete counts)"
+     },
+     {
+      "id": "player_bias",
+      "max_abs_other": 0.5,
+      "max_abs_pass_att": 1,
+      "rule": "|bias| <= 1.0 for pass attempts and <= 0.5 for the other markets"
+     },
+     {
+      "id": "player_sample",
+      "min_other": 2000,
+      "min_qb_starts": 300,
+      "rule": "at least 300 evaluated quarterback starts and 2000 rows per other market"
+     }
+    ],
+    "team": [
+     {
+      "id": "beats_season_avg",
+      "rule": "primary MAE below season_avg on plays, pass_att and rush_att, each with the bootstrap 95% CI upper bound < 0"
+     },
+     {
+      "id": "beats_recent_weighted",
+      "rule": "the same against recent_weighted"
+     },
+     {
+      "id": "vs_market_only",
+      "plays_max_pct_worse": 1,
+      "rule": "pass_att and rush_att: CI upper bound < 0 against market_only; plays: no more than 1% worse"
+     },
+     {
+      "id": "interval_coverage",
+      "max": 0.86,
+      "min": 0.74,
+      "rule": "P10-P90 coverage in [0.74, 0.86] for each target"
+     },
+     {
+      "id": "bias",
+      "max_abs": 0.75,
+      "rule": "|bias| <= 0.75 for each target"
+     },
+     {
+      "id": "sample",
+      "min_team_games": 450,
+      "rule": "at least 450 holdout team-games"
+     }
+    ]
+   },
+   "ridge_lambda": 5,
+   "seasons": {
+    "holdout": 2025,
+    "live": 2026,
+    "prior_only": [
+     2015
+    ],
+    "shrinkage_estimation": [
+     2016,
+     2017,
+     2018
+    ],
+    "train": [
+     2016,
+     2017,
+     2018
+    ],
+    "validation": [
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   }
+  }
+ },
+ "status": "frozen",
+ "walkforward_evidence": {
+  "cfb": {
+   "file": "football/situational/research/walkforward_cfb.json",
+   "sha256": "deb7891ad75290693747812737b90abc4f64ca1aad3656f190981820679f66af"
+  },
+  "nfl": {
+   "file": "football/situational/research/walkforward_nfl.json",
+   "sha256": "ecab29946c7ebecc12eb2e74cb06e84d18bf01c911b21646c2ef5eccbf5f98fa"
+  }
+ }
+}

@@ -96,6 +96,21 @@ function v2Shadow(gameId) {
     drivers: p.drivers, uncertainty_drivers: p.uncertainty_drivers,
     label: 'SHADOW — V2 is evaluated beside V1; V1 remains the priced number' };
 }
+/* FOOTBALL SITUATIONAL INTELLIGENCE (football/situational) in SHADOW beside V1:
+   situational play volume and possessions, the attributable total candidate
+   (V1's own pace term swapped for the situational expected plays), and
+   applied_points 0. Appended under `situational_shadow` only when the adapter
+   returns a block — OFF (config or FSIE_MODE=OFF) or no artifact means no key
+   at all, so every existing field and the row's shape are unchanged. */
+const FSIE = (function () { try { return require(path.join(ROOT, 'football', 'situational', 'adapter.js')); } catch (e) { return null; } })();
+function fsieShadow(gameId, p) {
+  if (!FSIE) return {};
+  const ppp = global.window && global.window.EDCfbP4Params && global.window.EDCfbP4Params.total ? global.window.EDCfbP4Params.total.points_per_pace : null;
+  const t = p && p.status === 'PREDICTED' && Array.isArray(p.total_contributions) ? p.total_contributions.find((c) => c.key === 'pace' && c.available) : null;
+  const pace = t && isFiniteNum(ppp) && ppp !== 0 && isFiniteNum(t.points) ? { input: t.points / ppp, points: t.points } : null;
+  const b = FSIE.shadowBlock('cfb', 'fbs_slate', gameId, { fair_total: p && p.status === 'PREDICTED' ? p.model.fair_total : null, pace });
+  return b ? { situational_shadow: b } : {};
+}
 const FBS = require(path.join(HERE, 'fbs.js'));
 const IN = require(path.join(ROOT, 'football', 'matchup', 'inputs.js'));
 const CONF = require(path.join(ROOT, 'football', 'matchup', 'confidence.js'));
@@ -1039,6 +1054,7 @@ async function main() {
          when the truth is more specific and more useful than that. */
       shadow_effect: shadowEffect(p, sh, asm),
       v2_shadow: v2Shadow(m.id),
+      ...fsieShadow(m.id, p),
       /* ALTITUDE & TRAVEL: the research section, with what the engine actually
          did with it (contribution 0 unless every lock is open) */
       altitude_travel: altitudeRow(altOf[m.id], p),
