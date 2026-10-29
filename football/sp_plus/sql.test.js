@@ -166,9 +166,20 @@ try {
   chk('refused: any other kind', /cfb_ext_kind/.test(mustFail(ext({ kind: "'EDGEDESK_MODEL'" })) || ''));
   chk('refused: a rating tier other than T3', /cfb_ext_rating_tier/.test(mustFail(ext({ rating_tier: "'T1'" })) || ''));
   chk('refused: flipping the seeded row to validated, even for the owner', /append-only/.test(mustFail(`update public.cfb_external_estimates set validated_by_edgedesk = true`) || ''));
-  chk('anon reads the registry (public metadata)', psql(`select count(*) from public.cfb_external_estimates`, { role: 'anon' }) === '1');
-  chk('authenticated reads it too', psql(`select count(*) from public.cfb_external_estimates`, { role: 'authenticated' }) === '1');
+  /* anon holds nothing here: no page reads the registry from the browser (the
+     cards read football/sp_plus/lines.json and registry.json), and the CFB
+     least-privilege rule (football/cfb_production/security.test.js) allows
+     anon only the settled-record views and the analytics writer */
+  chk('anon cannot read the registry', /permission denied/.test(mustFail(`select count(*) from public.cfb_external_estimates`, { role: 'anon' }) || ''));
+  chk('authenticated reads it', psql(`select count(*) from public.cfb_external_estimates`, { role: 'authenticated' }) === '1');
   chk('anon cannot write it', /permission denied/.test(mustFail(ext({ anon: 'x' }), { role: 'anon' }) || ''));
+  /* a database that ran the first version still holds anon's grant: running
+     the file again takes it away */
+  psql(`grant select on table public.cfb_external_estimates to anon`);
+  chk('a database carrying the old grant: anon reads before the file runs again', psql(`select count(*) from public.cfb_external_estimates`, { role: 'anon' }) === '1');
+  psql(SQL);
+  chk('running supabase/cfb_sp_plus.sql again takes anon\'s read away', /permission denied/.test(mustFail(`select count(*) from public.cfb_external_estimates`, { role: 'anon' }) || ''));
+  chk('and signed-in readers keep theirs', psql(`select count(*) from public.cfb_external_estimates`, { role: 'authenticated' }) === '1');
 } catch (e) {
   chk('the live layer ran without an unexpected error', false, String(e.stderr || e.message).slice(0, 600));
 } finally {

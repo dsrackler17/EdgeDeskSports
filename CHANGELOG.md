@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-29 — Methodology change: the SP+ registry table is no longer readable by anon (main was red on least privilege)
+
+**What failed.** CFB security (`audit`), `football/cfb_production/security.test.js`, on `main` since the SP+ commits of 12:47 and 13:08 UTC: 58 passed, 1 failed.
+```
+FAIL | least privilege: anon is granted only SELECT on the settled-record views and the analytics writer, nothing else  ["cfb_sp_plus.sql:214 grant select on table public.cfb_external_estimates to anon;"]
+```
+The SP+ change had made `public.cfb_external_estimates` (the external-estimates registry: metadata, no rating) readable by anon. Its own `sql.test.js` said so, and the least-privilege rule did not allow it.
+
+**The owner's decision: remove anon's read.**
+- Nothing on the site reads that table from the browser. The cards read `football/sp_plus/lines.json` and `registry.json`; no page, `lib/` script or edge function names the table.
+- Least privilege therefore wins. The rule is unchanged.
+
+**What changed:**
+- `supabase/cfb_sp_plus.sql`: the `grant select … to anon` line is gone.
+  - The `revoke all … from anon` before it stays, so running the file again revokes the read its first version gave.
+  - Signed-in readers (authenticated) and the service role keep theirs.
+- `football/sp_plus/sql.test.js` (a real PostgreSQL):
+  - "anon reads the registry" becomes "anon cannot read the registry".
+  - New: on a database that still carries the old grant, anon reads until the file runs again, and not after; signed-in readers keep theirs.
+  - With today's SQL, the new checks fail: 47 passed, 2 failed. With the change, 49 passed, 0 failed.
+- `football/cfb_production/security.test.js`: 59 passed, 0 failed (was 58 passed, 1 failed).
+- `football/sp_plus/README.md` says who may read the table.
+
+**To apply.** Run `supabase/cfb_sp_plus.sql` again in the Supabase SQL editor. It is idempotent, and the test applies it twice plus once as one string, the way the editor sends it. That takes the read away from the live database.
+
 ## 2026-10-29 — CFB: SP+ beside EdgeDesk's number on every card, as an external estimate, graded against the close
 
 **Why.** On 2026-10-28 EdgeDesk had Middle Tennessee −4.5 against Kennesaw State. SP+ had about Middle Tennessee −1, and the game closed Kennesaw State −1.5 (KSU won 44–28). A results-based number had missed a team that was losing close games while playing efficiently. SP+ (ESPN's opponent-adjusted efficiency rating, by Bill Connelly) is now a visible second opinion, measured against the close. The full write-up is `football/sp_plus/README.md`.

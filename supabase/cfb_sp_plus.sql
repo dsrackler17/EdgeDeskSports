@@ -151,9 +151,14 @@ end $blk$;
 -- ================================================================ the registry
 -- External estimates (football/sp_plus/registry.json): a third party's model
 -- is registered with its source, version and terms, and the server refuses to
--- record one as an EdgeDesk model or as validated by EdgeDesk. Public
--- metadata (no rating): anon and authenticated may read it; append-only like
--- the rest.
+-- record one as an EdgeDesk model or as validated by EdgeDesk. Metadata (no
+-- rating): signed-in readers (authenticated) and the service role may read
+-- it; anon holds nothing, since no page reads it from the browser (the cards
+-- read football/sp_plus/lines.json and registry.json) and the CFB
+-- least-privilege rule (football/cfb_production/security.test.js) allows anon
+-- only the settled-record views and the analytics writer. Running this file
+-- again revokes the read anon was given by its first version (2026-10-29).
+-- Append-only like the rest.
 create table if not exists public.cfb_external_estimates (
   estimate_id            text primary key,
   name                   text not null,
@@ -211,7 +216,6 @@ begin
   revoke all on table public.cfb_external_estimates from public;
   if exists (select 1 from pg_roles where rolname = 'anon') then
     revoke all on table public.cfb_external_estimates from anon;
-    grant select on table public.cfb_external_estimates to anon;
   end if;
   if exists (select 1 from pg_roles where rolname = 'authenticated') then
     revoke all on table public.cfb_external_estimates from authenticated;

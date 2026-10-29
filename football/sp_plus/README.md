@@ -202,7 +202,9 @@ node football/sp_plus/track.test.js
   their date), the display decision and the attribution.
 - **`public.cfb_external_estimates`** (`supabase/cfb_sp_plus.sql`) mirrors it.
   A check constraint refuses to record an external estimate as an EdgeDesk
-  model or as validated, and the table is append-only.
+  model or as validated, and the table is append-only. Signed-in readers and
+  the service role may read it; anon may not, since no page reads it from the
+  browser.
 - **The page.** `RS_EXTERNAL` in `app.html` pins `cfbd.sp_plus` to the
   **External** maturity badge ahead of the model registry, so no registry row
   can ever present SP+ as Validated. The provenance table lists the SP+ rating
