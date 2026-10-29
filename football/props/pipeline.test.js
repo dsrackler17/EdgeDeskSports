@@ -219,6 +219,8 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
     chk('gateway · a refused credential is an ERROR (GATEWAY_UNAUTHORIZED) that names the fix, not a deferral',
       gAuth.status === 'ERROR' && gAuth.reason === 'GATEWAY_UNAUTHORIZED' && /ODDS_GATEWAY_SECRET/.test(gAuth.why) && /unauthorized/.test(gAuth.error_message || ''),
       [gAuth.status, gAuth.reason, gAuth.why]);
+    /* the workflow's ::error:: annotation prints error_message, so the fix must be named there too */
+    chk('gateway · a refused credential\'s error message (the run\'s ::error:: annotation) names ODDS_GATEWAY_SECRET', /ODDS_GATEWAY_SECRET/.test(gAuth.error_message || ''), gAuth.error_message);
     chk('gateway · a refused credential buys nothing and is not counted as a provider failure (no back-off)',
       !(gAuth.quotes_written > 0) && !(gAuth.events_polled > 0) && !(gAuth.credits_spent > 0) && !(gAuth.provider || {}).consecutive_failures && !(gAuth.provider || {}).rate_limited_until, gAuth.provider);
 

@@ -588,7 +588,7 @@ async function run(opts) {
        secret in another valid format (sb_secret_…), which PostgREST accepts, is
        refused. Not a provider failure: no back-off, no failure count. */
     log(tag + ': ERROR — the odds gateway refused this job\'s credential (unauthorized): nothing requested, nothing spent');
-    const s = finish(Object.assign(base, { status: 'ERROR', reason: 'GATEWAY_UNAUTHORIZED', error_message: 'odds gateway: unauthorized',
+    const s = finish(Object.assign(base, { status: 'ERROR', reason: 'GATEWAY_UNAUTHORIZED', error_message: 'odds gateway: unauthorized; set the repository secret ODDS_GATEWAY_SECRET (docs/odds-api-incident-2026-10/INCIDENT.md §9 step 4)',
       why: 'The odds gateway refused this job\'s credential (unauthorized): no prop was requested. Set the repository secret ODDS_GATEWAY_SECRET to the odds_gateway function secret of the same name (docs/odds-api-incident-2026-10/INCIDENT.md §9 step 4).' }));
     s.closed_events = archiveFinished(P, league, now, opts.dry_run);
     return Object.assign({ skipped: 'odds gateway: unauthorized' }, s);
