@@ -45,12 +45,18 @@ async function cfbSchedule(y) {
   return cfbFetched[y];
 }
 
+/* missing tooling or data is NOT VERIFIED, never a pass: CI sets FSIE_E2E_REQUIRED=1, so there it fails */
+function unavailable(why) {
+  if (process.env.FSIE_E2E_REQUIRED === '1') { console.log('FAIL | ' + why + ' (FSIE_E2E_REQUIRED=1)'); process.exit(1); }
+  console.log('SKIPPED (not verified): ' + why); process.exit(0);
+}
+
 (async function main() {
   let pw = null;
   for (const p of ['playwright', '/opt/node22/lib/node_modules/playwright', '/opt/node-tools/node_modules/playwright']) { try { pw = require(p); break; } catch (_) { /* next */ } }
-  if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
+  if (!pw) unavailable('playwright is not installed here');
   const ART = path.join(ROOT, 'football', 'situational', 'data', 'cards.json');
-  if (!fs.existsSync(ART)) { console.log('SKIPPED: no committed cards.json'); process.exit(0); }
+  if (!fs.existsSync(ART)) unavailable('no committed cards.json');
   const cards = JSON.parse(fs.readFileSync(ART, 'utf8'));
   const PIN = Date.parse(cards.built_at);
   const nflIds = Object.keys(cards.games).filter((k) => cards.games[k].sport === 'nfl');
