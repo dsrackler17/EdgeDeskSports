@@ -228,6 +228,17 @@ let rest;
     V(`update public.poly_wallets set activity_synced_at = now() - interval '2 days', activity_cursor = null where wallet = ${lit(W1)}`);
     await go('wallets');
     chk('wallets: reading a wallet again from the start adds nothing (trades once, bets once)', V('select count(*) from public.poly_trades') === tradesBefore && V('select count(*) from public.poly_bets') === betsBefore);
+    /* a wallet whose stored bets already fill a grade still has its NEW bets graded: the cap is per run (the
+       newest first), not per wallet. Shown with the cap at 60, W1's stored count: three new games follow. */
+    const rules60 = Object.assign(JSON.parse(V('select public.radar_rules()')), { max_bets_per_wallet: 60 });
+    V(`create or replace function public.radar_rules() returns jsonb language sql immutable as $r$ select ${lit(JSON.stringify(rules60))}::jsonb $r$;`);
+    for (let g = 0; g < 3; g++) { const c = cid('new' + g); PAST.push({ c, start: NOW - (30 - g) * H, settle: ['1', '0'], tokens: [tok(c, 0), tok(c, 1)], slug: 'nfl-new-' + g }); }
+    V(`update public.poly_wallets set activity_synced_at = now() - interval '2 days' where wallet = ${lit(W1)}`);
+    await go('wallets');
+    chk('wallets: a wallet with a full grade of stored bets still has its three new bets graded', V(`select count(*) from public.poly_bets where wallet = ${lit(W1)}`) === '63',
+      V(`select count(*) from public.poly_bets where wallet = ${lit(W1)}`));
+    db.applyFileAtomic(path.join(ROOT, 'supabase', 'radar.sql'));   /* radar_rules() as shipped again */
+    chk('(radar_rules() is the shipped one again)', JSON.parse(V('select public.radar_rules()')).max_bets_per_wallet === 150);
     chk('no request left for a host that is not Polymarket or the database', strays.length === 0, strays.slice(0, 3));
 
     /* ── grade ── */
