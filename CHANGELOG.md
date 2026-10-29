@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar: the tonight sync looks markets up 100 at a time (production failed "Invalid URL")
+
+- **Bug.** The first production `tonight` runs (13:50 UTC on) ended in `error`: "tonight error: Invalid URL https://…/rest/v1/poly_markets?select=…&condition_id=in.(…)". The run looked up every market it saw in one request. On a full slate that URL is longer than fetch takes (65,534 bytes), so nothing was matched, no holders were read and no card was drawn.
+- **Fix.** `supabase/functions/polymarket_sync/index.ts` makes that lookup 100 ids a request, as the run's two other lookups already did. Build `polymarket_sync@2026-10-29.3`.
+- **Test.** `tools/radar/sync_fn.test.js`'s fake network now refuses a URL over 65,534 bytes, as Deno's fetch does. A new check runs `tonight` on a full slate of 1,200 more markets. On the old code: 54 passed, 1 failed, with production's error. On the fix: 55 passed, 0 failed.
+
 ## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
 
 **What was wrong, once Pages' source was switched to GitHub Actions:**
