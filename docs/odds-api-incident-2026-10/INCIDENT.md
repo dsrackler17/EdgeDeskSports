@@ -30,6 +30,20 @@ grade them. Both leagues stay disabled until the owner turns them on after the
 reset (§9 step 12;
 [METHODOLOGY-2026-10-29-nba-nhl-lines.md](METHODOLOGY-2026-10-29-nba-nhl-lines.md)).
 
+**Amended 2026-10-29 (the GitHub jobs' credential):** every props capture since
+the gateway went live (2026-10-10 14:29Z) was refused with `unauthorized`. The
+capture recorded it as `NOT_RUN / GATEWAY_DEFERRED` and its workflow stayed
+green.
+- The gateway compares the bearer byte for byte with its own
+  `SUPABASE_SERVICE_ROLE_KEY`.
+- The repository secret `SB_SERVICE_ROLE` is a different string. It is still
+  a valid service-role credential: in the same runs, PostgREST accepts it for
+  `rpc/odds_api_dashboard` and for the props health record.
+- So the GitHub jobs now also send `ODDS_GATEWAY_SECRET`, and §9 step 4 makes
+  it **required**.
+- A refused credential is now an ERROR (`GATEWAY_UNAUTHORIZED`), never a
+  deferral.
+
 **Plan:** $59/month, 100,000 credits. On 2026-10-10 at 12:24Z the provider
 reported **99,336 used and 664 remaining**. By 13:55Z it reported **100,000
 used and 0 remaining** (the CFB props capture's own `capture_state.json`): the
@@ -398,7 +412,9 @@ The **Deploy odds gateway** workflow applies 1 (opt-in) and 2 when the
 3. Paste `supabase/odds_api_gateway.sql` (or its parts) and run it. Every report row should say `ok`.
 4. Supabase secrets (dashboard → Edge Functions → Secrets, or the CLI):
    - `ODDS_GATEWAY_PROVIDER_KEY=<the The Odds API key>`. If the provider account lets you regenerate the key, do it, and give the new key **only** to this secret.
-   - Optional: `ODDS_GATEWAY_SECRET=<random>`, for callers without the service role.
+   - **Required:** `ODDS_GATEWAY_SECRET=<random>`. The GitHub jobs (props capture, the props-factory backfill and the alternate spreads) send it beside the service role. The gateway compares the service role byte for byte, so a repository `SB_SERVICE_ROLE` in another valid format (for example `sb_secret_…`) is refused without it.
+   - Add the **same value** as the GitHub repository secret `ODDS_GATEWAY_SECRET` (Settings → Secrets and variables → Actions).
+   - Check: run **Actions → Player props** by hand. Its capture line must no longer read `unauthorized` / `GATEWAY_UNAUTHORIZED`. Before 2026-11-01 it should read `PROVIDER_PAUSED` (the breaker is off) or `GATEWAY_DEFERRED` with a budget decision: the credential is accepted, and nothing is bought, as intended.
 5. Run **Actions → Deploy odds gateway** with the defaults: gateway SQL, `odds_gateway`, then the callers. Every caller now refuses to buy while the breaker is off.
 6. Remove the key from everywhere else:
    - `supabase secrets unset ODDS_API_KEY THE_ODDS_API_KEY`;
