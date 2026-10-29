@@ -118,6 +118,8 @@ function polymarket(url) {
   }
   if (u.host === 'data-api.polymarket.com' && p === '/v2/activity') {
     const user = q('user');
+    /* what the wallet's row says while its run reads it (the attempt mark must be written before the work) */
+    if (scenario.watchAttempt === user) scenario.seenAttempt = db.sql(`select coalesce(activity_cursor ->> 'attempts', '-') from public.poly_wallets where wallet = ${lit(user)}`);
     if (user === W4) return ok({ data: [], pagination: { has_more: true, next_cursor: 'c' + Math.random() } });
     let rows = activityFor(user).filter((r) => r.timestamp >= +q('start'));
     if (scenario.drift && user === W1) rows = rows.concat([{ type: 'TRADE', side: 'BUY', size: '1', price: '0.5', timestamp: Math.floor(NOW / 1000), condition_id: PAST[0].c, asset: PAST[0].tokens[0] }]);
@@ -361,6 +363,27 @@ let rest;
     scenario.costMs = 0;
     scenario.leaderboard = POOL;
     await go('pool');
+
+    /* ── a wallet whose run died part way (out of compute, HTTP 546: production, 16:38 UTC) never blocks the rest ── */
+    const crash = (wallet, ago, attempts) => V(`update public.poly_wallets set activity_synced_at = null, activity_cursor = jsonb_build_object('attempt_at', now() - interval '${ago}', 'attempts', ${attempts}) where wallet = ${lit(wallet)}`);
+    crash(W5, '2 minutes', 1);
+    V(`update public.poly_wallets set activity_synced_at = null where wallet = ${lit(W6)}`);
+    const k1 = await go('wallets'), k1w = (k1.details.wallets || []).map((x) => x.wallet);
+    chk('crash: a wallet whose run died minutes ago is set aside, and the next wallet is read instead (it does not block the queue)',
+      !k1w.includes(W5) && k1w.includes(W6) && (k1.details.skipped || []).includes(W5) && k1.alerts.some((a) => a.code === 'wallet_skipped' && a.severity === 'WARNING'), { k1w, skipped: k1.details.skipped, alerts: k1.alerts.map((a) => a.code) });
+    crash(W5, '20 minutes', 1);
+    scenario.watchAttempt = W5;
+    const k2 = await go('wallets');
+    scenario.watchAttempt = null;
+    chk('crash: after 15 minutes it is read again, its attempt marked before the work starts (2nd attempt), and a finished run clears the mark',
+      (k2.details.wallets || []).some((x) => x.wallet === W5 && x.status === 'done') && scenario.seenAttempt === '2'
+      && V(`select activity_cursor ? 'attempt_at' or activity_cursor ? 'attempts' from public.poly_wallets where wallet = ${lit(W5)}`) === 'f', { seen: scenario.seenAttempt, k2: k2.details.wallets });
+    crash(W5, '2 hours', 3);
+    const k3 = await go('wallets');
+    chk('crash: a wallet whose runs died three times is read only once a day', !(k3.details.wallets || []).some((x) => x.wallet === W5) && (k3.details.skipped || []).includes(W5), k3.details);
+    crash(W5, '25 hours', 3);
+    const k4 = await go('wallets');
+    chk('crash: …and is read again a day later', (k4.details.wallets || []).some((x) => x.wallet === W5), k4.details);
 
     /* ── budget ── */
     V('update public.poly_api_days set granted = 39997');

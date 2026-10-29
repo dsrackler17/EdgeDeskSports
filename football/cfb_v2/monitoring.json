@@ -2,12 +2,12 @@
  "alerts": [
   {
    "evidence": {
-    "brier": 0.2124,
-    "mean_gap": -0.0191
+    "brier": 0.2127,
+    "mean_gap": -0.0147
    },
    "kind": "calibration",
    "level": "warn",
-   "message": "season-to-date win probabilities are off by -0.019 on average (Brier 0.212)"
+   "message": "season-to-date win probabilities are off by -0.015 on average (Brier 0.213)"
   },
   {
    "evidence": {
@@ -23,7 +23,7 @@
    },
    "kind": "disagreement",
    "level": "info",
-   "message": "Merrimack @ Wake Forest: C 57.8 vs D 41.5 (beyond the backtest 99th percentile 7.5)"
+   "message": "Merrimack @ Wake Forest: C 57.9 vs D 41.5 (beyond the backtest 99th percentile 7.5)"
   }
  ],
  "bet_enabled": false,
@@ -193,56 +193,62 @@
    "week": 8
   },
   {
-   "ats_at_close": 0.0,
-   "ats_at_freeze_line": 0.0,
-   "bias": -0.092,
-   "brier": 0.2388,
-   "clv_mean": 0.0,
+   "ats_at_close": 0.25,
+   "ats_at_freeze_line": 0.25,
+   "bias": 9.795,
+   "brier": 0.2468,
+   "clv_mean": -0.062,
    "disagreement_c_d_mean": 1.851,
-   "final": 2,
+   "final": 4,
    "frozen_games": 56,
    "largest_misses": [
+    {
+     "abs_error": 20.0,
+     "final": -16.0,
+     "game": "Kennesaw State @ Middle Tennessee",
+     "v2": 4.0
+    },
+    {
+     "abs_error": 19.3,
+     "final": -24.0,
+     "game": "Jacksonville State @ New Mexico State",
+     "v2": -4.7
+    },
     {
      "abs_error": 16.8,
      "final": 21.0,
      "game": "Sam Houston @ Missouri State",
      "v2": 4.2
-    },
-    {
-     "abs_error": 16.7,
-     "final": -14.0,
-     "game": "Delaware @ Western Kentucky",
-     "v2": 2.7
     }
    ],
-   "mae": 16.755,
-   "mae_candidate_001_same_games": 16.86,
-   "mae_close": 14.625,
-   "mae_line_at_freeze": 14.625,
-   "mae_v1_same_games": 15.81,
-   "mae_v2_same_close_games": 16.755,
-   "mae_v2_same_line_at_freeze_games": 16.755,
-   "mae_v2_vs_candidate_001_games": 16.755,
-   "mae_v2_vs_v1_games": 16.755,
-   "rmse": 16.756,
+   "mae": 18.219,
+   "mae_candidate_001_same_games": 18.281,
+   "mae_close": 17.188,
+   "mae_line_at_freeze": 17.125,
+   "mae_v1_same_games": 17.947,
+   "mae_v2_same_close_games": 18.219,
+   "mae_v2_same_line_at_freeze_games": 18.219,
+   "mae_v2_vs_candidate_001_games": 18.219,
+   "mae_v2_vs_v1_games": 18.219,
+   "rmse": 18.28,
    "week": 9
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.086,
+  "ens_pred": 0.076,
   "ens_pred_noise_q99": 0.181,
-  "ens_sd": 0.155,
+  "ens_sd": 0.187,
   "ens_sd_noise_q99": 0.181,
-  "pred_total": 0.094,
+  "pred_total": 0.109,
   "pred_total_noise_q99": 0.181,
   "reference_weeks": "week9",
-  "sigma": 0.18,
+  "sigma": 0.156,
   "sigma_noise_q99": 0.181
  },
- "generated_at": "2026-10-29T10:49:41Z",
+ "generated_at": "2026-10-29T17:09:46Z",
  "learning": {
-  "bias": -1.2820692640692641,
+  "bias": -1.1021158798283262,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -255,20 +261,20 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -1.2820692640692641,
+    "bias": -1.1021158798283262,
     "fcs_not_priced_games": 6,
-    "games_scored": 231,
-    "mae": 12.120709956709957,
-    "major_miss_share": 0.11688311688311688,
+    "games_scored": 233,
+    "mae": 12.185618025751072,
+    "major_miss_share": 0.11587982832618025,
     "sources": {
-     "FROZEN": 231
+     "FROZEN": 233
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 231,
-  "mae": 12.120709956709957,
-  "major_miss_share": 0.11688311688311688,
+  "games_scored": 233,
+  "mae": 12.185618025751072,
+  "major_miss_share": 0.11587982832618025,
   "miss_classes": {
    "explosive_variance": 3,
    "garbage_time": 4,
@@ -280,7 +286,7 @@
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 231
+   "FROZEN": 233
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1962,8 +1968,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 231,
+  "final": 233,
   "frozen_games": 285,
-  "mae": 12.121
+  "mae": 12.186
  }
 }

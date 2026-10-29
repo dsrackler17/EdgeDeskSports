@@ -1,33 +1,6 @@
 # Changelog
 
-## 2026-10-29 — NHL methodology change: the headline is priced at lineup lock, from the dressed lineups and both Confirmed starters
 
-**Methodology change; needs the owner's explicit review.** Evidence and the decision are in `docs/engine/NHL_GOALIES.md` §11.
-
-- **What.** Until now an NHL card's headline was `xg_core` until puck drop, whoever dressed. Now the goalie sync (`supabase/functions/nhl_goalie_sync`) reads each side's dressed skaters from the NHL boxscore it already polls. Once both lineups are listed and both starters are Confirmed with no conflict, the card's headline is priced by `xg_all_confirmed`: the xG core plus the confirmed goalie and both clubs' confirmed lineup value. The card gets a new version (reason `lineup_locked`, trigger `inputs_changed`). The page, EdgeDesk vs the market, Check a price and the edge events read that price.
-- **Evidence** (`hockey/validation/nhl_walkforward.json`). Log loss against `xg_core`: selection −0.00030 (9,205 games), confirmation −0.00119 (7,945), live +0.00008 (198). It fails the lab's rule 1 (0.001 on selection). Using it at lock anyway is the owner's decision.
-- **Before and after on the committed slate** (33 games, each club's last lineup and the likeliest starters). The home win probability moves 1.7 pp on average, by 5.1 pp at most (OTT @ LAK, 47.6% → 42.5%). The mean distance from 50% goes from 8.34 pp to 8.46 pp, so this does not fix the favourite compression; the split factor does.
-- **Unchanged:** the slate, its ledger and the public record, which grade the slate's `xg_core` price. Also unchanged: the SQL, and everything before lock.
-- **Inputs** (`hockey/build_slate.js` → `hockey/goalie_inputs.json`): the variant's η without its goalie and lineup terms, each club's typical lineup value and last lineup, every skater's value, the betas and its own pair calibration. `--check` re-prices every game at lock from those inputs and fails unless it matches the build's own GLM path within 0.00015. All 33 games pass.
-- **Timing.** The sync checks every 5 minutes from T−25 to T−5, after the T−30 final pass. Each boxscore read records the minutes to start, the skaters listed and the starters in the run's `sources`, a timing probe. When lineups post has not been measured live.
-- **A failed read never unlocks.** The card keeps the lineups it locked with (`headline.lineup.ids`). A run whose boxscore read fails, or lists none, prices from them (`nhlgLockedLineups`). Found in review: before this, an NHL API outage after lock wrote a version `lineup_unlocked` and put the slate's price back minutes before puck drop. The regression checks failed on that code (core 103 passed, 1 failed; sync 75 passed, 2 failed).
-- **Tests:** goalie core 104/0, sync 77/0, SQL 79/0 (PostgreSQL), block and gate 46/0, compare 55/0, engine UI 164/0 (Chromium, desktop and phone). With the page's lock price disabled, the engine UI fails 6 checks: the Overview headline, the Markets banner and the list card, on desktop and phone.
-- **Not wired:** Today's Games and the matchup graphic still show the slate's price. Deploy: run NHL engine build, then Deploy NHL goalie layer with `deploy_function`.
-
-## 2026-10-29 — Deploy Fairline: a regression test for the email switch step
-
-**Why.** *Deploy Fairline*'s last step, "The Tape's email switch", read psql's answer as `t` followed by `UPDATE 1`, and compared it with the word `true`. So it reported `fairline_tape_settings was not updated` on every run, after the UPDATE had committed. The owner's run of 2026-10-29 14:19Z (run 40890282549) set the switch on and failed.
-
-The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads with `psql -X -q -At` and compares `t` / `f`. That change has no test of its own for this step.
-
-**What changed.** New `tools/fairline/deploy_switch.test.js`:
-- **What it runs:** the step's own script, read out of `deploy-fairline.yml`, with `bash`, against a real PostgreSQL carrying `fairline_tape_settings` as `fairline_tape.sql` creates it.
-- **What it checks:** `on` and `off` set the switch and pass; a warning appears only when the email pipeline's own switch is off; a missing settings row or table fails.
-- **Where it runs:** in Fairline CI's database job (the workflow now also starts on `deploy-fairline.yml`), and in Deploy Fairline's tests before anything ships.
-
-**Evidence.**
-- On the step as it was before the fix (`78a8315b4ac`), 5 checks fail, each with the production error.
-- On `main`'s fixed step it passes 10 / 0.
 
 ## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
 
@@ -154,6 +127,53 @@ All run in `cfb-sp-plus-tests.yml`.
   - `apply_cron`: the four schedules.
 
   A report row that says CHECK THIS fails the run.
+
+## 2026-10-29 — Prediction Radar 3/3: the Radar record, "How following has done", append-only and graded against the close and the result
+
+**What it is.** A record of every Smart Money Tonight card, kept so nobody can edit it, and graded the way a follower would have done. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("The Radar record").
+- **`radar_cards`.** Every card is published once per game and side, at the Polymarket price at that moment, by the same function that draws Smart Money Tonight (`radar_publish_cards()`).
+- **`radar_card_results`.** Each card is graded once after its game (`radar_grade_cards()`):
+  - the close, whether the card beat it, and its CLV%;
+  - the result, from the market's own resolution;
+  - the ROI of one unit at the published price.
+
+  A card with no resolution a week after its start is void. Both tables are append-only. Their guards refuse a grade whose arithmetic is not the database's own.
+- **`radar_record()`**, for subscribers. It reports record, ROI and beat-close rate, plus a small-sample flag under 200 graded cards. It stays labelled **Experimental** until H-RADAR-01 passes its criteria, and quotes what H-RADAR-01 found verbatim.
+- **"How following has done"** sits under Smart Money Tonight on the Overview.
+- **`polymarket_sync`** publishes and grades in the 10-minute run, after it stores holders, prices and resolutions. While the record is not installed it raises a warning.
+
+**Tests.** `radar_sql.test.js` 198, `sync_fn.test.js` with the record, `radar_ui.test.js` 72, `radar_ui.e2e.js` 54.
+
+## 2026-10-29 — Prediction Radar 2/3: Smart Money Tonight on the Overview, trader pages, and the free /radar/ page
+
+**What a reader sees.** Nothing is drawn while Radar is off or H-RADAR-01 is not registered. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md) ("Where it shows").
+- **Smart Money Tonight** is the first thing on the Overview, for subscribers. Each card leads with one plain sentence ("7 top bettors, $84K, on Chiefs -3"). Then come the average entry, the price now and whether it moved, EdgeDesk's fair with "Smart money agrees/disagrees with the sharp fair price" (or why there is no comparison), conviction flags, the other side, and each bettor. Cards are sorted by bettors, then dollars. A game with no graded bettor shows nothing.
+- **Trader pages** (a sheet in the terminal, a route on `/radar/`): the public name only when the wallet made it public, else a short address. They show record, ROI, CLV, follow ROI, style, sample, open positions (subscribers) and every graded bet with Polygonscan links. No bio.
+- **`/radar/`**, free: the graded leaderboard, trader pages, what H-RADAR-01 found, and a teaser of the first card that never names its side (`radar_teaser()`, new in `supabase/radar.sql`; the migration mirror stays byte-identical).
+- **Labels and limits.** Experimental, Small sample and High conviction are always visible. The Radar Score is never shown without its components. Every surface carries the Known limitations block. There are no bet or copy buttons, no affiliate links, and no promises.
+
+**Tests.** `tools/radar/radar_ui.test.js` 59, `tools/radar/radar_ui.e2e.js` 50 (Chromium at 390 and 1280 px), `radar_sql.test.js` 172 (with the teaser), `tools/site/free_access.test.js` with the new page and doors.
+
+## 2026-10-29 — Prediction Radar 1/3: Polymarket sports bettors graded from their own trades, behind a gateway and a switch; H-RADAR-01 registered before any data and run once
+
+**What it is.** Radar grades the Polymarket sports wallets with the most volume on their own trades: record, profit, ROI, CLV, the ROI a follower would have had 5 (and 15) minutes later, conviction and a style (Directional, Market Maker, Hedger). It is research, labelled Experimental, the same for every reader, and nothing trades for anyone. No UI ships in this change. Full write-up: [docs/prediction-radar.md](docs/prediction-radar.md).
+
+**What changed.**
+- **The grading core** (`lib/edgedesk_radar.js`). Every rule comes from one constant, `public.radar_rules()`, and nothing runs without it. P&L is computed from trades; Polymarket's P&L and rankings hosts are never read.
+- **The gateway** (`lib/edgedesk_poly_gateway.js`), the only Radar client of Polymarket: the `POLYMARKET_DATA_ENABLED` switch (off by default, one SQL statement turns it on or off, no deploy), a budget granted under a row lock, pacing, bounded backoff, a breaker. `tools/radar/no_bypass.test.js` fails if any other file names a Polymarket host.
+- **The data** (`supabase/radar.sql`, mirrored in `supabase/migrations/20261029120000_radar.sql`): append-only trades with transaction hashes, bets, versioned grades, holder and price snapshots. Anon reads the graded leaderboard and trader pages once Radar is on and H-RADAR-01 is registered; Smart Money Tonight and open positions are for subscribers (`has_active_sub()`). No existing policy changes.
+- **The job** (`supabase/functions/polymarket_sync`, schedules in `supabase/polymarket_sync_cron.sql`): holders every 10 minutes, the pool and wallet histories nightly, then a regrade.
+- **H-RADAR-01** (`research/radar/registration_h_radar_01.json`), committed before any Polymarket response was read: the top 25 directional wallets, followed 5 minutes after entry, must beat the close more than half the time and make money, each with a game-clustered 95% interval. The runner (`research/radar/run_validation.js`) runs it once, on GitHub's runner (`.github/workflows/radar-validation.yml`), and `research/radar/one_look.js` stops any later run from looking again until its report is committed.
+
+**What H-RADAR-01 found** (run 40823328433, `research/radar/H-RADAR-01/RESULTS.md`): **FAILED** on all three criteria. 41 followed bets over 37 games; beat-close rate 24.4% (95% CI 10.3% to 39.0%); follow ROI −1.7% (95% CI −33.4% to +30.5%). 172 of the 200 pool wallets had more than 30 pages of history and were excluded by the registered rule, so only 13 qualified, and 3 of them bet in the holdout. Radar stays Experimental; `supabase/radar_registry.sql` records the result with `passed = false`.
+
+**What the live probe found before the look** (`.github/workflows/radar-sources.yml`, each fixed with a regression test shown failing on the old code):
+- Gamma answers a resolved market only when asked with `closed=true`. Without it the H-RADAR-01 run would have read no market and spent its one look on an empty report.
+- `/v2/holders` refuses more than 100 holders with `include_pnl`, so Smart Money Tonight would never have shown a card.
+- One unwindowed page of open NFL events was 48 MB; events are now asked in a window, 5 a page.
+- Gamma's `spread` is the order book's spread, not a point; the line is read from `line` only.
+
+**Tests.** `tools/radar/`: core 96, fixtures 43 (recorded from the live probe), gateway 29, no-bypass 11, the runner and the one-look guard 30, the SQL on a real PostgreSQL as anon, a signed-in reader, a subscriber and the service role, and the shipped function against it 51. All run by `.github/workflows/radar-tests.yml`.
 
 ## 2026-10-28 — Billing change: the Fairline tier (`black`), and Fairline gated on it
 
