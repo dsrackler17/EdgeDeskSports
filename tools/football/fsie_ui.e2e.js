@@ -4,10 +4,8 @@
    football/situational/README.md
 
    The COMMITTED artifact (football/situational/data/cards.json) is served as
-   is and the page clock is pinned to the newest build among it and the NFL
-   and FBS slates (a slate built after the pinned "now" is one the board will
-   not show, and main's jobs rebuild the slates more often than the cards),
-   so the NFL and FBS boards list the same upcoming games the artifact covers:
+   is and the page clock is pinned to its build time, so the NFL and FBS
+   boards list the same upcoming games the artifact covers:
      NFL      every NFL card the artifact covers carries exactly one
               Situational Intelligence section; opened, it shows observed
               tendencies with samples and the experimental research block
@@ -60,8 +58,7 @@ function unavailable(why) {
   const ART = path.join(ROOT, 'football', 'situational', 'data', 'cards.json');
   if (!fs.existsSync(ART)) unavailable('no committed cards.json');
   const cards = JSON.parse(fs.readFileSync(ART, 'utf8'));
-  const builtAt = (rel) => { try { return Date.parse(JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')).generated_at) || 0; } catch (_) { return 0; } };
-  const PIN = Math.max(Date.parse(cards.built_at), builtAt('football/nfl/slate.json'), builtAt('football/fbs/slate.json'));
+  const PIN = Date.parse(cards.built_at);
   const nflIds = Object.keys(cards.games).filter((k) => cards.games[k].sport === 'nfl');
   const cfbIds = Object.keys(cards.games).filter((k) => cards.games[k].sport === 'cfb' && cards.games[k].research.status === 'projected');
   const csv = await gamesCsv();
