@@ -24,8 +24,10 @@
    row for the comp tests and it is removed again in a finally block.
 
    WHAT IT LEAVES BEHIND, BY DESIGN: billing_sync_log rows for the probe
-   accounts; and after `checkout`, a Stripe customer for probe A and ONE open,
-   unpaid Checkout Session that expires on its own within 24 hours. Nothing is
+   accounts; and after `checkout`, a Stripe customer for probe A and one open,
+   unpaid Checkout Session per price it opened (Bet Checker monthly and
+   annual, and the terminal's when STRIPE_PRICE_ID is set), each of which
+   expires on its own within 24 hours. Nothing is
    ever charged, no Stripe object is invented, and nothing about any real
    account is written.
 
@@ -61,6 +63,16 @@ function pricing() {
   const src = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_pricing.js'), 'utf8');
   const cents = /PRICE_CENTS:\s*(\d+)/.exec(src), days = /TRIAL_DAYS:\s*(\d+)/.exec(src);
   return { price_cents: cents ? +cents[1] : null, trial_days: days ? +days[1] : null };
+}
+// Bet Checker's plans as lib/edgedesk_pricing.js states them (its prices are found by lookup key)
+function betCheckerPricing() {
+  const src = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_pricing.js'), 'utf8');
+  const out = {};
+  ['monthly', 'annual'].forEach((plan) => {
+    const m = new RegExp(plan + ':\\s*\\{\\s*PRICE_CENTS:\\s*(\\d+)').exec(src);
+    out[plan] = m ? +m[1] : null;
+  });
+  return out;
 }
 const mask = (v) => (v == null ? null : String(v).slice(0, 8) + '…');
 const maskEmail = (e) => { const s = String(e || ''); const i = s.indexOf('@'); return i < 1 ? '***' : s[0] + '***' + s.slice(i); };
@@ -318,6 +330,40 @@ function makeProbe(opts) {
     check(after.row === null && same(after.customers, before.customers), 'after every probe, still no invented state for probe A', after);
   }
 
+  /* BET CHECKER (kind bet_checker). Its prices are found by Stripe lookup key,
+     so it needs no STRIPE_PRICE_ID and is probed whether or not the terminal's
+     server checkout is switched on. As probe A, before the terminal's probes
+     spend probe A's checkout allowance. */
+  async function betChecker() {
+    const plans = betCheckerPricing();
+    let r = await fn('create_checkout_session', 'POST', { kind: 'bet_checker', plan: 'monthly', price_cents: plans.monthly, trial_days: 0 });
+    check(r.status === 401, 'Bet Checker, unauthenticated: refused (401) before anything is created', r.status);
+    const A = await probeUser('a');
+    const s0 = await stateOf(A.id);
+    r = await fn('create_checkout_session', 'POST', { kind: 'bet_checker', plan: 'monthly', price_cents: plans.monthly + 1, trial_days: 0 }, A.token);
+    check(r.status === 409 && r.body?.reason === 'offer_mismatch', 'Bet Checker: a price the customer did not consent to is refused (409 offer_mismatch)',
+      { status: r.status, reason: r.body && r.body.reason });
+    check(same((await stateOf(A.id)).sessions, s0.sessions), 'Bet Checker: and that created no Checkout Session', null);
+    for (const plan of ['monthly', 'annual']) {
+      r = await fn('create_checkout_session', 'POST', { kind: 'bet_checker', plan, price_cents: plans[plan], trial_days: 0 }, A.token);
+      const okUrl = r.status === 200 && r.body?.ok === true && /^https:\/\/checkout\.stripe\.com\//.test(String(r.body?.url || ''));
+      check(okUrl, 'Bet Checker ' + plan + ': a signed-in reader gets a Stripe-hosted checkout (checkout.stripe.com)',
+        { status: r.status, reason: r.body && r.body.reason, message: r.body && r.body.message });
+      if (!okUrl) continue;
+      const sid = r.body.session_id;
+      check(/^cs_live_/.test(sid), 'Bet Checker ' + plan + ': it is a LIVE session', mask(sid));
+      const rec = (await db('billing_checkout_sessions?select=user_id,status,kind,price_id,livemode,trial_days&id=eq.' + encodeURIComponent(sid)))[0];
+      const learned = rec && rec.price_id ? (await db('billing_price_tiers?select=tier,lookup_key&price_id=eq.' + encodeURIComponent(rec.price_id)))[0] : null;
+      check(rec && rec.user_id === A.id && rec.kind === 'bet_checker' && rec.status === 'open' && rec.livemode === true && rec.trial_days === 0 &&
+        learned && learned.tier === 'red' && learned.lookup_key === 'bet_checker_' + plan,
+        'Bet Checker ' + plan + ': recorded for the caller, no trial, on the price with lookup key bet_checker_' + plan + ', which the access rule knows as Bet Checker (tier red)',
+        { kind: rec && rec.kind, trial_days: rec && rec.trial_days, livemode: rec && rec.livemode, tier: learned && learned.tier, lookup_key: learned && learned.lookup_key });
+    }
+    const s1 = await stateOf(A.id);
+    check(s1.row === null, 'Bet Checker: opening checkout granted nothing (no subscriptions row until Stripe says it is paid)',
+      s1.row && { status: s1.row.status, price_id: s1.row.price_id });
+  }
+
   async function checkout() {
     if (!need()) return;
     const want = expectedBuild('create_checkout_session');
@@ -325,6 +371,7 @@ function makeProbe(opts) {
     check(g.build === want, 'create_checkout_session serves this commit (' + want + ')', 'serving ' + g.build + ' (HTTP ' + g.status + ')');
     const cfg = (g.body && g.body.configured) || {};
     check(cfg.stripe_key && cfg.database && cfg.auth, 'configured: Stripe key, database, auth', cfg);
+    await betChecker();
     const offer = pricing();
     let r = await fn('create_checkout_session', 'POST', Object.assign({ kind: 'trial' }, offer));
     if (!cfg.price) {

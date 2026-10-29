@@ -25,7 +25,11 @@
      7  after the close, a card shows its CLV — and a bet whose line the
         market closed off says "No close available"
      8  a Bet Checker subscriber sees real stats and the billing portal
-     9  at 390 px nothing scrolls sideways; no script error anywhere
+     9  the landing page's ?upgrade=annual|monthly: a signed-in free reader
+        sees the renewal terms OPEN on that plan (unticked, Subscribe off, no
+        checkout asked for); a signed-out reader is told checkout opens after
+        signing in, and gets it back with no query; a paid reader gets no sheet
+    10  at 390 px nothing scrolls sideways; no script error anywhere
 
    Needs Playwright + Chromium and PostgreSQL (skips cleanly without;
    BET_CHECKER_UI_REQUIRED=1 makes a missing one a failure, as CI sets it).
@@ -104,10 +108,12 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     tokens[t] = { id, email, confirmed: true };
     return { id, email, token: t, session: { access_token: t, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: { id, email } } };
   };
-  const FREE = user(1, 'free@example.com'), PAID = user(2, 'paid@example.com');
+  const FREE = user(1, 'free@example.com'), PAID = user(2, 'paid@example.com'), COMP = user(3, 'comp@example.com');
   db.service("select public.billing_learn_price_tier('price_red_e2e', 'prod_bc', 'red', 'bet_checker_monthly', true, 'e2e');");
   db.sql("insert into public.subscriptions (user_id, status, price_id, current_period_end, stripe_customer_id, stripe_subscription_id) values (" +
     lit(PAID.id) + ", 'active', 'price_red_e2e', now() + interval '20 days', 'cus_e2e', 'sub_e2e');");
+  /* the owner's comp: full access granted in the database, never sold */
+  db.sql("insert into public.subscriptions (user_id, status, price_id, current_period_end) values (" + lit(COMP.id) + ", 'active', 'owner_comp', null);");
 
   /* ── the shipped function, and the stand-in, behind Supabase's URL ─── */
   const rest = REST.make(db, { serviceKey: 'service-key', anonKey: ANON, tokens });
@@ -125,7 +131,7 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
   const BASE = 'http://127.0.0.1:' + port;
   const browser = await pw.chromium.launch();
   const errors = [];
-  async function pageFor(u, width) {
+  async function pageFor(u, width, failRpc) {
     const ctx = await browser.newContext({ viewport: { width: width || 1280, height: 900 } });
     if (u) await ctx.addInitScript((s) => { try { localStorage.setItem('edgedesk_session', JSON.stringify(s)); } catch (_) {} }, u.session);
     await ctx.route(SB + '/**', async (route) => {
@@ -135,7 +141,9 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
       const body = r.postData();
       if (r.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }, body: '' });
       let res;
-      if (url.indexOf('/functions/v1/log_user_bet') >= 0) {
+      if (failRpc && url.indexOf('/rest/v1/rpc/' + failRpc) >= 0) {
+        res = new Response(JSON.stringify({ code: 'PGRST202', message: 'Could not find the function public.' + failRpc }), { status: 404 });
+      } else if (url.indexOf('/functions/v1/log_user_bet') >= 0) {
         const q = console.log; console.log = () => {};
         try { res = await LOG.handle(new Request(url, { method: r.method(), headers, body: r.method() === 'POST' ? body : undefined })); }
         finally { console.log = q; }
@@ -292,6 +300,70 @@ const jwt = (id, email) => b64u({ alg: 'HS256', typ: 'JWT' }) + '.' + b64u({ sub
     await shot(page, '4-subscriber');
     chk('Settings › Subscription names the plan and links the billing portal to cancel',
       /EdgeDesk Bet Checker/.test(await text(page, '[data-bc="settings"]')) && await page.locator('[data-bc="portal"]').getAttribute('href') === PRICING.portalLink());
+    await ctx.close();
+
+    /* 8b. a stats call that FAILS is not a "not paid": a subscriber is never shown a paywall for it */
+    ({ ctx, page } = await pageFor(PAID, 1280, 'my_bet_checker_stats'));
+    await page.goto(BASE + '/bet-checker/');
+    chk('stats unavailable: it says they could not be loaded, and offers no upgrade',
+      await eventually(async () => /Your stats could not be loaded/.test(await text(page, '[data-bc="stats"]'))) &&
+      await page.locator('[data-bc="stats"] .bc-blur').count() === 0 && await page.locator('[data-bc="stats"] [data-bc-act="upgrade"]').count() === 0,
+      await text(page, '[data-bc="stats"]'));
+    await ctx.close();
+
+    /* 8c. the owner's comp: Bet Checker in full, and no billing to manage */
+    ({ ctx, page } = await pageFor(COMP));
+    await page.goto(BASE + '/bet-checker/');
+    chk('a comped account: Settings names the terminal, complimentary, with no billing portal and no upgrade',
+      await eventually(async () => /Research Terminal \(includes Bet Checker\) — complimentary/.test(await text(page, '[data-bc="settings"]'))) &&
+      await page.locator('[data-bc="portal"]').count() === 0 && await page.locator('[data-bc="settings"] [data-bc-act="upgrade"]').count() === 0,
+      await text(page, '[data-bc="settings"]'));
+    chk('  ... and its stats are not locked', await page.locator('.bc-blur').count() === 0);
+    await ctx.close();
+
+    /* 9. the landing page's "Get Bet Checker": /bet-checker/?upgrade=monthly|annual
+       OPENS the renewal terms on that plan once the reader is signed in —
+       never past them — and says so to a plan that already includes it */
+    const consentsBefore = db.sql('select count(*) from public.billing_consents;');
+    const sheetOpen = (page) => page.locator('[data-bc="arl"]').isVisible();
+    const kept = (page) => page.evaluate(() => { try { return sessionStorage.getItem('bc_upgrade_intent'); } catch (_) { return 'unreadable'; } });
+    ({ ctx, page } = await pageFor(FREE));
+    await page.goto(BASE + '/bet-checker/?upgrade=annual&ref=landing_pricing');
+    chk('a signed-in free reader arriving with ?upgrade=annual sees the renewal terms, on the ANNUAL plan',
+      await eventually(async () => sheetOpen(page)) && (await text(page, '[data-bc="terms"]')) === PRICING.betCheckerTerms('annual'), await text(page, '[data-bc="terms"]'));
+    chk('the sheet\'s button and plan switch say annual', /\$59\.00\/year/.test(await text(page, '[data-bc="arl-go"]')) && await page.getAttribute('[data-bc-plan="annual"]', 'aria-pressed') === 'true');
+    chk('nothing is skipped: the terms are unticked and Subscribe is off', !(await page.isChecked('[data-bc="agree"]')) && await page.locator('[data-bc="arl-go"]').isDisabled());
+    chk('opening it asked for no checkout and recorded no consent', checkouts.length === 1 && db.sql('select count(*) from public.billing_consents;') === consentsBefore, [checkouts.length, consentsBefore]);
+    chk('the query left the address (the ref stays) and the intent is spent', /\/bet-checker\/\?ref=landing_pricing$/.test(page.url()) && await kept(page) === null, [page.url(), await kept(page)]);
+    await shot(page, '5-deep-link-annual');
+    if (await sheetOpen(page)) await page.click('[data-bc-act="arl-close"]');
+    await page.reload();
+    await eventually(async () => (await page.locator('.bc-card').count()) > 0);
+    await page.waitForTimeout(400);
+    chk('used once: a reload does not open it again', await page.locator('[data-bc="arl"]').isHidden());
+    await ctx.close();
+
+    /* the sign-in round trip: signed out with the link, then back with no query */
+    ({ ctx, page } = await pageFor(null));
+    await page.goto(BASE + '/bet-checker/?upgrade=monthly&ref=landing_pricing');
+    chk('signed out with ?upgrade=monthly: the sign-in door says checkout opens next, at the monthly figure, terms first',
+      await eventually(async () => page.locator('[data-bc="intent"]').isVisible()) &&
+      /Bet Checker’s checkout opens next \(\$7\.99\/month\)\. You read the renewal terms before anything is charged\./.test(await text(page, '[data-bc="intent"]')), await text(page, '[data-bc="intent"]'));
+    chk('and the intent is kept in this tab for the trip', await kept(page) === 'monthly');
+    await page.evaluate((s) => { localStorage.setItem('edgedesk_session', JSON.stringify(s)); }, FREE.session);
+    await page.goto(BASE + '/bet-checker/');
+    chk('back from signing in, with no query: the renewal terms open on the MONTHLY plan',
+      await eventually(async () => sheetOpen(page)) && (await text(page, '[data-bc="terms"]')) === PRICING.betCheckerTerms('monthly'), await text(page, '[data-bc="terms"]'));
+    chk('and the intent is spent', await kept(page) === null);
+    await ctx.close();
+
+    /* a plan that already includes Bet Checker */
+    ({ ctx, page } = await pageFor(PAID));
+    await page.goto(BASE + '/bet-checker/?upgrade=monthly&ref=landing_pricing');
+    chk('an already-paid reader arriving with ?upgrade= sees NO sheet, and is told the plan includes Bet Checker',
+      await eventually(async () => /Your plan already includes Bet Checker\./.test(await text(page, '[data-bc="status"]'))) && await page.locator('[data-bc="arl"]').isHidden(),
+      await text(page, '[data-bc="status"]'));
+    chk('and the intent is spent there too', await kept(page) === null);
     await ctx.close();
 
     chk('no script error on any page load', errors.length === 0, errors.slice(0, 4));

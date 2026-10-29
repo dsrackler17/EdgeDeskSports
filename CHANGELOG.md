@@ -13,6 +13,24 @@
 - **The page**: `fairline/index.html`, `lib/edgedesk_fairline_app.js`, `lib/edgedesk_fairline_app.css`, `lib/edgedesk_fairline_core.js`. Mobile first, on the tools frame and the game cards. Each leak card leads with one plain sentence; labels are chips with words. The Board says it is prices, not picks, and carries a Known limitations block. Added to `sitemap-pages.xml`.
 - **Tests** (`.github/workflows/fairline-tests.yml`, in `tools/ci/checks.json` under Frontend and navigation): `fairline_sql.test.js` (115, real PostgreSQL), `core.test.js` (55), `page.test.js` (27), `page.e2e.js` (30, Chromium).
 - **Out of scope, noted in the docs:** a DK Predictions price feed (no source exists), and selling Fairline through Juice Reel's checkout (that sells only the terminal today).
+
+## 2026-10-28 — Deploying Bet Checker: the checkout stage probes Bet Checker's purchase too
+
+**What was missing.** `create_checkout_session` was deployed to production at 20:33 (`create_checkout_session-2026-10-28-bet-checker-2`). Its Phase 8 probes (`tools/billing/prod_probe.js checkout`) never asked for a Bet Checker checkout. They also stop early while `STRIPE_PRICE_ID` is unset, and it is unset in production, so the terminal keeps its Payment Link. Bet Checker needs no `STRIPE_PRICE_ID`: its prices are found by Stripe lookup key. So nothing had shown that the live Stripe key can read `bet_checker_monthly` and `bet_checker_annual` and open a checkout for them.
+
+**What changed.** `checkout` now probes Bet Checker first, whether or not the terminal's price is set. All of it runs as probe A, never a customer:
+- An unauthenticated request is refused (401).
+- A price the customer did not consent to is refused (409) and creates nothing.
+- Monthly and annual each open a live `checkout.stripe.com` session. Each is recorded for the caller with no trial, on the price whose lookup key is `bet_checker_monthly` / `bet_checker_annual`, and `billing_price_tiers` knows that price as tier red.
+- Opening checkout grants nothing.
+
+It leaves one open, unpaid session per price, each expiring within 24 hours. `docs/billing-hardening.md` and the stage's heading say so.
+
+**Tests.** `tools/billing/prod_probe.test.js`, which runs the probe against the shipped function and a fake Stripe:
+- With the kill switch on, the Bet Checker probes still run and pass.
+- A Bet Checker product without metadata `tier = red` FAILS them.
+- Probe A ends with exactly one open session per price.
+
 ## 2026-10-28 — main is red: the "Integrated with Juice Reel" line pushed the free calculator off a short phone's first screen (#864)
 
 **What failed.** Funnel tests, browser job, `tools/home/landing.e2e.js`: "first visit: the top of the free calculator shows, labelled Free". On a 375×548 screen (an iPhone SE inside X's in-app browser), the calculator's top bar ended at 581 px on the runner, past the 548 px fold. #864 added the hero line inside the text column, and on phones that column stacks above the calculator, so the line pushed the calculator down by 43 px.
@@ -235,6 +253,18 @@ Nothing changes in production until an operator applies a file or calls the stop
 | `tools/billing/billing_hardening_sql.test.js` | 86 / 0 | 109 / 0 (a 150-case red / blue / unknown / comp grid; the report-row count moves 11 → 14 for the three new rows) |
 
 New suites: `tools/bet_checker/bet_checker_sql.test.js` (110), `functions.test.js` (37), `core.test.js` (46), `page.test.js` (30), `page.e2e.js` (36, Chromium); CI `bet-checker-tests.yml`. No model number, signal, ranking, research protocol or signal CLV changed.
+
+## 2026-10-28 — Landing pricing: Bet Checker beside Full Access
+
+**What changed.** The landing page's `#pricing` sold one plan. Now it shows three cards: Free, **Bet Checker** ($7.99/month or $59.00/year, no trial) and Full Access ($49.99/month after a 7-day free trial, unchanged). Bet Checker grades bets a reader already placed. Full Access is the research before the bet, and it includes Bet Checker. The heading and a one-sentence lede say this, and the Full Access card says it includes Bet Checker. The hero's price strip names Bet Checker's price beside Full Access's. Every Full Access element, id (`#subscribe`, `#subBtn`, `#edOffer`) and the trial timeline are as they were.
+
+- `lib/edgedesk_pricing.js`: `priceWords()` is the one map `apply()` fills from. The new words `bc_plan`, `bc_price`, `bc_monthly`, `bc_annual` and `bc_free` are derived from `BET_CHECKER` through `betCheckerOffer()`, so the landing page types no figure. The annual figure keeps its cents ("$59.00/year"), as the consent sheet shows it.
+- `lib/edgedesk_bet_checker.js`: `/bet-checker/?upgrade=monthly|annual` (the card's button) is kept in `sessionStorage` through the sign-in round trip. After sign-in it opens the renewal-terms sheet on that plan, unticked, or tells a reader whose plan already includes Bet Checker. It never skips the consent. A signed-out reader sees a line by the sign-in door saying checkout opens next.
+- `/bet-checker/`, seen on production before `bet_checker.sql` was applied: a stats call that FAILS used to read as "not paid", so a paying or comped reader was shown the blurred stats and an upgrade button. It now says the stats could not be loaded. A comped account (`owner_comp`) is now named complimentary in Settings, with no billing portal and nothing to cancel.
+- The page's 216 KB weight budget is unchanged. The new card's few rules stay inline, because app.html sends readers straight to `#subscribe`. To make room, `#trust`'s styles (3.9 KB, below the fold, linked from nowhere) moved out of the page into the two stylesheets that already load the same way: the press list (`.press`, 1.2 KB) went to `lib/edgedesk_landing_pictures.css`, the rest to `lib/edgedesk_landing_desk.css`. Juice Reel's hero line took the desk sheet's room, and each sheet stays under its 12 KB budget (11.1 KB and 9.9 KB). A "Which one do I need?" table was built and then left out: with it the page needed 221 KB, and the owner chose to keep the budget.
+- `?v=20261028b` for `lib/edgedesk_pricing.js` (index.html, app.html, bet-checker/, methodology/, research/sample/); `?v=20261028bc3` for `lib/edgedesk_bet_checker.js` (after #857's `bc2`); `?v=20261029a` for `lib/edgedesk_landing_desk.css` and `lib/edgedesk_landing_pictures.css`.
+
+Tests: `landing_positioning.test.js` covers the card, its FEATURES lines, both links and the strip. Its "one plan card" and Free-card checks were updated for the deliberate third card. `personal_wiring.test.js` checks the derived words, `apply()` and the static copies. `bet_checker/page.test.js` checks the deep link in Node with blocked or missing storage. `bet_checker/page.e2e.js` covers a signed-in free reader on `?upgrade=annual`, the signed-out round trip and an already-paid reader. `home/landing.e2e.js` checks the filled words at six widths. `billing/juicereel_checkout.e2e.js` and `billing/checkout_flow.e2e.js` took the first non-Free card to be Full Access's, which is now Bet Checker's (no trial). They select `.pcard:not(.freecard):not(.bccard)`.
 
 ## 2026-10-28 — Collective: why last week has no against-the-spread results, and a read-only doctor that shows it
 

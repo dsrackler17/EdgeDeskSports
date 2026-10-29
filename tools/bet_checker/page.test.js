@@ -86,6 +86,63 @@ chk('and sends a Bet Checker customer to the portal to switch, never to a second
 chk('the portal link is written once, in the pricing file', /var STRIPE_PORTAL_URL=\(window\.EDPricing&&window\.EDPricing\.PORTAL_LINK\)\|\|'';/.test(APP) &&
   /^https:\/\/billing\.stripe\.com\//.test(PRICING.portalLink()) && !/STRIPE_PORTAL_URL\s*=\s*["']https:/.test(APP));
 
+/* ── the landing page's door: /bet-checker/?upgrade=monthly|annual ──────── */
+/* a stand-in page: every [data-bc=...] element the sheet and status use */
+function fakeHost() {
+  const els = {};
+  const el = () => ({ hidden: true, textContent: '', innerHTML: '', className: '', disabled: false, checked: true,
+    classList: { toggle() {} }, setAttribute() {}, getAttribute() { return null; } });
+  return { els, querySelector: (sel) => (els[sel] = els[sel] || el()), querySelectorAll: () => [], addEventListener: () => {} };
+}
+function fakeStore(throws) {
+  const m = {};
+  return { m, getItem: (k) => { if (throws) throw new Error('blocked'); return k in m ? m[k] : null; },
+    setItem: (k, v) => { if (throws) throw new Error('blocked'); m[k] = String(v); }, removeItem: (k) => { if (throws) throw new Error('blocked'); delete m[k]; } };
+}
+function deep(search, store, acc) {
+  const replaced = [];
+  if (store === undefined) delete global.sessionStorage; else global.sessionStorage = store;
+  const host = fakeHost();
+  const p = UI._make(host, { url: 'x', key: 'y', fetch: () => null, pricing: PRICING,
+    location: { search, pathname: '/bet-checker/', hash: '' }, history: { replaceState: (a, b, u) => replaced.push(u) } });
+  p.S.acc = acc === undefined ? null : acc;
+  return { p, host, replaced, intent: p.takeIntent() };
+}
+const KEY = 'bc_upgrade_intent';
+let d = deep('?upgrade=annual&ref=landing_pricing', fakeStore());
+chk('?upgrade=annual is taken, kept in sessionStorage under bc_upgrade_intent', d.intent === 'annual' && global.sessionStorage.m[KEY] === 'annual');
+chk('and leaves the address, keeping the ref (a reload does not ask again)', JSON.stringify(d.replaced) === JSON.stringify(['/bet-checker/?ref=landing_pricing']), d.replaced);
+const kept = global.sessionStorage;
+d = deep('', kept);
+chk('back from signing in with no query, the kept intent survives the round trip', d.intent === 'annual' && d.replaced.length === 0);
+d = deep('?upgrade=weekly', fakeStore());
+chk('only monthly or annual is an intent; anything else is dropped from the address', d.intent === null && Object.keys(global.sessionStorage.m).length === 0 && d.replaced[0] === '/bet-checker/');
+d = deep('?upgrade=monthly', fakeStore(true));
+chk('a blocked storage throws nothing, and the link still works on this page', d.intent === 'monthly');
+d = deep('?upgrade=monthly', undefined);
+chk('and so does no storage at all', d.intent === 'monthly');
+const FREE_ACC = { has_access: false, bet_checker_paid: false };
+d = deep('?upgrade=annual', fakeStore(), FREE_ACC);
+d.p.applyIntent();
+let H = d.host.els;
+chk('a free reader: the upgrade sheet OPENS, on the annual plan, with its renewal terms', H['[data-bc="arl"]'].hidden === false && H['[data-bc="terms"]'].textContent === PRICING.betCheckerTerms('annual') && d.p.S.plan === 'annual');
+chk('it only opens it: the terms are unticked and Subscribe stays off until they are ticked', H['[data-bc="agree"]'].checked === false && H['[data-bc="arl-go"]'].disabled === true);
+chk('and the intent is forgotten once used', d.p.S.intent === null && !(KEY in global.sessionStorage.m));
+for (const acc of [{ has_access: false, bet_checker_paid: true }, { has_access: true, bet_checker_paid: false }]) {
+  d = deep('?upgrade=monthly', fakeStore(), acc);
+  d.p.applyIntent();
+  H = d.host.els;
+  chk('a plan that already includes Bet Checker (' + (acc.has_access ? 'Full Access' : 'Bet Checker') + '): no sheet, it says so, and the intent is forgotten',
+    !H['[data-bc="arl"]'] && /Your plan already includes Bet Checker\./.test(H['[data-bc="status"]'].innerHTML) && d.p.S.intent === null && !(KEY in global.sessionStorage.m));
+}
+d = deep('?upgrade=monthly', fakeStore(), null);
+d.p.applyIntent();
+chk('signed out, or the plan could not be read: nothing opens, and the intent is kept for the next load', !d.host.els['[data-bc="arl"]'] && d.p.S.intent === 'monthly' && global.sessionStorage.m[KEY] === 'monthly');
+chk('the deep link is read once, when the page mounts, and applied after the plan is loaded', /page\.takeIntent\(\);/.test(MOD) && /await load\(\);\s*await checkoutReturn\(\);\s*applyIntent\(\);/.test(MOD));
+chk('a signed-out reader is told, by the sign-in door, that checkout opens after signing in', /<p class="bc-status ok" data-bc="intent" hidden><\/p>/.test(PAGE)
+  && /<section class="card bc-auth" data-bc="out"[\s\S]*data-bc="intent"[\s\S]*<form data-bc="auth"/.test(PAGE) && /checkout opens next/.test(MOD) && /renewal terms before anything is charged/.test(MOD));
+delete global.sessionStorage;
+
 /* ── a card says what the database decided ─────────────────────────────── */
 const page = UI._make({ querySelector: () => null, querySelectorAll: () => [], addEventListener: () => {} }, { url: 'x', key: 'y', fetch: () => null });
 const base = { id: 'b1', sport: 'NFL', market: 'spread', side: 'home', team: 'Kansas City Chiefs', home_team: 'Kansas City Chiefs', away_team: 'Buffalo Bills',

@@ -35,8 +35,10 @@
         without an in-development label, and no platform is called connected;
      7  the research terminal — the live product — is read, never typed in,
         and falls back to an example that says it is one;
-     8  pricing is one plan, read from lib/edgedesk_pricing.js, listing only
-        what is live, with the real trial terms and no scarcity device;
+     8  pricing is Free, then Bet Checker, then the one Full Access plan,
+        every figure read from lib/edgedesk_pricing.js, listing only what is
+        live, with the real trial terms and no scarcity device (Bet Checker
+        joined on 2026-10-28);
      9  no picks, no profit promises, no invented proof, no marketing sludge;
     10  the FAQ answers the questions a bettor asks, with the real coverage
         and the real connection support;
@@ -154,6 +156,8 @@ const STRIP = (HERO.match(/<div class="strip"[\s\S]*?<\/div>/) || [''])[0];
 chk('the strip says what is free first, in order', /<span class="strip-k">Free<\/span>/.test(STRIP)
   && JSON.stringify([...STRIP.matchAll(/<li>([^<]+)/g)].map(m => plain(m[1]).trim())) === JSON.stringify(['Game research', "Today's games", 'Odds tools', 'Weekly email']));
 has(STRIP, '<span class="strip-k">Full Access</span> <span data-ed-price="monthly">$49.99/month</span>', 'then Full Access, at the pricing file\'s price');
+has(STRIP, '<span class="strip-k">Bet Checker</span> <span data-ed-price="bc_monthly">' + X.priceWords().bc_monthly + '</span>', 'and Bet Checker beside it, at the pricing file\'s price');
+chk('the strip runs Free, Bet Checker, Full Access: cheapest first', STRIP.indexOf('>Free<') < STRIP.indexOf('>Bet Checker<') && STRIP.indexOf('>Bet Checker<') < STRIP.indexOf('>Full Access<'));
 chk('nothing in the strip is a feature still being built', !/Process Coach|Soon/.test(STRIP));
 has(HERO, 'href="#how" data-track="how_it_works_click" data-cta="strip_how">How Full Access works<', 'how the paid half works is one tap away (the GA report reads how_it_works_click)');
 chk('the strip is not fifteen feature cards', (STRIP.match(/<li>/g) || []).length <= 5);
@@ -465,10 +469,12 @@ chk('the multi-megabyte ratings artifacts are never downloaded', !/fetch\('footb
 chk('a free sample game is one click away', /href="\/research\/sample\/"/.test(RS));
 
 /* ======================================================================== */
-/* 8. PRICING: ONE PLAN, FROM ONE SOURCE, ONLY WHAT IS LIVE                 */
+/* 8. PRICING: FREE, BET CHECKER, ONE FULL ACCESS PLAN, FROM ONE SOURCE     */
 /* ======================================================================== */
 const PRICE = section('pricing');
-chk('one plan card', (IDX.match(/class="pcard\b/g) || []).length === 1);
+/* since 2026-10-28 a Bet Checker card sits between Free and Full Access;
+   there is still exactly one Full Access plan card */
+chk('one Full Access plan card, and one Bet Checker card', (IDX.match(/class="pcard\b/g) || []).length === 1 && (IDX.match(/class="bccard pcard\b/g) || []).length === 1);
 has(PRICE, 'data-ed-price="plan">' + X.PLAN_NAME + '<', 'the plan is named from the pricing file');
 has(PRICE, 'data-ed-price="price">' + X.PRICE_DISPLAY + '<', 'the price is stated from the pricing file');
 has(PRICE, 'data-ed-price="trial">' + X.TRIAL_LABEL + '<', 'the trial is stated from the pricing file');
@@ -491,8 +497,9 @@ chk('player props are part of the plan', X.FEATURES.indexOf('Player props') >= 0
 /* FREE BESIDE FULL ACCESS: the free card is lib/edgedesk_plans.js FREE, in
    order; no card on this section lists anything still being built */
 const PLANS = require(path.join(ROOT, 'lib', 'edgedesk_plans.js'));
-const FREEC = (PRICE.match(/<div class="freecard pcard rv">([\s\S]*?)<div class="pcard rv">/) || [, ''])[1];
-chk('a Free card sits beside the plan, before it', FREEC.length > 200 && PRICE.indexOf('freecard') < PRICE.indexOf('id="subscribe"'));
+/* the Free card ends where the next card, Bet Checker's, begins */
+const FREEC = (PRICE.match(/<div class="freecard pcard rv">([\s\S]*?)<div class="bccard pcard rv">/) || [, ''])[1];
+chk('a Free card sits beside the plan, before it, with Bet Checker between them', FREEC.length > 200 && PRICE.indexOf('freecard') < PRICE.indexOf('bccard') && PRICE.indexOf('bccard') < PRICE.indexOf('id="subscribe"'));
 chk('the Free card lists lib/edgedesk_plans.js FREE, in order', () => {
   const li = [...(FREEC.match(/<ul class="pincl free-incl">([\s\S]*?)<\/ul>/) || [, ''])[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m => plain(m[1]).trim());
   return JSON.stringify(li) === JSON.stringify(PLANS.FREE.map(f => f.label.replace(/\u2019/g, "'")));
@@ -519,6 +526,37 @@ has(PRICE, 'Unless cancelled before renewal', 'and what day 8 means');
 chk('the trial reads Today, Before day 8, Day 8', /<span class="when">Today<\/span>[\s\S]*<span class="when">Before day <span data-ed-price="day8">8<\/span><\/span>[\s\S]*<span class="when">Day <span data-ed-price="day8">8<\/span><\/span><b data-ed-price="monthly">\$49\.99\/month<\/b>/.test(PRICE));
 has(PRICE, 'id="edOffer" hidden', 'a creator discount is only ever Stripe\'s own record');
 
+/* BET CHECKER, THE CHEAPER WAY IN (2026-10-28). Plain as day: it grades the
+   bets a reader ALREADY placed; Full Access is the research before the bet,
+   and includes it. Every figure is a word lib/edgedesk_pricing.js derives
+   from BET_CHECKER (priceWords), its lines are BET_CHECKER.FEATURES, and its
+   button only OPENS the renewal terms on /bet-checker/. */
+const PW = X.priceWords();
+const rx = (s) => String(s).replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+has(PRICE, '<h2>Free research. Check your own bets for <span data-ed-price="bc_price">' + PW.bc_price + '</span>. <span class="g">Or get the whole terminal.</span></h2>',
+  'the heading names both paid products: Bet Checker by its price, then the whole terminal');
+has(PRICE, 'Bet Checker grades the bets you have already placed. Full Access is the research you do before you bet, and it includes Bet Checker.', 'and says the difference in two sentences');
+const BCC = (PRICE.match(/<div class="bccard pcard rv">([\s\S]*?)<div class="pcard rv">/) || [, ''])[1];
+chk('the Bet Checker card is found', BCC.length > 400, BCC.length);
+has(BCC, '<span class="ptag" data-ed-price="bc_plan">' + X.BET_CHECKER.PLAN_NAME + '</span>', 'Bet Checker is named from the pricing file');
+has(BCC, '<p class="pname">Already placed the bet? See if you got a good price.</p>', 'and says what it is in one line');
+has(BCC, '<span class="pamt" data-ed-price="bc_price">' + PW.bc_price + '</span><span class="pper">/ month</span>', 'its monthly price is the pricing file\'s');
+has(BCC, '<p class="pyear">or <span data-ed-price="bc_annual">' + PW.bc_annual + '</span></p>', 'with the annual plan as a smaller line');
+chk('its lines are BET_CHECKER.FEATURES, verbatim and in order', () => {
+  const li = [...(BCC.match(/<ul class="pincl bc-incl">([\s\S]*?)<\/ul>/) || [, ''])[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m => plain(m[1]).trim());
+  return JSON.stringify(li) === JSON.stringify(X.BET_CHECKER.FEATURES);
+}, 'the Bet Checker card differs from lib/edgedesk_pricing.js BET_CHECKER.FEATURES');
+has(BCC, '<p class="pfree"><b>Free account, no card:</b> <span data-ed-price="bc_free">' + PW.bc_free + '</span> graded bets a month, and CLV on every bet.</p>', 'the free tier is stated: graded bets a month, CLV on every bet, no card');
+chk('"Get Bet Checker" opens the monthly plan on /bet-checker/, and names the landing page', /<a class="btn primary lg" href="\/bet-checker\/\?upgrade=monthly&amp;ref=landing_pricing" data-track="pricing_bet_checker_click" data-cta="pricing_bet_checker">Get Bet Checker </.test(BCC));
+chk('and checking a bet free is the second door', /<a class="btn ghost" href="\/bet-checker\/\?ref=landing_pricing" data-cta="pricing_bet_checker_free">Check a bet free<\/a>/.test(BCC));
+has(BCC, '<p class="psub">NFL and college football. No picks: it grades the price you took.</p>', 'it claims only the sports it grades, and no picks');
+has(BCC, '<p class="psub">No free trial. Renews automatically; cancel anytime in Settings.</p>', 'and how it renews, beside the button');
+chk('it starts no Full Access trial and borrows none of Full Access\'s words', !/startSubscribe|data-ed-price="(?:price|monthly|trial|cta|plan|days|day8)"/.test(BCC));
+chk('no figure on it is typed outside a pricing word', !/\$\s?\d|\b\d+\.\d\d\b/.test(BCC.replace(/<!--[\s\S]*?-->/g, '').replace(/<span[^>]*data-ed-price="bc_[a-z]+">[^<]*<\/span>/g, '')));
+chk('Bet Checker is "every bet graded", never "Unlimited"', !/unlimited/i.test(plain(PRICE)) && !/unlimited/i.test(STRIP));
+has(PRICE.slice(PRICE.indexOf('id="subscribe"')), '<p class="pinc">Includes <span data-ed-price="bc_plan">' + X.BET_CHECKER.PLAN_NAME + '</span>: every bet graded, with your stats.</p>',
+  'the Full Access card says it includes Bet Checker');
+chk('and says it outside its FEATURES list, which the terminal\'s paywall shares', PRICE.indexOf('<p class="pinc">') > PRICE.indexOf('<ul class="pincl">'));
 /* ======================================================================== */
 /* 9. NO PICKS. NO PROFIT PROMISES. NO INVENTED PROOF. NO SLUDGE.           */
 /* ======================================================================== */
