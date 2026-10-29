@@ -5,7 +5,7 @@
 -- is refused, and the transaction is rolled back.
 create temp table paywall_after (user_id uuid primary key, granted boolean not null, why text) on commit drop;
 do $pa$
-declare r record; v boolean; t text; lost_norow int;
+declare r record; v boolean; t text; lost_norow int; who text;
 begin
   for r in select user_id, granted from paywall_before loop
     perform set_config('request.jwt.claim.sub', r.user_id::text, true);
@@ -23,9 +23,9 @@ begin
     end if;
     insert into paywall_after values (r.user_id, v, t);
   end loop;
-  select count(*) into lost_norow from paywall_after where why = 'no subscription row';
+  select count(*), string_agg(left(user_id::text, 8) || '…', ', ' order by user_id) into lost_norow, who from paywall_after where why = 'no subscription row';
   if lost_norow > 0 then
-    raise exception 'PAYWALL: % account(s) had the terminal through something other than a subscriptions row, which the rule cannot see. Nothing was changed.', lost_norow;
+    raise exception 'PAYWALL: % account(s) had the terminal through something other than a subscriptions row, which the rule cannot see (%). Nothing was changed.', lost_norow, who;
   end if;
 end
 $pa$;

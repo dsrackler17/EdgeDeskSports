@@ -13,6 +13,8 @@
      the terminal (blue), a comp, an unlearned price, a past_due row in its
      grace                                        -> pass after, and read signals
      lapsed, cancelled, no row                    -> never
+     an EdgeDesk operator (billing_is_admin()) with
+     no subscriptions row                         -> keeps the terminal
      the change keeps the function's grants       -> anon still cannot run it
      an account with access through something the rule cannot see
                                                   -> the change is refused, and
@@ -73,6 +75,7 @@ const OLD = `create or replace function public.has_active_sub() returns boolean 
       alter table public.signals enable row level security;
       create policy signals_sub on public.signals for select to authenticated using (public.has_active_sub());
       grant select on public.signals to authenticated;
+      create table public.issue_report_admins (user_id uuid primary key);
       insert into public.billing_price_tiers (price_id, tier, source) values
         ('price_blue', 'blue', 'test'), ('price_red', 'red', 'test'), ('price_black', 'black', 'test');`);
 
@@ -96,6 +99,8 @@ const OLD = `create or replace function public.has_active_sub() returns boolean 
     acct('lapsed', ['active', 'price_blue', -2]);
     acct('cancelled', ['canceled', 'price_blue', 20]);
     acct('nobody', null);
+    acct('operator', null);
+    sql('insert into public.issue_report_admins (user_id) values (' + lit(A.operator) + ');');
 
     const has = (u) => db.as(A[u], 'select public.has_active_sub();') === 't';
     const seen = (u) => Number(db.as(A[u], 'select count(*) from public.signals;'));
@@ -104,6 +109,7 @@ const OLD = `create or replace function public.has_active_sub() returns boolean 
     chk('before: a Fairline (black) subscription passes has_active_sub() and reads signals', has('black') && seen('black') === 2);
     chk('before: so does a Bet Checker (red) one', has('red') && seen('red') === 2);
     chk('before: a past_due row in its 21-day grace is shut out (the rule keeps it)', !has('grace'));
+    chk('before: this stand-in shuts an operator with no row out', !has('operator'));
 
     /* the deploy's own paywall check (deploy-fairline.yml), read-only, before */
     const check = () => sql("select case when pg_get_functiondef(to_regprocedure('public.has_active_sub()')) similar to '(%billing_row_grants_access%|%community_is_entitled%)' then 'defers' else 'restates' end;");
@@ -112,9 +118,9 @@ const OLD = `create or replace function public.has_active_sub() returns boolean 
     /* THE CHANGE, as Deploy Fairline makes it: one transaction, compared */
     const out = sql('begin;\n' + BEFORE + '\n' + RULE + '\n' + AFTER + '\ncommit;');
     const line = (re) => (out.split('\n').filter((l) => re.test(l))[0] || '');
-    chk('the comparison counts every account', /PAYWALL accounts 9 · granted before 5 · after 4 · gained 1 · lost 2/.test(line(/^PAYWALL accounts/)), line(/^PAYWALL accounts/));
+    chk('the comparison counts every account', /PAYWALL accounts 10 · granted before 5 · after 5 · gained 2 · lost 2/.test(line(/^PAYWALL accounts/)), line(/^PAYWALL accounts/));
     chk('and names why each lost it: a Fairline row, a Bet Checker row', /a Fairline \(black\) row 1/.test(out) && /a Bet Checker \(red\) row 1/.test(out), out.split('\n').filter((l) => /^PAYWALL/.test(l)));
-    chk('the report: it defers, names no status, pins its search_path', ['01', '02', '03'].every((r) => new RegExp('^' + r + ' [^|]*\\|ok$', 'm').test(out)), out.slice(-600));
+    chk('the report: it defers, names no status, pins its search_path, keeps operators', ['01', '02', '03', '04'].every((r) => new RegExp('^' + r + ' [^|]*\\|ok$', 'm').test(out)), out.slice(-600));
     chk('the deploy\'s paywall check now passes', check() === 'defers');
 
     /* AFTER: the rule */
@@ -125,7 +131,8 @@ const OLD = `create or replace function public.has_active_sub() returns boolean 
     chk('after: a price never learned still does (the rule\'s coalesce to blue)', has('unlearned'));
     chk('after: past_due in its grace now does, as the rule says', has('grace'));
     chk('after: lapsed, cancelled and no row never do', !has('lapsed') && !has('cancelled') && !has('nobody'));
-    chk('it agrees with community_is_entitled() for every account', Object.keys(A).every((u) => has(u) === (sql('select public.community_is_entitled(' + lit(A[u]) + ');') === 't')));
+    chk('after: an EdgeDesk operator with no subscriptions row keeps the terminal, and reads signals', has('operator') && seen('operator') === 2);
+    chk('it agrees with community_is_entitled() for every account but the operator', Object.keys(A).filter((u) => u !== 'operator').every((u) => has(u) === (sql('select public.community_is_entitled(' + lit(A[u]) + ');') === 't')));
     chk('the grants are kept: anon still cannot run it', !!db.mustFail(() => db.anon('select public.has_active_sub();')));
     chk('and it applies a second time, identically', /^01 [^|]*\|ok$/m.test(sql(RULE)));
 
@@ -134,7 +141,7 @@ const OLD = `create or replace function public.has_active_sub() returns boolean 
       "select auth.uid() = " + lit(A.nobody) + "::uuid or exists (select 1 from public.subscriptions s where s.user_id = auth.uid()"));
     chk('(a function that also opens an account with no row)', has('nobody'));
     const refused = db.mustFail(() => sql('begin;\n' + BEFORE + '\n' + RULE + '\n' + AFTER + '\ncommit;'));
-    chk('the change is refused: it names the account the rule cannot see', /1 account\(s\) had the terminal through something other than a subscriptions row/.test(refused || ''), refused && refused.slice(0, 300));
+    chk('the change is refused: it counts the account the rule cannot see, and names it masked', /1 account\(s\) had the terminal through something other than a subscriptions row, which the rule cannot see \(00000000…\)/.test(refused || ''), refused && refused.slice(0, 300));
     chk('and nothing was changed: the old function still answers', has('nobody') && check() === 'restates');
     /* a dry run rolls back */
     sql(OLD);

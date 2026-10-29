@@ -13,7 +13,10 @@
 -- This replaces its body with the rule itself: a reader has the terminal when
 -- one of their subscriptions rows passes billing_row_grants_access() (blue, a
 -- comp, or a price never learned; never red or black). It is the definition
--- tools/billing/fairline_tier.test.js has always tested against.
+-- tools/billing/fairline_tier.test.js has always tested against. EdgeDesk's
+-- operators keep it too, by billing_is_admin() (the business consoles' one
+-- operator list): the first dry run (2026-10-29) found one account with the
+-- terminal and no subscriptions row, and the owner chose to keep operators in.
 --
 -- CREATE OR REPLACE keeps the function's owner and its grants exactly as they
 -- are: nothing here grants or revokes anything, and no policy changes.
@@ -27,8 +30,9 @@
 
 do $req$
 begin
-  if to_regprocedure('public.billing_row_grants_access(text, text, timestamptz, timestamptz)') is null then
-    raise exception 'paywall_rule.sql needs supabase/billing_hardening.sql first (public.billing_row_grants_access)';
+  if to_regprocedure('public.billing_row_grants_access(text, text, timestamptz, timestamptz)') is null
+     or to_regprocedure('public.billing_is_admin()') is null then
+    raise exception 'paywall_rule.sql needs supabase/billing_hardening.sql first (public.billing_row_grants_access, public.billing_is_admin)';
   end if;
 end
 $req$;
@@ -40,15 +44,16 @@ stable
 security definer
 set search_path = public, pg_temp
 as $$
-  select exists (
-    select 1 from public.subscriptions s
-     where s.user_id = auth.uid()
-       and public.billing_row_grants_access(s.status, s.price_id, s.current_period_end, now())
-  );
+  select public.billing_is_admin()
+      or exists (
+           select 1 from public.subscriptions s
+            where s.user_id = auth.uid()
+              and public.billing_row_grants_access(s.status, s.price_id, s.current_period_end, now())
+         );
 $$;
 
 comment on function public.has_active_sub() is
-  'The Research Terminal''s gate (signals RLS and its readers): the one access rule, billing_row_grants_access(). supabase/paywall_rule.sql.';
+  'The Research Terminal''s gate (signals RLS and its readers): the one access rule, billing_row_grants_access(), and EdgeDesk''s operators (billing_is_admin()). supabase/paywall_rule.sql.';
 
 -- ── report ──────────────────────────────────────────────────────────────────
 select '01 has_active_sub() defers to billing_row_grants_access()' as check,
@@ -59,4 +64,7 @@ select '02 it names no status itself (no inlined active / trialing)',
 union all
 select '03 it pins its search_path',
        case when exists (select 1 from pg_proc where oid = to_regprocedure('public.has_active_sub()')
-                           and array_to_string(proconfig, ',') like 'search_path=%') then 'ok' else 'CHECK THIS' end;
+                           and array_to_string(proconfig, ',') like 'search_path=%') then 'ok' else 'CHECK THIS' end
+union all
+select '04 EdgeDesk''s operators keep it (billing_is_admin())',
+       case when pg_get_functiondef(to_regprocedure('public.has_active_sub()')) like '%billing_is_admin()%' then 'ok' else 'CHECK THIS' end;
