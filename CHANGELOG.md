@@ -21,7 +21,88 @@
 - `page.e2e.js` 64 / 0: a signed-out visitor and a signed-in reader see it while paused, and it is gone after a reload once the feed is live.
 - On `main`'s page code the core suite crashes (no `feedNotice`), the wiring suite throws (no `loadFeed`), and the browser suite fails 2.
 
+## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
 
+**What was wrong, once Pages' source was switched to GitHub Actions:**
+
+- **Three workflows deployed the site on every merge.** `jekyll-gh-pages.yml` and `static.yml`, the two starter workflows from the Pages settings screen, were added on 2026-10-28 at 21:20 UTC. They shared the `pages` queue with `pages-deploy.yml`, which keeps one waiting run, so each merge cancelled two of the three. Of 50 runs, 20 were cancelled.
+  - Whichever finished last decided the site. At 12:41 UTC that was `static.yml`, which uploads the repository without the Jekyll build.
+- **The data jobs' updates stopped reaching the site between merges.** The data jobs push with `GITHUB_TOKEN`, which starts no workflow, and `pages-deploy.yml` relied on an every-10-minutes timer.
+  - GitHub's cron fires only every 4 to 7 hours in this repository. The data jobs themselves are started by Supabase `pg_cron`.
+  - The timer ran twice in 15 hours (01:56 and 07:56 UTC). Nothing deployed between 07:59 and 12:22.
+
+**What changed:**
+- **`jekyll-gh-pages.yml` and `static.yml` are removed.** `pages-deploy.yml` is the only deployer.
+- **`pages-deploy.yml` now also runs when any of the 65 workflows that push to `main` finishes** (`workflow_run`, by name), the pattern `editorial.yml` already uses.
+  - The timer becomes an hourly backstop at :41.
+  - The comments now say what the queue really does. The deploy in progress always finishes; waiting runs are replaced by the newest and show as cancelled.
+- **`tools/ci/pages_deploy.test.js`** (Core validation) now also fails:
+  - when a workflow that pushes to `main` is missing from the list, naming it;
+  - when a listed name matches no workflow;
+  - when any other workflow deploys Pages or queues in `pages`.
+  - Results: 22 passed, 0 failed. Against `main` before this change, 17 passed, 5 failed. With one data workflow left out of the list, 21 passed, 1 failed.
+- **Docs:** `docs/ci/README.md`, "Publishing the site", and the shipping table in `docs/intelligence.md`.
+
+## 2026-10-29 — CFB: SP+ beside EdgeDesk's number on every card, as an external estimate, graded against the close
+
+**Why.** On 2026-10-28 EdgeDesk had Middle Tennessee −4.5 against Kennesaw State. SP+ had about Middle Tennessee −1, and the game closed Kennesaw State −1.5 (KSU won 44–28). A results-based number had missed a team that was losing close games while playing efficiently. SP+ (ESPN's opponent-adjusted efficiency rating, by Bill Connelly) is now a visible second opinion, measured against the close. The full write-up is `football/sp_plus/README.md`.
+
+**It changes no EdgeDesk number.** SP+ feeds no projection, EV, ranking, grade or record, and it can never be a Model Lab role or a promotion candidate. `football/sp_plus/registry.test.js` fails if any of that code reads it.
+
+- **A · the weekly capture** (`football/sp_plus/sync.js`, `.github/workflows/cfb-sp-plus.yml`: Monday, retried Tuesday and Wednesday, plus a manual run).
+  - It reads CollegeFootballData `/ratings/sp` with `CFBD_API_KEY` and maps teams through the identity master. An unmapped or prefix-only name is logged, never guessed.
+  - Each team's overall, offense and defense are stored in `public.cfb_sp_ratings`: append-only by trigger, row level security with no policy, service role only (`supabase/cfb_sp_plus.sql`). Every attempt goes to `cfb_sp_sync_runs`.
+  - UNCHANGED when CFBD still serves last week's numbers. The sync fails closed. **No rating is ever committed:** the repository is public, CFBD's terms forbid a public mirror (§5), and SP+ is ESPN's.
+- **B · the projected line** (`lib/cfb_sp_plus.js`). A T2 transform of the T3 rating: home SP+ − away SP+ + the home field the CFB engine applies (2.8 today), 0 at a neutral site. It is pure and deterministic. `football/sp_plus/lines.json` publishes the derived line per game of the captured week.
+- **C · on the cards.**
+  - Where it appears:
+    - the board card, beside EdgeDesk fair and the market;
+    - the game page, after Fair spread;
+    - the research terminal: section 1 after Fair spread, the summary strip, and section A.
+  - Each row shows the SP+ line, "T3 external model · T2 computed line", the SP+ week, and the attribution "Projection derived from SP+ (ESPN, Bill Connelly). Data provided by CollegeFootballData.com."
+  - A 3+ point gap to EdgeDesk adds a plain "Models disagree" note. The two numbers are never combined.
+  - The line shows only from a capture of the game's own week, no older than 8 days. Otherwise the row reads unavailable, with the reason.
+- **D · tracking** (`football/sp_plus/track.js`, in the hourly Model Lab job).
+  - For every upcoming game: EdgeDesk's fair line, the SP+ line and the Lab's consensus market at the same moment, appended on change.
+  - Each game is graded once against the Lab's close and the final: MAE against each, the right side of the close, and whether the close moved toward it.
+  - A weekly and season report. Append-only, and checked before publish.
+- **E · the registry** (`football/sp_plus/registry.json`, `public.cfb_external_estimates`).
+  - *SP+ projected line* is registered as an `EXTERNAL_ESTIMATE` with its source, version and terms.
+  - The server refuses to mark it an EdgeDesk model or validated.
+  - The page pins its badge to "External" ahead of the model registry.
+- **Terms.** CFBD's terms (2026-08-12, read as quoted; the site was unreachable from the build environment) allow commercial use and reasonable portions of factual data in a larger product, and recommend the attribution line. **No licence from ESPN for SP+ was found or obtained.** The owner chose to show the derived projected line only, publicly, with attribution.
+- **To switch it on.**
+  1. Apply `supabase/cfb_sp_plus.sql`.
+  2. Add the repository secret `CFBD_API_KEY`.
+  3. Run *CFB SP+ weekly sync*.
+
+  Until then every card reads "SP+ has not been synced yet".
+
+Tests:
+- `football/sp_plus/ingest.test.js` (66, mocked CFBD and Supabase)
+- `projection.test.js` (42)
+- `display.test.js` (39)
+- `card_ui.test.js` (23, the real football module)
+- `ui.e2e.js` (22, Chromium)
+- `track.test.js` (38)
+- `registry.test.js` (22)
+- `sql.test.js` (46, a real PostgreSQL)
+
+All run in `cfb-sp-plus-tests.yml`.
+
+## 2026-10-29 — Prediction Radar: radar_registry.sql applies on the production registry (games_tested), and Deploy Prediction Radar
+
+- **Bug.** Applying `supabase/radar_registry.sql` in production stopped with "research_model_results requires games_tested and this file has nothing to put there". The registry's tables exist only in production. That table requires `games_tested`, and the generator had no mapping for it, so nothing was registered.
+- **Fix.** `tools/radar/build_registry_sql.js` fills `games_tested`, or the first of `n_games`, `holdout_games` and `games` that exists, with the report's holdout games (37). It fills a followed-bets column (`bets_tested`, `n_bets`, `n_followed` or `sample_size`) with the report's followed bets (41). `supabase/radar_registry.sql` is regenerated from it. The report and the verdict are unchanged (FAILED).
+- **Test.** `tools/radar/radar_sql.test.js`'s stand-in registry now requires `games_tested`, as production does. On the old SQL: 131 passed, 1 failed, with the production error. On the fix: 199 passed, 0 failed.
+- **Deploy Prediction Radar** (`.github/workflows/deploy-radar.yml`, run by hand, the `deploy-bet-checker.yml` pattern) runs the runbook in order with the repository's Supabase secrets, after the Radar suites pass:
+  - `apply_sql`: radar.sql, then radar_registry.sql, then radar_record.sql;
+  - `deploy_function`: `polymarket_sync`, checked by the build it serves;
+  - `set_cron_secret`: the function's and Vault's secrets made one value, never printed, and proved by a dry probe;
+  - `data_enabled`: both halves of the switch; `on` records `enable_note` in `radar_config`;
+  - `apply_cron`: the four schedules.
+
+  A report row that says CHECK THIS fails the run.
 
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 

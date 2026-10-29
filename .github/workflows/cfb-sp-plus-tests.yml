@@ -1,0 +1,110 @@
+# EdgeDesk CFB SP+ — run the SP+ suites on the pull request.
+#
+# The weekly sync (cfb-sp-plus.yml) runs the mocked suite before it writes,
+# but only on main. A change that breaks the parse, the team map, the
+# append-only table or its privileges has to fail on the PR that makes it.
+#
+# Offline: every external API is mocked; the Postgres contract runs on a
+# throwaway local cluster. No credentials, nothing written outside temp dirs.
+name: CFB SP+ tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/sp_plus/**'
+      - 'lib/cfb_sp_plus.js'
+      - 'supabase/cfb_sp_plus.sql'
+      # the projection uses the home field the CFB engine applies
+      - 'football/cfb_p4/engine.js'
+      - 'football/cfb_p4/home_field.js'
+      - 'football/cfb_p4/params.js'
+      # the identity master and alias table every SP+ team name maps through
+      - 'football/cfb_lab/identity.js'
+      - 'football/fbs/fbs.js'
+      - 'football/fbs_epa/teams.json'
+      # the insert-only writer and the table-missing check the sync uses
+      - 'football/cfb_production/db.js'
+      - 'football/cfb_lab/sync_supabase.js'
+      # tracking reads the Lab's quotes, closes and results through its own rules
+      - 'football/cfb_lab/lab_core.js'
+      - 'football/cfb_lab/ledger.js'
+      - '.github/workflows/cfb-lab.yml'
+      - 'tools/games/sql/supabase_shim.sql'
+      # the three surfaces that show the SP+ line, and the harness that runs the board card
+      - 'app.html'
+      - 'lib/edgedesk_game_view.js'
+      - 'research/cfb/index.html'
+      - 'research/cfb/terminal.js'
+      - 'research/cfb/resilience_ui.js'
+      - 'tools/football/_module.js'
+      # the code SP+ must never feed (registry.test.js fails if any of it reads SP+)
+      - 'football/cfb_p4/*.js'
+      - 'football/cfb_v2/*.js'
+      - 'football/cfb_ev/*.js'
+      - 'football/cfb_lab/*.js'
+      - 'football/cfb_lab/governance/**'
+      - 'football/cfb_production/*.js'
+      - 'football/cfb_production/compatibility.json'
+      - 'football/cfb_decision/*.js'
+      - 'football/cfb_market/*.js'
+      - 'football/rankings/*.js'
+      - 'football/rating/*.js'
+      - 'model_loop/**.py'
+      - 'tools/record/**'
+      - 'lib/edgedesk_ev*.js'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_decision*.js'
+      - 'lib/cfb_champion.js'
+      - 'package.json'
+      - '.github/workflows/cfb-sp-plus.yml'
+      - '.github/workflows/cfb-sp-plus-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/sp_plus/*.js'
+      - 'lib/cfb_sp_plus.js'
+      - 'supabase/cfb_sp_plus.sql'
+      - 'lib/edgedesk_game_view.js'
+      - 'research/cfb/terminal.js'
+      - 'research/cfb/resilience_ui.js'
+      - '.github/workflows/cfb-sp-plus-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-sp-plus-tests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Ingest (request, parse, team map, weekly sync; mocked CFBD and Supabase)
+        run: node football/sp_plus/ingest.test.js
+      - name: Projection (the T2 transform, the engine's home field, a week's derived lines)
+        run: node football/sp_plus/projection.test.js
+      - name: The SP+ tables on a real PostgreSQL (append-only, service role only)
+        env:
+          CFB_SP_SQL_REQUIRED: '1'
+        run: node football/sp_plus/sql.test.js
+      - name: SP+ stays external (registry, never a Lab role, never read by model, EV, rankings or grades)
+        run: node football/sp_plus/registry.test.js
+      - name: Tracking (capture, grade once against the Lab's close and final, report, append-only)
+        run: node football/sp_plus/track.test.js
+      - name: The display rule (fresh, stale, failed, missing, another week; Models disagree at 3+ points)
+        run: node football/sp_plus/display.test.js
+      - name: The board card, through the real football module
+        run: node football/sp_plus/card_ui.test.js
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The game page and the research terminal in Chromium (fresh, stale, missing)
+        run: node football/sp_plus/ui.e2e.js

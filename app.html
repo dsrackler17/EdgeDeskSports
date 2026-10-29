@@ -132,6 +132,7 @@ select option:checked{background-color:var(--surface2,#221c15);color:var(--text,
 .rs-mat-exp{color:var(--warn);border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07)}
 .rs-mat-val{color:#5bbf87;border-color:rgba(91,191,135,.35);background:rgba(91,191,135,.07)}
 .rs-mat-na{color:var(--faint)}
+.rs-mat-ext{color:var(--dim);border-color:var(--border);background:transparent}
 .rs-prov{border:1px solid var(--border);border-radius:11px;background:var(--surface);margin-bottom:12px;overflow:hidden}
 .rs-prov summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:7px}
 .rs-prov summary::-webkit-details-marker{display:none}
@@ -4125,6 +4126,10 @@ window.mcRefresh=function(){
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
 <script src="/lib/cfb_research_view.js?v=20261008i"></script>
+<!-- SP+ (football/sp_plus/README.md): an EXTERNAL estimate (T3 rating, T2
+     derived line) shown beside EdgeDesk's CFB fair spread on the board card
+     and the game page, never combined with it and never read by the model -->
+<script src="/lib/cfb_sp_plus.js?v=20261029sp1"></script>
 <!-- THE MAJOR-DISAGREEMENT INTEGRITY GATE: a 7+ point gap between EdgeDesk and
      the market is INVESTIGATE until it passes every check (game, market, team
      state, QB, roster, components, cross-model, football-only calibration),
@@ -4297,6 +4302,10 @@ window.mcRefresh=function(){
     market:function(league,gid){return league==='cfb'?gvCfb(gid):gvNfl(gid);},
     /* Sharp lag (Experimental): this game's research flags, read under the reader's own token */
     sharpLag:function(league,gid,g){return window.slData?window.slData.forGame({sport_key:league==='cfb'?'americanfootball_ncaaf':'americanfootball_nfl',home:g.home,away:g.away,start:g.kickoff}):Promise.resolve({state:'error'});},
+    /* SP+ (lib/cfb_sp_plus.js): college football only; the page draws the row
+       from EDCfbSpPlus once its weekly file is read, and says unavailable if it is not */
+    spPlus:function(league){if(league!=='cfb'||!window.EDCfbSpPlus)return Promise.resolve(null);
+      return window.EDCfbSpPlus.fetchLines(window.EDCfbSpPlus.URL).then(function(){return {loaded:true};},function(){return {loaded:true,error:true};});},
     /* a #game link opens this page while the document is still parsing: the Kalshi section's
        script sits near its end, so wait for the parse before deciding it is absent */
     /* at the snapshot's model time when the page names it (EDGameGraphic compares Kalshi only there) */
@@ -6288,7 +6297,8 @@ var RS_PROV={
   cfb:[
     {nm:'Scores, records, season totals, recruiting, AP poll, roster',tier:'T0',src:'CollegeFootballData ingest (cfb.games / records / team_season_stats / recruiting / rankings / roster)'},
     {nm:'Book line (spread, total, moneyline)',tier:'T0',src:'cfb.lines — consensus book numbers, not Pinnacle'},
-    {nm:'SP+ rating, ranking, SOS',tier:'T3',model:'cfbd.sp_plus',src:'Third-party opponent-adjusted model, ingested from CollegeFootballData'},
+    {nm:'SP+ rating, ranking, SOS',tier:'T3',model:'cfbd.sp_plus',src:'Third-party opponent-adjusted model (ESPN, Bill Connelly), ingested from CollegeFootballData. External: never an EdgeDesk model (football/sp_plus/registry.json)'},
+    {nm:'SP+ projected line on CFB cards',tier:'T2',src:'football/sp_plus/lines.json: home SP+ − away SP+ + EdgeDesk’s home field (cfb_sp_projection_v1), from the weekly CollegeFootballData capture; shown beside EdgeDesk’s number, never combined with it'},
     {nm:'Pregame Elo',tier:'T3',model:'cfbd.elo',src:'Third-party rating model, ingested from CollegeFootballData (cfb.games.*_pregame_elo)'},
     {nm:'SP+ favourite margin shown on game rows',tier:'T2',src:'Computed in the browser as home SP+ minus away SP+'},
     {nm:'Analyst flag drivers and flag-to-close CLV',tier:'T2',src:'cfb.analyst_flags — deterministic rules computed server-side from stored drivers'},
@@ -6406,6 +6416,11 @@ var RS_LIMITS={
    is no validation report to show. */
 var RS_MODELS={rows:null,state:'unread',at:0,loading:null};
 var RS_NO_REPORT='No validation report exists for this model.';
+/* EXTERNAL models (football/sp_plus/registry.json): a third party's model, shown
+   as research context and never as EdgeDesk's. Pinned here, ahead of the
+   registry, so no registry row can ever present one as Validated. */
+var RS_EXTERNAL={'cfbd.sp_plus':{owner:'ESPN (Bill Connelly)',via:'CollegeFootballData.com',registry:'football/sp_plus/registry.json',
+  note:'SP+ is ESPN’s opponent-adjusted efficiency rating. EdgeDesk shows a line derived from it beside its own number and grades both against the close; it feeds no EdgeDesk projection, EV, ranking or grade.'}};
 function rsModelsLoad(force){
   if(!force&&RS_MODELS.state!=='unread'&&(Date.now()-RS_MODELS.at)<300000)return Promise.resolve(RS_MODELS);
   if(RS_MODELS.loading)return RS_MODELS.loading;
@@ -6430,6 +6445,8 @@ function rsModelRow(key){
 /* maturity NEVER upgrades on missing evidence: no row => Experimental. */
 function rsMaturity(key){
   if(!key)return null;
+  var ext=RS_EXTERNAL[String(key).toLowerCase()];
+  if(ext)return {label:'External',cls:'rs-mat-ext',hasReport:false,row:null,external:ext};
   var row=rsModelRow(key);
   if(!row)return {label:'Experimental',cls:'rs-mat-exp',hasReport:false,row:null};
   var st=String(rsField(row,['status','model_status'])||'').toLowerCase();
@@ -6464,6 +6481,8 @@ function rsDossierHTML(tier,key){
   if(!key){
     return head+'<div class="rs-none">Maturity is a property of models. This value is not a model output, so there is no model record to show.</div>';
   }
+  var ext=RS_EXTERNAL[String(key).toLowerCase()];
+  if(ext)return head+'<div class="rs-none"><b>External model — not EdgeDesk’s, and not validated by EdgeDesk.</b><br>'+stEsc(ext.note)+' Source: '+stEsc(ext.owner)+', via '+stEsc(ext.via)+'.</div>';
   if(RS_MODELS.state==='unread')return head+'<div class="rs-none">Reading the model registry…</div>';
   var m=rsMaturity(key),row=m&&m.row;
   if(!row){
@@ -52961,6 +52980,10 @@ function fbP4Ensure(){
       return fetch('football/cfb_production/reports/champion.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
         .then(function(j){if(window.EDCfbChampion)window.EDCfbChampion.load(j);});
     }).catch(function(){if(window.EDCfbChampion)window.EDCfbChampion.load(null);});})
+    /* SP+ (lib/cfb_sp_plus.js): the weekly derived lines each card shows
+       beside EdgeDesk's number (football/sp_plus/lines.json). A failed read
+       leaves no file, and every card's SP+ row says it is unavailable */
+    .then(function(){return window.EDCfbSpPlus?window.EDCfbSpPlus.fetchLines(window.EDCfbSpPlus.URL).catch(function(){}):null;})
     .then(function(){return fbScript('football/cfb_p4/disagreement_params.js').catch(function(){});})
     .then(function(){fbDgSubEnsure();})
     /* THE CONFIDENCE LEDGER AND THE OUTCOME RENDERER, shared with the offline
@@ -56244,6 +56267,17 @@ function fbGxSummary(u,p,gid){
   out+=cell('Difference',gap!=null?(gap.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
     gap!=null&&gap>=FB_GUARD.p4.game?'neg':(gap!=null&&gap>=2?'warn':''),
     gap!=null?'model minus market':'no market number');
+  }
+  /* SP+ (lib/cfb_sp_plus.js): an EXTERNAL estimate beside EdgeDesk's number,
+     never combined with it. Unavailable, with the reason, rather than stale */
+  var SPX=window.EDCfbSpPlus;
+  if(SPX&&SPX.rowFor){
+    var SPR=SPX.rowFor(String(g.game_id),{now:Date.now(),home:g.home_team,away:g.away_team,edgedesk_home_margin:m?m.fair_spread:null});
+    out+=cell(SPR.label,SPR.state==='AVAILABLE'?fbEsc(SPR.text):'<span class="gx-miss">unavailable</span>',
+      SPR.disagree?'warn':'',
+      SPR.state==='AVAILABLE'
+        ?fbEsc(SPR.tier_text+' · '+SPR.source_text)+(SPR.disagree?'<br><b>Models disagree</b> · '+fbEsc(SPR.disagree_text):'')+'<br><span class="mut">'+fbEsc(SPR.attribution)+'</span>'
+        :fbEsc(SPR.reason));
   }
   out+=cell('Projected score',
     sc?('<span class="gx-sc"><i>'+h+'</i><b>'+sc.home+'</b></span>'

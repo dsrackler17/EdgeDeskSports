@@ -9,16 +9,22 @@
    about four, so on 2026-10-28 23 builds in a row were cancelled (19:54 to
    20:38 UTC) and the site served a 19:49 copy through three merges.
 
-     1  a new run waits for the one in progress (one concurrency group,
+     1  the deploy in progress always finishes (one concurrency group,
         cancel-in-progress false); no pull request starts it
-     2  it runs on a merge, on a schedule (the data jobs push with
-        GITHUB_TOKEN, which starts no workflow) and by hand
+     2  it runs on a merge, when ANY workflow that pushes to main finishes
+        (the data jobs push with GITHUB_TOKEN, which starts no workflow, and
+        GitHub's cron fires only every 4 to 7 hours in this repository: an
+        every-10-minutes schedule ran twice in 15 hours on 2026-10-29), on
+        an hourly backstop schedule and by hand
      3  the build is the branch build's: Jekyll over the repository root
      4  only the deploy job may write Pages or mint an OIDC token; the
         workflow's default is read-only
      5  the source check, run against a stand-in `gh`: "workflow" lets the
         deploy run; the branch source deploys nothing and says so in the
         summary; a failed read of the source fails the job
+     6  it is the only workflow that deploys Pages or queues in "pages": two
+        starter workflows from the Pages settings screen, added 2026-10-28,
+        raced it, and one uploaded the repository without the Jekyll build
 
    Run: node tools/ci/pages_deploy.test.js
    =========================================================================== */
@@ -49,9 +55,25 @@ chk('  no pull request starts it', !Object.prototype.hasOwnProperty.call(on, 'pu
 
 /* 2. when it runs */
 chk('2 a merge to main starts it', !!on.push && JSON.stringify(on.push.branches) === '["main"]' && !on.push.paths, on.push);
+/* every workflow in .github/workflows, read once (also for 6) */
+const WF_DIR = path.join(ROOT, '.github', 'workflows');
+const ALL = fs.readdirSync(WF_DIR).filter((f) => /\.ya?ml$/.test(f)).sort().map((f) => {
+  const text = fs.readFileSync(path.join(WF_DIR, f), 'utf8');
+  return { f, text, wf: parseYaml(text) };
+});
+/* a workflow pushes to main when a step runs tools/ci/push_generated.sh or git push */
+const runsOf = (w) => Object.values(w.jobs || {}).map((j) => (j.steps || []).map((st) => st.run || '').join('\n')).join('\n');
+const pushers = ALL.filter((x) => x.f !== 'pages-deploy.yml' && /push_generated\.sh|\bgit push\b/.test(runsOf(x.wf))).map((x) => x.wf.name);
+const wr = on.workflow_run || {};
+const listed = wr.workflows || [];
+const missing = pushers.filter((n) => listed.indexOf(n) < 0);
+const unknown = listed.filter((n) => !ALL.some((x) => x.wf.name === n));
+chk('  and when any workflow that pushes to main finishes: every one is listed by name', pushers.length > 20 && missing.length === 0,
+  'add to pages-deploy.yml on.workflow_run.workflows: ' + JSON.stringify(missing));
+chk('  and every listed name is a workflow here (a rename drops it silently)', listed.length > 0 && unknown.length === 0, unknown);
+chk('  on completion, on main', JSON.stringify(wr.types) === '["completed"]' && JSON.stringify(wr.branches) === '["main"]', wr);
 const cron = ((on.schedule || [])[0] || {}).cron || '';
-const every = (cron.match(/^\*\/(\d+) \* \* \* \*$/) || [])[1];
-chk('  and a schedule publishes the data jobs\' pushes, at least every 15 minutes', !!every && Number(every) >= 5 && Number(every) <= 15, cron);
+chk('  and an hourly backstop schedule, off the top of the hour', /^([1-9]|[1-5]\d) \* \* \* \*$/.test(cron), cron);
 chk('  and it can be run by hand', Object.prototype.hasOwnProperty.call(on, 'workflow_dispatch'));
 
 /* 3. the branch build's build */
@@ -101,6 +123,11 @@ function runSource(ghBody) {
   const r = runSource('echo "gh: Not Found (HTTP 404)" >&2; exit 1');
   chk('  the source cannot be read: the job fails, and nothing is reported as deployed', r.code !== 0 && r.output === '', r);
 }
+
+/* 6. the only deployer */
+const others = ALL.filter((x) => x.f !== 'pages-deploy.yml' && (/actions\/(deploy-pages|upload-pages-artifact|configure-pages)@/.test(x.text)
+  || (x.wf.concurrency && String(x.wf.concurrency.group || x.wf.concurrency).replace(/["']/g, '') === 'pages'))).map((x) => x.f);
+chk('6 no other workflow deploys Pages or queues in "pages" (the settings screen\'s starter workflows race this one)', others.length === 0, others);
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + String(JSON.stringify(f.detail)).slice(0, 400) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'pages deploy — ' + pass + ' passed, ' + fail + ' failed');
