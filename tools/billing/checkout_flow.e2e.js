@@ -173,7 +173,7 @@ async function startTrial(page) {
       const heroText = await page.textContent('#top .microcta');
       chk('1 the signed-out landing page says Then $49.99/month under the hero button', /Then \$49\.99\/month/.test(heroText), heroText);
       /* Full Access's card (the Free card says $0, Bet Checker's card its own price) */
-      chk('  and the plan card says $49.99 / month, 7 days free', (await page.textContent('.pcard:not(.freecard):not(.bccard) .pamt')) === '$49.99' && /7 days free/.test(await page.textContent('.pcard:not(.freecard):not(.bccard)')));
+      chk('  and the plan card says $49.99 / month, 7 days free', (await page.textContent('.pcard:not(.freecard):not(.bccard):not(.flcard) .pamt')) === '$49.99' && /7 days free/.test(await page.textContent('.pcard:not(.freecard):not(.bccard):not(.flcard)')));
       chk('  and nothing on the page says $79.99', !/79\.99/.test(await page.evaluate(() => document.body.innerText)));
 
       await startTrial(page);

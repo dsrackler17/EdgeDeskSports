@@ -18,6 +18,14 @@
 # A RE-RUN CANNOT DOUBLE-SEND. Rows are claimed FOR UPDATE SKIP LOCKED, and
 # each Resend call carries an Idempotency-Key equal to the message row id.
 #
+# THE TAPE (supabase/fairline_tape.sql) goes out through this same job: the
+# Fairline reader's Monday recap, BUILT by pg_cron (fairline_tape_cron.sql)
+# and SENT here by tools/fairline/tape_send.js with the same provider, sender,
+# tokens and suppressions. Its words come from the stored Tape, not the board.
+# It has its own switch (fairline_tape_settings.email_enabled, off by default)
+# on top of the pipeline's; its own tests run first, and a failure there
+# stops only The Tape, never the trial emails.
+#
 # SECRETS (the repository's existing ones)
 #   SB_SERVICE_ROLE    required: the lifecycle RPCs are service-role only
 #   RESEND_API_KEY     required to send; without it the run schedules only
@@ -70,4 +78,23 @@ jobs:
             node tools/lifecycle/send.js --dry-run
           else
             node tools/lifecycle/send.js
+          fi
+
+      # The Tape's words, copy rule and sender must pass before a Tape is sent.
+      - name: The Tape's email must pass before it sends
+        id: tape_test
+        if: ${{ !cancelled() }}
+        run: node tools/fairline/tape_email.test.js
+
+      - name: Send the Tapes that are due
+        if: ${{ !cancelled() && steps.tape_test.outcome == 'success' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node tools/fairline/tape_send.js --dry-run
+          else
+            node tools/fairline/tape_send.js
           fi
