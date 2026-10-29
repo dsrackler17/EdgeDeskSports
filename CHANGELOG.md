@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-29 — Changelog: eleven entries that merges dropped are back
+
+Conflict resolutions in "Update branch" merges dropped whole entries again. Each one is restored verbatim from the last commit that held it. Every line on `main` is kept, except the second copy of one Prediction Radar entry, which a merge had duplicated.
+
+- Football situational intelligence, apart from its "Tests:" list (merge `46c6060256d`, #903).
+- Prediction Radar: run_now grades every 25 wallet calls (merge `46c6060256d`, #903).
+- Prediction Radar: a wallet whose run dies part way is set aside (merges `1b1be847057` and `46c6060256d`).
+- NHL methodology change: the headline is priced at lineup lock (merge `1b1be847057`, #902).
+- Deploy Fairline: a regression test for the email switch step (merges `1b1be847057` and `91b1fe15116`).
+- Juice Reel billing reads Juice Reel's confirmed answers (merge `91b1fe15116`).
+- Methodology change (owner's decision): NHL favourites priced with the split factor fitted on the moneyline (merge `11000daf9da`).
+- Methodology change: NBA and NHL game lines every two hours in the odds gateway (merge `73fcc93075d`).
+- Fairline, part 3: The Tape (merge `a91cb0238c0`).
+- Authorization change: the terminal's paywall, `has_active_sub()`, defers to the one access rule (merge `502dc44665f`, #890). The later entry on EdgeDesk's operators was a separate change and stays.
+- Bet Checker says when sportsbook prices are paused: its heading survived, but merge `2ac8fc949b4` dropped its body.
+
+## 2026-10-29 — Prediction Radar: run_now grades every 25 wallet calls and stops the wallet calls after 5 hours, so a long run never loses its grade
+
+- **Bug.** `run_now` graded only once, after the last wallet call. On build `.6` ([run 40916807612](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40916807612)) the wallet calls were still going after 77 minutes, at about 76 s a call, with many wallets needing several calls. GitHub stops a job at 6 hours. A job stopped there would have ended before its grade, so the site would have shown nothing from all those calls.
+- **Fix** (`.github/workflows/deploy-radar.yml`). A grade also runs after every 25 good wallet calls; it asks Polymarket nothing. The wallet calls stop after 5 hours, so the last grade runs well inside the 6-hour limit, and the 06:10 UTC schedule takes the wallets still due. A grade along the way that fails is a warning: the wallet calls go on, the last grade still runs, and the step ends red.
+- **Test.** The workflow step was run against a stand-in function and a throwaway PostgreSQL. With the job stopped by a time limit (scaled down to seconds), main's loop made 19 wallet calls and no grade; this one stopped the wallet calls at its limit and graded. 31 wallet calls graded after the 25th and at the end. A failed grade along the way went on and ended red. The 546 and three-in-a-row cases are unchanged, and at most one call was ever in flight.
 ## 2026-10-29 — Props capture: the odds gateway refused the GitHub jobs' credential for 19 days, and said "deferred"
 
 **Why.** Every player-props capture since the odds gateway went live (2026-10-10 14:29Z) was refused with `unauthorized`. The capture filed the refusal as `NOT_RUN / GATEWAY_DEFERRED`, so the workflow stayed green, the boards read "deferred", and no prop has been priced since 2026-10-10.
@@ -98,11 +119,41 @@ Tests:
 - `tools/football/fsie_card_ui.test.js` (22)
 - `tools/football/fsie_ui.e2e.js` (14, Chromium)
 
-## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+## 2026-10-29 — NHL methodology change: the headline is priced at lineup lock, from the dressed lineups and both Confirmed starters
 
-- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
-- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
-- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
+**Methodology change; needs the owner's explicit review.** Evidence and the decision are in `docs/engine/NHL_GOALIES.md` §11.
+
+- **What.** Until now an NHL card's headline was `xg_core` until puck drop, whoever dressed. Now the goalie sync (`supabase/functions/nhl_goalie_sync`) reads each side's dressed skaters from the NHL boxscore it already polls. Once both lineups are listed and both starters are Confirmed with no conflict, the card's headline is priced by `xg_all_confirmed`: the xG core plus the confirmed goalie and both clubs' confirmed lineup value. The card gets a new version (reason `lineup_locked`, trigger `inputs_changed`). The page, EdgeDesk vs the market, Check a price and the edge events read that price.
+- **Evidence** (`hockey/validation/nhl_walkforward.json`). Log loss against `xg_core`: selection −0.00030 (9,205 games), confirmation −0.00119 (7,945), live +0.00008 (198). It fails the lab's rule 1 (0.001 on selection). Using it at lock anyway is the owner's decision.
+- **Before and after on the committed slate** (33 games, each club's last lineup and the likeliest starters). The home win probability moves 1.7 pp on average, by 5.1 pp at most (OTT @ LAK, 47.6% → 42.5%). The mean distance from 50% goes from 8.34 pp to 8.46 pp, so this does not fix the favourite compression; the split factor does.
+- **Unchanged:** the slate, its ledger and the public record, which grade the slate's `xg_core` price. Also unchanged: the SQL, and everything before lock.
+- **Inputs** (`hockey/build_slate.js` → `hockey/goalie_inputs.json`): the variant's η without its goalie and lineup terms, each club's typical lineup value and last lineup, every skater's value, the betas and its own pair calibration. `--check` re-prices every game at lock from those inputs and fails unless it matches the build's own GLM path within 0.00015. All 33 games pass.
+- **Timing.** The sync checks every 5 minutes from T−25 to T−5, after the T−30 final pass. Each boxscore read records the minutes to start, the skaters listed and the starters in the run's `sources`, a timing probe. When lineups post has not been measured live.
+- **A failed read never unlocks.** The card keeps the lineups it locked with (`headline.lineup.ids`). A run whose boxscore read fails, or lists none, prices from them (`nhlgLockedLineups`). Found in review: before this, an NHL API outage after lock wrote a version `lineup_unlocked` and put the slate's price back minutes before puck drop. The regression checks failed on that code (core 103 passed, 1 failed; sync 75 passed, 2 failed).
+- **Tests:** goalie core 104/0, sync 77/0, SQL 79/0 (PostgreSQL), block and gate 46/0, compare 55/0, engine UI 164/0 (Chromium, desktop and phone). With the page's lock price disabled, the engine UI fails 6 checks: the Overview headline, the Markets banner and the list card, on desktop and phone.
+- **Not wired:** Today's Games and the matchup graphic still show the slate's price. Deploy: run NHL engine build, then Deploy NHL goalie layer with `deploy_function`.
+
+## 2026-10-29 — Deploy Fairline: a regression test for the email switch step
+
+**Why.** *Deploy Fairline*'s last step, "The Tape's email switch", read psql's answer as `t` followed by `UPDATE 1`, and compared it with the word `true`. So it reported `fairline_tape_settings was not updated` on every run, after the UPDATE had committed. The owner's run of 2026-10-29 14:19Z (run 40890282549) set the switch on and failed.
+
+The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads with `psql -X -q -At` and compares `t` / `f`. That change has no test of its own for this step.
+
+**What changed.** New `tools/fairline/deploy_switch.test.js`:
+- **What it runs:** the step's own script, read out of `deploy-fairline.yml`, with `bash`, against a real PostgreSQL carrying `fairline_tape_settings` as `fairline_tape.sql` creates it.
+- **What it checks:** `on` and `off` set the switch and pass; a warning appears only when the email pipeline's own switch is off; a missing settings row or table fails.
+- **Where it runs:** in Fairline CI's database job (the workflow now also starts on `deploy-fairline.yml`), and in Deploy Fairline's tests before anything ships.
+
+**Evidence.**
+- On the step as it was before the fix (`78a8315b4ac`), 5 checks fail, each with the production error.
+- On `main`'s fixed step it passes 10 / 0.
+
+## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
+
+- **Bug.** `run_now` on build `.5` ([run 40905865196](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40905865196)) made 32 wallet calls in about 76 s each, all HTTP 200. The 33rd got HTTP 546, out of compute. A run that dies cannot record anything, so that wallet stayed first in line, and every later call, the 06:10 UTC schedule included, would have died on it. `run_now` also stopped before its grade, so nothing reached the site.
+- **Fix** (`supabase/functions/polymarket_sync/index.ts`, build `polymarket_sync@2026-10-29.6`). Each wallet is marked (`attempt_at`, `attempts` in its cursor) before its work, and the mark is cleared when the work ends. A wallet still marked was in a run that died, or one in flight: it is set aside for 15 minutes, and after 3 such runs read only once a day. A WARNING `wallet_skipped` names it.
+- **run_now** (`.github/workflows/deploy-radar.yml`) carries on after a failed wallet call, since the function now sets that wallet aside. It stops after three failures in a row, always runs the grade, reports how many wallets are set aside, and ends red if any call failed.
+- **Tests.** `tools/radar/sync_fn.test.js`: a wallet whose run died 2 minutes ago is set aside and the next wallet read; after 15 minutes it is read again, marked before the work starts, and its mark cleared when done; after three dead runs it is read only once a day. On the old code: 61 passed, 3 failed. On the fix: 64 passed, 0 failed. The workflow step was run against a stand-in function and a throwaway PostgreSQL: one HTTP 546 among the calls went on, graded and ended red; three in a row stopped, graded and ended red; a normal run ended green; at most one call was ever in flight.
 
 ## 2026-10-29 — Content engine: two Week 9 articles the gate blocked on main now pass it (the writer, not the gate, was wrong)
 
@@ -111,6 +162,32 @@ Tests:
 - **Quarterbacks** (`lib/content_engine.js`, the weekly-preview capsule). Kansas State's Big 12 report listed Jacob Knuth doubtful (the starter EdgeDesk's model expects, an input conflict) and Avery Johnson out. When a side had a conflict, the capsule wrote it and dropped every other report line for that side; otherwise it kept only the first. It now writes every conflict and every quarterback on a report, which is what the gate requires (`mustAddress`, as the upset list and the gap paragraph already did). A conflict's own quarterback is not repeated.
 - **Tests** (`tools/content/evidence.test.js`). Section R builds a packet from Utah's and Cincinnati's early-down rates and requires 51.9%/44.1% and a self-citing sentence. Section K adds a second quarterback listed out beside the Vanderbilt conflict in the frozen Week 6 slate, and requires the capsule to say so and the slate to pass. On the old code: 202 passed, 6 failed (R ×2, K ×3, L). On the fix: 208 passed, 0 failed.
 - `supabase/functions/content_engine/index.ts` carries the two libraries verbatim and was regenerated with `node tools/content/inline.js`. The editorial page (`admin/content/index.html`) loads both with new stamps, so a browser does not keep the old writer. The committed `football/evidence/packets.json` is left to its own build, the scheduled editorial job.
+
+## 2026-10-29 — Juice Reel billing reads Juice Reel's confirmed answers: isCurrentlySubscribed decides
+
+**Why.** Juice Reel approved the webhook on 2026-10-29 and pointed to its API docs for the shapes EdgeDesk had guessed (`docs/juicereel-billing.md` § 9). Tracing the documented answers through `supabase/functions/juicereel_billing` found four ways to get access wrong:
+- **`isCurrentlySubscribed` was never read.** Access followed `expiresDate` alone, so a list entry Juice Reel marks `false` with a future date (a refund) would let a buyer in. The hourly reconcile would then re-grant it every hour.
+- **The subscriber list holds everyone who ever subscribed**, a buyer's older entries included. The link check stopped at the buyer's first entry, so a returning buyer whose ended entry is listed before the current one was told "not subscribed".
+- **The reconcile counted every listed buyer as present**, so the "paid here, not on Juice Reel" alert could never fire.
+- **Webhook events carry `isCurrentlySubscribed` too.** A purchase or renewal event saying `false` would still have granted access.
+
+**What changed** (`supabase/functions/juicereel_billing/index.ts`, build `juicereel_billing-2026-10-29-1`):
+- `isCurrentlySubscribed` decides, on the status answer, each list entry and webhook data.
+- A bare yes with no subscription is not a purchase. Status answers `{isCurrentlySubscribed: true}`, with nothing else, to the application's owner, and linking the seller's own Juice Reel account opens nothing.
+- The link check reads the buyer's whole entry list.
+- The reconcile counts as present only buyers Juice Reel says have access now. It still never cuts anyone off; it raises the alert for a human.
+- An event saying `isCurrentlySubscribed: false` ends access, whatever its type or `expiresDate`.
+
+**The fake** (`tools/billing/_fake_juicereel_billing.js`) now answers in the documented shapes by default. That covers the owner's bare yes, a bare no for expired or never-subscribed buyers, the full one-page list with older entries first, and new `refund()` and `history()` helpers. The shapes guessed before stay available.
+
+**Tests:**
+- `tools/billing/juicereel_billing.test.js`: **90 passed, 0 failed** on a real PostgreSQL. Against the old function, the 4 new checks fail and everything else passes: 86 passed, 4 failed. The checks that fail on the old code are the refund, the returning buyer, the `false` event and the reconcile alert. A fifth new check, the owner's bare yes, passes on both.
+- `juicereel_client.test.js`: 25 passed, 0 failed.
+- `juicereel_checkout.e2e.js`: 50 passed, 0 failed.
+- `fairline_tier.test.js`: 72 passed, 0 failed.
+- `verify:core`: green.
+
+**To apply.** After merging, run **Actions → Deploy Juice Reel billing → deploy**. The function's health answer then reads build `juicereel_billing-2026-10-29-1`.
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
@@ -134,6 +211,51 @@ Tests:
 
 
 
+## 2026-10-29 — Methodology change (owner's decision): NHL favourites priced with the split factor fitted on the moneyline (b 0.90 → 1.125)
+
+**What changes for readers.** Every 2026-27 NHL price now uses the pair recalibration's split factor fitted on the moneyline. Favourites move up 1.58 points on average across the 33 games on the slate. Examples (fair price, before → after):
+
+| Game | Favourite | Before | After |
+|---|---|---|---|
+| VAN at SJS | SJS | −133 | −142 |
+| NYI at MIN | MIN | −146 | −161 |
+| CBJ at CAR | CAR | −186 | −218 |
+| CGY at COL | COL | −262 | −335 |
+
+Near-even games barely move (PIT −104 → −105). Expected totals move by at most 0.01 goals.
+
+**Why.** This is the cause measured in the entry below. The goal-split fit gave 2026-27 a split factor of 0.90, the lowest since 2013-14. It priced every favourite short of DraftKings: 35 of 47 settled games, mean gap 2.2 points, market slope 1.215 (1.036–1.394). The owner directed the switch the same day.
+
+**What it does not meet.** It is a methodology change against the out-of-sample record:
+- On 2021-26 the moneyline fit is +0.00027 log loss (−0.00013 to +0.00063) against the rule it replaces.
+- It fails the lab's promotion rule (§1).
+- It was promoted before its own pre-registered rule could decide (`rule_status` IN_PROGRESS).
+
+The record says all of this. It does not close the club-strength gaps either: Vancouver and Minnesota are rated differently by the market, and that is most of the SJS and MIN distance from DraftKings.
+
+**What changed.**
+- `hockey/model/split_shadow.js`: `PROTOCOL.promoted` and `promote()`. The shadow stops pricing, since it is now the price. Its 33 frozen ledger rows stay and are graded. The live record reads PROMOTED.
+- `hockey/model/walkforward.js` (amendment in its header): the season in progress takes the promoted `b` for every model, keeping `a`, `c` and the goal-split value as `goal_split_b`. Completed seasons keep the goal-split rule.
+- `hockey/lab/base.js`: the live season is priced the same way, so the lab and the diagnostics match production.
+- Rebuilt with their own builds: `hockey/model/params/live.json` and `hockey/validation/nhl_walkforward.json` (`walkforward.js --no-cache`, after `ingest/lineups.js`).
+  - `live.json` differs only in `generated_at` and the nine `b` values (0.85–0.925 → 1.125).
+  - Selection, confirmation, every completed season, the model choice, the comparisons and every market status are byte-identical. The live window (198 games) moves from LL 0.66324 to 0.66309, slope 1.452 to 1.155.
+- `simulator/data/nhl_strength_uncertainty.json`, re-run (`simulator/src/research/nhl_strength_uncertainty.ts`): it is tied to `live.json`'s hash.
+- `hockey/validation/nhl_split_shadow.json` (`--live`): PROMOTED.
+- `docs/engine/NHL_LAB.md` §6.3: the amendment.
+
+**Evidence.** The slate was built before and after at its own `generated_at` (2026-10-29T06:25:48Z):
+- every new production moneyline and home −1.5 equals, to the digit, the shadow price main already published for that game;
+- the old build equals the committed slate.
+
+The published slate changes at the next NHL engine build after merge. The model id stays `edgedesk_nhl_v1:xg_core`, because the goalie layer enforces that prefix. The switch shows in `slate.model.pair_calibration` (`b` 1.125, `goal_split_b` 0.9, `split_basis`).
+
+**Tests.** `tools/hockey/nhl_v2.test.js`: 147 pass (5 new checks). The rule tests now read `rule_status`.
+- The season in progress takes 1.125 and keeps `a` and `c`.
+- A completed season and an identity calibration are untouched.
+- Promoting twice keeps the first goal-split value.
+- The committed live parameters publish 1.125 for every model the slate prices with.
+
 ## 2026-10-29 — Authorization change: EdgeDesk's operators keep the terminal under the paywall rule
 
 **Authorization change; needs the owner's explicit review.** The first `paywall_rule = dry_run` against production refused, and nothing changed. One account had the terminal through production's old `has_active_sub()` without a `subscriptions` row, and the rule alone would have locked it out. The owner chose to keep operators in.
@@ -144,10 +266,61 @@ Tests:
 
 ## 2026-10-29 — Bet Checker says when sportsbook prices are paused
 
+**Why.** The odds account's October credits ran out on 2026-10-10, and paid price refresh is paused until the reset on 2026-11-01 (`docs/odds-api-incident-2026-10/INCIDENT.md`). Meanwhile most fair prices are older than the 6½ hours a grade accepts, so most bets logged on Bet Checker are saved Not graded, and nothing on the page said why. The owner asked for a notice (2026-10-29).
+
+**What changed.**
+- **The page** reads the public `odds_feed_status()`, the same read the terminal's banner uses. While it says `paused`, a notice above the sign-in and the form tells everyone, signed in or not, what that means for a bet logged now:
+  - it is still saved;
+  - it is graded only on a fair price under the rules' age;
+  - otherwise it is Not graded, which uses no free grade;
+  - a game that starts before prices refresh may show No close available.
+- **The title** names November 1 only while that date is ahead.
+- **It goes away on its own** when the feed is live again, whenever buying resumes.
+- **It fails soft:** a failed read shows no notice, never an error.
+- **Files:** `lib/edgedesk_bet_checker_core.js` (`feedNotice()`, `hoursText()`), `lib/edgedesk_bet_checker.js`, `bet-checker/index.html` (stamps `20261029bc4`), `lib/edgedesk_bet_checker.css`, `docs/bet-checker.md`.
+
+**Tests.**
+- `core.test.js` 60 / 0.
+- `page.test.js` 52 / 0: read with the page's key, never a token; live, a 404 and a network failure show none.
+- `page.e2e.js` 64 / 0: a signed-out visitor and a signed-in reader see it while paused, and it is gone after a reload once the feed is live.
+- On `main`'s page code the core suite crashes (no `feedNotice`), the wiring suite throws (no `loadFeed`), and the browser suite fails 2.
 
 
 
+## 2026-10-29 — Authorization change: the terminal's paywall, `has_active_sub()`, defers to the one access rule
 
+**Authorization change; needs the owner's explicit review.** *Deploy Fairline*'s read-only paywall check ran against production. It reported `has_active_sub(): RESTATES THE RULE`. The function gates the Research Terminal's data (the RLS on `signals`, and the readers in `kalshi_market_data.sql`, `sharp_lag.sql` and `radar.sql`), and it read `subscriptions`' status itself. A status-only check cannot tell what a price sells, so **a Bet Checker (red) or Fairline (black) subscription would have read the terminal's data**. Stripe holds no red or black subscription (all 30 read, 8 active, all terminal prices), so nothing had leaked. The Fairline prices stay inactive until this is fixed.
+
+- **`supabase/paywall_rule.sql`** (mirror: `migrations/20261029140000_paywall_rule.sql`) replaces its body with the rule itself: a reader has the terminal when one of their `subscriptions` rows passes `billing_row_grants_access()` (blue, a comp, or a price never learned; never red or black). It is the definition `fairline_tier.test.js` has always tested against. `CREATE OR REPLACE` keeps its owner and grants, and no policy changes. It ends in a report.
+- **`deploy-fairline.yml`** gains `paywall_rule` (`dry_run` or `apply`). In one transaction it records every account's answer before (`tools/billing/sql/paywall_before.psql`), applies the fix, and records every answer after (`paywall_after.psql`). It prints counts only: granted before and after, gained, lost, and why each lost it (a Fairline row, a Bet Checker row, a lapsed or unpaid row). It refuses to commit, and changes nothing, if an account would lose access through something other than a `subscriptions` row, which the rule cannot see. A dry run always rolls back. The same file fixes the Tape email switch's check (psql answers `t`, not `true`).
+- **Tests**: `tools/billing/paywall_rule.test.js` (27, new, real PostgreSQL; in `fairline-tests.yml`).
+  - Before the fix, production's shape lets black and red read `signals`.
+  - After it, they never do. Blue, comps, an unlearned price and a `past_due` row in its 21-day grace do, as the rule says.
+  - Lapsed, cancelled and no row never do. It agrees with `community_is_entitled()` for every account, and anon still cannot run it.
+  - The comparison counts and names the losses. It refuses access the rule cannot see, and a dry run changes nothing.
+  - The deploy's paywall check fails before the fix and passes after.
+  - Mutations: the fix restating the statuses, 17 passed, 10 failed. The comparison never refusing, 25 passed, 2 failed.
+
+
+
+## 2026-10-29 — Fairline, part 3: The Tape (Monday's recap, in the app and by email)
+
+**What it is.** Every Monday morning (America/Chicago), one snapshot of each Fairline reader's last week, kept for good: the record and P/L, average CLV and the beat-close rate, the prices they got against EdgeDesk's fair, any leak that crossed the minimum sample or changed label, and the best number they got. On the Fairline page (The Tape tab, no longer Coming Soon) and in their inbox. No picks. Narrative: [docs/fairline.md](docs/fairline.md).
+
+- **`supabase/fairline_tape.sql`** (new; mirrored in `migrations/20261029120000_fairline_tape.sql`):
+  - `fairline_tapes`, **append-only**: one Tape per reader per week. Triggers refuse UPDATE, TRUNCATE and any DELETE while the reader exists, for every role; deleting the account still removes its Tapes.
+  - `fairline_tape_build()`: due Monday from 06:00 in Chicago (CDT or CST), Fairline readers only (`fairline_paid()`), once per week however often it runs.
+  - What a Tape holds is The Leaks' own arithmetic over the week, through the new `fairline_slices_at()`. Price quality uses only Bet Checker's frozen entry edge; a bet never checked is counted, never guessed. Each Tape stores the rules it was read by.
+  - The email: `fairline_tape_due()` / `fairline_tape_mark()` claim once and re-check the reader at send time (opted out, bounced, no longer Fairline, more than 48 hours after the week, a quiet week: skipped with the reason). `fairline_tape_unsubscribe(token)` and `fairline_tape_email(on)` touch only `user_preferences.fairline_tape_emails`.
+  - Nothing is emailed until `lifecycle_settings.sending_enabled` **and** the new `fairline_tape_settings.email_enabled` (**off by default**) are on. Until then the page shows the email as Coming Soon.
+- **`supabase/fairline_tape_cron.sql`** (new; mirrored in `migrations/20261029120100_fairline_tape_cron.sql`): one pg_cron job, Mondays at :23 past 11:00 and 12:00 UTC; the build decides which is 06:00 in Chicago. No HTTP call, no secret.
+- **`supabase/fairline.sql`**: `fairline_slices_at(user, from, to)`, the slices over one window of bets; `fairline_slices_for()` is now it over every bet (same answer, tested). `fairline_rules()` gains the `tape` keys (time zone, build hour, email deadline, weeks listed).
+- **The existing email pipeline sends it**: `tools/fairline/tape_send.js` reuses `tools/lifecycle/send.js` (the Resend sender) and the trial emails' copy rule, settings, tokens and bounce list. It runs in the same hourly job (`lifecycle-email.yml`), after its own tests (`tape_email.test.js`); a failure there stops only The Tape. Each email has its own Idempotency-Key (`edgedesk-lifecycle-fairline-tape-<id>`). New opt-out page: `email/tape/` (a button, never a page load).
+- **The page**: The Tape tab (the week, the numbers, price quality, what changed, the best number; past weeks; the email switch). The words are `lib/edgedesk_fairline_core.js` `tapeView()`, the same ones the email uses. A free or Bet Checker reader sees placeholders under a blur and the offer; no Tape is built for them.
+- **The landing page sells Fairline.** A Fairline card sits between Bet Checker and Full Access. It carries the price, `FAIRLINE.FEATURES` verbatim, and *Get Fairline* to `/fairline/`, where the renewal terms are shown and ticked before Stripe. The price strip names it too, cheapest first. Its figures are new `fl_` words in `lib/edgedesk_pricing.js` (`priceWords()`), so the landing page loads the pricing file under `?v=20261029fl5`. The Tape is no longer "coming soon" in `FAIRLINE.FEATURES`. The page stays under its 216 KB budget.
+- **Deploying, `deploy-fairline.yml`** (new, manual, `main` only): first a read-only check of production's paywall (docs/billing-hardening.md §11 query 10). It fails, and nothing else runs, if `has_active_sub()`, an RLS policy or a production-only function reads `subscriptions`' status without deferring to `billing_row_grants_access()`, since a Fairline subscription would then read the terminal's data. Its log prints names and verdicts only. Then, as asked: `fairline.sql`, `fairline_tape.sql`, `fairline_tape_cron.sql` and The Tape's email switch. A `CHECK THIS` report row fails the run.
+- **Tests**: `tools/fairline/tape_sql.test.js` (90, new, real PostgreSQL), `tools/fairline/tape_email.test.js` (40, new, offline), both in `fairline-tests.yml`. The page suites cover The Tape (page 40, browser 58).
+- **Not built, on purpose** (unchanged): a DK Predictions price feed; selling Fairline through Juice Reel's checkout.
 
 ## 2026-10-29 — The site deploys from one workflow, and the data jobs' pushes reach it again
 
@@ -322,6 +495,18 @@ All run in `cfb-sp-plus-tests.yml`.
 **When it shows.** Only when capture prices the leagues. Both are off in the odds gateway until the owner turns them on after the November reset, every two hours ([METHODOLOGY-2026-10-29-nba-nhl-lines.md](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md)). Until then the page offers no NBA or NHL game.
 
 **Tests.** `bet_checker_sql.test.js` 137 / 0: the widened check, MLB still refused, NBA and NHL games offered and filtered, an NBA spread and an NHL moneyline graded on the same rules, the puck line, the free allowance, and an NHL close and result. On the previous SQL, 5 fail and the suite stops. `page.e2e.js` 61 / 0: the NHL pill, and the overtime note.
+
+## 2026-10-29 — Methodology change: NBA and NHL game lines every two hours in the odds gateway (both leagues still off)
+
+**Why.** Bet Checker can grade only what EdgeDesk prices, and the NBA and NHL are registered with the odds gateway disabled. The owner approved buying their main markets (h2h, spreads, totals) every **two hours**, about **2,160 credits a month for both leagues**, instead of the gateway's hourly default (about 4,320). Narrative, evidence and budget: [METHODOLOGY-2026-10-29-nba-nhl-lines.md](docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-29-nba-nhl-lines.md).
+
+**What changed.**
+- **`supabase/odds_api_nba_nhl_lines.sql`** (new, idempotent): cadence rows for the groups `nba` and `nhl` in `featured` (capture) and `close` (close), which share one fingerprint. They are 120 minutes up to 72 h from the next start and 360 minutes beyond. It also registers both leagues **disabled**, as their own files do. Every other sport, category, the floor, the breaker and the budget are untouched.
+- **`.github/workflows/deploy-odds-gateway.yml`**: input `apply_nba_nhl_lines` (default on), and the suite runs before anything ships. **`odds-gateway-tests.yml`** runs it on every pull request.
+- **`.github/workflows/capture.yml`** prints capture's `sports_list`, so the switch-on can show whether the production `CAPTURE_SPORTS` asks for the two leagues.
+- **`INCIDENT.md`** §9 step 12: the owner's switch-on (`odds_api_set_sport`), after the November reset and only once base spend tracks.
+
+**Evidence.** `tools/odds/nba_nhl_lines_sql.test.js`, 24 / 0 on a real PostgreSQL. An NBA or NHL board 65 or 117 minutes old was bought before and is a free cache hit after, for capture and close alike. NFL is still bought hourly. Leaving the NBA `close` band at 60 fails 5 checks.
 
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 
