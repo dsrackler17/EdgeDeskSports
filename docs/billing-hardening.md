@@ -712,5 +712,17 @@ $19.99/month or $159/year, sold by lookup keys `fairline_monthly` /
 Before selling Fairline: §11 query 10 again — the production-only paywall
 (`has_active_sub()` and the RLS that calls it) must defer to
 `billing_row_grants_access()`, or a Fairline subscription would read the
-terminal's data. It is not in this repository and cannot be tested here.
-Tests: `tools/billing/fairline_tier.test.js`.
+terminal's data. Tests: `tools/billing/fairline_tier.test.js`.
+
+**2026-10-29: it did not.** Deploy Fairline's paywall check found production's
+`has_active_sub()` reading `subscriptions`' status itself, so a red or black
+subscription would have passed it. No red or black subscription existed in
+Stripe, so nothing had leaked. `supabase/paywall_rule.sql` (an authorization
+change) gives it the rule's body. `CREATE OR REPLACE` keeps its owner and
+grants, and no policy changes. Deploy Fairline applies it with `paywall_rule`:
+first `dry_run`, then `apply`. In one transaction, it records every account's
+answer before, makes the change, and records every answer after. It prints
+counts only, and it refuses to commit if an account would lose access through
+anything but a `subscriptions` row. Tests: `tools/billing/paywall_rule.test.js`.
+The first dry run refused: one account had the terminal without a row. EdgeDesk's
+operators (`billing_is_admin()`) now keep it by the same function.

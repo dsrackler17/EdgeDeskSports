@@ -23,6 +23,13 @@
 # Polymarket nothing unless both say on. "on" sets both and records
 # enable_note (who read Polymarket's terms, when, and the clause) in
 # radar_config, whose audit log keeps every change. "off" turns both off.
+# RUN NOW (run_now, off by default): the overnight work at once instead of
+# 06:07-10:17 UTC: the pool, then the wallets (3 a call) until none is due,
+# then the grade. ONE CALL AT A TIME, each answer awaited before the next, as
+# pg_cron's 5-minute spacing does overnight: two wallet calls at once would
+# pick the same wallets. The wallet calls stop while fewer than
+# run_now_reserve of today's Polymarket requests remain, so the 10-minute
+# tonight runs keep theirs; the 06:10 UTC schedule takes the wallets left.
 name: Deploy Prediction Radar
 
 on:
@@ -53,6 +60,14 @@ on:
         description: 'Apply polymarket_sync_cron.sql (the four schedules; needs pg_cron, pg_net and the cron secret)'
         type: boolean
         default: false
+      run_now:
+        description: 'Run the overnight work now, one call at a time: the pool, the wallets (3 a call) until none is due, then the grade'
+        type: boolean
+        default: false
+      run_now_reserve:
+        description: 'For run_now: stop the wallet calls while fewer than this many of today''s Polymarket requests remain (kept for the tonight runs)'
+        type: string
+        default: '8000'
 
 permissions:
   contents: read
@@ -100,6 +115,8 @@ jobs:
           WANT_SWITCH: ${{ inputs.data_enabled }}
           NOTE: ${{ inputs.enable_note }}
           WANT_CRON: ${{ inputs.apply_cron }}
+          WANT_NOW: ${{ inputs.run_now }}
+          RESERVE: ${{ inputs.run_now_reserve }}
         run: |
           # Presence only. No value is ever printed.
           echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
@@ -112,6 +129,10 @@ jobs:
             echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the function cannot be deployed or configured from CI."; bad=1; fi
           if { [ "$WANT_SQL" = "true" ] || [ "$WANT_SECRET" = "true" ] || [ "$WANT_SWITCH" != "leave" ] || [ "$WANT_CRON" = "true" ]; } && [ -z "$DBURL" ]; then
             echo "::error::SB_DB_URL is not set — paste radar.sql, radar_registry.sql, radar_record.sql, then polymarket_sync_cron.sql, into the SQL editor instead."; bad=1; fi
+          if [ "$WANT_NOW" = "true" ] && { [ -z "$REF" ] || [ -z "$DBURL" ]; }; then
+            echo "::error::run_now needs SUPABASE_PROJECT_REF and SB_DB_URL (the function's address, and Vault's cron secret and the request budget)."; bad=1; fi
+          if [ "$WANT_NOW" = "true" ] && ! printf '%s' "$RESERVE" | grep -Eq '^[0-9]+$'; then
+            echo "::error::run_now_reserve must be a whole number of requests, not '$RESERVE'."; bad=1; fi
           if [ "$WANT_SWITCH" = "on" ] && [ -z "$(printf '%s' "$NOTE" | tr -d '[:space:]')" ]; then
             echo "::error::data_enabled = on needs enable_note: who read Polymarket's terms of use, when, and the clause. It is recorded in radar_config."; bad=1; fi
           exit $bad
@@ -242,3 +263,53 @@ jobs:
           out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/polymarket_sync_cron.sql) || { echo "$out" | tail -20; echo "::error::polymarket_sync_cron.sql did not apply"; exit 1; }
           echo "== supabase/polymarket_sync_cron.sql"; echo "$out" | tail -8
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::polymarket_sync_cron.sql: a report row says CHECK THIS"; exit 1; fi
+
+      # The overnight work, now. Each call is awaited before the next (curl waits
+      # for the function's answer), so no two wallet calls ever overlap.
+      - name: Run the pool, the wallets and the grade now (one call at a time)
+        if: ${{ inputs.run_now && steps.creds.outputs.have_ref == 'yes' && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+          RESERVE: ${{ inputs.run_now_reserve }}
+        run: |
+          set -eu
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          FN="https://$PROJECT_REF.supabase.co/functions/v1/polymarket_sync"
+          sec=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select decrypted_secret from vault.decrypted_secrets where name = 'polymarket_sync_cron_secret' limit 1")
+          if [ -z "$sec" ]; then echo "::error::Vault has no polymarket_sync_cron_secret: run this workflow with set_cron_secret first"; exit 1; fi
+          echo "::add-mask::$sec"
+          # one call, awaited: prints one line, leaves the answer in run.json, succeeds on HTTP 200
+          call() {
+            code=$(curl -sS -m 420 -o "$RUNNER_TEMP/run.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $sec" -d "{\"mode\":\"$1\"}" || echo 000)
+            node -e "let j={};try{j=require(process.argv[1])}catch(_){};const d=j.details||{},g=d.gateway||{};console.log([process.argv[2],'HTTP '+process.argv[3],j.status||'no answer',d.wallets?d.wallets.length+' wallet(s)':'',g.requests!=null?g.requests+' request(s)':'',(j.alerts||[]).map((a)=>a.severity+':'+a.code).join(' '),j.message||''].filter(Boolean).join(' · '))" "$RUNNER_TEMP/run.json" "$1" "$code"
+            [ "$code" = 200 ]
+          }
+          field() { node -e "let j={};try{j=require(process.argv[1])}catch(_){};const v=process.argv[2].split('.').reduce((o,k)=>o==null?o:o[k],j);process.stdout.write(Array.isArray(v)?String(v.length):String(v==null?'':v))" "$RUNNER_TEMP/run.json" "$1"; }
+          # today's Polymarket requests not yet granted (the gateway's own ledger, the UTC day it keeps)
+          left() { psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select (public.radar_rules() ->> 'daily_request_ceiling')::int - coalesce((select granted from public.poly_api_days where day = (now() at time zone 'utc')::date), 0)"; }
+
+          echo "== the pool"
+          call pool || { echo "::error::the pool call did not answer 200"; exit 1; }
+          case "$(field status)" in ok|warn) ;; *) echo "::error::the pool run ended '$(field status)': $(field message)"; exit 1;; esac
+
+          echo "== the wallets, 3 a call, one call at a time"
+          n=0
+          while :; do
+            l=$(left)
+            if [ "$l" -lt "$RESERVE" ]; then echo "Stopping the wallet calls: $l of today's requests are left, under the $RESERVE kept for the tonight runs. The 06:10 UTC schedule takes the wallets still due."; break; fi
+            n=$((n + 1))
+            call wallets || { echo "::error::wallet call $n did not answer 200"; exit 1; }
+            st=$(field status)
+            if [ "$st" = error ]; then echo "::error::wallet call $n ended in error: $(field message)"; exit 1; fi
+            if [ "$st" = skipped ]; then echo "Stopping the wallet calls: call $n was skipped ($(field message))."; break; fi
+            if [ "$(field details.wallets)" = 0 ]; then echo "Every pool wallet is synced."; break; fi
+            if [ "$n" -ge 100 ]; then echo "Stopping after 100 wallet calls."; break; fi
+          done
+
+          echo "== the grade"
+          call grade || { echo "::error::the grade call did not answer 200"; exit 1; }
+          if [ "$(field status)" = error ]; then echo "::error::the grade ended in error: $(field message)"; exit 1; fi
+          sec=""
+          echo "== where it stands"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -c "select (select count(*) from public.poly_wallets where in_pool) as pool_wallets, (select count(*) from public.poly_wallets where in_pool and activity_synced_at is not null) as synced, g.wallets as graded, g.ranked, g.top_directional, g.finished_at as graded_at from public.poly_grade_runs g order by g.finished_at desc limit 1"

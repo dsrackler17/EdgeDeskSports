@@ -45,26 +45,18 @@ The published slate changes at the next NHL engine build after merge. The model 
 - Promoting twice keeps the first goal-split value.
 - The committed live parameters publish 1.125 for every model the slate prices with.
 
+## 2026-10-29 — Authorization change: EdgeDesk's operators keep the terminal under the paywall rule
+
+**Authorization change; needs the owner's explicit review.** The first `paywall_rule = dry_run` against production refused, and nothing changed. One account had the terminal through production's old `has_active_sub()` without a `subscriptions` row, and the rule alone would have locked it out. The owner chose to keep operators in.
+
+- **`supabase/paywall_rule.sql`** (and its mirror): `has_active_sub()` is the rule **or** `billing_is_admin()`, the business consoles' existing operator list (the partner-program admins, else the problem-report admins, else the founding operator). It is still never red or black for anyone else. A new report row 04 checks it.
+- **`tools/billing/sql/paywall_after.psql`**: a refusal now also names the accounts it protects, masked as the billing logs mask them (the first 8 characters). If the account is not an operator, the next dry run refuses again and says which.
+- **Tests**: `paywall_rule.test.js` 29 / 0. An operator with no row keeps the terminal and reads `signals`; everything else is as before. Mutation: the fix without the operator clause, 26 passed, 3 failed.
+
 ## 2026-10-29 — Bet Checker says when sportsbook prices are paused
 
-**Why.** The odds account's October credits ran out on 2026-10-10, and paid price refresh is paused until the reset on 2026-11-01 (`docs/odds-api-incident-2026-10/INCIDENT.md`). Meanwhile most fair prices are older than the 6½ hours a grade accepts, so most bets logged on Bet Checker are saved Not graded, and nothing on the page said why. The owner asked for a notice (2026-10-29).
 
-**What changed.**
-- **The page** reads the public `odds_feed_status()`, the same read the terminal's banner uses. While it says `paused`, a notice above the sign-in and the form tells everyone, signed in or not, what that means for a bet logged now:
-  - it is still saved;
-  - it is graded only on a fair price under the rules' age;
-  - otherwise it is Not graded, which uses no free grade;
-  - a game that starts before prices refresh may show No close available.
-- **The title** names November 1 only while that date is ahead.
-- **It goes away on its own** when the feed is live again, whenever buying resumes.
-- **It fails soft:** a failed read shows no notice, never an error.
-- **Files:** `lib/edgedesk_bet_checker_core.js` (`feedNotice()`, `hoursText()`), `lib/edgedesk_bet_checker.js`, `bet-checker/index.html` (stamps `20261029bc4`), `lib/edgedesk_bet_checker.css`, `docs/bet-checker.md`.
 
-**Tests.**
-- `core.test.js` 60 / 0.
-- `page.test.js` 52 / 0: read with the page's key, never a token; live, a 404 and a network failure show none.
-- `page.e2e.js` 64 / 0: a signed-out visitor and a signed-in reader see it while paused, and it is gone after a reload once the feed is live.
-- On `main`'s page code the core suite crashes (no `feedNotice`), the wiring suite throws (no `loadFeed`), and the browser suite fails 2.
 
 
 
