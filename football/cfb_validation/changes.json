@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-29T17:08:27.194Z",
+ "generated_at": "2026-10-29T18:08:22.459Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-23T13:48:00.010Z",
+  "since": "2026-10-23T18:08:12.665Z",
   "changes": [
    {
     "what": "pricing code",
@@ -22,14 +22,20 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-23T13:07:18.650Z",
+    "from": "2026-10-23T17:54:33.911Z",
     "to": "2026-10-29T16:27:20.682Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
-    "from": 78,
+    "from": 82,
     "to": 74
+   },
+   {
+    "what": "market coverage (% of slate games with 2+ fresh books)",
+    "kind": "MARKET",
+    "from": 0,
+    "to": 35
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
@@ -38,12 +44,12 @@
     "to": 57
    }
   ],
-  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
    "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-26T22:48:55.575Z",
+   "to_at": "2026-10-29T16:27:20.682Z",
    "old_fair": 5.27,
    "new_fair": -3.8,
    "change": -9.07,
@@ -70,7 +76,7 @@
    "market_now": -3.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_FAULT",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -103,7 +109,7 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
-   "price_state": "PRICE NO LONGER ATTRACTIVE"
+   "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
@@ -185,10 +191,10 @@
    "game_id": "401858507",
    "game": "Michigan @ Rutgers",
    "market_then": null,
-   "market_now": 15.5,
+   "market_now": 15.38,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
@@ -329,7 +335,7 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
-   "price_state": "PART OF THE EDGE PRICED IN"
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-10-21T21:52:56.312Z",
@@ -561,7 +567,7 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
-   "price_state": "EDGE MOSTLY PRICED IN"
+   "price_state": "PRICE NO LONGER ATTRACTIVE"
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
@@ -735,7 +741,7 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
-   "price_state": "PART OF THE EDGE PRICED IN"
+   "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
@@ -835,7 +841,7 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
+   "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
@@ -2015,7 +2021,7 @@
    "market_change": -0.5,
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
+   "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-10-28T06:00:25.251Z",
@@ -2033,7 +2039,7 @@
    "market_change": 1,
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
+   "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-10-28T06:00:25.251Z",
@@ -2159,7 +2165,7 @@
    "market_change": -8,
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
-   "price_state": "PART OF THE EDGE PRICED IN"
+   "price_state": "EDGE MOSTLY PRICED IN"
   }
  ]
 }
