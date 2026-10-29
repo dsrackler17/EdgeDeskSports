@@ -2,6 +2,12 @@
 
 
 
+## 2026-10-29 — Prediction Radar: radar_registry.sql applies on the production registry (games_tested)
+
+- **Bug.** Applying `supabase/radar_registry.sql` in production stopped with "research_model_results requires games_tested and this file has nothing to put there". The registry's tables exist only in production. That table requires `games_tested`, and the generator had no mapping for it, so nothing was registered.
+- **Fix.** `tools/radar/build_registry_sql.js` fills `games_tested`, or the first of `n_games`, `holdout_games` and `games` that exists, with the report's holdout games (37). It fills a followed-bets column (`bets_tested`, `n_bets`, `n_followed` or `sample_size`) with the report's followed bets (41). `supabase/radar_registry.sql` is regenerated from it. The report and the verdict are unchanged (FAILED).
+- **Test.** `tools/radar/radar_sql.test.js`'s stand-in registry now requires `games_tested`, as production does. On the old SQL: 131 passed, 1 failed, with the production error. On the fix: 199 passed, 0 failed.
+
 ## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
 
 **What it does.** After a reader picks a game, the board's lines show as buttons: spread, total and moneyline, away and over first. Each spread and total shows the line most books hang, or the priced line where none is modal. One tap fills the market, the side and the line. For a paid reader (Bet Checker or the terminal), it also fills the best price on EdgeDesk's board at exactly that line, and its book. A note under the form says where the price came from and how old it is, and asks the reader to change it to the price they got, because the grade is on the odds they submit. A free reader taps the line and types the odds (owner's decision, 2026-10-29: the best price across the board's books is line shopping, which the paid tiers sell). The form still works as before for any line not on the buttons.

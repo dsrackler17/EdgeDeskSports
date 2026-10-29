@@ -330,7 +330,8 @@ try {
     create table public.research_models (id uuid primary key default gen_random_uuid(), model_key text unique not null, name text not null, sport text, provenance public.evidence_provenance not null, objective text, created_at timestamptz not null default now());
     create table public.research_model_versions (id bigserial primary key, model_id uuid not null references public.research_models (id), version text not null, status public.model_status not null default 'experimental',
       training_window daterange, validation_window daterange, holdout_window daterange, objective text, min_sample integer, success_metric text, forking_paths jsonb, promotion_criteria jsonb, spec jsonb, created_at timestamptz not null default now());
-    create table public.research_model_results (id bigserial primary key, version_id bigint references public.research_model_versions (id), passed boolean, metrics jsonb, computed_at timestamptz not null default now());
+    -- production's research_model_results requires games_tested (no default): applying radar_registry.sql there refused it on 2026-10-29
+    create table public.research_model_results (id bigserial primary key, version_id bigint references public.research_model_versions (id), passed boolean, metrics jsonb, games_tested integer not null, computed_at timestamptz not null default now());
     create view public.research_model_current as select m.model_key, v.version, v.status, r.passed from public.research_models m join public.research_model_versions v on v.model_id = m.id left join public.research_model_results r on r.version_id = v.id;`);
   out = db.applyFileAtomic(F('radar_registry.sql'));
   chk('registered: the report says ok on every row', (out.match(/\|ok/g) || []).length === 3 && !/CHECK THIS/.test(out), out.slice(-600));
@@ -341,6 +342,8 @@ try {
   const hasReport = fs.existsSync(reportFile);
   chk(hasReport ? 'the validation report\'s verdict is ONE result row' : 'no validation report yet: no result row (nothing is claimed)',
     V('select count(*) from public.research_model_results') === (hasReport ? '1' : '0'));
+  if (hasReport) chk('the result row carries the games its verdict stands on (games_tested, required in production)',
+    V('select games_tested from public.research_model_results') === String(JSON.parse(fs.readFileSync(reportFile, 'utf8')).holdout.games));
   const found = JSON.parse(V("select value from public.radar_config where key = 'h_radar_01_result'"));
   chk('what the holdout test found is recorded for the pages, verbatim', found.hypothesis_id === 'H-RADAR-01' && (hasReport ? found.status === JSON.parse(fs.readFileSync(reportFile, 'utf8')).status : found.status === 'not_run'), found);
   const again = db.applyFileAtomic(F('radar_registry.sql'));
