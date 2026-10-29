@@ -22,6 +22,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const ROOT = path.join(__dirname, '..', '..');
 const V = require(path.join(ROOT, 'research', 'radar', 'run_validation.js'));
 const G = require(path.join(ROOT, 'lib', 'edgedesk_poly_gateway.js'));
@@ -57,7 +58,7 @@ function activity(user) {
     condition_id: cid('politics'), asset: '1', outcome_index: 0, slug: 'presidential-election', event_slug: 'presidential-election' });
   return rows;
 }
-const calls = [];
+const calls = [], marketQueries = [];
 let volumeWorks = true;
 async function fetchStub(url) {
   const u = new URL(url), p = u.pathname, q = (k) => u.searchParams.get(k);
@@ -76,6 +77,10 @@ async function fetchStub(url) {
   }
   if (p === '/markets') {
     const ids = u.searchParams.getAll('condition_ids');
+    marketQueries.push(u.search);
+    /* as the real Gamma does (radar-sources run 40811733314): these markets are
+       all resolved, and Gamma answers a resolved market only with closed=true */
+    if (q('closed') !== 'true') return ok([]);
     return ok(games.filter((m) => ids.includes(m.c)).map((m) => ({ conditionId: m.c, question: 'A vs. B', slug: m.slug, outcomes: '["A","B"]', outcomePrices: JSON.stringify(m.win0 ? ['1', '0'] : ['0', '1']),
       clobTokenIds: JSON.stringify(m.tokens), sportsMarketType: 'moneyline', gameStartTime: new Date(m.start).toISOString(), closed: true, events: [{ id: 'e' + m.id, slug: m.slug, tags: [{ slug: m.league }] }] })));
   }
@@ -94,6 +99,7 @@ async function fetchStub(url) {
     const rep = await V.run({ out, gateway: gw, started_at: new Date().toISOString() });
     chk('the run completes on the registered protocol', rep.status === 'complete' && rep.hypothesis_id === 'H-RADAR-01' && rep.version === '0.1.0', rep.status);
     chk('the report names the registration it ran against', rep.registration_sha256 === V.REGISTERED_SHA256);
+    chk('the markets are asked with closed=true, the only way Gamma answers a resolved one', marketQueries.length > 0 && marketQueries.every((s) => /[?&]closed=true(&|$)/.test(s)), marketQueries.slice(0, 2));
     chk('the pool: every leaderboard wallet, by volume, read 50 a page', rep.data.pool === 40 && rep.data.pool_order_used === 'VOL' && calls.filter((c) => c === '/v1/leaderboard').length === 1, rep.data);
     chk('only league game markets are looked up (the politics trade is not)', rep.data.conditions_with_league_slug === 120 && rep.data.covered_markets === 120);
     chk('a history over 30 pages is truncated, counted', rep.data.wallets_truncated === 1);
@@ -113,6 +119,11 @@ async function fetchStub(url) {
       && rep.holdout.passed === false && rep.holdout.point_estimates_support_hypothesis === true, rep.holdout.criteria);
     chk('the headline says what the numbers say', /^H-RADAR-01 FAILED on its registered holdout: 1000 followed bets over 40 games; beat-close rate 100\.0% .*follow ROI 30\.0% \(95% CI 0\.0% to/.test(rep.headline), rep.headline);
     chk('everything read is kept, with a manifest and its sha256', fs.existsSync(path.join(out, 'manifest.json')) && /^[0-9a-f]{64}$/.test(rep.run.inputs_sha256) && rep.run.inputs_files > 100);
+    const man = JSON.parse(fs.readFileSync(path.join(out, 'manifest.json'), 'utf8'));
+    chk('each kept body is gzipped and unzips to the JSON its manifest sha256 names', man.length === rep.run.inputs_files && man.every((m) => {
+      const body = zlib.gunzipSync(fs.readFileSync(path.join(out, m.f))).toString('utf8');
+      return /\.json\.gz$/.test(m.f) && body.length === m.bytes && crypto.createHash('sha256').update(body).digest('hex') === m.sha256 && JSON.parse(body) !== undefined;
+    }));
     chk('no deviation on a clean run', rep.deviations.length === 0, rep.deviations);
     chk('the secondary (all ranked directional) is reported, never tested', rep.secondary_all_ranked_directional.wallets >= 25 && !('passed' in rep.secondary_all_ranked_directional));
     /* the fallback */
@@ -134,6 +145,21 @@ async function fetchStub(url) {
     try { fs.writeFileSync(regFile, raw.replace('"min_graded": 50', '"min_graded": 40')); V.registration(); } catch (e) { refused = e.message; } finally { fs.writeFileSync(regFile, raw); }
     chk('an edited registration is refused before anything is asked', /edited after it was registered/.test(refused || ''), refused);
     chk('(the registration is restored, byte for byte)', crypto.createHash('sha256').update(fs.readFileSync(regFile, 'utf8')).digest('hex') === V.REGISTERED_SHA256);
+    /* the one look across runs (research/radar/one_look.js): GitHub starts the workflow on every push */
+    const L = require(path.join(ROOT, 'research', 'radar', 'one_look.js'));
+    const self = { run_id: 900, run_attempt: 2 };
+    const liveStep = (conclusion) => [{ name: 'One look across runs', conclusion: 'success' }, { name: L.LIVE_STEP + ', once (or, with a committed report, its check)', conclusion }];
+    chk('one look: with a report committed, the runner only checks it', L.decide([{ run_id: 1, run_attempt: 1, steps: liveStep('success') }], self, true).ok === true);
+    chk('one look: no earlier run, this run is the look', L.decide([], self, false).ok === true);
+    const spentBy = L.decide([{ run_id: 7, run_attempt: 1, steps: liveStep('success') }], self, false);
+    chk('one look: an earlier run that finished its live step, with no report committed, stops this one and names it', spentBy.ok === false && /run 7 \(attempt 1\)/.test(spentBy.why), spentBy);
+    chk('one look: this run\'s own earlier attempt counts too (a re-run is a second look)', L.decide([{ run_id: 900, run_attempt: 1, steps: liveStep('success') }], self, false).ok === false);
+    chk('one look: this attempt itself does not', L.decide([{ run_id: 900, run_attempt: 2, steps: liveStep('in_progress') }], self, false).ok === true);
+    chk('one look: an earlier run whose live step failed or was stopped by the guard printed no report, so it was no look',
+      L.decide([{ run_id: 5, run_attempt: 1, steps: liveStep('failure') }, { run_id: 6, run_attempt: 1, steps: [{ name: 'One look across runs', conclusion: 'failure' }, { name: L.LIVE_STEP + ', once', conclusion: 'skipped' }] }], self, false).ok === true);
+    const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'radar-validation.yml'), 'utf8');
+    chk('one look: the workflow\'s live step is the one the guard reads, and the guard runs before it',
+      wf.indexOf('- name: ' + L.LIVE_STEP) > 0 && wf.indexOf('node research/radar/one_look.js') > 0 && wf.indexOf('node research/radar/one_look.js') < wf.indexOf('run_validation.js --live'));
   } catch (e) {
     chk('the suite ran to the end', false, String(e && e.stack || e).slice(0, 1200));
   }

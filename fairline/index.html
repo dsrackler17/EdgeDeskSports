@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fairline — Are You Getting a Good Number? | EdgeDesk</title>
+<meta name="description" content="EdgeDesk Fairline measures the prices on the board and your own bets against EdgeDesk's de-vigged fair price and the closing line. Prices, not picks: where you're losing money, and whether it's bad bets or bad luck.">
+<link rel="canonical" href="https://edgedesksports.com/fairline/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/fairline/">
+<meta property="og:title" content="Fairline — EdgeDesk">
+<meta property="og:description" content="Is this a good number right now? Where are you losing money, and is it bad bets or bad luck? Prices, not picks.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261028bc1">
+<link rel="stylesheet" href="/lib/edgedesk_fairline_app.css?v=20261028fl1">
+</head>
+<body data-ed-page="fairline">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+</header>
+<main class="wrap gm-page fl" id="fl">
+  <span class="ey">EdgeDesk · Prices, not picks</span>
+  <h1>Fairline</h1>
+  <p class="lede">Two questions every bettor has: <b>am I getting a good number right now</b>, and <b>where am I losing money — is it bad bets or bad luck?</b>
+  Fairline measures the prices on the board, and your own bets, against EdgeDesk’s de-vigged fair price and the closing line. It never tells you what to bet.</p>
+
+  <div class="fl-status" data-fl="status" role="status" aria-live="polite" hidden></div>
+
+  <!-- signed out: the free door (games/lib/auth.js, coming back here) -->
+  <section class="card fl-auth" data-fl="out" hidden aria-labelledby="fl-auth-h">
+    <h2 id="fl-auth-h" style="margin-top:0">Sign in to see Fairline</h2>
+    <p class="note">Free: the top of The Board, and where your biggest leak is. Your EdgeDesk account works here, and so do the bets you log in Bet Checker.</p>
+    <form data-fl="auth" onsubmit="return false">
+      <label class="fl-f">Email<input type="email" name="email" autocomplete="email" required></label>
+      <label class="fl-f">Password<input type="password" name="password" autocomplete="current-password" required minlength="6"></label>
+      <label class="fl-agree"><input type="checkbox" name="consent"><span>New account: I confirm I am <b>21+</b>, that betting is legal where I am, and I agree to the <a href="/terms.html" target="_blank">Terms</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. EdgeDesk is a research tool, not betting advice.</span></label>
+      <div class="row">
+        <button type="button" class="btn" data-fl-act="signin">Sign in</button>
+        <button type="button" class="btn ghost" data-fl-act="signup">Create a free account</button>
+        <button type="button" class="fl-link" data-fl-act="recover">Forgot password?</button>
+      </div>
+      <div class="fl-auth-msg" data-fl="auth-msg" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <div data-fl="in" hidden>
+    <p class="fl-who"><span data-fl="who"></span> <span data-fl="plan"></span></p>
+
+    <div class="fl-tabs" role="tablist" aria-label="Fairline">
+      <button type="button" role="tab" class="fl-tab on" data-fl-tab="board" aria-selected="true" aria-controls="fl-board">The Board</button>
+      <button type="button" role="tab" class="fl-tab" data-fl-tab="leaks" aria-selected="false" aria-controls="fl-leaks">The Leaks</button>
+      <button type="button" role="tab" class="fl-tab" data-fl-tab="tape" aria-selected="false" aria-disabled="true" disabled title="The Tape is coming soon">The Tape <span class="fl-chip soon">Coming Soon</span></button>
+    </div>
+
+    <section id="fl-board" data-fl="board" role="tabpanel" aria-labelledby="fl-board-h">
+      <h2 id="fl-board-h">The Board <span class="fl-q">Am I getting a good number right now?</span></h2>
+      <p class="fl-notpicks"><b>Prices, not picks.</b> Every row is a price capture recorded, measured against EdgeDesk’s fair price for that exact line. Sorted by edge vs fair; a stale price is greyed out and sorted last.</p>
+      <div data-fl="board-body"><div class="gm-empty">Loading The Board…</div></div>
+      <div class="card fl-limits">
+        <h3 style="margin-top:0">Known limitations</h3>
+        <ul data-fl="limits"></ul>
+      </div>
+    </section>
+
+    <section id="fl-leaks" data-fl="leaks" role="tabpanel" aria-labelledby="fl-leaks-h" hidden>
+      <h2 id="fl-leaks-h">The Leaks <span class="fl-q">Where am I losing money — bad bets or bad luck?</span></h2>
+      <p class="fl-notpicks">Losing money while beating the close is variance. Losing money while <b>not</b> beating the close is a real leak. The Leaks reads every bet you logged in Bet Checker and every bet in your Portfolio, counts a bet that is in both once, and tells the two apart.</p>
+      <div data-fl="leaks-body"><div class="gm-empty">Reading your bets…</div></div>
+    </section>
+
+    <p class="row"><button type="button" class="btn ghost" data-fl-act="signout">Sign out</button></p>
+  </div>
+
+  <section class="card" aria-labelledby="fl-how-h">
+    <h2 id="fl-how-h" style="margin-top:0">How Fairline measures</h2>
+    <p><b>Fair price.</b> EdgeDesk’s de-vigged price for one exact game, market, side and line — the same fair Bet Checker grades with. A price at another line is a different bet, and is never compared with it.</p>
+    <p><b>Edge vs fair.</b> The fair probability minus the probability the price implies, in points. Positive means the price is better than fair.</p>
+    <p><b>Closing-line value.</b> Your decimal odds times EdgeDesk’s no-vig closing probability at your line, minus one — the same CLV EdgeDesk grades its own signals with. A bet whose close was not captured has no CLV, and a live bet is never graded against a pregame close.</p>
+    <p><b>Small samples.</b> A slice of your bets gets a label only once it has enough settled bets, and its label speaks about the close only once enough of them have a captured close. Until then it says so.</p>
+    <p class="fine">Fairline measures prices. It is not betting advice and it never tells you what to bet. 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</p>
+  </section>
+</main>
+
+<script src="/lib/edgedesk_auth.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_access.js?v=20261028bc1"></script>
+<script src="/games/lib/attribution.js?v=20261028bc1"></script>
+<script src="/games/lib/social.js?v=20261028bc1"></script>
+<script src="/games/lib/auth.js?v=20261028bc1"></script>
+<script src="/lib/edgedesk_fairline_core.js?v=20261028fl1"></script>
+<script src="/lib/edgedesk_fairline_app.js?v=20261028fl1"></script>
+<script>
+/* The Supabase project, from the same committed file the games pages read
+   (games/data/config.json), so this page, Bet Checker and the terminal can
+   never point at different projects. */
+(function () {
+  var host = document.getElementById('fl');
+  var fail = function () {
+    var el = host.querySelector('[data-fl="status"]');
+    el.hidden = false; el.className = 'fl-status err';
+    el.textContent = 'Fairline could not load its settings. Reload the page to try again.';
+  };
+  fetch('/games/data/config.json', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (c) {
+      if (!c || !c.supabase_url || !c.supabase_anon_key || !window.EDFairline) return fail();
+      window.EDFairline.mount(host, { url: c.supabase_url, key: c.supabase_anon_key });
+    })
+    .catch(fail);
+})();
+</script>
+</body>
+</html>

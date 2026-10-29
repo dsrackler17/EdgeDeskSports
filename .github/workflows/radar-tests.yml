@@ -46,6 +46,7 @@ on:
       - 'tools/personal/_pg.js'
       - 'tools/games/sql/supabase_shim.sql'
       - '.github/workflows/radar-tests.yml'
+      - '.github/workflows/radar-validation.yml'
   push:
     branches: [main]
     paths:
@@ -81,6 +82,8 @@ jobs:
           node-version: '22'
       - name: The grading core — bets, CLV, follow ROI, conviction, market makers, the Radar Score, the H-RADAR-01 verdict, matching
         run: node tools/radar/core.test.js
+      - name: The parsers against what Polymarket really sent (tools/radar/fixtures/, recorded from the live probe)
+        run: node tools/radar/fixtures.test.js
       - name: The gateway — the switch, the budget, the backoff, the breaker, the endpoints
         run: node tools/radar/gateway.test.js
       - name: No Radar file reaches Polymarket but through the gateway; no P&L or rankings host

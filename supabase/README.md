@@ -688,6 +688,35 @@ column it reads that is missing). Mirrored byte for byte in
   `close` job it follows). Tested against a real PostgreSQL by
   `tools/bet_checker/bet_checker_sql.test.js`.
 
+### `fairline.sql` — Fairline: The Board and The Leaks
+Apply **after** `bettor_decisions.sql`, `billing_hardening.sql`,
+`bet_checker.sql`, `portfolio.sql` and `bet_import.sql` (it stops, naming the
+missing one, otherwise) on a project with capture's `signals` (it names any
+column it reads that is missing). Mirrored byte for byte in
+`migrations/20261028180000_fairline.sql`. `docs/fairline.md` is the narrative.
+
+- **No table, no policy.** Functions and one view only. `signals` keeps its
+  terminal-only RLS: The Board reads it through one security-definer door.
+- **The rules are one constant**, `fairline_rules()` (a label from 15 settled
+  bets, a label about the close from 15 captured closes, the odds, lead-time
+  and stake buckets, and capture's own freshness limits for The Board).
+- **The gate is one helper**, `fairline_paid()`: every door calls it; today it
+  is `has_bet_checker_paid()`.
+- `fairline_bets_for(uuid)` (the caller or the service role): one row per bet
+  from `user_bets` and `portfolio_positions`, a bet in both counted once
+  (linked, same market key, same game), with units, dollars and the house CLV
+  where the pipeline owns the close. `fairline_my_bets()` and the view
+  `fairline_bets` serve the caller only, paid only.
+- `fairline_leaks()`: every slice (sport, market, bet type, odds, lead time,
+  book, stake vs median) with its label (real leak, bad luck, running hot,
+  real edge; P/L only without closes; none below the sample); paid only, a
+  free account gets the biggest leak's slice name and no number.
+- `fairline_board(p_sport, p_market, p_book)`: fair, the best price
+  (`book_quotes` before `signals`), edge, quote age and freshness, Kalshi when
+  its card says OK, DK Predictions inactive; paid every row, free the top 3.
+- **The report** has 9 rows. Tested against a real PostgreSQL by
+  `tools/fairline/fairline_sql.test.js`.
+
 ### `card_opportunities.sql` — the EdgeDesk Card's saved games and props
 Apply **after** `bettor_decisions.sql` (the file stops with a message naming
 it otherwise). `card_opportunities` holds what a reader added to the Card
