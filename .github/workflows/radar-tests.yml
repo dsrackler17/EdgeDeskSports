@@ -9,6 +9,12 @@
 #             (the switch, the budget, the backoff, the breaker); no Radar file
 #             reaching Polymarket but through the gateway; the generated and
 #             inlined files current; the H-RADAR-01 registration unedited.
+#   ui        lib/edgedesk_radar_ui.js and its wiring, offline: the card's
+#             sentence, labels as words, the score with its parts, the copy
+#             rules, the doors each page may call.
+#   browser   the terminal's Overview (Smart Money Tonight first, the trader
+#             sheet) and the public /radar/ page in Chromium at 390 px and
+#             1280 px, the doors stubbed.
 #   database  supabase/radar.sql, polymarket_sync_cron.sql and
 #             radar_registry.sql on a throwaway PostgreSQL as anon, a signed-in
 #             reader, a subscriber and the service role (public vs paid,
@@ -23,6 +29,13 @@ on:
     paths:
       - 'lib/edgedesk_radar.js'
       - 'lib/edgedesk_poly_gateway.js'
+      - 'lib/edgedesk_radar_ui.js'
+      - 'lib/edgedesk_overview.js'
+      - 'lib/edgedesk_shell.js'
+      - 'lib/edgedesk_plans.js'
+      - 'app.html'
+      - 'radar/**'
+      - 'tools/tools.css'
       - 'research/radar/**'
       - 'tools/radar/**'
       - 'supabase/radar*.sql'
@@ -38,6 +51,8 @@ on:
     paths:
       - 'lib/edgedesk_radar.js'
       - 'lib/edgedesk_poly_gateway.js'
+      - 'lib/edgedesk_radar_ui.js'
+      - 'radar/**'
       - 'research/radar/**'
       - 'tools/radar/**'
       - 'supabase/radar*.sql'
@@ -76,6 +91,25 @@ jobs:
         run: node research/radar/run_validation.js --check
       - name: supabase/radar_registry.sql is generated from the registration and the report, and current
         run: node tools/radar/build_registry_sql.js --check
+      - name: What a reader sees — the card's sentence, labels as words, the score with its parts, no promise, the doors each page may call
+        run: node tools/radar/radar_ui.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Smart Money Tonight on the Overview, the trader sheet, and /radar/ in Chromium at a phone and a desktop
+        env:
+          RADAR_E2E_REQUIRED: '1'
+        run: node tools/radar/radar_ui.e2e.js
 
   database:
     runs-on: ubuntu-latest

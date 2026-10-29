@@ -31,7 +31,9 @@ It answers three questions:
 | The schedules | `supabase/polymarket_sync_cron.sql` |
 | The H-RADAR-01 registration | `research/radar/registration_h_radar_01.json`, generated into `supabase/radar_registry.sql` |
 | The H-RADAR-01 runner and report | `research/radar/run_validation.js`, `research/radar/H-RADAR-01/` |
+| What a reader sees | `lib/edgedesk_radar_ui.js` (`window.EDRadarUI`): Smart Money Tonight on the Overview (`lib/edgedesk_overview.js`), the trader sheet, and the public page `radar/index.html` |
 | Tests (offline) | `tools/radar/*.test.js`, run by `.github/workflows/radar-tests.yml` |
+| Tests (browser) | `tools/radar/radar_ui.e2e.js` (Chromium, 390 px and 1280 px) |
 | The live source check | `tools/radar/fetch_sources.js`, run by `.github/workflows/radar-sources.yml` |
 
 ## Data sources
@@ -198,6 +200,52 @@ The rules:
 - a game with no top-graded wallet gets **no card**: nothing is guessed;
 - cards are sorted by the number of wallets, then by dollars.
 
+## Where it shows
+
+All of it is drawn by `lib/edgedesk_radar_ui.js`. The module fetches nothing
+and decides no access: each page draws what a database door already decided.
+
+- **Smart Money Tonight is at the top of the Overview tab**, the first thing a
+  subscriber sees. It is read through `radar_tonight()` under the reader's own
+  token (`EDShell.rpc`). Each card leads with one plain sentence, "7 top
+  bettors, $84K, on Chiefs -3", with the numbers under it:
+  - their average entry, the Polymarket price now, and EdgeDesk's fair;
+  - whether the price has moved since they entered;
+  - "Smart money agrees with the sharp fair price" or "Smart money disagrees
+    with the sharp fair price", or the reason there is no comparison;
+  - the High-conviction chip;
+  - the other side's count;
+  - each bettor. Tap one to open the trader page.
+
+  When Radar is off, not registered or not deployed, the section draws nothing
+  at all.
+- **Trader pages.** In the terminal a trader page opens in a sheet over the
+  Overview (Escape closes it). Publicly it is at `/radar/#trader/<wallet>`.
+  Each page shows:
+  - the public name, or the shortened address;
+  - the record, ROI, CLV, follow ROI at 5 and 15 minutes, style and sample;
+  - the Radar Score with its parts;
+  - open positions, for a subscriber only;
+  - every graded bet, each transaction linked to Polygonscan.
+
+  It never shows a bio or anything beyond public trading data.
+- **`/radar/` is free, with no login.** It shows:
+  - the graded leaderboard;
+  - the trader pages;
+  - a teaser of the first Smart Money card: the game, the count and the
+    dollars. It never shows the side, a price or a wallet; that is
+    `radar_teaser()`'s rule, not the page's;
+  - what H-RADAR-01 found;
+  - the Known limitations.
+
+  The page calls anonymous doors only (`lib/edgedesk_plans.js` DOORS, held by
+  `tools/site/free_access.test.js`). It stays `noindex` until Radar is live;
+  then it is switched to `index,follow` and added to the sitemap.
+- **Labels are words.** Experimental, Small sample and High conviction are text
+  chips, never colour alone.
+- **Copy.** `tools/radar/radar_ui.test.js` fails on "bet now", "copy trade", an
+  affiliate link, "guaranteed", "lock", or any promise, anywhere Radar draws.
+
 ## Pipeline
 
 `supabase/functions/polymarket_sync` runs on the schedule in
@@ -347,6 +395,11 @@ In order. Each SQL file ends in a report whose rows should read `ok`.
 - `tools/radar/radar_sql.test.js` — the SQL on a real PostgreSQL, run as four
   readers: anon, a signed-in reader, a subscriber and the service role.
 - `tools/radar/sync_fn.test.js` — the shipped function against that SQL.
+- `tools/radar/radar_ui.test.js` — what a reader sees, and which door each page
+  may call.
+- `tools/radar/radar_ui.e2e.js` — the Overview, the trader sheet and `/radar/`
+  in Chromium at a phone and a desktop width. It fails on a page error or a
+  sideways scroll.
 - `.github/workflows/radar-tests.yml` runs them all; it is in
   `tools/ci/checks.json` (Research and signals).
 - `.github/workflows/radar-sources.yml` is the live check (Integration), never

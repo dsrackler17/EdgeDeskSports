@@ -30,8 +30,10 @@
 -- WHO READS (the database decides; the pages never filter access):
 --   anyone              radar_status(); and once POLYMARKET_DATA_ENABLED is on
 --                       and H-RADAR-01 is registered: the graded leaderboard
---                       (radar_leaderboard, and poly_wallet_grades by RLS) and
---                       each trader's graded history (radar_trader)
+--                       (radar_leaderboard, and poly_wallet_grades by RLS),
+--                       each trader's graded history (radar_trader), and a
+--                       teaser of the first Smart Money card (radar_teaser:
+--                       the game, the count, the dollars; never the side)
 --   subscribers         (has_active_sub(), the terminal's own rule) Smart Money
 --                       Tonight (radar_tonight) and a trader's open positions
 --   nobody else         trades, holders, prices, the pool, the budget
@@ -816,12 +818,27 @@ begin
     'cards', coalesce((select jsonb_agg(c) from public.radar_tonight_cards() c), '[]'::jsonb));
 end $f$;
 
+-- THE TEASER, for anyone (the public /radar/ page): the first card's game, how
+-- many top bettors and how many dollars. Never the side, a price, or a wallet:
+-- those are the terminal's.
+create or replace function public.radar_teaser()
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
+declare c jsonb;
+begin
+  if not public.radar_enabled() then return jsonb_build_object('status', 'disabled'); end if;
+  if not public.radar_registered() then return jsonb_build_object('status', 'not_registered'); end if;
+  select x into c from public.radar_tonight_cards() x limit 1;
+  return jsonb_build_object('status', 'ok', 'games', (select count(*) from public.radar_tonight_cards()),
+    'card', case when c is null then null else jsonb_build_object('sport_key', c ->> 'sport_key', 'home_team', c ->> 'home_team', 'away_team', c ->> 'away_team',
+      'commence_time', c ->> 'commence_time', 'n_wallets', (c ->> 'n_wallets')::int, 'dollars', round((c ->> 'dollars')::numeric, -2)) end);
+end $f$;
+
 do $g$ begin
   -- internal: no client may call these
   execute 'revoke all on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
        || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.radar_current_run(), public.radar_config_audit(), '
        || 'public.radar_style_stats(text, timestamptz) from public, anon, authenticated';
-  execute 'revoke all on function public.radar_status(), public.radar_leaderboard(integer), public.radar_trader(text), public.radar_tonight() from public';
+  execute 'revoke all on function public.radar_status(), public.radar_leaderboard(integer), public.radar_trader(text), public.radar_tonight(), public.radar_teaser() from public';
   execute 'revoke all on function public.radar_enabled(), public.radar_registered() from public, anon, authenticated';
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
@@ -835,6 +852,7 @@ grant execute on function public.radar_status() to anon, authenticated;
 grant execute on function public.radar_leaderboard(integer) to anon, authenticated;
 grant execute on function public.radar_trader(text) to anon, authenticated;
 grant execute on function public.radar_tonight() to anon, authenticated;
+grant execute on function public.radar_teaser() to anon, authenticated;
 -- the RLS policies on the grades call these as the reader
 grant execute on function public.radar_enabled() to anon, authenticated;
 grant execute on function public.radar_registered() to anon, authenticated;
