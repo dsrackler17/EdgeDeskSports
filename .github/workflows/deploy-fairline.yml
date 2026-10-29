@@ -1,0 +1,188 @@
+# Deploy Fairline: the production paywall check, supabase/fairline.sql (The
+# Board and The Leaks), supabase/fairline_tape.sql (The Tape),
+# supabase/fairline_tape_cron.sql (its Monday build) and, last, The Tape's own
+# email switch. docs/fairline.md › Deploying.
+#
+# MANUAL ON PURPOSE, as every deploy-*.yml here: tests first, then each part
+# that was asked for, in dependency order. A report row that says CHECK THIS
+# fails the job, and so does a part that was asked for and cannot run.
+#
+# ORDER. Billing first: fairline.sql calls has_fairline_paid(), which
+# supabase/billing_hardening.sql defines (Deploy billing, stage apply_sql).
+# fairline.sql stops with a message naming it otherwise.
+#
+# THE PAYWALL CHECK (check_paywall, on by default; read-only) is
+# docs/billing-hardening.md §11 query 10, run against production. The
+# terminal's RLS and has_active_sub() live only in production. If any of them
+# restates the rule (reads public.subscriptions' status) without deferring to
+# billing_row_grants_access() or community_is_entitled(), a Fairline (black)
+# subscription would read the terminal's data. Then the run fails, and nothing
+# after it runs. The log prints names and verdicts only, never a definition:
+# this repository's logs are public.
+#
+# SECRETS (the same one the other deploy-*.yml use):
+#   SB_DB_URL   read the catalog, apply the SQL
+name: Deploy Fairline
+
+on:
+  workflow_dispatch:
+    inputs:
+      check_paywall:
+        description: 'Read-only: production''s paywall RLS and has_active_sub() defer to the rule (docs/billing-hardening.md §11 query 10)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply fairline.sql (The Board and The Leaks; needs billing_hardening.sql, bettor_decisions.sql, bet_checker.sql, portfolio.sql, bet_import.sql)'
+        type: boolean
+        default: false
+      apply_tape_sql:
+        description: 'Apply fairline_tape.sql (The Tape; needs fairline.sql and lifecycle_email.sql)'
+        type: boolean
+        default: false
+      apply_tape_cron:
+        description: 'Apply fairline_tape_cron.sql (the Monday build; needs pg_cron)'
+        type: boolean
+        default: false
+      tape_email:
+        description: 'The Tape''s own email switch (the pipeline''s lifecycle_settings.sending_enabled must also be on for anything to send)'
+        type: choice
+        default: leave
+        options:
+          - leave
+          - 'on'
+          - 'off'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-fairline
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Production credentials run reviewed code only
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          [ "$REF_NAME" = "main" ] || { echo "::error::Fairline deploys run only from main (this run is on $REF_NAME)"; exit 1; }
+
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The SQL, the page and the black tier must pass before anything ships
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/fairline/core.test.js
+          node tools/fairline/page.test.js
+          FAIRLINE_SQL_REQUIRED=1 node tools/fairline/fairline_sql.test.js
+          node tools/fairline/tape_sql.test.js
+          node tools/fairline/tape_email.test.js
+          node tools/billing/fairline_tier.test.js
+
+      - name: Check the credentials exist before claiming anything
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          [ -n "$DBURL" ] || { echo "::error::SB_DB_URL is not set: paste the files into the SQL editor instead (docs/fairline.md › Deploying)"; exit 1; }
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+
+      - name: The paywall defers to the rule (§11 query 10, read-only)
+        if: ${{ inputs.check_paywall }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -eu
+          # Every function this repository defines is tested here; the check is
+          # about the ones that exist only in production.
+          grep -hoiE 'create (or replace )?function +(public\.)?[a-z_0-9]+' supabase/*.sql \
+            | sed -E 's/.*function +(public\.)?//I' | tr 'A-Z' 'a-z' | sort -u > "$RUNNER_TEMP/repo_fns.txt"
+          q() { psql "$PGURL" -At -F '|' -v ON_ERROR_STOP=1 -c "$1"; }
+          RULE="(%billing_row_grants_access%|%community_is_entitled%)"
+          bad=0
+          # 1. has_active_sub(): the terminal's gate
+          has=$(q "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'has_active_sub'")
+          if [ "$has" = 0 ]; then
+            echo "has_active_sub(): not in production (nothing to check)"
+          else
+            q "select p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
+                      case when p.prosrc similar to '$RULE' then 'defers to the rule'
+                           when p.prosrc ilike '%subscriptions%' then 'RESTATES THE RULE'
+                           else 'reads no subscription' end
+                 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                where n.nspname = 'public' and p.proname = 'has_active_sub'" > "$RUNNER_TEMP/has.txt"
+            while IFS='|' read -r name verdict; do echo "$name: $verdict"; [ "$verdict" = "RESTATES THE RULE" ] && bad=1; done < "$RUNNER_TEMP/has.txt"
+          fi
+          # 2. RLS policies that read public.subscriptions themselves
+          q "select schemaname || '.' || tablename || ' / ' || policyname,
+                    case when coalesce(qual, '') || ' ' || coalesce(with_check, '') similar to '$RULE' then 'defers to the rule' else 'RESTATES THE RULE' end
+               from pg_policies
+              where (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ilike '%subscriptions%'
+                and tablename <> 'subscriptions'
+              order by 1" > "$RUNNER_TEMP/pol.txt"
+          [ -s "$RUNNER_TEMP/pol.txt" ] || echo "policies: none reads public.subscriptions directly"
+          while IFS='|' read -r name verdict; do echo "policy $name: $verdict"; [ "$verdict" = "RESTATES THE RULE" ] && bad=1; done < "$RUNNER_TEMP/pol.txt"
+          # 3. production-only functions that inline the statuses (query 10's second half)
+          q "select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.prosrc ilike '%subscriptions%' and p.prosrc ilike '%trialing%'
+                and p.prosrc not similar to '$RULE'
+                and p.proname not in ('billing_row_grants_access', 'billing_access_for')
+              order by 1" | sort -u > "$RUNNER_TEMP/inl.txt"
+          while read -r fn; do
+            [ -n "$fn" ] || continue
+            if grep -qx "$fn" "$RUNNER_TEMP/repo_fns.txt"; then echo "function $fn: in this repository (tested here)"
+            else echo "function $fn: production only, RESTATES THE RULE"; bad=1; fi
+          done < "$RUNNER_TEMP/inl.txt"
+          rm -f "$RUNNER_TEMP"/has.txt "$RUNNER_TEMP"/pol.txt "$RUNNER_TEMP"/inl.txt
+          if [ "$bad" = 1 ]; then
+            echo "::error::production restates the access rule outside billing_row_grants_access(): a Fairline subscription could read the terminal's data. Make each one named above call the rule, then run this again. Nothing else ran."
+            exit 1
+          fi
+          echo "The paywall defers to the rule: a black subscription opens nothing the terminal guards."
+
+      - name: Apply fairline.sql
+        if: ${{ inputs.apply_sql }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # one transaction: a statement that fails rolls the whole file back
+          out=$(psql "$PGURL" --single-transaction -v ON_ERROR_STOP=1 -f supabase/fairline.sql)
+          echo "== supabase/fairline.sql"; echo "$out" | grep -E '^ ?[0-9][0-9] ' || true
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::fairline.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply fairline_tape.sql
+        if: ${{ inputs.apply_tape_sql }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          out=$(psql "$PGURL" --single-transaction -v ON_ERROR_STOP=1 -f supabase/fairline_tape.sql)
+          echo "== supabase/fairline_tape.sql"; echo "$out" | grep -E '^ ?[0-9][0-9] ' || true
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::fairline_tape.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply the cron (The Tape, Monday from 06:00 in Chicago)
+        if: ${{ inputs.apply_tape_cron }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/fairline_tape_cron.sql)
+          echo "== supabase/fairline_tape_cron.sql"; echo "$out" | grep -E '^ ?[0-9][0-9] ' || true
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::fairline_tape_cron.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: The Tape's email switch
+        if: ${{ inputs.tape_email != 'leave' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          WANT: ${{ inputs.tape_email }}
+        run: |
+          set -eu
+          v=$([ "$WANT" = on ] && echo true || echo false)
+          got=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "update public.fairline_tape_settings set email_enabled = $v, updated_at = now() where id = 1 returning email_enabled")
+          [ "$got" = "$v" ] || { echo "::error::fairline_tape_settings was not updated (is fairline_tape.sql applied?)"; exit 1; }
+          pipe=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select coalesce((select sending_enabled from public.lifecycle_settings limit 1), false)")
+          echo "The Tape's email switch: $WANT. The pipeline's own switch (lifecycle_settings.sending_enabled): $pipe."
+          if [ "$WANT" = on ] && [ "$pipe" != t ]; then echo "::warning::The pipeline's switch is off, so no Tape email sends until it is on."; fi

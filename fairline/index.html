@@ -22,7 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/tools/tools.css?v=1">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261028bc1">
-<link rel="stylesheet" href="/lib/edgedesk_fairline_app.css?v=20261028fl2">
+<link rel="stylesheet" href="/lib/edgedesk_fairline_app.css?v=20261029fl3">
 </head>
 <body data-ed-page="fairline">
 <header class="th">
@@ -62,7 +62,7 @@
     <div class="fl-tabs" role="tablist" aria-label="Fairline">
       <button type="button" role="tab" class="fl-tab on" data-fl-tab="board" aria-selected="true" aria-controls="fl-board">The Board</button>
       <button type="button" role="tab" class="fl-tab" data-fl-tab="leaks" aria-selected="false" aria-controls="fl-leaks">The Leaks</button>
-      <button type="button" role="tab" class="fl-tab" data-fl-tab="tape" aria-selected="false" aria-disabled="true" disabled title="The Tape is coming soon">The Tape <span class="fl-chip soon">Coming Soon</span></button>
+      <button type="button" role="tab" class="fl-tab" data-fl-tab="tape" aria-selected="false" aria-controls="fl-tape">The Tape</button>
     </div>
 
     <section id="fl-board" data-fl="board" role="tabpanel" aria-labelledby="fl-board-h">
@@ -81,6 +81,12 @@
       <div data-fl="leaks-body"><div class="gm-empty">Reading your bets…</div></div>
     </section>
 
+    <section id="fl-tape" data-fl="tape" role="tabpanel" aria-labelledby="fl-tape-h" hidden>
+      <h2 id="fl-tape-h">The Tape <span class="fl-q">How did last week go — the prices or the results?</span></h2>
+      <p class="fl-notpicks">Every Monday morning (Central time), a snapshot of your week: the record and P/L, your closing-line value, the prices you got against EdgeDesk’s fair, any leak that changed, and the best number you got. Kept for good, never rewritten, and sent to your inbox. <b>No picks.</b></p>
+      <div data-fl="tape-body"><div class="gm-empty">Reading your Tapes…</div></div>
+    </section>
+
     <section class="card" aria-labelledby="fl-set-h" id="settings">
       <h2 id="fl-set-h" style="margin-top:0">Settings › Subscription</h2>
       <div data-fl="settings"></div>
@@ -92,6 +98,7 @@
     <p><b>Fair price.</b> EdgeDesk’s de-vigged price for one exact game, market, side and line — the same fair Bet Checker grades with. A price at another line is a different bet, and is never compared with it.</p>
     <p><b>Edge vs fair.</b> The fair probability minus the probability the price implies, in points. Positive means the price is better than fair.</p>
     <p><b>Closing-line value.</b> Your decimal odds times EdgeDesk’s no-vig closing probability at your line, minus one — the same CLV EdgeDesk grades its own signals with. A bet whose close was not captured has no CLV, and a live bet is never graded against a pregame close.</p>
+    <p><b>The Tape’s week.</b> Monday 00:00 to Monday 00:00, Central time. A bet belongs to the week its game started (a bet with no known start, the week it was placed). “What changed” compares your slices over the bets before the week with your slices through it.</p>
     <p><b>Small samples.</b> A slice of your bets gets a label only once it has enough settled bets, and its label speaks about the close only once enough of them have a captured close. Until then it says so.</p>
     <p class="fine">Fairline measures prices. It is not betting advice and it never tells you what to bet. 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</p>
   </section>
@@ -121,8 +128,8 @@
 <script src="/games/lib/attribution.js?v=20261028bc1"></script>
 <script src="/games/lib/social.js?v=20261028bc1"></script>
 <script src="/games/lib/auth.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_fairline_core.js?v=20261028fl1"></script>
-<script src="/lib/edgedesk_fairline_app.js?v=20261028fl2"></script>
+<script src="/lib/edgedesk_fairline_core.js?v=20261029fl3"></script>
+<script src="/lib/edgedesk_fairline_app.js?v=20261029fl3"></script>
 <script>
 /* The Supabase project, from the same committed file the games pages read
    (games/data/config.json), so this page, Bet Checker and the terminal can
