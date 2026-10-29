@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-29 — Content engine: the evidence gate refused two correct week-9 articles and passed an incomplete one, from two writer bugs
+
+**Why.** `tools/content/evidence.test.js` ("every article generated from today's research passes the gate") went red on `main` from data alone: 202 passed, 1 failed, at `c933dc468`, `adcb2b7f8` and `9957decf9`. Two articles were blocked, for two different reasons.
+
+- **A number the claim itself prints was "not in the evidence"** (Utah at Cincinnati, `numbers_in_evidence`: 51.8, 44, 42.6). The gate was wrong.
+  - A claim's printed figure and its citation number were rounded by two different functions: `pct1` (`toFixed`) for the text, `rnd` for `cite.nums`.
+  - They disagree at x.x5. For example, 0.5185 prints as 51.8% but was cited as 51.9.
+  - So an article quoting the claim word for word could not cite it, and the FBS average in the same sentence fell with it.
+  - Today's research had 71 such claims out of 4,260, across third down, red zone, explosive plays, run blocking, early downs, efficiency, protection and the metric-conflict claims. One more claim cited a pick'em's 0.0 while printing "a pick'em".
+  - Fix (`lib/football_evidence.js`): `metricNum` now derives from `metricText`, the same formatter the reader sees, so no printed number changes. `other_models` cites only a number it prints. All 4,260 claims are now consistent.
+- **A starting quarterback listed out went unmentioned** (Kansas State at Colorado, upset watch, `injuries_addressed`: "Avery Johnson is listed as out on the Big 12 availability report"). The gate was right; the writer was wrong.
+  - The weekly-preview capsule printed either a team's quarterback input conflict or its first official listing, never both. So the conflict about Jacob Knuth (doubtful) hid Avery Johnson (out).
+  - Fix (`lib/content_engine.js`, `capsuleEv`): the capsule also prints every other quarterback listing and input conflict that the gate requires (`mustAddress`), and never repeats a player it has already covered. The single-game writer already did this.
+- `supabase/functions/content_engine/index.ts` was regenerated with `node tools/content/inline.js` (its `--check` passes).
+
+Tests: `tools/content/evidence.test.js` gains S 3b (a second quarterback listed out is named, and the gate passes), S 3c (every claim the current build makes cites only numbers its text prints) and S 3d (0.5185 is cited exactly as printed).
+- Against `main`'s library logic: `FAIL | football evidence pipeline | 202 passed, 4 failed` (S 3b, S 3c, S 3d and the live check).
+- After: `206 passed, 0 failed`.
+- The frozen week-6 fixture keeps the citations its own build wrote: it is a record and is not rewritten.
+
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
