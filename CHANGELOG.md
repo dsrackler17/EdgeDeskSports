@@ -17,6 +17,49 @@ It leaves one open, unpaid session per price, each expiring within 24 hours. `do
 - A Bet Checker product without metadata `tier = red` FAILS them.
 - Probe A ends with exactly one open session per price.
 
+## 2026-10-28 — main is red: the "Integrated with Juice Reel" line pushed the free calculator off a short phone's first screen (#864)
+
+**What failed.** Funnel tests, browser job, `tools/home/landing.e2e.js`: "first visit: the top of the free calculator shows, labelled Free". On a 375×548 screen (an iPhone SE inside X's in-app browser), the calculator's top bar ended at 581 px on the runner, past the 548 px fold. #864 added the hero line inside the text column, and on phones that column stacks above the calculator, so the line pushed the calculator down by 43 px.
+- On this machine, the same layout put the bar at exactly 548 of 548 px, which is why the full local `verify` passed. The runner's fallback fonts set the hero 33 px taller.
+
+**The fix** (`index.html`, `lib/edgedesk_landing_desk.css`):
+- The line moves out of the text column to right after the hero's two columns.
+- On a wide screen, the text column is the taller one, so the line sits in the same place as before: under the hero's text, on the first screen (1024 to 1440 px measured).
+- Where the columns stack, it follows the calculator. The calculator's top bar is back where it was before #864: 505 of 548 px here.
+- Stylesheet stamp `20261028jr3`, recorded.
+
+**Tests:**
+- `tools/home/landing.e2e.js`: 327 passed, 0 failed.
+- `tools/billing/juicereel_checkout.e2e.js` now checks both placements: under the text at 1280 px, and right after the calculator at 390 px. With the fix, 50 passed, 0 failed. With #864's layout, 49 passed, 1 failed.
+
+## 2026-10-28 — The site's deploy is no longer cancelled by the next push (inert until Pages' source is switched)
+
+**Why.** Pages' own "Deploy from a branch" build cancels the build before it on every push. The data jobs push every few minutes, and a build takes about four. On 2026-10-28, 23 builds in a row were cancelled (19:54 to 20:38 UTC). The site served a 19:49 copy through the merges of #860, #861 and #862.
+
+**What changed:**
+- **`.github/workflows/pages-deploy.yml`** (new).
+  - The build is the same one Pages ran: Jekyll over the repository root, then deployed to the `github-pages` environment.
+  - A new run waits for the one in progress (`cancel-in-progress: false`), so every run that starts finishes.
+  - It runs on a merge to `main`, every 10 minutes (the data jobs' pushes start no workflow), and by hand.
+  - While Settings › Pages › Source is still "Deploy from a branch", it deploys nothing and says so in the run's summary.
+- **To switch on:** set Settings › Pages › Source to **GitHub Actions**, then run **Pages deploy** once by hand. Steps and undo: `docs/ci/README.md`, "Publishing the site".
+- **`tools/ci/pages_deploy.test.js`** (new, run by Core validation): 18 passed, 0 failed. It fails without the workflow (2 passed, 16 failed), with `cancel-in-progress: true` (17 passed, 1 failed) and without the schedule (17 passed, 1 failed).
+  - It also runs the source check against a stand-in `gh`. "workflow" deploys. "legacy" deploys nothing and says why. A failed read fails the job.
+- `docs/intelligence.md`: the shipping table names the new run.
+
+## 2026-10-28 — The landing page's hero says "Integrated with Juice Reel"
+
+**Why.** The Juice Reel integration matters most as a credential. Until now the landing page said so only in the partner band, eleven sections down, and only once a script had drawn it.
+
+**What changed:**
+- `index.html`: a line, **Integrated with Juice Reel**, sits under the hero's audience line. The words are in the page itself, so a reader without the script, or a crawler, sees them too. It is on the first screen at phone and desktop widths.
+- `lib/edgedesk_landing_desk.css`: its pill style, kept out of the page's own sheet for the 216 KB budget. The stamp moves to `20261028jr2` and is recorded in `tools/presentation/landing_asset_stamps.json`.
+- A shared link's preview leads with it too. `og:description` (LinkedIn, Slack) and `twitter:description` (X) now open with "Integrated with Juice Reel.", because previews cut long text.
+  - To fit the budget, "the whole terminal:" and "the whole desk:" left those two lines. Every feature they list is still listed.
+  - The search description (`<meta name="description">`) is unchanged.
+- The page now has 20 characters of room under the budget (it had 56).
+- `tools/billing/juicereel_checkout.e2e.js` gains four checks: the line is in the hero's HTML, it is on the first screen at 390 px and at 1280 px, and both share descriptions lead with it. With these changes, 50 passed, 0 failed. Without the hero line, its three checks fail (46 passed, 3 failed). Without the preview change, its check fails (49 passed, 1 failed).
+
 ## 2026-10-28 — main is red: Personal research CI after the Juice Reel merge (#860)
 
 **What was wrong.** #860 merged with Personal research CI red, and `main` has stayed red since. Two checks fail there, both in tests, not in what a reader sees:

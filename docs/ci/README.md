@@ -151,6 +151,38 @@ keeps the name branch protection may require.
 - **`odds-gateway-tests.yml`**: its job is named `Odds gateway suites`, so a
   required check can name it unambiguously (32 jobs are called `suites`).
 
+## Publishing the site
+
+GitHub Pages serves `main` at edgedesksports.com.
+`.github/workflows/pages-deploy.yml` builds and deploys it.
+
+**Why it is a workflow.** Pages' own "Deploy from a branch" build runs on every push and cancels the build before it. The data jobs push every few minutes, and a build takes about four. On 2026-10-28, 23 builds in a row were cancelled (19:54 to 20:38 UTC). The site served a 19:49 copy through three merges.
+
+**How the workflow avoids that.** A new run waits for the one in progress instead of cancelling it (`cancel-in-progress: false`). GitHub keeps one waiting run and replaces it with the newest, so every run that starts finishes.
+
+**When it runs:**
+- on a merge to `main`;
+- every 10 minutes, because the data jobs push with `GITHUB_TOKEN`, which starts no workflow;
+- by hand (Run workflow).
+
+**The build.** It is the one Pages ran: `actions/jekyll-build-pages` over the repository root. The site's files and paths do not change.
+
+**It is inert until the source is switched.** While Settings › Pages › Source is "Deploy from a branch", its first job deploys nothing and says so in the run's summary.
+
+**To switch, once it is on `main`:**
+1. Go to Settings › Pages › Build and deployment › Source and choose **GitHub Actions**. Do not add a suggested workflow; this one is already there.
+2. Go to Actions › **Pages deploy** › **Run workflow** on `main`, and wait for the run to finish green. Then check the site.
+3. In Settings › Pages, check that the custom domain still reads edgedesksports.com and that **Enforce HTTPS** is still on.
+
+**To undo,** set the Source back to "Deploy from a branch" (`main`, `/ (root)`). The workflow then goes inert again.
+
+`tools/ci/pages_deploy.test.js` checks all of this in Core validation:
+- the runs queue rather than cancel;
+- the merge, schedule and manual triggers are present;
+- the build is the same;
+- only the deploy job may write Pages;
+- the source check behaves correctly for each source.
+
 ## Determinism audits
 
 `--clock-shift <days>` runs every node process a step starts with

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-29T00:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1920,88 +1920,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "xydsbt1qn040b",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can New Mexico State’s pass rush get to Caden Creel?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.4 points.",
-    "gap": {
-      "points": 1.4,
-      "toward": "Jacksonville State",
-      "other": "New Mexico State"
-    },
-    "supporting": [
-      "When New Mexico State has the ball (big plays on the ground): New Mexico State’s offense turns 7.5% of its runs into explosive gains, and Jacksonville State’s defense gives up explosive gains on 4.1% of opponent runs (FBS average 6.5%).",
-      "In his last two games (New Mexico and Florida International), Hedden averaged 4.6 yards per attempt, against 8.2 in his three games before that.",
-      "In his last two games (Florida International and Sam Houston), Damante averaged 5.2 yards per attempt, against 7.6 in his three games before that.",
-      "EdgeDesk’s position-group ratings put Jacksonville State’s offense No. 63 nationally and New Mexico State’s No. 109."
-    ],
-    "contradicting": [
-      "When New Mexico State has the ball (the line of scrimmage on running plays): New Mexico State’s offense is stopped at or behind the line on 12.4% of its runs, and Jacksonville State’s defense stops 15.5% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When Jacksonville State has the ball (the red zone): Jacksonville State’s offense succeeds on 29.5% of its red-zone plays, and New Mexico State’s defense allows success on 35.5% of opponent red-zone plays (FBS average 43.6%).",
-      "When Jacksonville State has the ball (the line of scrimmage on running plays): Jacksonville State’s offense is stopped at or behind the line on 16.7% of its runs, and New Mexico State’s defense stops 25.1% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When Jacksonville State has the ball (big plays through the air): Jacksonville State’s offense turns 10.6% of its pass plays into explosive gains, and New Mexico State’s defense gives up explosive gains on 7.6% of opponent pass plays (FBS average 10.2%)."
-    ],
-    "quarterbacks": [
-      "Trey Hedden has completed 65 of 125 passes (52.0%) for 933 yards, 7.5 yards per attempt, 5 touchdowns and 6 interceptions in five games for New Mexico State, and has been sacked on 7 of 132 dropbacks.",
-      "Adam Damante has completed 63 of 100 passes (63.0%) for 637 yards, 6.4 yards per attempt, 6 touchdowns and 3 interceptions in five games for New Mexico State, and has been sacked on 4 of 104 dropbacks.",
-      "Caden Creel has completed 129 of 192 passes (67.2%) for 1,637 yards, 8.5 yards per attempt, 12 touchdowns and 6 interceptions in seven games for Jacksonville State, and has been sacked on 7 of 199 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Jacksonville State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.4% of its dropbacks, and New Mexico State’s defense sacks the quarterback on 7.4% of opponent dropbacks.",
-        "Jacksonville State’s offense has to hold its own at the line of scrimmage against a defense that stops 25.1% of opponent runs at or behind the line.",
-        "Jacksonville State’s defense has to slow New Mexico State at the line of scrimmage — New Mexico State’s offense is stopped at or behind the line on 12.4% of its runs.",
-        "Jacksonville State’s defense has to come out ahead on long runs: it gives up explosive gains on 4.1% of opponent runs, against an offense that turns 7.5% of its runs into explosive gains."
-      ],
-      "market": [
-        "New Mexico State’s defense has to come out ahead at the line of scrimmage: it stops 25.1% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 16.7% of its runs.",
-        "New Mexico State’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 12.4% of its runs, and Jacksonville State’s defense stops 15.5% of opponent runs at or behind the line.",
-        "New Mexico State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.4% of opponent dropbacks, against an offense that has allowed a sack on 3.4% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for New Mexico State and Jacksonville State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (New Mexico State), sack rate allowed (Jacksonville State) and sack rate (Jacksonville State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-28T18:55:38.252Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-28T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-28T16:18:01.565Z",
-        "verification": "RATING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-28T20:14:07.027Z"
+    "at": "2026-10-29T00:49:03.363Z"
   }
 }

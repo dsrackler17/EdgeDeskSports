@@ -43,3 +43,5 @@ jobs:
         run: node tools/ci/integrity.js
       - name: The gate, the workflow reader, npm run verify and All checks keep their own rules (synthetic repositories and a fake GitHub API; the YAML reader held equal to PyYAML on every workflow)
         run: node tools/ci/integrity.test.js && node tools/ci/workflows.test.js && node tools/ci/verify.test.js && node tools/ci/gate.test.js
+      - name: The site's deploy waits for the one in progress instead of cancelling it, publishes the data jobs' pushes, and is inert until Pages' source is GitHub Actions
+        run: node tools/ci/pages_deploy.test.js

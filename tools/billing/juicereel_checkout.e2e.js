@@ -158,6 +158,11 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       const band = await page.evaluate(() => { const b = document.getElementById('juicereel'); return b ? b.innerText : ''; });
       chk('1 the landing page shows the partnership: EdgeDesk × Juice Reel, "working with Juice Reel"', /EdgeDesk\s*×\s*Juice Reel/.test(band) && /working with Juice Reel/.test(band), band);
       chk('  and links to juicereel.com', await page.evaluate(() => !!document.querySelector('#juicereel a[href="https://www.juicereel.com/"][rel="noopener"]')));
+      chk('  the hero says "Integrated with Juice Reel" in the page itself, so a reader without the script sees it too',
+        /<header class="hero"[\s\S]*?<p class="jrc">Integrated with Juice Reel<\/p>[\s\S]*?<\/header>/.test(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')));
+      /* a shared link's preview (LinkedIn, Slack, X) leads with it: previews cut long text */
+      chk('  and a shared link\'s preview leads with it (og:description, twitter:description)', ['property="og:description"', 'name="twitter:description"']
+        .every((k) => fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').indexOf('<meta ' + k + ' content="Integrated with Juice Reel. ') >= 0));
       chk('  switch OFF: no Juice Reel checkout line or button is shown', !(await page.isVisible('#jrAct')) && !(await page.isVisible('#jrLive')) && !(await page.isVisible('#jrBtn')));
       chk('  no script errors', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
@@ -172,6 +177,18 @@ const gateText = (page) => page.evaluate(() => { const g = document.querySelecto
       chk('2 switch ON: the partner band shows "Get EdgeDesk on Juice Reel"', (await page.isVisible('#jrBtn')) && /Get EdgeDesk on Juice Reel/.test(await page.innerText('#jrBtn')));
       chk('  and says Juice Reel shows the plan and price, and bills it', /shows the plan and price before you pay, and bills and renews it/.test(await page.textContent('#jrLive')));
       chk('  the card trial is still offered exactly as before', /7 days free/.test(await page.textContent('.pcard:not(.freecard)')));
+      /* two columns: under the hero's text, on the first screen; stacked: right
+         after the calculator, which keeps its place on a short phone's first
+         screen (tools/home/landing.e2e.js, 375x548) */
+      const cred = await page.evaluate(() => { const e = document.querySelector('.hero .jrc'), r = e && e.getBoundingClientRect();
+        const aud = document.querySelector('.hero .aud').getBoundingClientRect(), dash = document.querySelector('.hero .dash').getBoundingClientRect();
+        return e ? { text: e.innerText.trim(), shown: getComputedStyle(e).display !== 'none', top: r.top, bottom: r.bottom, vh: innerHeight,
+          afterText: Math.round(r.top - aud.bottom), afterDash: Math.round(r.top - dash.bottom) } : null; });
+      chk(width >= 1020 ? '  the hero\'s "Integrated with Juice Reel" sits under the hero\'s text, on the first screen'
+        : '  the hero\'s "Integrated with Juice Reel" follows the calculator, so it never pushes the calculator down',
+        !!cred && cred.text === 'Integrated with Juice Reel' && cred.shown && (width >= 1020
+          ? cred.top >= 0 && cred.bottom <= cred.vh && cred.afterText >= 0 && cred.afterText <= 40
+          : cred.afterDash >= 0 && cred.afterDash <= 40), cred);
       await page.click('#jrBtn');
       await page.waitForSelector('#authModal.on');
       await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'aEmail');
