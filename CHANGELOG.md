@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-28 — Deploying Bet Checker: the checkout stage probes Bet Checker's purchase too
+
+**What was missing.** `create_checkout_session` was deployed to production at 20:33 (`create_checkout_session-2026-10-28-bet-checker-2`). Its Phase 8 probes (`tools/billing/prod_probe.js checkout`) never asked for a Bet Checker checkout. They also stop early while `STRIPE_PRICE_ID` is unset, and it is unset in production, so the terminal keeps its Payment Link. Bet Checker needs no `STRIPE_PRICE_ID`: its prices are found by Stripe lookup key. So nothing had shown that the live Stripe key can read `bet_checker_monthly` and `bet_checker_annual` and open a checkout for them.
+
+**What changed.** `checkout` now probes Bet Checker first, whether or not the terminal's price is set. All of it runs as probe A, never a customer:
+- An unauthenticated request is refused (401).
+- A price the customer did not consent to is refused (409) and creates nothing.
+- Monthly and annual each open a live `checkout.stripe.com` session. Each is recorded for the caller with no trial, on the price whose lookup key is `bet_checker_monthly` / `bet_checker_annual`, and `billing_price_tiers` knows that price as tier red.
+- Opening checkout grants nothing.
+
+It leaves one open, unpaid session per price, each expiring within 24 hours. `docs/billing-hardening.md` and the stage's heading say so.
+
+**Tests.** `tools/billing/prod_probe.test.js`, which runs the probe against the shipped function and a fake Stripe:
+- With the kill switch on, the Bet Checker probes still run and pass.
+- A Bet Checker product without metadata `tier = red` FAILS them.
+- Probe A ends with exactly one open session per price.
+
 ## 2026-10-28 — main is red: the "Integrated with Juice Reel" line pushed the free calculator off a short phone's first screen (#864)
 
 **What failed.** Funnel tests, browser job, `tools/home/landing.e2e.js`: "first visit: the top of the free calculator shows, labelled Free". On a 375×548 screen (an iPhone SE inside X's in-app browser), the calculator's top bar ended at 581 px on the runner, past the 548 px fold. #864 added the hero line inside the text column, and on phones that column stacks above the calculator, so the line pushed the calculator down by 43 px.
