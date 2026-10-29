@@ -22,6 +22,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const ROOT = path.join(__dirname, '..', '..');
 const V = require(path.join(ROOT, 'research', 'radar', 'run_validation.js'));
 const G = require(path.join(ROOT, 'lib', 'edgedesk_poly_gateway.js'));
@@ -118,6 +119,11 @@ async function fetchStub(url) {
       && rep.holdout.passed === false && rep.holdout.point_estimates_support_hypothesis === true, rep.holdout.criteria);
     chk('the headline says what the numbers say', /^H-RADAR-01 FAILED on its registered holdout: 1000 followed bets over 40 games; beat-close rate 100\.0% .*follow ROI 30\.0% \(95% CI 0\.0% to/.test(rep.headline), rep.headline);
     chk('everything read is kept, with a manifest and its sha256', fs.existsSync(path.join(out, 'manifest.json')) && /^[0-9a-f]{64}$/.test(rep.run.inputs_sha256) && rep.run.inputs_files > 100);
+    const man = JSON.parse(fs.readFileSync(path.join(out, 'manifest.json'), 'utf8'));
+    chk('each kept body is gzipped and unzips to the JSON its manifest sha256 names', man.length === rep.run.inputs_files && man.every((m) => {
+      const body = zlib.gunzipSync(fs.readFileSync(path.join(out, m.f))).toString('utf8');
+      return /\.json\.gz$/.test(m.f) && body.length === m.bytes && crypto.createHash('sha256').update(body).digest('hex') === m.sha256 && JSON.parse(body) !== undefined;
+    }));
     chk('no deviation on a clean run', rep.deviations.length === 0, rep.deviations);
     chk('the secondary (all ranked directional) is reported, never tested', rep.secondary_all_ranked_directional.wallets >= 25 && !('passed' in rep.secondary_all_ranked_directional));
     /* the fallback */

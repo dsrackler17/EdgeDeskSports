@@ -36,6 +36,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const ROOT = path.join(__dirname, '..', '..');
 const R = require(path.join(ROOT, 'lib', 'edgedesk_radar.js'));
 const G = require(path.join(ROOT, 'lib', 'edgedesk_poly_gateway.js'));
@@ -80,10 +81,12 @@ async function run(opts) {
   fs.mkdirSync(path.join(out, 'raw'), { recursive: true });
   const manifest = [];
   let n = 0;
+  /* gzipped: one top wallet's 1,000-row activity page is about 0.9 MB
+     (radar-sources run 40811733314), and a run reads thousands */
   const keep = (label, url, data) => {
     const body = JSON.stringify(data);
-    const f = 'raw/' + String(++n).padStart(6, '0') + '_' + label + '.json';
-    fs.writeFileSync(path.join(out, f), body);
+    const f = 'raw/' + String(++n).padStart(6, '0') + '_' + label + '.json.gz';
+    fs.writeFileSync(path.join(out, f), zlib.gzipSync(body));
     manifest.push({ f, url, sha256: sha(body), bytes: body.length });
   };
   const gw = opts.gateway;
@@ -116,6 +119,7 @@ async function run(opts) {
 
   /* 2. activity */
   const acts = {}, trunc = {};
+  let walletsDone = 0;
   await pool({ items: wallets, width: 4 }, async (w) => {
     const rows = [];
     let cursor = null, pages = 0, ok = true;
@@ -134,6 +138,7 @@ async function run(opts) {
       cursor = pg.next_cursor;
     }
     acts[w.wallet] = ok ? rows : null;
+    if (++walletsDone % 20 === 0) log('activity: ' + walletsDone + ' of ' + wallets.length + ' wallets read; truncated so far ' + Object.keys(trunc).length + '; requests ' + gw.stats().requests);
   });
   const failedWallets = wallets.filter((w) => acts[w.wallet] === null).map((w) => w.wallet);
   if (failedWallets.length) deviations.push(failedWallets.length + ' wallet(s) whose activity could not be read were left out: ' + failedWallets.slice(0, 10).join(', '));
