@@ -24,6 +24,7 @@
 Tests: `football/props/pipeline.test.js`.
 - Against the old `capture.js`: `FAILED player props pipeline — 153 passed, 2 failed`. The run returned `["NOT_RUN","GATEWAY_DEFERRED","The odds gateway deferred the event index (unauthorized): no prop was requested."]`.
 - After the fix: 155 passed, 0 failed.
+- The `::error::` annotation prints the capture's error message, which first read only "odds gateway: unauthorized". It now names the secret and the runbook step. A third check failed on that (`155 passed, 1 failed`) and passes now: 156 passed, 0 failed.
 
 ## 2026-10-29 — Content engine: the evidence gate refused two correct week-9 articles and passed an incomplete one, from two writer bugs
 
