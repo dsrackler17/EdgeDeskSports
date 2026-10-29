@@ -22,7 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/tools/tools.css?v=1">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261028bc1">
-<link rel="stylesheet" href="/lib/edgedesk_bet_checker.css?v=20261029bc1">
+<link rel="stylesheet" href="/lib/edgedesk_bet_checker.css?v=20261029bc4">
 </head>
 <body data-ed-page="bet_checker">
 <header class="th">
@@ -38,6 +38,8 @@
   then grades it against EdgeDesk’s captured close. Where we don’t own the number, we say so — we never estimate one.</p>
 
   <div class="bc-status" data-bc="status" role="status" aria-live="polite" hidden></div>
+  <!-- while sportsbook price refresh is paused (odds_feed_status), for everyone -->
+  <div class="bc-status warn bc-feed" data-bc="feed" role="note" hidden></div>
 
   <!-- signed out: the free door (games/lib/auth.js, coming back here) -->
   <section class="card bc-auth" data-bc="out" hidden aria-labelledby="bc-auth-h">
@@ -147,8 +149,8 @@
 <script src="/games/lib/attribution.js?v=20261028bc1"></script>
 <script src="/games/lib/social.js?v=20261028bc1"></script>
 <script src="/games/lib/auth.js?v=20261028bc1"></script>
-<script src="/lib/edgedesk_bet_checker_core.js?v=20261029bc1"></script>
-<script src="/lib/edgedesk_bet_checker.js?v=20261029fl4"></script>
+<script src="/lib/edgedesk_bet_checker_core.js?v=20261029bc4"></script>
+<script src="/lib/edgedesk_bet_checker.js?v=20261029bc4"></script>
 <script>
 /* The Supabase project, from the same committed file the games pages read
    (games/data/config.json, written from app.html by the build), so this page
