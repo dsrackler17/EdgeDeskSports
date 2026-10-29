@@ -1,4 +1,4 @@
-# College baseball weekly model report: 2026-10-22
+# College baseball weekly model report: 2026-10-29
 
 Served version **1.0.0** (SERVED, selection-window tuning). The loop learns on SELECTION + VALIDATION (2014–2024); the HOLDOUT (2025–2026) is never read here (research/PROTOCOL.md). Outcome-graded only: no college baseball prices are archived.
 
@@ -32,26 +32,26 @@ Wins minus priced; z = (wins − Σp) / √Σp(1−p). |z| ≥ 2 pulls the match
 
 | Candidate | Change | Δlog loss | 95% interval | ΔBrier | VALIDATION Δlog loss | Decision |
 |---|---|---|---|---|---|---|
-| conf_spread_looser | `tq.sigma_conf` ["mul",1.6] | 0.000151 | [0.000044,0.000258] | 0.00007 | 0.000138 | FAIL: log loss change 0.000151 does not clear -0.0002; 95% interval [0.000044,0.000258] is not below zero; Brier worse (0.00007); worse on VALIDATION (0.000138) |
-| div_spread_tighter | `tq.sigma_div` ["mul",0.5] | -0.000118 | [-0.000211,-0.000031] | -0.000047 | -0.000062 | FAIL: log loss change -0.000118 does not clear -0.0002 |
-| div_spread_looser | `tq.sigma_div` ["mul",2] | 0.000145 | [0.000072,0.00022] | 0.000054 | 0.000081 | FAIL: log loss change 0.000145 does not clear -0.0002; 95% interval [0.000072,0.00022] is not below zero; Brier worse (0.000054); worse on VALIDATION (0.000081) |
-| park_spread_tighter | `tq.sigma_park` ["mul",0.5] | 0.000026 | [-0.000011,0.00006] | 0.000009 | 0.000079 | FAIL: log loss change 0.000026 does not clear -0.0002; 95% interval [-0.000011,0.00006] is not below zero; Brier worse (0.000009); worse on VALIDATION (0.000079) |
-| park_spread_looser | `tq.sigma_park` ["mul",2] | -0.000049 | [-0.00009,-0.000013] | -0.00002 | -0.000103 | FAIL: log loss change -0.000049 does not clear -0.0002 |
-| conf_carry_lower | `tq.carry_conf` ["add",-0.15] | 0.000008 | [0,0.000014] | 0.000003 | 0.000009 | FAIL: log loss change 0.000008 does not clear -0.0002; 95% interval [0,0.000014] is not below zero; Brier worse (0.000003); worse on VALIDATION (0.000009) |
-| div_carry_lower | `tq.carry_div` ["add",-0.15] | 0.000108 | [0.000008,0.000215] | 0.000044 | -0.000008 | FAIL: log loss change 0.000108 does not clear -0.0002; 95% interval [0.000008,0.000215] is not below zero; Brier worse (0.000044) |
-| park_carry_lower | `tq.carry_park` ["add",-0.15] | -0.000005 | [-0.000021,0.000011] | -0.000003 | -0.000004 | FAIL: log loss change -0.000005 does not clear -0.0002; 95% interval [-0.000021,0.000011] is not below zero |
+| team_spread_looser | `tq.sigma_team` ["mul",1.33] | 0.000849 | [0.00059,0.001124] | 0.000352 | 0.001023 | FAIL: log loss change 0.000849 does not clear -0.0002; 95% interval [0.00059,0.001124] is not below zero; Brier worse (0.000352); worse on VALIDATION (0.001023) |
+| conf_spread_tighter | `tq.sigma_conf` ["mul",0.6] | 0.000066 | [-0.000027,0.000162] | 0.00002 | 0.000046 | FAIL: log loss change 0.000066 does not clear -0.0002; 95% interval [-0.000027,0.000162] is not below zero; Brier worse (0.00002); worse on VALIDATION (0.000046) |
+| roster_continuity_carry | `tq.cont_k` ["set",0.5] | 0.000088 | [-0.000018,0.000189] | 0.00002 | 0.000178 | FAIL: log loss change 0.000088 does not clear -0.0002; 95% interval [-0.000018,0.000189] is not below zero; Brier worse (0.00002); worse on VALIDATION (0.000178) |
+| team_carry_lower | `tq.carry_team` ["add",-0.05] | -0.000051 | [-0.000116,0.000016] | -0.000024 | -0.000143 | FAIL: log loss change -0.000051 does not clear -0.0002; 95% interval [-0.000116,0.000016] is not below zero |
+| dispersion_lower | `tq.phi` ["mul",0.85] | 0.000141 | [0.000056,0.000223] | 0.000057 | 0.000153 | FAIL: log loss change 0.000141 does not clear -0.0002; 95% interval [0.000056,0.000223] is not below zero; Brier worse (0.000057); worse on VALIDATION (0.000153) |
+| dispersion_higher | `tq.phi` ["mul",1.2] | -0.000023 | [-0.00012,0.000073] | -0.000007 | -0.000007 | FAIL: log loss change -0.000023 does not clear -0.0002; 95% interval [-0.00012,0.000073] is not below zero |
+| recency_faster | `tq.halflife_days` ["mul",0.67] | -0.000027 | [-0.000074,0.000024] | -0.000012 | -0.000027 | FAIL: log loss change -0.000027 does not clear -0.0002; 95% interval [-0.000074,0.000024] is not below zero |
+| recency_slower | `tq.halflife_days` ["mul",1.5] | 0.000038 | [0.000003,0.000068] | 0.000016 | 0.000033 | FAIL: log loss change 0.000038 does not clear -0.0002; 95% interval [0.000003,0.000068] is not below zero; Brier worse (0.000016); worse on VALIDATION (0.000033) |
 
 ## Waiting on data we do not hold yet
 
 These changes need inputs the record does not cover yet; they are not tried, and nothing stands in for the missing data.
 
-- **starter_quality**: the schools' box scores cover 0.1% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
-- **starter_quality_half**: the schools' box scores cover 0.1% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
-- **starter_quality_stronger**: the schools' box scores cover 0.1% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
-- **starter_quality_weaker**: the schools' box scores cover 0.1% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
-- **platoon**: the starter's hand and the opposing nine's bats are both known for 0.1% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
-- **platoon_half**: the starter's hand and the opposing nine's bats are both known for 0.1% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
-- **platoon_stronger**: the starter's hand and the opposing nine's bats are both known for 0.1% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
-- **platoon_weaker**: the starter's hand and the opposing nine's bats are both known for 0.1% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
+- **starter_quality**: the schools' box scores cover 58.7% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
+- **starter_quality_half**: the schools' box scores cover 58.7% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
+- **starter_quality_stronger**: the schools' box scores cover 58.7% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
+- **starter_quality_weaker**: the schools' box scores cover 58.7% of D-I team-seasons 2014-2024 (a team-season counts when 80% of its contests are boxed; needs 80%); the collegiate box-score backfill (collegiate/plan.json) fills it
+- **platoon**: the starter's hand and the opposing nine's bats are both known for 27.2% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
+- **platoon_half**: the starter's hand and the opposing nine's bats are both known for 27.2% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
+- **platoon_stronger**: the starter's hand and the opposing nine's bats are both known for 27.2% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
+- **platoon_weaker**: the starter's hand and the opposing nine's bats are both known for 27.2% of D-I team-seasons 2014-2024 (a team-season counts when they are for 80% of its contests; needs 80%); box scores and the schools' rosters (collegiate/) fill it
 
 Every candidate ever tried: `docs/model-loop/college_baseball/candidates.jsonl`. Versions: `docs/model-loop/college_baseball/versions.json`.
