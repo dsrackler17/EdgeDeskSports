@@ -510,4 +510,14 @@ tonight's):
 
 **Deploy.** Merge, then run NHL engine build once, so the inputs carry the
 lineup block. Then run Deploy NHL goalie layer with `deploy_function`. The
-SQL is unchanged: the card's trigger values and columns are the same.
+SQL is unchanged: the card's trigger values and columns are the same. A `GET`
+of the function answers build `nhl_goalie_sync@2026-10-29.1` or later once
+the lock is deployed.
+
+**The first deploy (2026-10-29, run 4 of Deploy NHL goalie layer).** It
+deployed `main` at 0e148dc6d, after NHL engine build had published the
+lineup block (all 33 games). That build still answered
+`nhl_goalie_sync@2026-10-25.1`: #902 did not bump the stamp. The first forced
+run read the site's previous inputs (slate 15:32 UTC) because the site had
+not yet published the new file, so no card could lock on it. Later pokes read
+the new file once it is published.

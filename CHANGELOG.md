@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-29 — NHL goalie sync: a build stamp for the lineup lock
+
+- **Why.** #902 (the lineup lock) left the function's build at `nhl_goalie_sync@2026-10-25.1`, so after its deploy a `GET` could not tell the new code from the old.
+- **What.** `supabase/functions/nhl_goalie_sync/index.ts` answers `nhl_goalie_sync@2026-10-29.1`. Nothing else in the function changes. `docs/engine/NHL_GOALIES.md` §11 records the first deploy: Deploy NHL goalie layer run 4 deployed it, and its first run read the site's previous inputs, which the site had not yet replaced.
+
 ## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
 
 - **Bug.** `run_now` on build `.5` ([run 40905865196](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40905865196)) made 32 wallet calls in about 76 s each, all HTTP 200. The 33rd got HTTP 546, out of compute. A run that dies cannot record anything, so that wallet stayed first in line, and every later call, the 06:10 UTC schedule included, would have died on it. `run_now` also stopped before its grade, so nothing reached the site.
