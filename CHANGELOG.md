@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-29 — Content engine: main red again, from two fixes for one failure merged together (one is removed)
+
+- **What failed on `main`.**
+  - `tools/content/evidence.test.js`: 209 passed, 2 failed. The Week 9 preview was BLOCKED for `no_repetition` ("dante moore is listed as out on the big ten availability report" 3+ times), and S 3d expected 51.8.
+  - The content engine core, weekly job, deployed function, owner's browser flow and system-integrity suites failed on the same repetition.
+- **Why.** Two sessions fixed the same Week 9 failure in parallel.
+  - 64143ada2 (cite what a claim prints; the capsule adds every `mustAddress` claim) reached `main` first.
+  - #904 (print with the house rounding; the capsule writes every report line) came second.
+  - "Update branch" on #904 merged them without a conflict, and #904 was merged before any check ran on the combination. The capsule then wrote the quarterback lines twice, and the rounding contradicted S 3d. This is what AGENTS.md § 1 (check for a parallel fix) and § 5 (wait for the update commit's checks) guard against.
+- **Fix.** #904's overlapping code is removed, and 64143ada2's tested behaviour stands. `lib/content_engine.js` and `lib/football_evidence.js` are now identical to 64143ada2's.
+  - The Edge Function's inline copy was regenerated with `node tools/content/inline.js`.
+  - The editorial page's script stamps are bumped again, to `20261029r2` and `20261029ce3`.
+  - #904's tests stay. R now requires the claim to cite exactly the figures it prints. K (a second quarterback listed out beside a conflict is named) passes unchanged on 64143ada2's capsule.
+- **Tests.** `evidence.test.js`: `main` 209 passed, 2 failed; fixed 211 passed, 0 failed. `npm run verify:affected`: 136 passed, 0 failed.
+
 ## 2026-10-29 — NHL goalie sync: a build stamp for the lineup lock, and the job summary shows the headline
 
 - **Why.** #902 (the lineup lock) left two gaps. The function's build stayed at `nhl_goalie_sync@2026-10-25.1`, so after its deploy a `GET` could not tell the new code from the old. And the job summary's "Home win %" is the goalie pairing's number, so a lock never showed in NHL goalie sync or in the deploy's first run.

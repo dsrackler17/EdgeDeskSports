@@ -349,15 +349,18 @@ section('R a claim and its citation round the same way');
 /* 2026-10-29: the Utah–Cincinnati matchup piece was BLOCKED, on main and in
    the live check below, for "not in the evidence: 51.8, 44, 42.6". Utah's
    early-down success is 0.5185 and Cincinnati's allowed rate 0.4405. The
-   claim's text rounded with toFixed (51.8%, 44.0%: 0.5185 × 100 is stored as
-   51.849999…) and its citation with EdgeDesk's rounding (51.9, 44.1), so the
-   sentence never cited the claim it was. Both now round half away from zero. */
+   claim's text printed 51.8% (toFixed: 0.5185 × 100 is stored as 51.849999…)
+   and its citation 51.9, so the sentence never cited the claim it was. The
+   citation is now the printed figure (S 3d); this builds the packet end to
+   end and requires the claim's own sentence to cite it. */
 {
   const unit = (off, def) => ({ performance: { offense_detail: { used: off }, defense_detail: { used: def } } });
   const pk = FE.buildCfb({ game: { game: { id: 'r1', home: 'Cincinnati', away: 'Utah' } }, keys: { home: 'cin', away: 'uta' },
     metrics: { away: unit([{ id: 'early_down_success', raw: 0.5185, league: 0.4264, n_obs: 314 }], []), home: unit([], [{ id: 'def_early_down_allowed', raw: 0.4405, league: 0.4264, n_obs: 300 }]) } }, { now: NOW });
   const c = pk.claims.find((x) => x.key === 'pair:early_downs:away');
-  chk('R a percentage is printed as EdgeDesk rounds it: 0.5185 is 51.9%, 0.4405 is 44.1%', !!c && /51\.9%/.test(c.text) && /44\.1%/.test(c.text) && /51\.9%/.test(c.short) && /44\.1%/.test(c.short), c && c.text);
+  const printed = (x) => (String(x).match(/\d+\.\d/g) || []);
+  chk('R the claim cites exactly the figures it prints, in its text and its short form', !!c && c.cite.nums.length === 2
+    && c.cite.nums.every((n) => printed(c.text).indexOf(n) >= 0 && printed(c.short).indexOf(n) >= 0), c && { text: c.text, cite: c.cite.nums });
   chk('R … so the claim’s own sentence cites it', !!c && FE.citedClaims(pk, c.text).some((x) => x.id === c.id), c && c.cite);
 }
 
