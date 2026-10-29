@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-29 — Authorization change: each Juice Reel product opens only what it is mapped to (terminal, Bet Checker, or nothing)
+
+**Authorization change; needs the owner's explicit review.** Until now every product the seller had on Juice Reel opened the whole Research Terminal (`JUICE_REEL_PRODUCT_IDS` empty: "every product"). A cheaper Bet Checker product created there would have sold the terminal for its price, and so would anything else sold on Juice Reel (a picks package).
+
+- **The map** (`supabase/juicereel_billing.sql`). The new table `billing_juicereel_products` maps a Juice Reel product id to the terminal (blue) or Bet Checker (red). **A product not mapped opens nothing.** A linked reader who paid for one is told their payment is safe and not to pay again, and `juicereel_product_not_mapped` is raised with the product id. `billing_jr_set_product(product, terminal | bet_checker | none)` writes it and re-checks that product's buyers at once.
+- **Bet Checker's price** (`supabase/billing_hardening.sql`, one line). `billing_tier_of_price('juicereel_bet_checker')` is red, a constant next to `owner_comp` and `comp_trial`. Unknown, the rule would read it as the terminal. So a product cannot be mapped to Bet Checker, and no Bet Checker row is written, until this file is applied (Deploy billing → `apply_sql`).
+- **A higher tier is kept** (`billing_jr_record_state`, `billing_jr_project`).
+  - A buyer of both keeps the terminal.
+  - Bet Checker, or an unmapped product, never replaces a terminal still paid for.
+  - A Bet Checker purchase never writes over any plan in good standing (each includes it).
+  - When the terminal ends, the next reconcile opens the Bet Checker still paid for.
+- **The function** (`supabase/functions/juicereel_billing/index.ts`, build `juicereel_billing-2026-10-29-2`).
+  - It records every product and lets the database decide.
+  - On a return whose status answer (one subscription) did not open the terminal, it reads the owner's list for the buyer's others.
+  - It tells a Bet Checker buyer where it opens.
+  - `check` lists the map, the products bought but not mapped, and the product ids on Juice Reel's list.
+  - `JUICE_REEL_PRODUCT_IDS` is no longer read, and is reported as missing while set.
+- **The workflow** (`deploy-juicereel-billing.yml`). The new `set_product` step takes the product id as a psql variable, never spliced into SQL. `set_mode on` is refused while no product opens the terminal. Both were run against a throwaway PostgreSQL before committing: refused with nothing mapped, then mapped, then passed; an injection-shaped id refused; `bet_checker` refused before the rule and accepted after; `none` unmapped.
+- **Tests** (`tools/billing/juicereel_billing.test.js`, new § 13).
+  - On the old code: 86 passed, 5 failed. The unmapped Bet Checker product, the picks package and a status answer naming no product each opened the terminal (`outcome: active`).
+  - On the fix: 107 passed, 0 failed.
+  - Expectations changed by design: a bare status answer that names no product now opens nothing alone, and opens with the owner's list. The documented webhook's example product is mapped, as an owner maps theirs.
+- **Production, in order.**
+  1. Deploy Juice Reel billing → `deploy`. From here no Juice Reel product opens anything until mapped.
+  2. → `set_product` with your EdgeDesk product's id → `terminal`. `check` lists the ids.
+  3. For Bet Checker later: Deploy billing → `apply_sql`, then `set_product` → `bet_checker`.
+
 ## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
 
 - **Bug.** `run_now` on build `.5` ([run 40905865196](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40905865196)) made 32 wallet calls in about 76 s each, all HTTP 200. The 33rd got HTTP 546, out of compute. A run that dies cannot record anything, so that wallet stayed first in line, and every later call, the 06:10 UTC schedule included, would have died on it. `run_now` also stopped before its grade, so nothing reached the site.
