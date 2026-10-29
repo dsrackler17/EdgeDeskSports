@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-28 — Fairline, part 1: The Board and The Leaks (behind the Bet Checker and terminal tiers)
+
+**What it is.** A new page, [`/fairline/`](fairline/index.html), that answers two questions from prices and the reader's own bets, never from picks: **"Am I getting a good number right now?"** (The Board) and **"Where am I losing money, and is it bad bets or bad luck?"** (The Leaks). The weekly recap (The Tape) shows as Coming Soon. Narrative: [docs/fairline.md](docs/fairline.md).
+
+- **`supabase/fairline.sql`** (new, additive; mirrored in `migrations/20261028180000_fairline.sql`). Functions and one view; no table, row or policy changes. `signals` keeps its terminal-only RLS.
+  - `fairline_rules()`: the one constant (a label from 15 settled bets; a label about the close from 15 captured closes; the odds, lead-time and stake buckets; capture's own freshness limits).
+  - `fairline_paid()`: the one gate. Today it is `has_bet_checker_paid()` (Bet Checker `red` or the terminal `blue`). No billing change in this part.
+  - `fairline_bets_for()` / `fairline_my_bets()` / view `fairline_bets`: the reader's bets from Bet Checker and the Portfolio, one row per bet. A bet in both is counted once (linked, same market key, or same game), keeping the book's money and Bet Checker's close.
+  - `fairline_leaks()`: every slice by sport, market, bet type, odds range, lead time, book and stake vs median, with bets, record, units and dollars P/L, ROI, average CLV and beat-close rate, and a label: real leak, bad luck, running hot, real edge; P/L only when too few closes were captured; none below the sample. Free: the biggest leak's slice name, no number.
+  - `fairline_board()`: a security-definer door. Fair (probability and odds), best price (`book_quotes` where present, else `signals`), edge vs fair, quote age with stale rows greyed and sorted last, Kalshi only when its card says OK, DK Predictions marked inactive. Free: the top 3 fresh rows.
+- **The page**: `fairline/index.html`, `lib/edgedesk_fairline_app.js`, `lib/edgedesk_fairline_app.css`, `lib/edgedesk_fairline_core.js`. Mobile first, on the tools frame and the game cards. Each leak card leads with one plain sentence; labels are chips with words. The Board says it is prices, not picks, and carries a Known limitations block. Added to `sitemap-pages.xml`.
+- **Tests** (`.github/workflows/fairline-tests.yml`, in `tools/ci/checks.json` under Frontend and navigation): `fairline_sql.test.js` (115, real PostgreSQL), `core.test.js` (55), `page.test.js` (27), `page.e2e.js` (30, Chromium).
+- **Out of scope, noted in the docs:** a DK Predictions price feed (no source exists), and selling Fairline through Juice Reel's checkout (that sells only the terminal today).
+
 ## 2026-10-28 — Deploying Bet Checker: the checkout stage probes Bet Checker's purchase too
 
 **What was missing.** `create_checkout_session` was deployed to production at 20:33 (`create_checkout_session-2026-10-28-bet-checker-2`). Its Phase 8 probes (`tools/billing/prod_probe.js checkout`) never asked for a Bet Checker checkout. They also stop early while `STRIPE_PRICE_ID` is unset, and it is unset in production, so the terminal keeps its Payment Link. Bet Checker needs no `STRIPE_PRICE_ID`: its prices are found by Stripe lookup key. So nothing had shown that the live Stripe key can read `bet_checker_monthly` and `bet_checker_annual` and open a checkout for them.
