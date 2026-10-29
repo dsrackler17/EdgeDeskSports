@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-10-29 — Props capture: the odds gateway refused the GitHub jobs' credential for 19 days, and said "deferred"
+
+**Why.** Every player-props capture since the odds gateway went live (2026-10-10 14:29Z) was refused with `unauthorized`. The capture filed the refusal as `NOT_RUN / GATEWAY_DEFERRED`, so the workflow stayed green, the boards read "deferred", and no prop has been priced since 2026-10-10.
+
+- **Cause.**
+  - `supabase/functions/odds_gateway` compares the bearer byte for byte with its own `SUPABASE_SERVICE_ROLE_KEY`.
+  - The repository secret `SB_SERVICE_ROLE` is a different string, though still a valid service-role key. In the same runs PostgREST accepts it for `rpc/odds_api_dashboard` (restricted to the service role) and for the props health record.
+  - `tools/collective/odds_doctor.js` already documents this failure for a key in the newer `sb_secret_` format.
+- **Fix (code).**
+  - The three steps that call the gateway now also send the gateway's own shared secret, `ODDS_GATEWAY_SECRET`. The client already sends it as `x-odds-gateway-secret`, and the gateway already accepts it. The steps are `player-props.yml` capture, the `props-factory.yml` backfill and the `cfb-lab.yml` alternates.
+  - `football/props/capture.js` now reports a refused credential as an **ERROR** (`GATEWAY_UNAUTHORIZED`), with a `::error::` naming the secret. It is not a deferral. It is still not a provider failure: no back-off, no failure count.
+  - The credential registry in `tools/games/builder.test.js` lists the new secret, with its reason.
+- **Fix (owner).** Code alone does not restore capture:
+  1. Set `ODDS_GATEWAY_SECRET` on Supabase (Edge Functions → Secrets).
+  2. Set the same value as a GitHub repository secret.
+
+  `docs/odds-api-incident-2026-10/INCIDENT.md` §9 step 4 now says so.
+- **Not changed.** The gateway's authorization check, budget, breaker and every other guard (AGENTS.md §3).
+  - Paid retrieval stays paused until the 2026-11-01 reset and the runbook's re-enable.
+  - Until then a working credential shows `PROVIDER_PAUSED` or a budget deferral, not prices.
+
+Tests: `football/props/pipeline.test.js`.
+- Against the old `capture.js`: `FAILED player props pipeline — 153 passed, 2 failed`. The run returned `["NOT_RUN","GATEWAY_DEFERRED","The odds gateway deferred the event index (unauthorized): no prop was requested."]`.
+- After the fix: 155 passed, 0 failed.
+- The `::error::` annotation prints the capture's error message, which first read only "odds gateway: unauthorized". It now names the secret and the runbook step. A third check failed on that (`155 passed, 1 failed`) and passes now: 156 passed, 0 failed.
+
 ## 2026-10-29 — Content engine: the evidence gate refused two correct week-9 articles and passed an incomplete one, from two writer bugs
 
 **Why.** `tools/content/evidence.test.js` ("every article generated from today's research passes the gate") went red on `main` from data alone: 202 passed, 1 failed, at `c933dc468`, `adcb2b7f8` and `9957decf9`. Two articles were blocked, for two different reasons.
@@ -71,13 +97,6 @@ Tests:
 - `sql.test.js` (35, real PostgreSQL)
 - `tools/football/fsie_card_ui.test.js` (22)
 - `tools/football/fsie_ui.e2e.js` (14, Chromium)
-
-## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
-
-- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
-- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
-- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
-
 
 ## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
 
