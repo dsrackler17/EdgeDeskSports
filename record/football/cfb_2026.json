@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk CFB Power 4 Model · all FBS",
  "projection_source": "football/fbs/slate.json",
- "updated_at": "2026-10-28T23:34:42.394Z",
+ "updated_at": "2026-10-29T02:53:58.621Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -108143,7 +108143,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -108346,24 +108346,113 @@
      "away_ml": 130
     }
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 1.5,
+    "total": 49.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -120,
+     "away": 100,
+     "over": -110,
+     "under": -110,
+     "home_ml": -108,
+     "away_ml": -112
+    }
+   },
+   "final": {
+    "home_score": 28,
+    "away_score": 44,
+    "source": "espn",
+    "at": "2026-10-29T02:53:58.621Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 6.02,
+     "result": "loss"
+    },
+    "total": {
+     "side": "under",
+     "gap": 0.3,
+     "result": "loss"
+    },
+    "su": {
+     "side": "home",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -2.5,
+      "close": 1.5,
+      "gap": 1.8,
+      "pts": -4
+     },
+     "total": {
+      "side": "over",
+      "market": 48.5,
+      "close": 49.5,
+      "gap": 1.2,
+      "pts": 1
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": -3,
+      "close": 1.5,
+      "gap": 1.52,
+      "pts": -4.5
+     },
+     "total": {
+      "side": "under",
+      "market": 51.5,
+      "close": 49.5,
+      "gap": 2.3,
+      "pts": 2
+     }
+    },
+    "error": {
+     "margin": -16,
+     "model_margin_err": 20.52,
+     "close_margin_err": 14.5,
+     "model_total_err": 22.8,
+     "close_total_err": 22.5
+    },
+    "brier": 0.3859,
     "beyond_guard": false,
     "reliability": {
      "score": 87,
      "bucket": "80-89",
      "at": "2026-10-28T22:44:48.157Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -120,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "under",
+      "odds": -110,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "home",
+      "odds": -108,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -3,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 1.5,

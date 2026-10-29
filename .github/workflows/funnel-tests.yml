@@ -11,7 +11,9 @@
 #               readers, as anon and as the service role; the browser's status
 #               rule held equal to the database's.
 #   browser     index.html at 375 · 390 · 430 · 768 · 1280 (live, stale and
-#               unreachable data), the first run in app.html, admin/funnel/.
+#               unreachable data), the trial checkout from "Start 7 days free"
+#               through the consent to Stripe and back into the terminal, the
+#               first run in app.html, admin/funnel/.
 #
 # Nothing here deploys, writes or sends.
 name: Funnel tests
@@ -40,6 +42,8 @@ on:
       - 'lib/edgedesk_track.js'
       - 'lib/edgedesk_first_run.*'
       - 'lib/edgedesk_pricing.js'
+      - 'lib/edgedesk_access.js'
+      - 'tools/billing/checkout_flow.e2e.js'
       - 'lib/edgedesk_personal_ui.js'
       - 'lib/edgedesk_props_ui.js'
       - 'supabase/funnel.sql'
@@ -109,6 +113,14 @@ jobs:
           npx playwright install --with-deps chromium
       - name: The landing page at five widths, live, stale and unreachable
         run: node tools/home/landing.e2e.js
+      # "Start 7 days free" → sign-up → the renewal terms → the consent recorded
+      # → Stripe's checkout (stood in) → back → the terminal opens. On
+      # 2026-10-29 the page threw after the consent (an undeclared `promo`) and
+      # never left for Stripe; nothing in CI ran this, so nothing went red.
+      - name: The trial checkout, from "Start 7 days free" to Stripe and back into the terminal
+        env:
+          CHECKOUT_FLOW_UI_REQUIRED: '1'
+        run: node tools/billing/checkout_flow.e2e.js
       - name: The terminal's first run for a new trial
         run: node tools/funnel/first_run.e2e.js
       - name: The operator's conversion dashboard
