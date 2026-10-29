@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_split_shadow_v1",
- "generated_at": "2026-10-29T13:41:29.060Z",
+ "generated_at": "2026-10-29T15:33:04.155Z",
  "protocol": {
   "id": "nhl_split_ml_v1",
   "registered": "2026-10-29",
@@ -21,7 +21,13 @@
    "ELIGIBLE only if, on those games: (a) the moneyline log loss of the shadow minus production has a paired block-bootstrap 95% interval over dates (1,000 resamples, seed 20261013) wholly below zero; (b) the shadow's moneyline calibration slope is between 0.85 and 1.15 and |mean p − mean y| is at most 0.02; (c) the shadow's home −1.5 puck-line log loss is at most 0.001 above production's. Otherwise NOT_CONFIRMED.",
    "DraftKings' closing prices (research/clv/openers/nhl) are reported beside the result. They never decide it.",
    "ELIGIBLE changes nothing by itself: promotion is a methodology-change pull request carrying this record, reviewed by the owner."
-  ]
+  ],
+  "promoted": {
+   "on": "2026-10-29",
+   "by": "the owner",
+   "from_b": 0.9,
+   "basis": "the owner directed the switch after the investigation, before the rule's decision point: the published moneyline was 1.2 times narrower than DraftKings' closes (35 of 47 favourites less favoured). On 2021-26 the candidate is +0.00027 log loss (−0.00013 to +0.00063) against the goal-split rule; on 2026-27 to date −0.00265 (198 games). The decision rule was not met and is not claimed."
+  }
  },
  "history": {
   "generated_at": "2026-10-29T03:01:02.607Z",
@@ -570,15 +576,22 @@
  "live": {
   "season": 2027,
   "protocol": "nhl_split_ml_v1",
-  "generated_at": "2026-10-29T13:41:29.071Z",
+  "generated_at": "2026-10-29T15:33:04.166Z",
   "shadow_ledger": "hockey/ledger/split_shadow_2027.jsonl",
   "shadow_ledger_records": 42,
   "games_graded": 0,
   "verdict": {
-   "status": "IN_PROGRESS",
+   "status": "PROMOTED",
+   "rule_status": "IN_PROGRESS",
    "n": 0,
    "needed": 1000,
-   "decision_set": "interim: every graded game so far (not a decision)",
+   "decision_set": "interim: the rows frozen before the promotion (not a decision; the rule was not met)",
+   "promoted": {
+    "on": "2026-10-29",
+    "by": "the owner",
+    "from_b": 0.9,
+    "basis": "the owner directed the switch after the investigation, before the rule's decision point: the published moneyline was 1.2 times narrower than DraftKings' closes (35 of 47 favourites less favoured). On 2021-26 the candidate is +0.00027 log loss (−0.00013 to +0.00063) against the goal-split rule; on 2026-27 to date −0.00265 (198 games). The decision rule was not met and is not claimed."
+   },
    "draftkings_close": {
     "n": 0,
     "production": {
