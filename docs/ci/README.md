@@ -154,34 +154,45 @@ keeps the name branch protection may require.
 ## Publishing the site
 
 GitHub Pages serves `main` at edgedesksports.com.
-`.github/workflows/pages-deploy.yml` builds and deploys it.
+`.github/workflows/pages-deploy.yml` builds and deploys it. **It is the only workflow that may deploy the site.**
 
-**Why it is a workflow.** Pages' own "Deploy from a branch" build runs on every push and cancels the build before it. The data jobs push every few minutes, and a build takes about four. On 2026-10-28, 23 builds in a row were cancelled (19:54 to 20:38 UTC). The site served a 19:49 copy through three merges.
+**Why it is a workflow.** Pages' own "Deploy from a branch" build runs on every push and cancels the build in progress. The data jobs push every few minutes, and a build takes about four. On 2026-10-28, 23 builds in a row were cancelled (19:54 to 20:38 UTC). The site served a 19:49 copy through three merges.
 
-**How the workflow avoids that.** A new run waits for the one in progress instead of cancelling it (`cancel-in-progress: false`). GitHub keeps one waiting run and replaces it with the newest, so every run that starts finishes.
+**How the workflow avoids that.** The deploy in progress always finishes (`cancel-in-progress: false`). Of the runs waiting behind it, GitHub keeps only the newest; the others show as **cancelled**, which is expected. The newest `main` always goes out next.
 
 **When it runs:**
 - on a merge to `main`;
-- every 10 minutes, because the data jobs push with `GITHUB_TOKEN`, which starts no workflow;
+- when **any workflow that pushes to `main`** finishes (`workflow_run`, listed by name);
+- hourly, as a backstop that GitHub may skip;
 - by hand (Run workflow).
+
+Why the data needs `workflow_run`, not a timer:
+- The data jobs push with `GITHUB_TOKEN`, which starts no workflow.
+- GitHub's own cron fires only every 4 to 7 hours in this repository. On 2026-10-29, an every-10-minutes schedule ran twice in 15 hours.
+- The data jobs themselves are started by Supabase `pg_cron` through `workflow_dispatch`.
+
+**Adding a workflow that pushes to `main`?** Add its `name:` to `on.workflow_run.workflows` in `pages-deploy.yml`. Core validation fails until you do, and names the workflow.
+
+**Never add a Pages starter workflow.** The Pages settings screen offers starters under "Configure". On 2026-10-28, `jekyll-gh-pages.yml` and `static.yml` were added that way and raced this one in the same queue. Whichever finished last decided the site, and `static.yml` uploaded the repository without the Jekyll build. Core validation now fails on any other workflow that deploys Pages or queues in `pages`.
 
 **The build.** It is the one Pages ran: `actions/jekyll-build-pages` over the repository root. The site's files and paths do not change.
 
-**It is inert until the source is switched.** While Settings › Pages › Source is "Deploy from a branch", its first job deploys nothing and says so in the run's summary.
+**It is inert while the source is the branch.** While Settings › Pages › Source is "Deploy from a branch", its first job deploys nothing and says so in the run's summary.
 
-**To switch, once it is on `main`:**
+**To switch** (done on 2026-10-29):
 1. Go to Settings › Pages › Build and deployment › Source and choose **GitHub Actions**. Do not add a suggested workflow; this one is already there.
 2. Go to Actions › **Pages deploy** › **Run workflow** on `main`, and wait for the run to finish green. Then check the site.
-3. In Settings › Pages, check that the custom domain still reads edgedesksports.com and that **Enforce HTTPS** is still on.
+3. In Settings › Pages, check that the custom domain still reads edgedesksports.com. HTTPS is enforced at Cloudflare ("Always Use HTTPS"), which proxies the domain, so GitHub's "Enforce HTTPS" box stays unavailable.
 
 **To undo,** set the Source back to "Deploy from a branch" (`main`, `/ (root)`). The workflow then goes inert again.
 
 `tools/ci/pages_deploy.test.js` checks all of this in Core validation:
-- the runs queue rather than cancel;
-- the merge, schedule and manual triggers are present;
+- the deploy in progress is never cancelled;
+- the merge, `workflow_run` (every pushing workflow, by name), backstop schedule and manual triggers are present;
 - the build is the same;
 - only the deploy job may write Pages;
-- the source check behaves correctly for each source.
+- the source check behaves correctly for each source;
+- no other workflow deploys Pages.
 
 ## Determinism audits
 
