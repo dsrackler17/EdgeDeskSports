@@ -51,7 +51,9 @@ eq(SP.lineText('A', 'B', null), null, 'nothing to name without a margin');
 /* ------------------------------------------------------- pure, deterministic */
 {
   const src = fs.readFileSync(LN.LIB, 'utf8');
-  ok(!/Date\.now|new Date|Math\.random|fetch\(|XMLHttpRequest/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')), 'the transform reads no clock, no randomness and no network');
+  const tx = src.slice(src.indexOf('/*__TRANSFORM_START__*/'), src.indexOf('/*__TRANSFORM_END__*/'));
+  ok(tx.length > 200 && /projectHomeMargin/.test(tx) && /disagreement/.test(tx), 'the transform is marked in the file');
+  ok(!/Date\.now|new Date|Date\.parse|Math\.random|fetch\(|XMLHttpRequest/.test(tx.replace(/\/\*[\s\S]*?\*\//g, '')), 'the transform reads no clock, no randomness and no network');
   const a = [], b = [];
   for (let i = 0; i < 50; i++) { a.push(SP.projectHomeMargin(i * 0.37 - 9, 4.1 - i * 0.21, i % 3 === 0, 2.8)); }
   for (let i = 0; i < 50; i++) { b.push(SP.projectHomeMargin(i * 0.37 - 9, 4.1 - i * 0.21, i % 3 === 0, 2.8)); }

@@ -26,6 +26,13 @@ on:
       - 'football/cfb_production/db.js'
       - 'football/cfb_lab/sync_supabase.js'
       - 'tools/games/sql/supabase_shim.sql'
+      # the three surfaces that show the SP+ line, and the harness that runs the board card
+      - 'app.html'
+      - 'lib/edgedesk_game_view.js'
+      - 'research/cfb/index.html'
+      - 'research/cfb/terminal.js'
+      - 'research/cfb/resilience_ui.js'
+      - 'tools/football/_module.js'
       - 'package.json'
       - '.github/workflows/cfb-sp-plus.yml'
       - '.github/workflows/cfb-sp-plus-tests.yml'
@@ -35,6 +42,9 @@ on:
       - 'football/sp_plus/*.js'
       - 'lib/cfb_sp_plus.js'
       - 'supabase/cfb_sp_plus.sql'
+      - 'lib/edgedesk_game_view.js'
+      - 'research/cfb/terminal.js'
+      - 'research/cfb/resilience_ui.js'
       - '.github/workflows/cfb-sp-plus-tests.yml'
   workflow_dispatch:
 
@@ -62,3 +72,13 @@ jobs:
         env:
           CFB_SP_SQL_REQUIRED: '1'
         run: node football/sp_plus/sql.test.js
+      - name: The display rule (fresh, stale, failed, missing, another week; Models disagree at 3+ points)
+        run: node football/sp_plus/display.test.js
+      - name: The board card, through the real football module
+        run: node football/sp_plus/card_ui.test.js
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The game page and the research terminal in Chromium (fresh, stale, missing)
+        run: node football/sp_plus/ui.e2e.js

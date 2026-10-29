@@ -105,3 +105,37 @@ home line   = − home margin                         (book sign: − = home fav
 - **What is published.** Per game: the teams, the week, the kickoff, the
   neutral flag, `home_margin` and `home_line`, or `UNAVAILABLE` with the reason.
   No rating.
+
+## C · On the cards (`lib/cfb_sp_plus.js` `rowFor`)
+
+| Surface | Where the row sits | Code |
+|---|---|---|
+| Board card (app) | the summary grid, after EdgeDesk fair / Market / Market gap | `fbGxSummary` in `app.html` |
+| Game page `#game/cfb/<id>` | the overview, right after Fair spread | `spTile` in `lib/edgedesk_game_view.js` (`opts.spPlus` from `app.html`) |
+| Research terminal `/research/cfb/#/game/<id>` | section 1, right after Fair spread; the summary strip; section A | `research/cfb/resilience_ui.js` `spRow`, `research/cfb/terminal.js` `spRow` |
+
+Each row shows the SP+ line named for its favourite, **T3 external model · T2
+computed line**, the SP+ week and capture date, and the attribution. When
+EdgeDesk's margin and SP+'s differ by **3 points or more**, a plain
+**Models disagree** note gives the size of the gap. The two numbers are never
+combined.
+
+**The display rule.** A line is shown only from a capture of the game's own
+week, no older than 8 days. Otherwise the row reads **unavailable**, with the
+reason:
+
+- the file did not load;
+- SP+ has not been synced yet;
+- the sync failed, and why;
+- the capture is stale;
+- the game is from another week (or that week's sync failed, or SP+ had not
+  updated);
+- a team SP+ does not rate.
+
+A stale number is never shown.
+
+```
+node football/sp_plus/display.test.js     # every state of the rule
+node football/sp_plus/card_ui.test.js     # the board card, through the real football module
+node football/sp_plus/ui.e2e.js           # the game page and the terminal in Chromium
+```
