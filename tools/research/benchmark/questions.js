@@ -120,7 +120,7 @@ add('missing_players', [
   { q: 'How does Shane Baz being scratched affect the Rays?', scenario: 'starter_change_mlb', route: 'MODEL_DESK', grounded: [/Shane Baz/] },
   { q: 'Who is starting for the Rays tomorrow?', scenario: 'starter_change_mlb', route: 'AVAILABILITY', has: [/Taj Bradley/, /Shane Baz/, /different starters/] },
   { q: 'Is Anthony Richardson starting for the Colts?', route: 'AVAILABILITY', has: [/holds no report on Anthony Richardson/, /Daniel Jones/], not: [/Anthony Richardson (is|will be) (out|active|starting|playing)/i] },
-  { q: 'Is Amon-Ra St. Brown out this week?', route: 'MODEL_DESK' },
+  { q: 'Is Amon-Ra St. Brown out this week?', scenario: 'not_on_report', route: 'MODEL_DESK' },
   { q: 'Will Josh Allen play against the Lions?', route: 'AVAILABILITY', has: [/Josh Allen/] }
 ]);
 
