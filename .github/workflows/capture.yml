@@ -184,7 +184,7 @@ jobs:
               process.exit(1);
             }
             const pick = (o, ks) => ks.filter(k => o[k] !== undefined).map(k => k + ": " + JSON.stringify(o[k])).join("\n");
-            console.log(pick(j, ["ok","status","build","error","reason","cadence","sports","priced",
+            console.log(pick(j, ["ok","status","build","error","reason","cadence","sports","sports_list","priced",
                                  "new_signals","refreshed","sports_skipped_no_near_events",
                                  "quota_spent_this_run","quota_remaining","write_errors",
                                  "schema_gaps","schema_warning","reference_warning"]));
