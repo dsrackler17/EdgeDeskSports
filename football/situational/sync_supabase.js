@@ -21,6 +21,17 @@ const DIR = __dirname;
 const DATA = path.join(DIR, 'data');
 const ROOT = path.join(DIR, '..', '..');
 
+/* each table's natural key, sent as ?on_conflict= so PostgREST's ignore-duplicates
+   becomes ON CONFLICT (key) DO NOTHING; without it PostgREST targets the primary key
+   only, and fsie_team_games has none (its key is a UNIQUE constraint) */
+const CONFLICT = {
+  fsie_source_files: 'sport,source_name,sha256', fsie_team_games: 'sport,game_id,team_id,source_ref',
+  fsie_quality_failures: 'sport,game_id,team_id,scope,check_name,source_ref', fsie_coverage: 'run_id,sport,team_id',
+  fsie_tendencies: 'sport,season,team_id,side,as_of,features_version', fsie_team_projections: 'projection_id',
+  fsie_player_projections: 'projection_id', fsie_prop_comparisons: 'comparison_id', fsie_clv_evaluations: 'clv_id',
+  fsie_shadow_integrations: 'sport,game_id,target,model_version,as_of', fsie_pipeline_runs: 'run_id,sport,stage'
+};
+
 function arg(k, d) { const i = process.argv.indexOf('--' + k); return i >= 0 ? (process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? process.argv[i + 1] : true) : d; }
 function jsonl(f) { if (!fs.existsSync(f)) return []; return fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)); }
 function id(o) { return U.sha256(o).slice(0, 32); }
@@ -74,11 +85,15 @@ function rows(season) {
     });
     const sh = U.readJson(path.join(DATA, 'shadow', sp + '.json'));
     const slate = U.readJson(path.join(ROOT, 'football', sp === 'nfl' ? 'nfl' : 'fbs', 'slate.json'));
-    const existing = {}; ((slate && slate.games) || []).forEach((g) => { existing[String(g.game_id)] = { fair_total: g.model_fair_total, home_margin: g.model_home_margin, model_version: g.model_version }; });
+    const existing = {}, cand = {}; ((slate && slate.games) || []).forEach((g) => {
+      existing[String(g.game_id)] = { fair_total: g.model_fair_total, home_margin: g.model_home_margin, model_version: g.model_version };
+      /* the candidate the slate's own block published (what ACTIVE would change), once a build has appended it */
+      const blk = g.situational || g.situational_shadow; if (blk && blk.candidate) cand[String(g.game_id)] = blk.candidate;
+    });
     const target = sp === 'nfl' ? 'nfl_slate' : 'fbs_slate';
-    if (sh) Object.keys(sh.games).forEach((gid) => { if (!existing[gid]) return; const g = sh.games[gid]; out.fsie_shadow_integrations.push({ sport: sp, game_id: gid, target, mode: A.mode(target), model_version: sh.model_version || 'unknown', as_of: g.as_of, existing: existing[gid], situational: g, candidate: null, applied_points: 0 }); });
+    if (sh) Object.keys(sh.games).forEach((gid) => { if (!existing[gid]) return; const g = sh.games[gid]; out.fsie_shadow_integrations.push({ sport: sp, game_id: gid, target, mode: A.mode(target), model_version: sh.model_version || 'unknown', as_of: g.as_of, existing: existing[gid], situational: g, candidate: cand[gid] || null, applied_points: 0 }); });
   });
-  if (state && state.runs) state.runs.forEach((r) => Object.keys(r.stages || {}).forEach((sp) => { const s = r.stages[sp]; out.fsie_pipeline_runs.push({ run_id: r.run_id, sport: sp, stage: 'build', started_at: r.started_at, duration_ms: s.total || null, status: r.status === 'ok' ? 'ok' : r.status, rows_out: s.projections || 0, errors: r.errors || [], freshness: null }); }));
+  if (state && state.runs) state.runs.forEach((r) => Object.keys(r.stages || {}).forEach((sp) => { const s = r.stages[sp]; out.fsie_pipeline_runs.push({ run_id: r.run_id, sport: sp, stage: 'build', started_at: r.started_at, duration_ms: (s.ms || {}).total || null, status: r.status === 'ok' ? 'ok' : r.status, rows_out: s.projections || 0, errors: r.errors || [], freshness: null }); }));
   return out;
 }
 
@@ -86,7 +101,7 @@ async function post(cfg, table, list) {
   let n = 0;
   for (let i = 0; i < list.length; i += 500) {
     const chunk = list.slice(i, i + 500);
-    const r = await fetch(cfg.url.replace(/\/+$/, '') + '/rest/v1/' + table, { method: 'POST', headers: { apikey: cfg.key, authorization: 'Bearer ' + cfg.key, 'content-type': 'application/json', prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify(chunk) });
+    const r = await fetch(cfg.url.replace(/\/+$/, '') + '/rest/v1/' + table + '?on_conflict=' + CONFLICT[table], { method: 'POST', headers: { apikey: cfg.key, authorization: 'Bearer ' + cfg.key, 'content-type': 'application/json', prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify(chunk) });
     if (!r.ok) throw new Error(table + ': HTTP ' + r.status + ' ' + (await r.text()).slice(0, 300));
     n += chunk.length;
   }
@@ -106,4 +121,4 @@ async function main() {
   return 0;
 }
 if (require.main === module) main().then((c) => { process.exitCode = c; }, (e) => { console.error(String(e && e.stack || e)); process.exitCode = 1; });
-module.exports = { rows };
+module.exports = { rows, CONFLICT };

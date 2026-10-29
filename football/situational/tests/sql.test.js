@@ -60,6 +60,26 @@ try {
   chk('the same source version twice is one row (idempotent insert)', must(() => db.service("insert into public.fsie_team_games (sport,season,week,season_type,game_id,team_id,opponent_id,source_name,source_ref,situations_version,quality_version,volume_ok,situation_ok,player_ok,quality_status,counts) values ('nfl',2026,1,'REG','g','A','B','pbp','pbp@bbb','situations_v1','quality_v1',true,true,true,'accepted','{}');")));
   chk('situation_ok without volume_ok is refused', must(() => db.service("insert into public.fsie_team_games (sport,season,week,season_type,game_id,team_id,opponent_id,source_name,source_ref,situations_version,quality_version,volume_ok,situation_ok,player_ok,quality_status,counts) values ('nfl',2026,1,'REG','h','A','B','pbp','x','s','q',false,true,false,'rejected','{}');")));
   chk('retention refuses to prune below 120 days', must(() => db.sql('select * from public.fsie_prune(30);')));
+
+  /* the COMMITTED artifacts, exactly as sync_supabase.js offers them, inserted the way PostgREST
+     runs its POST (service role, ON CONFLICT (the sent on_conflict key) DO NOTHING), twice */
+  const SYNC = require(path.join(ROOT, 'football', 'situational', 'sync_supabase.js'));
+  const stj = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'situational', 'data', 'state.json'), 'utf8'));
+  const at = new Date(stj.last.at); const season = at.getUTCMonth() <= 1 ? at.getUTCFullYear() - 1 : at.getUTCFullYear();
+  const payload = SYNC.rows(season);
+  const tables = Object.keys(payload).filter((t) => payload[t].length);
+  chk('the sync payload covers the core tables', ['fsie_team_games', 'fsie_coverage', 'fsie_tendencies', 'fsie_team_projections', 'fsie_player_projections', 'fsie_shadow_integrations', 'fsie_pipeline_runs'].every((t) => payload[t].length > 0), JSON.stringify(Object.fromEntries(Object.keys(payload).map((t) => [t, payload[t].length]))));
+  chk('every table\'s rows carry the same keys (PostgREST takes the columns from the first object)', tables.every((t) => { const k0 = Object.keys(payload[t][0]).sort().join(','); return payload[t].every((r) => Object.keys(r).sort().join(',') === k0); }));
+  chk('every table has an on_conflict key', Object.keys(payload).every((t) => SYNC.CONFLICT[t]));
+  const insertAll = () => db.service(tables.map((t) => { const cols = Object.keys(payload[t][0]); return 'insert into public.' + t + ' (' + cols.join(', ') + ') select ' + cols.join(', ') + ' from jsonb_populate_recordset(null::public.' + t + ', $fsiesync$' + JSON.stringify(payload[t]) + '$fsiesync$::jsonb) on conflict (' + SYNC.CONFLICT[t] + ') do nothing;'; }).join('\n'));
+  const counted = () => tables.map((t) => db.sql('select count(*) from public.' + t + ';').trim()).join(',');
+  let syncErr = null; try { insertAll(); } catch (e) { syncErr = String(e.message).slice(0, 600); }
+  chk('the committed artifacts insert into the migration\'s tables without a constraint or trigger refusing a row', !syncErr, syncErr);
+  const first = counted();
+  let againErr = null; try { insertAll(); } catch (e) { againErr = String(e.message).slice(0, 600); }
+  chk('a second sync of the same artifacts adds nothing and is refused nowhere (insert-only, idempotent)', !againErr && counted() === first, againErr);
+  chk('no shadow row from the artifacts applies points', db.sql("select count(*) from public.fsie_shadow_integrations where applied_points <> 0;").trim() === '0');
+  chk('every synced build run has its duration', db.sql("select count(*) from public.fsie_pipeline_runs where run_id like 'fsie_%' and duration_ms is null;").trim() === '0');
   out = db.applyFileAtomic(RB);
   chk('the rollback removes every fsie table and function', !/CHECK THIS/.test(out), out);
 

@@ -22,6 +22,13 @@
    Flags use the preregistered thresholds (core/market.js FLAG). CLV is the
    project's own (lib/edgedesk_props.js clv). Outcomes are reported apart
    from CLV: a favourable close is not a correct result.
+   existing EdgeDesk forecast  the props model's own last pregame evaluation
+                       of the same player, game and market (kind 'final' in
+                       football/props/<lg>/<season>/evaluations.jsonl), its
+                       median beside this model's median and the entry line,
+                       on the rows all three share. The props evaluation is
+                       usually made closer to kickoff than this model's
+                       inputs, with the injury report in hand.
    ========================================================================== */
 'use strict';
 const path = require('path');
@@ -31,6 +38,7 @@ const R = require(path.join(__dirname, 'research.js'));
 const VM = require(path.join(__dirname, 'volume_model.js'));
 const PM = require(path.join(__dirname, 'player_model.js'));
 const MK = require(path.join(__dirname, 'market.js'));
+const EV = require(path.join(__dirname, 'evaluate.js'));
 const EDP = require(path.join(__dirname, '..', '..', '..', 'lib', 'edgedesk_props.js'));
 
 const ROOT = path.join(__dirname, '..', '..', '..');
@@ -164,6 +172,7 @@ async function study(sport, season, P, opts) {
     events, rows_total: out.length, comparisons: valid.length,
     exclusions: out.filter((r) => r.exclusion).reduce((o, r) => { o[r.exclusion] = (o[r.exclusion] || 0) + 1; return o; }, {}),
     summary: MK.summarize(valid), model_vs_actual: mae(valid),
+    existing_edgedesk: existingEdgeDesk(sport, season, valid),
     rows: valid.map((r) => { const o = Object.assign({}, r); return o; })
   };
 }
@@ -174,4 +183,35 @@ function mae(rows) {
   return by;
 }
 
-module.exports = { study, nflEventMap, cfbEventMap, playerMap, openerAt };
+/* the props pipeline's own pregame forecast of the same opportunity count */
+function existingEdgeDesk(sport, season, rows, file) {
+  const fs = require('fs');
+  const f = file || path.join(ROOT, 'football', 'props', sport, String(season), 'evaluations.jsonl');
+  if (!fs.existsSync(f)) return { available: false, reason: 'no props evaluations file for ' + sport + ' ' + season };
+  const last = {};
+  fs.readFileSync(f, 'utf8').split('\n').forEach((l) => {
+    if (!l.trim()) return; let e; try { e = JSON.parse(l); } catch (_) { return; }
+    if (e.kind !== 'final' || !U.isNum(e.median) || !(Date.parse(e.evaluated_at) < Date.parse(e.kickoff))) return;
+    const k = e.game_id + '|' + e.player_id + '|' + e.market;
+    if (!last[k] || e.evaluated_at > last[k].evaluated_at) last[k] = e;
+  });
+  const by = {};
+  rows.forEach((r) => {
+    const e = last[r.game_id + '|' + r.player_id + '|' + r.market];
+    if (!e || !U.isNum(r.actual) || !U.isNum(r.model_median) || !U.isNum(r.market_line)) return;
+    (by[r.market] = by[r.market] || []).push({ game_id: r.game_id, y: r.actual, a: r.model_median, b: e.median, line: r.market_line, model_as_of: r.model_as_of, props_at: e.evaluated_at });
+  });
+  const out = { available: true, source: path.relative(ROOT, f), rule: 'kind final, last evaluation before kickoff; medians compared, MAE', markets: {} };
+  Object.keys(by).sort().forEach((m) => {
+    const xs = by[m]; const abs = (k) => U.round(U.mean(xs.map((x) => Math.abs(x[k] - x.y))), 3);
+    const lead = xs.map((x) => (Date.parse(x.props_at) - Date.parse(x.model_as_of)) / 3600000).sort((a, b) => a - b);
+    out.markets[m] = { n: xs.length, games: new Set(xs.map((x) => x.game_id)).size, situational_mae: abs('a'), existing_props_model_mae: abs('b'),
+      entry_line_mae: U.round(U.mean(xs.map((x) => Math.abs(x.line - x.y))), 3),
+      situational_vs_existing: EV.paired(xs, { seed: 'existing|' + sport + m, boot: 2000, perm: 4000 }),
+      situational_vs_entry_line: EV.paired(xs.map((x) => ({ game_id: x.game_id, y: x.y, a: x.a, b: x.line })), { seed: 'line|' + sport + m, boot: 2000, perm: 4000 }),
+      props_evaluated_hours_after_situational_inputs_median: U.round(lead[Math.floor(lead.length / 2)], 1) };
+  });
+  return out;
+}
+
+module.exports = { study, nflEventMap, cfbEventMap, playerMap, openerAt, existingEdgeDesk };

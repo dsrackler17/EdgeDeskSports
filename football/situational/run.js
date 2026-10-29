@@ -130,7 +130,8 @@ async function cmdBuild(a) {
     catch (e) { run.errors.push({ sport: sp, error: String(e && e.stack || e).slice(0, 500) }); log('build_failed', { sport: sp, error: String(e && e.message || e) }); continue; }
     if (!r.ok) { run.errors.push({ sport: sp, stage: r.stage, error: r.error }); continue; }
     built[sp] = r; coverage[sp] = r.coverage;
-    run.stages[sp] = Object.assign({}, r.timings, { projections: r.projections.filter((x) => !x.skipped).length, player_projections: r.player_projections.filter((x) => !x.skipped).length, comparisons: r.comparisons.length });
+    /* stage timings stay apart from counts: a count must never overwrite a timing of the same name */
+    run.stages[sp] = { ms: r.timings, projections: r.projections.filter((x) => !x.skipped).length, player_projections: r.player_projections.filter((x) => !x.skipped).length, comparisons: r.comparisons.length };
     const sd = path.join(DATA, sp, String(season));
     U.writeJson(path.join(sd, 'tendencies.json'), CARDS.tendencies(sp, r));
     U.writeJson(path.join(sd, 'observations.json'), CARDS.observations(sp, r), { compact: true });

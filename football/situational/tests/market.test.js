@@ -65,4 +65,23 @@ chk('a game on another day does not map', map({ home_team: 'UMass Minutemen', aw
 const pm = MS.playerMap('cfb', { player_games: [{ team: '9', player_id: '77', name: 'Luke Weaver' }] });
 chk('player names map within the game\'s teams only', pm('9', 'Luke Weaver') === '77' && pm('8', 'Luke Weaver') === null);
 
+/* the existing EdgeDesk forecast: the props model's last pregame 'final' evaluation, joined by game, player and market */
+{
+  const os = require('os'); const fs = require('fs'); const path = require('path');
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'fsie-ev-')), 'evaluations.jsonl');
+  const ev = (o) => JSON.stringify(Object.assign({ game_id: 'G', player_id: 'P', market: 'receptions', kickoff: '2026-10-04T17:00:00Z' }, o));
+  fs.writeFileSync(f, [
+    ev({ kind: 'qualified', median: 9, evaluated_at: '2026-10-04T12:00:00Z' }),
+    ev({ kind: 'final', median: 4, evaluated_at: '2026-10-03T12:00:00Z' }),
+    ev({ kind: 'final', median: 5, evaluated_at: '2026-10-04T16:00:00Z' }),
+    ev({ kind: 'final', median: 11, evaluated_at: '2026-10-04T18:00:00Z' }),
+    'not json'].join('\n') + '\n');
+  const rows = [{ game_id: 'G', player_id: 'P', market: 'receptions', actual: 6, model_median: 7, market_line: 4.5, model_as_of: '2026-10-01T12:00:00Z' },
+    { game_id: 'G', player_id: 'Q', market: 'receptions', actual: 2, model_median: 3, market_line: 2.5, model_as_of: '2026-10-01T12:00:00Z' }];
+  const x = MS.existingEdgeDesk('nfl', 2026, rows, f);
+  const m = x.markets.receptions;
+  chk('existing forecast: the last pregame final evaluation is used (not a qualified row, not one after kickoff), only on shared rows', x.available && m.n === 1 && m.existing_props_model_mae === 1 && m.situational_mae === 1 && m.entry_line_mae === 1.5 && m.props_evaluated_hours_after_situational_inputs_median === 76);
+  chk('existing forecast: a missing evaluations file is reported, not invented', MS.existingEdgeDesk('nfl', 2026, rows, f + '.missing').available === false);
+}
+
 process.exit(T.done());

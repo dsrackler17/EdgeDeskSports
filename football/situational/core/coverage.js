@@ -78,6 +78,9 @@ function build(sport, d, opts) {
     if (sport === 'cfb') {
       T.missing_fields.push('personnel and coverage: no public college feed');
       if (share < thr.formation_min_share) T.missing_fields.push('formation tokens on ' + Math.round(share * 100) + '% of accepted plays');
+      /* the feed writes "Shotgun" / "No Huddle" but never "under center" or "huddle", so a
+         rate's denominator is the plays it marked: a play it left unmarked cannot count against */
+      if (share > 0) T.missing_fields.push('shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high');
       T.missing_fields.push('scrambles not distinguishable from designed runs (ESPN)');
       T.missing_fields.push('availability / injury report: no public college feed');
     } else {

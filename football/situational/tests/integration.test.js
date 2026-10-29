@@ -111,6 +111,11 @@ function strip(o) { const c = JSON.parse(JSON.stringify(o)); delete c.generated_
   const nflb = fs.readFileSync(path.join(ROOT, 'tools', 'football', 'build_nfl_slate.js'), 'utf8');
   chk('the NFL builder appends the block the same way', /\.\.\.fsieShadow\(String\(g\.game_id\), p\)/.test(nflb) && /return b \? \{ situational: b \} : \{\};/.test(nflb));
 
+  /* the committed run log: a stage's timing is never overwritten by a count of the same name */
+  const st = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'situational', 'data', 'state.json'), 'utf8'));
+  const stages = (st.runs || []).flatMap((r) => Object.keys(r.stages || {}).map((sp) => r.stages[sp]));
+  chk('every recorded build stage keeps its timings (ms.total, ms.projections) apart from its counts', stages.length > 0 && stages.every((s) => s.ms && Number.isFinite(s.ms.total) && Number.isFinite(s.ms.projections) && Number.isInteger(s.projections)), JSON.stringify(stages[0]).slice(0, 300));
+
   fs.rmSync(stage, { recursive: true, force: true });
   process.exit(T.done());
 })().catch((e) => { console.error(e); process.exit(1); });

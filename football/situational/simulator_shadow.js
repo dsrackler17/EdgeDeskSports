@@ -63,7 +63,8 @@ function run(sport, P, rowsByGame, opts) {
     const h = Object.assign({}, pair.home, { m: inp.fair_margin, total: U.isNum(inp.fair_total) ? inp.fair_total : pair.home.total, m_source: 'line' });
     const a = Object.assign({}, pair.away, { m: -inp.fair_margin, total: h.total, m_source: 'line' });
     const sim = VM.simulateGame(P.team, h, a, { variant: P.primary_variant, draws: opts.draws || 2000, seed: 'simshadow|' + gid, phi: P.team.phi, sigma_margin: U.isNum(inp.sigma) ? inp.sigma : undefined });
-    const pick = (s) => ({ plays: [s.p10.plays, s.p50.plays, s.p90.plays], pass_att: [s.p10.pass_att, s.p50.pass_att, s.p90.pass_att], rush_att: [s.p10.rush_att, s.p50.rush_att, s.p90.rush_att], drives: [s.p10.drives, s.p50.drives, s.p90.drives], mean_plays: s.mean.plays, script: s.script });
+    const q3 = (s, k) => [s.p10[k], s.p50[k], s.p90[k]].map((x) => U.round(x, 1)); /* interpolated quantiles of integer draws */
+    const pick = (s) => ({ plays: q3(s, 'plays'), pass_att: q3(s, 'pass_att'), rush_att: q3(s, 'rush_att'), drives: q3(s, 'drives'), mean_plays: s.mean.plays, script: s.script });
     games[gid] = { conditioned_on: { fair_home_margin: inp.fair_margin, sigma: U.isNum(inp.sigma) ? U.round(inp.sigma, 2) : 'situational default ' + P.team.residual.sigma_margin, fair_total: inp.fair_total, source: inp.source },
       home: pick(sim.a), away: pick(sim.b), game_possessions_mean: U.round(sim.a.mean.drives + sim.b.mean.drives, 2),
       simulator_draws_changed: 0 };
