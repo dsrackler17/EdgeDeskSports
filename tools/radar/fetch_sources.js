@@ -3,15 +3,21 @@
    PREDICTION RADAR — Polymarket's public APIs, read from GitHub's runner.
 
    The build environment cannot reach Polymarket (its network policy refuses
-   data-api, gamma-api and clob.polymarket.com), so this is how the response
+   all three of Polymarket's API hosts), so this is how the response
    shapes the parsers in lib/edgedesk_radar.js read are checked against the
    real thing. Run by .github/workflows/radar-sources.yml (an integration
    workflow: a live source, never replaced by a mock).
 
+   It also asks, once each, the request forms the H-RADAR-01 runner makes
+   (research/radar/run_validation.js REQ: its activity page size, time window
+   and cursor, its markets batch, a price history from the training window),
+   so the test's one look is not spent on a request Polymarket refuses. It
+   computes no metric and grades nothing.
+
    Each endpoint Radar uses is asked ONCE, through the Radar gateway
    (lib/edgedesk_poly_gateway.js, its own budget of 80 requests), and printed:
    the URL, the HTTP status, the byte count, the sha256 of the body, its shape,
-   and the body with every array cut to its first 3 items. The whole bodies
+   and the body on one line with every array cut to its first 3 items. The whole bodies
    are written to --out (kept as the run's artifact): tools/radar/fixtures/ is
    recorded from them, by hand, with the run id, and never edited after.
 
@@ -28,6 +34,7 @@ const crypto = require('crypto');
 const ROOT = path.join(__dirname, '..', '..');
 const R = require(path.join(ROOT, 'lib', 'edgedesk_radar.js'));
 const G = require(path.join(ROOT, 'lib', 'edgedesk_poly_gateway.js'));
+const V = require(path.join(ROOT, 'research', 'radar', 'run_validation.js'));
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const OUT = arg('--out', path.join(ROOT, 'tools', 'radar', 'out', 'sources'));
@@ -57,7 +64,7 @@ async function ask(label, endpoint, params) {
   if (body != null) fs.writeFileSync(path.join(OUT, file), JSON.stringify({ url: r.url, status: r.status, fetched_at: new Date().toISOString(), sha256: sha, body: r.data }, null, 1));
   console.log('\n=== ' + label + '\nGET ' + r.url + '\nstatus ' + r.status + ' · decision ' + r.decision + ' · attempts ' + r.attempts
     + (body != null ? ' · ' + Buffer.byteLength(body) + ' bytes · sha256 ' + sha + ' · file ' + file : '') + (r.reason ? '\nreason ' + r.reason : ''));
-  if (r.data != null) { console.log('shape ' + shape(r.data)); console.log(JSON.stringify(trim(r.data), null, 1)); }
+  if (r.data != null) { console.log('shape ' + shape(r.data)); console.log('body ' + JSON.stringify(trim(r.data))); }
   results.push({ label, url: r.url, status: r.status, decision: r.decision, sha256: sha, file: body != null ? file : null });
   return r;
 }
@@ -68,6 +75,7 @@ function check(label, ok, detail) {
 
 (async () => {
   const now = Math.floor(Date.now() / 1000);
+  const iso = (t) => new Date(t).toISOString();
   /* 1. the leagues */
   const sp = await ask('gamma sports', 'sports', {});
   check('gamma /sports answers a list', sp.ok && Array.isArray(R.page(sp.data).rows) && R.page(sp.data).rows.length > 0, sp.ok ? shape(sp.data) : sp.decision);
@@ -103,6 +111,52 @@ function check(label, ok, detail) {
     await ask('positions CLOSED', 'positions', { user: who, status: 'CLOSED', limit: 5 });
   }
 
+  /* 3b. the H-RADAR-01 runner's own request forms (V.REQ), each once */
+  const reg = V.registration(), rules = R.rules(reg.R.spec.rules), W = reg.R.machine.window_dates;
+  const T0 = Date.parse(W.training[0] + 'T00:00:00Z'), H1 = Date.parse(W.holdout[1] + 'T00:00:00Z');
+  const lbLast = await ask('runner leaderboard last page', 'leaderboard', V.REQ.leaderboard(rules.pool_order, rules.pool_size - 50, rules));
+  check('the runner\'s last pool page (offset ' + (rules.pool_size - 50) + ') answers with wallets', lbLast.ok && R.page(lbLast.data).rows.map(R.leaderRow).filter(Boolean).length > 0,
+    lbLast.ok ? R.page(lbLast.data).rows.length : lbLast.decision);
+  let early = [];
+  if (who) {
+    const ra = await ask('runner activity page 1', 'activity', V.REQ.activity(who, T0, H1, null));
+    const pg = ra.ok ? R.page(ra.data) : { rows: [] };
+    const rows = pg.rows.map((x) => R.activityRow(x, who)).filter(Boolean);
+    const ts = rows.map((x) => x.ts);
+    const inWindow = rows.every((x) => x.ts >= T0 && x.ts < H1);
+    const ascending = ts.every((t, i) => i === 0 || t >= ts[i - 1]);
+    early = rows.filter((x) => V.LEAGUE_PREFIX.test(String(x.event_slug || '')) || V.LEAGUE_PREFIX.test(String(x.slug || '')));
+    console.log('RUNNER PAGE rows ' + pg.rows.length + ' parsed ' + rows.length + ' league ' + early.length + ' first ' + (ts.length ? new Date(ts[0]).toISOString() : '-')
+      + ' last ' + (ts.length ? new Date(ts[ts.length - 1]).toISOString() : '-') + ' has_more ' + pg.has_more + ' next_cursor ' + JSON.stringify(pg.next_cursor)
+      + ' slugs ' + JSON.stringify(Array.from(new Set(rows.map((x) => x.event_slug || x.slug))).slice(0, 12)));
+    check('the runner\'s activity page (limit ' + V.REQ.activity(who, T0, H1, null).limit + ', oldest first, the study window) answers, inside the window, oldest first',
+      ra.ok && pg.rows.length > 0 && rows.length > 0 && inWindow && ascending, { status: ra.status, decision: ra.decision, rows: pg.rows.length, inWindow, ascending });
+    if (pg.next_cursor) {
+      const rb = await ask('runner activity page 2 (cursor)', 'activity', V.REQ.activity(who, T0, H1, pg.next_cursor));
+      const rows2 = rb.ok ? R.page(rb.data).rows.map((x) => R.activityRow(x, who)).filter(Boolean) : [];
+      check('the runner\'s next activity page (cursor and window together) answers and moves forward', rb.ok && rows2.length > 0 && rows2[0].ts >= ts[ts.length - 1],
+        { status: rb.status, decision: rb.decision, rows: rows2.length, first: rows2[0] && new Date(rows2[0].ts).toISOString() });
+    }
+  }
+  /* a covered market from the training window: Gamma by the runner's batch, then its minute history */
+  const oldConds = Array.from(new Set(early.map((t) => t.condition_id))).slice(0, 50);
+  if (oldConds.length) {
+    const om = await ask('runner markets batch', 'markets', V.REQ.markets(oldConds));
+    const olds = om.ok ? R.page(om.data).rows.map((m) => R.marketRow(m)).filter(Boolean) : [];
+    const cov = olds.filter((m) => R.covered(m, rules));
+    console.log('RUNNER MARKETS asked ' + oldConds.length + ' read ' + olds.length + ' covered ' + cov.length + ' '
+      + JSON.stringify(olds.slice(0, 12).map((m) => ({ league: m.league, type: m.market_type, raw: m.raw_type, start: m.game_start_at && new Date(m.game_start_at).toISOString(), settle: m.settle, slug: m.event_slug }))));
+    check('the runner\'s markets batch answers the training-window markets by condition id', om.ok && olds.length > 0, { asked: oldConds.length, read: olds.length, covered: cov.length });
+    const old = cov.find((m) => m.settle && m.game_start_at && m.token_ids.length);
+    if (old) {
+      const oph = await ask('runner prices, a training-window market', 'prices_history', V.REQ.prices(old.token_ids[0], old.game_start_at - 6 * 3600 * 1000, old.game_start_at));
+      const oh = oph.ok ? R.priceHistory(oph.data) : [];
+      const gaps = oh.slice(1).map((x, i) => (x.t - oh[i].t) / 60000);
+      check('a training-window market still has a minute price history (the close and the follow price are read from it)', oh.length > 0,
+        { start: new Date(old.game_start_at).toISOString(), points: oh.length, max_gap_min: gaps.length ? Math.max.apply(null, gaps) : null, first: oh[0], last: oh[oh.length - 1] });
+    } else console.log('RUNNER no resolved covered market in the first page: the training-window price history was not asked');
+  }
+
   /* 4. the markets those trades were in */
   const conds = Array.from(new Set(trades.map((t) => t.condition_id))).slice(0, 5);
   let markets = [];
@@ -131,8 +185,14 @@ function check(label, ok, detail) {
   for (const L of leagues.slice(0, 6)) {
     const sid = String(L.series || '').split(',')[0];
     if (!sid) continue;
-    const ev = await ask('gamma events series ' + L.sport + ' (recently closed)', 'events', { series_id: sid, closed: true, limit: 2, order: 'startTime', ascending: false });
-    (ev.ok ? R.page(ev.data).rows : []).forEach((e) => (e.markets || []).forEach((m) => { const x = R.marketRow(m, e); if (x && x.market_type === 'moneyline') live.push(x); }));
+    /* games that ended in the last week: "closed, newest start first" also returns
+       events dated in the future that closed void (run 40823328503) */
+    const ev = await ask('gamma events series ' + L.sport + ' (ended in the last week)', 'events',
+      { series_id: sid, closed: true, end_date_min: iso(Date.now() - 7 * 86400e3), end_date_max: iso(Date.now() - 3 * 3600e3), limit: 5, order: 'startTime', ascending: false });
+    /* a game that was played and has a result: a voided one (settled 0.5 / 0.5,
+       run 40823328503) can carry a start after its market closed, with no price there */
+    (ev.ok ? R.page(ev.data).rows : []).forEach((e) => (e.markets || []).forEach((m) => { const x = R.marketRow(m, e);
+      if (x && x.market_type === 'moneyline' && x.settle && x.settle.indexOf(1) >= 0 && x.game_start_at != null && x.game_start_at < Date.now()) live.push(x); }));
     if (live.length) break;
   }
   const target = live[0] || markets.find((m) => m.token_ids.length) || null;
@@ -150,6 +210,46 @@ function check(label, ok, detail) {
     const hv1 = h1.ok ? R.holderRows(h1.data, target.condition_id) : [];
     check('holders parse into wallets with shares (v2 with average entry, or v1)', hv2.length > 0 || hv1.length > 0, { v2: hv2.slice(0, 3), v1: hv1.slice(0, 3) });
     console.log('HOLDERS v2 parsed ' + hv2.length + ' with avg price ' + hv2.filter((h) => h.avg_price != null).length + ' · v1 parsed ' + hv1.length);
+  }
+
+  /* 7. polymarket_sync's own forms (the every-10-minutes job): holders 100 a
+     call (500 was refused, run 40812803914), and one league's open events in
+     a window on their end date, 5 a page, paged by offset */
+  if (target) {
+    for (const lim of [100]) {
+      const hb = await ask('sync holders limit ' + lim, 'holders', { condition: target.condition_id, include_pnl: true, limit: lim });
+      const pg = hb.ok ? R.page(hb.data) : { rows: [] };
+      console.log('SYNC HOLDERS limit ' + lim + ' status ' + hb.status + ' decision ' + hb.decision + ' per side ' + JSON.stringify(pg.rows.map((g) => (g.holders || []).length))
+        + ' has_more ' + pg.has_more + ' next_cursor ' + JSON.stringify(pg.next_cursor) + (hb.reason ? ' reason ' + String(hb.reason).slice(0, 200) : ''));
+      check('polymarket_sync\'s holders form (limit ' + lim + ', include_pnl) answers with holders', hb.ok && R.holderRows(hb.data, target.condition_id).length > 0, { status: hb.status, reason: hb.reason });
+      if (hb.ok && pg.next_cursor) {
+        const hc = await ask('sync holders next page (cursor)', 'holders', { condition: target.condition_id, include_pnl: true, limit: lim, cursor: pg.next_cursor });
+        const pc = hc.ok ? R.page(hc.data) : { rows: [] };
+        console.log('SYNC HOLDERS cursor page status ' + hc.status + ' per side ' + JSON.stringify(pc.rows.map((g) => (g.holders || []).length)) + ' has_more ' + pc.has_more);
+      }
+    }
+  }
+  const nowMs = now * 1000;
+  for (const lg of ['nba', 'nfl']) {
+    const L = leagues.find((x) => x.sport === lg);
+    if (!L) continue;
+    const sid = String(L.series || '').split(',')[0];
+    const win = { series_id: sid, closed: false, end_date_min: iso(nowMs - 6 * 3600e3), end_date_max: iso(nowMs + 60 * 3600e3) };
+    const forms = [['window, page 1', Object.assign({ limit: 5, offset: 0 }, win)], ['window, page 2', Object.assign({ limit: 5, offset: 5 }, win)]];
+    const pageIds = [];
+    for (const [name, params] of forms) {
+      const r = await gw.get('events', params);
+      const evs = r.ok ? R.page(r.data).rows : [];
+      const starts = evs.map((e) => R.ms(e.startTime || e.start_time)).filter((t) => t != null).sort((a, b) => a - b);
+      const inWin = starts.filter((t) => t >= nowMs - 6 * 3600e3 && t <= nowMs + 60 * 3600e3).length;
+      const bytes = r.data == null ? 0 : Buffer.byteLength(JSON.stringify(r.data));
+      console.log('SYNC EVENTS ' + lg + ' ' + name + ' ' + r.url + ' status ' + r.status + ' decision ' + r.decision + ' events ' + evs.length + ' bytes ' + bytes
+        + ' markets ' + evs.reduce((a, e) => a + (e.markets || []).length, 0) + ' starts ' + (starts.length ? iso(starts[0]) + '..' + iso(starts[starts.length - 1]) : '-')
+        + ' in [now-6h, now+60h] ' + inWin + ' endDates ' + JSON.stringify(evs.slice(0, 4).map((e) => [e.startTime, e.endDate, e.startDate])));
+      check('polymarket_sync\'s events form (' + lg + ', ' + name + ') answers, every event inside the window', r.ok && starts.length === inWin && evs.length <= 5, { status: r.status, events: evs.length, inWin });
+      pageIds.push(evs.map((e) => String(e.id)));
+    }
+    check('polymarket_sync\'s events pages (' + lg + ') do not overlap', pageIds.length === 2 && pageIds[1].every((id) => pageIds[0].indexOf(id) < 0), pageIds);
   }
 
   fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify({ ran_at: new Date().toISOString(), run: process.env.GITHUB_RUN_ID || null, results, gateway: gw.stats() }, null, 1));
