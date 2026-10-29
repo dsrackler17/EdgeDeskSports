@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-29 — Football situational browser suite: the FBS schedule is fetched when no local cache exists, so CI stops failing every `app.html` pull request
+
+**Why.** `tools/football/fsie_ui.e2e.js` (Football situational tests, job `suites`) failed "the FBS board lists a game the artifact covers" on every pull request that touches `app.html`, and on `main` (`189bf8a75`): `9 passed, 1 failed`.
+- The suite served the FBS schedule (`cfb_schedules_<year>.csv`) only from a local cache (`football/situational/.cache/raw/` or `football/fbs/.cache/`). Neither is committed, and the workflow never builds one. So on a runner the board's schedule request got a 404, the FBS board listed no games, and the four FBS card checks never ran.
+- The NFL schedule already fell back to its published file. The FBS schedule now does the same, from the URL the page itself requests (`FBP4_URL_SCHED`), once per year per run. A local cache still wins when one exists.
+
+Tests: the suite itself.
+- On `main`: `FAIL | situational intelligence (browser) | 9 passed, 1 failed`.
+- After: `PASS | situational intelligence (browser) | 14 passed, 0 failed` (the four FBS card checks now run).
+
+
 ## 2026-10-29 — NHL goalie sync: a build stamp for the lineup lock, and the job summary shows the headline
 
 - **Why.** #902 (the lineup lock) left two gaps. The function's build stayed at `nhl_goalie_sync@2026-10-25.1`, so after its deploy a `GET` could not tell the new code from the old. And the job summary's "Home win %" is the goalie pairing's number, so a lock never showed in NHL goalie sync or in the deploy's first run.
