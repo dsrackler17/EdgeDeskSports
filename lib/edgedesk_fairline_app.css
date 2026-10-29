@@ -1,0 +1,119 @@
+/* ===========================================================================
+   EdgeDesk FAIRLINE — fairline/index.html, lib/edgedesk_fairline_app.js.
+   The page frame is the public tools frame (/tools/tools.css: .wrap, .card,
+   .btn, .note); the type, tokens and empty states are the game cards'
+   (lib/edgedesk_games.css .gm-page, .gm-lg, .gm-empty). This file adds what
+   Fairline has that they do not: the board rows (stacked cells on a phone, one
+   dense line on a desk), the label chips (always text, never colour alone),
+   the leak verdicts, the slice rows and the blurred teaser. Mobile first.
+   =========================================================================== */
+.fl{--fl-pos:var(--gm-pos,#76bd3e);--fl-neg:var(--gm-neg,#e26044);--fl-warn:var(--gm-warn,#d99a2b);--fl-mdl:var(--mdl,#d274b0)}
+.fl [hidden]{display:none!important}
+.fl-status{border:1px solid var(--gm-bd);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:14px;background:var(--gm-s1)}
+.fl-status.ok{border-color:rgba(47,167,154,.5)}
+.fl-status.err{border-color:rgba(226,96,68,.55)}
+.fl-who{font-size:12.5px;color:var(--gm-dim);margin:14px 0 10px}
+.fl-q{display:block;font-size:14px;font-weight:600;color:var(--gm-dim);letter-spacing:0;margin-top:2px}
+.fl-notpicks{font-size:14px;line-height:1.5;color:var(--gm-dim);border-left:3px solid var(--gm-ac);padding:2px 0 2px 10px;margin:8px 0 12px}
+.fl-asof{font:600 11.5px var(--gm-mono);color:var(--gm-faint);margin:8px 0}
+.fl-h3{font-size:15px;margin:18px 0 8px}
+.fl-link{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--gm-ac);text-decoration:underline;cursor:pointer}
+
+/* ---- tabs ---- */
+.fl-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px;padding:2px 1px 4px}
+.fl-tab{flex:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--gm-bd);background:transparent;
+  color:var(--gm-tx);font:700 14px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.fl-tab.on{border-color:var(--gm-ac);background:rgba(47,167,154,.12)}
+.fl-tab[disabled]{cursor:not-allowed;color:var(--gm-faint);border-style:dashed}
+
+/* ---- chips: words first; colour only repeats them ---- */
+.fl-chip{display:inline-flex;align-items:center;min-height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid var(--gm-bd);
+  color:var(--gm-dim);white-space:nowrap}
+.fl-chip.big{min-height:30px;font-size:13.5px;padding:0 12px}
+.fl-chip.leak{background:rgba(226,96,68,.14);border-color:var(--fl-neg);color:var(--fl-neg)}
+.fl-chip.luck{background:rgba(47,167,154,.12);border-color:var(--gm-ac);color:var(--gm-ac)}
+.fl-chip.hot{background:rgba(217,154,43,.14);border-color:var(--fl-warn);color:var(--fl-warn)}
+.fl-chip.edge{background:rgba(118,189,62,.14);border-color:var(--fl-pos);color:var(--fl-pos)}
+.fl-chip.plonly,.fl-chip.small{border-style:dashed;color:var(--gm-tx)}
+.fl-chip.stale{border-style:dashed;color:var(--fl-warn);border-color:var(--fl-warn)}
+.fl-chip.soon{border-style:dashed;color:var(--gm-faint);font-size:11px;min-height:20px;padding:0 7px}
+
+/* ---- filters ---- */
+.fl-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 6px}
+.fl-filters label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--gm-dim);min-width:0}
+.fl-filters label:last-of-type{grid-column:1/-1}
+.fl-filters select{min-height:44px;font-size:15px}
+.fl-filters select[disabled]{opacity:.55}
+.fl-filters .note{grid-column:1/-1;margin:0}
+@media(min-width:720px){.fl-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.fl-filters label:last-of-type{grid-column:auto}}
+
+/* ---- the board: a stacked card on a phone, one dense line on a desk ---- */
+.fl-board{display:grid;gap:8px}
+.fl-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;border:1px solid var(--gm-bd);border-radius:12px;background:var(--gm-s1);padding:10px 12px}
+.fl-row[data-fresh="false"]{opacity:.5}
+.fl-row[data-fresh="false"] .fl-cell .v{text-decoration:line-through;text-decoration-color:rgba(162,149,129,.5)}
+.fl-row[data-fresh="false"] .fl-cell.age .v,.fl-row[data-fresh="false"] .fl-cell.inactive .v{text-decoration:none}
+.fl-game{grid-column:1/-1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fl-game b{font-size:15.5px;font-weight:800;overflow-wrap:anywhere}
+.fl-game .fl-chip{align-self:flex-start;margin-top:2px}
+.fl-sub{font-size:12px;color:var(--gm-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fl-cell{display:flex;flex-direction:column;gap:1px;min-width:0}
+.fl-cell .k{font:600 9.5px var(--gm-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gm-faint)}
+.fl-cell .v{font:700 13.5px var(--gm-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.fl-cell .v i{display:block;font:600 11px var(--sans,inherit);font-style:normal;color:var(--gm-dim)}
+.fl-cell.edge.pos .v{color:var(--fl-pos)}.fl-cell.edge.neg .v{color:var(--fl-neg)}
+.fl-cell.inactive .v{color:var(--gm-faint)}
+.fl-head{display:none}
+@media(min-width:900px){
+  .fl-row{grid-template-columns:minmax(0,2.4fr) repeat(6,minmax(0,1fr));align-items:center;padding:8px 12px}
+  .fl-game{grid-column:auto}
+  .fl-row .fl-cell .k{display:none}
+  .fl-head{display:grid;background:transparent;border:0;padding:0 12px;font:600 10px var(--gm-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gm-faint)}
+}
+
+/* ---- locked: shapes under a blur, the offer on top ----
+   one grid cell holds both, so the box is as tall as the taller of the two:
+   on a phone the offer's words can outgrow the shapes, and its button must
+   never be cut off */
+.fl-locked{position:relative;border-radius:12px;overflow:hidden;margin-top:8px;display:grid}
+.fl-locked>.fl-blur,.fl-locked>.fl-lock-over{grid-area:1/1;min-width:0}
+.fl-blur{filter:blur(6px);opacity:.55;pointer-events:none;user-select:none;display:grid;gap:8px}
+.fl-lock-over{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:14px;
+  background:rgba(16,14,10,.62)}
+.fl-lock-over span{font-size:13.5px;color:var(--gm-dim);max-width:460px;line-height:1.45}
+
+/* ---- the leaks ---- */
+.fl-counts{font-size:13.5px;color:var(--gm-dim);margin:4px 0 6px}
+.fl-leaks{display:grid;gap:10px}
+.fl-leak{margin:0}
+.fl-leak[data-label="real_leak"]{border-left:4px solid var(--fl-neg)}
+.fl-leak[data-label="bad_luck"]{border-left:4px solid var(--gm-ac)}
+.fl-leak[data-label="running_hot"]{border-left:4px solid var(--fl-warn)}
+.fl-leak[data-label="real_edge"]{border-left:4px solid var(--fl-pos)}
+.fl-verdict{font-size:17px;font-weight:700;line-height:1.4;margin:10px 0}
+.fl-verdict.lead{font-size:clamp(19px,4.6vw,23px);font-weight:800;letter-spacing:-.01em}
+.fl-nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;margin:0}
+.fl-nums div{min-width:0}
+.fl-nums dt{font:600 9.5px var(--gm-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gm-faint)}
+.fl-nums dd{margin:0;font:700 13.5px var(--gm-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(min-width:720px){.fl-nums{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.fl-teaser{margin-top:6px}
+.fl-slices{display:grid;gap:6px}
+.fl-slice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 10px;border:1px solid var(--gm-bd);border-radius:10px;background:var(--gm-s1);padding:9px 11px}
+.fl-sname{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-width:0}
+.fl-sname b{font-size:14.5px;overflow-wrap:anywhere}
+.fl-sn{display:flex;flex-direction:column;font:700 12.5px var(--gm-mono);font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+.fl-sn .k{font:600 9px var(--gm-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gm-faint)}
+.fl-slice[data-label="small"]{opacity:.8}
+@media(min-width:900px){.fl-slice{grid-template-columns:minmax(0,2fr) repeat(5,minmax(0,.85fr)) repeat(2,minmax(0,1.35fr));align-items:center}.fl-sname{grid-column:auto}}
+.fl-legend{list-style:none;padding:0;margin:6px 0;display:grid;gap:8px;font-size:13.5px;line-height:1.45}
+.fl-legend li{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.fl-limits ul{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55;color:var(--gm-dim)}
+.fl-limits li{margin:4px 0}
+
+/* ---- sign-in ---- */
+.fl-auth .fl-f{display:block;margin:8px 0;font-size:12px;font-weight:600;color:var(--gm-dim)}
+.fl-auth input[type=email],.fl-auth input[type=password]{width:100%;min-height:44px;font-size:16px}
+.fl-agree{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;margin:10px 0}
+.fl-agree input{width:20px;height:20px;flex:none;margin-top:1px}
+.fl-auth-msg{font-size:13.5px;margin-top:8px;min-height:1em}

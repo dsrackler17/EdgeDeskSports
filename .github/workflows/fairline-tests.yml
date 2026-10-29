@@ -1,0 +1,122 @@
+# EdgeDesk Fairline — the checks that gate every change to The Board and The
+# Leaks (docs/fairline.md).
+#
+#   suites    the page's rules and words (lib/edgedesk_fairline_core.js: the
+#             buckets, the labels, the verdicts) and the page's wiring (the
+#             doors, the limits, Coming Soon, no typed price) — offline, in Node.
+#   database  supabase/fairline.sql applied TWICE over everything it builds on
+#             (bettor_decisions, billing_hardening, bet_checker, portfolio,
+#             bet_import) on a throwaway PostgreSQL, acted on as two readers,
+#             anon and the service role: owner-only reads, the paid gate, one
+#             row per bet across Bet Checker and the Portfolio, the slices and
+#             their labels, the minimum sample, The Board's freshness rule; and
+#             the page's mirrors of the rules held equal to the SQL.
+#   browser   fairline/index.html in Chromium (1280 px and a 390 px phone)
+#             against the same stack: a free reader's teaser, a paid reader's
+#             Board and Leaks, nothing scrolling sideways.
+#
+# Not lib/edgedesk_fairline.js (the Linemaker's fair-line sheet, which only
+# shares the word): its own workflows name it exactly. Nothing here deploys or
+# writes anywhere.
+name: Fairline tests
+
+on:
+  pull_request:
+    paths:
+      - 'fairline/**'
+      - 'lib/edgedesk_fairline_*'
+      - 'lib/edgedesk_pricing.js'
+      - 'lib/edgedesk_access.js'
+      - 'lib/edgedesk_auth.js'
+      - 'lib/edgedesk_nav.js'
+      - 'lib/edgedesk_games.css'
+      - 'tools/tools.css'
+      - 'games/lib/auth.js'
+      - 'games/lib/social.js'
+      - 'games/lib/attribution.js'
+      - 'games/data/config.json'
+      - 'sitemap-pages.xml'
+      - 'supabase/fairline*.sql'
+      - 'supabase/migrations/*_fairline.sql'
+      - 'supabase/bankroll_and_stakes.sql'
+      - 'supabase/bettor_decisions.sql'
+      - 'supabase/billing.sql'
+      - 'supabase/stripe_webhook.sql'
+      - 'supabase/billing_hardening.sql'
+      - 'supabase/bet_checker.sql'
+      - 'supabase/portfolio.sql'
+      - 'supabase/bet_import.sql'
+      - 'supabase/functions/close/index.ts'
+      - 'supabase/functions/capture/index.ts'
+      - 'tools/fairline/**'
+      - 'tools/personal/_pg.js'
+      - 'tools/billing/_pgrest.js'
+      - 'tools/games/sql/supabase_shim.sql'
+      - '.github/workflows/fairline-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'fairline/**'
+      - 'lib/edgedesk_fairline_*'
+      - 'supabase/fairline*.sql'
+      - 'supabase/migrations/*_fairline.sql'
+      - 'tools/fairline/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: fairline-ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The rules and words — buckets at every boundary, the four labels, the minimum sample, the verdicts, The Board's words
+        run: node tools/fairline/core.test.js
+      - name: The page's wiring — one Main nav, the two doors, prices not picks, known limitations, Coming Soon, no typed price
+        run: node tools/fairline/page.test.js
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL on the runner
+        run: sudo apt-get install -y -qq postgresql >/dev/null
+      - name: fairline.sql as two readers, anon and the service role — owner-only, the gate, one row per bet, the labels, the sample, freshness
+        env:
+          FAIRLINE_SQL_REQUIRED: '1'
+        run: node tools/fairline/fairline_sql.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL on the runner
+        run: sudo apt-get install -y -qq postgresql >/dev/null
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The page in Chromium against the real stack — the free teaser, the paid Board and Leaks, a 390 px phone
+        env:
+          FAIRLINE_UI_REQUIRED: '1'
+        run: node tools/fairline/page.e2e.js
