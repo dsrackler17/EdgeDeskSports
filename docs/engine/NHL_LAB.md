@@ -408,6 +408,106 @@ incl. overtime and shootout, de-vigged; there is no NHL closing archive):
 The market sits above the model on all three. Without a closing-line record,
 that cannot be scored, and the model's totals stay `PROVISIONAL` (§5).
 
+### 6.3 Every favourite less favoured than DraftKings: the split factor (2026-10-29)
+
+> Record: `hockey/validation/nhl_split_shadow.json` (`node hockey/lab/split_shadow.js`;
+> `--live`; `--check`). Candidate and rule: `hockey/model/split_shadow.js`.
+
+**The question.** A reader saw every favourite priced below DraftKings again:
+SJS −133 against −198 (VAN at SJS), MIN −146 against −192 (NYI at MIN). Is
+the moneyline mis-calibrated, and if so where?
+
+**What the captured closes say.** The hourly ESPN capture
+(`research/clv/openers/nhl`) holds DraftKings' close for 47 settled 2026-27
+games. Against the published pregame price (the ledger):
+
+| | Value |
+|---|---|
+| Book favourites priced less favoured here | 35 of 47 |
+| Mean gap on the book's favourite | −2.2 points |
+| Market logit on model logit (1 = equally spread) | 1.215 (1.036–1.394): `NARROWER_THAN_MARKET` |
+| Club strengths fitted from the same games, model vs market | correlation 0.89; market on model 1.19 |
+
+So the ordering agrees and the scale does not. SJS itself is rated the same by
+both; most of that game's gap is VAN, which the market rates as the league's
+weakest club and the model does not. No calibration closes that part.
+
+**Where the scale comes from.** The pair recalibration (`glm.js`) shrinks or
+widens the home/away goal split by a factor `b`, fitted on the regulation goal
+split of the three seasons before. For 2026-27 it is **0.90**, the lowest since
+2013-14 (the others are 0.975 to 1.175). It is pulled down by 2024-25 and
+2025-26, whose own splits wanted 0.90 and 0.775. A second, older effect sits
+under it. Fitted on the goal
+split, the right `b` is about 1.025 in both windows. Fitted on what the slate
+publishes, the two-way moneyline, it is wider:
+
+| Pooled, in sample | Goal-split `b` | Moneyline `b` |
+|---|---|---|
+| Selection 2014-20 (9,205) | 1.025 | 1.125 |
+| Confirmation 2021-26 (7,945) | 1.025 | 1.15 |
+
+**The candidate** (`nhl_split_ml_v1`): production's pair recalibration with
+`a` and `c` unchanged, and `b` chosen on the same grid to maximise the
+moneyline likelihood of every earlier out-of-sample game since 2013-14. It
+gives 1.125 for 2026-27. Walked forward:
+
+| Window | Production LL | Shadow LL | Shadow − production (95%) | Slope prod / shadow | PL −1.5 LL prod / shadow |
+|---|---|---|---|---|---|
+| Selection 2014-20 (9,205) | 0.67459 | 0.67442 | −0.00017 (−0.00049 to +0.00011) | 1.231 / 1.142 | 0.60743 / 0.60727 |
+| Confirmation 2021-26 (7,945) | 0.66286 | 0.66312 | +0.00027 (−0.00013 to +0.00063) | 1.064 / 1.002 | 0.61247 / 0.61299 |
+| 2026-27 to 2026-10-27 (198) | 0.66574 | 0.66309 | −0.00265 (−0.00736 to +0.00278) | 1.445 / 1.155 | 0.59581 / 0.59504 |
+
+On the 47 games with a close, priced walk-forward, the shadow's spread matches
+the market's (slope 0.971, 0.831–1.111): 25 book favourites are less
+favoured, against production's 37 on the same rebuild.
+VAN at SJS moves from −133 to −142 and NYI at MIN from −146 to −161.
+
+**Every variant scored** (shadow − production, 95%):
+
+| Variant | `b` 2026-27 | Selection | Confirmation | 2026-27 |
+|---|---|---|---|---|
+| `b` = 1 | 1 | −0.00002 (−0.00012 to +0.00009) | +0.00057 (−0.00003 to +0.00114) | −0.00137 |
+| Goal split, every earlier season | 1.025 | −0.00002 (−0.00008 to +0.00004) | **+0.00036 (+0.00001 to +0.00069)** | −0.00167 |
+| Moneyline, three seasons before | 1.025 | −0.00013 (−0.00053 to +0.00023) | +0.00041 (−0.00015 to +0.00096) | −0.00167 |
+| **Moneyline, every earlier season (the candidate)** | 1.125 | −0.00017 (−0.00049 to +0.00011) | +0.00027 (−0.00013 to +0.00063) | −0.00265 |
+
+Per season the candidate wins in seven, loses in five and ties in two. Its
+biggest loss is 2025-26 (+0.0021); its biggest win is this season.
+
+**Decision: production keeps its price.** No variant passes §1: none gains
+0.001 on selection, and on confirmation every one is worse (one significantly).
+The live season and the book both favour the candidate, but the live season
+never chooses, and no NHL price may be called right by the market until a
+licensed closing archive exists. Disclosure: the investigation read both
+windows, the season so far and the closes before choosing the candidate.
+
+**The shadow.** From this change every slate game carries
+`calibration_shadow` (the candidate's price, labelled SHADOW). Each build
+freezes it with production's price in its own append-only, hash-checked ledger
+(`hockey/ledger/split_shadow_2027.jsonl`). The production ledger is
+untouched. The rule was written before that ledger held a row:
+
+1. The decision is read once, on the first 1,000 graded games by start time.
+   Before that the record is `IN_PROGRESS` and its numbers are interim.
+2. `ELIGIBLE` only if (a) shadow − production moneyline log loss has a 95%
+   block-bootstrap interval wholly below zero, (b) the shadow's calibration
+   slope is in [0.85, 1.15] with |mean p − mean y| ≤ 0.02, and (c) its home
+   −1.5 log loss is at most 0.001 above production's. Otherwise
+   `NOT_CONFIRMED`, as it is if the season ends first.
+3. DraftKings' closes are reported beside it and never decide it.
+4. `ELIGIBLE` changes nothing by itself: promotion is a methodology-change
+   pull request, reviewed by the owner.
+
+**Power, stated now.** With this season's per-game spread (sd 0.038), an
+effect the size seen so far needs about 810 games for its interval to clear
+zero, and one of 0.001 about 5,700. A season after this change has about
+1,100. The likeliest result is `NOT_CONFIRMED` unless 0.90 is badly wrong.
+
+**The monitor.** Every build also writes `market_spread`: production's last
+pregame price for every graded game against DraftKings' close, read as
+`NARROWER_THAN_MARKET`, `WIDER_THAN_MARKET`, `CONSISTENT` or `TOO_EARLY`
+(under 30 games). It never reprices anything.
+
 ## 7. Reproducibility
 
 Every fit is deterministic. IRLS has no randomness; the tree learner and the

@@ -7,8 +7,10 @@
 #   build     every three hours: ingest the season in progress (sportsdataverse
 #             fastRhockey, public, keyless), rebuild its team-game partitions
 #             with the committed xG model, price the slate (refreshing today's
-#             times from the NHL's own API), grade the ledger, rebuild the
-#             registry and the cross-sport board, commit only on change.
+#             times from the NHL's own API), grade the ledger and the
+#             split-factor shadow (with its DraftKings spread check,
+#             hockey/lab/split_shadow.js --live), rebuild the registry and
+#             the cross-sport board, commit only on change.
 #             NHL book prices are requested ONLY when the repository variable
 #             NHL_PRICES is "on" AND the gateway row icehockey_nhl is enabled
 #             (supabase/nhl_odds_sport.sql creates it disabled). Default spend: 0.
