@@ -293,6 +293,25 @@ The `security definer` doors return only what a page needs.
 - **The result** is in `research/radar/H-RADAR-01/RESULTS.md` and is written
   into the registry. The Radar record section quotes it verbatim, good or bad.
 
+### What it found
+
+> H-RADAR-01 FAILED on its registered holdout: 41 followed bets over 37 games;
+> beat-close rate 24.4% (95% CI 10.3% to 39.0%); follow ROI -1.7% (95% CI
+> -33.4% to 30.5%).
+
+- **Run.** [40823328433](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40823328433),
+  2026-10-29. The report is `research/radar/H-RADAR-01/report.json`, sha256
+  `8f9d8a4f…0ab1`, committed as printed.
+- **None of the three criteria is met.** C1 has 41 followed bets, not 200.
+  C2's lower bound is 10.3%, not above 50%. C3's lower bound is −33.4%, not
+  above zero.
+- **Why the sample is small.** 172 of the 200 pool wallets had more than 30
+  pages of activity, so the registered rule excluded them. That left 13
+  qualifying wallets, and only 3 of them bet on covered games in the holdout.
+- **What follows.** The test does not support the hypothesis, and with 41 bets
+  it cannot rule it out. Radar stays **Experimental**. A second look needs a
+  new registered version.
+
 ## Compliance rules (built in)
 
 - **The same for everyone.** Everything Radar shows is the same for every
