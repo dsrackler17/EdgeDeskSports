@@ -137,7 +137,9 @@ function polymarket(url) {
   if (u.host === 'gamma-api.polymarket.com' && p === '/markets') {
     const ids = u.searchParams.getAll('condition_ids');
     const all = PAST.concat([STARTED]).map((m) => gammaMarket(m)).concat([gammaMarket(EPL, { slug: 'epl-ars-che', sportsMarketType: 'moneyline', events: [{ id: 'epl', slug: 'epl-ars-che', tags: [{ slug: 'epl' }] }] })]);
-    return ok(all.filter((m) => ids.includes(m.conditionId)));
+    /* as the real Gamma does (radar-sources run 40811733314): a resolved market
+       only when asked with closed=true, an open one only without it */
+    return ok(all.filter((m) => ids.includes(m.conditionId) && m.closed === (q('closed') === 'true')));
   }
   if (u.host === 'clob.polymarket.com' && p === '/prices-history') return ok(historyFor(q('market'), +q('startTs'), +q('endTs')));
   strays.push(url);
@@ -210,6 +212,9 @@ let rest;
       && V(`select count(*) from public.poly_trades where condition_id = ${lit(EPL.c)}`) === '0');
     chk('wallets: every stored trade keeps its transaction hash', V("select count(*) from public.poly_trades where tx_hash !~ '^0x[0-9a-f]{64}$'") === '0');
     chk('wallets: the markets they traded are stored, resolutions with them', V('select count(*) from public.poly_markets where settle is not null') >= '60');
+    chk('wallets: Gamma is asked for resolved markets with closed=true, and for the rest without it (it answers each only so)',
+      pmCalls.slice(before).some((u) => /\/markets\?.*closed=true/.test(u)) && pmCalls.slice(before).some((u) => /\/markets\?.*closed=false/.test(u))
+      && V(`select count(*) from public.poly_markets where condition_id = ${lit(EPL.c)}`) === '1');
     const bets = J(`select * from public.poly_bets where wallet = ${lit(W1)} order by entry_at`);
     chk('wallets: 60 resolved bets graded once each', bets.length === 60, bets.length);
     const b0 = bets[0];

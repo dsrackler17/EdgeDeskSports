@@ -57,7 +57,7 @@ function activity(user) {
     condition_id: cid('politics'), asset: '1', outcome_index: 0, slug: 'presidential-election', event_slug: 'presidential-election' });
   return rows;
 }
-const calls = [];
+const calls = [], marketQueries = [];
 let volumeWorks = true;
 async function fetchStub(url) {
   const u = new URL(url), p = u.pathname, q = (k) => u.searchParams.get(k);
@@ -76,6 +76,10 @@ async function fetchStub(url) {
   }
   if (p === '/markets') {
     const ids = u.searchParams.getAll('condition_ids');
+    marketQueries.push(u.search);
+    /* as the real Gamma does (radar-sources run 40811733314): these markets are
+       all resolved, and Gamma answers a resolved market only with closed=true */
+    if (q('closed') !== 'true') return ok([]);
     return ok(games.filter((m) => ids.includes(m.c)).map((m) => ({ conditionId: m.c, question: 'A vs. B', slug: m.slug, outcomes: '["A","B"]', outcomePrices: JSON.stringify(m.win0 ? ['1', '0'] : ['0', '1']),
       clobTokenIds: JSON.stringify(m.tokens), sportsMarketType: 'moneyline', gameStartTime: new Date(m.start).toISOString(), closed: true, events: [{ id: 'e' + m.id, slug: m.slug, tags: [{ slug: m.league }] }] })));
   }
@@ -94,6 +98,7 @@ async function fetchStub(url) {
     const rep = await V.run({ out, gateway: gw, started_at: new Date().toISOString() });
     chk('the run completes on the registered protocol', rep.status === 'complete' && rep.hypothesis_id === 'H-RADAR-01' && rep.version === '0.1.0', rep.status);
     chk('the report names the registration it ran against', rep.registration_sha256 === V.REGISTERED_SHA256);
+    chk('the markets are asked with closed=true, the only way Gamma answers a resolved one', marketQueries.length > 0 && marketQueries.every((s) => /[?&]closed=true(&|$)/.test(s)), marketQueries.slice(0, 2));
     chk('the pool: every leaderboard wallet, by volume, read 50 a page', rep.data.pool === 40 && rep.data.pool_order_used === 'VOL' && calls.filter((c) => c === '/v1/leaderboard').length === 1, rep.data);
     chk('only league game markets are looked up (the politics trade is not)', rep.data.conditions_with_league_slug === 120 && rep.data.covered_markets === 120);
     chk('a history over 30 pages is truncated, counted', rep.data.wallets_truncated === 1);

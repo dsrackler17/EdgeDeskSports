@@ -62,7 +62,10 @@ const REQ = {
   leaderboard: (order, offset, rules) => ({ category: 'SPORTS', timePeriod: rules.pool_period, orderBy: order, limit: 50, offset }),
   activity: (wallet, fromMs, toMs, cursor) => ({ user: wallet, type: 'TRADE,REDEEM,SPLIT,MERGE', limit: 1000, sort_direction: 'ASC',
     start: Math.floor(fromMs / 1000), end: Math.floor(toMs / 1000) - 1, cursor }),
-  markets: (conditionIds) => ({ condition_ids: conditionIds, limit: 50 }),
+  /* Gamma answers a resolved market only when asked with closed=true (the
+     probe, radar-sources run 40811733314: 23 resolved markets asked without
+     it, none answered); only resolved markets can be graded */
+  markets: (conditionIds) => ({ condition_ids: conditionIds, closed: true, limit: 50 }),
   prices: (token, fromMs, toMs) => ({ market: token, startTs: Math.floor(fromMs / 1000) - 900, endTs: Math.floor(toMs / 1000) + 60, fidelity: 1 })
 };
 

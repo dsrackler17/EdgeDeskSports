@@ -1028,18 +1028,30 @@ async function tonight(ctx: any) {
   await resolveMarkets(ctx, done.map((d: any) => d.condition_id));
 }
 
-/* Gamma, 50 condition ids a call: a resolved market gets its settlement once */
+/* Gamma by condition id, 50 a call. Gamma answers a resolved market only when
+   asked with closed=true, and an open one only without it (radar-sources run
+   40811733314), so the closed ones are asked first and, unless only resolved
+   markets are wanted, the rest after */
+async function gammaMarkets(ctx: any, ids: string[], resolvedOnly: boolean) {
+  const out: Record<string, any> = {};
+  for (const closed of resolvedOnly ? [true] : [true, false]) {
+    const left = ids.filter((c) => !out[c]);
+    for (let i = 0; i < left.length; i += 50) {
+      const r = await ask(ctx, "markets", { condition_ids: left.slice(i, i + 50), closed, limit: 50 });
+      if (!r.ok) continue;
+      for (const raw of R.page(r.data).rows) { const m = R.marketRow(raw); if (m) out[m.condition_id] = m; }
+    }
+  }
+  return out;
+}
+
+/* a resolved market gets its settlement once */
 async function resolveMarkets(ctx: any, ids: string[]) {
   let resolved = 0;
-  for (let i = 0; i < ids.length; i += 50) {
-    const r = await ask(ctx, "markets", { condition_ids: ids.slice(i, i + 50), limit: 50 });
-    if (!r.ok) continue;
-    for (const raw of R.page(r.data).rows) {
-      const m = R.marketRow(raw);
-      if (!m || !m.settle) continue;
-      if (!ctx.dry) await patch("poly_markets?condition_id=eq." + m.condition_id + "&settle=is.null", { settle: m.settle, closed: true, resolved_at: iso(ctx.nowMs) });
-      resolved++;
-    }
+  for (const m of Object.values(await gammaMarkets(ctx, ids, true)) as any[]) {
+    if (!m.settle) continue;
+    if (!ctx.dry) await patch("poly_markets?condition_id=eq." + m.condition_id + "&settle=is.null", { settle: m.settle, closed: true, resolved_at: iso(ctx.nowMs) });
+    resolved++;
   }
   ctx.run.details.resolved = (ctx.run.details.resolved || 0) + resolved;
 }
@@ -1096,12 +1108,7 @@ async function wallets(ctx: any) {
     const known: Record<string, any> = {};
     await inChunks(conds, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) known[m.condition_id] = m; });
     const want = conds.filter((c) => !known[c] || (!known[c].settle && known[c].game_start_at && R.ms(known[c].game_start_at)! < now));
-    const fresh: Record<string, any> = {};
-    for (let i = 0; i < want.length; i += 50) {
-      const r = await ask(ctx, "markets", { condition_ids: want.slice(i, i + 50), limit: 50 });
-      if (!r.ok) continue;
-      for (const raw of R.page(r.data).rows) { const m = R.marketRow(raw); if (m) fresh[m.condition_id] = m; }
-    }
+    const fresh: Record<string, any> = await gammaMarkets(ctx, want, false);
     const newMarkets = Object.values(fresh).filter((m: any) => !known[m.condition_id]);
     if (!ctx.dry && newMarkets.length) await inChunks(newMarkets.map((m: any) => marketRecord(m, true)), 200, (c) => insertOnce("poly_markets", c, "condition_id"));
     for (const m of Object.values(fresh) as any[]) if (known[m.condition_id] && m.settle && !known[m.condition_id].settle && !ctx.dry) {
