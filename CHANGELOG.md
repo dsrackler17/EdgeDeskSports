@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-29 — Content engine: a capsule says each quarterback listing once (two merged fixes said it up to three times)
+
+**Why.** #904 and #907 fixed the same weekly-preview capsule in parallel, and the conflict resolution in `329df540e` kept both. Each quarterback listing was then printed up to three times, `no_repetition` blocked the Week 9 preview, and four content suites went red on `main`: evidence 209/2, core 331/5, edge function 21/8, weekly job 27/3.
+
+- **Fix** (`lib/content_engine.js`, `capsuleEv`). It keeps #904's loop, which writes every conflict and every listed quarterback once per side, and removes the two lines and the trailing loop that #907 added. `capsuleEv` is now exactly #904's. `supabase/functions/content_engine/index.ts` was regenerated with `node tools/content/inline.js`.
+- **Rounding is unchanged.** #904 prints 0.5185 as 51.9%, and #907's citation follows the printed text, so both say 51.9. Test S 3d now expects 51.9 instead of 51.8; it still requires the citation to equal the printed figure.
+
+Tests: `tools/content/evidence.test.js` gains S 3e (each quarterback sentence in a capsule appears once).
+- Against `main`: `FAIL | football evidence pipeline | 210 passed, 2 failed`, with the conflict sentence and the "listed as out" sentence repeated.
+- After: evidence 212/212, core 336/336, edge function 70/70, weekly job 30/30.
+
 ## 2026-10-29 — Football situational browser suite: the FBS schedule is fetched when no local cache exists, so CI stops failing every `app.html` pull request
 
 **Why.** `tools/football/fsie_ui.e2e.js` (Football situational tests, job `suites`) failed "the FBS board lists a game the artifact covers" on every pull request that touches `app.html`, and on `main` (`189bf8a75`): `9 passed, 1 failed`.
