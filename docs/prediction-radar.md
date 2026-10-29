@@ -27,6 +27,7 @@ It answers three questions:
 | The grading core | `lib/edgedesk_radar.js` (`window.EDRadar`) |
 | The Polymarket gateway (the only Radar client) | `lib/edgedesk_poly_gateway.js` |
 | The tables, the rules, the guards and the reader doors | `supabase/radar.sql` (mirror: `supabase/migrations/20261029120000_radar.sql`) |
+| The Radar record | `supabase/radar_record.sql` (mirror: `supabase/migrations/20261029130000_radar_record.sql`) |
 | The scheduled job | `supabase/functions/polymarket_sync` (carries both libraries verbatim: `tools/radar/inline_core.js`) |
 | The schedules | `supabase/polymarket_sync_cron.sql` |
 | The H-RADAR-01 registration | `research/radar/registration_h_radar_01.json`, generated into `supabase/radar_registry.sql` |
@@ -261,6 +262,53 @@ and decides no access: each page draws what a database door already decided.
 - **Copy.** `tools/radar/radar_ui.test.js` fails on "bet now", "copy trade", an
   affiliate link, "guaranteed", "lock", or any promise, anywhere Radar draws.
 
+## The Radar record: how following has done
+
+This section answers "can this make me money" with Radar's own unedited
+results, never with a claim.
+
+- **Every card is recorded.** Each Smart Money Tonight card is snapshotted
+  into `radar_cards` (append-only) the first time it is published: the
+  game, the side, the number of top-graded bettors, their dollars and
+  average entry, EdgeDesk's fair, and **the Polymarket price at that moment**,
+  which is the price a follower could have taken.
+  - `radar_publish_cards()` builds the cards with the same function that
+    draws Smart Money Tonight, so the record holds exactly what subscribers
+    saw.
+  - There is one entry per game and side. A card is published only with a
+    price, and only before its game starts.
+- **Every card is graded once, automatically**, after its game, the way the
+  public record grades a signal (`radar_grade_cards()`, `radar_card_results`,
+  append-only):
+  - **The close:** the last recorded price at or before the start, at most
+    60 minutes before it. Otherwise there is no close; the card is counted
+    and its result still graded.
+  - **Beat the close:** the close is above the published price.
+  - **CLV%:** close ÷ published price − 1.
+  - **The result** comes from the market's own resolution: win, loss, or push
+    (a 50-50 resolution).
+  - **ROI:** one unit at the published price, held to settlement: settlement ÷
+    published price − 1.
+  - A market that has not resolved a week after its start is **void**: counted,
+    never graded.
+  - The guards refuse a grade whose arithmetic is not the database's own, and
+    a grade made before the start.
+- **What the subscriber sees.** Under Smart Money Tonight, "How following has
+  done" shows (through `radar_record()`, subscribers only):
+  - the record, the ROI per card and the beat-close rate;
+  - the counts of pending, void and no-close cards;
+  - the latest cards;
+  - **exactly what H-RADAR-01 found**, passed or not, with its numbers and
+    intervals.
+
+  It is labelled **Experimental** until H-RADAR-01 has passed its registered
+  criteria, and a **small sample** until 200 cards are graded. Both labels
+  are words.
+- **The job.** The 10-minute `tonight` run publishes and grades after it has
+  stored the holders, the prices and the resolutions. While
+  `radar_record.sql` is not applied, the run warns `record_not_installed` and
+  goes on.
+
 ## Pipeline
 
 `supabase/functions/polymarket_sync` runs on the schedule in
@@ -424,7 +472,8 @@ In order. Each SQL file ends in a report whose rows should read `ok`.
    `POLYMARKET_DATA_ENABLED=on`.
 4. Store the same secret in Vault:
    `select vault.create_secret('<the secret>', 'polymarket_sync_cron_secret');`
-5. Apply `supabase/polymarket_sync_cron.sql`.
+5. Apply `supabase/radar_record.sql` (the Radar record), then
+   `supabase/polymarket_sync_cron.sql`.
 6. After reading Polymarket's terms, turn the switch on (above). The first
    night fills the pool and starts the wallets; ranks appear once wallets have
    50 graded bets.

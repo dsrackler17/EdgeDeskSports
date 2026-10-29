@@ -62,6 +62,11 @@ function door(name) {
   if (name === 'radar_leaderboard') return { status: 'ok', min_graded: 50, rows: [GRADE, Object.assign({}, GRADE, { wallet: T2, display: '0x2222…2222', rank: null, sample: 'small_sample', graded_bets: 12, radar_score: null, score_parts: null })] };
   if (name === 'radar_trader') return { status: 'ok', access: M.sub ? 'subscriber' : 'public', min_graded: 50, grade: GRADE, history: HISTORY,
     positions: M.sub ? [{ question: 'Chiefs vs. Raiders spread', outcome: 'Chiefs', cost: 40000, avg_price: 0.4, game_start_at: START }] : null, positions_locked: !M.sub };
+  if (name === 'radar_record') return M.sub ? { status: 'ok', label: 'EXPERIMENTAL', small_sample: true, min_sample: 200,
+    totals: { cards: 14, graded: 11, wins: 6, losses: 5, pushes: 0, void: 1, roi: -0.0312, beat_close_rate: 0.5455, with_close: 11, no_close: 0, pending: 2 },
+    h_radar_01: { status: 'complete', passed: false, followed: 340, beat_close_rate: 0.512, beat_close_ci: [0.47, 0.55], follow_roi: -0.021, follow_roi_ci: [-0.08, 0.04] },
+    recent: [{ commence_time: '2026-10-28T00:15:00Z', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', market_type: 'moneyline', outcome: 'Chiefs', follow_price: 0.6, close_price: 0.64, result: 'win', roi: 0.6667 }] }
+    : { status: 'subscribers_only' };
   if (name === 'radar_teaser') return { status: 'ok', games: 2, card: { sport_key: 'americanfootball_nfl', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', commence_time: START, n_wallets: 7, dollars: 84200 } };
   return null;
 }
@@ -141,6 +146,10 @@ function door(name) {
       chk('overview ' + label + ': each card leads with its sentence', heads[0] === '7 top bettors, $84K, on Chiefs -3' && heads[1] === '2 top bettors, $9.4K, on Dolphins', heads);
       chk('overview ' + label + ': the numbers under it, and the fair line in words', /Their average entry\s*41¢/.test(s) && /Smart money agrees with the sharp fair price/.test(s) && /more than 90 minutes old/.test(s), s);
       chk('overview ' + label + ': the conviction label is a word', /High conviction/.test(s) && /4× usual size/.test(s));
+      await O.page.waitForSelector('#ovRadar .rd-rec', { timeout: 10000 }).catch(() => {});
+      const rec = await text(O.page, '#ovRadar .rd-rec');
+      chk('overview ' + label + ': "How following has done" under the cards, Experimental and a small sample in words', /How following has done/.test(rec) && /Experimental/.test(rec) && /Small sample: 11 of 200 graded/.test(rec), rec.slice(0, 300));
+      chk('overview ' + label + ': the record\'s own numbers and what H-RADAR-01 found', /6–5/.test(rec) && /−3\.1%/.test(rec) && /did not pass its criteria/.test(rec), rec);
       chk('overview ' + label + ': read under the reader\'s own token', O.seen.doors.includes('radar_tonight') && O.seen.auth.every((a) => a === 'Bearer e2e'), O.seen);
       chk('overview ' + label + ': no horizontal page scroll', await noHScroll(O.page));
       await shot(O.page, 'overview-' + label);
@@ -182,7 +191,7 @@ function door(name) {
       chk('public ' + label + ': live, and H-RADAR-01\'s finding as recorded (here: did not pass)', /Live\./.test(st) && /did not pass/.test(st) && /51\.2%/.test(st), st);
       chk('public ' + label + ': the leaderboard with the score\'s parts and the Small sample label', /SharpAlice/.test(lb) && /0\.5 × follow ROI/.test(lb) && /Small sample/.test(lb), lb.slice(0, 400));
       chk('public ' + label + ': the teaser gives the game, the count and the dollars, never the side', /7 top bettors, \$84K, on/.test(tz) && !/Chiefs -3/.test(tz) && /in the terminal/.test(tz), tz);
-      chk('public ' + label + ': only anonymous doors, never radar_tonight, all with the anon key', !P.seen.doors.includes('radar_tonight') && P.seen.doors.every((d) => ['radar_status', 'radar_leaderboard', 'radar_teaser', 'radar_trader'].includes(d))
+      chk('public ' + label + ': only anonymous doors, never radar_tonight or the record, all with the anon key', !P.seen.doors.includes('radar_tonight') && !P.seen.doors.includes('radar_record') && P.seen.doors.every((d) => ['radar_status', 'radar_leaderboard', 'radar_teaser', 'radar_trader'].includes(d))
         && P.seen.auth.every((a) => /^Bearer eyJ/.test(a)), P.seen.doors);
       chk('public ' + label + ': no horizontal page scroll', await noHScroll(P.page));
       await shot(P.page, 'public-' + label);

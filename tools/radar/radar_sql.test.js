@@ -28,6 +28,10 @@
     10 the schedule: four jobs; a missing secret is a recorded failure
     11 the registry: H-RADAR-01 registered EXPERIMENTAL before anything is
        shown, and what the test found recorded
+    12 the Radar record (radar_record.sql): every card published once, with
+       the price a follower could take; graded once against the close and
+       the result; void when the market never resolves; append-only; for
+       subscribers only, EXPERIMENTAL and a small sample until earned
 
    Run: node tools/radar/radar_sql.test.js
    =========================================================================== */
@@ -46,15 +50,18 @@ const F = (f) => path.join(ROOT, 'supabase', f);
 const SQL = fs.readFileSync(F('radar.sql'), 'utf8');
 const CRON = fs.readFileSync(F('polymarket_sync_cron.sql'), 'utf8');
 const REGSQL = fs.readFileSync(F('radar_registry.sql'), 'utf8');
+const RECSQL = fs.readFileSync(F('radar_record.sql'), 'utf8');
 const MIRROR = F('migrations/20261029120000_radar.sql');
 const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'radar', 'registration_h_radar_01.json'), 'utf8'));
 
 /* ── STATIC: the folder's conventions ──────────────────────────────────── */
-for (const [name, text] of [['radar.sql', SQL], ['polymarket_sync_cron.sql', CRON], ['radar_registry.sql', REGSQL]]) {
+for (const [name, text] of [['radar.sql', SQL], ['polymarket_sync_cron.sql', CRON], ['radar_registry.sql', REGSQL], ['radar_record.sql', RECSQL]]) {
   chk(name + ': no psql meta-commands (it is pasted into the SQL editor)', !/^\s*\\/m.test(text));
   chk(name + ': it ends in a report', /CHECK THIS/.test(text) && /\n(select piece, state from|select \* from pg_temp\.rdr_report\(\);)/.test(text));
 }
 chk('the migration mirror is byte-identical', fs.existsSync(MIRROR) && fs.readFileSync(MIRROR, 'utf8') === SQL);
+chk('the record\'s migration mirror is byte-identical', fs.existsSync(F('migrations/20261029130000_radar_record.sql')) && fs.readFileSync(F('migrations/20261029130000_radar_record.sql'), 'utf8') === RECSQL);
+chk('the record grades with the house formulas: ROI = settle / follow - 1, CLV% = close / follow - 1', /s \/ r\.follow_price - 1/.test(RECSQL) && /cp \/ r\.follow_price - 1/.test(RECSQL));
 chk('PostgREST is told to reload', /notify pgrst, 'reload schema'/.test(SQL));
 chk('nothing existing is dropped (only its own triggers are re-created)', !/\bdrop\s+(table|column|view|function|index|policy)/i.test(SQL.replace(/--.*$/gm, '')));
 chk('the cron file never writes the service-role key into a job', !/service_role_key|Bearer\s/i.test(CRON));
@@ -419,6 +426,50 @@ try {
   const st = JSON.parse(db.service(`select coalesce(json_agg(s), '[]') from public.radar_style_stats(${lit(MM)}, now() - interval '1 day') s;`))[0];
   chk('radar_style_stats: one row per covered market, both sides bought', st && st.trades === 2 && Number(st.bought['0']) === 10 && Number(st.bought['1']) === 9 && st.split === false, st);
   chk('…the service role\'s only', fails(() => db.anon(`select public.radar_style_stats(${lit(MM)}, now());`)));
+
+  /* ===================================================================== */
+  /* 12. THE RADAR RECORD                                                  */
+  /* ===================================================================== */
+  chk('(no record before radar_record.sql)', V("select to_regclass('public.radar_cards') is null") === 't');
+  out = db.applyFileAtomic(F('radar_record.sql'));
+  chk('the record installs; its report says ok', (out.match(/\|ok/g) || []).length === 3 && !/CHECK THIS/.test(out), out);
+  chk('applying it twice is harmless', !/CHECK THIS/.test(db.applyFileAtomic(F('radar_record.sql'))));
+  chk('no client may publish or grade', fails(() => asSub('select public.radar_publish_cards();')) && fails(() => db.anon('select public.radar_grade_cards();')));
+  const pub = Number(db.service('select public.radar_publish_cards();'));
+  chk('every card on Smart Money Tonight is published once: E1 and E2', pub === 2 && V("select string_agg(event_id, ',' order by event_id) from public.radar_cards") === 'E1,E2');
+  const rc1 = one("select follow_price, n_wallets, selection, agrees, jsonb_array_length(wallets) as w from public.radar_cards where event_id = 'E1'");
+  chk('…with the side and the price a follower could take then (0.66)', Number(rc1.follow_price) === 0.66 && rc1.selection === 'Kansas City Chiefs' && rc1.n_wallets === 3 && rc1.agrees === false && rc1.w === 3, rc1);
+  chk('publishing again adds nothing (one entry per game and side)', db.service('select public.radar_publish_cards();') === '0' && V('select count(*) from public.radar_cards') === '2');
+  chk('nothing is graded before the start', JSON.parse(db.service('select public.radar_grade_cards();')).graded === 0);
+  chk('the record is append-only: a card cannot be edited or removed', fails(() => db.service('update public.radar_cards set follow_price = 0.5;')) && fails(() => db.service('delete from public.radar_cards;'))
+    && fails(() => V('truncate public.radar_cards;')));
+  chk('a grade before the start is refused', fails(() => db.service(`insert into public.radar_card_results (card_id, result, settle, roi, close_status) select card_id, 'win', 1, 1 / follow_price - 1, 'no_close' from public.radar_cards where event_id = 'E1';`)));
+  /* the clock moves on (the test's only device: a card's start is write-once): E1 started an hour ago and the Chiefs won,
+     its last price 10 minutes before the start 0.70; E2 started 8 days ago and its market never resolved */
+  V(`set session_replication_role = replica;
+     update public.radar_cards set commence_time = now() - interval '1 hour', published_at = now() - interval '3 hours', follow_price_at = now() - interval '3 hours' where event_id = 'E1';
+     update public.radar_cards set commence_time = now() - interval '8 days', published_at = now() - interval '9 days', follow_price_at = now() - interval '9 days' where event_id = 'E2';
+     set session_replication_role = default;`);
+  db.service(`update public.poly_markets set settle = '[1,0]'::jsonb, closed = true where condition_id = ${lit(C('1'))};`);
+  price(C('1'), 0, 0.70, 70, crypto.randomUUID());
+  price(C('1'), 0, 0.99, 30, crypto.randomUUID());   /* in play: never the close */
+  chk('a grade that is not settle / follow price - 1 is refused', fails(() => db.service(`insert into public.radar_card_results (card_id, result, settle, roi, close_status) select card_id, 'win', 1, 0.9, 'no_close' from public.radar_cards where event_id = 'E1';`)));
+  const gr1 = JSON.parse(db.service('select public.radar_grade_cards();'));
+  chk('graded once: E1 against its close and result, E2 void (no resolution in a week)', gr1.graded === 1 && gr1.void === 1, gr1);
+  const res1 = one("select r.result, r.settle, r.roi, r.close_status, r.close_price, r.beat_close, r.clv_pct from public.radar_card_results r join public.radar_cards c using (card_id) where c.event_id = 'E1'");
+  chk('E1: a win; ROI = 1 / 0.66 - 1; the close is the last price before the start (0.70), not the in-play one', res1.result === 'win' && Math.abs(Number(res1.roi) - (1 / 0.66 - 1)) < 1e-6
+    && Number(res1.close_price) === 0.7 && res1.beat_close === true && Math.abs(Number(res1.clv_pct) - (0.7 / 0.66 - 1)) < 1e-6, res1);
+  chk('E2: void, with no ROI and no close', one("select r.result || ':' || coalesce(r.roi::text, '-') || ':' || r.close_status as x from public.radar_card_results r join public.radar_cards c using (card_id) where c.event_id = 'E2'").x === 'void:-:void');
+  chk('grading again changes nothing', JSON.parse(db.service('select public.radar_grade_cards();')).graded === 0 && V('select count(*) from public.radar_card_results') === '2');
+  chk('a grade cannot be edited or removed', fails(() => db.service("update public.radar_card_results set result = 'loss';")) && fails(() => db.service('delete from public.radar_card_results;')));
+  chk('the record is subscribers only', fn('public.radar_record(10)', db.anon).status === 'subscribers_only' && fn('public.radar_record(10)', asA).status === 'subscribers_only');
+  chk('no client reads the record\'s tables directly', fails(() => asSub('select * from public.radar_cards;')) && fails(() => db.anon('select * from public.radar_card_results;')));
+  const rec = fn('public.radar_record(10)', asSub);
+  chk('the record: 1 graded (1-0), ROI +51.5%, beat the close 100%, 1 void', rec.status === 'ok' && rec.totals.graded === 1 && rec.totals.wins === 1 && rec.totals.void === 1
+    && Math.abs(Number(rec.totals.roi) - 0.5152) < 1e-4 && Number(rec.totals.beat_close_rate) === 1, rec.totals);
+  chk('labelled EXPERIMENTAL (H-RADAR-01 has not passed) and a small sample (under 200 graded)', rec.label === 'EXPERIMENTAL' && rec.small_sample === true && rec.min_sample === 200);
+  chk('it carries what H-RADAR-01 found, verbatim from the registry', rec.h_radar_01 && rec.h_radar_01.hypothesis_id === 'H-RADAR-01' && rec.h_radar_01.status === found.status);
+  chk('the cards themselves, newest first', rec.recent.length === 2 && rec.recent[0].home_team === 'Las Vegas Raiders' && rec.recent[0].result === 'win');
 
   /* ===================================================================== */
   /* 10. THE SCHEDULE                                                      */
