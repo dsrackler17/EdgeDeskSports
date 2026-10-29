@@ -43,9 +43,22 @@
   - `lib/edgedesk_access.js` gains `fairline()`, and black in `betChecker()` and `offerFor()`.
   - The Fairline page sells Fairline with the automatic-renewal consent, in Bet Checker's order. It gains Settings › Subscription. A Bet Checker reader is offered the portal switch.
   - The terminal's paywall and the Bet Checker page name a Fairline plan as Fairline.
-  - `index.html`, `app.html` and `bet-checker/index.html` load the changed `edgedesk_pricing.js`, `edgedesk_access.js` (and, on Bet Checker, `edgedesk_bet_checker.js`) under a new stamp (`?v=20261029fl2`), so a returning browser cannot keep the old copies. On Bet Checker an old `edgedesk_access.js` would show a Fairline customer as free. The landing page's stamp check failed until this was done; a new check in `tools/fairline/page.test.js` fails on any of these pages loading a stamp from before the `black` tier.
+  - `index.html`, `app.html` and `bet-checker/index.html` load the changed `edgedesk_pricing.js`, `edgedesk_access.js` (and, on Bet Checker, `edgedesk_bet_checker.js`, at `?v=20261029fl3` since it merged with main's one-tap change) under a new stamp (`?v=20261029fl2`), so a returning browser cannot keep the old copies. On Bet Checker an old `edgedesk_access.js` would show a Fairline customer as free. The landing page's stamp check failed until this was done; a new check in `tools/fairline/page.test.js` fails on any of these pages loading a stamp from before the `black` tier.
 - **Tests**: `tools/billing/fairline_tier.test.js` (72, new; in `personal-tests.yml`, `fairline-tests.yml` and `deploy-billing.yml`). The Fairline suites now run with black as paid and red as free (SQL 116, page 37, browser 42). `billing_hardening_sql.test.js` expects 15 report rows instead of 14.
 - **Not verified here:** production's `has_active_sub()` and paywall RLS are not in this repository. Run `docs/billing-hardening.md` §11 query 10 before selling Fairline.
+
+## 2026-10-29 — Bet Checker: tap the bet you placed (the best price fills in for a paid reader)
+
+**What it does.** After a reader picks a game, the board's lines show as buttons: spread, total and moneyline, away and over first. Each spread and total shows the line most books hang, or the priced line where none is modal. One tap fills the market, the side and the line. For a paid reader (Bet Checker or the terminal), it also fills the best price on EdgeDesk's board at exactly that line, and its book. A note under the form says where the price came from and how old it is, and asks the reader to change it to the price they got, because the grade is on the odds they submit. A free reader taps the line and types the odds (owner's decision, 2026-10-29: the best price across the board's books is line shopping, which the paid tiers sell). The form still works as before for any line not on the buttons.
+
+**What changed.**
+- **`supabase/bet_checker.sql`** (mirrored in `migrations/20261028120000_bet_checker.sql`), additive:
+  - `bet_checker_line_prices(p_event_id)`, a security-definer function beside `bet_checker_lines()`, which is unchanged. It answers capture's `best_dec` as American odds, `best_book` and `last_seen_at` at each line of a game that has not started. It answers only lines seen within `fair_max_age_min`, the window `priced` already uses. **A free reader gets no rows**, anon is refused, and the grant is `authenticated` and the service role.
+  - `bet_checker_decimal_to_american()`, for display.
+  - The startup guard also requires `signals.best_dec` and `signals.best_book`.
+- **The page**: `lib/edgedesk_bet_checker.js`, `lib/edgedesk_bet_checker_core.js` (`tapLines()`, `bookOption()`), `lib/edgedesk_bet_checker.css`, `bet-checker/index.html` (the buttons and the note; stamps `20261029bc1`). A book EdgeDesk's list does not carry is set to Other, and the note says so.
+- **Nothing about grading changes.** The entry grade, the CLV and the free allowance are computed as before, from the odds the reader submits.
+- **Tests**: `bet_checker_sql.test.js` 127 (a free reader gets no prices, paid readers get each line's price and book, a stale or unpriced line is left out, the conversion), `core.test.js` 53, `page.e2e.js` 59 (a free reader's tap leaves the odds empty; a paid reader's tap fills -110 at DraftKings, a book outside the list becomes Other, and an edited price is the one logged).
 
 ## 2026-10-29 — NHL: every favourite less favoured than DraftKings. The cause measured, a pre-registered shadow, a nightly spread check; no published price moves
 

@@ -56,7 +56,7 @@ const restoreConsole = () => Object.assign(console, ORIGINAL);
 
   try {
     db.sql('create table public.signals (sig_key text primary key, event_id text, sport_key text, sport_title text, commence_time timestamptz, home_team text, away_team text, ' +
-      'market text, selection text, point numeric, sharp_fair numeric, last_seen_at timestamptz, point_is_modal boolean, is_player_prop boolean not null default false, ' +
+      'market text, selection text, point numeric, sharp_fair numeric, best_dec numeric, best_book text, last_seen_at timestamptz, point_is_modal boolean, is_player_prop boolean not null default false, ' +
       'flagged_at timestamptz, closed_at timestamptz, closing_sharp_fair numeric, clv_excluded_reason text, closing_source text, result text, ' +
       'closing_dec numeric, closing_at_observed timestamptz, clv numeric, beat_close boolean);');
     for (const f of ['bankroll_and_stakes.sql', 'bettor_decisions.sql', 'billing.sql', 'stripe_webhook.sql', 'billing_hardening.sql', 'bet_checker.sql']) {
