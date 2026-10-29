@@ -131,6 +131,25 @@ Until then no NBA or NHL game is offered.
   settlement. If `settle` does not settle a league, its bets keep their entry
   grade and their CLV, and show no result.
 
+## While sportsbook prices are paused
+
+When the odds gateway buys nothing (`odds_feed_status()` reads `paused`: the
+breaker is off, there is no budget, or the cycle's quota is unconfirmed), most
+fair prices are older than `fair_max_age_min`, so most bets are saved
+ungraded. The page says so to everyone, signed in or not, above the sign-in
+and the form. It reads `odds_feed_status()` with the page's public key, the
+same read the terminal's banner uses, and fails soft (no notice). The words
+are `feedNotice()` in `lib/edgedesk_bet_checker_core.js`:
+
+- a bet is still logged;
+- it is graded only on a fair under the rules' age;
+- otherwise it is Not graded, which uses no free grade;
+- a game that starts before prices refresh may show No close available.
+
+While the provider's next reset (`QUOTA_RESET_AT`, 2026-11-01) is ahead, the
+title names it. The notice lasts exactly as long as the pause, whenever buying
+resumes: nothing to switch off by hand.
+
 ## Logging a bet (`log_user_bet` → `bet_checker_log_bet()`)
 
 One transaction, so the free count cannot race:
