@@ -536,7 +536,8 @@ const rx = (s) => String(s).replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 has(PRICE, '<h2>Free research. Check your own bets for <span data-ed-price="bc_price">' + PW.bc_price + '</span>. <span class="g">Or get the whole terminal.</span></h2>',
   'the heading names both paid products: Bet Checker by its price, then the whole terminal');
 has(PRICE, 'Bet Checker grades the bets you have already placed. Full Access is the research you do before you bet, and it includes Bet Checker.', 'and says the difference in two sentences');
-const BCC = (PRICE.match(/<div class="bccard pcard rv">([\s\S]*?)<div class="pcard rv">/) || [, ''])[1];
+/* since 2026-10-29 the next card is Fairline's (below), so Bet Checker's ends there */
+const BCC = (PRICE.match(/<div class="bccard pcard rv">([\s\S]*?)<div class="(?:flcard )?pcard rv">/) || [, ''])[1];
 chk('the Bet Checker card is found', BCC.length > 400, BCC.length);
 has(BCC, '<span class="ptag" data-ed-price="bc_plan">' + X.BET_CHECKER.PLAN_NAME + '</span>', 'Bet Checker is named from the pricing file');
 has(BCC, '<p class="pname">Already placed the bet? See if you got a good price.</p>', 'and says what it is in one line');
@@ -557,6 +558,25 @@ chk('Bet Checker is "every bet graded", never "Unlimited"', !/unlimited/i.test(p
 has(PRICE.slice(PRICE.indexOf('id="subscribe"')), '<p class="pinc">Includes <span data-ed-price="bc_plan">' + X.BET_CHECKER.PLAN_NAME + '</span>: every bet graded, with your stats.</p>',
   'the Full Access card says it includes Bet Checker');
 chk('and says it outside its FEATURES list, which the terminal\'s paywall shares', PRICE.indexOf('<p class="pinc">') > PRICE.indexOf('<ul class="pincl">'));
+
+/* FAIRLINE (2026-10-29), between Bet Checker and Full Access. Every figure is
+   a word lib/edgedesk_pricing.js derives from FAIRLINE (the fl_ words), its
+   lines are FAIRLINE.FEATURES, and its button goes to /fairline/, where the
+   renewal terms are shown and ticked before Stripe. */
+const FLC = (PRICE.match(/<div class="flcard pcard rv">([\s\S]*?)<div class="pcard rv">/) || [, ''])[1];
+chk('a Fairline card sits between Bet Checker and Full Access', FLC.length > 300 && PRICE.indexOf('bccard') < PRICE.indexOf('flcard') && PRICE.indexOf('flcard') < PRICE.indexOf('id="subscribe"'), FLC.length);
+has(FLC, '<span class="ptag" data-ed-price="fl_plan">' + X.FAIRLINE.PLAN_NAME + '</span>', 'Fairline is named from the pricing file');
+has(FLC, '<span class="pamt" data-ed-price="fl_price">' + PW.fl_price + '</span><span class="pper">/ month</span>', 'its monthly price is the pricing file\'s');
+chk('its lines are FAIRLINE.FEATURES, verbatim and in order', () => {
+  const li = [...(FLC.match(/<ul class="pincl fl-incl">([\s\S]*?)<\/ul>/) || [, ''])[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m => plain(m[1]).trim());
+  return JSON.stringify(li) === JSON.stringify(X.FAIRLINE.FEATURES);
+}, 'the Fairline card differs from lib/edgedesk_pricing.js FAIRLINE.FEATURES');
+chk('"Get Fairline" goes to /fairline/, and names the landing page', /<a class="btn primary lg" href="\/fairline\/\?ref=landing_pricing" data-cta="pricing_fairline">Get Fairline</.test(FLC));
+has(FLC, '<p class="psub">No free trial. Renews automatically; cancel anytime in Settings.</p>', 'and how it renews, beside the button');
+chk('it starts no trial and borrows no other plan\'s words', !/startSubscribe|data-ed-price="(?:price|monthly|trial|cta|plan|days|day8|bc_[a-z]+)"/.test(FLC));
+chk('no figure on it is typed outside a pricing word', !/\$\s?\d|\b\d+\.\d\d\b/.test(FLC.replace(/<!--[\s\S]*?-->/g, '').replace(/<span[^>]*data-ed-price="fl_[a-z]+">[^<]*<\/span>/g, '')));
+has(STRIP, '<span class="strip-k">Fairline</span> <span data-ed-price="fl_monthly">' + PW.fl_monthly + '</span>', 'and the strip states Fairline at the pricing file\'s price');
+chk('the strip runs Bet Checker, Fairline, Full Access: cheapest first', STRIP.indexOf('>Bet Checker<') < STRIP.indexOf('>Fairline<') && STRIP.indexOf('>Fairline<') < STRIP.indexOf('>Full Access<'));
 /* ======================================================================== */
 /* 9. NO PICKS. NO PROFIT PROMISES. NO INVENTED PROOF. NO SLUDGE.           */
 /* ======================================================================== */
