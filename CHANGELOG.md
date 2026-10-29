@@ -1,5 +1,52 @@
 # Changelog
 
+## 2026-10-29 — CFB: SP+ beside EdgeDesk's number on every card, as an external estimate, graded against the close
+
+**Why.** On 2026-10-28 EdgeDesk had Middle Tennessee −4.5 against Kennesaw State. SP+ had about Middle Tennessee −1, and the game closed Kennesaw State −1.5 (KSU won 44–28). A results-based number had missed a team that was losing close games while playing efficiently. SP+ (ESPN's opponent-adjusted efficiency rating, by Bill Connelly) is now a visible second opinion, measured against the close. The full write-up is `football/sp_plus/README.md`.
+
+**It changes no EdgeDesk number.** SP+ feeds no projection, EV, ranking, grade or record, and it can never be a Model Lab role or a promotion candidate. `football/sp_plus/registry.test.js` fails if any of that code reads it.
+
+- **A · the weekly capture** (`football/sp_plus/sync.js`, `.github/workflows/cfb-sp-plus.yml`: Monday, retried Tuesday and Wednesday, plus a manual run).
+  - It reads CollegeFootballData `/ratings/sp` with `CFBD_API_KEY` and maps teams through the identity master. An unmapped or prefix-only name is logged, never guessed.
+  - Each team's overall, offense and defense are stored in `public.cfb_sp_ratings`: append-only by trigger, row level security with no policy, service role only (`supabase/cfb_sp_plus.sql`). Every attempt goes to `cfb_sp_sync_runs`.
+  - UNCHANGED when CFBD still serves last week's numbers. The sync fails closed. **No rating is ever committed:** the repository is public, CFBD's terms forbid a public mirror (§5), and SP+ is ESPN's.
+- **B · the projected line** (`lib/cfb_sp_plus.js`). A T2 transform of the T3 rating: home SP+ − away SP+ + the home field the CFB engine applies (2.8 today), 0 at a neutral site. It is pure and deterministic. `football/sp_plus/lines.json` publishes the derived line per game of the captured week.
+- **C · on the cards.**
+  - Where it appears:
+    - the board card, beside EdgeDesk fair and the market;
+    - the game page, after Fair spread;
+    - the research terminal: section 1 after Fair spread, the summary strip, and section A.
+  - Each row shows the SP+ line, "T3 external model · T2 computed line", the SP+ week, and the attribution "Projection derived from SP+ (ESPN, Bill Connelly). Data provided by CollegeFootballData.com."
+  - A 3+ point gap to EdgeDesk adds a plain "Models disagree" note. The two numbers are never combined.
+  - The line shows only from a capture of the game's own week, no older than 8 days. Otherwise the row reads unavailable, with the reason.
+- **D · tracking** (`football/sp_plus/track.js`, in the hourly Model Lab job).
+  - For every upcoming game: EdgeDesk's fair line, the SP+ line and the Lab's consensus market at the same moment, appended on change.
+  - Each game is graded once against the Lab's close and the final: MAE against each, the right side of the close, and whether the close moved toward it.
+  - A weekly and season report. Append-only, and checked before publish.
+- **E · the registry** (`football/sp_plus/registry.json`, `public.cfb_external_estimates`).
+  - *SP+ projected line* is registered as an `EXTERNAL_ESTIMATE` with its source, version and terms.
+  - The server refuses to mark it an EdgeDesk model or validated.
+  - The page pins its badge to "External" ahead of the model registry.
+- **Terms.** CFBD's terms (2026-08-12, read as quoted; the site was unreachable from the build environment) allow commercial use and reasonable portions of factual data in a larger product, and recommend the attribution line. **No licence from ESPN for SP+ was found or obtained.** The owner chose to show the derived projected line only, publicly, with attribution.
+- **To switch it on.**
+  1. Apply `supabase/cfb_sp_plus.sql`.
+  2. Add the repository secret `CFBD_API_KEY`.
+  3. Run *CFB SP+ weekly sync*.
+
+  Until then every card reads "SP+ has not been synced yet".
+
+Tests:
+- `football/sp_plus/ingest.test.js` (66, mocked CFBD and Supabase)
+- `projection.test.js` (42)
+- `display.test.js` (39)
+- `card_ui.test.js` (23, the real football module)
+- `ui.e2e.js` (22, Chromium)
+- `track.test.js` (38)
+- `registry.test.js` (22)
+- `sql.test.js` (46, a real PostgreSQL)
+
+All run in `cfb-sp-plus-tests.yml`.
+
 ## 2026-10-29 — NHL: every favourite less favoured than DraftKings. The cause measured, a pre-registered shadow, a nightly spread check; no published price moves
 
 **The report.** EdgeDesk priced every favourite below DraftKings again: VAN at SJS −133 against −198, NYI at MIN −146 against −192. The hourly ESPN capture (`research/clv/openers/nhl`) confirms the pattern on the published prices. In 35 of 47 settled 2026-27 games the book's favourite was less favoured here, by 2.2 points on average. The market's logit on the model's has slope 1.215 (1.036–1.394). Both rank clubs alike (correlation 0.89). The scale differs. Full write-up: [docs/engine/NHL_LAB.md](docs/engine/NHL_LAB.md) §6.3.
