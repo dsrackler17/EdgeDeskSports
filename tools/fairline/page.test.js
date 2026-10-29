@@ -64,7 +64,7 @@ chk('mobile first: the viewport, and no fixed width wider than a phone', /width=
    know the Fairline tier (black). A stamp set before it would let a returning
    browser keep the old file: on Bet Checker, a Fairline customer shown as free. */
 (() => {
-  const PRE_BLACK = ['20261028a', '20261028b', '20261028bc1', '20261028bc3', '20261028fl1', '20261029bc1'];
+  const PRE_BLACK = ['20261028a', '20261028b', '20261028bc1', '20261028bc3', '20261028fl1', '20261029bc1', '20261029bc2'];
   const stale = [];
   ['index.html', 'app.html', 'bet-checker/index.html', 'fairline/index.html'].forEach((pg) => {
     const html = read(pg);
