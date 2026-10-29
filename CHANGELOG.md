@@ -1,6 +1,40 @@
 # Changelog
 
+## 2026-10-29 — Prediction Radar: a wallet whose run dies part way is set aside, never blocking the pool; run_now grades whatever happens
 
+- **Bug.** `run_now` on build `.5` ([run 40905865196](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40905865196)) made 32 wallet calls in about 76 s each, all HTTP 200. The 33rd got HTTP 546, out of compute. A run that dies cannot record anything, so that wallet stayed first in line, and every later call, the 06:10 UTC schedule included, would have died on it. `run_now` also stopped before its grade, so nothing reached the site.
+- **Fix** (`supabase/functions/polymarket_sync/index.ts`, build `polymarket_sync@2026-10-29.6`). Each wallet is marked (`attempt_at`, `attempts` in its cursor) before its work, and the mark is cleared when the work ends. A wallet still marked was in a run that died, or one in flight: it is set aside for 15 minutes, and after 3 such runs read only once a day. A WARNING `wallet_skipped` names it.
+- **run_now** (`.github/workflows/deploy-radar.yml`) carries on after a failed wallet call, since the function now sets that wallet aside. It stops after three failures in a row, always runs the grade, reports how many wallets are set aside, and ends red if any call failed.
+- **Tests.** `tools/radar/sync_fn.test.js`: a wallet whose run died 2 minutes ago is set aside and the next wallet read; after 15 minutes it is read again, marked before the work starts, and its mark cleared when done; after three dead runs it is read only once a day. On the old code: 61 passed, 3 failed. On the fix: 64 passed, 0 failed. The workflow step was run against a stand-in function and a throwaway PostgreSQL: one HTTP 546 among the calls went on, graded and ended red; three in a row stopped, graded and ended red; a normal run ended green; at most one call was ever in flight.
+
+## 2026-10-29 — NHL methodology change: the headline is priced at lineup lock, from the dressed lineups and both Confirmed starters
+
+**Methodology change; needs the owner's explicit review.** Evidence and the decision are in `docs/engine/NHL_GOALIES.md` §11.
+
+- **What.** Until now an NHL card's headline was `xg_core` until puck drop, whoever dressed. Now the goalie sync (`supabase/functions/nhl_goalie_sync`) reads each side's dressed skaters from the NHL boxscore it already polls. Once both lineups are listed and both starters are Confirmed with no conflict, the card's headline is priced by `xg_all_confirmed`: the xG core plus the confirmed goalie and both clubs' confirmed lineup value. The card gets a new version (reason `lineup_locked`, trigger `inputs_changed`). The page, EdgeDesk vs the market, Check a price and the edge events read that price.
+- **Evidence** (`hockey/validation/nhl_walkforward.json`). Log loss against `xg_core`: selection −0.00030 (9,205 games), confirmation −0.00119 (7,945), live +0.00008 (198). It fails the lab's rule 1 (0.001 on selection). Using it at lock anyway is the owner's decision.
+- **Before and after on the committed slate** (33 games, each club's last lineup and the likeliest starters). The home win probability moves 1.7 pp on average, by 5.1 pp at most (OTT @ LAK, 47.6% → 42.5%). The mean distance from 50% goes from 8.34 pp to 8.46 pp, so this does not fix the favourite compression; the split factor does.
+- **Unchanged:** the slate, its ledger and the public record, which grade the slate's `xg_core` price. Also unchanged: the SQL, and everything before lock.
+- **Inputs** (`hockey/build_slate.js` → `hockey/goalie_inputs.json`): the variant's η without its goalie and lineup terms, each club's typical lineup value and last lineup, every skater's value, the betas and its own pair calibration. `--check` re-prices every game at lock from those inputs and fails unless it matches the build's own GLM path within 0.00015. All 33 games pass.
+- **Timing.** The sync checks every 5 minutes from T−25 to T−5, after the T−30 final pass. Each boxscore read records the minutes to start, the skaters listed and the starters in the run's `sources`, a timing probe. When lineups post has not been measured live.
+- **A failed read never unlocks.** The card keeps the lineups it locked with (`headline.lineup.ids`). A run whose boxscore read fails, or lists none, prices from them (`nhlgLockedLineups`). Found in review: before this, an NHL API outage after lock wrote a version `lineup_unlocked` and put the slate's price back minutes before puck drop. The regression checks failed on that code (core 103 passed, 1 failed; sync 75 passed, 2 failed).
+- **Tests:** goalie core 104/0, sync 77/0, SQL 79/0 (PostgreSQL), block and gate 46/0, compare 55/0, engine UI 164/0 (Chromium, desktop and phone). With the page's lock price disabled, the engine UI fails 6 checks: the Overview headline, the Markets banner and the list card, on desktop and phone.
+- **Not wired:** Today's Games and the matchup graphic still show the slate's price. Deploy: run NHL engine build, then Deploy NHL goalie layer with `deploy_function`.
+
+## 2026-10-29 — Deploy Fairline: a regression test for the email switch step
+
+**Why.** *Deploy Fairline*'s last step, "The Tape's email switch", read psql's answer as `t` followed by `UPDATE 1`, and compared it with the word `true`. So it reported `fairline_tape_settings was not updated` on every run, after the UPDATE had committed. The owner's run of 2026-10-29 14:19Z (run 40890282549) set the switch on and failed.
+
+The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads with `psql -X -q -At` and compares `t` / `f`. That change has no test of its own for this step.
+
+**What changed.** New `tools/fairline/deploy_switch.test.js`:
+- **What it runs:** the step's own script, read out of `deploy-fairline.yml`, with `bash`, against a real PostgreSQL carrying `fairline_tape_settings` as `fairline_tape.sql` creates it.
+- **What it checks:** `on` and `off` set the switch and pass; a warning appears only when the email pipeline's own switch is off; a missing settings row or table fails.
+- **Where it runs:** in Fairline CI's database job (the workflow now also starts on `deploy-fairline.yml`), and in Deploy Fairline's tests before anything ships.
+
+**Evidence.**
+- On the step as it was before the fix (`78a8315b4ac`), 5 checks fail, each with the production error.
+- On `main`'s fixed step it passes 10 / 0.
 
 ## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
 
