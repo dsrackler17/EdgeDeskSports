@@ -39,7 +39,7 @@
   - The suites run first.
   - `football-situational-tests.yml` runs every suite on a pull request (registered in `tools/ci/checks.json`).
 - **Rollback.** Set the modes in `football/situational/config/integration.json` to OFF, or set `FSIE_MODE=OFF` for one run. Then disable the workflow, remove the `app.html` section, and run the rollback SQL. The steps are in the README.
-- **The CFB freeze.** `football/fbs/build_coverage.js` is on the CFB champion freeze's pricing path. Its new guarded hook therefore gets the declared PATCH row `edgedesk_cfb_r1+p13`, appended by `football/cfb_validation/build.js`. No price moves. That build also regenerated the validation dashboards it owns.
+- **The CFB freeze.** `football/fbs/build_coverage.js` is on the CFB champion freeze's pricing path. Its new guarded hook therefore gets the declared PATCH row `edgedesk_cfb_r1+p13`, appended by `football/cfb_validation/build.js`. No price moves. The validation dashboards are left as `main`'s scheduled build writes them; its next run regenerates them with `p13` in place.
 - **Next scheduled builds.** The NFL slate and the FBS slate gain the SHADOW block on their next scheduled build.
 
 Tests:

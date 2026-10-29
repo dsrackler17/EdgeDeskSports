@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-29T13:30:17.778Z",
+ "generated_at": "2026-10-29T16:27:20.682Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-29T13:30:17.778Z",
-  "reliability_generated_at": "2026-10-29T13:30:17.778Z",
-  "enrichment_generated_at": "2026-10-29T13:30:06.887Z",
+  "at": "2026-10-29T16:27:20.682Z",
+  "reliability_generated_at": "2026-10-29T16:27:20.682Z",
+  "enrichment_generated_at": "2026-10-29T16:27:12.956Z",
   "counts": {
    "games": 115,
    "mean": 85.8,
@@ -20,11 +20,11 @@
    "missing_qb_status": 190,
    "qb_conflicts_open": 17,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 23,
+   "games_lacking_injury_information": 26,
    "unrated_meaningful_absences": 270,
    "fcs_games_thin_data": 1,
    "games_under_two_market_sources": 115,
-   "stale_evidence_records": 28,
+   "stale_evidence_records": 50,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -665,8 +665,8 @@
     "score": 89,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 1.3
     },
     "qb": {
@@ -674,8 +674,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858278": {
@@ -683,27 +683,27 @@
     "score": 79,
     "grade": "ADEQUATE",
     "fam": {
-     "availability": 4.6,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 2.1,
-     "qb_conflict": 1,
-     "qb_status": 2
+     "qb_conflict": 1
     },
     "qb": {
      "home": "EXPECTED",
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858279": {
     "game": "Boston College @ Duke",
-    "score": 89,
+    "score": 88,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 1.4,
      "transfer_turnover": 0.6
     },
@@ -712,8 +712,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858280": {
@@ -2412,7 +2412,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-29T13:28:17.184Z",
+  "at": "2026-10-29T13:30:17.778Z",
   "counts": {
    "games": 115,
    "mean": 85.8,
@@ -2438,33 +2438,12 @@
   "baseline_of": null
  },
  "what_improved": [],
- "what_degraded": [],
+ "what_degraded": [
+  "+3 games lacking injury information (23 → 26)",
+  "+22 stale evidence records (28 → 50)"
+ ],
  "why": [],
  "history": [
-  {
-   "at": "2026-10-22T21:49:29.744Z",
-   "counts": {
-    "games": 108,
-    "mean": 87.3,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 18,
-     "ADEQUATE": 22,
-     "STRONG": 66,
-     "CAUTION": 2
-    },
-    "missing_qb_status": 165,
-    "qb_conflicts_open": 10,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 24,
-    "unrated_meaningful_absences": 384,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 108,
-    "stale_evidence_records": 55,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-23T05:03:47.069Z",
    "counts": {
@@ -3843,6 +3822,31 @@
     "fcs_games_thin_data": 1,
     "games_under_two_market_sources": 115,
     "stale_evidence_records": 28,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-29T16:27:20.682Z",
+   "counts": {
+    "games": 115,
+    "mean": 85.8,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 13,
+     "ADEQUATE": 36,
+     "CAUTION": 2,
+     "STRONG": 63,
+     "LOW": 1
+    },
+    "missing_qb_status": 190,
+    "qb_conflicts_open": 17,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 26,
+    "unrated_meaningful_absences": 270,
+    "fcs_games_thin_data": 1,
+    "games_under_two_market_sources": 115,
+    "stale_evidence_records": 50,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
