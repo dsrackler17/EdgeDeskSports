@@ -75,6 +75,7 @@ function check(label, ok, detail) {
 
 (async () => {
   const now = Math.floor(Date.now() / 1000);
+  const iso = (t) => new Date(t).toISOString();
   /* 1. the leagues */
   const sp = await ask('gamma sports', 'sports', {});
   check('gamma /sports answers a list', sp.ok && Array.isArray(R.page(sp.data).rows) && R.page(sp.data).rows.length > 0, sp.ok ? shape(sp.data) : sp.decision);
@@ -184,8 +185,14 @@ function check(label, ok, detail) {
   for (const L of leagues.slice(0, 6)) {
     const sid = String(L.series || '').split(',')[0];
     if (!sid) continue;
-    const ev = await ask('gamma events series ' + L.sport + ' (recently closed)', 'events', { series_id: sid, closed: true, limit: 2, order: 'startTime', ascending: false });
-    (ev.ok ? R.page(ev.data).rows : []).forEach((e) => (e.markets || []).forEach((m) => { const x = R.marketRow(m, e); if (x && x.market_type === 'moneyline') live.push(x); }));
+    /* games that ended in the last week: "closed, newest start first" also returns
+       events dated in the future that closed void (run 40823328503) */
+    const ev = await ask('gamma events series ' + L.sport + ' (ended in the last week)', 'events',
+      { series_id: sid, closed: true, end_date_min: iso(Date.now() - 7 * 86400e3), end_date_max: iso(Date.now() - 3 * 3600e3), limit: 5, order: 'startTime', ascending: false });
+    /* a game that was played and has a result: a voided one (settled 0.5 / 0.5,
+       run 40823328503) can carry a start after its market closed, with no price there */
+    (ev.ok ? R.page(ev.data).rows : []).forEach((e) => (e.markets || []).forEach((m) => { const x = R.marketRow(m, e);
+      if (x && x.market_type === 'moneyline' && x.settle && x.settle.indexOf(1) >= 0 && x.game_start_at != null && x.game_start_at < Date.now()) live.push(x); }));
     if (live.length) break;
   }
   const target = live[0] || markets.find((m) => m.token_ids.length) || null;
@@ -222,7 +229,6 @@ function check(label, ok, detail) {
       }
     }
   }
-  const iso = (t) => new Date(t).toISOString();
   const nowMs = now * 1000;
   for (const lg of ['nba', 'nfl']) {
     const L = leagues.find((x) => x.sport === lg);
