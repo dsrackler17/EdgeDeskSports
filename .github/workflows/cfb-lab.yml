@@ -194,6 +194,18 @@ jobs:
           node tools/football/build_game_research.js && node tools/football/build_game_research.js --check \
             || echo "::warning::the game research snapshots could not be rebuilt; the last published snapshots stay up"
 
+      # SP+ tracking (football/sp_plus/track.js, football/sp_plus/README.md):
+      # for every upcoming CFB game, EdgeDesk's fair line, the SP+ projected
+      # line (an EXTERNAL estimate) and the market at this hour, appended when
+      # one of them changes; each game graded once against this run's close
+      # and final; the weekly report. Research only: SP+ feeds nothing.
+      # Append-only, checked before publish: a violation restores the
+      # committed files and warns, and never costs the Lab's own publish.
+      # Its suites run on every pull request (cfb-sp-plus-tests.yml).
+      - name: SP+ tracking (football/sp_plus/ledger, football/sp_plus/reports)
+        if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        run: node football/sp_plus/track.js run --write --base HEAD || echo "::warning::SP+ tracking did not run; nothing was appended"
+
       # Live validation (football/cfb_validation): the separated model / market /
       # betting views, the since-upgrade view against the frozen champion, the
       # 138-team rating-state divergence monitor, the verified / investigate
@@ -273,6 +285,7 @@ jobs:
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json football/cfb_production/reports/champion.json \
             football/cfb_production/reports/auto_promotion.json \
             football/cfb_production/reports/traces.json football/cfb_terminal football/game_research football/cfb_validation football/markets \
+            football/sp_plus/ledger football/sp_plus/reports \
             football/validation/model_health.json football/broadcasts/current.json football/content/packets.json football/evidence/packets.json \
             articles sitemap-articles.xml sitemap.xml
 
