@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-29T13:28:17.184Z",
+ "generated_at": "2026-10-29T13:30:17.778Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-29T13:28:17.184Z",
-  "reliability_generated_at": "2026-10-29T13:28:17.184Z",
-  "enrichment_generated_at": "2026-10-29T13:28:10.586Z",
+  "at": "2026-10-29T13:30:17.778Z",
+  "reliability_generated_at": "2026-10-29T13:30:17.778Z",
+  "enrichment_generated_at": "2026-10-29T13:30:06.887Z",
   "counts": {
    "games": 115,
    "mean": 85.8,
@@ -2412,72 +2412,35 @@
   }
  },
  "previous": {
-  "at": "2026-10-29T06:07:47.352Z",
+  "at": "2026-10-29T13:28:17.184Z",
   "counts": {
    "games": 115,
-   "mean": 85.5,
+   "mean": 85.8,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 9,
+    "VERY_STRONG": 13,
     "ADEQUATE": 36,
     "CAUTION": 2,
-    "STRONG": 67,
+    "STRONG": 63,
     "LOW": 1
    },
-   "missing_qb_status": 202,
+   "missing_qb_status": 190,
    "qb_conflicts_open": 17,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 33,
-   "unrated_meaningful_absences": 171,
+   "games_lacking_injury_information": 23,
+   "unrated_meaningful_absences": 270,
    "fcs_games_thin_data": 1,
    "games_under_two_market_sources": 115,
-   "stale_evidence_records": 4,
+   "stale_evidence_records": 28,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
- "what_improved": [
-  "+0.3 mean reliability (85.5 → 85.8)",
-  "-12 QB statuses missing (202 → 190)",
-  "-10 games lacking injury information (33 → 23)",
-  "4 games moved STRONG → VERY STRONG"
- ],
- "what_degraded": [
-  "+99 unrated meaningful absences (171 → 270)",
-  "+24 stale evidence records (4 → 28)"
- ],
- "why": [
-  "Arizona @ Texas Tech: STRONG → VERY STRONG (89 → 96); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Kansas @ TCU: STRONG → VERY STRONG (89 → 96); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Oklahoma State @ Iowa State: STRONG → VERY STRONG (86 → 94); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Utah @ Cincinnati: STRONG → VERY STRONG (89 → 97); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL"
- ],
+ "what_improved": [],
+ "what_degraded": [],
+ "why": [],
  "history": [
-  {
-   "at": "2026-10-22T17:26:49.757Z",
-   "counts": {
-    "games": 108,
-    "mean": 87.3,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 17,
-     "ADEQUATE": 22,
-     "STRONG": 67,
-     "CAUTION": 2
-    },
-    "missing_qb_status": 167,
-    "qb_conflicts_open": 10,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 21,
-    "unrated_meaningful_absences": 365,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 108,
-    "stale_evidence_records": 53,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-22T21:49:29.744Z",
    "counts": {
@@ -3836,6 +3799,31 @@
   },
   {
    "at": "2026-10-29T13:28:17.184Z",
+   "counts": {
+    "games": 115,
+    "mean": 85.8,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 13,
+     "ADEQUATE": 36,
+     "CAUTION": 2,
+     "STRONG": 63,
+     "LOW": 1
+    },
+    "missing_qb_status": 190,
+    "qb_conflicts_open": 17,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 23,
+    "unrated_meaningful_absences": 270,
+    "fcs_games_thin_data": 1,
+    "games_under_two_market_sources": 115,
+    "stale_evidence_records": 28,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-29T13:30:17.778Z",
    "counts": {
     "games": 115,
     "mean": 85.8,
