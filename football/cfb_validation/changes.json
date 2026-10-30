@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-30T03:08:10.390Z",
+ "generated_at": "2026-10-30T12:08:24.686Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-24T02:08:08.025Z",
+  "since": "2026-10-24T10:08:03.382Z",
   "changes": [
    {
     "what": "pricing code",
@@ -22,8 +22,8 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-24T01:29:24.180Z",
-    "to": "2026-10-29T22:54:00.628Z"
+    "from": "2026-10-24T09:37:56.431Z",
+    "to": "2026-10-30T06:02:45.811Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -555,7 +555,7 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
-   "price_state": "PRICE NO LONGER ATTRACTIVE"
+   "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
@@ -903,38 +903,6 @@
    "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE HISTORY UNKNOWN"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-29T13:30:17.778Z",
-   "old_fair": 9.19,
-   "new_fair": 6.47,
-   "change": -2.72,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_ABSENCE_OR_AVAILABILITY",
-     "term": "injury",
-     "points": 0.59
-    }
-   ],
-   "unexplained": -0.02,
-   "game_id": "401856845",
-   "game": "Kansas @ TCU",
-   "market_then": null,
-   "market_now": -5.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-10-22T05:08:29.173Z",
@@ -1328,6 +1296,38 @@
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
+   "to_at": "2026-10-30T06:02:45.811Z",
+   "old_fair": 9.19,
+   "new_fair": 7.84,
+   "change": -1.35,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": 1.95
+    }
+   ],
+   "unexplained": -0.01,
+   "game_id": "401856845",
+   "game": "Kansas @ TCU",
+   "market_then": null,
+   "market_now": -6.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-10-21T04:06:23.535Z",
    "to_at": "2026-10-26T15:03:38.857Z",
    "old_fair": 22.44,
    "new_fair": 21.16,
@@ -1360,39 +1360,6 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-29T06:07:47.352Z",
-   "old_fair": 8.88,
-   "new_fair": 10.14,
-   "change": 1.26,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -0.69
-    },
-    {
-     "cause": "QB_ABSENCE_OR_AVAILABILITY",
-     "term": "injury",
-     "points": 1.95
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401858504",
-   "game": "Washington @ Nebraska",
-   "market_then": null,
-   "market_now": -7.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -1648,7 +1615,7 @@
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-26T15:03:38.857Z",
+   "to_at": "2026-10-29T22:54:00.628Z",
    "old_fair": 13.86,
    "new_fair": 13.47,
    "change": -0.39,
@@ -1672,10 +1639,10 @@
    "game_id": "401856735",
    "game": "Auburn @ Ole Miss",
    "market_then": null,
-   "market_now": -13.5,
+   "market_now": -11.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
@@ -1840,6 +1807,39 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-10-21T04:06:23.535Z",
+   "to_at": "2026-10-30T06:02:45.811Z",
+   "old_fair": 8.88,
+   "new_fair": 8.78,
+   "change": -0.1,
+   "material": false,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": -0.69
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": 0.59
+    }
+   ],
+   "unexplained": 0,
+   "game_id": "401858504",
+   "game": "Washington @ Nebraska",
+   "market_then": null,
+   "market_now": -7.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {

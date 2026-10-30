@@ -58,7 +58,11 @@ function door(name) {
   if (name === 'radar_status') return { enabled: M.enabled, registered: true, status: 'EXPERIMENTAL', access: M.sub ? 'subscriber' : 'public', min_graded: 50, top_wallets: 25, graded_at: '2026-10-29T10:20:00Z',
     h_radar_01: { status: 'complete', passed: false, beat_close_rate: 0.512, follow_roi: -0.021, followed: 340 } };
   if (!M.enabled) return { status: 'disabled', rows: [], cards: [] };
-  if (name === 'radar_tonight') return M.sub ? { status: 'ok', top_wallets: 25, conviction_high_x: 3, graded_at: '2026-10-29T10:20:00Z', cards: CARDS } : { status: 'subscribers_only', cards: [] };
+  /* as H-RADAR-02's door answers: the featured cards, how many qualify, observed activity apart, how discovery stands */
+  if (name === 'radar_tonight') return M.sub ? { status: 'ok', hypothesis: 'H-RADAR-02', top_wallets: 10, featured: 3, conviction_high_x: 3, graded_at: '2026-10-29T10:20:00Z', cards: CARDS,
+    observed: [{ kind: 'observed', event_id: 'E9', market_type: 'spreads', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', commence_time: '2026-11-01T20:25:00Z', n_wallets: 12,
+      sides: [{ outcome: 'Chiefs', selection: 'Kansas City Chiefs', point: -3, n_wallets: 8, dollars: 52000 }, { outcome: 'Raiders', selection: 'Las Vegas Raiders', point: 3, n_wallets: 4, dollars: 18000 }] }],
+    discovery: { candidates: 1000, screened: 240, flagged: 90, sampled: 90, high_frequency: 60, insufficient_history: 12, fully_evaluated: 150, eligible: 140, pool: 140 } } : { status: 'subscribers_only', cards: [] };
   if (name === 'radar_leaderboard') return { status: 'ok', min_graded: 50, rows: [GRADE, Object.assign({}, GRADE, { wallet: T2, display: '0x2222…2222', rank: null, sample: 'small_sample', graded_bets: 12, radar_score: null, score_parts: null })] };
   if (name === 'radar_trader') return { status: 'ok', access: M.sub ? 'subscriber' : 'public', min_graded: 50, grade: GRADE, history: HISTORY,
     positions: M.sub ? [{ question: 'Chiefs vs. Raiders spread', outcome: 'Chiefs', cost: 40000, avg_price: 0.4, game_start_at: START }] : null, positions_locked: !M.sub };
@@ -67,7 +71,7 @@ function door(name) {
     h_radar_01: { status: 'complete', passed: false, followed: 340, beat_close_rate: 0.512, beat_close_ci: [0.47, 0.55], follow_roi: -0.021, follow_roi_ci: [-0.08, 0.04] },
     recent: [{ commence_time: '2026-10-28T00:15:00Z', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', market_type: 'moneyline', outcome: 'Chiefs', follow_price: 0.6, close_price: 0.64, result: 'win', roi: 0.6667 }] }
     : { status: 'subscribers_only' };
-  if (name === 'radar_teaser') return { status: 'ok', games: 2, card: { sport_key: 'americanfootball_nfl', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', commence_time: START, n_wallets: 7, dollars: 84200 } };
+  if (name === 'radar_teaser') return { status: 'ok', hypothesis: 'H-RADAR-02', games: 2, card: { sport_key: 'americanfootball_nfl', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', commence_time: START, n_wallets: 7, dollars: 84200 } };
   return null;
 }
 
@@ -143,7 +147,9 @@ function door(name) {
       chk('overview ' + label + ': Smart Money Tonight is drawn, labelled Experimental in words', /Smart Money Tonight/.test(s) && /Experimental/.test(s), s.slice(0, 300));
       chk('overview ' + label + ': it is the first thing on the Overview', await O.page.evaluate(() => { const w = document.querySelector('#overviewHost .ovw'); return !!w && w.firstElementChild && w.firstElementChild.id === 'ovRadar'; }));
       const heads = await O.page.$$eval('#ovRadar .rd-sent', (h) => h.map((x) => x.innerText));
-      chk('overview ' + label + ': each card leads with its sentence', heads[0] === '7 top bettors, $84K, on Chiefs -3' && heads[1] === '2 top bettors, $9.4K, on Dolphins', heads);
+      chk('overview ' + label + ': each card leads with its sentence (H-RADAR-02: the featured bettors)', heads[0] === '7 featured bettors, $84K, on Chiefs -3' && heads[1] === '2 featured bettors, $9.4K, on Dolphins', heads);
+      chk('overview ' + label + ': how many qualify, observed activity apart and labelled, how discovery stands', /3 bettors qualify to be featured today/.test(s) && /Observed activity/.test(s) && /Observed, not a signal/.test(s)
+        && /Radar has screened 240 wallets/.test(s), s.slice(0, 600));
       chk('overview ' + label + ': the numbers under it, and the fair line in words', /Their average entry\s*41¢/.test(s) && /Smart money agrees with the sharp fair price/.test(s) && /more than 90 minutes old/.test(s), s);
       chk('overview ' + label + ': the conviction label is a word', /High conviction/.test(s) && /4× usual size/.test(s));
       await O.page.waitForSelector('#ovRadar .rd-rec', { timeout: 10000 }).catch(() => {});
@@ -190,7 +196,7 @@ function door(name) {
       const st = await text(P.page, '#rpState'), lb = await text(P.page, '#rpLeaders'), tz = await text(P.page, '#rpTeaser');
       chk('public ' + label + ': live, and H-RADAR-01\'s finding as recorded (here: did not pass)', /Live\./.test(st) && /did not pass/.test(st) && /51\.2%/.test(st), st);
       chk('public ' + label + ': the leaderboard with the score\'s parts and the Small sample label', /SharpAlice/.test(lb) && /0\.5 × follow ROI/.test(lb) && /Small sample/.test(lb), lb.slice(0, 400));
-      chk('public ' + label + ': the teaser gives the game, the count and the dollars, never the side', /7 top bettors, \$84K, on/.test(tz) && !/Chiefs -3/.test(tz) && /in the terminal/.test(tz), tz);
+      chk('public ' + label + ': the teaser gives the game, the count and the dollars, never the side', /7 featured bettors, \$84K, on/.test(tz) && !/Chiefs -3/.test(tz) && /in the terminal/.test(tz), tz);
       chk('public ' + label + ': only anonymous doors, never radar_tonight or the record, all with the anon key', !P.seen.doors.includes('radar_tonight') && !P.seen.doors.includes('radar_record') && P.seen.doors.every((d) => ['radar_status', 'radar_leaderboard', 'radar_teaser', 'radar_trader'].includes(d))
         && P.seen.auth.every((a) => /^Bearer eyJ/.test(a)), P.seen.doors);
       chk('public ' + label + ': no horizontal page scroll', await noHScroll(P.page));

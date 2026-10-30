@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_postmortems_v1",
- "generated_at": "2026-10-30T03:08:10.390Z",
+ "generated_at": "2026-10-30T12:08:24.686Z",
  "classes": {
   "GOOD_PROCESS_BAD_OUTCOME": "GOOD PROCESS / BAD OUTCOME",
   "GOOD_PROCESS_GOOD_OUTCOME": "GOOD PROCESS / GOOD OUTCOME",
@@ -13,6 +13,174 @@
  },
  "threshold_points": 21,
  "rows": [
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401869963",
+   "week": 9,
+   "game": "Troy @ James Madison",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-29T23:08:02.000Z",
+   "edgedesk_fair": "James Madison -25.0",
+   "final_margin": -3,
+   "error": 27.97,
+   "close_error": 22.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401862812",
+   "week": 9,
+   "game": "Florida Atlantic @ North Texas",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T2",
+   "prediction_ts": "2026-10-29T22:07:57.000Z",
+   "edgedesk_fair": "North Texas -16.5",
+   "final_margin": 7,
+   "error": 9.29,
+   "close_error": 7.5,
+   "ats": "LOSS",
+   "clv_points": 0.5,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "YES",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "GOOD_PROCESS_BAD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401869963",
+   "week": 9,
+   "game": "Troy @ James Madison",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-29T00:07:54.000Z",
+   "edgedesk_fair": "James Madison -25.0",
+   "final_margin": -3,
+   "error": 27.97,
+   "close_error": 22.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": "UNKNOWN"
+  },
   {
    "kind": "RESEARCH_LEAN_LOSS",
    "epoch": "CURRENT",
@@ -14914,17 +15082,17 @@
   "qualified_losses": {},
   "qualified_wins": {},
   "large_misses": {
+   "NORMAL_VARIANCE": 30,
    "GOOD_PROCESS_BAD_OUTCOME": 10,
-   "NORMAL_VARIANCE": 29,
    "BAD_PRICE": 13,
    "BAD_MODEL": 27,
    "UNRESOLVED": 2
   },
   "research_lean_losses": {
+   "NORMAL_VARIANCE": 11,
+   "GOOD_PROCESS_BAD_OUTCOME": 16,
    "BAD_PRICE": 42,
-   "GOOD_PROCESS_BAD_OUTCOME": 15,
    "BAD_MODEL": 13,
-   "NORMAL_VARIANCE": 10,
    "UNRESOLVED": 18
   },
   "research_lean_wins": {

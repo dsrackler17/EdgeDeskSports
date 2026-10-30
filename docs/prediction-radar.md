@@ -20,6 +20,112 @@ It answers three questions:
    follower could really get, in a record nobody can edit (H-RADAR-01, and the
    Radar record).
 
+## H-RADAR-02: the owner's methodology change (DRAFT, not registered)
+
+**Status:** this branch carries H-RADAR-02. It is a methodology change: the
+owner reviews it, and its rules are frozen in a registration before its
+prospective test starts. Until H-RADAR-02 is registered, its SQL must not be
+applied: every reader door stays shut until the live hypothesis is registered
+(below). The sections after this one describe H-RADAR-01's rules (version 1),
+which stay registered and whose result stands.
+
+- **Design record and evidence:** `research/radar/H-RADAR-02/DESIGN.md`. That
+  covers the owner's decisions and what Polymarket's data supports, from probe
+  runs 40975470572, 40975893030, 40977654862 and 40982170115.
+- **Draft registration:** `research/radar/registration_h_radar_02.json`.
+
+### What changes (rules version 2, `radar_rules()`)
+
+| | H-RADAR-01 (version 1) | H-RADAR-02 (version 2) |
+|---|---|---|
+| Candidates | the all-time sports board by volume, top 200 | Polymarket's 30-day sports board (`MONTH`), read to rank 1,000. It ranks candidates only, and qualifies nobody |
+| History | oldest first, at most 30 pages; more is truncated (172 of 200) | each candidate's **complete last 90 days**, newest first, 10 pages a run, resumed with its cursor; more than 30 pages is **insufficient history — ungraded** |
+| High-frequency | not screened | 1,000 actions in under 3 days **flags** a wallet (nothing more). Three 24-hour samples (now, 30 and 60 days ago) mark it **high-frequency — not followable** only if all three are known and above 100 position changes a day. A sample that cannot be read is unknown, never low. Counted in position changes, not fills |
+| Pool | the 200 candidates | the 200 fully evaluated wallets with the most **dollars on covered-league game markets** in the 90 days, each with at least 20 covered pregame bets. Discovery continues past every exclusion |
+| Follow price (grades) | the price-history midpoint | the midpoint **plus 1 cent** (Polymarket keeps no ask history), plus the market's taker fee from its own schedule |
+| Featured | top 25 Directional, any score | Directional, ranked, complete history, not high-frequency, **a Radar Score above 0**, **at most 10**, fewer when fewer qualify |
+| Record price | the recorded price (the midpoint) | the **best ask in the order book** when the card is published, plus the market's taker fee at it, with the depth and the midpoint |
+
+### The pipeline (version 2)
+
+- `pool`: reads the 30-day board as candidates (board rank and shares). It
+  writes no pool membership.
+- `wallets`: refreshes the pool's wallets first, then takes candidates in
+  board order while fewer than 200 are eligible. Each candidate goes through:
+  - screening on the first page;
+  - the samples, if flagged;
+  - the complete 90-day read;
+  - its window's covered dollars and bets, and the grade of its newest bets
+    in the window. A version-1 grade moves to version 2 from its stored
+    midpoints, with no new read.
+
+  Then the pool is chosen again. A read that fails part way keeps the cursor
+  it started from.
+- `grade`: grades the pool from its version-2 bets in the window. It writes
+  the run's **discovery counts**: screened, flagged, sampled, high-frequency,
+  insufficient history, fully evaluated, eligible and pool.
+- `tonight`: reads each card's best ask from the order book (`/book`).
+  `radar_publish_cards(p_quotes)` publishes a card only at that ask, with its
+  market's taker fee at it, and only when that fee can be read.
+
+### What a subscriber sees
+
+- **Smart Money Tonight**, from the featured bettors, saying how many qualify
+  today.
+- **Observed Activity**, its own section, labelled *Observed, not a signal*.
+  It shows what the other evaluated bettors hold, counted and summed by
+  side. No bettor is named, and high-frequency wallets and market makers are
+  left out.
+- **How discovery stands**, in one line.
+- **The record**, priced at the best ask, with H-RADAR-01's cards counted
+  apart.
+
+Access is unchanged: the subscriber doors are subscribers only
+(`has_active_sub()`).
+
+### Registered before shown
+
+`radar_registered()` requires the live rules' hypothesis
+(`radar_hypothesis()`): H-RADAR-02 for version 2. H-RADAR-01's registration
+alone no longer opens the doors. `radar_current_run()` takes the latest
+grading run made under the live rules' version, so an H-RADAR-01 run is never
+shown as H-RADAR-02's featured bettors.
+
+### Change-over order
+
+1. **Deploy the function first.** It serves version 1 exactly as before:
+   the version-1 sync suite passes 67/0 against it.
+2. **Register H-RADAR-02.** After the owner approves:
+   - freeze `registration_h_radar_02.json`, with its status, version,
+     `registered_at` and the window's start date;
+   - extend `tools/radar/build_registry_sql.js` to write it into the
+     research registry and `registry_ref:H-RADAR-02`;
+   - apply `supabase/radar_registry.sql`.
+3. **Apply `supabase/radar.sql`, then `supabase/radar_record.sql`.** This
+   has been checked over a version-1 database with data: the `poly_bets` key
+   becomes `(wallet, token_id, grading_version)`, the version-1 rows stay,
+   and the report reads ok.
+4. **Run `run_now`.** Discovery, evaluation and the first version-2 grade.
+
+### Fees (confirmed from Polymarket's documentation, 2026-10-30)
+
+- **The formula.** The taker fee in USDC is shares × `feeSchedule.rate` ×
+  (p × (1 − p)) raised to `exponent`, at the trade price p. Takers only;
+  each market's own schedule decides (`docs.polymarket.com`, `trading/fees`
+  and `market-data/market-details`).
+- **Where it applies.** Grades and cards pay it on top of the price:
+  - a grade's ROI is settlement ÷ (price + fee) − 1;
+  - a card stores `fee_per_share` and is graded the same way.
+- **Unknown schedules.** A market whose schedule cannot be read is never
+  guessed: its follow or card is not graded.
+- **Today.** Polymarket lists 0.05 for Sports; the covered markets probed
+  charge 0.
+
+### Open before registration
+
+- The prospective window's start date.
+- The registry builder for H-RADAR-02.
+
 ## Contents
 
 | Piece | File |

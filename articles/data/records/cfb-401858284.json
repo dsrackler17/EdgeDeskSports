@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Virginia vs. Wake Forest: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Virginia vs. Wake Forest 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Virginia at Wake Forest: Wake Forest −19.0, fair total 50.0. Wake Forest wins 90% of simulations. Data confidence 85%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Virginia at Wake Forest: Wake Forest −19.0, fair total 50.0. Wake Forest wins 90% of simulations. Data confidence 90%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Wake Forest carries the stronger underlying team rating — +10.9 against +3.4, a 7.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Wake Forest −19.0 before any sportsbook number is consulted, with Wake Forest…",
   "home_team": "Wake Forest",
   "away_team": "Virginia",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-31T19:45:00.000Z",
   "game_when_label": "2026-10-31 19:45 UTC",
   "published_at": null,
-  "updated_at": "2026-10-30T00:50:38.302Z",
-  "generated_at": "2026-10-30T00:50:38.302Z",
+  "updated_at": "2026-10-30T09:54:04.516Z",
+  "generated_at": "2026-10-30T09:54:04.516Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 85,
+  "confidence": 90,
   "priced": true,
   "fair_spread_text": "Wake Forest −19.0",
   "fair_total": "50.0",
@@ -66,7 +66,7 @@
       "Wake Forest carries the stronger underlying team rating — +10.9 against +3.4, a 7.5-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Wake Forest −19.0 before any sportsbook number is consulted, with Wake Forest winning 90% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is running backs, where Virginia leads Wake Forest by 88 places nationally.",
-      "Data confidence on this matchup is 85% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 90% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -123,24 +123,24 @@
         "volatility_discriminates": false,
         "note": "Quoted from Wake Forest’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 85,
-      "inputs_reached_pct": 73,
+      "confidence_pct": 90,
+      "inputs_reached_pct": 89,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 23,
+        "priced": 15,
+        "priced_coverage_pct": 58,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 15,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
-          "UNAVAILABLE": 5
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
@@ -148,30 +148,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Wake Forest and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Virginia and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff. 1 older row(s) on file were refused as HISTORICAL against this kickoff (published more than a week before it, or undated), so they say nothing about this game."
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -1464,18 +1440,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
@@ -1500,14 +1464,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1580,18 +1536,18 @@
         "reason": "no market line is joined to this game"
       },
       "confidence": {
-        "score": 85,
+        "score": 90,
         "tier": "HIGH",
         "label": "High"
       },
       "reliability": {
-        "pct": 84,
+        "pct": 94,
         "tier": "STRONG",
-        "text": "84 · STRONG",
-        "sub": "main deduction: Virginia’s availability sources refused",
-        "score": 84,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "text": "94 · VERY STRONG",
+        "sub": "main deduction: no market quote is joined to this game",
+        "score": 94,
+        "grade": "VERY_STRONG",
+        "grade_label": "VERY STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1603,7 +1559,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 9.3,
+            "score": 18.3,
             "max": 20
           },
           {
@@ -1615,13 +1571,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 11.6,
+            "score": 12.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.9,
             "max": 15
           },
           {
@@ -1631,25 +1587,9 @@
             "max": 10
           }
         ],
-        "main_deduction": "Virginia’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Virginia’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "no market quote is joined to this game",
         "capped_by": [],
-        "next_actions": [
-          {
-            "action": "Restore an injury/availability source for Virginia",
-            "potential_gain": 5,
-            "text": "up to +5"
-          },
-          {
-            "action": "Restore an injury/availability source for Wake Forest",
-            "potential_gain": 5,
-            "text": "up to +5"
-          },
-          {
-            "action": "Capture a market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
-          }
-        ],
+        "next_actions": [],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 0.81,
@@ -1687,9 +1627,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 25 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "HIGH",
@@ -1906,7 +1846,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "dujwxu1svnmcg",
+    "packet_hash": "fumi8s120kvwe",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Virginia get Wake Forest off the field on third down?",
@@ -1929,9 +1869,16 @@
     "quarterbacks": [
       "Gio Lopez has completed 140 of 208 passes (67.3%) for 1,947 yards, 9.4 yards per attempt, 18 touchdowns and 1 interception in seven games for Wake Forest, and has been sacked on 10 of 218 dropbacks.",
       "Beau Pribula has completed 119 of 187 passes (63.6%) for 1,419 yards, 7.6 yards per attempt, 13 touchdowns and 2 interceptions in eight games for Virginia, and has been sacked on 24 of 211 dropbacks.",
-      "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, 3 touchdowns and no interceptions in two games for Virginia, and has been sacked on 2 of 20 dropbacks."
+      "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, 3 touchdowns and no interceptions in two games for Virginia, and has been sacked on 2 of 20 dropbacks.",
+      "Gio Lopez does not appear on Wake Forest’s update 1 availability report.",
+      "Beau Pribula does not appear on Virginia’s update 1 availability report."
     ],
-    "availability": [],
+    "availability": [
+      "Virginia’s availability report lists running back Noah Vaughn as questionable.",
+      "Virginia’s availability report lists receiver Kameron Courtney as doubtful.",
+      "Virginia’s availability report lists receiver Dylan Cope as questionable.",
+      "Virginia’s availability report lists 18 players as out, including offensive linemen Noah Hartsoe and Grant Ellinger."
+    ],
     "script": {
       "model": [
         "Wake Forest’s offense has to keep winning on third down: it converts 54.6% of its third downs, and Virginia’s defense allows opponents to convert 29.4% of their third downs.",
@@ -1945,8 +1892,11 @@
       ]
     },
     "unknown": [
+      "Virginia’s availability report lists running back Noah Vaughn as questionable.",
+      "Virginia’s availability report lists receiver Kameron Courtney as doubtful.",
+      "Virginia’s availability report lists receiver Dylan Cope as questionable.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Wake Forest and Virginia.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel, conference implications and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
     ],
     "flags": [
       {
@@ -1960,7 +1910,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-29T22:48:03.785Z",
+        "observed_at": "2026-10-30T05:53:54.856Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1976,6 +1926,13 @@
         "path": "football/rankings/current.json",
         "observed_at": "2026-10-29T19:28:53.811Z",
         "verification": "RATING"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 1)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-30T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1983,6 +1940,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-30T00:50:38.302Z"
+    "at": "2026-10-30T09:54:04.516Z"
   }
 }

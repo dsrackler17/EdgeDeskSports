@@ -24,6 +24,7 @@ on:
       - 'lib/edgedesk_radar.js'
       - 'lib/edgedesk_poly_gateway.js'
       - 'research/radar/run_validation.js'
+      - 'tools/radar/probe_h02.js'
   workflow_dispatch:
 
 permissions:
@@ -38,7 +39,7 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -46,11 +47,19 @@ jobs:
           node-version: '22'
       - name: Ask each Polymarket endpoint once through the Radar gateway, and read it with Radar's parsers
         run: node tools/radar/fetch_sources.js --out tools/radar/out/sources
+      # H-RADAR-02's design questions (tools/radar/probe_h02.js): the leaderboard's periods, recent volume
+      # against the wallets' own trades, the cost of a 90-day window, fees, and the price a follower can pay.
+      # It reports what Polymarket answers; it fails only when no leaderboard answers at all.
+      - name: H-RADAR-02's design questions, before anything is registered
+        if: ${{ always() }}
+        run: node tools/radar/probe_h02.js --out tools/radar/out/h02
       - name: Keep the fetched bodies
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: radar-sources-${{ github.run_id }}
-          path: tools/radar/out/sources
+          path: |
+            tools/radar/out/sources
+            tools/radar/out/h02
           if-no-files-found: ignore
           retention-days: 30
