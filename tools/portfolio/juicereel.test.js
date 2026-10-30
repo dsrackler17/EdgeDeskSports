@@ -233,9 +233,9 @@ function uiRender() {
   const off = view({ juicereel: null });
   chk('UI: without Juice Reel on the server, no Juice Reel panel and the sportsbook copy is unchanged', off.indexOf('data-r="juicereel"') < 0 && /Sportsbooks · import/.test(off) && !/jr-connect/.test(off));
   const wait = view({ juicereel: jr({ available: false, reason: 'awaiting_approval', approval: 'PENDING', message: K.ERRORS.JR_AWAITING_APPROVAL }) });
-  chk('UI: a reader before approval sees "Awaiting provider approval", a disabled Connect, the import fallback — and no way to start linking',
-    stateOf(wait) === 'AWAITING_APPROVAL' && /Awaiting provider approval/.test(wait) && /<button class="pfo-btn ghost" disabled aria-disabled="true"[^>]*>Connect Juice Reel/.test(wait)
-      && !/data-act="jr-connect"/.test(wait) && /awaiting Juice Reel/.test(wait) && /Sportsbooks · import/.test(wait) && !/\bConnected\b/.test(wait));
+  chk('UI: a reader before it opens sees "Not open yet", a disabled Connect, the import fallback — no way to start linking, and no claim that Juice Reel has not approved',
+    stateOf(wait) === 'AWAITING_APPROVAL' && /Not open yet/.test(wait) && /<button class="pfo-btn ghost" disabled aria-disabled="true"[^>]*>Connect Juice Reel/.test(wait)
+      && !/data-act="jr-connect"/.test(wait) && /live test/.test(wait) && !/awaiting Juice Reel|provider approval|Juice Reel(&#39;|')s approval/i.test(wait) && /Sportsbooks · import/.test(wait) && !/\bConnected\b/.test(wait), wait);
   const none = view({ juicereel: jr() });
   chk('UI: available and not connected → "Not connected", Connect Juice Reel, what EdgeDesk reads, never a password field',
     stateOf(none) === 'NOT_CONNECTED' && /data-act="jr-connect">Connect Juice Reel/.test(none) && /open and settled bets/.test(none) && /never sees your Juice Reel or sportsbook password/.test(none)
@@ -284,8 +284,9 @@ function uiRender() {
     /Connect Juice Reel<\/div>/.test(cNone) && /Connect your Juice Reel account to automatically import and sync your betting history\./.test(cNone)
       && /data-act="jr-add-connect">Connect Juice Reel</.test(cNone) && /can never place, change or cancel one/.test(cNone) && /Or add one yourself/.test(cNone), cNone);
   const cWait = choose(jr({ available: false, reason: 'awaiting_approval', approval: 'PENDING', message: K.ERRORS.JR_AWAITING_APPROVAL }));
-  chk('UI · Add a position, before approval: Connect shown disabled with the reason — no way to start linking (no placeholder that pretends)',
-    /disabled aria-disabled="true">Connect Juice Reel</.test(cWait) && !/jr-add-connect/.test(cWait) && /awaiting Juice Reel(&#39;|')s approval/.test(cWait), cWait);
+  chk('UI · Add a position, before it opens: Connect shown disabled with the reason — no way to start linking (no placeholder that pretends), no claim that Juice Reel has not approved',
+    /disabled aria-disabled="true"[^>]*>Connect Juice Reel</.test(cWait) && !/jr-add-connect/.test(cWait) && /Not open yet: Juice Reel opens with EdgeDesk(&#39;|')s live test/.test(cWait)
+      && !/awaiting Juice Reel|provider approval|Juice Reel(&#39;|')s approval/i.test(cWait), cWait);
   const cCon = choose(jr({}, grant({ review: 2 })));
   chk('UI · Add a position, connected: the connection\'s state, who, the held bets to review, and the way to Accounts — no second Connect',
     /data-state="CONNECTED"/.test(cCon) && /Connected as Sharp Bettor/.test(cCon) && /data-act="jr-review">Review 2 held bets</.test(cCon) && /data-act="jr-add-manage"/.test(cCon) && !/jr-add-connect/.test(cCon));
@@ -522,6 +523,22 @@ async function live() {
     const smoke = one(db.service(`select public.portfolio_svc_ag_smoke_begin('juicereel', 'production', 'operator');`));
     r = await call({ action: 'jr_status' }, 'tok-op');
     chk('an operator under a running PRODUCTION smoke test may connect (and is told which test)', r.body.available === true && r.body.smoke_test === smoke && r.body.operator === true);
+    r = await call({ action: 'jr_status' }, 'tok-b');
+    chk('a reader, while that PRODUCTION live test runs, may connect too — not told the test, not an operator', r.status === 200 && r.body.available === true
+      && r.body.operator === false && r.body.smoke_test === null && r.body.approval === 'PENDING', r.body);
+    r = await call({ action: 'jr_start', smoke_test: demo }, 'tok-b');
+    const sessB = jq(db.sql(`select row_to_json(s) from (select state_hash, challenge from portfolio_private.connect_sessions where user_id = ${L(B)}) s;`));
+    const openedB = sessB && await K.jrOpenSession({ keyring: { current: '1', keys: KEYS } }, B, sessB.state_hash, sessB.challenge);
+    chk('…the reader starts linking under the RUNNING test, whatever test id they send (here the failed sandbox one)', r.status === 200
+      && new URL(r.body.url).origin === 'https://www.juicereel.com' && !!openedB && openedB.smoke_test === smoke, { start: r.body, opened: openedB && openedB.smoke_test });
+    db.service(`delete from portfolio_private.connect_sessions where user_id = ${L(B)};`);
+    const startedAt = one(db.service(`select started_at::text from portfolio_private.connector_smoke_tests where id = ${L(smoke)};`));
+    db.service(`update portfolio_private.connector_smoke_tests set started_at = now() - interval '45 days' where id = ${L(smoke)};`);
+    r = await call({ action: 'jr_status' }, 'tok-b');
+    chk('the live test has no expiry: started 45 days ago and still running, it still lets a reader connect, and the database still admits its grants',
+      r.body.available === true && one(db.service(`select public.portfolio_svc_jr_smoke_current('production');`)) === smoke
+        && one(db.service(`select public.portfolio_svc_ag_allowed('juicereel', 'production', ${L(smoke)})::text;`)) === 'true', r.body);
+    db.service(`update portfolio_private.connector_smoke_tests set started_at = ${L(startedAt)}::timestamptz where id = ${L(smoke)};`);
 
     /* the operator's history before connecting: a DraftKings file import with one bet the sync will match */
     db.as(OP, `insert into public.platform_accounts (platform, platform_label, platform_type, connection_type, status) values ('draftkings', 'DraftKings', 'SPORTSBOOK', 'CSV', 'IMPORT_ONLY');`);
@@ -909,6 +926,9 @@ async function live() {
     due();
     const sw2 = await call({ action: 'sweep' });
     chk('with the test finished and Juice Reel still off, not even the operator\'s grant is synced', sw2.body.due === 0);
+    r = await call({ action: 'jr_start' }, 'tok-b');
+    chk('…and a reader can no longer start linking: the live test is over and the switch is not thrown', r.status === 403 && r.body.reason === 'awaiting_approval'
+      && count(`select count(*) from portfolio_private.connect_sessions where user_id = ${L(B)};`) === 0, r.body);
     chk('the switch cannot be thrown without a PASSED PRODUCTION test of juicereel_v1 and a cleared review', /cannot be enabled/.test(db.mustFail(() => db.service(
       `update public.portfolio_platform_registry set automatic_enabled = true, tos_review = 'CLEARED', enabled_by_smoke_test = gen_random_uuid() where platform_key = 'juicereel';`)) || '')
       && /enabled_evidence|violates/.test(db.mustFail(() => db.service(`update public.portfolio_platform_registry set automatic_enabled = true, enabled_by_smoke_test = ${L(smoke)} where platform_key = 'juicereel';`)) || ''));

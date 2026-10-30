@@ -48,10 +48,10 @@
 //                                     — must EXACTLY match the redirect URI
 //                                     registered on the Juice Reel application
 //    (and the PORTFOLIO_CREDENTIAL_KEYS keyring above: tokens are sealed)
-//  Even switched on, readers see "Awaiting provider approval" until the
-//  registry row 'juicereel' is switched on (Juice Reel's approval of the
-//  application, a PASSED PRODUCTION smoke test and a cleared terms review);
-//  until then only an operator running that smoke test can link. A reader's
+//  Even switched on, readers see "Not open yet" until the registry row
+//  'juicereel' is switched on (a PASSED PRODUCTION smoke test and a
+//  cleared terms review) or a PRODUCTION live test is running; while one
+//  runs, every signed-in reader can link under it. A reader's
 //  existing connection can always be disconnected — and revoked at Juice
 //  Reel — whatever the switch says.
 //
@@ -149,7 +149,7 @@
 //   GET                                              health: build and what is
 //        configured, never a value (juicereel.missing names what is not set)
 
-const BUILD = 'portfolio_connect-2026-10-30-jr4';
+const BUILD = 'portfolio_connect-2026-10-30-jr5';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -414,7 +414,7 @@ function sharpsportsConfig(env) {
     NOT_CONFIGURED: 'Sportsbook linking is not configured on this server yet.',
     ENV_MISMATCH: 'This account was linked in a different SharpSports environment (test or live) from the one this server reads, so it is not synced here.',
     /* Juice Reel (OAuth 2.0) */
-    JR_AWAITING_APPROVAL: 'Connecting Juice Reel is not open yet: EdgeDesk\'s Juice Reel application is awaiting Juice Reel\'s approval. Import a file or record bets by hand meanwhile.',
+    JR_AWAITING_APPROVAL: 'Connecting Juice Reel is not open yet: it opens with EdgeDesk\'s live test of the connection. Import a file or record bets by hand meanwhile.',
     JR_STATE_INVALID: 'This Juice Reel sign-in could not be matched to one started here (it expired after 15 minutes, was already used, or was started from another EdgeDesk account). '
       + 'Nothing was connected; start again from Portfolio → Accounts.',
     JR_CONSENT_DENIED: 'You did not authorize EdgeDesk on Juice Reel, so nothing was connected.',
@@ -2769,12 +2769,14 @@ async function jrGate(c, user, smokeTest) {
   if (!jrConfigured(c)) return { ok: false, status: 503, reason: 'not_configured', operator, approval,
     message: K.ERRORS.NOT_CONFIGURED + (operator ? ' Operators: not set in Supabase — ' + jrMissing(c).join(', ') + ' (Actions → Juice Reel setup).' : '') };
   if (reg.automatic_enabled) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: null };
-  if (operator) {
-    let smoke = UUID_RE.test(String(smokeTest || '')) ? smokeTest : null;
-    if (!smoke) { try { smoke = await serviceRpc(c)('portfolio_svc_jr_smoke_current', { p_env: c.juicereel.env }); } catch (_) { smoke = null; } }
-    if (UUID_RE.test(String(smoke || ''))) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: smoke };
-    return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL + ' Operators: start the live smoke test (Actions → Juice Reel setup → start_live_test, or tools/portfolio/juicereel_smoke.js begin) to connect under it.', operator, approval };
-  }
+  /* While the PRODUCTION live test runs, every signed-in reader may link
+     under it (the database admits such grants only while it runs:
+     portfolio_svc_ag_allowed). An operator may name the test; a reader is
+     given the running one, never one they name. */
+  let smoke = operator && UUID_RE.test(String(smokeTest || '')) ? smokeTest : null;
+  if (!smoke) { try { smoke = await serviceRpc(c)('portfolio_svc_jr_smoke_current', { p_env: c.juicereel.env }); } catch (_) { smoke = null; } }
+  if (UUID_RE.test(String(smoke || ''))) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: smoke };
+  if (operator) return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL + ' Operators: start the live smoke test (Actions → Juice Reel setup → start_live_test, or tools/portfolio/juicereel_smoke.js begin) to connect under it.', operator, approval };
   return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL, operator, approval };
 }
 async function jrGrantState(c, user) {
