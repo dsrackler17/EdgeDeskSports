@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-30T00:18:55.000Z",
+ "generated_at": "2026-10-30T01:07:48.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -944,8 +944,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-30T00:18:55.000Z",
-    "quotes_total": 28904,
+    "last_quote_at": "2026-10-30T01:07:48.000Z",
+    "quotes_total": 28909,
     "last_result_at": "2026-10-29T04:07:53.000Z"
    }
   },
@@ -990,7 +990,7 @@
   "ledger": {
    "predictions": 8269,
    "live_predictions": 7759,
-   "quotes": 28904,
+   "quotes": 28909,
    "lines": 4345,
    "results": 521,
    "evaluations": 7252,
@@ -7075,6 +7075,216 @@
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
+      "MARKET_DEGRADED"
+     ]
+    }
+   }
+  },
+  {
+   "game_id": "401862818",
+   "week": 10,
+   "kickoff": "2026-11-07T00:30:00.000Z",
+   "home": "East Carolina",
+   "away": "South Florida",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_loop_v2.0.0": {
+     "label": "Loop v2.0.0",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T02:07:48.000Z",
+     "margin": -1.06,
+     "fair": "South Florida -1.0",
+     "p_home": 0.4742,
+     "sigma": 16.049,
+     "conf": null,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": null
+    },
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T06:07:54.000Z",
+     "margin": -5.7,
+     "fair": "South Florida -5.5",
+     "p_home": 0.3485,
+     "sigma": 14.639,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T11:07:54.000Z",
+     "margin": -0.37,
+     "fair": "South Florida -0.5",
+     "p_home": 0.4905,
+     "sigma": 15.838,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ]
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T11:07:54.000Z",
+     "margin": 0.16,
+     "fair": "PICK",
+     "p_home": 0.5041,
+     "sigma": 15.899,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ]
+    }
+   }
+  },
+  {
+   "game_id": "401858510",
+   "week": 10,
+   "kickoff": "2026-11-07T01:00:00.000Z",
+   "home": "Illinois",
+   "away": "Nebraska",
+   "market": {
+    "current": null,
+    "open": null,
+    "books": 0,
+    "as_of": null,
+    "sources": [],
+    "stale": true
+   },
+   "models": {
+    "edgedesk_cfb_loop_v2.0.0": {
+     "label": "Loop v2.0.0",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T02:07:48.000Z",
+     "margin": -6.11,
+     "fair": "Nebraska -6.0",
+     "p_home": 0.3545,
+     "sigma": 16.158,
+     "conf": null,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": null
+    },
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T06:07:54.000Z",
+     "margin": -5.33,
+     "fair": "Nebraska -5.5",
+     "p_home": 0.3578,
+     "sigma": 14.629,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T11:07:54.000Z",
+     "margin": -3.42,
+     "fair": "Nebraska -3.5",
+     "p_home": 0.4147,
+     "sigma": 15.999,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ]
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-28T11:07:54.000Z",
+     "margin": -2.91,
+     "fair": "Nebraska -3.0",
+     "p_home": 0.4271,
+     "sigma": 15.973,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ]
     }
