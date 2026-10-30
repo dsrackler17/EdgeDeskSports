@@ -127,7 +127,9 @@ an *existing* subaccount. Neither is ever `trading`.
 It runs the tests, deploys the transient `novig_key_bootstrap` with a one-time
 secret, asks it which environment the management key belongs to (it signs
 `POST /v3/echo` on both hosts; the one that answers 200 is the environment,
-and the key list and existing subaccounts are printed), generates an Ed25519
+and the key list and existing subaccounts are printed; when Novig answers but
+accepts the key in neither environment — a 451 location refusal among them —
+the run stops at once and is never retried), generates an Ed25519
 keypair **on the runner**, sends only the public half, lets the management
 key register it (`POST /v3/keys` → `management::read`), checks Novig's
 fingerprint against the key it sent, sets `NOVIG_READ_KEY_ID`,
@@ -314,6 +316,28 @@ Deploy order: provision keys → Deploy Novig market data (`apply_sql`,
 `set_cron_secret`, `enable_ingest=on`, `first_run`). The console
 (`/admin/novig/`) shows readiness, the research summary, the unmapped queue
 and the display switch.
+
+**The deploy check (`verify`, on by default).** The repository is public, and
+so are its Actions logs. Printing a Novig price there would be the
+redistribution §8 forbids. `tools/novig/deploy_check.js` therefore prints
+facts that are not prices, each `ok` or `CHECK THIS` (which fails the job):
+
+- the ten tables, RLS, the policies and the grants, including that anon can
+  read and execute nothing;
+- every index the layer declares;
+- the display switch (off) and the environment served (production);
+- the four cron jobs and that the Vault secret exists;
+- rows by environment, the links, the unmapped reasons, the newest runs, a
+  halt in force, and the DraftKings tape's newest capture;
+- what `novig_access()` and `novig_compare()` give a signed-in reader who is
+  not an admin, and the owner's admin account.
+
+With `report_key` (an RSA-3072+ public key, base64 SPKI DER), the admin's own
+view — the `novig_compare()` rows, their history and the readiness row — is
+added **sealed** to that key (RSA-OAEP-SHA256 + AES-256-GCM). The view goes
+from psql straight into the seal and is never printed. Open it where the
+private half is, with `node tools/novig/deploy_check.js open <key.pem> <
+log.txt`. The whole check is one transaction that is rolled back.
 
 | Alert | Meaning | Do |
 |---|---|---|
