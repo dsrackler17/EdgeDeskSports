@@ -193,12 +193,51 @@ last. So a large order filled in many pieces counts once.
 - **Discovery walks down the 30-day board** until 200 wallets are eligible,
   and reports how many were screened, marked, ungraded and evaluated.
 
+## Approved by the owner (2026-10-30), to be frozen in the registration
+
+- **High-frequency screen.**
+  - A wallet is **high-frequency — not followable** only when each of three
+    samples is known and shows more than 100 position changes a day.
+  - Each sample is the same fixed span: the 24 hours ending now, 30 days ago
+    and 60 days ago.
+  - A sample that could not be read is **unknown**, never low activity. So a
+    wallet with an unknown sample is never labelled high-frequency.
+  - A wallet whose 90 days fit within the processing cap is read
+    completely, so its three spans are counted from its own history and none
+    is unknown.
+  - Passing the screen does not qualify a wallet. It must still pass every
+    performance and follower-execution check.
+- **Processing cap: 30 pages (30,000 actions) for the 90 days.** A wallet over
+  the cap that is not marked high-frequency is **insufficient history —
+  ungraded**. Discovery continues past every exclusion, and each run reports
+  how many wallets were screened, excluded and fully evaluated.
+- **Historical follower price: the midpoint plus 1 cent.** Polymarket keeps
+  only midpoint history. That is a full tick, twice the half-cent seen on
+  liquid NBA markets. Live cards record the real best ask from the order
+  book.
+- **The prospective test runs 12 weeks, with a fixed end date.**
+  - It measures the featured wallets' Smart Money cards (at most 10 wallets),
+    followed at the live best ask when published, net of fees.
+  - They must beat the close more than 50% of the time and show positive
+    ROI, both on game-clustered 95% intervals, as in H-RADAR-01.
+  - Fewer than 200 graded cards by the end date means it cannot pass, and
+    the report says so.
+- **Fees.** Third-party guides disagree on Polymarket's formula and its
+  sports rate. Polymarket's own documentation (docs.polymarket.com) could not
+  be reached from the build session.
+  - So the fee is never hardcoded. Each card stores its market's
+    `feeSchedule` at publication, and the fee comes from it.
+  - Every covered market probed shows rate 0 today, so the fee is 0.
+  - Before the registration is frozen, the formula must be confirmed from
+    Polymarket's documentation. The fee must also be recomputed whenever a
+    covered market shows a non-zero rate.
+
 ## Open, for the registration
 
 - The minimum number of covered pregame bets in 90 days (decision 3).
 - The processing cap and the followability test: proposed above, from the
   screening evidence (decision 7). They need the owner's review.
-- The historical cost allowance over the midpoint, and the fee formula
-  applied to each market's schedule.
-- The prospective test: its window or sample, its criteria and its stopping
-  rule, fixed before it starts.
+- Polymarket's fee formula, confirmed from its own documentation.
+- The registration file itself, with the frozen rules, the forking-paths
+  disclosure (this record and the probe runs are data seen before
+  registration) and the test's start and end dates.
