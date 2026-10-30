@@ -323,6 +323,78 @@ chk('"St." at the end is State ("Michigan St." is Michigan State)', R.teamScore(
 chk('"St. Louis Blues" keeps its saint', R.teamScore('Blues', 'St. Louis Blues') === 2);
 chk('accents fold ("Montréal" is "Montreal")', R.teamScore('Montréal Canadiens', 'Montreal Canadiens') === 3);
 
+/* ── H-RADAR-02 (rules_version 2): research/radar/registration_h_radar_02.json, a DRAFT ── */
+const RULES2 = require(path.join(ROOT, 'research', 'radar', 'registration_h_radar_02.json')).spec.rules;
+chk('v2: the draft registration carries every rule the core reads, both versions', R.RULE_KEYS.concat(R.RULE_KEYS_V2).every((k) => RULES2[k] !== undefined),
+  R.RULE_KEYS.concat(R.RULE_KEYS_V2).filter((k) => RULES2[k] === undefined));
+chk('v2: a version-2 rule that is missing is named', (() => { try { R.rules(Object.assign({}, RULES2, { follow_cost: undefined })); return false; } catch (e) { return /missing follow_cost/.test(e.message); } })());
+chk('v2: H-RADAR-01\'s frozen rules are still version 1, whole', R.rulesVersion(RULES) === 1 && R.rules(RULES) === RULES && R.gradingVersion(RULES) === 'radar-grade-1');
+chk('v2: the draft is version 2, graded as radar-grade-2', R.rulesVersion(RULES2) === 2 && R.gradingVersion(RULES2) === 'radar-grade-2');
+/* fees: as the probe saw them (run 40975470572): fees enabled, feeType zero_fees, schedule rate 0 */
+const v2feeM = (o) => R.marketRow(Object.assign({ conditionId: '0x' + 'c'.repeat(64), question: 'Kings vs. Pelicans', outcomes: '["Kings", "Pelicans"]', outcomePrices: '["0.315", "0.685"]',
+  clobTokenIds: '["1", "2"]', sportsMarketType: 'moneyline', gameStartTime: '2026-10-30 00:00:00+00', slug: 'nba-sac-nop-2026-10-29' }, o));
+const v2live = v2feeM({ feesEnabled: true, feeType: 'zero_fees', feeSchedule: { exponent: 1, rate: 0, takerOnly: true, rebateRate: 0 }, makerBaseFee: 1000, takerBaseFee: 1000 });
+chk('v2: a market\'s fee schedule is read as it says itself', v2live.fees_enabled === true && v2live.fee_schedule.rate === 0 && v2live.fee_schedule.fee_type === 'zero_fees' && v2live.fee_schedule.taker_only === true, v2live.fee_schedule);
+chk('v2: a market\'s fee schedule as the formula reads it: fees off is no fee; on with a rate and exponent is that schedule',
+  JSON.stringify(R.feeSchedule(v2live)) === '{"rate":0,"exponent":1}' && JSON.stringify(R.feeSchedule(v2feeM({ feesEnabled: false }))) === '{"rate":0,"exponent":1}'
+  && JSON.stringify(R.feeSchedule(v2feeM({ feesEnabled: true, feeSchedule: { rate: 0.05, exponent: 1, takerOnly: true } }))) === '{"rate":0.05,"exponent":1}');
+chk('v2: a fee status never read, or an unreadable schedule, is unknown (null): never guessed', R.feeSchedule(v2feeM({})) === null && R.feeSchedule({ fees_enabled: null }) === null
+  && R.feeSchedule(v2feeM({ feesEnabled: true, feeSchedule: null })) === null && R.feeSchedule(v2feeM({ feesEnabled: true, feeSchedule: { rate: 'x', exponent: 1 } })) === null);
+/* Polymarket's published fee tables (docs.polymarket.com, trading/fees): 100 shares in Sports (0.05) at 50¢ pay $1.25, at 30¢ $1.05, at 99¢ $0.05; Crypto (0.07) at 50¢ $1.75 */
+const SP = { rate: 0.05, exponent: 1 };
+chk('v2: the taker fee is Polymarket\'s formula, rate x (p x (1 - p))^exponent, and matches its fee tables', near(100 * R.takerFee(0.5, SP), 1.25, 1e-9) && near(100 * R.takerFee(0.3, SP), 1.05, 1e-9)
+  && Math.abs(100 * R.takerFee(0.99, SP) - 0.05) < 0.005 && near(100 * R.takerFee(0.5, { rate: 0.07, exponent: 1 }), 1.75, 1e-9) && R.takerFee(0.5, { rate: 0, exponent: 1 }) === 0 && R.takerFee(1, SP) === null);
+/* the follower's cost: the midpoint + 1 cent, then the market's taker fee at that price */
+const v2g = { follow5_price: 0.5, follow15_price: 0.6, close_price: 0.505, settle: 1, fee_schedule: { rate: 0, exponent: 1 } };
+const v2c1 = R.followCost(v2g, RULES2);
+chk('v2: the follow price is the midpoint plus 1 cent, and its ROI is at that price (no fee here)', v2c1.follow5_mid === 0.5 && v2c1.follow5_price === 0.51 && v2c1.follow5_fee === 0 && near(v2c1.follow5_roi, 1 / 0.51 - 1, 1e-6) && v2c1.follow15_price === 0.61, v2c1);
+chk('v2: beating the close is against the price paid: a close of 0.505 beats a 0.50 midpoint but not a 0.51 follow', v2c1.beat_close5 === false && v2c1.grading_version === 'radar-grade-2', v2c1);
+const v2cf = R.followCost(Object.assign({}, v2g, { fee_schedule: SP }), RULES2);
+chk('v2: on a market charging the Sports rate the follower also pays its taker fee: 0.05 x 0.51 x 0.49 = 0.012495 a share, ROI = 1 / (0.51 + 0.012495) - 1',
+  near(v2cf.follow5_fee, 0.012495, 1e-9) && near(v2cf.follow5_roi, 1 / (0.51 + 0.012495) - 1, 1e-6) && v2cf.follow5_price === 0.51 && v2cf.beat_close5 === false, v2cf);
+const v2c2 = R.followCost(Object.assign({}, v2g, { fee_schedule: null }), RULES2);
+chk('v2: an unknown fee leaves the follow ungraded, with its reason (never a guess)', v2c2.follow5_price === null && v2c2.follow5_roi === null && v2c2.follow5_reason === 'fee_unknown' && v2c2.beat_close5 === null, v2c2);
+const v2c3 = R.followCost(Object.assign({}, v2g, { follow5_price: 0.995 }), RULES2);
+chk('v2: a follow that would cost 1 or more cannot be bought', v2c3.follow5_price === null && v2c3.follow5_reason === 'price_at_bound', v2c3);
+const v2c4 = R.followCost(Object.assign({}, v2g, { follow5_price: null, follow5_reason: 'started_before_follow' }), RULES2);
+chk('v2: a follow with no midpoint keeps its own reason', v2c4.follow5_price === null && v2c4.follow5_reason === 'started_before_follow');
+chk('v2: a stored version-1 grade moves to version 2 with no new read (the same as grading the history at version 2)',
+  JSON.stringify(R.followCost(R.followCost(v2g, RULES2), RULES2).follow5_price) === JSON.stringify(v2c1.follow5_price));
+chk('v1 is unchanged: no cost, the recorded price', (() => { const b = { entry_at: 0, game_start_at: 120 * MIN, settle: 1, entry_price: 0.4 }; const g = R.gradeBet(b, [{ t: 4 * MIN, p: 0.5 }, { t: 100 * MIN, p: 0.55 }], RULES); return g.follow5_price === 0.5 && g.follow5_mid === undefined; })());
+chk('v2: gradeBet adds the cost to the history\'s midpoint', (() => { const b = { entry_at: 0, game_start_at: 120 * MIN, settle: 1, entry_price: 0.4, fee_schedule: { rate: 0, exponent: 1 } }; const g = R.gradeBet(b, [{ t: 4 * MIN, p: 0.5 }, { t: 100 * MIN, p: 0.55 }], RULES2); return g.follow5_mid === 0.5 && g.follow5_price === 0.51 && g.beat_close5 === true; })());
+/* position changes, not fills */
+const v2fill = (min, tok, side) => ({ kind: 'TRADE', ts: T0 + min * MIN, token_id: tok, side: side || 'BUY' });
+chk('v2: fills on one token and side, each within 10 minutes of the last, are one position change', R.positionChanges([v2fill(0, 'a'), v2fill(4, 'a'), v2fill(12, 'a'), v2fill(21, 'a')], RULES2) === 1);
+chk('v2: a gap of more than 10 minutes, another side or another token is another change', R.positionChanges([v2fill(0, 'a'), v2fill(11, 'a'), v2fill(12, 'a', 'SELL'), v2fill(12, 'b')], RULES2) === 4);
+chk('v2: redemptions, splits and merges are not position changes', R.positionChanges([v2fill(0, 'a'), { kind: 'REDEEM', ts: T0 }, { kind: 'MERGE', ts: T0 + MIN }], RULES2) === 1);
+/* the screening flag */
+const v2page = (n, spanDays) => Array.from({ length: n }, (_, i) => ({ ts: T0 - (i / Math.max(n - 1, 1)) * spanDays * 24 * H }));
+chk('v2: 1,000 actions in under 3 days, with more to come, is a flag', R.screenFlag(v2page(1000, 2.9), true, T0, RULES2) === true);
+chk('v2: …not 999, not 3 days or more, not when the page is the whole window', R.screenFlag(v2page(999, 1), true, T0, RULES2) === false && R.screenFlag(v2page(1000, 3.1), true, T0, RULES2) === false
+  && R.screenFlag(v2page(1000, 1), false, T0, RULES2) === false);
+/* the samples and the verdict */
+const v2busy = Array.from({ length: 150 }, (_, i) => v2fill(-i * 9.5, 't' + (i % 3)));   /* 150 changes in a day: three tokens, each fill 28.5 minutes after its token's last */
+chk('v2: a sample read to its start counts its changes a day', (() => { const x = R.hfSample(v2busy, true, RULES2); return x.known && x.changes_per_day === 150; })(), R.hfSample(v2busy, true, RULES2));
+chk('v2: a sample that could not be read is unknown, never low activity', (() => { const x = R.hfSample(null, false, RULES2); return x.known === false && x.reason === 'unread' && x.changes_per_day === null; })());
+chk('v2: a sample cut short is unknown unless what it read already exceeds the bar', R.hfSample(v2busy.slice(0, 50), false, RULES2).known === false && R.hfSample(v2busy, false, RULES2).known === true);
+const S = (v) => ({ known: true, changes_per_day: v });
+chk('v2: high-frequency only when all three samples are known and above 100 a day', R.hfVerdict([S(150), S(101), S(3000)], RULES2).high_frequency === true
+  && R.hfVerdict([S(150), S(100), S(3000)], RULES2).high_frequency === false && R.hfVerdict([S(150), { known: false }, S(3000)], RULES2).high_frequency === false
+  && R.hfVerdict([S(150), S(150)], RULES2).high_frequency === false);
+chk('v2: the samples are the 24 hours ending now, 30 and 60 days ago', (() => { const sp = R.hfSpans(T0, RULES2); return sp.length === 3 && sp[0].to === T0 && sp[1].to === T0 - 30 * 24 * H && sp[2].from === T0 - 60 * 24 * H - 24 * H; })());
+/* featured: a positive score, never high-frequency, at most 10; fewer when fewer qualify */
+const v2gw = (w, score, o) => Object.assign({ wallet: w, sample: 'ranked', radar_score: score, graded_bets: 60, style: 'Directional', history_truncated: false }, o || {});
+const v2field = [v2gw('a', 5), v2gw('b', 0.4), v2gw('c', 0), v2gw('d', -2), v2gw('e', 9, { high_frequency: true }), v2gw('f', 7, { history_truncated: true }), v2gw('g', 3, { style: 'Hedger' })];
+R.rankWallets(v2field, RULES2);
+const v2feat = v2field.filter((g) => g.top_directional).map((g) => g.wallet).sort().join();
+chk('v2: featured only with a Radar Score above 0, never high-frequency, truncated or not Directional: here 2 of 7, and the page says fewer qualify', v2feat === 'a,b', v2field.map((g) => g.wallet + ':' + g.rank + ':' + g.top_directional));
+const v2many = Array.from({ length: 14 }, (_, i) => v2gw('w' + String(i).padStart(2, '0'), 20 - i));
+R.rankWallets(v2many, RULES2);
+chk('v2: at most 10 featured, by Radar Score', v2many.filter((g) => g.top_directional).length === 10 && !v2many.find((g) => g.wallet === 'w10').top_directional);
+const v1field = [v2gw('a', 5), v2gw('d', -2)];
+R.rankWallets(v1field, RULES);
+chk('v1 is unchanged: a negative score could be top-graded under H-RADAR-01', v1field.every((g) => g.top_directional));
+
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
 console.log((fail ? 'FAILED' : 'ALL GREEN') + ' radar core — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

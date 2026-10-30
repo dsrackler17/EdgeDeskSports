@@ -41,6 +41,9 @@ const make = (w, extra) => G.make(Object.assign({ fetch: w.fetch, sleep: w.sleep
 (async () => {
   /* endpoints */
   chk('only listed endpoints: an unknown one throws', (() => { try { G.url('pnl', {}); return false; } catch (e) { return /unknown endpoint/.test(e.message); } })());
+  chk('the CLOB\'s live book, price, midpoint and fee rate are listed endpoints (H-RADAR-02: the price a follower pays)',
+    G.url('book', { token_id: '12' }) === 'https://clob.polymarket.com/book?token_id=12' && G.url('price', { token_id: '12', side: 'BUY' }) === 'https://clob.polymarket.com/price?token_id=12&side=BUY'
+    && G.url('midpoint', { token_id: '12' }) === 'https://clob.polymarket.com/midpoint?token_id=12' && G.url('fee_rate', { token_id: '12' }) === 'https://clob.polymarket.com/fee-rate?token_id=12');
   chk('the P&L and rankings hosts are not in the gateway', !Object.values(G.HOSTS).some((h) => /pnl|rank/i.test(h)) && Object.keys(G.HOSTS).sort().join() === 'clob,data,gamma');
   chk('an array repeats its key; empty values are left out', G.url('markets', { condition_ids: ['0xa', '0xb'], closed: null, limit: 2 }) === 'https://gamma-api.polymarket.com/markets?condition_ids=0xa&condition_ids=0xb&limit=2');
   chk('the leaderboard is the v1 path on the data API', G.url('leaderboard', { category: 'SPORTS' }) === 'https://data-api.polymarket.com/v1/leaderboard?category=SPORTS');

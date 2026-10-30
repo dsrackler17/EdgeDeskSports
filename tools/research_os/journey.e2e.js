@@ -139,6 +139,9 @@ function setupDb() {
 /* (edp_track, the trial-activation door, stands on the whole billing, Stripe and affiliate stack (supabase/growth.sql):
    it is not part of this test, so it answers like any door this test does not serve) */
 const SERVED = /\/rest\/v1\/(rpc\/(sc_[a-z_]+|sim_[a-z_]+|portfolio_[a-z_]+)|(my_watchlist|watchlist_games|user_preferences|alert_preferences|user_alerts|game_research_state|research_journal|sim_current_[a-z_]+|portfolio_[a-z_]+|platform_accounts)\b)/;
+/* Market Foresight's game door answers late, as it did on a slow runner (#924's phone run, 2026-10-30):
+   the game page draws its Foresight card first and adds the record's link when this answers */
+const MF_GAME_LATE_MS = 2000;
 
 (async function main() {
   let browser = null, srv = null;
@@ -222,6 +225,7 @@ const SERVED = /\/rest\/v1\/(rpc\/(sc_[a-z_]+|sim_[a-z_]+|portfolio_[a-z_]+)|(my
           if (/\/rest\/v1\/subscriptions/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(who === 'free' ? [] : [{ status: 'active', price_id: 'price_x', current_period_end: '2027-06-01T00:00:00Z' }]) });
           if (MF.owns(url) || SERVED.test(url)) {
             served.push(url.replace(SB, ''));
+            if (MF.readsRecord(url)) await new Promise((r) => setTimeout(r, MF_GAME_LATE_MS));
             const h = req.headers();
             const res = await stand.fetch(url.replace(SB, 'http://standin'), { method: req.method(), headers: { authorization: h.authorization || '', prefer: h.prefer || '', 'content-type': 'application/json' }, body: req.postData() || undefined });
             const text = await res.text();
@@ -287,6 +291,8 @@ const SERVED = /\/rest\/v1\/(rpc\/(sc_[a-z_]+|sim_[a-z_]+|portfolio_[a-z_]+)|(my
       T.chk(W + ': Open research lands on the game\'s own page, by its research key', s.views.join() === 'v-game' && s.hash === '#game/' + LG + '/' + GID && s.seat.join() === 'research', s);
       T.chk(W + ': the game is the research context', s.ctx && s.ctx.researchKey === KEY && !!SNAP_HOME && s.ctx.home === SNAP_HOME && !!SNAP_AWAY && s.ctx.away === SNAP_AWAY, s.ctx);
       T.chk(W + ': and the AI desk\'s screen, by the card\'s own id and sport key', s.screen && s.screen.game_id === GID && s.screen.sport === DESK_SPORT, s.screen);
+      /* the Foresight card links its record once Market Foresight's door answers */
+      await page.waitForFunction(() => { const e = document.getElementById('gvWsFs'); return !!e && !/Checking the record/.test(e.textContent); }, null, { timeout: 15000 }).catch(() => null);
       const links = await page.$$eval('#gvWs a[href]', (as) => as.map((a) => a.getAttribute('href')));
       T.chk(W + ': the workspace links Signals, Foresight and the Simulator for this game', links.indexOf('#signals/' + LG) >= 0 && links.indexOf('#foresight/game/' + encodeURIComponent(LG + ':' + GID)) >= 0 && (LG !== 'nfl' || links.indexOf('#simulator/nfl') >= 0), links);
       T.chk(W + ': no horizontal scroll on the game', await noHScroll(page));
