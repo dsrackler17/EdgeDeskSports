@@ -171,6 +171,32 @@ try {
   chk('no client may ask the gateway for requests', fails(() => db.anon("select public.poly_api_acquire('{}'::jsonb);")) && fails(() => asSub("select public.poly_api_acquire('{}'::jsonb);"))
     && fails(() => asA("select public.poly_api_settle('{}'::jsonb);")));
 
+  /* DEAD RUNS (owner's decision, 2026-10-30): a run that dies never settles, and its whole grant stayed reserved for the
+     rest of the day (2026-10-30: 40,000 granted, 17,785 used). Fifteen minutes after it was given, the next acquire
+     settles it at what its run last reported plus 100, never more than it was granted. The ceiling is unchanged. */
+  const deadGrant = (req, ago) => +V(`insert into public.poly_api_grants (caller, requested, granted, decision, granted_at) values ('polymarket_sync:tonight', ${req}, ${req}, 'granted', now() - interval '${ago}') returning grant_id;`);
+  const dA = deadGrant(400, '20 minutes'), dB = deadGrant(900, '20 minutes'), dC = deadGrant(400, '5 minutes');
+  V("update public.poly_api_days set granted = 1700, used = 0");
+  fn(`public.poly_api_progress('{"grant_id":${dB},"used":300}'::jsonb)`, db.service);
+  fn(`public.poly_api_progress('{"grant_id":${dB},"used":120}'::jsonb)`, db.service);
+  chk('dead runs: progress never goes backwards (a late, older report does not lower it)', V(`select used from public.poly_api_progress where grant_id = ${dB}`) === '300');
+  fn(`public.poly_api_progress('{"grant_id":${dC},"used":999}'::jsonb)`, db.service);
+  chk('dead runs: progress is capped at the grant', V(`select used from public.poly_api_progress where grant_id = ${dC}`) === '400');
+  const gNext = fn("public.poly_api_acquire('{\"caller\":\"t\",\"requested\":10}'::jsonb)", db.service);
+  chk('dead runs: a grant unsettled after 15 minutes that never reported is settled at 100 of its 400, recorded as expired',
+    V(`select used || '|' || (statuses ->> 'expired') from public.poly_api_settlements where grant_id = ${dA}`) === '100|true');
+  chk('dead runs: one that reported 300 of 900 is settled at 400 (its last report plus 100)', V(`select used from public.poly_api_settlements where grant_id = ${dB}`) === '400');
+  chk('dead runs: a grant 5 minutes old is left alone: its run may still be working', V(`select count(*) from public.poly_api_settlements where grant_id = ${dC}`) === '0');
+  chk('dead runs: the day gets back what they did not use (1,700 - 300 - 500 = 900, then the new 10), and counts what they may have used (500)',
+    gNext.decision === 'granted' && V("select granted || '|' || used from public.poly_api_days") === '910|500', V("select granted || '|' || used from public.poly_api_days"));
+  chk('dead runs: a late settlement of an expired grant changes nothing', fn(`public.poly_api_settle('{"grant_id":${dA},"used":50}'::jsonb)`, db.service).settled === false
+    && V("select granted || '|' || used from public.poly_api_days") === '910|500');
+  chk('dead runs: no client may report progress', fails(() => db.anon(`select public.poly_api_progress('{"grant_id":${dC},"used":1}'::jsonb);`))
+    && fails(() => asSub(`select public.poly_api_progress('{"grant_id":${dC},"used":1}'::jsonb);`)) && fails(() => asSub('select count(*) from public.poly_api_progress;')));
+  db.service(`select public.poly_api_settle('{"grant_id":${dC},"used":0}'::jsonb);`);
+  db.service(`select public.poly_api_settle('{"grant_id":${gNext.grant_id},"used":0}'::jsonb);`);
+  V("update public.poly_api_days set granted = 0, used = 0");
+
   /* ===================================================================== */
   /* 5-7. THE WORLD, AND EVERY GUARD ON THE WAY IN                          */
   /* ===================================================================== */

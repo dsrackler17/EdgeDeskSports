@@ -6,6 +6,89 @@
 - **The change.** `football-situational.yml` restores the cache with `actions/cache/restore@v4` and saves it with `actions/cache/save@v4` right after the engine stages, before the commit and the Supabase copy. A failed build still saves nothing.
 - **Not fixed here.** The Supabase step fails on every run until the migration is applied to production. That is the owner's deployment.
 - **Test.** `football/situational/tests/integration.test.js`: on the old workflow 25 passed and 4 failed (the 4 new checks); now 29 of 29. Each new check also fails when the save is moved after the Supabase copy, runs on `always()`, or uses a key the next run does not restore.
+## 2026-10-30 — Franchise SQL: the founding-age spread is held on forty fixed rosters, not on one random roster per run
+
+**What failed.** A full `npm run verify` on 2026-10-30 went red at `games-sql.yml` "Refuse a silent skip". The franchise SQL suite had stopped after 724 checks:
+
+```
+FAIL: and no one age dominates it, which is what made the wave — 13 of 38
+```
+
+Two re-runs of the same tree passed. Nothing in the game was wrong.
+
+**Why.** The check read the founding roster of one fresh franchise. `franchise_create` gives every franchise a new random seed (`md5` of a random uuid and the clock), so the suite checked a different roster every run.
+
+The generator (`franchise_generate_roster`, `career_v1`) spreads ages uniformly over 21 to 32, as its comment says. Over 3,000 generated rosters, the size of each roster's biggest single age matched a uniform draw of 38 over 12 ages in every bucket:
+
+| biggest age group | 6 | 8 | 10 | 12 |
+|---|---|---|---|---|
+| expected | 1,180 | 292 | 24 | 1.1 |
+| measured | 1,207 | 283 | 19 | 1 |
+
+So a correct generator puts 13 or more of 38 at one age (over a third) about once in 12,000 rosters. It fails the neighbouring "spread across its whole age range" check about once in 52,000: no one aged 21 to 23, or fewer than eight ages. Searching seeds, the unchanged generator built such a roster, with only 7 distinct ages (seed `feaa68f2…`, the 10,758th tried). Both checks failed at random on a working game.
+
+**The repair.** Test only (`tools/games/sql/games_franchise.test.sql`). No game code, data or threshold changed.
+- The two claims are held on forty fixed seeds (`age-spread:1` … `age-spread:40`). `franchise_generate_roster`, the generator `franchise_create` calls and a pure function of its seed, turns them into the same forty rosters every run. Each must be spread across the range and have no age at a third or more, the same thresholds as before.
+- A new check requires the forty together to be flat: every age of the range holds its even share of the 1,520 players, give or take 30% (measured: 104 to 145 against 127).
+- The rosters are built and measured in a block that is rolled back, so no later check sees them. The fresh franchise is still created and still re-seeds the generator at random for everything after it.
+- The fresh franchise keeps its deterministic checks: 38 founding players, every age inside the published range.
+
+**Before and after** (`node tools/games/franchise_sql.test.js`, real PostgreSQL):
+
+| | old test | new test |
+|---|---|---|
+| unchanged generator, the fresh franchise drawing seed `feaa68f2…` | FAIL: spread, `21,22,24,25,26,27,32` | PASS |
+| mutation A: ages skewed young, `power(random(), 2)` | not run | FAIL: biggest single age 21 of 38 |
+| mutation B: ages bunched on 21, 24, 27, 30 | not run | FAIL: fewest ages 4 |
+| mutation C: a mild lean young, `power(random(), 1.35)` | not run | FAIL: biggest single age 16 of 38 |
+| mutation D: off by one, age 32 never drawn | PASS (993): every age still sits inside the range | FAIL: not flat, 11 of the 12 ages |
+
+The suite runs 999 checks, or 996 when the simulated first season earns no bowl. The bowl branch guards three checks; that was true before, when the counts were 996 and 993. The file has three more checks than before:
+- the two spread claims moved from the fresh roster to the forty fixed ones;
+- three are new: forty rosters of 38 were built, the forty are flat, and the fresh franchise has 38 founding players.
+## 2026-10-30 — Methodology change (integrity guard, owner's decision): the Polymarket request budget settles a dead run's grant at what it may have used
+
+**A change to the gateway's budget guard (AGENTS.md §3). It needs the owner's explicit review before it is deployed.**
+
+- **Why.** A run that dies (out of compute, a 502 from the database) never calls `poly_api_settle`, so its whole grant stayed reserved for the rest of the UTC day.
+  - On 2026-10-30 (stage report, run 41069288565), 56 tonight grants were never settled and held 22,215 requests. The day read granted 40,000 and used 17,785.
+  - Every run after 09:55 UTC was refused (`denied_budget`), so Smart Money Tonight had no current holders.
+- **What.**
+  - Each run reports its requests so far every 20 requests (`poly_api_progress()`, a new table of the same name). The report never goes backwards, never exceeds the grant, and never lands after the settlement.
+  - Under the day's lock, `poly_api_acquire()` first settles every grant still unsettled 15 minutes after it was given, at its last report plus 100, capped at the grant. Each is recorded as expired. A run lives at most about 7 minutes, so it is gone by then.
+  - The day gets back only what the dead run cannot have used.
+  - The daily ceiling (40,000) and the per-run cap (3,000) are unchanged, and `radar_rules()` is unchanged. `polymarket_sync` is build `.10`.
+- **Tests, failing first.**
+  - SQL 237 -> 245: two dead grants (no report: 100 of 400; reported 300: 400 of 900), a fresh one left alone, the day's totals (910 granted, 500 used), a late settlement changing nothing, and no client access. Before `poly_api_progress()` existed, the suite stopped on its first call.
+  - Sync 83 -> 84: runs report in steps of 20, never more than they used. On the old function: 83 passed, 1 failed (no report).
+
+## 2026-10-30 — NHL goalie sync: ESPN's probable goalies are a second starter source
+
+- **What failed.** Daily Faceoff refused the function (HTTP 403) from 16:34 UTC; the 16:00 run had read it. More than three hours out it is the only source, so every run was a `sources_down` error and tonight's starters could only be confirmed by hand (`hockey/data/confirmed_starters.json`).
+- **The source.** ESPN's public NHL scoreboard (`site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=<ET date>`) answers a plain request with each team's `probableStartingGoalie` and ESPN's status word. On 2026-10-30 it named all six starters (two Confirmed, four Expected); every name matched a rated goalie.
+- **The change** (build `nhl_goalie_sync@2026-10-30.3`). The sync reads ESPN on its own cadence (pg_cron, every five minutes; runs at the due slots), for each Eastern date, and stores each probable goalie as an `espn` observation. Nothing is entered by hand.
+  - ESPN's "Confirmed" is Confirmed, its "Expected" is Likely, as Daily Faceoff's words are read. A goalie only Expected never opens the edge gate or the lineup lock.
+  - When ESPN and Daily Faceoff name different goalies, it is a conflict: Daily Faceoff leads, at Likely at most.
+  - `sources_down` now needs Daily Faceoff and ESPN both unreadable. ESPN down alone is DEGRADED; a changed response shape is a DRIFT.
+- **SQL.** `supabase/nhl_goalie_layer.sql` (and its migration copy) adds `espn` to the starters' source check; applying the file again replaces the check on the live table. It must be applied before the function is deployed.
+- **Tests,** shown failing on the old code first:
+  - core: 113/0 (the suite crashes on the old core);
+  - sync: 104/0 (main's function at `761147e24`, which retries Daily Faceoff: 96/8; Daily Faceoff refusing is still `sources_down`, and there are no ESPN rows);
+  - SQL on a real PostgreSQL: 85/0 (old 14/2: the old check refuses the `espn` row);
+  - UI: 48/0 (old 46/2).
+
+  ESPN's parser is tested on its real 2026-10-30 response, trimmed to the fields it reads.
+- **Terms.** ESPN's response is public but unlicensed, like the ESPN NHL pack: the source registry names it beside Daily Faceoff for the owner's review before paid use.
+## 2026-10-30 — Novig in production: DraftKings from the prices production keeps; ingestion only on a key Novig lists as read-only
+
+- **What production showed.** Deploy run 41112694540 applied nothing. The layer's guard refused: `needs public.sharp_price_snapshots (the DraftKings tape): apply supabase/sharp_lag.sql first`. Production has no Sharp-lag tape. It keeps DraftKings in `book_quote_ticks` (capture's per-book history, joined to `signals` by `sig_key`), and only for actionable signals. The project's secret names (run 41113406385, names only) show `NOVIG_MANAGEMENT_KEY_ID` and `NOVIG_MANAGEMENT_PRIVATE_KEY` NOT set, and an unexplained `NOVIG_READ_KEY_ID` / `NOVIG_READ_PRIVATE_KEY` pair set.
+- **DraftKings source.** `novig_market_data.sql` reads DraftKings through one service-only view, `novig_dk_tape`. It is built from the Sharp-lag tape where it exists, otherwise from `book_quote_ticks`. `novig_dk_price`, `novig_history`, the report, `novig_sync`'s line choice and the deploy check all read the view. Nothing is written to either source. Applied again after `sharp_lag.sql`, the layer switches to the full tape. The comparison's source line says which one is in use.
+- **Least privilege, enforced.** `discover` and `snapshot` now run only after a probe in the last 30 hours saw Novig list the key as `management::read`. A `management` or `trading` key, or an unlisted one, is a FAILURE (`key_not_read_only`; it used to be a WARNING). Every later run is skipped (`scope_unverified`) and calls nobody. A newer refusal is never shadowed by an older pass.
+- **Provisioning.** When the bootstrap cannot sign at all (the management key is not set), `whoami` exits 4: "Novig was never asked". It no longer reports that as Novig's answer. Not retried.
+- **Tests.**
+  - `novig_sql.test.js`: 65 → 74, adding a second real-PostgreSQL world shaped like production (`signals` and `book_quote_ticks` only). On the old layer: 2 failed, with production's exact guard error.
+  - `novig_sync.test.js`: 44 → 50. On the old code the source check fails (`GET sharp_price_snapshots`), and a management key only warned.
+  - `novig_bootstrap.test.js`: 22 → 23.
 
 ## 2026-10-30 — NBA injury report: two-line reasons go to the right player, and nothing is left unread
 

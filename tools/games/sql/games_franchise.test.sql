@@ -112,6 +112,8 @@ declare
   scf uuid; scg uuid; sc jsonb; sc2 jsonb; band_lo integer; band_hi integer; wdt integer;
   -- the development program and the league
   dvf uuid; dv jsonb; dv2 jsonb; grd jsonb; pot0 integer; ovr0 integer; std0 integer; nslot integer;
+  -- the founding ages, on fixed seeds
+  agf uuid; ag jsonb;
   -- the rank and the packs
   rkf uuid; rk jsonb; pk jsonb; pk2 jsonb; nlow integer; nhigh integer; nrank integer;
   -- the drives you call
@@ -3970,40 +3972,78 @@ begin
     and public.franchise_staff()->>'version' = 'staff_v2');
 
   -- ── ONE: the founding roster renews itself every season ─────────────────
+  -- THE SPREAD IS HELD ON ROSTERS THAT DO NOT MOVE. A fresh franchise draws a
+  -- new seed every run (franchise_create: md5 of a random uuid and the clock),
+  -- and the generator spreads founding ages UNIFORMLY over 21 to 32: over
+  -- 3,000 rosters, the size of each one's biggest single age matched a
+  -- uniform draw of 38 over 12 ages in every bucket (6 of 38: 1,207 rosters
+  -- against 1,180 expected; 10: 19 against 24; 12: 1 against 1.1). So a
+  -- single roster puts 13 or more of its 38 at one age (over a third) about
+  -- once in 12,000, and fails the spread check (no one aged 21 to 23, or
+  -- fewer than eight ages) about once in 52,000, with the game working as
+  -- intended: on 2026-10-30 one drew 13 of 38 and turned the suite red. The
+  -- claims are held on forty fixed seeds instead, which
+  -- franchise_generate_roster (the generator franchise_create calls, a pure
+  -- function of its seed) turns into the same forty rosters every run, and the
+  -- forty together must be flat. They are built and measured in a block that
+  -- is rolled back, so no later check sees them; the fresh franchise below
+  -- re-seeds the generator at random, as before.
+  begin
+    for k in 1..40 loop
+      insert into public.franchises (anon_hash, name, city, abbr, logo, theme, offense, defense, founded_season, seed)
+      values ('age-spread-' || k, 'Spread', 'Spreadtown', 'SPR', 'bolt', 'crimson', 'spread', 'zone', 1, 'age-spread:' || k)
+      returning id into agf;
+      perform public.franchise_generate_roster(agf, 'age-spread:' || k, 1);
+    end loop;
+    with ag_p as (select ag_f.seed as ag_seed, ag_g.age as ag_age
+                    from public.game_players ag_g join public.franchises ag_f on ag_f.id = ag_g.franchise_id
+                   where ag_f.anon_hash like 'age-spread-%' and ag_g.acquired_source = 'founding_roster'),
+         ag_r as (select ag_seed, count(*) as ag_n, count(distinct ag_age) as ag_ages, min(ag_age) as ag_lo, max(ag_age) as ag_hi,
+                         (select max(ag_c) from (select count(*) as ag_c from ag_p ag_q
+                                                   where ag_q.ag_seed = ag_r0.ag_seed group by ag_q.ag_age) ag_t) as ag_top
+                    from ag_p ag_r0 group by ag_seed),
+         ag_a as (select ag_age, count(*) as ag_c from ag_p group by ag_age),
+         ag_w as (select (public.franchise_career()->>'found_age_max')::int
+                         - (public.franchise_career()->>'found_age_min')::int + 1 as ag_span)
+    select jsonb_build_object(
+      'rosters', (select count(*) from ag_r), 'players', (select count(*) from ag_p),
+      'spread', (select bool_and(ag_ages >= 8
+                                 and ag_lo <= (public.franchise_career()->>'found_age_min')::int + 2
+                                 and ag_hi >= (public.franchise_career()->>'found_age_max')::int - 4) from ag_r),
+      'narrowest', (select min(ag_ages) from ag_r), 'highest_youngest', (select max(ag_lo) from ag_r), 'lowest_oldest', (select min(ag_hi) from ag_r),
+      'no_dominant', (select bool_and(ag_top < ag_n / 3.0) from ag_r),
+      'biggest', (select max(ag_top) from ag_r),
+      'by_age', (select jsonb_object_agg(ag_age, ag_c) from ag_a),
+      -- every age of the range holds its even share of the players, give or take 30%
+      'flat', (select count(*) = (select ag_span from ag_w)
+                      and bool_and(ag_c between 0.7 * (select count(*) from ag_p) / (select ag_span from ag_w)
+                                            and 1.3 * (select count(*) from ag_p) / (select ag_span from ag_w)) from ag_a)) into ag;
+    raise exception 'undo' using errcode = 'P0001';
+  exception when raise_exception then null;
+  end;
+  perform pg_temp.ok('forty fixed seeds build forty founding rosters of thirty-eight through the generator a fresh franchise uses',
+    (ag->>'rosters')::int = 40 and (ag->>'players')::int = 40 * 38, ag::text);
+  perform pg_temp.ok('a founding roster is spread across its whole age range, not bunched at the bottom (each of the forty)',
+    (ag->>'spread')::boolean,
+    'fewest ages ' || (ag->>'narrowest') || ', highest youngest ' || (ag->>'highest_youngest') || ', lowest oldest ' || (ag->>'lowest_oldest'));
+  -- THE SHAPE THAT MADE THE WAVE: no single age may dominate the squad, or
+  -- they all leave in the same three seasons. A third, not a quarter: a
+  -- quarter is what a uniform draw of 38 crosses once in a hundred rosters.
+  perform pg_temp.ok('and no one age dominates it, which is what made the wave (each of the forty)',
+    (ag->>'no_dominant')::boolean, 'biggest single age ' || (ag->>'biggest') || ' of 38');
+  -- and the forty together are flat: every age from the youngest to the
+  -- oldest holds its even share of the 1,520, give or take 30%
+  perform pg_temp.ok('together the founding ages are flat: every age in the range holds its even share, give or take 30%',
+    (ag->>'flat')::boolean, (ag->'by_age')::text);
+
   -- a FRESH franchise: every other one in this suite has played seasons, and
   -- an age that has advanced is not the age it was generated at
   v := public.franchise_create('Ages', 'Coalport', 'AGS', 'bolt', 'crimson', 'spread', 'zone',
         'device-secret-agesagesagesagesagesages1');
   dvf := (v->'franchise'->>'id')::uuid;
-  perform pg_temp.ok('a founding roster is spread across its whole age range, not bunched at the bottom',
-    (select count(distinct age) from public.game_players
-      where franchise_id = dvf and acquired_source = 'founding_roster') >= 8
-    and (select min(age) from public.game_players
-          where franchise_id = dvf and acquired_source = 'founding_roster')
-        <= (public.franchise_career()->>'found_age_min')::int + 2
-    and (select max(age) from public.game_players
-          where franchise_id = dvf and acquired_source = 'founding_roster')
-        >= (public.franchise_career()->>'found_age_max')::int - 4,
-    (select string_agg(distinct age::text, ',' order by age::text) from public.game_players
-      where franchise_id = dvf and acquired_source = 'founding_roster'));
-  -- THE SHAPE THAT MADE THE WAVE: no single age may dominate the squad, or
-  -- they all leave in the same three seasons.
-  --
-  -- The threshold was a QUARTER, which sat right on top of what the generator
-  -- actually does: measured over 150 founding rosters of 38, the biggest
-  -- single age holds 28.9% at worst and one roster in 150 crosses a quarter.
-  -- So it failed about one CI run in a hundred while the game was working
-  -- exactly as intended. A third is the same claim with room to be true.
-  perform pg_temp.ok('and no one age dominates it, which is what made the wave',
-    (select max(t.at_age) from (
-       select count(*) as at_age from public.game_players
-        where franchise_id = dvf and acquired_source = 'founding_roster' group by age) t)
-    < (select count(*) from public.game_players
-        where franchise_id = dvf and acquired_source = 'founding_roster') / 3.0,
-    (select max(t.at_age) || ' of ' || (select count(*) from public.game_players
-        where franchise_id = dvf and acquired_source = 'founding_roster')
-       from (select count(*) as at_age from public.game_players
-              where franchise_id = dvf and acquired_source = 'founding_roster' group by age) t));
+  perform pg_temp.ok('a fresh franchise''s founding roster is thirty-eight men, from the same generator',
+    (select count(*) from public.game_players
+      where franchise_id = dvf and acquired_source = 'founding_roster') = 38);
   perform pg_temp.ok('every founding age sits inside the published range',
     not exists (select 1 from public.game_players
                  where franchise_id = dvf and acquired_source = 'founding_roster'

@@ -5,8 +5,13 @@
 --
 -- A NEW DATA SOURCE, NOT A MODEL CHANGE. Nothing here touches a projection,
 -- ranking, threshold, EV guard, grade, the CLV record or any frozen protocol.
--- It reads public.signals (the book's events) and public.sharp_price_snapshots
--- (the DraftKings tape the Sharp-lag pipeline already keeps); it writes neither.
+-- It reads public.signals (the book's events) and the DraftKings prices this
+-- project already keeps, through one view, public.novig_dk_tape: the
+-- Sharp-lag tape (public.sharp_price_snapshots: every DraftKings price the
+-- gateway buys) where supabase/sharp_lag.sql is applied, otherwise capture's
+-- per-book history (public.book_quote_ticks joined to public.signals), which
+-- holds DraftKings only for the selections that became actionable signals.
+-- It writes neither, and never changes how either is written.
 --
 -- WHO WRITES. Only supabase/functions/novig_sync (service_role), and the
 -- stream worker (tools/novig/stream_worker.js, service_role) once it is
@@ -41,8 +46,8 @@
 --                            subscriber (has_active_sub(), as public.signals)
 -- Every table's RLS uses it; anon reads nothing. The comparison and the
 -- history come through SECURITY DEFINER functions that check it first,
--- because the DraftKings tape (public.sharp_price_snapshots) is service-role
--- only and stays that way: the functions return DraftKings prices only for
+-- because the DraftKings prices (public.novig_dk_tape and what it reads) are
+-- service-role only and stay that way: the functions return DraftKings prices only for
 -- markets linked to Novig, only to a reader novig_can_read() admits — the
 -- subscribers who already read book prices through public.signals.
 -- No secret, key or credential is stored anywhere in this layer.
@@ -58,8 +63,10 @@
 -- (novig_prune(), scheduled by novig_market_data_cron.sql). Growth is on
 -- novig_readiness.
 --
--- REQUIRES public.signals (capture) and public.sharp_price_snapshots
--- (supabase/sharp_lag.sql).
+-- REQUIRES public.signals (capture), and the DraftKings prices: either
+-- public.sharp_price_snapshots (supabase/sharp_lag.sql) or
+-- public.book_quote_ticks (supabase/book_quote_ticks.sql). Applied again after
+-- sharp_lag.sql, it switches novig_dk_tape to the full tape.
 --
 -- CONVENTION (supabase/README.md): idempotent, additive, pasted into the SQL
 -- editor, no psql meta-commands, ends in a report. Safe to run again.
@@ -70,8 +77,8 @@ do $req$ begin
   if to_regclass('public.signals') is null then
     raise exception 'novig_market_data.sql needs public.signals (the capture tables): apply capture first';
   end if;
-  if to_regclass('public.sharp_price_snapshots') is null then
-    raise exception 'novig_market_data.sql needs public.sharp_price_snapshots (the DraftKings tape): apply supabase/sharp_lag.sql first';
+  if to_regclass('public.sharp_price_snapshots') is null and to_regclass('public.book_quote_ticks') is null then
+    raise exception 'novig_market_data.sql needs DraftKings prices: public.sharp_price_snapshots (supabase/sharp_lag.sql) or public.book_quote_ticks (supabase/book_quote_ticks.sql)';
   end if;
 end $req$;
 
@@ -442,20 +449,65 @@ begin
   return jsonb_build_object('depth_rows_pruned', v_depth, 'resolved_unmapped_pruned', v_queue);
 end $p$;
 
--- ---------------------------------------------------------------- the DraftKings side (from the Sharp-lag tape)
+-- ---------------------------------------------------------------- the DraftKings side: one view over the prices this project keeps
+-- novig_dk_tape: every DraftKings game-line price the layer may read, as
+-- (tick_id, event_id, market, side, point, price_dec, captured_at,
+-- book_last_update). Built from whichever source exists when this file is
+-- applied; the layer reads nothing else. Service-role only, like its sources.
+--   public.sharp_price_snapshots  the Sharp-lag tape: every DraftKings price
+--                                 the gateway buys (supabase/sharp_lag.sql)
+--   public.book_quote_ticks       capture's per-book history, joined to
+--                                 public.signals by sig_key: DraftKings only
+--                                 for selections that became actionable
+--                                 signals (supabase/functions/capture,
+--                                 CAPTURE_BOOK_QUOTES); book_last_update is
+--                                 seen_at less the quote's age at capture
+do $dkv$ begin
+  drop view if exists public.novig_dk_tape;
+  if to_regclass('public.sharp_price_snapshots') is not null then
+    execute $v$create view public.novig_dk_tape as
+      select s.id::bigint as tick_id, s.event_id::text as event_id, s.market::text as market, s.side::text as side, s.point::numeric as point,
+             s.price_dec::numeric as price_dec, s.captured_at, s.book_last_update
+        from public.sharp_price_snapshots s
+       where s.book = 'draftkings' and s.participant is null$v$;
+  else
+    if (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'signals'
+         and column_name in ('sig_key', 'event_id', 'market', 'selection', 'point')) <> 5 then
+      raise exception 'novig_market_data.sql reads DraftKings from public.book_quote_ticks through public.signals (sig_key, event_id, market, selection, point), and signals lacks one of them';
+    end if;
+    execute $v$create view public.novig_dk_tape as
+      select t.id::bigint as tick_id, g.event_id::text as event_id, g.market::text as market, g.selection::text as side, g.point::numeric as point,
+             t.dec::numeric as price_dec, t.seen_at as captured_at,
+             t.seen_at - make_interval(secs => (t.payload ->> 'quote_age_s')::double precision) as book_last_update
+        from public.book_quote_ticks t join public.signals g on g.sig_key = t.sig_key
+       where t.book_key = 'draftkings' and t.dec > 1$v$;
+  end if;
+end $dkv$;
+revoke all on public.novig_dk_tape from public, anon, authenticated;
+do $g$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then execute 'grant select on public.novig_dk_tape to service_role'; end if;
+end $g$;
+
+-- which source novig_dk_tape reads, for the comparison's source line and the report
+create or replace function public.novig_dk_source()
+returns text language sql stable security definer set search_path = public, pg_temp as $s$
+  select case when v.definition like '%sharp_price_snapshots%' then 'sharp_price_snapshots'
+              when v.definition like '%book_quote_ticks%' then 'book_quote_ticks' end
+    from pg_views v where v.schemaname = 'public' and v.viewname = 'novig_dk_tape'
+$s$;
+
 -- the DraftKings price of one linked outcome, as of p_at: the latest row at or
--- before it. SECURITY DEFINER because the tape is service-role only; callable
--- only by the functions below (not granted to any client).
+-- before it. SECURITY DEFINER because the prices are service-role only;
+-- callable only by the functions below (not granted to any client).
 create or replace function public.novig_dk_price(p_event text, p_market text, p_side text, p_point numeric, p_at timestamptz)
 returns table (price_dec numeric, captured_at timestamptz, book_last_update timestamptz)
 language sql stable security definer set search_path = public, pg_temp as $dk$
   select s.price_dec, s.captured_at, s.book_last_update
-    from public.sharp_price_snapshots s
-   where s.event_id = p_event and s.book = 'draftkings' and s.market = p_market and s.side = p_side
-     and s.participant is null
+    from public.novig_dk_tape s
+   where s.event_id = p_event and s.market = p_market and s.side = p_side
      and (p_point is null and s.point is null or s.point = p_point)
      and s.captured_at <= p_at
-   order by s.captured_at desc, s.id desc
+   order by s.captured_at desc, s.tick_id desc
    limit 1
 $dk$;
 
@@ -518,7 +570,8 @@ begin
                      when j.novig_source = 'ws_book' and j.novig_age_s <= public.novig_rule('novig_live_seconds') then 'LIVE'
                      when j.novig_age_s <= public.novig_rule('novig_recent_minutes') * 60 then case when (j.top -> j.outcome_id ->> 'ask') is null then 'NO_LIQUIDITY' else 'RECENT' end
                      else 'STALE' end),
-    'draftkings', jsonb_build_object('price_dec', j.dk_price_dec, 'observed_at', j.dk_at, 'book_last_update', j.dk_book_last_update, 'source', 'The Odds API via the odds gateway (public.sharp_price_snapshots)',
+    'draftkings', jsonb_build_object('price_dec', j.dk_price_dec, 'observed_at', j.dk_at, 'book_last_update', j.dk_book_last_update, 'source', case public.novig_dk_source() when 'book_quote_ticks' then 'The Odds API via capture (public.book_quote_ticks: actionable signals only)'
+                                                 else 'The Odds API via the odds gateway (public.sharp_price_snapshots)' end,
        'state', case when j.dk_at is null then 'AWAITING'
                      when j.dk_age_s <= public.novig_rule('book_live_minutes') * 60 then 'LIVE'
                      when j.dk_age_s <= public.novig_rule('book_recent_minutes') * 60 then 'RECENT'
@@ -554,8 +607,8 @@ begin
   union all
   select jsonb_build_object('venue', 'draftkings', 'book_market', l.book_market, 'line', l.line, 'side', l.side, 'point', l.point, 'at', d.captured_at,
            'price_dec', d.price_dec, 'book_last_update', d.book_last_update, 'pregame', d.captured_at < l.kickoff_at, 'kickoff_at', l.kickoff_at)
-    from l join public.sharp_price_snapshots d on d.event_id = l.odds_event_id and d.book = 'draftkings' and d.market = l.book_market and d.side = l.side
-         and d.participant is null and (l.point is null and d.point is null or d.point = l.point);
+    from l join public.novig_dk_tape d on d.event_id = l.odds_event_id and d.market = l.book_market and d.side = l.side
+         and (l.point is null and d.point is null or d.point = l.point);
 end $h$;
 
 -- ---------------------------------------------------------------- THE RESEARCH VIEW: is Novig consistently better?
@@ -728,7 +781,7 @@ end $p$;
 revoke all on public.novig_readiness, public.novig_meta from anon, authenticated;
 grant select on public.novig_readiness, public.novig_meta to authenticated;   -- as the reader: an operator sees rows, anyone else sees an empty ledger
 revoke all on function public.novig_keep(), public.novig_market_links_guard(), public.novig_depth_guard(), public.novig_config_audit() from public, anon, authenticated;
-revoke all on function public.novig_dk_price(text, text, text, numeric, timestamptz), public.novig_prune(), public.novig_record_unmapped(text, jsonb, text[], text[]),
+revoke all on function public.novig_dk_price(text, text, text, numeric, timestamptz), public.novig_dk_source(), public.novig_prune(), public.novig_record_unmapped(text, jsonb, text[], text[]),
                        public.novig_is_subscriber() from public, anon, authenticated;
 -- the switches hold no secret (public_display, expected_environment): the readiness view reads them as the reader
 revoke all on function public.novig_setting(text) from public, anon;
@@ -770,7 +823,7 @@ select piece, state from (
          case when public.novig_setting('public_display') = 'off' then 'ok'
               when public.novig_setting('public_display') = 'on' then 'ok (on: see novig_config_log for who switched it and why)' else 'CHECK THIS' end
   union all select '6 the readiness view answers', case when (select count(*) from public.novig_readiness) = 1 then 'ok' else 'CHECK THIS' end
-  union all select '7 the DraftKings tape is readable by the layer (sharp_price_snapshots has the columns it reads)',
-         case when (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'sharp_price_snapshots'
-              and column_name in ('event_id', 'book', 'market', 'side', 'point', 'participant', 'price_dec', 'captured_at', 'book_last_update')) = 9 then 'ok' else 'CHECK THIS' end
+  union all select '7 the DraftKings prices are readable by the layer (public.novig_dk_tape)',
+         case public.novig_dk_source() when 'sharp_price_snapshots' then 'ok (the Sharp-lag tape)'
+              when 'book_quote_ticks' then 'ok (capture''s per-book history: DraftKings for actionable signals only)' else 'CHECK THIS' end
 ) r order by 1;

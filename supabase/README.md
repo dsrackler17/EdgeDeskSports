@@ -167,7 +167,7 @@ Tested against a real PostgreSQL by `tools/kalshi/kalshi_sql.test.js`.
 
 Run in that order (`.github/workflows/deploy-novig.yml` does it, tests first). A new data source, not a model change: nothing here touches a projection, ranking, threshold, EV guard, grade or the CLV record, and it writes nothing outside `novig_*`. `docs/novig/README.md` is the narrative.
 
-- **`novig_market_data.sql`** (needs `public.signals` and `sharp_lag.sql`'s `public.sharp_price_snapshots`, the DraftKings tape; mirrored in `migrations/20261030120000_novig_market_data.sql`) adds:
+- **`novig_market_data.sql`** (needs `public.signals` and DraftKings prices: `sharp_lag.sql`'s `public.sharp_price_snapshots`, the full tape, or else `book_quote_ticks.sql`'s `public.book_quote_ticks`, DraftKings for actionable signals only. The service-only view `novig_dk_tape` reads whichever exists; mirrored in `migrations/20261030120000_novig_market_data.sql`) adds:
   - `novig_events`, `novig_markets` (the catalog: fee schedule, void rule, outcomes, consensus flag, the last book seq and ETag, `book_confirmed_at`);
   - `novig_book_snapshots` (T0, provider Novig; append-only, unique on environment/market/source/seq: the top of book and the $25–$500 fills) and `novig_book_depth` (the ladder; pruned after 7 days by `novig_prune()`, each market's close kept);
   - `novig_market_links` (append-only; one invalidation allowed): a Novig market matched to exactly one book event, market, period, line and side, with confidence, method, constraints and settlement notes; `novig_unmapped` (the queue, `novig_record_unmapped()`);
