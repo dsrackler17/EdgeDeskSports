@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-30 — Methodology change (integrity guard, owner's decision): the Polymarket request budget settles a dead run's grant at what it may have used
+
+**A change to the gateway's budget guard (AGENTS.md §3). It needs the owner's explicit review before it is deployed.**
+
+- **Why.** A run that dies (out of compute, a 502 from the database) never calls `poly_api_settle`, so its whole grant stayed reserved for the rest of the UTC day.
+  - On 2026-10-30 (stage report, run 41069288565), 56 tonight grants were never settled and held 22,215 requests. The day read granted 40,000 and used 17,785.
+  - Every run after 09:55 UTC was refused (`denied_budget`), so Smart Money Tonight had no current holders.
+- **What.**
+  - Each run reports its requests so far every 20 requests (`poly_api_progress()`, a new table of the same name). The report never goes backwards, never exceeds the grant, and never lands after the settlement.
+  - Under the day's lock, `poly_api_acquire()` first settles every grant still unsettled 15 minutes after it was given, at its last report plus 100, capped at the grant. Each is recorded as expired. A run lives at most about 7 minutes, so it is gone by then.
+  - The day gets back only what the dead run cannot have used.
+  - The daily ceiling (40,000) and the per-run cap (3,000) are unchanged, and `radar_rules()` is unchanged. `polymarket_sync` is build `.10`.
+- **Tests, failing first.**
+  - SQL 237 -> 245: two dead grants (no report: 100 of 400; reported 300: 400 of 900), a fresh one left alone, the day's totals (910 granted, 500 used), a late settlement changing nothing, and no client access. Before `poly_api_progress()` existed, the suite stopped on its first call.
+  - Sync 83 -> 84: runs report in steps of 20, never more than they used. On the old function: 83 passed, 1 failed (no report).
+
 ## 2026-10-30 — Prediction Radar: H-RADAR-02 registered, the page says whether its sync is current, and a stage-by-stage report
 
 - **Why.** Smart Money Tonight showed nothing. On Polymarket's own data, the 18 wallets H-RADAR-01 graded "top" held one open position ending within 60 hours, on an uncovered esports market: those all-time leaders mostly no longer bet. The owner merged H-RADAR-02 (#924) and asked for the rollout to be finished and verified end to end, with the count at each stage and the point where it reaches zero, and with "sync pending", "sync failed" and "no current qualifying position" told apart on the page. No qualification rule changes.

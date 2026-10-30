@@ -246,6 +246,15 @@ create table if not exists public.poly_api_settlements (
 select public.radar_seal(array['poly_api_grants', 'poly_api_settlements']);
 alter table public.poly_api_days enable row level security;
 revoke all on public.poly_api_days from anon, authenticated;
+-- a run's progress, reported as it goes (every 20 requests), so that a grant whose run died is settled at what the run
+-- may have used, not held whole for the rest of the day (owner's decision, 2026-10-30)
+create table if not exists public.poly_api_progress (
+  grant_id     bigint primary key references public.poly_api_grants (grant_id),
+  used         integer not null check (used >= 0),
+  reported_at  timestamptz not null default now()
+);
+alter table public.poly_api_progress enable row level security;
+revoke all on public.poly_api_progress from anon, authenticated;
 
 -- one grant per run, decided under the day's row lock: the switch, the breaker,
 -- the daily ceiling and the per-run cap. A refusal is answered, never waited out.
@@ -253,10 +262,28 @@ create or replace function public.poly_api_acquire(p jsonb)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $f$
 declare d public.poly_api_days; want int := greatest(0, coalesce((p ->> 'requested')::int, 0));
         cap int := public.radar_rule('run_request_cap')::int; ceiling int := public.radar_rule('daily_request_ceiling')::int;
-        give int := 0; dec text; why text; gid bigint;
+        give int := 0; dec text; why text; gid bigint; x record; u int;
 begin
   insert into public.poly_api_days (day) values ((now() at time zone 'utc')::date) on conflict (day) do nothing;
   select * into d from public.poly_api_days where day = (now() at time zone 'utc')::date for update;
+  -- DEAD RUNS (owner's decision, 2026-10-30). A run that dies never settles, and its whole grant stayed reserved for
+  -- the rest of the day (2026-10-30: 40,000 granted, 17,785 used). A grant still unsettled 15 minutes after it was
+  -- given (a run lives at most about 7 minutes) is settled at what its run last reported plus 100, never more than
+  -- it was granted: the run reports every 20 requests, so 100 covers what it used after its last report reached the
+  -- database. The ceiling and the per-run cap are unchanged.
+  for x in select g.grant_id, g.granted, g.granted_at, coalesce(pr.used, 0) as reported
+             from public.poly_api_grants g
+             left join public.poly_api_settlements st on st.grant_id = g.grant_id
+             left join public.poly_api_progress pr on pr.grant_id = g.grant_id
+            where st.grant_id is null and g.decision = 'granted' and g.granted > 0 and g.granted_at < now() - interval '15 minutes'
+            order by g.grant_id loop
+    u := least(x.granted, x.reported + 100);
+    insert into public.poly_api_settlements (grant_id, used, statuses)
+    values (x.grant_id, u, jsonb_build_object('expired', true, 'reported', x.reported, 'margin', 100));
+    update public.poly_api_days set granted = granted - (x.granted - u), used = used + u, updated_at = now()
+     where day = (x.granted_at at time zone 'utc')::date;
+  end loop;
+  select * into d from public.poly_api_days where day = d.day;
   if not public.radar_enabled() then dec := 'denied_disabled'; why := 'POLYMARKET_DATA_ENABLED is off';
   elsif d.breaker_until is not null and d.breaker_until > now() then dec := 'denied_breaker'; why := 'the breaker is open until ' || d.breaker_until;
   else
@@ -286,6 +313,19 @@ begin
          updated_at = now()
    where day = (g.granted_at at time zone 'utc')::date;
   return jsonb_build_object('settled', true, 'used', u, 'returned', g.granted - u);
+end $f$;
+-- the run's progress so far (it reports every 20 requests): never more than its grant, never backwards, never after
+-- its settlement. What a dead run is settled at (poly_api_acquire, above)
+create or replace function public.poly_api_progress(p jsonb)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $f$
+declare g public.poly_api_grants; u int := greatest(0, coalesce((p ->> 'used')::int, 0));
+begin
+  select * into g from public.poly_api_grants where grant_id = (p ->> 'grant_id')::bigint;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'no grant'); end if;
+  if exists (select 1 from public.poly_api_settlements where grant_id = g.grant_id) then return jsonb_build_object('ok', false, 'reason', 'settled'); end if;
+  insert into public.poly_api_progress (grant_id, used, reported_at) values (g.grant_id, least(u, g.granted), now())
+  on conflict (grant_id) do update set used = greatest(public.poly_api_progress.used, excluded.used), reported_at = now();
+  return jsonb_build_object('ok', true);
 end $f$;
 
 -- ---------------------------------------------------------------- the pool
@@ -1028,13 +1068,13 @@ end $f$;
 do $g$ begin
   -- internal: no client may call these
   execute 'revoke all on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
-       || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.radar_current_run(), public.radar_config_audit(), '
+       || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.poly_api_progress(jsonb), public.radar_current_run(), public.radar_config_audit(), '
        || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state() from public, anon, authenticated';
   execute 'revoke all on function public.radar_status(), public.radar_leaderboard(integer), public.radar_trader(text), public.radar_tonight(), public.radar_teaser() from public';
   execute 'revoke all on function public.radar_enabled(), public.radar_registered() from public, anon, authenticated';
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
-         || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.radar_current_run(), public.radar_enabled(), public.radar_registered(), '
+         || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.poly_api_progress(jsonb), public.radar_current_run(), public.radar_enabled(), public.radar_registered(), '
          || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state() to service_role';
     execute 'grant select, insert, update on public.poly_wallets, public.poly_markets, public.poly_api_days to service_role';
   end if;
