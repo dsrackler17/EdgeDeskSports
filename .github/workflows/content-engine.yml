@@ -56,6 +56,7 @@ on:
       - 'lib/edgedesk_admin_session.js'
       - '.github/workflows/content-engine.yml'
       - '.github/workflows/content-engine-weekly.yml'
+      - '.github/workflows/content-engine-live.yml'
 
 permissions:
   contents: read
@@ -75,7 +76,9 @@ jobs:
           node-version: '22'
       - name: The core — research, discovery, drafts, every check, exports, the page's static guards
         run: node tools/content/content.test.js
-      - name: The football evidence pipeline — packets, explanations, the editorial gate, both formats, on the frozen Week 6 regression games and today's research
+      # "today's research" is pinned here (tools/content/fixtures/research_2026_w9.json.gz), so a data
+      # push or the clock never turns a pull request red; content-engine-live.yml sweeps today's daily
+      - name: The football evidence pipeline — packets, explanations, the editorial gate, both formats, on the frozen Week 6 regression games and the research pinned on 2026-10-29
         run: node tools/content/evidence.test.js
       - name: The facts ledger — every outside fact dated, sourced and attributed
         run: node tools/content/add_fact.js --check
