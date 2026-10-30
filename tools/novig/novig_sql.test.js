@@ -34,6 +34,14 @@
      config      every change logged with who; bad values and deletes refused
      cron        four jobs; the poke without its secret records a failure; with
                  it, the mode is posted with x-cron-secret; no client may call it
+     deploy      tools/novig/deploy_check.js as deploy-novig.yml runs it on
+                 production, where the log is public: tables, RLS, policies,
+                 grants, every declared index, display off, production served,
+                 the jobs, Vault, a halt reported; a reader who is not an
+                 admin sees nothing, the admin is the operator; no price in
+                 its output; it fails when display is on or anon is granted a
+                 table; it writes nothing. The admin's view is sealed (RSA-OAEP
+                 + AES-GCM) and opens only with the private key
      rollback    removes the layer and its jobs; the tape is untouched
 
    Run: node tools/novig/novig_sql.test.js     (NOVIG_SQL_REQUIRED=1 in CI)
@@ -41,6 +49,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const nodeCrypto = require('crypto');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const T = PG.kit('Novig market data');
 const ROOT = PG.ROOT;
@@ -252,6 +261,44 @@ try {
   T.chk('cron: an unknown mode is refused; no client may call the poke', fails(() => db.sql("select public.novig_poke('trade');")) && fails(() => db.anon("select public.novig_poke('snapshot');")) && fails(() => db.as(OP, "select public.novig_poke('snapshot');")) && fails(() => db.service("select public.novig_poke('snapshot');")));
   out = db.applyFile(F('novig_market_data_cron.sql'));
   T.chk('cron: applying it twice keeps one job each', db.sql("select count(*) from cron.job where jobname like 'novig_%'") === '4' && !/CHECK THIS/.test(out), out);
+
+  /* ---- the deploy check (tools/novig/deploy_check.js), as deploy-novig.yml runs it on production: a PUBLIC log ---- */
+  const DC = require(path.join(__dirname, 'deploy_check.js'));
+  const WF = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy-novig.yml'), 'utf8');
+  const step = WF.slice(WF.indexOf('- name: Verify the layer in production'));
+  T.chk('deploy-novig.yml: the admin\'s view goes from psql straight into seal, and nothing else in the step prints it; a CHECK THIS row fails the job',
+    /deploy_check\.js view --admin "\$ADMIN" \| psql [^\n]*\| node tools\/novig\/deploy_check\.js seal "\$REPORT_KEY"\n/.test(step) && (step.match(/deploy_check\.js view/g) || []).length === 1
+      && /set -euo pipefail/.test(step) && /grep -q '\|CHECK THIS'; then [^\n]*exit 1; fi/.test(step), step.slice(0, 400));
+  const report = (sql) => Object.fromEntries(db.sql(sql).split('\n').filter((l) => /^\d+\|/.test(l)).map((l) => { const p = l.split('|'); return [p[0], p.slice(2).join('|')]; }));
+  const snapsBefore = db.sql('select count(*) from public.novig_book_snapshots');
+  let R = report(DC.checkSql(OP));
+  const okRows = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '20', '22', '23'];
+  T.chk('deploy check: tables, RLS, policies, grants, readers, every declared index, display off, production served, the four jobs, Vault — and the reader who is not an admin sees nothing while the admin is the operator — all ok',
+    okRows.every((n) => /^ok\b/.test(R[n] || '')) && DC.INDEXES.length === 14, okRows.filter((n) => !/^ok\b/.test(R[n] || '')).map((n) => n + ': ' + R[n]));
+  T.chk('deploy check: rows by environment, and the admin\'s compare rows counted from production only (BAL @ BUF\'s two markets, both sides; KC @ DEN is outside the window; the paper link was invalidated above) — counts, never a price',
+    R['23'] === 'ok (4 rows, 1 events)' && R['12'] === 'production 2 · 3 · 3 · 8 | paper 1 · 1 · 0 · 1' && !/(^|[^\d:.])0\.\d{3}|"(bid|ask)"/.test(Object.values(R).join('\n')), [R['12'], R['23']]);
+  T.chk('deploy check: a halt in force is reported, not hidden', /^CHECK THIS: halted until .*451/.test(R['17']), R['17']);
+  T.chk('deploy check: it writes nothing (one transaction, rolled back)', db.sql('select count(*) from public.novig_book_snapshots') === snapsBefore && db.sql("select current_setting('request.jwt.claim.sub', true)") === '');
+  db.sql(`update public.novig_config set value = 'on', note = 'test: the deploy check sees it' where key = 'public_display'; grant select on public.novig_book_snapshots to anon;`);
+  R = report(DC.checkSql(OP));
+  T.chk('deploy check: it fails when it should — display switched on, or anon granted a table, each reads CHECK THIS', /^CHECK THIS: on\b/.test(R['8']) && /^CHECK THIS: novig_book_snapshots:select/.test(R['4']), [R['8'], R['4']]);
+  db.sql(`update public.novig_config set value = 'off', note = 'test: back off' where key = 'public_display'; revoke select on public.novig_book_snapshots from anon;`);
+  R = report(DC.checkSql('00000000-0000-0000-0000-0000000000bb'));
+  T.chk('deploy check: an account that is not an admin, named as the admin, fails row 22', /^CHECK THIS/.test(R['22']), R['22']);
+  T.chk('deploy check: --admin must be a uuid (nothing is interpolated unchecked)', fails(() => DC.checkSql("x'; drop table public.novig_config; --")) && fails(() => DC.viewSql('')));
+  const V = JSON.parse(db.sql(DC.viewSql(OP)).split('\n').filter((l) => /^\{/.test(l)).pop());
+  T.chk('deploy view: the admin\'s card data — the compare rows (production only), their history and the readiness row',
+    V.access.access === 'operator' && V.rows.length > 0 && V.rows.every((r) => r.novig.environment === 'production') && Array.isArray(V.history['odds-1']) && V.history['odds-1'].length > 0 && !!V.readiness, [V.access, V.rows.length, Object.keys(V.history)]);
+  const RSA = nodeCrypto.generateKeyPairSync('rsa', { modulusLength: 3072 });
+  const PUB = RSA.publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+  const SEALED = DC.seal('BEGIN\nnoise\n' + JSON.stringify(V) + '\n', PUB);
+  T.chk('seal: what a public log carries is ciphertext only — no price, team or market id', SEALED.length > 0 && SEALED.every((l) => /^NOVIG-SEALED [A-Za-z0-9+/=]+$/.test(l) && l.length <= 3013)
+    && !/0\.\d{3}|Buffalo|nv-m1/.test(SEALED.join('\n')));
+  const OPENED = DC.open(SEALED.map((l) => '2026-10-30T18:00:00.0000000Z ' + l).join('\n'), RSA.privateKey.export({ type: 'pkcs8', format: 'pem' }));
+  T.chk('seal: the holder of the private key opens it, from the timestamped log lines, exactly', JSON.stringify(OPENED) === JSON.stringify(V));
+  const RSA2 = nodeCrypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  T.chk('seal: a key under 3072 bits is refused; a tampered blob does not open', fails(() => DC.seal(JSON.stringify(V), RSA2.publicKey.export({ type: 'spki', format: 'der' }).toString('base64')))
+    && fails(() => DC.open(SEALED.map((l, i) => (i === 0 ? l.slice(0, -8) + 'AAAAAAAA' : l)).join('\n'), RSA.privateKey.export({ type: 'pkcs8', format: 'pem' }))));
 
   /* ---- rollback ---- */
   const tapeBefore = db.sql('select count(*) from public.sharp_price_snapshots');

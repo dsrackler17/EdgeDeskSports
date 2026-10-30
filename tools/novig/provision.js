@@ -7,7 +7,12 @@
          asks the transient novig_key_bootstrap function which environment
          the management key belongs to; prints the key list (names, scopes,
          fingerprints) and the subaccount labels; writes environment=<env>
-         to $GITHUB_OUTPUT
+         to $GITHUB_OUTPUT. Exit 0: one environment accepted the key.
+         Exit 3: Novig answered and neither environment accepted it (a 451
+         location refusal, a wrong key, the clock): final, never retried,
+         because repeated 451s can lock the account. Exit 1: the bootstrap
+         could not be asked (not deployed yet, not JSON): the only answer
+         the workflow retries.
 
      node tools/novig/provision.js register --kind read|stream --environment <env>
                                     --env-file <path> [--subaccount <trading key id>]
@@ -41,20 +46,32 @@ async function boot(body, o) {
   return j;
 }
 
+/* the workflow's log is public (a public repository): an account's ids are shown by their first 8 characters */
+const mask = (id) => (id ? String(id).slice(0, 8) + '…' : id);
+
 async function whoami(o) {
-  const j = await boot({ action: 'whoami' }, o);
+  let j;
+  /* a whoami answer that names no environment is still Novig's answer: return it, do not throw */
+  try { j = await boot({ action: 'whoami' }, o); } catch (e) { if (e.body && e.body.probes) j = e.body; else throw e; }
   const lines = ['environment: ' + j.environment];
   for (const [e, p] of Object.entries(j.probes || {})) lines.push('  echo on ' + e + ': ' + p.status + ' ' + (p.message || p.code || ''));
   if (Array.isArray(j.keys)) {
     lines.push('keys (' + j.keys.length + '):');
-    for (const k of j.keys) lines.push('  ' + (k.is_management_key ? '[management] ' : '') + k.scope + '  "' + k.name + '"  ' + k.algorithm + '  ' + k.fingerprint + (k.restriction ? '  subaccount=' + k.restriction : '') + (k.expires_at ? '  expires ' + k.expires_at : ''));
+    for (const k of j.keys) lines.push('  ' + (k.is_management_key ? '[management] ' : '') + k.scope + '  "' + k.name + '"  ' + k.algorithm + '  ' + k.fingerprint + (k.restriction ? '  subaccount=' + mask(k.restriction) : '') + (k.expires_at ? '  expires ' + k.expires_at : ''));
   }
   if (Array.isArray(j.subaccounts)) {
     lines.push('existing subaccounts (' + j.subaccounts.length + '):');
-    for (const s of j.subaccounts) lines.push('  ' + s.key_id + '  "' + s.label + '"');
+    for (const s of j.subaccounts) lines.push('  ' + mask(s.key_id) + '  "' + s.label + '"');
   }
   if (j.hint) lines.push('hint: ' + j.hint);
   return { json: j, text: lines.join('\n') };
+}
+
+/** whoami as the workflow runs it: 0 found, 3 Novig answered without one (never retried), 1 the bootstrap could not be asked */
+async function whoamiCli(o) {
+  let r;
+  try { r = await whoami(o); } catch (e) { return { code: 1, text: 'FAILED: ' + e.message, json: null }; }
+  return { code: r.json.ok ? 0 : 3, text: r.text, json: r.json };
 }
 
 /** the single-line base64 body of a PKCS#8 PEM */
@@ -85,14 +102,14 @@ if (require.main === module) {
   (async () => {
     const cmd = process.argv[2];
     if (cmd === 'whoami') {
-      const r = await whoami();
+      const r = await whoamiCli();
       console.log(r.text);
-      if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'environment=' + r.json.environment + '\n');
-      if (!r.json.ok) process.exit(1);
+      if (r.json && process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'environment=' + r.json.environment + '\n');
+      if (r.code) process.exit(r.code);
     } else if (cmd === 'register') {
       const r = await register({ kind: arg('kind'), environment: arg('environment'), envFile: arg('env-file'), subaccount: arg('subaccount'), name: arg('name') });
       console.log(r.text);
     } else { console.log('usage: provision.js whoami | register --kind read|stream --environment <env> --env-file <path> [--subaccount <id>]'); process.exit(2); }
   })().catch((e) => { console.log('FAILED: ' + e.message); process.exit(1); });
 }
-module.exports = { whoami, register, boot, pemBody };
+module.exports = { whoami, whoamiCli, register, boot, pemBody };
