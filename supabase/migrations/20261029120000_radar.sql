@@ -950,7 +950,7 @@ begin
   if not public.radar_enabled() then return jsonb_build_object('status', 'disabled'); end if;
   if not public.radar_registered() then return jsonb_build_object('status', 'not_registered'); end if;
   select x into c from public.radar_tonight_cards() x limit 1;
-  return jsonb_build_object('status', 'ok', 'games', (select count(*) from public.radar_tonight_cards()),
+  return jsonb_build_object('status', 'ok', 'hypothesis', public.radar_hypothesis(), 'games', (select count(*) from public.radar_tonight_cards()),
     'card', case when c is null then null else jsonb_build_object('sport_key', c ->> 'sport_key', 'home_team', c ->> 'home_team', 'away_team', c ->> 'away_team',
       'commence_time', c ->> 'commence_time', 'n_wallets', (c ->> 'n_wallets')::int, 'dollars', round((c ->> 'dollars')::numeric, -2)) end);
 end $f$;

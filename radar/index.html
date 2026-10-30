@@ -114,10 +114,11 @@
   function teaser(t) {
     var el = $('rpTeaser');
     if (!t || t.status !== 'ok') { el.innerHTML = '<p class="note">Smart Money Tonight is in the Research Terminal.</p>'; return; }
-    if (!t.card) { el.innerHTML = '<p class="note">No top-graded bettor holds a position on tonight’s covered games yet.</p>'; return; }
+    var noun = t.hypothesis === 'H-RADAR-02' ? 'featured bettor' : 'top bettor';   /* H-RADAR-02's cards come from the featured bettors */
+    if (!t.card) { el.innerHTML = '<p class="note">No ' + (t.hypothesis === 'H-RADAR-02' ? 'featured' : 'top-graded') + ' bettor holds a position on tonight’s covered games yet.</p>'; return; }
     var c = t.card, n = c.n_wallets;
     el.innerHTML = '<div class="note" style="margin:0">' + U.esc(U.gameLabel(c)) + ' ' + U.experimentalChip() + '</div>'
-      + '<h3>' + U.esc(n + ' top bettor' + (n === 1 ? '' : 's') + ', ' + U.money(c.dollars) + ', on ') + '<span class="rp-blur" aria-label="the side, in the terminal">side hidden</span></h3>'
+      + '<h3>' + U.esc(n + ' ' + noun + (n === 1 ? '' : 's') + ', ' + U.money(c.dollars) + ', on ') + '<span class="rp-blur" aria-label="the side, in the terminal">side hidden</span></h3>'
       + '<p class="note">The side, their entry against the price now, and EdgeDesk’s fair price are in the terminal' + (t.games > 1 ? ', with ' + U.esc(t.games - 1) + ' more game' + (t.games > 2 ? 's' : '') : '') + '.</p>'
       + '<div class="row"><a class="btn" href="/#subscribe" data-ed-cta="radar_teaser_trial">See tonight’s cards</a></div>';
   }

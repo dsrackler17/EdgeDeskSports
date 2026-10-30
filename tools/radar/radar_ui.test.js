@@ -82,6 +82,29 @@ chk('it says it is information, not a pick, and links the Known limitations', /I
 chk('no card: says so, invents nothing', /No top-graded bettor holds a position/.test(U.tonightHTML({ status: 'ok', cards: [] })));
 chk('a reader the database refuses: one line, no card', /part of the Research Terminal/.test(U.tonightHTML({ status: 'subscribers_only', cards: [] })) && !/rd-card/.test(U.tonightHTML({ status: 'subscribers_only', cards: [] })));
 
+/* ── H-RADAR-02: featured bettors, how many qualify, observed activity apart, discovery ── */
+const T2 = { status: 'ok', hypothesis: 'H-RADAR-02', top_wallets: 10, featured: 3, conviction_high_x: 3, graded_at: '2026-10-30T10:17:00Z',
+  cards: [card()],
+  observed: [{ kind: 'observed', event_id: 'E9', market_type: 'spreads', home_team: 'Las Vegas Raiders', away_team: 'Kansas City Chiefs', commence_time: '2026-11-01T20:25:00Z', n_wallets: 12,
+    sides: [{ outcome: 'Chiefs', selection: 'Kansas City Chiefs', point: -3, n_wallets: 8, dollars: 52000 }, { outcome: 'Raiders', selection: 'Las Vegas Raiders', point: 3, n_wallets: 4, dollars: 18000 }] }],
+  discovery: { candidates: 1000, screened: 240, flagged: 90, sampled: 90, high_frequency: 60, insufficient_history: 12, fully_evaluated: 150, eligible: 140, pool: 140 } };
+const t2 = keep(U.tonightHTML(T2)), t2t = textOf(t2);
+chk('v2: the cards lead with the featured bettors', /\d+ featured bettors?, \$/.test(t2t) && !/top bettor/.test(t2t), t2t.slice(0, 400));
+chk('v2: it says what featured means, and how many qualify today (fewer than 10 says so)', /positive Radar Score/.test(t2t) && /at most 10/.test(t2t)
+  && /3 bettors qualify to be featured today \(at most 10; fewer qualify when fewer clear the bar\)/.test(t2t), t2t.slice(0, 600));
+chk('v2: none qualifying says so, plainly', /No bettor qualifies to be featured yet/.test(U.featuredLine({ featured: 0, top_wallets: 10 })) && /the most Radar features/.test(U.featuredLine({ featured: 10, top_wallets: 10 })));
+chk('v2: observed activity is its own section, labelled observed and not a signal, apart from the cards', /Observed activity/.test(t2t) && /Observed, not a signal/.test(t2t)
+  && t2.indexOf('rd-obs') > t2.lastIndexOf('rd-card') && /not evidence and not a pick/.test(t2t));
+chk('v2: …it counts and sums, by side, and names no bettor', /Chiefs -3 8 \(\$52K\) · Raiders \+3 4 \(\$18K\)/.test(t2t) && !/data-radar-wallet/.test(t2.slice(t2.indexOf('rd-obs'))), t2t.slice(t2t.indexOf('Observed activity'), t2t.indexOf('Observed activity') + 400));
+chk('v2: how discovery stands: screened, fully evaluated, high-frequency and ungraded, with why', /Radar has screened 240 wallets from Polymarket’s 30-day sports board: 150 fully evaluated, 60 high-frequency \(not followable\), 12 with too much history to read in full \(ungraded\)\./.test(t2t), t2t.slice(-500));
+chk('v2: no featured card: says so, invents nothing', /No featured bettor holds a position/.test(U.tonightHTML(Object.assign({}, T2, { cards: [] }))));
+chk('v2: a subscriber-only refusal shows no observed activity either', !/Observed activity/.test(U.tonightHTML({ status: 'subscribers_only', hypothesis: 'H-RADAR-02', cards: [], observed: T2.observed })));
+chk('v2: the leaderboard marks a featured bettor in words', /Featured/.test(U.leaderboardHTML({ status: 'ok', rows: [{ rank: 1, wallet: '0x' + '1'.repeat(40), sample: 'ranked', style: 'Directional', graded_bets: 60, wins: 40, losses: 20, roi: 0.1, clv_pp: 2, follow5_roi: 0.05, radar_score: 3, score_parts: { follow_roi: 0.01, clv_pct: 0.01, roi: 0.01 }, top_directional: true }] })));
+const rec2 = textOf(keep(U.recordHTML({ status: 'ok', label: 'EXPERIMENTAL', hypothesis: 'H-RADAR-02', priced_at: 'best_ask', small_sample: true, min_sample: 200, earlier_cards: 4,
+  totals: { graded: 1, wins: 1, losses: 0, pushes: 0, roi: 0.49, beat_close_rate: 1, with_close: 1, pending: 0, void: 0 }, h_radar_01: { status: 'complete', passed: false }, recent: [] })));
+chk('v2: the record says it is priced at the best ask, what H-RADAR-02 tests, and counts earlier cards apart', /at the best ask in Polymarket’s order book/.test(rec2) && /one unit per card at the best ask/.test(rec2)
+  && /H-RADAR-02 tests: a 12-week test at the best ask/.test(rec2) && /Until it passes, nothing here is called evidence/.test(rec2) && /4 earlier cards were published under H-RADAR-01’s rules, at the midpoint/.test(rec2), rec2.slice(0, 700));
+
 /* ── the leaderboard ─────────────────────────────────────────────────── */
 const g = (o) => Object.assign({ wallet: '0x' + '3'.repeat(40), display: 'SharpAlice', rank: 1, style: 'Directional', sample: 'ranked', graded_bets: 120, wins: 70, losses: 48, pushes: 2,
   roi: 0.061, clv_pp: 2.1, follow5_roi: 0.034, radar_score: 3.12, score_parts: { follow_roi: 0.024, clv_pct: 0.031, roi: 0.042 } }, o || {});
