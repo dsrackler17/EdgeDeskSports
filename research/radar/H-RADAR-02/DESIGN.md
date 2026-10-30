@@ -112,6 +112,26 @@ Activity read newest first, 1,000 actions a page, for 90 days:
 The top of the 30-day board is high-frequency wallets. From about rank 100
 down, a complete 90 days is a few pages.
 
+### Resuming a newest-first read
+
+[Run 40982170115](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40982170115)
+checked this on three wallets near rank 100 of the 30-day board. Evaluation
+needs it, because it reads 10 pages a run and has to resume where it stopped.
+
+- **`end` bounds a newest-first read**, inclusive of that second. A read
+  ending at page 1's oldest second started exactly there.
+- **A `next_cursor` saved and used 20 seconds later carries on** with the
+  same `start` and `end`: HTTP 200, 1,000 rows, none newer than page 1's
+  oldest.
+
+So a read keeps its window and its cursor between runs.
+
+Two notes from the same run:
+- The 30-day board again equalled each wallet's own shares over the rolling
+  30 days: 1,683,473.46 at rank 400, for example.
+- The `DAY` board was empty for every wallet 51 minutes after midnight UTC,
+  so `DAY` is the UTC calendar day. H-RADAR-02 does not use it.
+
 ### Fees
 
 On the three covered NBA markets probed (a moneyline, a spread and a total):
