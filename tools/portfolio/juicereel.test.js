@@ -480,6 +480,33 @@ async function live() {
     J.fail['/oauth2/me'] = [502];
     r = await call({ action: 'jr_check' }, SERVICE);
     chk('…the owner lookup failing alone (5xx) does not refuse credentials the revoke accepted', r.body.accepted === true && r.body.owner_access === 'unavailable' && /did not answer/.test(r.body.message), r.body);
+    /* ── which Juice Reel application the client id is (2026-10-30), and the scopes line ── */
+    r = await call({ action: 'jr_check' }, SERVICE);
+    chk('jr_check names the application by the client id\'s first 10 characters: the test id is neither known app — unknown, not ok, said so; the verdict and message otherwise unchanged',
+      r.body.app && r.body.app.client_id_prefix === J.clientId.slice(0, 10) && r.body.app.verdict === 'unknown' && r.body.app.ok === false && r.body.app.name === null
+        && /neither known Juice Reel application/.test(r.body.app.message) && /jr_UcOwwS/.test(r.body.app.message) && r.body.accepted === true && !/WRONG APPLICATION/.test(r.body.message), r.body.app);
+    chk('jr_check\'s scopes line before anyone connected: the bet sync requests bets.open.read and bets.settled.read; no token yet, nothing to compare',
+      r.body.scopes && JSON.stringify(r.body.scopes.requested) === '["bets.open.read","bets.settled.read"]' && r.body.scopes.granted === null && r.body.scopes.missing === null
+        && /^scopes: requests bets\.open\.read bets\.settled\.read; no token yet/.test(r.body.scopes.line), r.body.scopes);
+    const INTEGRATION_ID = 'jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK', OWNER_ONLY_ID = 'jr_AFk36va1' + 'Zq9xLw2Rt7Kp0Nb4Vc8Hd', SECRET_X = 'jrs_never_printed_0001';
+    const appCalls = J.calls.length;
+    /* no secret set, so Juice Reel is not asked (its calls would carry another client id): the application verdict needs no request */
+    const rInt = await callBy(load(Object.assign({}, env, { JUICE_REEL_CLIENT_ID: INTEGRATION_ID, JUICE_REEL_CLIENT_SECRET: '' })), { action: 'jr_check' }, SERVICE);
+    chk('the EdgeDesk Sports Integration id (jr_UcOwwS…): correct, named, ok — only its first 10 characters in the response',
+      rInt.status === 200 && rInt.body.app.verdict === 'correct' && rInt.body.app.ok === true && rInt.body.app.name === 'EdgeDesk Sports Integration'
+        && rInt.body.app.client_id_prefix === 'jr_UcOwwS-' && !JSON.stringify(rInt.body).includes(INTEGRATION_ID) && !/WRONG/.test(rInt.body.message), rInt.body.app);
+    const rOwn = await callBy(load(Object.assign({}, env, { JUICE_REEL_CLIENT_ID: OWNER_ONLY_ID, JUICE_REEL_CLIENT_SECRET: '' })), { action: 'jr_check' }, SERVICE);
+    chk('the EdgeDeskSports id (jr_AFk36va1…, sign-in off): WRONG — not ok, the message leads with it and says which id to put in Supabase; the full id not echoed',
+      rOwn.status === 200 && rOwn.body.app.verdict === 'wrong' && rOwn.body.app.ok === false && rOwn.body.app.name === 'EdgeDeskSports' && rOwn.body.app.client_id_prefix === 'jr_AFk36va'
+        && /^WRONG APPLICATION: JUICE_REEL_CLIENT_ID \(jr_AFk36va…\) is the EdgeDeskSports app/.test(rOwn.body.message) && /Sign in With Juice Reel is off/.test(rOwn.body.app.message)
+        && /EdgeDesk Sports Integration app's id \(jr_UcOwwS…\)/.test(rOwn.body.app.message) && !JSON.stringify(rOwn.body).includes(OWNER_ONLY_ID), rOwn.body);
+    const rOwnS = await callBy(load(Object.assign({}, env, { JUICE_REEL_CLIENT_ID: OWNER_ONLY_ID, JUICE_REEL_CLIENT_SECRET: '' })), { action: 'jr_check' }, 'tok-op');
+    chk('…the same verdict for a signed-in operator; Juice Reel was asked by none of these (no secret set)', rOwnS.body.app.verdict === 'wrong' && J.calls.length === appCalls);
+    const rNone = await callBy(fnNoId, { action: 'jr_check' }, SERVICE);
+    chk('…no client id at all: not_set, no prefix', rNone.body.app.verdict === 'not_set' && rNone.body.app.client_id_prefix === null && rNone.body.app.ok === false, rNone.body.app);
+    chk('…the secret is never printed: not the fake\'s, not a set one', [rInt, rOwn, rOwnS, rNone].every((x) => !JSON.stringify(x.body).includes(J.clientSecret))
+      && !JSON.stringify((await callBy(load(Object.assign({}, env, { JUICE_REEL_CLIENT_ID: OWNER_ONLY_ID, JUICE_REEL_CLIENT_SECRET: SECRET_X })), { action: 'jr_check' }, SERVICE)).body).includes(SECRET_X));
+    J.calls.length = appCalls;   // that last check asked Juice Reel under another client id; the per-request header check later is about EdgeDesk's own id
     r = await callBy(fnBare, { action: 'jr_status' }, 'tok-op');
     const rr = await callBy(fnBare, { action: 'jr_status' }, 'tok-b');
     chk('the provider unset: jr_status says sync is off, to operators and readers alike',
@@ -663,6 +690,25 @@ async function live() {
     chk('status for the page: Connected as Sharp Bettor, 3 books, open bets — no token, ciphertext or Juice Reel id in it',
       st1.body.grant.status === 'CONNECTED' && st1.body.grant.display_name === 'Sharp Bettor' && +st1.body.grant.books === 3 && +st1.body.grant.open_bets === 3
         && !/ciphertext|provider_user_id|jra_|jrr_|grant_id/.test(JSON.stringify(st1.body)), st1.body.grant);
+
+    /* jr_check's scopes line, now that a token exists */
+    r = await call({ action: 'jr_check' }, SERVICE);
+    chk('jr_check after the operator connected: the most recent token granted both bet scopes — none missing, with when',
+      JSON.stringify(r.body.scopes.granted) === '["bets.open.read","bets.settled.read"]' && r.body.scopes.missing.length === 0 && typeof r.body.scopes.token_at === 'string'
+        && /most recent token \(.+\) granted bets\.open\.read bets\.settled\.read; none missing$/.test(r.body.scopes.line), r.body.scopes);
+    const gScopes = grantRow(OP).scopes;
+    db.sql(`update portfolio_private.oauth_grants set scopes = array['bets.open.read'], rotated_at = now() + interval '1 second' where user_id = ${L(OP)};`);
+    r = await call({ action: 'jr_check' }, SERVICE);
+    chk('a most recent token granted only bets.open.read (as the Integration app had before settled was approved): bets.settled.read flagged MISSING',
+      JSON.stringify(r.body.scopes.granted) === '["bets.open.read"]' && JSON.stringify(r.body.scopes.missing) === '["bets.settled.read"]' && /; MISSING bets\.settled\.read$/.test(r.body.scopes.line)
+        && !JSON.stringify(r.body.scopes).includes(OP), r.body.scopes);
+    db.sql(`alter function public.portfolio_svc_jr_latest_scopes(text) rename to portfolio_svc_jr_latest_scopes_hidden;`);
+    r = await call({ action: 'jr_check' }, SERVICE);
+    db.sql(`alter function public.portfolio_svc_jr_latest_scopes_hidden(text) rename to portfolio_svc_jr_latest_scopes;`);
+    chk('…a database that predates the scopes function: granted unknown, says to apply portfolio_juicereel.sql — the check still answers',
+      r.status === 200 && r.body.scopes.granted === null && /granted unknown \(apply the current supabase\/portfolio_juicereel\.sql\)/.test(r.body.scopes.line), r.body.scopes);
+    db.sql(`update portfolio_private.oauth_grants set scopes = ${L('{' + (gScopes || []).join(',') + '}')}::text[] where user_id = ${L(OP)};`);
+    chk('readers cannot call the scopes function', /permission denied|42501|connector/.test(db.mustFail(() => db.as(B, `select public.portfolio_svc_jr_latest_scopes('production');`)) || ''));
 
     /* ── PHASE 5 · the synced bets in the existing analytics ── */
     const sum = JSON.parse(one(db.as(OP, `select public.portfolio_summary(null, null, 'UTC', null);`)));

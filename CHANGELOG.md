@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-30 — Juice Reel: the check says which application the client id is, and which scopes the last token got
+
+- **Juice Reel approved `bets.settled.read` on EdgeDesk Sports Integration** (`jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK`), and both redirect URIs are registered on it: `https://edgedesksports.com/oauth/juicereel-callback.html` (bet sync) and `https://edgedesksports.com/oauth/juicereel-subscribe.html` (billing). The other application, EdgeDeskSports (`jr_AFk36va1…`, Sign in With Juice Reel off), is to be disabled once the Integration app passes `check`. Today's `check` named its owner "EdgeDeskSports".
+- **Which application.** `jr_check` (`portfolio_connect`, build `2026-10-30-jr6`) and billing's `check` (`juicereel_billing-2026-10-30-1`) now answer `app`: the client id's first 10 characters, matched against `jr_UcOwwS` (Integration, correct) and `jr_AFk36va1` (EdgeDeskSports, wrong). On the wrong one, Actions → Juice Reel setup and Actions → Deploy Juice Reel billing fail with what to put in Supabase. An id that is neither is a warning. The secret is never read for this and never printed.
+- **Scopes.** `jr_check` answers `scopes`: what the bet sync requests (`bets.open.read bets.settled.read`) against what Juice Reel granted on the most recent stored token, with any missing scope flagged. The new service-only `portfolio_svc_jr_latest_scopes(env)` (`supabase/portfolio_juicereel.sql`) returns the scopes, time and status only: no reader, token or Juice Reel id. `supabase/parts/portfolio_juicereel.part*` regenerated (now 5 parts). `tools/portfolio/juicereel_smoke.js probe` prints both lines.
+- **Docs.** `docs/juicereel.md` § 1 and `docs/juicereel-billing.md` § 1.
+- **Tests.**
+  - `tools/portfolio/juicereel.test.js`: 196 → 207. Against the old function: 3 failed, and the run stopped at the first missing `app`.
+  - `tools/billing/juicereel_billing.test.js`: 113 → 118. Against the old function the suite stops at the first new check (`app` absent).
+- **Deploy:** Actions → Deploy Portfolio schema (`deploy_function` ticked) for the SQL and `portfolio_connect`, and Actions → Deploy Juice Reel billing for `juicereel_billing`. Then run Actions → Juice Reel setup → `check`.
+
 ## 2026-10-30 — Novig in production: DraftKings from the prices production keeps; ingestion only on a key Novig lists as read-only
 
 - **What production showed.** Deploy run 41112694540 applied nothing. The layer's guard refused: `needs public.sharp_price_snapshots (the DraftKings tape): apply supabase/sharp_lag.sql first`. Production has no Sharp-lag tape. It keeps DraftKings in `book_quote_ticks` (capture's per-book history, joined to `signals` by `sig_key`), and only for actionable signals. The project's secret names (run 41113406385, names only) show `NOVIG_MANAGEMENT_KEY_ID` and `NOVIG_MANAGEMENT_PRIVATE_KEY` NOT set, and an unexplained `NOVIG_READ_KEY_ID` / `NOVIG_READ_PRIVATE_KEY` pair set.
