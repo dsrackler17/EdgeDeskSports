@@ -65,6 +65,22 @@ Tests: `tools/billing/juicereel_checkout.e2e.js` gains the login window: switch 
 - **What.** `supabase/functions/nhl_goalie_sync/index.ts` answers `nhl_goalie_sync@2026-10-29.1`. Nothing else in the function changes. `tools/hockey/nhl_goalie_run_summary.js` adds a "Headline home win %" column, marked "(lineup lock)" once the card is locked, and labels the old column "(pairing)".
 - **Tests.** `tools/hockey/nhl_goalie_sync.test.js`: the summary row carries the headline, and at lock it shows the lock price marked "(lineup lock)". On the old summary code: 76 passed, 2 failed. On the fix: 78/0. `docs/engine/NHL_GOALIES.md` §11 records the first deploy: Deploy NHL goalie layer run 4 deployed it, and its first run read the site's previous inputs, which the site had not yet replaced.
 
+## 2026-10-29 — Prediction Radar: the wallet sync grades only the bets the grade reads, and reads the wallets that can be top-graded first
+
+- **Bug.** Smart Money Tonight showed "No top-graded bettor holds a position" because there was almost no one to show. `run_now` on build `.6` ([run 40916807612](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40916807612)) made 123 wallet calls in 2 h 45 m. At the end 6 of the pool's 200 wallets had been read in full, 6 were ranked and 1 was top-graded. The Radar record had no card to publish, so "How following has done" stayed at 0 graded.
+- **Cause** (`supabase/functions/polymarket_sync/index.ts`, `wallets`).
+  - Every resolved bet in a wallet's history was graded, at one or two price reads a bet. The grade reads only the newest 150 (`max_bets_per_wallet`).
+  - Bets were graded while the activity read was still short of the present. Newer bets read later pushed them out of the grade.
+  - Due wallets were taken by pool rank, which is by volume. So the busiest wallets were read first and kept the queue for dozens of runs each. Most of them (172 of 200 in H-RADAR-01) have truncated histories and can never be top-graded.
+- **Fix** (build `polymarket_sync@2026-10-29.7`). A wallet's bets are graded only once its activity is read up to the present, and only the newest 150 resolved ones, newest first. The grade reads exactly these, so every grade is the same as before. Wallets whose history is not truncated are read before truncated ones. No rule in `radar_rules()` changes.
+- **Visible change.** A trader page lists a wallet's newest 150 resolved bets from Radar's first read of it, and every one after. Before, it listed up to 500.
+- **Tests** (`tools/radar/sync_fn.test.js`, with `max_bets_per_wallet` at 20 against a wallet with 63 bets):
+  - a read stopped at 10 pages grades nothing yet;
+  - once the read is complete, exactly the newest 20 bets are graded, in at most 4 runs;
+  - a wallet that is not truncated is read before truncated wallets that rank higher and have waited longer.
+
+  On the old code: 64 passed, 3 failed. It graded 20 bets before the read was complete, then all 63 over 5 more runs, and took the three truncated wallets first. On the fix: 67 passed, 0 failed.
+
 ## 2026-10-29 — Changelog: eleven entries that merges dropped are back
 
 Conflict resolutions in "Update branch" merges dropped whole entries again. Each one is restored verbatim from the last commit that held it. Every line on `main` is kept, except the second copy of one Prediction Radar entry, which a merge had duplicated.

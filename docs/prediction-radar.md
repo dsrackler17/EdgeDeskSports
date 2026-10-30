@@ -242,7 +242,9 @@ and decides no access: each page draws what a database door already decided.
   - the record, ROI, CLV, follow ROI at 5 and 15 minutes, style and sample;
   - the Radar Score with its parts;
   - open positions, for a subscriber only;
-  - every graded bet, each transaction linked to Polygonscan.
+  - every graded bet, each transaction linked to Polygonscan. A wallet's graded
+    bets are its newest 150 resolved bets when Radar first read it, and every
+    one since.
 
   It never shows a bio or anything beyond public trading data.
 - **`/radar/` is free, with no login.** It shows:
@@ -318,7 +320,7 @@ results, never with a claim.
 |---|---|---|
 | `tonight` | every 10 minutes | Reads the covered leagues' open game events starting within the next 60 hours (5 a page, at most 16 pages a series) and upserts their markets, matching each once. For the matched markets of games within 36 hours **at the board's own lines**, it stores who holds each side (pool wallets only) and each outcome's price. An alternate line is matched but not read for holders: it has no EdgeDesk fair to compare with. It also stores the resolution of matched markets whose game started in the last two days. |
 | `pool` | 06:07 | Puts the sports leaderboard's top 200 by volume in the pool. Every other wallet leaves it. |
-| `wallets` | every 5 minutes, 06:10 to 09:55 | Takes three pool wallets a run, least recently read first. It reads their activity since the cursor, the markets they traded, and their covered trades with hashes. Each newly resolved bet is graded once: its close, CLV and the 5- and 15-minute follow. |
+| `wallets` | every 5 minutes, 06:10 to 09:55 | Takes three pool wallets a run: first every wallet whose history is not truncated (only those can be top-graded), then the least recently read. It reads their activity since the cursor, the markets they traded, and their covered trades with hashes. Once a wallet's activity is read up to the present, each newly resolved bet among its newest 150 (`max_bets_per_wallet`, what the grade reads) is graded once: its close, CLV and the 5- and 15-minute follow. An older bet is not graded. |
 | `grade` | 10:17 | Regrades every pool wallet as one versioned run. |
 
 | Table | Kind |
@@ -478,6 +480,9 @@ finish stays due with its place kept (the 30-page cap counts across runs).
 A run also holds at most 10 activity pages, and grades a bet from only the
 two stretches of its price history the grade reads (`R.gradeWindows`: the
 follows' and the close's), so a bet placed days early is two short reads.
+It grades only the bets the grade reads (a wallet's newest 150), and only once
+the wallet's activity is read up to the present, and it reads every wallet that
+can still be top-graded before a truncated one.
 Each wallet is marked before its work and the mark cleared after, so a wallet
 whose run dies (out of compute) is set aside for 15 minutes, and after three
 such runs read once a day: it never blocks the pool behind it.
