@@ -16,7 +16,7 @@
 --   nhl_goalie_alerts         FAILURE / DEGRADED / DRIFT / WARNING, by run
 --   nhl_goalie_starters       every observation of a starter: one row per
 --                             game, team and source when it changes
---                             (daily_faceoff, nhl_api_boxscore, manual,
+--                             (daily_faceoff, espn, nhl_api_boxscore, manual,
 --                             edgedesk_projection) and the merged
 --                             'consensus' row the card uses; the newest per
 --                             (game, team, source) is_current
@@ -142,7 +142,7 @@ create table if not exists public.nhl_goalie_starters (
   goalie_id          text,
   goalie_name        text,
   status             public.nhl_goalie_status not null,
-  source             text not null check (source in ('daily_faceoff', 'nhl_api_boxscore', 'manual', 'edgedesk_projection', 'consensus')),
+  source             text not null check (source in ('daily_faceoff', 'espn', 'nhl_api_boxscore', 'manual', 'edgedesk_projection', 'consensus')),
   source_status      text,
   source_url         text,
   source_updated_at  timestamptz,
@@ -164,6 +164,11 @@ create table if not exists public.nhl_goalie_starters (
 );
 create index if not exists nhl_goalie_starters_game_idx on public.nhl_goalie_starters (game_id, team, source, fetched_at desc, id desc);
 create unique index if not exists nhl_goalie_starters_one_current on public.nhl_goalie_starters (game_id, team, source) where is_current;
+-- ESPN's probable goalies became a source on 2026-10-30. A table created before that keeps the old list until
+-- this file is applied again, which replaces the check (every row already on file satisfies the new one).
+alter table public.nhl_goalie_starters drop constraint if exists nhl_goalie_starters_source_check;
+alter table public.nhl_goalie_starters add constraint nhl_goalie_starters_source_check
+  check (source in ('daily_faceoff', 'espn', 'nhl_api_boxscore', 'manual', 'edgedesk_projection', 'consensus'));
 
 -- a new observation supersedes the current one for the same game, team and source
 create or replace function public.nhl_goalie_starter_supersede()

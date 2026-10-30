@@ -16,8 +16,10 @@
 
    WHAT IS IN IT
      T0  observations   Daily Faceoff's starting-goalies page (its embedded
-                        __NEXT_DATA__ JSON), the NHL's own game boxscore (the
-                        `starter` flag, once lineups post), the manual file
+                        __NEXT_DATA__ JSON), ESPN's public NHL scoreboard (each
+                        team's probable starting goalie, Confirmed or Expected),
+                        the NHL's own game boxscore (the `starter` flag, once
+                        lineups post), the manual file
                         hockey/data/confirmed_starters.json. Team identity and
                         goalie-name matching. Nothing is estimated: a name that
                         does not match is kept as unmatched, a page that does
@@ -69,9 +71,10 @@ const NHLG_STATUSES = ['unknown', 'projected', 'likely', 'confirmed'];
 const NHLG_BADGE = { confirmed: 'Confirmed', likely: 'Likely', projected: 'Projected', unknown: 'Unknown' };
 /* rank: which source leads when sources disagree (the league's own lineup first) */
 const NHLG_SOURCES = {
-  nhl_api_boxscore: { label: 'NHL.com game boxscore', tier: 'T0', rank: 4, observed: true },
-  manual: { label: 'Manual entry (hockey/data/confirmed_starters.json)', tier: 'T0', rank: 3, observed: true },
-  daily_faceoff: { label: 'Daily Faceoff', tier: 'T0', rank: 2, observed: true },
+  nhl_api_boxscore: { label: 'NHL.com game boxscore', tier: 'T0', rank: 5, observed: true },
+  manual: { label: 'Manual entry (hockey/data/confirmed_starters.json)', tier: 'T0', rank: 4, observed: true },
+  daily_faceoff: { label: 'Daily Faceoff', tier: 'T0', rank: 3, observed: true },
+  espn: { label: 'ESPN scoreboard (probable goalie)', tier: 'T0', rank: 2, observed: true },
   edgedesk_projection: { label: 'EdgeDesk usage projection', tier: 'T2', rank: 1, observed: false },
   consensus: { label: 'EdgeDesk merge of the sources above', tier: 'T0', rank: 0, observed: false },
 };
@@ -183,6 +186,7 @@ function nhlgMatchGoalie(name, team, inputs) {
 /* ---------------------------------------------------------------- the sources */
 function nhlgDailyFaceoffUrl(etDate) { return 'https://www.dailyfaceoff.com/starting-goalies/' + etDate; }
 function nhlgBoxscoreUrl(gameId) { return 'https://api-web.nhle.com/v1/gamecenter/' + gameId + '/boxscore'; }
+function nhlgEspnScoreboardUrl(etDate) { return 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=' + String(etDate).replace(/-/g, ''); }
 
 function nhlgWalk(x, fn, depth) {
   if (depth > 12 || x == null || typeof x !== 'object') return;
@@ -229,6 +233,41 @@ function nhlgParseDailyFaceoff(html, ctx) {
   return out;
 }
 /**
+ * ESPN's public NHL scoreboard for one Eastern date
+ * (site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=YYYYMMDD).
+ * Each event's competitors carry `probables`; the one named
+ * probableStartingGoalie is the team's starter, with ESPN's status
+ * (status.name "Confirmed" or "Expected"). ESPN's athlete id is not the
+ * NHL's, so the name is matched like Daily Faceoff's. A response with no
+ * events array is a DRIFT; a game with no probable goalie is a row with no
+ * name (unknown), never a guess.
+ */
+function nhlgParseEspnScoreboard(json, ctx) {
+  ctx = ctx || {};
+  const out = { ok: false, source: 'espn', url: ctx.url || null, fetched_at: nhlgIso(ctx.fetched_at), rows: [], games: 0, unread: [], drift: null };
+  if (!json || typeof json !== 'object' || !Array.isArray(json.events)) { out.drift = 'not an ESPN scoreboard (no events array)'; return out; }
+  out.ok = true; out.games = json.events.length;
+  for (const e of json.events) {
+    const comp = e && Array.isArray(e.competitions) ? e.competitions[0] : null;
+    const cs = comp && Array.isArray(comp.competitors) ? comp.competitors : [];
+    const by = {};
+    for (const c of cs) if (c && (c.homeAway === 'home' || c.homeAway === 'away')) by[c.homeAway] = c;
+    const tm = (c) => (c && c.team ? nhlgTeam(c.team.abbreviation) || nhlgTeam(c.team.displayName) : null);
+    const home = tm(by.home), away = tm(by.away);
+    if (!home || !away) { out.unread.push({ why: 'teams did not read', event: e && e.shortName ? String(e.shortName) : null }); continue; }
+    const start = nhlgIso((comp && comp.date) || (e && e.date));
+    for (const side of ['home', 'away']) {
+      const pr = (Array.isArray(by[side].probables) ? by[side].probables : []).filter((x) => x && x.name === 'probableStartingGoalie' && x.athlete)[0] || null;
+      const a = pr ? pr.athlete : null;
+      const nm = a ? String(a.displayName || a.fullName || '').trim() : '';
+      const raw = pr && pr.status ? (pr.status.name || pr.status.type || null) : null;
+      out.rows.push({ side, team: side === 'home' ? home : away, home, away, game_date: null, start_utc: start,
+        goalie_name: nm || null, source_status: raw == null ? null : String(raw), status: nm ? nhlgStatus(raw) : 'unknown', source_updated_at: null });
+    }
+  }
+  return out;
+}
+/**
  * The NHL's game boxscore (api-web.nhle.com/v1/gamecenter/{id}/boxscore).
  * playerByGameStats appears once lineups post; a goalie flagged
  * `starter: true` is the confirmed starter. Before that the boxscore says
@@ -268,7 +307,7 @@ function nhlgSummary(o) { return { source: o.source, goalie_id: o.goalie_id || n
  *   proj  the usage projection's likeliest goalie { goalie_id, goalie_name, p }, or null
  * Sources that name the same goalie: the highest status wins. Sources that
  * name different goalies: the lead source's goalie (NHL > manual > Daily
- * Faceoff), the LOWER of their statuses, capped at Likely (two sources naming
+ * Faceoff > ESPN), the LOWER of their statuses, capped at Likely (two sources naming
  * different starters is never a confirmation), conflict = true.
  */
 function nhlgMergeSide(obs, proj) {
@@ -663,7 +702,7 @@ function nhlgIsDue(now, last, games, o) {
 const EDNHLGoalieCore = {
   NHLG_CORE_VERSION, NHLG_STATUSES, NHLG_BADGE, NHLG_SOURCES, NHLG_DEFAULTS, NHLG_TEAMS, nhlgR, nhlgIso,
   nhlgStatus, nhlgStatusRank, nhlgMinStatus, nhlgSourceLabel, nhlgKey, nhlgTeam, nhlgNameParts, nhlgMatchGoalie,
-  nhlgDailyFaceoffUrl, nhlgBoxscoreUrl, nhlgParseDailyFaceoff, nhlgParseNhlBoxscore,
+  nhlgDailyFaceoffUrl, nhlgBoxscoreUrl, nhlgEspnScoreboardUrl, nhlgParseDailyFaceoff, nhlgParseEspnScoreboard, nhlgParseNhlBoxscore,
   nhlgIdentity, nhlgMergeSide, nhlgDisplay, nhlgRate, nhlgCalibrate, nhlgLambdas, nhlgMarkets, nhlgPrice, nhlgLineupDelta, nhlgLockPrice, nhlgLockedLineups, nhlgCandidates, nhlgPairings,
   nhlgBothConfirmed, nhlgLimitations, nhlgChangeNote, nhlgBuildCard, nhlgCardChange, nhlgStable, nhlgHash,
   nhlgDec, nhlgEv, nhlgSideProb, nhlgEdgeGate, nhlgEtParts, nhlgEtDate, nhlgEtToUtc, nhlgDueTimes, nhlgIsDue,
