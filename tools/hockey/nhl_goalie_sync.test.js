@@ -295,6 +295,36 @@ globalThis.fetch = async (u, init) => {
   chk('inputs down: the next poke inside 15 minutes is not another error row', runs().length === 1 && r.status === 'not_recorded');
   W.inputsUp = true;
 
+  /* ============================================================ a failed check is tried again (2026-10-30)
+     The deploy's forced run at 16:34 UTC got HTTP 403 from Daily Faceoff on both pages; the next slot was 18:00, so one
+     refusal held readiness (and the site's header) in error for ~90 minutes with nothing asked in between. */
+  resetDb(); W.box = null; W.df = 'evening'; W.dfStatus = 403;
+  r = await run('2026-10-25T12:34:00Z', { force: true });
+  chk('retry: a forced off-slot run with Daily Faceoff refusing (403) and no NHL API read is an error run', r.status === 'error' && runs().length === 1 && runs()[0].status === 'error' && runs()[0].daily_faceoff_ok === false, [r.status, runs()[0]]);
+  chk('retry: the error run says when it is tried again (10 minutes), not only the next slot', runs()[0].next_due_at === '2026-10-25T12:44:00.000Z', runs()[0].next_due_at);
+  W.dfStatus = 200;
+  r = await run('2026-10-25T12:40:00Z');
+  chk('retry: not before 10 minutes have passed', runs().filter((x) => x.status !== 'skipped').length === 1, runs().map((x) => x.status));
+  r = await run('2026-10-25T12:45:00Z');
+  chk('retry: 10 minutes after the failed check the sync runs again, off-slot, and recovers', runs().filter((x) => x.status !== 'skipped').length === 2 && r.run && r.run.due_kinds.join() === 'retry_after_error' && r.status !== 'error' && runs()[runs().length - 1].daily_faceoff_ok === true,
+    [r.status, r.run, runs().map((x) => x.status)]);
+  r = await run('2026-10-25T12:55:00Z');
+  chk('retry: after a run succeeds, the cadence is the schedule again (no retry)', runs().filter((x) => x.status !== 'skipped').length === 2, runs().map((x) => x.status));
+  /* a source that stays down: 10, then 20, then 40 minutes apart, and never past the schedule's own slots */
+  resetDb(); W.dfStatus = 403;
+  await run('2026-10-25T12:34:00Z', { force: true });
+  await run('2026-10-25T12:45:00Z');
+  chk('retry: a second failure in a row is recorded as an error', runs().filter((x) => x.status === 'error').length === 2, runs().map((x) => x.status));
+  await run('2026-10-25T12:55:00Z');
+  chk('retry: after two failures in a row the wait is 20 minutes (12:55 is too soon)', runs().filter((x) => x.status === 'error').length === 2, runs().map((x) => x.status));
+  await run('2026-10-25T13:05:00Z');
+  chk('retry: 20 minutes after the second failure it is tried again', runs().filter((x) => x.status === 'error').length === 3, runs().map((x) => x.status));
+  await run('2026-10-25T13:30:00Z');
+  chk('retry: after three the wait is 40 minutes (13:30 is too soon)', runs().filter((x) => x.status === 'error').length === 3, runs().map((x) => x.status));
+  await run('2026-10-25T13:45:00Z');
+  chk('retry: 40 minutes after the third failure it is tried again (the backoff stops growing)', runs().filter((x) => x.status === 'error').length === 4, runs().map((x) => x.status));
+  W.dfStatus = 200;
+
   /* ============================================================ unmatched names */
   resetDb();
   W.df = FX.dfPage([Object.assign({}, FX.MIN_VAN, { home: { name: 'Arturs Silovs', strength: 'Likely', at: '2026-10-25T22:00:00.000Z' }, away: { name: 'Cam Pickard', strength: 'Likely' } })]);

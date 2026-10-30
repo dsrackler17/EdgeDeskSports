@@ -62,7 +62,7 @@
 //      NHL_GOALIE_INPUTS_URL (default https://edgedesksports.com/hockey/goalie_inputs.json)
 // ============================================================
 
-export const BUILD = "nhl_goalie_sync@2026-10-30.1";
+export const BUILD = "nhl_goalie_sync@2026-10-30.2";
 const INPUTS_URL = "https://edgedesksports.com/hockey/goalie_inputs.json";
 // A browser's headers, as nba_injury_sync sends: a crawler-style agent was
 // refused by ESPN's edge on the NBA layer's first live runs.
@@ -1123,6 +1123,22 @@ export async function readBoxscore(gameId: string, nowMs: number) {
   } catch (e) { return { ok: false, url, error: "the NHL API: " + String((e as Error)?.message ?? e).slice(0, 160) }; }
 }
 
+/* ---------------------------------------------------------------- a failed check is tried again
+   A source refusing one read (Daily Faceoff answered HTTP 403 to the deploy's forced run at 16:34 UTC on 2026-10-30)
+   left readiness in error until the next slot, 86 minutes later, with nothing asked in between. After an error run the
+   sync runs again 10 minutes later, then 20, then every 40 while it keeps failing, besides the schedule's own slots.
+   Nothing about what a run writes or how readiness judges it changes. */
+const RETRY_AFTER_ERROR_MIN = [10, 20, 40];
+/** the error runs in a row at the head of recent (the latest executed runs, newest first) */
+function errorStreak(recent: Any[]) { let n = 0; for (const r of recent || []) { if (r.status !== "error") break; n++; } return n; }
+/** when the latest executed run failed, the instant it is tried again; otherwise null */
+function retryAfterError(recent: Any[]) {
+  const n = errorStreak(recent);
+  if (!n) return null;
+  const last = Date.parse(recent[0].started_at);
+  return isFinite(last) ? last + RETRY_AFTER_ERROR_MIN[Math.min(n, RETRY_AFTER_ERROR_MIN.length) - 1] * 60000 : null;
+}
+
 /* ---------------------------------------------------------------- one run */
 export async function syncOnce(opts: Any = {}) {
   const t0 = Date.now();
@@ -1135,8 +1151,10 @@ export async function syncOnce(opts: Any = {}) {
   const alert = (severity: string, code: string, message: string, detail?: Any) => alerts.push({ severity, code, message, detail: detail ?? null });
   const out: Any = { build: BUILD, core: NHLG_CORE_VERSION, run_id: run.run_id, now: nowIso, dry };
   let record = true;
+  let recent: Any[] = [];
   try {
-    const lastExec = (await db("nhl_goalie_sync_runs?select=started_at,finished_at,status&status=neq.skipped&order=started_at.desc&limit=1"))[0] || null;
+    recent = (await db("nhl_goalie_sync_runs?select=started_at,finished_at,status&status=neq.skipped&order=started_at.desc&limit=" + RETRY_AFTER_ERROR_MIN.length)) || [];
+    const lastExec = recent[0] || null;
     const lastAny = (await db("nhl_goalie_sync_runs?select=finished_at&order=finished_at.desc&limit=1"))[0] || null;
     const quietFor = lastAny ? nowMs - Date.parse(lastAny.finished_at) : Infinity;
 
@@ -1162,8 +1180,11 @@ export async function syncOnce(opts: Any = {}) {
 
     /* 2. due? */
     const due = nhlgIsDue(nowMs, lastExec ? lastExec.started_at : null, upcoming);
+    const retryAt = retryAfterError(recent);
+    const retry = !due.due && retryAt != null && nowMs >= retryAt;
     run.next_due_at = due.next_due_at;
     out.due = due;
+    if (retry) { due.due = true; due.kinds = ["retry_after_error"]; }
     if (!due.due && !opts.force) {
       if (quietFor >= NHLG_DEFAULTS.heartbeat_min * 60000) { run.status = "skipped"; run.skipped_reason = "no slot due" + (due.next_due_at ? "; next " + due.next_due_at : ": no game in the inputs"); }
       else record = false;
@@ -1357,6 +1378,8 @@ export async function syncOnce(opts: Any = {}) {
     alert("FAILURE", "sync_error", run.message);
   } finally {
     run.finished_at = new Date(nowMs + Math.max(0, Date.now() - t0)).toISOString();  // the run's own clock (a test or a dry run passes `now`)
+    if (run.status === "error") { const at = Date.parse(run.started_at) + RETRY_AFTER_ERROR_MIN[Math.min(errorStreak(recent) + 1, RETRY_AFTER_ERROR_MIN.length) - 1] * 60000;
+      if (!run.next_due_at || at < Date.parse(run.next_due_at)) run.next_due_at = new Date(at).toISOString(); }
     if (run.status !== "skipped" && !run.message) run.message = alerts.filter((a) => a.severity !== "WARNING").map((a) => a.message).join("; ").slice(0, 600) || null;
     run.details = { alerts: alerts.map((a) => a.code), simulate_outage: sim.length ? sim : undefined };
     out.status = out.status || run.status; out.alerts = alerts; out.ok = run.status !== "error"; out.run = { status: run.status, due_kinds: run.due_kinds, final_pass_games: run.final_pass_games, next_due_at: run.next_due_at,

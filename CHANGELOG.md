@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-30 — NHL goalie sync: a failed check is tried again instead of waiting for the next slot (the header's "1 failing")
+
+- **What the header showed.** The site's System pill read "1 failing" from 16:34 UTC. The one failing check was `nhl_goalie_readiness` (state `error`): "the last check failed: no starter source could be read (Daily Faceoff)". Deploy NHL goalie layer (run 41090811837) ended with a forced run at 16:34. Daily Faceoff answered HTTP 403 to both date pages, and the NHL API was not due (no game inside three hours). The cron run at 16:00 had read both pages, 18 rows. Daily Faceoff refused the function the same way on 2026-10-26 at 00:35 UTC. These are intermittent refusals from an outside source; EdgeDesk's parser and data were fine.
+- **What was ours.** After an error run the sync asked nothing until the next scheduled slot (18:00 UTC), so one refused read held readiness, and the site-wide header, in error for 86 minutes. The starters on file were kept and nothing was written in their place, so readers lost freshness, not data.
+- **Fix** (`supabase/functions/nhl_goalie_sync/index.ts`, build `nhl_goalie_sync@2026-10-30.2`). After an error run, the sync runs again 10 minutes later, then 20, then every 40 while it keeps failing, besides the schedule's own slots (`due_kinds` `retry_after_error`). The error run's `next_due_at` names the retry time. No change to what a run writes, how readiness judges a run, or the header's rule: a failed check still shows as failing until a check succeeds.
+- **Tests** (`tools/hockey/nhl_goalie_sync.test.js`), replaying production. A forced off-slot run refused with 403 is an error, and its `next_due_at` is 10 minutes on. Then:
+  - nothing runs at 6 minutes;
+  - at 11 minutes it runs and recovers;
+  - after the recovery, nothing extra runs;
+  - a source that stays down is retried 10, 20, then 40 minutes apart.
+
+  On the old code: 86 passed, 8 failed. On the fix: 94/0.
+- **Deploy:** after merge, run Deploy NHL goalie layer with `deploy_function`.
 ## 2026-10-30 — Data pushes to `main` carry an "All checks" certificate, so `main` can require All checks of every pull request
 
 **Why.** Nothing stops a pull request from merging while its checks are red or still running. #926, #928 and #930 merged within 11 seconds of their checks starting today, and `main` went red. The fix is one rule on `main`: require `All checks`. That rule also binds the 65 data jobs that push straight to `main` with `GITHUB_TOKEN`, and this account has no bypass that lets them through. GitHub refused the GitHub Actions app as a bypass actor ("invalid actor", 2026-10-27). A Write-role bypass still refused a `GITHUB_TOKEN` push (TEMP bypass probe, run 41092698463, `GH013: Required status check "All checks" is expected`).
