@@ -43,7 +43,8 @@ chk('hooks: the section is beside Market Structure, never inside the price lines
 /* ---------------------------------------------------------------- System health and provenance, statically */
 const sh = fnBody('sysHealthHTML'), st = fnBody('sysHealthState');
 chk('health: the readiness view is read as anon, apart from sbFetch', /function sysHealthKalshiLoad\(force\)[\s\S]{0,600}kalshi_readiness\?select=\*/.test(HTML) && /try\{sysHealthKalshiLoad\(force\);\}catch\(_\)\{\}/.test(fnBody('sysHealthLoad')));
-chk('health: an error state fails the system check, warn asks for attention (as the NBA sync)', /ksr\.state==='error'\)fails\+\+;else if\(ksr\.state==='warn'\)warns\+\+/.test(st));
+/* the syncs share one rule, each named for the count it adds to (tools/app/navigation.test.js runs it) */
+chk('health: an error state fails the system check, warn asks for attention (as the NBA sync)', /\['Kalshi snapshot sync',SH\.ks\]/.test(st) && /if\(r\.state==='error'\)\{fails\+\+;failing\.push\(x\[0\]\);\}else if\(r\.state==='warn'\)\{warns\+\+;warning\.push\(x\[0\]\);\}/.test(st));
 chk('health: rows for the sync, the last successful snapshot, close capture and the game links', ['Kalshi snapshot sync', 'Kalshi last successful snapshot', 'Kalshi close capture', 'Kalshi game links'].every((l) => sh.indexOf("'" + l + "'") >= 0));
 chk('health: not deployed reads "not loaded", never a tick', /shRow\('Kalshi snapshot sync',SH\.ksErr\?[^;]*'not loaded','mut'\)/.test(sh));
 chk('health: the limitations are stated beside the Kalshi rows', /5-minute snapshots, not live/.test(sh) && /6\\u00a2/.test(sh) && /trading fees are not reflected/.test(sh));

@@ -115,6 +115,7 @@ returns numeric language sql immutable as $r$
     when 'close_capture_target_pct' then 90    -- below this over 7 days, close capture is degraded
     when 'discover_max_age_hours'   then 30    -- no successful discover in this long: degraded
     when 'unmapped_window_hours'    then 30    -- an unmapped game market settling inside this window is a warning
+    when 'recovery_confirm_minutes' then 30    -- one failed run followed by this long of good runs (same mode) is a recovered incident, not a warning
   end
 $r$;
 
@@ -500,22 +501,64 @@ select j.sport, j.game_id, j.game_key, j.odds_event_id, j.event_ticker, j.market
     ) u limit 1) c on true;
 
 -- THE KPIs. One row: freshness, failures, degradation, mapping, close capture.
+--
+-- FAILURES (2026-10-30: one snapshot timed out at 09:20Z, every run after it
+-- was good, and the feed read warn, with no reason, for 24 hours). A failed
+-- run is weighed by what came after it:
+--   * repeated     two or more failed runs in 24 hours: a warning, recovered or not;
+--   * unrecovered  no run of the failed run's mode has succeeded since: a
+--                  snapshot is already an error (the last snapshot failed); a
+--                  discover is a warning;
+--   * recovering   runs of that mode have succeeded since, for less than
+--                  kalshi_rule('recovery_confirm_minutes'): a warning;
+--   * recovered    one failed run, followed by that long of good runs: NOT a
+--                  warning. It stays counted (failures_24h, errors_24h,
+--                  failed_runs_24h) and named (recent_incident,
+--                  last_failure_at, last_failure_message) for 24 hours.
+-- A state other than ok always carries a state_reason.
 create or replace view public.kalshi_readiness with (security_invoker = true) as
 with any_run   as (select * from public.kalshi_sync_runs order by finished_at desc limit 1),
      snap_any  as (select * from public.kalshi_sync_runs where mode = 'snapshot' order by finished_at desc limit 1),
      snap_good as (select * from public.kalshi_sync_runs where mode = 'snapshot' and status in ('ok', 'warn') order by finished_at desc limit 1),
      disc_good as (select * from public.kalshi_sync_runs where mode = 'discover' and status in ('ok', 'warn') order by finished_at desc limit 1),
      a24 as (select count(*) filter (where severity = 'FAILURE') as failures, count(*) filter (where severity = 'DEGRADED') as degraded,
-                    count(*) filter (where severity = 'DRIFT') as drift, count(*) filter (where severity = 'WARNING') as warnings
+                    count(*) filter (where severity = 'DRIFT') as drift, count(*) filter (where severity = 'WARNING') as warnings,
+                    count(distinct coalesce(run_id::text, 'alert ' || id)) filter (where severity = 'FAILURE') as failed_runs
                from public.kalshi_alerts where created_at > now() - interval '24 hours'),
+     /* the latest FAILURE in 24 h, the mode of the run it belongs to, and the
+        good runs of that mode since (an alert with no run: any mode) */
+     fl as (select a.created_at as at, a.message, r.mode
+              from public.kalshi_alerts a left join public.kalshi_sync_runs r on r.run_id = a.run_id
+             where a.severity = 'FAILURE' and a.created_at > now() - interval '24 hours'
+             order by a.created_at desc, a.id desc limit 1),
+     rec as (select count(*) as good_since, min(g.finished_at) as first_good
+               from public.kalshi_sync_runs g
+              where g.status in ('ok', 'warn') and g.finished_at > (select at from fl)
+                and ((select mode from fl) is null or g.mode = (select mode from fl))),
+     fs as (select case
+                     when (select at from fl) is null then null
+                     when (select failed_runs from a24) > 1 then 'repeated'
+                     when (select good_since from rec) = 0 then 'unrecovered'
+                     when now() - (select first_good from rec) < make_interval(mins => public.kalshi_rule('recovery_confirm_minutes')::int) then 'recovering'
+                     else 'recovered'
+                   end as s,
+                   to_char((select at from fl) at time zone 'UTC', 'YYYY-MM-DD HH24:MI') || ' UTC' as at_txt,
+                   coalesce((select message from fl), 'no message') as msg,
+                   coalesce((select mode from fl), 'sync') as mode),
+     /* the latest DEGRADED or DRIFT alert in 24 h, named in the reason */
+     dl as (select severity, code, message from public.kalshi_alerts
+             where severity in ('DEGRADED', 'DRIFT') and created_at > now() - interval '24 hours'
+             order by created_at desc, id desc limit 1),
      r24 as (select count(*) filter (where mode = 'snapshot') as snapshot_runs, count(*) filter (where status = 'error') as errors
                from public.kalshi_sync_runs where finished_at > now() - interval '24 hours'),
      s24 as (select count(*) as rows from public.kalshi_price_snapshots where captured_at > now() - interval '24 hours'),
      streak as (select count(*) as n from public.kalshi_sync_runs
                  where mode = 'snapshot' and status = 'error' and finished_at > coalesce((select finished_at from snap_good), '-infinity'::timestamptz)),
      tracked as (select count(*) filter (where tracked) as n, count(*) as listed from public.kalshi_series),
+     /* markets (two per game event: one per team) and the events they belong to */
      gm as (select count(*) filter (where l.market_ticker is not null) as linked,
                    count(*) filter (where l.market_ticker is null) as unmapped,
+                   count(distinct m.event_ticker) filter (where l.market_ticker is null) as unmapped_events,
                    count(*) filter (where l.market_ticker is null and coalesce(m.expected_expiration_time, m.close_time) < now() + make_interval(hours => public.kalshi_rule('unmapped_window_hours')::int)) as unmapped_soon
               from public.kalshi_markets m
               join public.kalshi_link_series ls on ls.series_ticker = m.series_ticker
@@ -556,7 +599,8 @@ select
     when (select status from snap_any) = 'error' then 'error'
     when (select finished_at from snap_any) is null
       or now() - (select finished_at from snap_any) > make_interval(mins => public.kalshi_rule('silent_scheduler_minutes')::int) then 'error'
-    when (select failures from a24) > 0 or (select degraded from a24) > 0 or (select drift from a24) > 0
+    when (select s from fs) in ('repeated', 'unrecovered', 'recovering')
+      or (select degraded from a24) > 0 or (select drift from a24) > 0
       or (select n from tracked) = 0
       or (select finished_at from snap_good) is null
       or now() - (select finished_at from snap_good) > make_interval(mins => public.kalshi_rule('stale_snapshot_minutes')::int)
@@ -566,22 +610,45 @@ select
       or ((select closed from cap) > 0 and 100.0 * (select captured from cap) / (select closed from cap) < public.kalshi_rule('close_capture_target_pct')) then 'warn'
     else 'ok'
   end as state,
+  /* one branch per condition above, in the same order: never null unless ok */
   case
     when (select finished_at from any_run) is null then 'the Kalshi sync has never run'
     when (select status from snap_any) = 'error' then 'the last snapshot failed: ' || coalesce((select message from snap_any), 'no message')
     when (select finished_at from snap_any) is null then 'no snapshot run yet (only discover has run)'
     when now() - (select finished_at from snap_any) > make_interval(mins => public.kalshi_rule('silent_scheduler_minutes')::int)
       then 'no snapshot run in over ' || public.kalshi_rule('silent_scheduler_minutes')::int || ' minutes: the scheduler is not calling the sync'
+    when (select s from fs) = 'repeated'
+      then (select failed_runs from a24) || ' failed runs in 24 hours (the last at ' || (select at_txt from fs) || ': ' || (select msg from fs) || ')'
+    when (select s from fs) = 'unrecovered'
+      then 'the last ' || (select mode from fs) || ' run failed at ' || (select at_txt from fs) || ' and none has succeeded since: ' || (select msg from fs)
+    when (select s from fs) = 'recovering'
+      then 'recovering: a ' || (select mode from fs) || ' run failed at ' || (select at_txt from fs) || ' (' || (select msg from fs) || '); '
+        || (select good_since from rec) || ' good run(s) since, reported as recovered after ' || public.kalshi_rule('recovery_confirm_minutes')::int || ' minutes of them'
     when (select n from tracked) = 0 then 'no series is tracked: set kalshi_series.tracked = true on the game series'
+    when (select finished_at from snap_good) is null then 'no snapshot has succeeded yet'
+    when now() - (select finished_at from snap_good) > make_interval(mins => public.kalshi_rule('stale_snapshot_minutes')::int)
+      then 'the last successful snapshot is ' || round(extract(epoch from now() - (select finished_at from snap_good)) / 60)::int || ' minutes old (over ' || public.kalshi_rule('stale_snapshot_minutes')::int || ')'
     when (select finished_at from disc_good) is null then 'discover has not succeeded yet'
     when now() - (select finished_at from disc_good) > make_interval(hours => public.kalshi_rule('discover_max_age_hours')::int) then 'discover has not succeeded in over ' || public.kalshi_rule('discover_max_age_hours')::int || ' hours'
+    when (select degraded from a24) > 0 or (select drift from a24) > 0
+      then (select degraded from a24) || ' DEGRADED and ' || (select drift from a24) || ' DRIFT alert(s) in 24 hours (the last: ' || (select severity from dl) || ' ' || (select code from dl) || ': ' || coalesce((select message from dl), 'no message') || ')'
     when (select n from us) > 0 then (select n from us) || ' game event(s) settling soon that a book prices could not be matched to its game (see kalshi_sync_runs.details -> ''unmapped'')'
     when (select closed from cap) > 0 and 100.0 * (select captured from cap) / (select closed from cap) < public.kalshi_rule('close_capture_target_pct')
       then 'close capture ' || round(100.0 * (select captured from cap) / (select closed from cap), 1) || '% over 7 days (target ' || public.kalshi_rule('close_capture_target_pct')::int || '%)'
     else null
   end as state_reason,
   coalesce((select unpriced from us), 0)                                               as unmapped_unpriced_soon,
-  (select counts from us)                                                             as unmapped_counts
+  (select counts from us)                                                             as unmapped_counts,
+  -- unmapped_counts counts EVENTS (by the sync's reason); open_game_markets_unmapped counts MARKETS (two per event)
+  (select unmapped_events from gm)::int                                               as open_game_events_unmapped,
+  (select failed_runs from a24)::int                                                  as failed_runs_24h,
+  (select at from fl)                                                                 as last_failure_at,
+  (select message from fl)                                                            as last_failure_message,
+  case when (select s from fs) is not null then (select s from fs) = 'recovered' end as failure_recovered,
+  case when (select s from fs) = 'recovered'
+    then '1 failed ' || (select mode from fs) || ' run in 24 hours, recovered: ' || (select at_txt from fs) || ' (' || (select msg from fs) || '); '
+      || (select good_since from rec) || ' good run(s) since'
+  end                                                                                 as recent_incident
 ;
 
 -- the research module's pipeline ledger reads {job}_last_run / {job}_last_status / row_count_{job}
