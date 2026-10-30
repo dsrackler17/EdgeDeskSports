@@ -3981,7 +3981,8 @@ begin
   -- single roster puts 13 or more of its 38 at one age (over a third) about
   -- once in 12,000, and fails the spread check (no one aged 21 to 23, or
   -- fewer than eight ages) about once in 52,000, with the game working as
-  -- intended: on 2026-10-30 one drew 13 of 38 and turned the suite red. The claims are held on forty fixed seeds instead, which
+  -- intended: on 2026-10-30 one drew 13 of 38 and turned the suite red. The
+  -- claims are held on forty fixed seeds instead, which
   -- franchise_generate_roster (the generator franchise_create calls, a pure
   -- function of its seed) turns into the same forty rosters every run, and the
   -- forty together must be flat. They are built and measured in a block that
