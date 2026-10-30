@@ -1,160 +1,176 @@
 # Protecting `main`
 
-## Where it stands (read 2026-10-26 from the public API)
+## Where it stands (2026-10-30)
 
 ```
-GET /repos/dsrackler17/EdgeDeskSports/branches/main
-  "protected": false
-  "protection": { "enabled": false, "required_status_checks": { "enforcement_level": "off", "contexts": [] } }
 GET /repos/dsrackler17/EdgeDeskSports/rules/branches/main
-  []            (no ruleset applies)
+  deletion, non_fast_forward      (ruleset 25958884)
+GET /repos/dsrackler17/EdgeDeskSports/branches/main
+  "required_status_checks": { "enforcement_level": "off", "contexts": [] }
 ```
 
-Nothing stops a pull request from merging while its checks are red or still
-running. On 2026-10-26 that happened four times in 45 minutes
-([INCIDENT-2026-10-26.md](INCIDENT-2026-10-26.md)). This page gives the
-settings that would have stopped every one of them.
+`main` cannot be deleted or force-pushed, but nothing stops a pull request
+from merging while its checks are red or still running. On 2026-10-26 that
+happened four times in 45 minutes
+([INCIDENT-2026-10-26.md](INCIDENT-2026-10-26.md)). On 2026-10-30 #926, #928
+and #930 merged within 11 seconds of their checks starting, and `main` went
+red on NFL model suites, Game research tests and Collective suites.
 
-Nothing on this page has been applied. Changing repository settings needs the
-owner's account and the owner's decision. Agents must not change them.
+The fix is one rule: **Require status checks to pass: `All checks`**. This
+page says why the data jobs must carry a certificate before it can be turned
+on, and how to turn it on.
 
-## The constraint that shapes everything: the data bots push to `main`
+Changing repository settings needs the owner's account and the owner's
+decision. Agents must not change them.
 
-64 workflows (60 of them scheduled) commit generated data straight to
-`main`: the editorial system, the Model Lab, ratings, settlement and the app
-version stamp. They authenticate with the workflow's `GITHUB_TOKEN`, as
-`github-actions[bot]`, through `tools/ci/push_generated.sh`.
+## The constraint: the data jobs push straight to `main`
 
-A rule that requires a pull request, or required status checks, applies to
-those pushes too. Turn either on without a bypass and every data pipeline
-stops at its next push: `push_generated.sh` retries, fails, and turns every
-scheduled job red. No workflow pushes with a personal token or a deploy key
-(checked 2026-10-26), so one bypass, for the GitHub Actions app, covers all
-64. The bypass list below therefore contains that app and nothing else.
+Sixty-five workflows commit generated data straight to `main` with the
+workflow's `GITHUB_TOKEN`, as `github-actions[bot]`: most through
+`tools/ci/push_generated.sh`, a dozen with their own `git push`. A required
+status check binds those pushes too. Turned on as it is, it stops every data
+pipeline at its next push.
+
+No bypass this account offers lets them through:
+
+| Bypass tried | Result | Evidence |
+|---|---|---|
+| The GitHub Actions app (id 15368) | GitHub refused the ruleset: "invalid actor" | import of the old `main-ruleset.json`, 2026-10-27. The bypass menu offers only Deploy keys, the Repository admin, Maintain and Write roles, and the installed apps (Claude, ChatGPT Codex Connector, Supabase) |
+| Write role | a `GITHUB_TOKEN` push was **refused**: `GH013: Required status check "All checks" is expected` | TEMP bypass probe, run 41092698463 attempt 2, on a scratch branch whose ruleset requires `All checks` with Write as its bypass |
+| None (control) | refused, the same way | the same run |
+
+A Repository admin bypass would let the owner's account, and so every coding
+agent, through. A Deploy keys bypass works only if the data jobs push with a
+deploy key, and a deploy-key push starts workflows, so every data commit
+would start CI on `main`.
+
+## The data jobs' certificate
+
+What the rule does accept is a commit whose `All checks` has passed. TEMP
+bypass probe, run 41094226276, against the control branch (required
+`All checks`, **no bypass**):
+
+| Push with `GITHUB_TOKEN` | Result |
+|---|---|
+| plain, as the data jobs pushed before | REFUSED (GH013) |
+| commit first on a side branch, then an `All checks` check run (success) on it, then the push | **ACCEPTED** |
+| the same with a commit status instead of a check run | **ACCEPTED** |
+
+So every push to `main` from a data job goes through
+`tools/ci/certified_push.sh`:
+
+1. the commit goes to a side branch, `ci-certify/<run>-<attempt>-<sha>`, so
+   GitHub has it;
+2. the job's own token posts an `All checks` check run on that commit:
+   completed, success, titled "Data publish, not the pull-request gate", and
+   naming the workflow and run;
+3. the real push;
+4. the side branch is deleted.
+
+`push_generated.sh` certifies every attempt, so the commit that lands is the
+one certified. A `GITHUB_TOKEN` push starts no workflow, so neither push runs
+anything. Only a push to `main` from GitHub Actions is certified; any other
+branch, and the suites' local repositories, get a plain `git push`. If the
+certificate cannot be made, the push still happens with a warning. While the
+rule is off nothing changes. Once it is on, GitHub refuses the push (GH013) and
+the job goes red: a loud failure, never a silent one.
+
+Every job that pushes to `main` has `checks: write` for this. The one
+workflow that pushes only into pull-request branches,
+`nfl-coaching-staff-validation.yml`, does not need it.
+
+**What the certificate is, and is not.** It lets data commits, which no
+pull-request check ever ran on, through a rule meant for pull requests: the
+same thing a bypass would do. It does not make a data commit checked. Any
+workflow with `checks: write` could post an `All checks` success on any
+commit, including a pull request's head. The rule stops merging a red or
+unfinished pull request by accident. It does not stop someone who sets out to
+fake the check. Tests: `tools/ci/certified_push.test.js`.
 
 ## Applying it
 
-**1. Merge the pull request that adds `All checks` first.** The four
-required checks exist only once their workflows are on `main`. `All checks`
-(`all-checks.yml`) is the last of them. Applied before that, every other pull
-request would wait on it forever. `Repository integrity` and `Odds gateway
-suites` arrived with #805, and `audit` was already there.
+**1. Merge the pull request that adds the certificate**
+(`tools/ci/certified_push.sh`), and wait for one data push to land with it.
+On the next `editorial:` commit on `main`, the checks list shows **All
+checks — Data publish, not the pull-request gate**. Until that shows, do not
+go on.
 
-**1a. Prove the bypass on scratch branches first.** GitHub's docs list
-"GitHub Apps" among eligible bypass actors. They do not say whether the
-built-in GitHub Actions app, and with it the data jobs' `GITHUB_TOKEN`
-pushes, is honoured in a personal account's repository. Step 3 only shows
-that the page accepted the actor.
+**2. Turn the rule on.** Settings → Rules → Rulesets → the existing ruleset on
+`main` (25958884):
 
-1. Import this same file twice, each time targeting a scratch branch
-   pattern. The second copy, the control, gets an empty bypass list.
-2. From a workflow, push one commit to each scratch branch with the default
-   `GITHUB_TOKEN`. The control must be refused, which proves the rules bind
-   those pushes; the other copy must be accepted.
-3. Delete both copies.
+- tick **Require status checks to pass**;
+- **Add checks** → `All checks`;
+- leave **Require branches to be up to date before merging** off;
+- leave the bypass list **empty**;
+- Save changes.
 
-Status, 2026-10-26: prepared and **not yet run**, because the agents' token
-may not write rulesets. Do not activate step 2 on `main` until the probe has
-passed.
+[`main-ruleset.json`](main-ruleset.json) holds the same ruleset, for an import
+or `gh api --method POST repos/dsrackler17/EdgeDeskSports/rulesets --input
+docs/ci/main-ruleset.json` from the owner's machine.
 
-**2. Import the ruleset.** [`main-ruleset.json`](main-ruleset.json) holds
-exactly the table below.
-
-- In the browser: Settings → Rules → Rulesets → **New ruleset → Import a
-  ruleset**, then choose the file.
-- From your own machine, with `gh` logged in as the owner:
-
-```
-gh api --method POST repos/dsrackler17/EdgeDeskSports/rulesets --input docs/ci/main-ruleset.json
-```
-
-**3. Before you leave the page, check the bypass list shows "GitHub Actions"**
-(app id 15368).
-
-If GitHub does not accept that bypass actor on this account, set the ruleset
-to **Disabled** and stop: active without it, it would block the data bots. The
-fallback is a deploy key that `push_generated.sh` pushes with, added to the
-bypass list as *Deploy keys*. That is a change to the publishing workflows.
-
-**4. Verify, within the hour:**
+**3. Verify, within the hour:**
 
 - The next scheduled data push still lands. The Editorial system commits
-  every few minutes: its run is green and its commit is on `main`.
-- A pull request's merge button waits for `Repository integrity` and
-  `All checks`.
-- `GET /repos/dsrackler17/EdgeDeskSports/rules/branches/main` lists the
-  ruleset.
+  every few minutes: its run is green and its commit is on `main`. If a data
+  job fails with `GH013`, set the ruleset's new rule off again and read that
+  job's log for the `certified_push` warning.
+- A pull request's merge button waits for `All checks`.
+- `GET /repos/dsrackler17/EdgeDeskSports/rules/branches/main` lists
+  `required_status_checks`.
+
+**4. Delete the TEMP probe rulesets** (`TEMP probe control`,
+`TEMP probe write`) and the branches `claude/bypass-probe-runner`,
+`claude/bypass-probe-control/target`, `claude/bypass-probe-write/target`,
+`claude/bypass-probe-deploykey/target` and `claude/bypass-probe/target`.
 
 **A bot commit into a pull request branch reports no checks.** Two jobs push
 generated files into the pull request that triggered them:
 `simulator-sports-data.yml` and `nfl-coaching-staff-validation.yml`. A
-`GITHUB_TOKEN` push starts no workflow, so with this ruleset the pull
-request's new head never reports the three required checks. It waits as
-"Expected" until someone pushes again.
+`GITHUB_TOKEN` push starts no workflow, so that pull request's new head never
+reports `All checks` and waits as "Expected". Press **Update branch**: the
+merge commit is yours, so every workflow the pull request starts, `All checks`
+among them, runs on the new head.
 
-To unblock one, run *Core validation*, *Odds gateway tests* and *CFB security*
-on the pull request's branch (Actions → the workflow → Run workflow). All
-three have `workflow_dispatch`. Confirm on the first occurrence that the
-dispatched runs satisfy the merge box. Having those two jobs dispatch the
-three themselves needs `actions: write` on them; that is a separate decision.
+On this account a ruleset is Active or Disabled (Evaluate mode is GitHub
+Enterprise only), which is why step 3 is a checklist rather than a trial.
 
-Once `All checks` is required, dispatching those three is not enough. The
-bot's head has no pull-request runs for `All checks` to wait on. Press
-**Update branch** instead. The data jobs keep `main` moving, so it is almost
-always offered. The merge commit is yours, so every workflow the pull
-request starts, `All checks` among them, runs on the new head.
-
-Evaluate mode (log, do not block) is offered only on GitHub Enterprise. On
-this account a ruleset is Active or Disabled, which is why step 4 is a
-checklist rather than a trial period.
-
-## The ruleset (Settings → Rules → Rulesets → New ruleset → New branch ruleset)
+## The rule
 
 | Field | Value | Why |
 |---|---|---|
-| Ruleset name | `main: verified merges` | |
-| Enforcement status | **Active** (once `All checks` is on `main`) | this account has no Evaluate mode (Enterprise only); step 4 above is the check that the bots still push |
-| Bypass list | **GitHub Actions** (the app), mode *Always* | the data bots above. Do **not** add *Repository admin*: coding agents act through the owner's account, so an admin bypass is an agent bypass |
-| Target branches | *Include default branch* | |
-| Restrict deletions | on | |
-| Block force pushes | on | |
-| Require a pull request before merging | on | |
-| · Required approvals | **0** (see below) | |
-| · Dismiss stale approvals when new commits are pushed | on | |
-| · Require conversation resolution before merging | on | |
-| · Allowed merge methods | Merge, Squash | |
+| Target branches | the default branch | |
+| Bypass list | **empty** | no bypass lets the data jobs through (above), and an admin bypass would be an agent bypass |
+| Restrict deletions | on | already on |
+| Block force pushes | on | already on |
 | Require status checks to pass | on | |
-| · Require branches to be up to date before merging | **off** (see below) | |
-| · Status checks | `Repository integrity`, `Odds gateway suites`, `audit`, `All checks` (all from *GitHub Actions*) | see the next section |
+| · Status checks | `All checks` (from *GitHub Actions*) | it waits for every workflow the pull request started (below) |
+| · Require branches to be up to date before merging | **off** | see below |
+| Require a pull request before merging | **off** | it binds direct pushes too, and a certificate cannot satisfy it: every data job would stop |
 
 Leave "Require deployments to succeed", "Require signed commits" and "Require
-linear history" off. Each would block the data bots or change how this
-repository merges, and nothing on 2026-10-26 needed them.
+linear history" off. Each would block the data jobs or change how this
+repository merges.
 
-### Why these four checks
+### Why only `All checks`
 
-A required check must report on **every** pull request. A workflow with a
-`paths:` filter does not run on a pull request outside its paths. A required
-check that never reports stays "Expected — waiting" forever and blocks the
-merge. These four run on every pull request:
+A required check must report on **every** pull request, or it stays
+"Expected — waiting" and blocks the merge. `All checks` does, and it waits for
+every workflow the pull request started. That includes the three that run on
+every pull request: `Repository integrity` (`core-validation.yml`),
+`Odds gateway suites` (`odds-gateway-tests.yml`) and `audit`
+(`cfb-security.yml`). Requiring those three as well would add nothing for
+pull requests. It would also make each data commit need four certificates
+instead of one.
 
-| Check (job name) | Workflow | What it catches |
-|---|---|---|
-| `Repository integrity` | `core-validation.yml` | `2ad15afadd`: the unparseable `lib/edgedesk_quote_ev.js` and the invalid `slate_audit.json`, in about 20 s, with file and line |
-| `Odds gateway suites` | `odds-gateway-tests.yml` | the same breakage, through `football/props/factory/odds.test.js` (#800, #803) |
-| `audit` | `cfb-security.yml` | secrets and least-privilege audit |
-| `All checks` | `all-checks.yml` | every other workflow the pull request started: #807's eight failed workflows (below) |
-
-Check names are matched by job name. `Odds gateway suites` was renamed from
-`suites` because 32 workflows have a job called `suites`, and a required
-`suites` would be satisfied by whichever one reported. Keep these four names
-stable. Renaming a job silently un-requires its check.
-`tools/ci/gate.test.js` fails if a check the ruleset requires is not exactly
-one job, or if that job does not report on every pull request.
+Check names are matched by job name. Keep `All checks` stable: renaming the
+job silently un-requires it. `tools/ci/gate.test.js` fails if a check the
+ruleset requires is not exactly one job, or if that job does not report on
+every pull request.
 
 ### All checks: one required check for the 64 path-filtered workflows
 
-The first three checks would not have stopped #807. It merged 17 s after it
+`Repository integrity`, `Odds gateway suites` and `audit` alone would not
+have stopped #807. It merged 17 s after it
 was opened. Its three required checks passed within three minutes, and eight
 of the 40 workflows it started failed after that: Collective, Funnel, Market
 Foresight, Player props, Signal Center, Simulator, Today's Games and the
@@ -192,17 +208,6 @@ merge commit>`:
 
 - **#807: ALL CHECKS FAILED**, 32 of 40 passed. It names the eight failed runs.
 - **#806: ALL CHECKS PASSED**, 8 of 8.
-
-### Why required approvals is 0
-
-Claude Code opens its pull requests through the owner's account, so GitHub
-counts the owner as their author, and GitHub never lets an author approve
-their own pull request. One required approval would therefore block every
-merge in this repository. Review still happens: the owner reads the pull
-request and presses merge, and `AGENTS.md` §7 forbids agents from merging. To
-make approval *enforced*, agents must open pull requests under a separate
-identity (a GitHub App or a machine user). The owner's approval then counts,
-and Required approvals can be 1.
 
 ### Why "require branches to be up to date" stays off
 

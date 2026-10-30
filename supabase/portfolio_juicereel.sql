@@ -212,14 +212,15 @@ end $$;
 -- 3. THE SERVICE FUNCTIONS (service role only; each asserts its caller)
 -- ─────────────────────────────────────────────────────────────────────────────
 -- The PRODUCTION smoke test of Juice Reel that is running now, if any (the
--- edge function lets an operator link under it while the registry is off).
+-- edge function lets every signed-in reader link under it while the
+-- registry is off). It has no expiry: it runs until it is finished.
 create or replace function public.portfolio_svc_jr_smoke_current(p_env text)
 returns uuid language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
 begin
   perform public.portfolio_svc_assert();
   return (select t.id from portfolio_private.connector_smoke_tests t
            where t.platform_key = 'juicereel' and t.status = 'RUNNING' and t.environment = case p_env when 'production' then 'PRODUCTION' else 'DEMO' end
-             and t.started_at > now() - interval '30 days' order by t.started_at desc limit 1);
+           order by t.started_at desc limit 1);
 end $$;
 
 -- The reader's grant row, made on first use (DISCONNECTED, no tokens) — so a

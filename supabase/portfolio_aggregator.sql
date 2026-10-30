@@ -85,10 +85,11 @@ begin
   select * into reg from public.portfolio_platform_registry where platform_key = p_provider and automatic_method = 'AUTHORIZED_API';
   if not found then raise exception 'portfolio: % is not a registered aggregator', p_provider using errcode = '22023'; end if;
   if p_env = 'sandbox' then return true; end if;
-  -- only a PRODUCTION smoke test opens production; a sandbox rehearsal (DEMO) never does
+  -- only a PRODUCTION smoke test opens production; a sandbox rehearsal (DEMO) never does.
+  -- Juice Reel's runs until it is finished (no expiry); any other's, 30 days
   return reg.automatic_enabled or exists (select 1 from portfolio_private.connector_smoke_tests t
     where t.id = p_smoke_test and t.platform_key = p_provider and t.status = 'RUNNING' and t.environment = 'PRODUCTION'
-      and t.started_at > now() - interval '30 days');
+      and (p_provider = 'juicereel' or t.started_at > now() - interval '30 days'));
 end $$;
 
 -- A smoke test of an aggregator, in the environment it really runs in: a
