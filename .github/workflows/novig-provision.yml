@@ -1,0 +1,187 @@
+# Provision EdgeDesk's READ-ONLY Novig keys (docs/novig/README.md §Credentials).
+#
+# MANUAL ON PURPOSE, and privileged for the length of one run only:
+#   1. the tests pass first (the signer against Novig's vectors, the
+#      bootstrap and the runner helper against a mock Novig)
+#   2. a one-time secret is generated on this runner and set on the project
+#      (NOVIG_BOOTSTRAP_SECRET), and the transient function
+#      supabase/functions/novig_key_bootstrap is deployed
+#   3. whoami: the existing management key (NOVIG_MANAGEMENT_KEY_ID /
+#      NOVIG_MANAGEMENT_PRIVATE_KEY, already in Edge Function secrets — this
+#      workflow never sees them) is tried on production and paper; the one
+#      that accepts it is the environment, and it is never guessed
+#   4. read key: an Ed25519 keypair is generated HERE; only the public half is
+#      sent; Novig issues it as management::read (POST /v3/keys); the
+#      fingerprint is checked; NOVIG_READ_KEY_ID, NOVIG_READ_PRIVATE_KEY and
+#      NOVIG_ENV are set with `supabase secrets set --env-file` (functions read
+#      a new secret immediately) and the file is shredded
+#   5. stream key (only if an EXISTING subaccount's trading key id is given):
+#      the same, with scope trading::read on that subaccount. No subaccount is
+#      ever opened (that would mint a trading key) and no `trading` key is
+#      minted
+#   6. ALWAYS, even on failure: the bootstrap function is deleted and the
+#      one-time secret unset; the runner's key files are shredded
+#   7. if the database URL is set and novig_sync is deployed, a probe proves
+#      the new read key end to end (clock, echo, limits, geolocation, scope)
+# The management key is never revoked, rotated or read by anything but the
+# transient function. Nothing here places an order, moves money or opens a
+# subaccount.
+#
+# SECRETS: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF (the CLI);
+#          SB_DB_URL (optional: the probe reads the cron secret from Vault)
+name: Novig — provision read-only keys
+
+on:
+  workflow_dispatch:
+    inputs:
+      read_key:
+        description: 'Register a management::read key for REST ingestion (NOVIG_READ_*)'
+        type: boolean
+        default: true
+      stream_subaccount_key_id:
+        description: 'Optional: the trading key id of an EXISTING subaccount to issue a trading::read stream key for (NOVIG_STREAM_*). Leave empty to skip; nothing is ever opened.'
+        type: string
+        default: ''
+      whoami_only:
+        description: 'Only report the environment, the key list and the subaccounts (register nothing)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: novig-provision
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The signer, the bootstrap and the runner helper must pass first
+        run: |
+          node tools/novig/inline.js --check
+          node tools/novig/signing.test.js
+          node tools/novig/novig_bootstrap.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF are required to provision Novig keys."; exit 1; fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy the transient bootstrap with a one-time secret
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -eu
+          umask 077
+          s=$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))")
+          echo "::add-mask::$s"
+          printf 'NOVIG_BOOTSTRAP_SECRET=%s\n' "$s" > "$RUNNER_TEMP/boot.env"
+          supabase secrets set --project-ref "$PROJECT_REF" --env-file "$RUNNER_TEMP/boot.env" >/dev/null
+          printf '%s' "$s" > "$RUNNER_TEMP/boot.secret"
+          rm -f "$RUNNER_TEMP/boot.env"
+          supabase functions deploy novig_key_bootstrap --project-ref "$PROJECT_REF" --no-verify-jwt
+
+      - name: Which environment is the management key? (keys and subaccounts listed)
+        id: who
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -eu
+          export NOVIG_BOOTSTRAP_URL="https://$PROJECT_REF.supabase.co/functions/v1/novig_key_bootstrap"
+          export NOVIG_BOOTSTRAP_SECRET="$(cat "$RUNNER_TEMP/boot.secret")"
+          echo "::add-mask::$NOVIG_BOOTSTRAP_SECRET"
+          ok=no
+          for i in $(seq 1 10); do
+            if node tools/novig/provision.js whoami; then ok=yes; break; fi
+            sleep 6
+          done
+          if [ "$ok" != yes ]; then echo "::error::the bootstrap could not establish the management key's environment (see above)"; exit 1; fi
+
+      - name: Register the read key (management::read) and set NOVIG_READ_* and NOVIG_ENV
+        if: ${{ inputs.read_key && !inputs.whoami_only }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          NOVIG_ENVIRONMENT: ${{ steps.who.outputs.environment }}
+        run: |
+          set -eu
+          umask 077
+          export NOVIG_BOOTSTRAP_URL="https://$PROJECT_REF.supabase.co/functions/v1/novig_key_bootstrap"
+          export NOVIG_BOOTSTRAP_SECRET="$(cat "$RUNNER_TEMP/boot.secret")"
+          echo "::add-mask::$NOVIG_BOOTSTRAP_SECRET"
+          f="$RUNNER_TEMP/read.env"
+          node tools/novig/provision.js register --kind read --environment "$NOVIG_ENVIRONMENT" --env-file "$f"
+          while IFS= read -r line; do v="${line#*=}"; [ -n "$v" ] && echo "::add-mask::$v"; done < "$f"
+          supabase secrets set --project-ref "$PROJECT_REF" --env-file "$f" >/dev/null
+          shred -u "$f" 2>/dev/null || rm -f "$f"
+          echo "NOVIG_READ_KEY_ID, NOVIG_READ_PRIVATE_KEY and NOVIG_ENV=$NOVIG_ENVIRONMENT are set on the project (never printed)."
+
+      - name: Register the stream key (trading::read on an EXISTING subaccount) and set NOVIG_STREAM_*
+        if: ${{ inputs.stream_subaccount_key_id != '' && !inputs.whoami_only }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          NOVIG_ENVIRONMENT: ${{ steps.who.outputs.environment }}
+          SUBACCOUNT_KEY_ID: ${{ inputs.stream_subaccount_key_id }}
+        run: |
+          set -eu
+          umask 077
+          export NOVIG_BOOTSTRAP_URL="https://$PROJECT_REF.supabase.co/functions/v1/novig_key_bootstrap"
+          export NOVIG_BOOTSTRAP_SECRET="$(cat "$RUNNER_TEMP/boot.secret")"
+          echo "::add-mask::$NOVIG_BOOTSTRAP_SECRET"
+          f="$RUNNER_TEMP/stream.env"
+          node tools/novig/provision.js register --kind stream --environment "$NOVIG_ENVIRONMENT" --subaccount "$SUBACCOUNT_KEY_ID" --env-file "$f"
+          while IFS= read -r line; do v="${line#*=}"; [ -n "$v" ] && echo "::add-mask::$v"; done < "$f"
+          supabase secrets set --project-ref "$PROJECT_REF" --env-file "$f" >/dev/null
+          shred -u "$f" 2>/dev/null || rm -f "$f"
+          echo "NOVIG_STREAM_KEY_ID and NOVIG_STREAM_PRIVATE_KEY are set on the project (never printed). The stream worker must run on a persistent host: docs/novig/README.md §Streaming."
+
+      - name: ALWAYS remove the bootstrap and its one-time secret
+        if: ${{ always() && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions delete novig_key_bootstrap --project-ref "$PROJECT_REF" || echo "::warning::novig_key_bootstrap could not be deleted: delete it in the dashboard (Edge Functions) now"
+          supabase secrets unset NOVIG_BOOTSTRAP_SECRET --project-ref "$PROJECT_REF" || echo "::warning::NOVIG_BOOTSTRAP_SECRET could not be unset: unset it in the dashboard now"
+          shred -u "$RUNNER_TEMP/boot.secret" "$RUNNER_TEMP/read.env" "$RUNNER_TEMP/stream.env" 2>/dev/null || rm -f "$RUNNER_TEMP/boot.secret" "$RUNNER_TEMP/read.env" "$RUNNER_TEMP/stream.env"
+          code=$(curl -sS -o /dev/null -w '%{http_code}' "https://$PROJECT_REF.supabase.co/functions/v1/novig_key_bootstrap" || true)
+          echo "the bootstrap now answers HTTP $code (404 = gone)"
+
+      - name: Prove the read key end to end (novig_sync probe)
+        if: ${{ inputs.read_key && !inputs.whoami_only && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -eu
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          FN="https://$PROJECT_REF.supabase.co/functions/v1/novig_sync"
+          vault=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select decrypted_secret from vault.decrypted_secrets where name = 'novig_cron_secret' limit 1" 2>/dev/null || true)
+          if [ -z "$vault" ]; then echo "::warning::novig_sync's cron secret is not in Vault yet: run Deploy Novig market data (set_cron_secret), which probes the key itself"; exit 0; fi
+          echo "::add-mask::$vault"
+          code=$(curl -sS -m 120 -o "$RUNNER_TEMP/probe.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $vault" -d '{"mode":"probe","source":"manual"}' || true)
+          vault=""
+          node -e "const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const a=r.auth||{};console.log('probe HTTP '+process.argv[2]+': status '+r.status+(r.skipped_reason?' ('+r.skipped_reason+')':'')+'; env '+a.environment+'; echo '+a.echo+'; clock '+a.clock+' ('+a.clock_offset_ms+' ms); scope '+a.scope+'; geolocation '+JSON.stringify(a.geolocation)+'; alerts '+(r.alerts||[]).map(x=>x.severity+':'+x.code).join(','));if(r.status!=='ok'&&r.status!=='warn')process.exit(1)" "$RUNNER_TEMP/probe.json" "$code"
+          rm -f "$RUNNER_TEMP/probe.json"

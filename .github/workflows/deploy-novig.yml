@@ -1,0 +1,205 @@
+# Deploy the Novig market data layer: the novig_sync edge function and
+# (optionally) its SQL — supabase/novig_market_data.sql (tables, the
+# comparison, the history, the research summary, the KPIs) and
+# supabase/novig_market_data_cron.sql (probe, discover, snapshot, prune on
+# pg_cron). docs/novig/README.md.
+#
+# MANUAL ON PURPOSE, as every deploy-*.yml here: tests first, then the
+# function, then the SQL in dependency order. A report row that says CHECK
+# THIS fails the job.
+#
+# Credentials are NOT set here: .github/workflows/novig-provision.yml
+# registers the read-only key and sets NOVIG_READ_* and NOVIG_ENV. Until
+# then, and until enable_ingest=on, novig_sync records one 'skipped' run an
+# hour and calls nobody. Public display stays a database switch
+# (novig_config.public_display, off) that this workflow never touches.
+#
+# SECRETS: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF (deploy, function
+# secrets); SB_DB_URL (the SQL, the Vault cron secret, the first run).
+name: Deploy Novig market data
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/novig_sync (JWT verification OFF: pg_cron sends no JWT)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply novig_market_data.sql and novig_market_data_cron.sql (needs signals, sharp_price_snapshots, pg_cron, pg_net)'
+        type: boolean
+        default: false
+      set_cron_secret:
+        description: 'Make sure Vault novig_cron_secret and the function''s NOVIG_CRON_SECRET exist and agree'
+        type: boolean
+        default: false
+      enable_ingest:
+        description: 'NOVIG_INGEST_ENABLED on the function: leave as it is, on, or off'
+        type: choice
+        options: [leave, 'on', 'off']
+        default: leave
+      first_run:
+        description: 'Probe, discover and snapshot once now, and print the readiness and coverage'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-novig
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # the deployed file itself is imported by the sync test (type stripping),
+      # against a mocked Novig that verifies every signature: what ships is what was tested
+      - name: The signer, the engine, the matcher, the function, the layer and the card must pass before anything ships
+        env:
+          NOVIG_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/novig/inline.js --check
+          node tools/novig/signing.test.js
+          node tools/novig/venue_compare.test.js
+          node tools/novig/market_map.test.js
+          node tools/novig/novig_sync.test.js
+          node tools/novig/novig_bootstrap.test.js
+          node tools/novig/stream.test.js
+          node tools/novig/novig_sql.test.js
+          node tools/novig/lead_lag.test.js
+          node tools/novig/novig_ui.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — novig_sync cannot be deployed from CI."; fi
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — paste the two SQL files into the SQL editor instead, in order."; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ (inputs.deploy_function || inputs.set_cron_secret || inputs.enable_ingest != 'leave') && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt IS LOAD-BEARING: pg_cron sends the x-cron-secret header,
+      # not a JWT. A POST without the secret is refused by the function itself.
+      - name: Deploy novig_sync
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy novig_sync \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+          curl -sS "https://$PROJECT_REF.supabase.co/functions/v1/novig_sync" | head -c 400; echo
+
+      - name: Apply the SQL (the layer)
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/novig_market_data.sql)
+          echo "== supabase/novig_market_data.sql"; echo "$out" | tail -10
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/novig_market_data.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: The cron secret exists in Vault and on the function, and they agree
+        if: ${{ inputs.set_cron_secret && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -eu
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          FN="https://$PROJECT_REF.supabase.co/functions/v1/novig_sync"
+          supabase secrets list --project-ref "$PROJECT_REF" > "$RUNNER_TEMP/names.txt" 2>"$RUNNER_TEMP/err.txt" || { cat "$RUNNER_TEMP/err.txt"; echo "::error::supabase secrets list failed: is SUPABASE_ACCESS_TOKEN still valid?"; exit 1; }
+          fn_has=no; grep -qw NOVIG_CRON_SECRET "$RUNNER_TEMP/names.txt" && fn_has=yes
+          for n in NOVIG_ENV NOVIG_READ_KEY_ID NOVIG_READ_PRIVATE_KEY NOVIG_MANAGEMENT_KEY_ID NOVIG_MANAGEMENT_PRIVATE_KEY NOVIG_STREAM_KEY_ID NOVIG_INGEST_ENABLED; do
+            if grep -qw "$n" "$RUNNER_TEMP/names.txt"; then echo "secret $n: set"; else echo "secret $n: NOT set"; fi
+          done
+          rm -f "$RUNNER_TEMP/names.txt"
+          vault=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select decrypted_secret from vault.decrypted_secrets where name = 'novig_cron_secret' limit 1")
+          if [ -n "$vault" ]; then echo "::add-mask::$vault"; fi
+          setfn() { umask 077; f="$RUNNER_TEMP/novig.env"; printf 'NOVIG_CRON_SECRET=%s\n' "$1" > "$f"; supabase secrets set --project-ref "$PROJECT_REF" --env-file "$f" >/dev/null || { rm -f "$f"; echo "::error::supabase secrets set failed"; exit 1; }; rm -f "$f"; }
+          if [ -z "$vault" ]; then
+            vault=$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))")
+            echo "::add-mask::$vault"
+            echo "select vault.create_secret(:'sec', 'novig_cron_secret');" | psql "$PGURL" -q -v ON_ERROR_STOP=1 -v sec="$vault" >/dev/null
+            setfn "$vault"
+            echo "Vault had no novig_cron_secret: a new one was generated on this runner and set in Vault and on the function (never printed)."
+          elif [ "$fn_has" = no ]; then
+            setfn "$vault"
+            echo "The function had no NOVIG_CRON_SECRET: it was set to the Vault value."
+          fi
+          probe() { curl -sS -o "$RUNNER_TEMP/probe.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $vault" -d '{"mode":"probe","dry":true}' || true; }
+          ok=no; code=000
+          for i in $(seq 1 15); do
+            code=$(probe)
+            if [ "$code" != 401 ] && [ "$code" != 000 ] && grep -q '"run_id"' "$RUNNER_TEMP/probe.json"; then ok=yes; break; fi
+            if [ "$code" = 401 ] && [ "$i" = 4 ]; then setfn "$vault"; echo "The function refused the Vault value: its secret was set to it."; fi
+            sleep 6
+          done
+          vault=""
+          if [ "$ok" != yes ]; then echo "::error::novig_sync did not accept the cron secret (last answer HTTP $code)"; head -c 400 "$RUNNER_TEMP/probe.json"; echo; exit 1; fi
+          echo "novig_sync accepts the cron secret (HTTP $code)."
+          rm -f "$RUNNER_TEMP/probe.json"
+
+      - name: Apply the cron (probe, discover, snapshot, prune)
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/novig_market_data_cron.sql)
+          echo "== supabase/novig_market_data_cron.sql"; echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/novig_market_data_cron.sql: a report row says CHECK THIS (is the Vault secret set? run with set_cron_secret)"; exit 1; fi
+
+      - name: Switch ingestion on or off
+        if: ${{ inputs.enable_ingest != 'leave' && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          WANT: ${{ inputs.enable_ingest }}
+        run: |
+          v=false; [ "$WANT" = on ] && v=true
+          supabase secrets set --project-ref "$PROJECT_REF" "NOVIG_INGEST_ENABLED=$v" >/dev/null
+          echo "NOVIG_INGEST_ENABLED=$v"
+
+      - name: First run — probe, discover, snapshot, then the readiness and the coverage
+        if: ${{ inputs.first_run && steps.creds.outputs.have_ref == 'yes' && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          set -eu
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          FN="https://$PROJECT_REF.supabase.co/functions/v1/novig_sync"
+          vault=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select decrypted_secret from vault.decrypted_secrets where name = 'novig_cron_secret' limit 1")
+          if [ -z "$vault" ]; then echo "::error::Vault has no novig_cron_secret (run with set_cron_secret)"; exit 1; fi
+          echo "::add-mask::$vault"
+          for mode in probe discover snapshot; do
+            code=$(curl -sS -m 150 -o "$RUNNER_TEMP/$mode.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $vault" -d "{\"mode\":\"$mode\",\"source\":\"manual\"}" || true)
+            node -e "const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));console.log(process.argv[2]+' HTTP '+process.argv[3]+': '+r.status+(r.skipped_reason?' ('+r.skipped_reason+': '+(r.hint||'')+')':'')+(r.auth?' env '+r.auth.environment+' echo '+r.auth.echo+' scope '+r.auth.scope+' geolocation '+JSON.stringify(r.auth.geolocation):'')+(r.discover?' events '+r.discover.events+' markets '+r.discover.markets:'')+(r.links?' links +'+r.links.new+' unmapped '+r.links.unmapped+' '+JSON.stringify(r.links.unmapped_counts):'')+(r.snapshot?' books '+r.snapshot.read+' written '+r.snapshot.written:'')+' alerts '+(r.alerts||[]).map(a=>a.severity+':'+a.code).join(','))" "$RUNNER_TEMP/$mode.json" "$mode" "$code" || head -c 400 "$RUNNER_TEMP/$mode.json"
+          done
+          vault=""
+          psql "$PGURL" -v ON_ERROR_STOP=1 -c "select state, state_reason, environment, links_active, links_high, unmapped_open, snapshot_rows_24h, linked_markets_next_48h, linked_markets_fresh, public_display from public.novig_readiness;"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -c "select reason, count(*) from public.novig_unmapped where resolved_at is null group by reason order by 2 desc;"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -c "select league, book_market, match_confidence, count(*) from public.novig_market_links where invalidated_at is null group by 1,2,3 order by 1,2,3;"
