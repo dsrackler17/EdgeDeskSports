@@ -15,7 +15,7 @@
 # Pushers: the default GITHUB_TOKEN, as every data job pushes today; and a
 # deploy key, only when the PROBE_DEPLOY_KEY secret exists. A refusal is
 # reported as REFUSED only when GitHub names a rule violation (GH013); any
-# other failure is reported as itself. Until all three scratch rulesets are in
+# other failure is reported as itself. Until the control and write rulesets are in
 # force it pushes nothing and exits green. main is never touched.
 name: TEMP bypass probe
 
@@ -31,19 +31,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: The three scratch rulesets are in force
+      - name: The control and write scratch rulesets are in force
         id: ready
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           ready=yes
-          for leg in control write deploykey; do
+          for leg in control write; do
             n=$(gh api "repos/$GITHUB_REPOSITORY/rules/branches/claude%2Fbypass-probe-$leg%2Ftarget" --jq 'length' 2>/dev/null || echo error)
             echo "rules in force on claude/bypass-probe-$leg/target: $n"
             case "$n" in 0|error) ready=no ;; esac
           done
           if [ "$ready" = no ]; then
-            msg="NOT READY: import the three rulesets in PROBE.md, then re-run this job. Nothing was pushed."
+            msg="NOT READY: create the control and write rulesets, then re-run this job. Nothing was pushed."
             echo "::notice::$msg"
             echo "$msg" >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -70,8 +70,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
-          summary "| pushed with | control (no bypass) | write (Write role) | deploykey (Deploy keys) |"
-          summary "|---|---|---|---|"
+          summary "| pushed with | control (no bypass) | write (Write role) |"
+          summary "|---|---|---|"
           for who in token deploykey; do
             if [ "$who" = token ]; then
               push_url=$token_url; row="| GITHUB_TOKEN (as the data jobs push today) |"
@@ -81,7 +81,7 @@ jobs:
               summary "| deploy key | not run: no PROBE_DEPLOY_KEY secret | | |"
               continue
             fi
-            for leg in control write deploykey; do
+            for leg in control write; do
               b="claude/bypass-probe-$leg/target"
               # read with the token; only the push uses the identity under test
               git fetch -q --depth=1 "$token_url" "$b"
