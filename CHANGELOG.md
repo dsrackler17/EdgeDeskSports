@@ -13,6 +13,21 @@
   On the old code: 82 passed, 2 failed, with production's exact error. On the fix: 84/0.
 - **Deploy:** after merge, run Deploy NHL goalie layer with `deploy_function`.
 
+## 2026-10-30 — Novig: DraftKings vs Novig at the price a stake actually gets (built and tested; not deployed)
+
+- **Why.** A line's price is not what it costs. An exchange's best price holds only so much size, a larger stake walks the book, and a sportsbook's margin is inside its price. EdgeDesk now compares the SAME bet at DraftKings and at Novig, at the reader's stake, and says when it cannot.
+- **What.** (`docs/novig/README.md`)
+  - `lib/novig_signing.js`: NOVIG-V3 signing (Ed25519 and P-256 via WebCrypto, no package), 30/30 of Novig's published vectors.
+  - `lib/edgedesk_venue_compare.js`: the executable-price engine in exact integer arithmetic (1¢ contracts, the price grid, per-fill fees half up to $0.00001, VWAP, partial fills), implied probability, hold on complete markets only, no-vig as an estimate, EV only through a model gate, freshness rules shared with SQL.
+  - `lib/novig_market_map.js`: matching to `public.signals` on teams, home/away, kickoff, market type, period, exact line and orientation; anything else queued with its reason.
+  - `supabase/functions/novig_sync` + `supabase/novig_market_data.sql` (+ cron, rollback, migrations): signed REST ingestion, append-only snapshots, links, the comparison against the existing DraftKings tape (`sharp_price_snapshots`), history, a research summary, readiness.
+  - Credentials: a transient bootstrap and `novig-provision.yml` register a `management::read` key from the existing management key (public key only; the private key goes straight to Edge Function secrets).
+  - `lib/novig_stream.js` + `tools/novig/stream_worker.js`: the websocket book channel, off until a persistent host and a `trading::read` key exist.
+  - `lib/edgedesk_market_compare_ui.js` on the NFL/CFB cards (beside Kalshi), `lib/edgedesk_compare_cards.js` (seven PNG templates), `lib/edgedesk_lead_lag.js`, `admin/novig/`.
+- **Gates.** Public display is OFF in the database (`novig_config.public_display`) and in code (`NOVIG_PUBLIC_DISPLAY_ENABLED = false`) until Novig's written permission is on record; until then only operators see Novig prices, and graphics are watermarked internal. Ingestion is off until `NOVIG_INGEST_ENABLED=true`. No model, ranking, threshold, grade or historical record changed; no order route exists.
+- **Tests.** New suites, all green here: signing 98, venue compare 59, market map 34, novig_sync 44, bootstrap 17, stream 30, SQL 53 (real PostgreSQL), lead-lag 11, UI and graphics 38. `.github/workflows/novig.yml` runs them (category market-odds).
+- **Not verified here.** No deploy, no signed call to Novig and no read of the production database were possible from the build environment (no Supabase or Novig credentials); real Novig prices were read only from Novig's unsigned public catalog for the test fixture.
+
 ## 2026-10-30 — Juice Reel: connect from Add a position, and no bet counted twice (look-alikes held for the reader's review)
 
 - **What was already built.** Juice Reel's OAuth 2.0 + PKCE connection, sealed tokens, the refresh lease, the initial import, the `/bets/changed` sync, the 10-minute schedule and the Accounts panel (`docs/juicereel.md`). It is not live for readers: the registry row stays off until Juice Reel approves the application, the PRODUCTION smoke test passes and the terms review clears (§ 9). This change does not touch that switch.
