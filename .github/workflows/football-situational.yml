@@ -54,7 +54,7 @@ jobs:
       - name: pyarrow (reads the ESPN college play-by-play parquet; the 26 other football jobs install it the same way)
         run: pip install --quiet pyarrow
       - name: Cached source downloads (completed seasons never change)
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: football/situational/.cache
           key: fsie-feeds-${{ github.run_id }}
@@ -89,6 +89,15 @@ jobs:
       - name: Prop-market study and CLV
         if: steps.stage.outputs.stage == 'study'
         run: node football/situational/run.js study --sport all
+      # Saved here, not when the job ends: actions/cache saves only if every
+      # step passed, so the Supabase copy failing after a good build
+      # (2026-10-30 16:50) threw away the seasons it had just derived, and
+      # every market refresh after it stopped on "no derived season".
+      - name: Save the source downloads and derived seasons (before the commit and the Supabase copy)
+        uses: actions/cache/save@v4
+        with:
+          path: football/situational/.cache
+          key: fsie-feeds-${{ github.run_id }}
       - name: Commit the artifacts
         run: |
           git config user.name 'github-actions[bot]'
