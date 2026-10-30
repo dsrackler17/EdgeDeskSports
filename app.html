@@ -66970,6 +66970,14 @@ try{
   };
 })();
 </script>
+<!-- DraftKings vs Novig on the football cards (lib/edgedesk_market_compare_ui.js, docs/novig/README.md):
+     '' for every reader who may not see Novig prices, and '' when the module did not load -->
+<script>
+window.fbNovigHTML=function(sport,g,t,ev,opts){
+  try{return window.EDMarketCompareUI?window.EDMarketCompareUI.html(sport,g,t,ev,opts):'';}
+  catch(e){try{console.error('EdgeDesk Novig: the section failed in the page',e);}catch(_){}return '';}
+};
+</script>
 <!-- ═══ ADDED: FOOTBALL SITUATIONAL INTELLIGENCE (football/situational/README.md) ═══
      A "Situational Intelligence" section on every NFL and FBS game card in the
      upcoming window: each team's OBSERVED situational tendencies (season-to-date
