@@ -39,6 +39,7 @@ on:
     - cron: '0 6 1 * *'    # the first of the month, report-only
 
 permissions:
+  checks: write
   contents: write
 
 concurrency:
@@ -113,4 +114,4 @@ jobs:
           git add football/validation/feature-status.json football/cfb_p4/research/qb_epa.json football/rankings/coaching_program_validation.json
           if git diff --cached --quiet; then echo 'registry unchanged'; exit 0; fi
           git commit -m "football: feature promotion registry"
-          git push
+          bash "$(git rev-parse --show-toplevel)/tools/ci/certified_push.sh" origin "HEAD:${GITHUB_REF_NAME}"
