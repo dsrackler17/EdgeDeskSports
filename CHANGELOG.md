@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-30 — Deploy football situational tables (SQL): a button that applies supabase/football_situational.sql
+
+- **Why.** The Football situational pipeline's last step copies its artifacts into the `fsie_` tables, which do not exist in production (`Could not find the table 'public.fsie_source_files'`, run 41093420059). Until they do, every run of the pipeline fails.
+- **The workflow.** `deploy-football-situational.yml`, manual only (`workflow_dispatch`), `contents: read`. It runs `football/situational/tests/sql.test.js` against a throwaway PostgreSQL first, and fails if that suite fails or prints NOT VERIFIED. It applies the file with `SB_DB_URL` in one transaction (`--single-transaction`, `ON_ERROR_STOP`). It fails on any report row saying CHECK THIS, or unless all eleven `public.fsie_*` tables exist afterwards. Without `SB_DB_URL` the run fails: nothing was applied.
+- **What it installs.** Eleven `fsie_` tables (RLS on), the `fsie_team_games_current` view and the `fsie_prune()` retention function. It drops, truncates and deletes nothing. The registry file is not part of it.
+- **Checked here, not in production.** Each run step, taken from the workflow, was run against a throwaway PostgreSQL 16 with the Supabase shim. A first run applied it (SQL suite 35/35, 11 tables) and a second run was idempotent. A missing secret fails at the credential step, a suite printing NOT VERIFIED fails at the suite step, and a failing suite fails with its output shown. The production apply is NOT VERIFIED: no credential here.
 ## 2026-10-30 — NHL goalie sync: a failed check is tried again instead of waiting for the next slot (the header's "1 failing")
 
 - **What the header showed.** The site's System pill read "1 failing" from 16:34 UTC. The one failing check was `nhl_goalie_readiness` (state `error`): "the last check failed: no starter source could be read (Daily Faceoff)". Deploy NHL goalie layer (run 41090811837) ended with a forced run at 16:34. Daily Faceoff answered HTTP 403 to both date pages, and the NHL API was not due (no game inside three hours). The cron run at 16:00 had read both pages, 18 rows. Daily Faceoff refused the function the same way on 2026-10-26 at 00:35 UTC. These are intermittent refusals from an outside source; EdgeDesk's parser and data were fine.
