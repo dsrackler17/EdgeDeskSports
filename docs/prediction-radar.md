@@ -20,19 +20,22 @@ It answers three questions:
    follower could really get, in a record nobody can edit (H-RADAR-01, and the
    Radar record).
 
-## H-RADAR-02: the owner's methodology change (DRAFT, not registered)
+## H-RADAR-02: the owner's methodology change (registered 2026-10-30)
 
-**Status:** this branch carries H-RADAR-02. It is a methodology change: the
-owner reviews it, and its rules are frozen in a registration before its
-prospective test starts. Until H-RADAR-02 is registered, its SQL must not be
-applied: every reader door stays shut until the live hypothesis is registered
-(below). The sections after this one describe H-RADAR-01's rules (version 1),
-which stay registered and whose result stands.
+**Status:** the owner approved H-RADAR-02 (#924, merged 2026-10-30). It is
+registered EXPERIMENTAL, version 0.2.0, at 2026-10-30 13:30:16 UTC, with its
+rules frozen in the registration. Its prospective window is 84 days,
+**2026-10-31 00:00 UTC to 2027-01-23 00:00 UTC**, with a fixed end: the day
+after registration and deployment, as the registration requires. The sections
+after this one describe H-RADAR-01's rules (version 1), which stay registered
+and whose result stands.
 
 - **Design record and evidence:** `research/radar/H-RADAR-02/DESIGN.md`. That
   covers the owner's decisions and what Polymarket's data supports, from probe
   runs 40975470572, 40975893030, 40977654862 and 40982170115.
-- **Draft registration:** `research/radar/registration_h_radar_02.json`.
+- **Registration:** `research/radar/registration_h_radar_02.json`, written
+  into the research registry by `supabase/radar_registry.sql`
+  (`tools/radar/build_registry_sql.js`), with `registry_ref:H-RADAR-02`.
 
 ### What changes (rules version 2, `radar_rules()`)
 
@@ -77,6 +80,20 @@ which stay registered and whose result stands.
   side. No bettor is named, and high-frequency wallets and market makers are
   left out.
 - **How discovery stands**, in one line.
+- **Whether the sync is current** (`radar_sync_state()`, in the door's `sync`),
+  so three cases never read alike:
+  - *Sync pending*: no grading run under these rules has finished yet. The
+    page says how many candidates have been evaluated so far, and claims
+    neither an empty slate nor that nobody qualifies.
+  - *Sync failed*: the holders update (every 10 minutes) last ended in error,
+    or has not succeeded for 30 minutes; or a grade failed after the current
+    one, or the current one is more than 36 hours old. The page says which,
+    since when, and that what it shows may be out of date.
+  - *Current*: with no card, the page says no featured bettor holds a
+    position on tonight's covered games right now, and when the holders were
+    checked. Observed Activity says the same, under its own heading.
+
+  These thresholds are presentation only. No rule in `radar_rules()` changes.
 - **The record**, priced at the best ask, with H-RADAR-01's cards counted
   apart.
 
@@ -93,19 +110,44 @@ shown as H-RADAR-02's featured bettors.
 
 ### Change-over order
 
-1. **Deploy the function first.** It serves version 1 exactly as before:
-   the version-1 sync suite passes 67/0 against it.
-2. **Register H-RADAR-02.** After the owner approves:
-   - freeze `registration_h_radar_02.json`, with its status, version,
-     `registered_at` and the window's start date;
-   - extend `tools/radar/build_registry_sql.js` to write it into the
-     research registry and `registry_ref:H-RADAR-02`;
-   - apply `supabase/radar_registry.sql`.
-3. **Apply `supabase/radar.sql`, then `supabase/radar_record.sql`.** This
-   has been checked over a version-1 database with data: the `poly_bets` key
+One run of **Deploy Prediction Radar** does it, in this order:
+
+1. **The function** (`deploy_function`). Under version-1 SQL it serves
+   version 1 exactly as before (the version-1 sync suite passes 67/0
+   against it).
+2. **The SQL** (`apply_sql`): `supabase/radar.sql`, then
+   `supabase/radar_registry.sql` (which registers H-RADAR-02 and writes
+   `registry_ref:H-RADAR-02`), then `supabase/radar_record.sql`. This has
+   been checked over a version-1 database with data: the `poly_bets` key
    becomes `(wallet, token_id, grading_version)`, the version-1 rows stay,
    and the report reads ok.
-4. **Run `run_now`.** Discovery, evaluation and the first version-2 grade.
+3. **`run_now`**: discovery, evaluation and the first version-2 grade, then
+   one tonight run, so the holders and the cards are current at once.
+4. **The report** (`report`, on by default): where Radar stands, stage by
+   stage (below).
+
+### Where it stands, stage by stage
+
+`tools/radar/sql/radar_pipeline_report.sql` is read-only. Deploy Prediction
+Radar prints it last, whatever happened before it (run it alone with every
+other input off). It shows:
+
+- the rules, the hypothesis, whether it is registered and on, and the sync
+  state;
+- every sync run of the last 24 hours, and the latest of each mode with its
+  message;
+- discovery: the candidates, the wallets excluded by reason (high-frequency,
+  insufficient history, too few covered bets), the complete histories and
+  the pool;
+- the current grade by style: graded, ranked, with a positive score, and
+  featured;
+- the covered game markets in the window, matched or not, and why not;
+- the stages in order (candidates, complete histories, pool, graded,
+  featured, matched games, the pool's open positions, the featured wallets'
+  open positions, cards, observed cards, recorded cards), marking the first
+  stage of the featured path that reaches zero;
+- the four schedules, with their last run and how many did not succeed in the
+  last 24 hours.
 
 ### Fees (confirmed from Polymarket's documentation, 2026-10-30)
 
@@ -120,11 +162,6 @@ shown as H-RADAR-02's featured bettors.
   guessed: its follow or card is not graded.
 - **Today.** Polymarket lists 0.05 for Sports; the covered markets probed
   charge 0.
-
-### Open before registration
-
-- The prospective window's start date.
-- The registry builder for H-RADAR-02.
 
 ## Contents
 

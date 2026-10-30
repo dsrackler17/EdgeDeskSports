@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-30 — Prediction Radar: H-RADAR-02 registered, the page says whether its sync is current, and a stage-by-stage report
+
+- **Why.** Smart Money Tonight showed nothing. On Polymarket's own data, the 18 wallets H-RADAR-01 graded "top" held one open position ending within 60 hours, on an uncovered esports market: those all-time leaders mostly no longer bet. The owner merged H-RADAR-02 (#924) and asked for the rollout to be finished and verified end to end, with the count at each stage and the point where it reaches zero, and with "sync pending", "sync failed" and "no current qualifying position" told apart on the page. No qualification rule changes.
+- **Registered.** `research/radar/registration_h_radar_02.json` is frozen: EXPERIMENTAL, version 0.2.0, registered 2026-10-30 13:30:16 UTC. Its prospective window is 2026-10-31 00:00 UTC to 2027-01-23 00:00 UTC (84 days, fixed end), the day after registration and deployment as the registration requires. Its data-already-seen disclosure adds what was looked at since the draft: probe run 40982170115, production's H-RADAR-01 counts of 2026-10-30, and those 18 wallets' open positions.
+- **The registry.** `tools/radar/build_registry_sql.js` writes both hypotheses into the research registry, and `registry_ref:H-RADAR-02` beside H-RADAR-01's. H-RADAR-01's block is unchanged, and so is its result row.
+- **The sync state.** `radar_sync_state()` (internal) goes into the subscribers' door as `sync`:
+  - *pending* means no grade under the live rules yet;
+  - *failed* means the holders update ended in error or has not succeeded for 30 minutes, or a grade failed after the current one, or the current grade is over 36 hours old;
+  - *ok* means both are current.
+
+  The page says which, and with no card says "no featured bettor holds a position on tonight's covered games right now", with when the holders were checked. Observed Activity says the same under its own heading. These thresholds are presentation only.
+- **The report.** `tools/radar/sql/radar_pipeline_report.sql` is read-only. Deploy Prediction Radar prints it last (`report`, on by default), together with the four schedules' last runs. It shows the rules, the hypothesis and the sync state, then the runs, discovery with exclusions by reason, the grade by style, the matched games, and every stage in order to the cards, marking where the featured path first reaches zero.
+- **run_now** ends with one tonight run, so the holders and the cards are current at once. A failed tonight run fails the step.
+- **Tests**, each failing first:
+  - SQL 223 -> 237. On the old registry builder the new checks fail: 142 passed and 2 failed, with H-RADAR-02 not registered. Before `radar_sync_state()` existed, the suite stopped on its first call.
+  - UI 84 -> 95. Before the change, 6 of the 7 new checks failed. The seventh, observed activity shown when nobody is featured, already passed.
+
 ## 2026-10-30 — Methodology change (owner's decision, DRAFT for review): Prediction Radar H-RADAR-02, featured bettors from complete recent histories, at what a follower pays
 
 **Methodology change; needs the owner's explicit review. Not registered: its SQL is not to be applied until H-RADAR-02 is registered.**
