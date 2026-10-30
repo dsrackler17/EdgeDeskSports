@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-30 — NHL goalie sync: ESPN's probable goalies are a second starter source
+
+- **What failed.** Daily Faceoff refused the function (HTTP 403) from 16:34 UTC; the 16:00 run had read it. More than three hours out it is the only source, so every run was a `sources_down` error and tonight's starters could only be confirmed by hand (`hockey/data/confirmed_starters.json`).
+- **The source.** ESPN's public NHL scoreboard (`site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=<ET date>`) answers a plain request with each team's `probableStartingGoalie` and ESPN's status word. On 2026-10-30 it named all six starters (two Confirmed, four Expected); every name matched a rated goalie.
+- **The change** (build `nhl_goalie_sync@2026-10-30.3`). The sync reads ESPN on its own cadence (pg_cron, every five minutes; runs at the due slots), for each Eastern date, and stores each probable goalie as an `espn` observation. Nothing is entered by hand.
+  - ESPN's "Confirmed" is Confirmed, its "Expected" is Likely, as Daily Faceoff's words are read. A goalie only Expected never opens the edge gate or the lineup lock.
+  - When ESPN and Daily Faceoff name different goalies, it is a conflict: Daily Faceoff leads, at Likely at most.
+  - `sources_down` now needs Daily Faceoff and ESPN both unreadable. ESPN down alone is DEGRADED; a changed response shape is a DRIFT.
+- **SQL.** `supabase/nhl_goalie_layer.sql` (and its migration copy) adds `espn` to the starters' source check; applying the file again replaces the check on the live table. It must be applied before the function is deployed.
+- **Tests,** shown failing on the old code first:
+  - core: 113/0 (the suite crashes on the old core);
+  - sync: 104/0 (main's function at `761147e24`, which retries Daily Faceoff: 96/8; Daily Faceoff refusing is still `sources_down`, and there are no ESPN rows);
+  - SQL on a real PostgreSQL: 85/0 (old 14/2: the old check refuses the `espn` row);
+  - UI: 48/0 (old 46/2).
+
+  ESPN's parser is tested on its real 2026-10-30 response, trimmed to the fields it reads.
+- **Terms.** ESPN's response is public but unlicensed, like the ESPN NHL pack: the source registry names it beside Daily Faceoff for the owner's review before paid use.
 ## 2026-10-30 — Novig in production: DraftKings from the prices production keeps; ingestion only on a key Novig lists as read-only
 
 - **What production showed.** Deploy run 41112694540 applied nothing. The layer's guard refused: `needs public.sharp_price_snapshots (the DraftKings tape): apply supabase/sharp_lag.sql first`. Production has no Sharp-lag tape. It keeps DraftKings in `book_quote_ticks` (capture's per-book history, joined to `signals` by `sig_key`), and only for actionable signals. The project's secret names (run 41113406385, names only) show `NOVIG_MANAGEMENT_KEY_ID` and `NOVIG_MANAGEMENT_PRIVATE_KEY` NOT set, and an unexplained `NOVIG_READ_KEY_ID` / `NOVIG_READ_PRIVATE_KEY` pair set.
