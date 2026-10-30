@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-30 — Research OS journey: the workspace's links are read once Market Foresight's card has its answer
+
+- **What failed.** On #924, the Research OS browser job failed one check on the phone: "the workspace links Signals, Foresight and the Simulator for this game" found `["#signals/cfb","#simulator/cfb"]` (run 41008198329; 125 passed, 1 failed). The same check passed on the desktop in that run.
+- **Why.** The game page draws its Market Foresight card as "Checking the record…", with no link, and `EDContext.railFill` adds the record's link when `mf_game` answers. The test read the links as soon as `#gvWs` appeared. Its step 4 already waits for that card to settle; this check did not.
+- **The fix** (`tools/research_os/journey.e2e.js`, test only). Before reading the links, the check waits for the Foresight card the same way step 4 does. The assertion is unchanged.
+- **Regression.** The test's PostgREST stand-in now answers `mf_game` 2 seconds late, every run, so the race is always exercised.
+  - Before the fix, with the late answer: 124 passed, 2 failed (desktop and phone, `["#signals/cfb","#simulator/cfb"]`).
+  - After: 126 passed, 0 failed.
+
 ## 2026-10-30 — Football evidence test: a pull request reads "today's" research pinned on 2026-10-29; a daily sweep reads today's
 
 **What kept breaking.** Two checks in `tools/content/evidence.test.js` read "today". S 3c checks every claim the evidence builder makes; section L checks every article the engine would offer. Both read today's committed research at the real clock, so `main` went red with no code change whenever new data exposed the writer:
