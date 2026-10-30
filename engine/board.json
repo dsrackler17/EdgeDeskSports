@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-30T10:27:15.173Z",
+ "evaluated_at": "2026-10-30T15:57:03.677Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 474 without a price, 0 stale."
+  "No market had a fresh executable price: 996 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0163
  },
  "counts": {
-  "RESEARCH": 474
+  "RESEARCH": 996
  },
  "gate_failures": {
-  "NO_PRICE": 474,
-  "NEEDS_PRICE": 474
+  "NO_PRICE": 996,
+  "NEEDS_PRICE": 996
  },
- "n_candidates": 474,
+ "n_candidates": 996,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -131,6 +131,3414 @@
  },
  "candidates": [
   {
+   "id": "02434d0f",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401906074",
+   "event": {
+    "home": "Louisville Cardinals",
+    "away": "Bellarmine Knights",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Bellarmine Knights @ Louisville Cardinals"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Louisville Cardinals",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Bellarmine Knights @ Louisville Cardinals — Louisville Cardinals moneyline",
+   "quote": null,
+   "fair_american": -333233,
+   "break_even": null,
+   "prob": {
+    "model": 0.9997,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9997,
+    "sd": 0.0354,
+    "conservative": 0.9544,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1455,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1455 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 60.7 (home), total 135.4",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "1b6cb8a1",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401912964",
+   "event": {
+    "home": "LSU Tigers",
+    "away": "SE Louisiana Lady Lions",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "SE Louisiana Lady Lions @ LSU Tigers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "LSU Tigers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "SE Louisiana Lady Lions @ LSU Tigers — LSU Tigers moneyline",
+   "quote": null,
+   "fair_american": -333233,
+   "break_even": null,
+   "prob": {
+    "model": 0.9997,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9997,
+    "sd": 0.0354,
+    "conservative": 0.9544,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1455,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1455 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 61.6 (home), total 145.8",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "fc691210",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401911736",
+   "event": {
+    "home": "UConn Huskies",
+    "away": "Cornell Big Red",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Cornell Big Red @ UConn Huskies"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "UConn Huskies",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Cornell Big Red @ UConn Huskies — UConn Huskies moneyline",
+   "quote": null,
+   "fair_american": -166567,
+   "break_even": null,
+   "prob": {
+    "model": 0.9994,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9994,
+    "sd": 0.0354,
+    "conservative": 0.9541,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1448,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1448 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 55.6 (home), total 126",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "763fb9d2",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401917679",
+   "event": {
+    "home": "Pacific Tigers",
+    "away": "Simpson (CA) Red Hawks",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Simpson (CA) Red Hawks @ Pacific Tigers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Pacific Tigers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Simpson (CA) Red Hawks @ Pacific Tigers — Pacific Tigers moneyline",
+   "quote": null,
+   "fair_american": -111011,
+   "break_even": null,
+   "prob": {
+    "model": 0.9991,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9991,
+    "sd": 0.0354,
+    "conservative": 0.9538,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1441,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1441 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 52.8 (home), total 145.1",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "318e7895",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401912988",
+   "event": {
+    "home": "Alabama Crimson Tide",
+    "away": "Queens University Royals",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Queens University Royals @ Alabama Crimson Tide"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Alabama Crimson Tide",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Queens University Royals @ Alabama Crimson Tide — Alabama Crimson Tide moneyline",
+   "quote": null,
+   "fair_american": -21639,
+   "break_even": null,
+   "prob": {
+    "model": 0.9954,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9954,
+    "sd": 0.0354,
+    "conservative": 0.9501,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1359,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1359 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 40.6 (home), total 126.5",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "24c3f2d4",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401916067",
+   "event": {
+    "home": "Vanderbilt Commodores",
+    "away": "Lipscomb Bisons",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Lipscomb Bisons @ Vanderbilt Commodores"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Vanderbilt Commodores",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Lipscomb Bisons @ Vanderbilt Commodores — Vanderbilt Commodores moneyline",
+   "quote": null,
+   "fair_american": -20733,
+   "break_even": null,
+   "prob": {
+    "model": 0.9952,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9952,
+    "sd": 0.0354,
+    "conservative": 0.9499,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1355,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1355 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 40.3 (home), total 135.6",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "eeca7b7d",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401917926",
+   "event": {
+    "home": "Iowa State Cyclones",
+    "away": "Grambling Lady Tigers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Grambling Lady Tigers @ Iowa State Cyclones"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Iowa State Cyclones",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Grambling Lady Tigers @ Iowa State Cyclones — Iowa State Cyclones moneyline",
+   "quote": null,
+   "fair_american": -9424,
+   "break_even": null,
+   "prob": {
+    "model": 0.9895,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9895,
+    "sd": 0.0354,
+    "conservative": 0.9442,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1245,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1245 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 34.4 (home), total 139.8",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "0c7730ba",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401916015",
+   "event": {
+    "home": "Virginia Tech Hokies",
+    "away": "North Carolina Central Eagles",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "North Carolina Central Eagles @ Virginia Tech Hokies"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Virginia Tech Hokies",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "North Carolina Central Eagles @ Virginia Tech Hokies — Virginia Tech Hokies moneyline",
+   "quote": null,
+   "fair_american": -8375,
+   "break_even": null,
+   "prob": {
+    "model": 0.9882,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9882,
+    "sd": 0.0354,
+    "conservative": 0.9429,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1223,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1223 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 33.5 (home), total 133.4",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "b037a249",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401909669",
+   "event": {
+    "home": "Winthrop Eagles",
+    "away": "Newberry Wolves",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Newberry Wolves @ Winthrop Eagles"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Winthrop Eagles",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Newberry Wolves @ Winthrop Eagles — Winthrop Eagles moneyline",
+   "quote": null,
+   "fair_american": -6797,
+   "break_even": null,
+   "prob": {
+    "model": 0.9855,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9855,
+    "sd": 0.0354,
+    "conservative": 0.9402,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1178,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1178 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 31.9 (home), total 128.9",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "d2c2c7f3",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401912952",
+   "event": {
+    "home": "Tennessee Lady Volunteers",
+    "away": "Duquesne Dukes",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Duquesne Dukes @ Tennessee Lady Volunteers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Tennessee Lady Volunteers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Duquesne Dukes @ Tennessee Lady Volunteers — Tennessee Lady Volunteers moneyline",
+   "quote": null,
+   "fair_american": -5614,
+   "break_even": null,
+   "prob": {
+    "model": 0.9825,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9825,
+    "sd": 0.0354,
+    "conservative": 0.9372,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1132,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1132 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 30.5 (home), total 138.9",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "fc9fedc1",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401907046",
+   "event": {
+    "home": "Oklahoma State Cowgirls",
+    "away": "Southern Jaguars",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Southern Jaguars @ Oklahoma State Cowgirls"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Oklahoma State Cowgirls",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Southern Jaguars @ Oklahoma State Cowgirls — Oklahoma State Cowgirls moneyline",
+   "quote": null,
+   "fair_american": -5163,
+   "break_even": null,
+   "prob": {
+    "model": 0.981,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.981,
+    "sd": 0.0354,
+    "conservative": 0.9357,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1110,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1110 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 29.9 (home), total 132",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "e33a59b5",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401913735",
+   "event": {
+    "home": "NC State Wolfpack",
+    "away": "Wofford Terriers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Wofford Terriers @ NC State Wolfpack"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "NC State Wolfpack",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Wofford Terriers @ NC State Wolfpack — NC State Wolfpack moneyline",
+   "quote": null,
+   "fair_american": -5108,
+   "break_even": null,
+   "prob": {
+    "model": 0.9808,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9808,
+    "sd": 0.0354,
+    "conservative": 0.9355,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1107,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1107 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 29.8 (home), total 135.2",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "ff353bd1",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401906890",
+   "event": {
+    "home": "Florida Gators",
+    "away": "Bucknell Bison",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Bucknell Bison @ Florida Gators"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Florida Gators",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Bucknell Bison @ Florida Gators — Florida Gators moneyline",
+   "quote": null,
+   "fair_american": -5081,
+   "break_even": null,
+   "prob": {
+    "model": 0.9807,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9807,
+    "sd": 0.0354,
+    "conservative": 0.9354,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1106,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1106 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 29.8 (home), total 122.1",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "0352c65d",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401912977",
+   "event": {
+    "home": "Georgia Lady Bulldogs",
+    "away": "West Georgia Wolves",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "West Georgia Wolves @ Georgia Lady Bulldogs"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Georgia Lady Bulldogs",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "West Georgia Wolves @ Georgia Lady Bulldogs — Georgia Lady Bulldogs moneyline",
+   "quote": null,
+   "fair_american": -4174,
+   "break_even": null,
+   "prob": {
+    "model": 0.9766,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9766,
+    "sd": 0.0354,
+    "conservative": 0.9313,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1050,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1050 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 28.3 (home), total 139.8",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "561d8b01",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401913772",
+   "event": {
+    "home": "New Hampshire Wildcats",
+    "away": "New England College Pilgrims",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "New England College Pilgrims @ New Hampshire Wildcats"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New Hampshire Wildcats",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "New England College Pilgrims @ New Hampshire Wildcats — New Hampshire Wildcats moneyline",
+   "quote": null,
+   "fair_american": -3998,
+   "break_even": null,
+   "prob": {
+    "model": 0.9756,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9756,
+    "sd": 0.0354,
+    "conservative": 0.9303,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1037,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1037 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 28 (home), total 118",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "bbd8a16c",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401916003",
+   "event": {
+    "home": "Virginia Cavaliers",
+    "away": "Maryland Eastern Shore Hawks",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Maryland Eastern Shore Hawks @ Virginia Cavaliers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Virginia Cavaliers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Maryland Eastern Shore Hawks @ Virginia Cavaliers — Virginia Cavaliers moneyline",
+   "quote": null,
+   "fair_american": -3717,
+   "break_even": null,
+   "prob": {
+    "model": 0.9738,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9738,
+    "sd": 0.0354,
+    "conservative": 0.9285,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1015,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1015 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 27.5 (home), total 132.1",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "26a85cf8",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401913830",
+   "event": {
+    "home": "Rice Owls",
+    "away": "Houston Christian Huskies",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Houston Christian Huskies @ Rice Owls"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Rice Owls",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Houston Christian Huskies @ Rice Owls — Rice Owls moneyline",
+   "quote": null,
+   "fair_american": -3348,
+   "break_even": null,
+   "prob": {
+    "model": 0.971,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.971,
+    "sd": 0.0354,
+    "conservative": 0.9257,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -982,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -982 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 26.7 (home), total 125.2",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "aef995ec",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401917678",
+   "event": {
+    "home": "New Mexico Lobos",
+    "away": "Seattle U Redhawks",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Seattle U Redhawks @ New Mexico Lobos"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New Mexico Lobos",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Seattle U Redhawks @ New Mexico Lobos — New Mexico Lobos moneyline",
+   "quote": null,
+   "fair_american": -2567,
+   "break_even": null,
+   "prob": {
+    "model": 0.9625,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9625,
+    "sd": 0.0354,
+    "conservative": 0.9172,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -892,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -892 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 24.7 (home), total 132.4",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "337172e5",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401906979",
+   "event": {
+    "home": "Kansas State Wildcats",
+    "away": "Wichita State Shockers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Wichita State Shockers @ Kansas State Wildcats"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Kansas State Wildcats",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Wichita State Shockers @ Kansas State Wildcats — Kansas State Wildcats moneyline",
+   "quote": null,
+   "fair_american": -2425,
+   "break_even": null,
+   "prob": {
+    "model": 0.9604,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9604,
+    "sd": 0.0354,
+    "conservative": 0.9151,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -872,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -872 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 24.3 (home), total 130.6",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "31314608",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401911720",
+   "event": {
+    "home": "Fordham Rams",
+    "away": "Niagara Purple Eagles",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Niagara Purple Eagles @ Fordham Rams"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Fordham Rams",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Niagara Purple Eagles @ Fordham Rams — Fordham Rams moneyline",
+   "quote": null,
+   "fair_american": -2375,
+   "break_even": null,
+   "prob": {
+    "model": 0.9596,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9596,
+    "sd": 0.0354,
+    "conservative": 0.9143,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -865,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -865 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 24.1 (home), total 128.8",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "342b9ce1",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401906102",
+   "event": {
+    "home": "Wake Forest Demon Deacons",
+    "away": "South Carolina Upstate Spartans",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "South Carolina Upstate Spartans @ Wake Forest Demon Deacons"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Wake Forest Demon Deacons",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "South Carolina Upstate Spartans @ Wake Forest Demon Deacons — Wake Forest Demon Deacons moneyline",
+   "quote": null,
+   "fair_american": -2046,
+   "break_even": null,
+   "prob": {
+    "model": 0.9534,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9534,
+    "sd": 0.0354,
+    "conservative": 0.9081,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -811,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -811 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 23 (home), total 123.8",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "1110f064",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401911503",
+   "event": {
+    "home": "Clemson Tigers",
+    "away": "Radford Highlanders",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Radford Highlanders @ Clemson Tigers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Clemson Tigers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Radford Highlanders @ Clemson Tigers — Clemson Tigers moneyline",
+   "quote": null,
+   "fair_american": -2032,
+   "break_even": null,
+   "prob": {
+    "model": 0.9531,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9531,
+    "sd": 0.0354,
+    "conservative": 0.9078,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -809,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -809 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 22.9 (home), total 125",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "0cd7e46a",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401913723",
+   "event": {
+    "home": "Miami Hurricanes",
+    "away": "Florida Atlantic Owls",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Florida Atlantic Owls @ Miami Hurricanes"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Miami Hurricanes",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Florida Atlantic Owls @ Miami Hurricanes — Miami Hurricanes moneyline",
+   "quote": null,
+   "fair_american": -1801,
+   "break_even": null,
+   "prob": {
+    "model": 0.9474,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9474,
+    "sd": 0.0354,
+    "conservative": 0.9021,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -765,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -765 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 22 (home), total 132.2",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "f0257aed",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_w",
+   "sport_label": "Women's college basketball",
+   "event_key": "WOMENSCOLLEGEBASKETBALL|401916057",
+   "event": {
+    "home": "Tulane Green Wave",
+    "away": "Texas Southern Tigers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Texas Southern Tigers @ Tulane Green Wave"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Tulane Green Wave",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Texas Southern Tigers @ Tulane Green Wave — Tulane Green Wave moneyline",
+   "quote": null,
+   "fair_american": -1411,
+   "break_even": null,
+   "prob": {
+    "model": 0.9338,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9338,
+    "sd": 0.0354,
+    "conservative": 0.8885,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -676,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -676 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 20.2 (home), total 135.1",
+    "model points+bb_cal_v2_home_intercept (ncaaw); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.9)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaaw:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "3c748674",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401911390",
+   "event": {
+    "home": "UConn Huskies",
+    "away": "Gardner-Webb Runnin' Bulldogs",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Gardner-Webb Runnin' Bulldogs @ UConn Huskies"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "UConn Huskies",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Gardner-Webb Runnin' Bulldogs @ UConn Huskies — UConn Huskies moneyline",
+   "quote": null,
+   "fair_american": -11394,
+   "break_even": null,
+   "prob": {
+    "model": 0.9913,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9913,
+    "sd": 0.0354,
+    "conservative": 0.946,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1278,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1278 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 36.9 (home), total 146.1",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "021559df",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909562",
+   "event": {
+    "home": "Duke Blue Devils",
+    "away": "Army Black Knights",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Army Black Knights @ Duke Blue Devils"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Duke Blue Devils",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Army Black Knights @ Duke Blue Devils — Duke Blue Devils moneyline",
+   "quote": null,
+   "fair_american": -10889,
+   "break_even": null,
+   "prob": {
+    "model": 0.9909,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9909,
+    "sd": 0.0354,
+    "conservative": 0.9456,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -1271,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -1271 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 36.6 (home), total 147.2",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "428788a2",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401906779",
+   "event": {
+    "home": "Georgia Bulldogs",
+    "away": "North Carolina Central Eagles",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "North Carolina Central Eagles @ Georgia Bulldogs"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Georgia Bulldogs",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "North Carolina Central Eagles @ Georgia Bulldogs — Georgia Bulldogs moneyline",
+   "quote": null,
+   "fair_american": -3536,
+   "break_even": null,
+   "prob": {
+    "model": 0.9725,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9725,
+    "sd": 0.0354,
+    "conservative": 0.9272,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -999,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -999 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 27.8 (home), total 159.3",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "472a2c83",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401906863",
+   "event": {
+    "home": "Texas Longhorns",
+    "away": "Chicago State Cougars",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Chicago State Cougars @ Texas Longhorns"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Texas Longhorns",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Chicago State Cougars @ Texas Longhorns — Texas Longhorns moneyline",
+   "quote": null,
+   "fair_american": -2841,
+   "break_even": null,
+   "prob": {
+    "model": 0.966,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.966,
+    "sd": 0.0354,
+    "conservative": 0.9207,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -927,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -927 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 26.1 (home), total 150.3",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "8e75ea83",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909490",
+   "event": {
+    "home": "Creighton Bluejays",
+    "away": "Kansas City Roos",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Kansas City Roos @ Creighton Bluejays"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Creighton Bluejays",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Kansas City Roos @ Creighton Bluejays — Creighton Bluejays moneyline",
+   "quote": null,
+   "fair_american": -1988,
+   "break_even": null,
+   "prob": {
+    "model": 0.9521,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9521,
+    "sd": 0.0354,
+    "conservative": 0.9068,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -801,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -801 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 23.3 (home), total 150.2",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "49bc47e9",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401911248",
+   "event": {
+    "home": "Saint Louis Billikens",
+    "away": "Lehigh Mountain Hawks",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Lehigh Mountain Hawks @ Saint Louis Billikens"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Saint Louis Billikens",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Lehigh Mountain Hawks @ Saint Louis Billikens — Saint Louis Billikens moneyline",
+   "quote": null,
+   "fair_american": -1975,
+   "break_even": null,
+   "prob": {
+    "model": 0.9518,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9518,
+    "sd": 0.0354,
+    "conservative": 0.9065,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -799,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -799 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 23.2 (home), total 154.2",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "8a42db87",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909725",
+   "event": {
+    "home": "Wake Forest Demon Deacons",
+    "away": "Maryland Eastern Shore Hawks",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Maryland Eastern Shore Hawks @ Wake Forest Demon Deacons"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Wake Forest Demon Deacons",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Maryland Eastern Shore Hawks @ Wake Forest Demon Deacons — Wake Forest Demon Deacons moneyline",
+   "quote": null,
+   "fair_american": -1604,
+   "break_even": null,
+   "prob": {
+    "model": 0.9413,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9413,
+    "sd": 0.0354,
+    "conservative": 0.896,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -723,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -723 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 21.6 (home), total 144",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "072e7cc3",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909705",
+   "event": {
+    "home": "Pittsburgh Panthers",
+    "away": "Rider Broncs",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Rider Broncs @ Pittsburgh Panthers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Pittsburgh Panthers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Rider Broncs @ Pittsburgh Panthers — Pittsburgh Panthers moneyline",
+   "quote": null,
+   "fair_american": -1402,
+   "break_even": null,
+   "prob": {
+    "model": 0.9334,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9334,
+    "sd": 0.0354,
+    "conservative": 0.8881,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -673,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -673 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 20.5 (home), total 141.2",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "d31203d5",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401906801",
+   "event": {
+    "home": "Oklahoma Sooners",
+    "away": "East Texas A&M Lions",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "East Texas A&M Lions @ Oklahoma Sooners"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Oklahoma Sooners",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "East Texas A&M Lions @ Oklahoma Sooners — Oklahoma Sooners moneyline",
+   "quote": null,
+   "fair_american": -1397,
+   "break_even": null,
+   "prob": {
+    "model": 0.9332,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9332,
+    "sd": 0.0354,
+    "conservative": 0.8879,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -672,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -672 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 20.5 (home), total 151.7",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "f73473f7",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909531",
+   "event": {
+    "home": "Providence Friars",
+    "away": "Maine Black Bears",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Maine Black Bears @ Providence Friars"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Providence Friars",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Maine Black Bears @ Providence Friars — Providence Friars moneyline",
+   "quote": null,
+   "fair_american": -1228,
+   "break_even": null,
+   "prob": {
+    "model": 0.9247,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9247,
+    "sd": 0.0354,
+    "conservative": 0.8794,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -625,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -625 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 19.5 (home), total 151.7",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "0c71824b",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401911185",
+   "event": {
+    "home": "Dayton Flyers",
+    "away": "NJIT Highlanders",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "NJIT Highlanders @ Dayton Flyers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Dayton Flyers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "NJIT Highlanders @ Dayton Flyers — Dayton Flyers moneyline",
+   "quote": null,
+   "fair_american": -1205,
+   "break_even": null,
+   "prob": {
+    "model": 0.9234,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9234,
+    "sd": 0.0354,
+    "conservative": 0.8781,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -619,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -619 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 19.4 (home), total 142.2",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "f3cbf36e",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401911333",
+   "event": {
+    "home": "Wright State Raiders",
+    "away": "Air Force Falcons",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Air Force Falcons @ Wright State Raiders"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Wright State Raiders",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Air Force Falcons @ Wright State Raiders — Wright State Raiders moneyline",
+   "quote": null,
+   "fair_american": -1066,
+   "break_even": null,
+   "prob": {
+    "model": 0.9142,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9142,
+    "sd": 0.0354,
+    "conservative": 0.8689,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -575,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -575 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 18.4 (home), total 144.9",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "1472893a",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909771",
+   "event": {
+    "home": "Iowa State Cyclones",
+    "away": "Memphis Tigers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Memphis Tigers @ Iowa State Cyclones"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Iowa State Cyclones",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Memphis Tigers @ Iowa State Cyclones — Iowa State Cyclones moneyline",
+   "quote": null,
+   "fair_american": -1034,
+   "break_even": null,
+   "prob": {
+    "model": 0.9118,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9118,
+    "sd": 0.0354,
+    "conservative": 0.8665,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -564,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -564 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 18.3 (home), total 149",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "518576af",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401902275",
+   "event": {
+    "home": "Butler Bulldogs",
+    "away": "Lafayette Leopards",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Lafayette Leopards @ Butler Bulldogs"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Butler Bulldogs",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Lafayette Leopards @ Butler Bulldogs — Butler Bulldogs moneyline",
+   "quote": null,
+   "fair_american": -985,
+   "break_even": null,
+   "prob": {
+    "model": 0.9078,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9078,
+    "sd": 0.0354,
+    "conservative": 0.8625,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -548,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -548 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 17.8 (home), total 151.5",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "285bb8f8",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909784",
+   "event": {
+    "home": "Kansas Jayhawks",
+    "away": "Fordham Rams",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Fordham Rams @ Kansas Jayhawks"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Kansas Jayhawks",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Fordham Rams @ Kansas Jayhawks — Kansas Jayhawks moneyline",
+   "quote": null,
+   "fair_american": -922,
+   "break_even": null,
+   "prob": {
+    "model": 0.9022,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.9022,
+    "sd": 0.0354,
+    "conservative": 0.8569,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -525,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -525 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 17.3 (home), total 139.5",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "fb93f741",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401911374",
+   "event": {
+    "home": "South Florida Bulls",
+    "away": "Charleston Southern Buccaneers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Charleston Southern Buccaneers @ South Florida Bulls"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "South Florida Bulls",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Charleston Southern Buccaneers @ South Florida Bulls — South Florida Bulls moneyline",
+   "quote": null,
+   "fair_american": -888,
+   "break_even": null,
+   "prob": {
+    "model": 0.8988,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8988,
+    "sd": 0.0354,
+    "conservative": 0.8535,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -513,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -513 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 17 (home), total 162.9",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "ccf097fc",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401912207",
+   "event": {
+    "home": "Cincinnati Bearcats",
+    "away": "American University Eagles",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "American University Eagles @ Cincinnati Bearcats"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Cincinnati Bearcats",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "American University Eagles @ Cincinnati Bearcats — Cincinnati Bearcats moneyline",
+   "quote": null,
+   "fair_american": -859,
+   "break_even": null,
+   "prob": {
+    "model": 0.8957,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8957,
+    "sd": 0.0354,
+    "conservative": 0.8504,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -501,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -501 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 16.7 (home), total 141.9",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "91374bc1",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909716",
+   "event": {
+    "home": "Syracuse Orange",
+    "away": "New Haven Chargers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "New Haven Chargers @ Syracuse Orange"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Syracuse Orange",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "New Haven Chargers @ Syracuse Orange — Syracuse Orange moneyline",
+   "quote": null,
+   "fair_american": -855,
+   "break_even": null,
+   "prob": {
+    "model": 0.8953,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8953,
+    "sd": 0.0354,
+    "conservative": 0.85,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -500,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -500 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 16.7 (home), total 142.1",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "654e1a6e",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401906791",
+   "event": {
+    "home": "Mississippi State Bulldogs",
+    "away": "Tennessee Tech Golden Eagles",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Tennessee Tech Golden Eagles @ Mississippi State Bulldogs"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Mississippi State Bulldogs",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Tennessee Tech Golden Eagles @ Mississippi State Bulldogs — Mississippi State Bulldogs moneyline",
+   "quote": null,
+   "fair_american": -663,
+   "break_even": null,
+   "prob": {
+    "model": 0.8689,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8689,
+    "sd": 0.0354,
+    "conservative": 0.8236,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -419,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -419 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 14.7 (home), total 152.3",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "05f613fc",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401910993",
+   "event": {
+    "home": "Louisiana Ragin' Cajuns",
+    "away": "Akron Zips",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Akron Zips @ Louisiana Ragin' Cajuns"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Akron Zips",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Akron Zips @ Louisiana Ragin' Cajuns — Akron Zips moneyline",
+   "quote": null,
+   "fair_american": -639,
+   "break_even": null,
+   "prob": {
+    "model": 0.8646,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8646,
+    "sd": 0.0354,
+    "conservative": 0.8193,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -408,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -408 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin -14.7 (home), total 147.6",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "1e29494e",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909500",
+   "event": {
+    "home": "DePaul Blue Demons",
+    "away": "West Georgia Wolves",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "West Georgia Wolves @ DePaul Blue Demons"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "DePaul Blue Demons",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "West Georgia Wolves @ DePaul Blue Demons — DePaul Blue Demons moneyline",
+   "quote": null,
+   "fair_american": -600,
+   "break_even": null,
+   "prob": {
+    "model": 0.8571,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8571,
+    "sd": 0.0354,
+    "conservative": 0.8118,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -390,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -390 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 13.9 (home), total 144.5",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "02aa3c71",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909759",
+   "event": {
+    "home": "Colorado Buffaloes",
+    "away": "Abilene Christian Wildcats",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Abilene Christian Wildcats @ Colorado Buffaloes"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Colorado Buffaloes",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Abilene Christian Wildcats @ Colorado Buffaloes — Colorado Buffaloes moneyline",
+   "quote": null,
+   "fair_american": -597,
+   "break_even": null,
+   "prob": {
+    "model": 0.8565,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8565,
+    "sd": 0.0354,
+    "conservative": 0.8112,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -388,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -388 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 13.9 (home), total 150.1",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "a686b0f7",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909522",
+   "event": {
+    "home": "Marquette Golden Eagles",
+    "away": "Mercyhurst Lakers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Mercyhurst Lakers @ Marquette Golden Eagles"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Marquette Golden Eagles",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Mercyhurst Lakers @ Marquette Golden Eagles — Marquette Golden Eagles moneyline",
+   "quote": null,
+   "fair_american": -595,
+   "break_even": null,
+   "prob": {
+    "model": 0.8561,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8561,
+    "sd": 0.0354,
+    "conservative": 0.8108,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -388,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -388 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 13.8 (home), total 144.3",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "14768bf5",
+   "status": "RESEARCH",
+   "sport_id": "ncaab_m",
+   "sport_label": "Men's college basketball",
+   "event_key": "MENSCOLLEGEBASKETBALL|401909541",
+   "event": {
+    "home": "Xavier Musketeers",
+    "away": "Mount St. Mary's Mountaineers",
+    "start_utc": "2026-11-02T05:00:00Z",
+    "label": "Mount St. Mary's Mountaineers @ Xavier Musketeers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Xavier Musketeers",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Mount St. Mary's Mountaineers @ Xavier Musketeers — Xavier Musketeers moneyline",
+   "quote": null,
+   "fair_american": -533,
+   "break_even": null,
+   "prob": {
+    "model": 0.8419,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8419,
+    "sd": 0.0354,
+    "conservative": 0.7966,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -357,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -357 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 13 (home), total 151.9",
+    "model points+bb_cal_v2_home_intercept (ncaam); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/ncaam:points+bb_cal_v2_home_intercept"
+  },
+  {
    "id": "fd9b93e3",
    "status": "RESEARCH",
    "sport_id": "nba",
@@ -150,16 +3558,16 @@
    },
    "label": "Charlotte Hornets @ Washington Wizards — Charlotte Hornets moneyline",
    "quote": null,
-   "fair_american": -167,
+   "fair_american": -170,
    "break_even": null,
    "prob": {
-    "model": 0.6252,
+    "model": 0.6294,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6252,
+    "posterior": 0.6294,
     "sd": 0.0354,
-    "conservative": 0.5799,
+    "conservative": 0.5841,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -169,7 +3577,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -132,
+   "min_acceptable_american": -134,
    "disagreement": null,
    "gates": [
     {
@@ -182,13 +3590,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -132 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -134 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.7 (home), total 221.6",
+    "projected margin -3.8 (home), total 221.8",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -202,7 +3610,7 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "5d70fb35",
+   "id": "3949a5ee",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
@@ -214,23 +3622,23 @@
     "label": "Charlotte Hornets @ Washington Wizards"
    },
    "market": {
-    "kind": "spread",
-    "side": "Charlotte Hornets",
-    "line": -3.5,
-    "settles": "including overtime; a whole-number line can push"
+    "kind": "total",
+    "side": "under",
+    "line": 222,
+    "settles": "including overtime"
    },
-   "label": "Charlotte Hornets @ Washington Wizards — Charlotte Hornets -3.5",
+   "label": "Charlotte Hornets @ Washington Wizards — under 222",
    "quote": null,
    "fair_american": -102,
    "break_even": null,
    "prob": {
-    "model": 0.5056,
-    "push": 0,
+    "model": 0.4947,
+    "push": 0.0209,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5056,
+    "posterior": 0.4947,
     "sd": 0.0354,
-    "conservative": 0.4603,
+    "conservative": 0.4494,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -259,7 +3667,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.7 (home), total 221.6",
+    "projected margin -3.8 (home), total 221.8",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -273,7 +3681,7 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "fa6ab8f2",
+   "id": "15daa161",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
@@ -285,23 +3693,23 @@
     "label": "Charlotte Hornets @ Washington Wizards"
    },
    "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 221.5,
-    "settles": "including overtime"
+    "kind": "spread",
+    "side": "Washington Wizards",
+    "line": 4,
+    "settles": "including overtime; a whole-number line can push"
    },
-   "label": "Charlotte Hornets @ Washington Wizards — over 221.5",
+   "label": "Charlotte Hornets @ Washington Wizards — Washington Wizards +4",
    "quote": null,
-   "fair_american": -101,
+   "fair_american": -102,
    "break_even": null,
    "prob": {
-    "model": 0.5017,
-    "push": 0,
+    "model": 0.4906,
+    "push": 0.0277,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5017,
+    "posterior": 0.4906,
     "sd": 0.0354,
-    "conservative": 0.4564,
+    "conservative": 0.4453,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -330,7 +3738,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.7 (home), total 221.6",
+    "projected margin -3.8 (home), total 221.8",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -344,7 +3752,7 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "3dd9f3de",
+   "id": "d24dd712",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
@@ -357,22 +3765,22 @@
    },
    "market": {
     "kind": "total",
-    "side": "under",
-    "line": 221.5,
+    "side": "over",
+    "line": 222,
     "settles": "including overtime"
    },
-   "label": "Charlotte Hornets @ Washington Wizards — under 221.5",
+   "label": "Charlotte Hornets @ Washington Wizards — over 222",
    "quote": null,
-   "fair_american": 101,
+   "fair_american": 102,
    "break_even": null,
    "prob": {
-    "model": 0.4983,
-    "push": 0,
+    "model": 0.4844,
+    "push": 0.0209,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4983,
+    "posterior": 0.4844,
     "sd": 0.0354,
-    "conservative": 0.453,
+    "conservative": 0.4391,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -382,7 +3790,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 125,
+   "min_acceptable_american": 128,
    "disagreement": null,
    "gates": [
     {
@@ -395,13 +3803,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +128 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.7 (home), total 221.6",
+    "projected margin -3.8 (home), total 221.8",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -415,7 +3823,7 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "29c1d989",
+   "id": "74412065",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
@@ -428,22 +3836,22 @@
    },
    "market": {
     "kind": "spread",
-    "side": "Washington Wizards",
-    "line": 3.5,
+    "side": "Charlotte Hornets",
+    "line": -4,
     "settles": "including overtime; a whole-number line can push"
    },
-   "label": "Charlotte Hornets @ Washington Wizards — Washington Wizards +3.5",
+   "label": "Charlotte Hornets @ Washington Wizards — Charlotte Hornets -4",
    "quote": null,
    "fair_american": 102,
    "break_even": null,
    "prob": {
-    "model": 0.4944,
-    "push": 0,
+    "model": 0.4817,
+    "push": 0.0277,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4944,
+    "posterior": 0.4817,
     "sd": 0.0354,
-    "conservative": 0.4491,
+    "conservative": 0.4364,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -472,7 +3880,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.7 (home), total 221.6",
+    "projected margin -3.8 (home), total 221.8",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -505,16 +3913,16 @@
    },
    "label": "Charlotte Hornets @ Washington Wizards — Washington Wizards moneyline",
    "quote": null,
-   "fair_american": 167,
+   "fair_american": 170,
    "break_even": null,
    "prob": {
-    "model": 0.3748,
+    "model": 0.3706,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3748,
+    "posterior": 0.3706,
     "sd": 0.0354,
-    "conservative": 0.3295,
+    "conservative": 0.3253,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -524,7 +3932,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 210,
+   "min_acceptable_american": 214,
    "disagreement": null,
    "gates": [
     {
@@ -537,13 +3945,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +210 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +214 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.7 (home), total 221.6",
+    "projected margin -3.8 (home), total 221.8",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -576,16 +3984,16 @@
    },
    "label": "Chicago Bulls @ Boston Celtics — Boston Celtics moneyline",
    "quote": null,
-   "fair_american": -790,
+   "fair_american": -779,
    "break_even": null,
    "prob": {
-    "model": 0.8876,
+    "model": 0.8862,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.8876,
+    "posterior": 0.8862,
     "sd": 0.0354,
-    "conservative": 0.8423,
+    "conservative": 0.8409,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -595,7 +4003,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -474,
+   "min_acceptable_american": -469,
    "disagreement": null,
    "gates": [
     {
@@ -608,13 +4016,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -474 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -469 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16.1 (home), total 234.7",
+    "projected margin 16 (home), total 234.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -647,16 +4055,16 @@
    },
    "label": "Detroit Pistons @ Brooklyn Nets — Detroit Pistons moneyline",
    "quote": null,
-   "fair_american": -588,
+   "fair_american": -593,
    "break_even": null,
    "prob": {
-    "model": 0.8546,
+    "model": 0.8557,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.8546,
+    "posterior": 0.8557,
     "sd": 0.0354,
-    "conservative": 0.8093,
+    "conservative": 0.8104,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -666,7 +4074,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -384,
+   "min_acceptable_american": -387,
    "disagreement": null,
    "gates": [
     {
@@ -679,7 +4087,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -384 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -387 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
@@ -718,16 +4126,16 @@
    },
    "label": "Orlando Magic @ Toronto Raptors — Toronto Raptors moneyline",
    "quote": null,
-   "fair_american": -314,
+   "fair_american": -310,
    "break_even": null,
    "prob": {
-    "model": 0.7586,
+    "model": 0.7561,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.7586,
+    "posterior": 0.7561,
     "sd": 0.0354,
-    "conservative": 0.7133,
+    "conservative": 0.7108,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -737,7 +4145,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -233,
+   "min_acceptable_american": -230,
    "disagreement": null,
    "gates": [
     {
@@ -750,13 +4158,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -233 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -230 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 9 (home), total 219.5",
+    "projected margin 8.9 (home), total 219.5",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -789,16 +4197,16 @@
    },
    "label": "New York Knicks @ Philadelphia 76ers — New York Knicks moneyline",
    "quote": null,
-   "fair_american": -157,
+   "fair_american": -159,
    "break_even": null,
    "prob": {
-    "model": 0.6104,
+    "model": 0.6139,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6104,
+    "posterior": 0.6139,
     "sd": 0.0354,
-    "conservative": 0.5651,
+    "conservative": 0.5686,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -808,7 +4216,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -124,
+   "min_acceptable_american": -126,
    "disagreement": null,
    "gates": [
     {
@@ -821,13 +4229,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -124 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -126 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.2 (home), total 217.5",
+    "projected margin -3.3 (home), total 217.6",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -841,24 +4249,24 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "55b3a9d1",
+   "id": "8b4e6741",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
-   "event_key": "NBA|401909278",
+   "event_key": "NBA|401909280",
    "event": {
-    "home": "Boston Celtics",
-    "away": "Chicago Bulls",
+    "home": "Philadelphia 76ers",
+    "away": "New York Knicks",
     "start_utc": "2026-10-30T23:30:00Z",
-    "label": "Chicago Bulls @ Boston Celtics"
+    "label": "New York Knicks @ Philadelphia 76ers"
    },
    "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 234.5,
-    "settles": "including overtime"
+    "kind": "spread",
+    "side": "Philadelphia 76ers",
+    "line": 3.5,
+    "settles": "including overtime; a whole-number line can push"
    },
-   "label": "Chicago Bulls @ Boston Celtics — over 234.5",
+   "label": "New York Knicks @ Philadelphia 76ers — Philadelphia 76ers +3.5",
    "quote": null,
    "fair_american": -102,
    "break_even": null,
@@ -898,7 +4306,78 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16.1 (home), total 234.7",
+    "projected margin -3.3 (home), total 217.6",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "55b3a9d1",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909278",
+   "event": {
+    "home": "Boston Celtics",
+    "away": "Chicago Bulls",
+    "start_utc": "2026-10-30T23:30:00Z",
+    "label": "Chicago Bulls @ Boston Celtics"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 234.5,
+    "settles": "including overtime"
+   },
+   "label": "Chicago Bulls @ Boston Celtics — over 234.5",
+   "quote": null,
+   "fair_american": -102,
+   "break_even": null,
+   "prob": {
+    "model": 0.5041,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5041,
+    "sd": 0.0354,
+    "conservative": 0.4588,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 122,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 16 (home), total 234.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -931,16 +4410,16 @@
    },
    "label": "Detroit Pistons @ Brooklyn Nets — Brooklyn Nets +13.5",
    "quote": null,
-   "fair_american": -102,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.504,
+    "model": 0.5022,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.504,
+    "posterior": 0.5022,
     "sd": 0.0354,
-    "conservative": 0.4587,
+    "conservative": 0.4569,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -950,7 +4429,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 122,
+   "min_acceptable_american": 123,
    "disagreement": null,
    "gates": [
     {
@@ -963,7 +4442,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
@@ -983,7 +4462,7 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "30275a2b",
+   "id": "da01ce6f",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
@@ -996,11 +4475,82 @@
    },
    "market": {
     "kind": "total",
-    "side": "under",
+    "side": "over",
     "line": 217.5,
     "settles": "including overtime"
    },
-   "label": "New York Knicks @ Philadelphia 76ers — under 217.5",
+   "label": "New York Knicks @ Philadelphia 76ers — over 217.5",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.5017,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5017,
+    "sd": 0.0354,
+    "conservative": 0.4564,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 123,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin -3.3 (home), total 217.6",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "752b619e",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909281",
+   "event": {
+    "home": "Toronto Raptors",
+    "away": "Orlando Magic",
+    "start_utc": "2026-10-30T23:30:00Z",
+    "label": "Orlando Magic @ Toronto Raptors"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 219.5,
+    "settles": "including overtime"
+   },
+   "label": "Orlando Magic @ Toronto Raptors — over 219.5",
    "quote": null,
    "fair_american": -100,
    "break_even": null,
@@ -1040,7 +4590,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.2 (home), total 217.5",
+    "projected margin 8.9 (home), total 219.5",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1072,148 +4622,6 @@
     "settles": "including overtime"
    },
    "label": "Orlando Magic @ Toronto Raptors — under 219.5",
-   "quote": null,
-   "fair_american": -100,
-   "break_even": null,
-   "prob": {
-    "model": 0.5003,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5003,
-    "sd": 0.0354,
-    "conservative": 0.455,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 124,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 9 (home), total 219.5",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "752b619e",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909281",
-   "event": {
-    "home": "Toronto Raptors",
-    "away": "Orlando Magic",
-    "start_utc": "2026-10-30T23:30:00Z",
-    "label": "Orlando Magic @ Toronto Raptors"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 219.5,
-    "settles": "including overtime"
-   },
-   "label": "Orlando Magic @ Toronto Raptors — over 219.5",
-   "quote": null,
-   "fair_american": 100,
-   "break_even": null,
-   "prob": {
-    "model": 0.4997,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4997,
-    "sd": 0.0354,
-    "conservative": 0.4544,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 124,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 9 (home), total 219.5",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "da01ce6f",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909280",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "New York Knicks",
-    "start_utc": "2026-10-30T23:30:00Z",
-    "label": "New York Knicks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 217.5,
-    "settles": "including overtime"
-   },
-   "label": "New York Knicks @ Philadelphia 76ers — over 217.5",
    "quote": null,
    "fair_american": 100,
    "break_even": null,
@@ -1253,7 +4661,78 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin -3.2 (home), total 217.5",
+    "projected margin 8.9 (home), total 219.5",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "30275a2b",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909280",
+   "event": {
+    "home": "Philadelphia 76ers",
+    "away": "New York Knicks",
+    "start_utc": "2026-10-30T23:30:00Z",
+    "label": "New York Knicks @ Philadelphia 76ers"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 217.5,
+    "settles": "including overtime"
+   },
+   "label": "New York Knicks @ Philadelphia 76ers — under 217.5",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4983,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4983,
+    "sd": 0.0354,
+    "conservative": 0.453,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 125,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin -3.3 (home), total 217.6",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1286,16 +4765,16 @@
    },
    "label": "Detroit Pistons @ Brooklyn Nets — Detroit Pistons -13.5",
    "quote": null,
-   "fair_american": 102,
+   "fair_american": 101,
    "break_even": null,
    "prob": {
-    "model": 0.496,
+    "model": 0.4978,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.496,
+    "posterior": 0.4978,
     "sd": 0.0354,
-    "conservative": 0.4507,
+    "conservative": 0.4525,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1305,7 +4784,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 126,
+   "min_acceptable_american": 125,
    "disagreement": null,
    "gates": [
     {
@@ -1318,7 +4797,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
@@ -1360,6 +4839,77 @@
    "fair_american": 102,
    "break_even": null,
    "prob": {
+    "model": 0.4959,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4959,
+    "sd": 0.0354,
+    "conservative": 0.4506,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 16 (home), total 234.7",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "d099672a",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909280",
+   "event": {
+    "home": "Philadelphia 76ers",
+    "away": "New York Knicks",
+    "start_utc": "2026-10-30T23:30:00Z",
+    "label": "New York Knicks @ Philadelphia 76ers"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "New York Knicks",
+    "line": -3.5,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "New York Knicks @ Philadelphia 76ers — New York Knicks -3.5",
+   "quote": null,
+   "fair_american": 102,
+   "break_even": null,
+   "prob": {
     "model": 0.4953,
     "push": 0,
     "market_novig": null,
@@ -1395,149 +4945,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 16.1 (home), total 234.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "5d654e99",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909280",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "New York Knicks",
-    "start_utc": "2026-10-30T23:30:00Z",
-    "label": "New York Knicks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "New York Knicks",
-    "line": -3,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "New York Knicks @ Philadelphia 76ers — New York Knicks -3",
-   "quote": null,
-   "fair_american": -103,
-   "break_even": null,
-   "prob": {
-    "model": 0.4922,
-    "push": 0.0277,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4922,
-    "sd": 0.0354,
-    "conservative": 0.4469,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin -3.2 (home), total 217.5",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "bdbcc266",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909279",
-   "event": {
-    "home": "Brooklyn Nets",
-    "away": "Detroit Pistons",
-    "start_utc": "2026-10-30T23:30:00Z",
-    "label": "Detroit Pistons @ Brooklyn Nets"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 220,
-    "settles": "including overtime"
-   },
-   "label": "Detroit Pistons @ Brooklyn Nets — under 220",
-   "quote": null,
-   "fair_american": -100,
-   "break_even": null,
-   "prob": {
-    "model": 0.4899,
-    "push": 0.0209,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4899,
-    "sd": 0.0354,
-    "conservative": 0.4446,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 125,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin -13.4 (home), total 220",
+    "projected margin -3.3 (home), total 217.6",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1570,16 +4978,16 @@
    },
    "label": "Detroit Pistons @ Brooklyn Nets — over 220",
    "quote": null,
-   "fair_american": 100,
+   "fair_american": -100,
    "break_even": null,
    "prob": {
-    "model": 0.4892,
+    "model": 0.4897,
     "push": 0.0209,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4892,
+    "posterior": 0.4897,
     "sd": 0.0354,
-    "conservative": 0.4439,
+    "conservative": 0.4444,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1622,106 +5030,35 @@
    "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
   },
   {
-   "id": "4c834c28",
+   "id": "bdbcc266",
    "status": "RESEARCH",
    "sport_id": "nba",
    "sport_label": "NBA",
-   "event_key": "NBA|401909278",
+   "event_key": "NBA|401909279",
    "event": {
-    "home": "Boston Celtics",
-    "away": "Chicago Bulls",
+    "home": "Brooklyn Nets",
+    "away": "Detroit Pistons",
     "start_utc": "2026-10-30T23:30:00Z",
-    "label": "Chicago Bulls @ Boston Celtics"
+    "label": "Detroit Pistons @ Brooklyn Nets"
    },
    "market": {
-    "kind": "spread",
-    "side": "Boston Celtics",
-    "line": -16,
-    "settles": "including overtime; a whole-number line can push"
+    "kind": "total",
+    "side": "under",
+    "line": 220,
+    "settles": "including overtime"
    },
-   "label": "Chicago Bulls @ Boston Celtics — Boston Celtics -16",
+   "label": "Detroit Pistons @ Brooklyn Nets — under 220",
    "quote": null,
-   "fair_american": -101,
+   "fair_american": 100,
    "break_even": null,
    "prob": {
-    "model": 0.488,
-    "push": 0.0277,
+    "model": 0.4894,
+    "push": 0.0209,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.488,
+    "posterior": 0.4894,
     "sd": 0.0354,
-    "conservative": 0.4427,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 124,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 16.1 (home), total 234.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "ffdc01ae",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909281",
-   "event": {
-    "home": "Toronto Raptors",
-    "away": "Orlando Magic",
-    "start_utc": "2026-10-30T23:30:00Z",
-    "label": "Orlando Magic @ Toronto Raptors"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Toronto Raptors",
-    "line": -9,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Orlando Magic @ Toronto Raptors — Toronto Raptors -9",
-   "quote": null,
-   "fair_american": -100,
-   "break_even": null,
-   "prob": {
-    "model": 0.4862,
-    "push": 0.0277,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4862,
-    "sd": 0.0354,
-    "conservative": 0.4409,
+    "conservative": 0.4441,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1750,7 +5087,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 9 (home), total 219.5",
+    "projected margin -13.4 (home), total 220",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -1783,16 +5120,87 @@
    },
    "label": "Orlando Magic @ Toronto Raptors — Orlando Magic +9",
    "quote": null,
-   "fair_american": 100,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4861,
+    "model": 0.4889,
     "push": 0.0277,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4861,
+    "posterior": 0.4889,
     "sd": 0.0354,
-    "conservative": 0.4408,
+    "conservative": 0.4436,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 8.9 (home), total 219.5",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "90d4ac0f",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909278",
+   "event": {
+    "home": "Boston Celtics",
+    "away": "Chicago Bulls",
+    "start_utc": "2026-10-30T23:30:00Z",
+    "label": "Chicago Bulls @ Boston Celtics"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Chicago Bulls",
+    "line": 16,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Chicago Bulls @ Boston Celtics — Chicago Bulls +16",
+   "quote": null,
+   "fair_american": -100,
+   "break_even": null,
+   "prob": {
+    "model": 0.4872,
+    "push": 0.0277,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4872,
+    "sd": 0.0354,
+    "conservative": 0.4419,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -1821,7 +5229,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 9 (home), total 219.5",
+    "projected margin 16 (home), total 234.7",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -5340,16 +8748,16 @@
    },
    "label": "Atlanta Dream @ Golden State Valkyries — Golden State Valkyries moneyline",
    "quote": null,
-   "fair_american": -115,
+   "fair_american": -111,
    "break_even": null,
    "prob": {
-    "model": 0.5344,
+    "model": 0.5265,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5344,
+    "posterior": 0.5265,
     "sd": 0.0354,
-    "conservative": 0.4891,
+    "conservative": 0.4812,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -5359,7 +8767,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 109,
+   "min_acceptable_american": 112,
    "disagreement": null,
    "gates": [
     {
@@ -5372,13 +8780,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +112 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 1.4 (home), total 158.1",
+    "projected margin 1.2 (home), total 157.9",
     "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -5392,78 +8800,7 @@
    "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
   },
   {
-   "id": "5541017a",
-   "status": "RESEARCH",
-   "sport_id": "wnba",
-   "sport_label": "WNBA",
-   "event_key": "WNBA|401918311",
-   "event": {
-    "home": "Golden State Valkyries",
-    "away": "Atlanta Dream",
-    "start_utc": "2026-11-01T00:00:00Z",
-    "label": "Atlanta Dream @ Golden State Valkyries"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Atlanta Dream",
-    "line": 1.5,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Atlanta Dream @ Golden State Valkyries — Atlanta Dream +1.5",
-   "quote": null,
-   "fair_american": -101,
-   "break_even": null,
-   "prob": {
-    "model": 0.5022,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5022,
-    "sd": 0.0354,
-    "conservative": 0.4569,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 123,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.4 (home), total 158.1",
-    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "d5d797d3",
+   "id": "7604b17c",
    "status": "RESEARCH",
    "sport_id": "wnba",
    "sport_label": "WNBA",
@@ -5477,21 +8814,21 @@
    "market": {
     "kind": "spread",
     "side": "Golden State Valkyries",
-    "line": -1.5,
+    "line": -1,
     "settles": "including overtime; a whole-number line can push"
    },
-   "label": "Atlanta Dream @ Golden State Valkyries — Golden State Valkyries -1.5",
+   "label": "Atlanta Dream @ Golden State Valkyries — Golden State Valkyries -1",
    "quote": null,
-   "fair_american": 101,
+   "fair_american": -103,
    "break_even": null,
    "prob": {
-    "model": 0.4978,
-    "push": 0,
+    "model": 0.4908,
+    "push": 0.0319,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4978,
+    "posterior": 0.4908,
     "sd": 0.0354,
-    "conservative": 0.4525,
+    "conservative": 0.4455,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -5501,7 +8838,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 125,
+   "min_acceptable_american": 122,
    "disagreement": null,
    "gates": [
     {
@@ -5514,84 +8851,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 1.4 (home), total 158.1",
-    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "f9355cb7",
-   "status": "RESEARCH",
-   "sport_id": "wnba",
-   "sport_label": "WNBA",
-   "event_key": "WNBA|401918311",
-   "event": {
-    "home": "Golden State Valkyries",
-    "away": "Atlanta Dream",
-    "start_utc": "2026-11-01T00:00:00Z",
-    "label": "Atlanta Dream @ Golden State Valkyries"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 158,
-    "settles": "including overtime"
-   },
-   "label": "Atlanta Dream @ Golden State Valkyries — over 158",
-   "quote": null,
-   "fair_american": -101,
-   "break_even": null,
-   "prob": {
-    "model": 0.4893,
-    "push": 0.0239,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4893,
-    "sd": 0.0354,
-    "conservative": 0.444,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 124,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.4 (home), total 158.1",
+    "projected margin 1.2 (home), total 157.9",
     "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -5624,16 +8890,87 @@
    },
    "label": "Atlanta Dream @ Golden State Valkyries — under 158",
    "quote": null,
-   "fair_american": 101,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4867,
+    "model": 0.4904,
     "push": 0.0239,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4867,
+    "posterior": 0.4904,
     "sd": 0.0354,
-    "conservative": 0.4414,
+    "conservative": 0.4451,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 1.2 (home), total 157.9",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "f9355cb7",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918311",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-11-01T00:00:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 158,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — over 158",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4857,
+    "push": 0.0239,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4857,
+    "sd": 0.0354,
+    "conservative": 0.4404,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -5662,7 +8999,78 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 1.4 (home), total 158.1",
+    "projected margin 1.2 (home), total 157.9",
+    "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "4cecdd49",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918311",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-11-01T00:00:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Atlanta Dream",
+    "line": 1,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Atlanta Dream +1",
+   "quote": null,
+   "fair_american": 103,
+   "break_even": null,
+   "prob": {
+    "model": 0.4773,
+    "push": 0.0319,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4773,
+    "sd": 0.0354,
+    "conservative": 0.432,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 129,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +129 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 1.2 (home), total 157.9",
     "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -5695,16 +9103,16 @@
    },
    "label": "Atlanta Dream @ Golden State Valkyries — Atlanta Dream moneyline",
    "quote": null,
-   "fair_american": 115,
+   "fair_american": 111,
    "break_even": null,
    "prob": {
-    "model": 0.4656,
+    "model": 0.4735,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4656,
+    "posterior": 0.4735,
     "sd": 0.0354,
-    "conservative": 0.4203,
+    "conservative": 0.4282,
     "components": {
      "model_sd": 0.025,
      "calibration_sd": 0.015,
@@ -5714,7 +9122,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 143,
+   "min_acceptable_american": 138,
    "disagreement": null,
    "gates": [
     {
@@ -5727,13 +9135,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +143 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +138 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "projected margin 1.4 (home), total 158.1",
+    "projected margin 1.2 (home), total 157.9",
     "model points+bb_cal_v2_home_intercept (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -5934,13 +9342,13 @@
    "label": "NBA",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 102,
+   "candidates": 126,
    "priced": 0,
-   "note": "102 fair prices in the window; no book price is captured for this sport",
+   "note": "126 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
-     "detail": "24511 games (2008-2027), retrospective"
+     "detail": "24514 games (2008-2027), retrospective"
     },
     "model_trained": {
      "done": true,
@@ -5976,7 +9384,7 @@
    "ladder": {
     "data_loaded": {
      "done": true,
-     "detail": "4500 games (2008-2026), retrospective"
+     "detail": "4501 games (2008-2026), retrospective"
     },
     "model_trained": {
      "done": true,
@@ -6006,9 +9414,9 @@
    "label": "Men's college basketball",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 0,
+   "candidates": 252,
    "priced": 0,
-   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "note": "252 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -6042,9 +9450,9 @@
    "label": "Women's college basketball",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 0,
+   "candidates": 246,
    "priced": 0,
-   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "note": "246 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -6147,9 +9555,9 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-30T10:27:15.149Z",
+  "registry_generated_at": "2026-10-30T15:57:03.643Z",
   "nhl_slate_generated_at": "2026-10-30T10:27:09.912Z",
-  "basketball_slate_generated_at": "2026-10-29T16:08:25.982Z",
+  "basketball_slate_generated_at": "2026-10-30T15:57:02.697Z",
   "nhl_quotes": {
    "status": "DISABLED",
    "generated_at": "2026-10-30T10:27:09.868Z",
@@ -6159,8 +9567,8 @@
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 474,
-  "research_kept": 78,
+  "research_total": 996,
+  "research_kept": 126,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
 }

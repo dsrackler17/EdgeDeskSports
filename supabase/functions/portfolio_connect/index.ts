@@ -48,10 +48,10 @@
 //                                     — must EXACTLY match the redirect URI
 //                                     registered on the Juice Reel application
 //    (and the PORTFOLIO_CREDENTIAL_KEYS keyring above: tokens are sealed)
-//  Even switched on, readers see "Awaiting provider approval" until the
-//  registry row 'juicereel' is switched on (Juice Reel's approval of the
-//  application, a PASSED PRODUCTION smoke test and a cleared terms review);
-//  until then only an operator running that smoke test can link. A reader's
+//  Even switched on, readers see "Not open yet" until the registry row
+//  'juicereel' is switched on (a PASSED PRODUCTION smoke test and a
+//  cleared terms review) or a PRODUCTION live test is running; while one
+//  runs, every signed-in reader can link under it. A reader's
 //  existing connection can always be disconnected — and revoked at Juice
 //  Reel — whatever the switch says.
 //
@@ -127,7 +127,16 @@
 //   POST {action:'jr_disconnect', delete_history}    (signed in) delete the
 //        sealed pair, revoke it at Juice Reel, stop syncing; keep or delete
 //        the synced history
-//   POST {action:'jr_check'}                         (an operator, or the
+//   POST {action:'jr_matches'}                       (signed in) the reader's
+//        synced bets HELD for review — each resembles a bet they recorded or
+//        imported themselves, and none is counted until they decide — with
+//        the records of theirs it resembles
+//   POST {action:'jr_match_resolve', match_id, decision: MERGE | SEPARATE,
+//        position_id?} or {decision: MERGE_EXACT}   (signed in, their own)
+//        "the same bet as this one of mine" (their record takes the synced
+//        id; notes and journal kept), "a different bet" (stored as its own),
+//        or every exact match at once
+//   POST {action:'jr_check'}                        (an operator, or the
 //        service role: .github/workflows/juicereel-setup.yml) does Juice Reel
 //        accept EdgeDesk's client id and secret? A revoke of a random token
 //        EdgeDesk made (the token endpoint's client authentication; it
@@ -140,7 +149,7 @@
 //   GET                                              health: build and what is
 //        configured, never a value (juicereel.missing names what is not set)
 
-const BUILD = 'portfolio_connect-2026-10-22-jr3';
+const BUILD = 'portfolio_connect-2026-10-30-jr5';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -405,7 +414,7 @@ function sharpsportsConfig(env) {
     NOT_CONFIGURED: 'Sportsbook linking is not configured on this server yet.',
     ENV_MISMATCH: 'This account was linked in a different SharpSports environment (test or live) from the one this server reads, so it is not synced here.',
     /* Juice Reel (OAuth 2.0) */
-    JR_AWAITING_APPROVAL: 'Connecting Juice Reel is not open yet: EdgeDesk\'s Juice Reel application is awaiting Juice Reel\'s approval. Import a file or record bets by hand meanwhile.',
+    JR_AWAITING_APPROVAL: 'Connecting Juice Reel is not open yet: it opens with EdgeDesk\'s live test of the connection. Import a file or record bets by hand meanwhile.',
     JR_STATE_INVALID: 'This Juice Reel sign-in could not be matched to one started here (it expired after 15 minutes, was already used, or was started from another EdgeDesk account). '
       + 'Nothing was connected; start again from Portfolio → Accounts.',
     JR_CONSENT_DENIED: 'You did not authorize EdgeDesk on Juice Reel, so nothing was connected.',
@@ -1373,13 +1382,13 @@ function sharpsportsConfig(env) {
     logSafe(ctx, 'sharpsports.refresh', { env: cfg.env, by: by, status: r.status });
     return { status: ok ? 'ACCEPTED' : 'REFUSED', code: code, otp_url: otp };
   }
-  async function ingestWagerChunks(ctx, accountId, runId, payload) {
-    var tot = { positions_inserted: 0, positions_updated: 0, positions_unchanged: 0, positions_settled: 0, positions_adopted: 0, rejected: 0,
+  async function ingestWagerChunks(ctx, accountId, runId, payload, fn) {
+    var tot = { positions_inserted: 0, positions_updated: 0, positions_unchanged: 0, positions_settled: 0, positions_adopted: 0, positions_review: 0, rejected: 0,
       transactions_inserted: 0, transactions_unchanged: 0, healed: 0 }, issues = [];
     var ps = payload.positions || [];
     for (var i = 0; i < Math.max(1, ps.length); i += 200) {
       var chunk = { version: VERSION, positions: ps.slice(i, i + 200), issues: i === 0 ? (payload.issues || []).slice(0, 200) : [], fetched: i === 0 ? payload.fetched || 0 : 0 };
-      var r = await ctx.rpc('portfolio_svc_ingest_wagers', { p_account: accountId, p_run: runId, p_payload: chunk }) || {};
+      var r = await ctx.rpc(fn || 'portfolio_svc_ingest_wagers', { p_account: accountId, p_run: runId, p_payload: chunk }) || {};
       Object.keys(tot).forEach(function (k) { tot[k] += +r[k] || 0; });
       /* the database returns the payload's own issues with any it added */
       (r.issues || []).forEach(function (x) { if (x && issues.length < 200) issues.push(x); });
@@ -1926,7 +1935,7 @@ function sharpsportsConfig(env) {
      listed. The same bet twice in one read keeps its newest version. */
   function juicereelNormalize(bets, o) {
     o = o || {};
-    var books = {}, order = [], issues = [], skipped = 0, stats = { rounded: 0, closed_before_placed: 0, live_legs: 0, adjusted_risk: 0 }, maxUpdated = null;
+    var books = {}, order = [], issues = [], skipped = 0, stats = { rounded: 0, closed_before_placed: 0, live_legs: 0, adjusted_risk: 0, adjusted_odds: 0 }, maxUpdated = null;
     var latest = {}, list = [];
     (bets || []).forEach(function (b, idx) {
       if (!b || typeof b !== 'object') { list.push({ bad: '#' + idx }); return; }
@@ -1985,6 +1994,12 @@ function sharpsportsConfig(env) {
       }
       var adj = jrMicro(b.adjustedRisk);
       if (adj != null && adj !== risk) { stats.adjusted_risk++; if (bk.issues.length < 200) bk.issues.push(bad('ADJUSTED_RISK', ref, 'This bet\'s risk was adjusted in Juice Reel; EdgeDesk stored the amount risked as reported. Check it against your book.')); }
+      /* odds or a line the user corrected in Juice Reel: stored exactly as Juice Reel reports them now, and said so */
+      if (b.isAdjustedOdds === true || b.isAdjustedLine === true) {
+        stats.adjusted_odds++;
+        var what = b.isAdjustedOdds === true && b.isAdjustedLine === true ? 'odds and line were' : b.isAdjustedOdds === true ? 'odds were' : 'line was';
+        if (bk.issues.length < 200) bk.issues.push(bad('ADJUSTED_ODDS', ref, 'This bet\'s ' + what + ' adjusted in Juice Reel; EdgeDesk stored the bet as Juice Reel reports it now. Check it against your book.'));
+      }
       var legs = (Array.isArray(b.Subbets) ? b.Subbets : []).map(jrLeg);
       legs.forEach(function (l) { if (l.live) stats.live_legs++; });
       var tn = jrWord(b.BetType && b.BetType.typeName);
@@ -2063,9 +2078,12 @@ function sharpsportsConfig(env) {
      or upgraded in place), bets moved here from another book first (one
      whose sportsbook was edited in Juice Reel), then the wager ingest under a
      run of that account — the same ingest and settlement history as every
-     other synced sportsbook */
+     other synced sportsbook, through portfolio_svc_jr_ingest: a bet that
+     resembles one the reader recorded or imported themselves is HELD for
+     their review instead of stored (never counted twice, never merged
+     unasked) */
   async function jrIngest(ctx, grant, normal, kind) {
-    var tot = { positions_inserted: 0, positions_updated: 0, positions_unchanged: 0, positions_settled: 0, positions_adopted: 0, rejected: 0,
+    var tot = { positions_inserted: 0, positions_updated: 0, positions_unchanged: 0, positions_settled: 0, positions_adopted: 0, positions_review: 0, rejected: 0,
       transactions_inserted: 0, transactions_unchanged: 0, healed: 0 }, issues = [], books = [], busy = [];
     for (var i = 0; i < normal.books.length; i++) {
       var b = normal.books[i];
@@ -2079,7 +2097,7 @@ function sharpsportsConfig(env) {
       var runId = await ctx.rpc('portfolio_svc_run_begin', { p_account: acct.account_id, p_kind: kind });
       if (!runId) { busy.push(b.platform); issues.push(bad('BOOK_BUSY', b.platform, 'Another sync of this book was running; its bets are read again next time.')); continue; }
       var r;
-      try { r = await ingestWagerChunks(ctx, acct.account_id, runId, { positions: b.positions, issues: b.issues, fetched: b.positions.length + b.skipped }); }
+      try { r = await ingestWagerChunks(ctx, acct.account_id, runId, { positions: b.positions, issues: b.issues, fetched: b.positions.length + b.skipped }, 'portfolio_svc_jr_ingest'); }
       catch (e) {
         await ctx.rpc('portfolio_svc_run_finish', { p_run: runId, p_status: 'FAILED', p_error_code: 'UNKNOWN', p_error_message: ERRORS.UNKNOWN, p_cursor: null, p_reconcile: null });
         throw e;
@@ -2090,7 +2108,7 @@ function sharpsportsConfig(env) {
       Object.keys(tot).forEach(function (k) { tot[k] += +r.totals[k] || 0; });
       r.issues.forEach(function (x) { if (issues.length < 200) issues.push(x); });
       books.push({ account_id: acct.account_id, platform: b.platform, label: b.label, created: !!acct.created, status: st, inserted: r.totals.positions_inserted,
-        updated: r.totals.positions_updated, settled: r.totals.positions_settled });
+        updated: r.totals.positions_updated, settled: r.totals.positions_settled, held: r.totals.positions_review });
     }
     return { totals: tot, issues: issues, books: books, busy: busy };
   }
@@ -2297,7 +2315,7 @@ function sharpsportsConfig(env) {
     if (!g) return null;
     var out = {};
     ['status', 'display_name', 'scopes', 'connected_at', 'last_sync_at', 'last_success_at', 'next_sync_at', 'last_error_code', 'last_error',
-      'consecutive_failures', 'syncing', 'imported', 'issues', 'revoked_at', 'books', 'open_bets'].forEach(function (k) { if (g[k] !== undefined) out[k] = g[k]; });
+      'consecutive_failures', 'syncing', 'imported', 'issues', 'revoked_at', 'books', 'open_bets', 'bets', 'platforms', 'review', 'review_exact'].forEach(function (k) { if (g[k] !== undefined) out[k] = g[k]; });
     if (o && o.operator && g.smoke_test) out.smoke_test = g.smoke_test;
     return out;
   }
@@ -2751,12 +2769,14 @@ async function jrGate(c, user, smokeTest) {
   if (!jrConfigured(c)) return { ok: false, status: 503, reason: 'not_configured', operator, approval,
     message: K.ERRORS.NOT_CONFIGURED + (operator ? ' Operators: not set in Supabase — ' + jrMissing(c).join(', ') + ' (Actions → Juice Reel setup).' : '') };
   if (reg.automatic_enabled) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: null };
-  if (operator) {
-    let smoke = UUID_RE.test(String(smokeTest || '')) ? smokeTest : null;
-    if (!smoke) { try { smoke = await serviceRpc(c)('portfolio_svc_jr_smoke_current', { p_env: c.juicereel.env }); } catch (_) { smoke = null; } }
-    if (UUID_RE.test(String(smoke || ''))) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: smoke };
-    return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL + ' Operators: start the live smoke test (Actions → Juice Reel setup → start_live_test, or tools/portfolio/juicereel_smoke.js begin) to connect under it.', operator, approval };
-  }
+  /* While the PRODUCTION live test runs, every signed-in reader may link
+     under it (the database admits such grants only while it runs:
+     portfolio_svc_ag_allowed). An operator may name the test; a reader is
+     given the running one, never one they name. */
+  let smoke = operator && UUID_RE.test(String(smokeTest || '')) ? smokeTest : null;
+  if (!smoke) { try { smoke = await serviceRpc(c)('portfolio_svc_jr_smoke_current', { p_env: c.juicereel.env }); } catch (_) { smoke = null; } }
+  if (UUID_RE.test(String(smoke || ''))) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: smoke };
+  if (operator) return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL + ' Operators: start the live smoke test (Actions → Juice Reel setup → start_live_test, or tools/portfolio/juicereel_smoke.js begin) to connect under it.', operator, approval };
   return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL, operator, approval };
 }
 async function jrGrantState(c, user) {
@@ -2880,7 +2900,44 @@ async function jrSync(c, user, body) {
   /* cut short (a 429, a 5xx): what was read is stored, but the reader is told it did not finish */
   return json({ ok: r.status !== 'FAILED' && !r.error, status: r.status, complete: r.complete !== false, totals: r.totals || null, books: r.books || [], error: r.error || null,
     message: r.error ? r.error.message : 'Synced from Juice Reel: ' + (+t.positions_inserted || 0) + ' new, ' + (+t.positions_updated || 0) + ' updated'
-      + (+t.positions_settled ? ', ' + t.positions_settled + ' settled' : '') + '.' });
+      + (+t.positions_settled ? ', ' + t.positions_settled + ' settled' : '') + (+t.positions_review ? ', ' + t.positions_review + ' held for your review' : '') + '.' });
+}
+/* THE HELD BETS: a synced bet that resembles one the reader recorded or
+   imported themselves waits for them, uncounted (portfolio_juicereel.sql
+   2b). Their own rows only, chosen by their verified id — never by the body.
+   Deciding needs no Juice Reel connection: it is the reader's own data. */
+async function jrMatches(c, user) {
+  let out = null;
+  try { out = await serviceRpc(c)('portfolio_svc_jr_matches', { p_user: user.id, p_limit: 100 }); }
+  catch (e) {
+    logLine('warn', 'juicereel.matches_failed', { status: (e && e.status) || null });
+    return json({ ok: false, reason: 'failed', message: 'Your held Juice Reel bets could not be read just now. Nothing was changed.' }, 500);
+  }
+  return json(Object.assign({ ok: true, pending: 0, exact: 0, matches: [] }, out || {}));
+}
+async function jrMatchResolve(c, user, body) {
+  const decision = String(body.decision || '');
+  if (['MERGE', 'SEPARATE', 'MERGE_EXACT'].indexOf(decision) < 0) return json({ ok: false, reason: 'bad_decision', message: 'Choose "the same bet" or "a different bet".' }, 400);
+  if (decision !== 'MERGE_EXACT' && !UUID_RE.test(String(body.match_id || ''))) return json({ ok: false, reason: 'not_found', message: 'That held bet was not found. Nothing was changed.' }, 404);
+  if (decision === 'MERGE' && !UUID_RE.test(String(body.position_id || ''))) return json({ ok: false, reason: 'refused', message: 'Choose which of your bets it is.' }, 400);
+  let out;
+  try {
+    out = await serviceRpc(c)('portfolio_svc_jr_match_resolve', { p_user: user.id, p_match: decision === 'MERGE_EXACT' ? null : body.match_id, p_decision: decision,
+      p_position: decision === 'MERGE' ? body.position_id : null });
+  } catch (e) {
+    let pg = { code: '', message: '' };
+    try { pg = Object.assign(pg, JSON.parse((e && e.body) || '{}')); } catch (_) { /* not PostgREST's shape */ }
+    if (pg.code === 'P0002') return json({ ok: false, reason: 'not_found', message: 'That bet is no longer there. Nothing was changed.' }, 404);
+    if (pg.code === '55000') return json({ ok: false, reason: 'decided', message: 'That synced bet was already decided, or your bet is already linked to another synced bet. Nothing was changed.' }, 409);
+    if (pg.code === '22023' && /not one of the bets/.test(String(pg.message))) return json({ ok: false, reason: 'refused', message: 'That is not one of the bets this synced bet resembles. Nothing was changed.' }, 400);
+    logLine('warn', 'juicereel.match_failed', { decision, code: String(pg.code).slice(0, 8) });
+    return json({ ok: false, reason: 'failed', message: 'That could not be applied. Nothing was changed.' }, 500);
+  }
+  const merged = +(out && out.merged) || 0, separate = +(out && out.separate) || 0;
+  logLine('info', 'juicereel.match', { decision, merged, separate });
+  return json({ ok: true, merged, separate, message: decision === 'SEPARATE' ? 'Added as its own bet.'
+    : merged ? (merged === 1 ? 'Merged: one bet, your notes kept.' : 'Merged ' + merged + ' exact matches: one bet each, your notes kept.')
+    : 'No exact match was left to merge; decide the rest one by one.' });
 }
 /* the seam's discover (sb_discover): Juice Reel names a reader's books on their bets, so this is a sync that answers the books */
 async function jrDiscover(c, user, body) {
@@ -2977,6 +3034,8 @@ async function handle(req) {
     if (body.action === 'jr_callback') return await jrCallback(c, user, body);
     if (body.action === 'jr_sync') return await jrSync(c, user, body);
     if (body.action === 'jr_disconnect') return await jrDisconnect(c, user, body);
+    if (body.action === 'jr_matches') return await jrMatches(c, user);
+    if (body.action === 'jr_match_resolve') return await jrMatchResolve(c, user, body);
     return json({ ok: false, reason: 'unknown_action' }, 400);
   } catch (e) {
     logLine('error', 'failed', { action: body.action || null, error: String((e && e.message) || e).slice(0, 200) });

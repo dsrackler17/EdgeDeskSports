@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Novig research console</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE NOVIG RESEARCH CONSOLE (supabase/novig_market_data.sql,
+     supabase/functions/novig_sync; docs/novig/README.md).
+
+     The operator's view of the integration, from LOCAL records only — this
+     page never calls Novig or The Odds API. Every read is a database
+     function or view under the operator's own token; the database decides
+     (public.novig_is_operator()).
+
+       readiness   last runs, halts, freshness, stale share, auth/geolocation
+                   and rate-limit alerts, snapshot growth (bytes), public
+                   display state — public.novig_readiness
+       research    "Is Novig consistently better?" — simultaneous pregame
+                   pairs only, by sport and market: Novig better / DraftKings
+                   better / ties with Wilson 95% intervals, the gap's median
+                   and quartiles, the $100 payout difference, partial-fill and
+                   no-liquidity rates, and the coverage that bounds all of it
+                   (exclusions counted, unmatched markets by reason) —
+                   public.novig_price_gap_summary()
+       queue       unmapped Novig markets by reason — public.novig_unmapped
+       switches    public display and its log — public.novig_config(_log).
+                   Changing it is NOT a button: it is a reviewed SQL change
+                   once Novig's written permission is on record.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}.who{font-size:11px;color:var(--dim)}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;overflow-x:auto}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);vertical-align:top}
+th{color:var(--dim);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.k div{background:var(--surface2);border-radius:10px;padding:10px}.k b{display:block;font-size:18px}.k small{color:var(--dim);font-size:11px}
+.ok{color:var(--pos)}.warn{color:var(--warn)}.err{color:var(--neg)}
+.note{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
+.msg{font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">Novig · operator</span><span class="sp"></span><span class="who" id="who"></span></div></header>
+<div class="wrap">
+  <div id="gate" class="card" style="margin-top:20px;max-width:420px">
+    <div class="row" style="flex-direction:column;align-items:stretch">
+      <label>Operator email<input id="gEmail" type="email" autocomplete="username"></label>
+      <label>Password<input id="gPass" type="password" autocomplete="current-password"></label>
+      <button id="gGo">Sign in</button><div class="msg" id="gMsg"></div>
+    </div>
+  </div>
+  <div id="app" class="hide">
+    <h2>Readiness</h2><div class="card" id="ready">loading…</div>
+    <h2>Is Novig consistently better? <span class="mono" style="text-transform:none">(simultaneous pregame pairs only)</span></h2>
+    <div class="card">
+      <div class="row"><label>From <input type="date" id="from"></label><label>To <input type="date" id="to"></label><button class="g" id="reload">Reload</button></div>
+      <div id="research" style="margin-top:12px">loading…</div>
+    </div>
+    <h2>Unmapped queue</h2><div class="card" id="queue">loading…</div>
+    <h2>Public display</h2><div class="card" id="display">loading…</div>
+  </div>
+</div>
+<script src="/lib/edgedesk_venue_compare.js?v=20261030nv1"></script>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_novig_admin_session';
+var SESSION = null;
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function tok() { return (SESSION && SESSION.access_token) || SB_KEY; }
+function n(v, d) { var x = Number(v); return v == null || !isFinite(x) ? '—' : x.toFixed(d == null ? 0 : d); }
+function pct(v, d) { return v == null ? '—' : (100 * Number(v)).toFixed(d == null ? 0 : d) + '%'; }
+function ago(v) { if (!v) return '—'; var m = Math.round((Date.now() - Date.parse(v)) / 60000); return m < 60 ? m + ' min ago' : m < 2880 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; }
+function mb(b) { return b == null ? '—' : (Number(b) / 1048576).toFixed(1) + ' MB'; }
+async function api(path, init) {
+  var r = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({}, init, { headers: { apikey: SB_KEY, authorization: 'Bearer ' + tok(), 'content-type': 'application/json' } }));
+  var t = await r.text(); if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 200)); return t ? JSON.parse(t) : null;
+}
+function rpc(fn, body) { return api('rpc/' + fn, { method: 'POST', body: JSON.stringify(body || {}) }); }
+
+function renderReady(r) {
+  if (!r) { $('ready').innerHTML = '<span class="err">No readiness row: is supabase/novig_market_data.sql applied, and is this account an operator?</span>'; return; }
+  var cls = r.state === 'ok' ? 'ok' : r.state === 'warn' ? 'warn' : 'err';
+  $('ready').innerHTML = '<div class="row"><b class="' + cls + '">' + esc(String(r.state).toUpperCase()) + '</b><span>' + esc(r.state_reason || 'all checks pass') + '</span></div>'
+    + '<div class="k" style="margin-top:10px">'
+    + [['Environment', r.environment || '—'], ['Public display', r.public_display], ['Last snapshot run', ago(r.last_snapshot_run_at) + ' · ' + (r.last_snapshot_run_status || '—')], ['Last discover', ago(r.last_discover_at)],
+       ['Last probe', ago(r.last_probe_at) + ' · ' + (r.last_probe_status || '—')], ['Clock offset', r.clock_offset_ms == null ? '—' : n(r.clock_offset_ms) + ' ms'], ['Halted until', r.halted_until ? r.halted_until + ' (' + (r.halt_reason || '') + ')' : 'not halted'],
+       ['Links active (high)', n(r.links_active) + ' (' + n(r.links_high) + ')'], ['Unmapped open (soon)', n(r.unmapped_open) + ' (' + n(r.unmapped_starting_soon) + ')'],
+       ['Linked next 48 h · fresh', n(r.linked_markets_next_48h) + ' · ' + n(r.linked_markets_fresh)], ['Stale share', r.stale_pct == null ? '—' : r.stale_pct + '%'],
+       ['Snapshot rows 24 h', n(r.snapshot_rows_24h)], ['Storage', mb(r.snapshots_bytes) + ' + depth ' + mb(r.depth_bytes)],
+       ['Alerts 24 h', 'F ' + n(r.failures_24h) + ' · D ' + n(r.degraded_24h) + ' · drift ' + n(r.drift_24h) + ' · W ' + n(r.warnings_24h)],
+       ['Auth / geo / 429 (24 h)', n(r.auth_failures_24h) + ' / ' + n(r.geolocation_24h) + ' / ' + n(r.rate_limited_24h)], ['Stream events 24 h', n(r.stream_events_24h)]]
+      .map(function (x) { return '<div><small>' + esc(x[0]) + '</small><b>' + esc(x[1]) + '</b></div>'; }).join('') + '</div>'
+    + (r.last_probe_auth ? '<div class="note">Last probe: echo ' + esc(r.last_probe_auth.echo) + ' · scope ' + esc(r.last_probe_auth.scope) + ' · geolocation ' + esc(JSON.stringify(r.last_probe_auth.geolocation)) + ' · exchange ' + esc(JSON.stringify(r.last_probe_auth.exchange)) + '</div>' : '');
+}
+function renderResearch(s) {
+  if (!s || s.access === 'none') { $('research').innerHTML = '<span class="err">Not readable by this account.</span>'; return; }
+  var W = window.EDVENUE ? window.EDVENUE.wilson : null;
+  var g = s.groups || [];
+  var head = '<table><thead><tr><th>Sport</th><th>Market</th><th class="n">Pairs</th><th class="n">Events</th><th class="n">Novig better</th><th class="n">DraftKings better</th><th class="n">Ties</th><th class="n">Median gap</th><th class="n">IQR</th><th class="n">Median $100 diff</th><th class="n">$100 partial / none</th><th>Window</th></tr></thead><tbody>';
+  var rows = g.map(function (x) {
+    var nb = W ? W(x.novig_better, x.pairs) : null, db = W ? W(x.dk_better, x.pairs) : null;
+    return '<tr><td>' + esc(x.sport) + '</td><td>' + esc(x.book_market) + '</td><td class="n">' + n(x.pairs) + '</td><td class="n">' + n(x.events) + '</td>'
+      + '<td class="n">' + n(x.novig_better) + (nb ? ' · ' + pct(nb.p) + ' [' + pct(nb.low) + '–' + pct(nb.high) + ']' : '') + '</td>'
+      + '<td class="n">' + n(x.dk_better) + (db ? ' · ' + pct(db.p) + ' [' + pct(db.low) + '–' + pct(db.high) + ']' : '') + '</td><td class="n">' + n(x.ties) + '</td>'
+      + '<td class="n">' + n(x.median_gap_pp, 2) + ' pp</td><td class="n">' + n(x.p25_gap_pp, 2) + ' to ' + n(x.p75_gap_pp, 2) + '</td><td class="n">' + (x.median_payout_diff_100 == null ? '—' : '$' + n(x.median_payout_diff_100, 2)) + '</td>'
+      + '<td class="n">' + n(x.partial_100) + ' / ' + n(x.no_liquidity_100) + '</td><td>' + esc(String(x.first_at || '').slice(0, 10)) + ' → ' + esc(String(x.last_at || '').slice(0, 10)) + '</td></tr>';
+  }).join('');
+  var c = s.coverage || {};
+  $('research').innerHTML = (g.length ? head + rows + '</tbody></table>' : '<p class="note">No simultaneous pregame pairs in this window. Nothing can be said about whether Novig is better — that is the answer until data accumulates.</p>')
+    + '<div class="note"><b>Definition.</b> ' + esc(s.definition) + ' Brackets are Wilson 95% intervals. A share is only as good as its sample: read the pair counts first.</div>'
+    + '<div class="note"><b>Coverage and selection.</b> Pregame Novig outcome-snapshots ' + n(c.snapshots_pregame) + ' (with an ask ' + n(c.snapshots_with_ask) + '); simultaneous pairs ' + n(c.pairs_simultaneous)
+    + '; excluded for no simultaneous DraftKings price ' + n(c.excluded_no_simultaneous_dk) + '; active links ' + n(c.links_active) + '; unmatched markets ' + n(c.unmapped_open) + ' ' + esc(JSON.stringify(c.unmapped_by_reason || {}))
+    + '. Only markets BOTH venues list, at the same line, while both quotes were current, are compared — markets Novig does not list or has no liquidity in are not in these rates.</div>';
+}
+async function load() {
+  try { var r = await api('novig_readiness?select=*'); renderReady(r && r[0]); } catch (e) { $('ready').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+  try { renderResearch(await rpc('novig_price_gap_summary', { p_from: $('from').value ? new Date($('from').value).toISOString() : null, p_to: $('to').value ? new Date($('to').value + 'T23:59:59Z').toISOString() : null })); }
+  catch (e) { $('research').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+  try {
+    var q = await api('novig_unmapped?select=reason,novig_event_id,market_id,seen_count,starts_at,last_seen_at,detail&resolved_at=is.null&order=starts_at.asc&limit=200');
+    var by = {}; (q || []).forEach(function (x) { by[x.reason] = (by[x.reason] || 0) + 1; });
+    $('queue').innerHTML = '<div class="note">' + esc(Object.keys(by).map(function (k) { return k + ' ' + by[k]; }).join(' · ') || 'empty') + '</div><table><thead><tr><th>Reason</th><th>Event</th><th>Market</th><th class="n">Seen</th><th>Starts</th><th>Detail</th></tr></thead><tbody>'
+      + (q || []).slice(0, 60).map(function (x) { return '<tr><td>' + esc(x.reason) + '</td><td class="mono">' + esc(String(x.novig_event_id).slice(0, 8)) + '</td><td class="mono">' + esc(String(x.market_id).slice(0, 8)) + '</td><td class="n">' + n(x.seen_count) + '</td><td>' + esc(String(x.starts_at || '').slice(0, 16)) + '</td><td>' + esc(JSON.stringify(x.detail || {}).slice(0, 160)) + '</td></tr>'; }).join('') + '</tbody></table>';
+  } catch (e) { $('queue').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+  try {
+    var cfg = await api('novig_config?select=key,value,note,updated_at'), log = await api('novig_config_log?select=key,old_value,new_value,note,changed_by,changed_at&order=changed_at.desc&limit=20');
+    $('display').innerHTML = (cfg || []).map(function (x) { return '<p><b>' + esc(x.key) + '</b> = <span class="mono">' + esc(x.value) + '</span> · ' + esc(x.note || '') + '</p>'; }).join('')
+      + '<div class="note">Turning public display on is a reviewed change, not a button: record Novig\'s written permission (docs/novig/README.md §Data rights), then run <span class="mono">update public.novig_config set value = \'on\', note = \'&lt;who, when, permission reference&gt;\' where key = \'public_display\';</span> AND ship NOVIG_PUBLIC_DISPLAY_ENABLED = true in lib/edgedesk_market_compare_ui.js.</div>'
+      + '<table style="margin-top:8px"><thead><tr><th>When</th><th>Key</th><th>Change</th><th>By</th><th>Note</th></tr></thead><tbody>' + (log || []).map(function (x) { return '<tr><td>' + esc(String(x.changed_at).slice(0, 16)) + '</td><td>' + esc(x.key) + '</td><td>' + esc((x.old_value || '∅') + ' → ' + x.new_value) + '</td><td>' + esc(x.changed_by) + '</td><td>' + esc(x.note || '') + '</td></tr>'; }).join('') + '</tbody></table>';
+  } catch (e) { $('display').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+}
+async function boot() {
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').textContent = (SESSION && SESSION.user && SESSION.user.email) || '';
+  await load();
+}
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    await boot();
+  } catch (e) { $('gMsg').className = 'msg err'; $('gMsg').textContent = String(e.message || e); }
+};
+$('reload').onclick = load;
+(function () {
+  try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) { SESSION = s; boot(); } } catch (e) {}
+})();
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
--- portfolio_juicereel -- part 1 of 3.
+-- portfolio_juicereel -- part 1 of 4.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -36,6 +36,16 @@
 --                                       served by PostgREST; no client grant;
 --                                       row level security on with no policy.
 --   portfolio_svc_jr_*                  the service role's only door to it.
+--   public.portfolio_sync_matches       synced bets HELD for the reader's
+--                                       review because they resemble a bet
+--                                       the reader recorded or imported
+--                                       themselves (2b). Not positions: never
+--                                       counted until the reader decides.
+--                                       The reader reads their own rows (RLS);
+--                                       only the service role writes.
+--   portfolio_positions_juicereel_once  one position per reader and Juice
+--                                       Reel bet id, whichever book it is filed
+--                                       under.
 --
 -- REFRESH-TOKEN ROTATION IS ATOMIC. Juice Reel's refresh token is single-use,
 -- and sending a consumed one revokes the whole grant. So: a worker takes the
@@ -54,8 +64,9 @@
 -- Run AFTER supabase/portfolio.sql, portfolio_journal.sql, portfolio_connect.sql
 -- and portfolio_aggregator.sql (and, if installed, portfolio_decision.sql —
 -- its "delete everything" then removes the grant as well).
--- Idempotent, additive, ends in a report. No existing table or row is
--- changed except by adding the registry row.
+-- Idempotent, additive, ends in a report. No existing row is changed except
+-- by adding the registry row; portfolio_positions gains one unique index
+-- (made only when its data already satisfies it).
 -- Paste-sized: supabase/parts/portfolio_juicereel.part*-of-*.sql (npm run portfolio:parts).
 -- =============================================================================
 
@@ -133,17 +144,87 @@ create index if not exists oauth_grants_due on portfolio_private.oauth_grants (n
 alter table portfolio_private.oauth_grants enable row level security;
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 2b. BETS HELD FOR THE READER'S REVIEW — never counted twice, never merged unasked
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Juice Reel's bet ids are not the book's, so nothing identifies a synced
+-- bet with one the reader typed, imported from a file, a screenshot or
+-- pasted text. A synced bet that RESEMBLES such a record — the same book, the
+-- stake within a cent, the same price, and placed close to it, or for the
+-- same event (portfolio_svc_jr_candidates says exactly) — is therefore not
+-- stored as a position. It is HELD here, its newest copy kept, until the
+-- reader decides:
+--   the same bet   their record takes the synced id and Juice Reel's figures
+--                  (the shared ingest; its settlement history appended); their
+--                  notes, journal and attribution stay; what the record said
+--                  before is kept on the decision (merged_record);
+--   a different bet  it is stored as its own position.
+-- Until then the reader's own record is the one counted, so P&L, ROI, the
+-- record and every count stay exactly as they were. EXACT marks a look-alike
+-- the automatic adoption used to take (the same stake, price and line, placed
+-- within 15 minutes, one each way), so all of those can be confirmed at once.
+-- A held bet that no longer resembles anything of the reader's when it next
+-- arrives (they deleted their copy) is stored, and the row says the sync
+-- released it.
+create table if not exists public.portfolio_sync_matches (
+  id                   uuid        primary key default gen_random_uuid(),
+  user_id              uuid        not null references auth.users(id) on delete cascade,
+  provider             text        not null,
+  platform_account_id  uuid        not null,
+  platform             text        not null,
+  external_position_id text        not null,
+  wager                jsonb       not null,
+  candidates           uuid[]      not null default '{}',
+  exact                boolean     not null default false,
+  status               text        not null default 'PENDING',
+  resolved_by          text        null,
+  merged_into          uuid        null,
+  merged_record        jsonb       null,
+  received_at          timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  resolved_at          timestamptz null,
+  constraint portfolio_sync_matches_once unique (user_id, provider, external_position_id),
+  constraint portfolio_sync_matches_account_fk foreign key (platform_account_id, user_id)
+    references public.platform_accounts (id, user_id) on delete cascade,
+  constraint portfolio_sync_matches_ids check (provider ~ '^[a-z][a-z0-9_]{1,30}$' and left(external_position_id, length(provider) + 1) = provider || ':'
+    and length(external_position_id) <= 200 and platform ~ '^[a-z0-9][a-z0-9_]{1,47}$'),
+  constraint portfolio_sync_matches_status check (status in ('PENDING', 'MERGED', 'SEPARATE')
+    and (status = 'PENDING') = (resolved_at is null) and (status = 'PENDING') = (resolved_by is null)
+    and (resolved_by is null or resolved_by in ('READER', 'SYNC')) and (status = 'MERGED') = (merged_into is not null)),
+  -- room for any wager the shared ingest accepts (its raw record alone may be 64 KB), so holding one never fails where storing it would not
+  constraint portfolio_sync_matches_shape check (jsonb_typeof(wager) = 'object' and pg_column_size(wager) <= 200000
+    and cardinality(candidates) <= 10 and (merged_record is null or pg_column_size(merged_record) <= 200000))
+);
+create index if not exists portfolio_sync_matches_pending on public.portfolio_sync_matches (user_id, received_at) where status = 'PENDING';
+alter table public.portfolio_sync_matches enable row level security;
+drop policy if exists portfolio_sync_matches_own on public.portfolio_sync_matches;
+create policy portfolio_sync_matches_own on public.portfolio_sync_matches for select to authenticated using (user_id = auth.uid());
+
+-- One position per reader, provider and Juice Reel bet id, whichever book it
+-- is filed under (a bet whose book is edited in Juice Reel moves; it is never
+-- a second row). Made only over data that already satisfies it: otherwise the
+-- report below says CHECK THIS and names nothing it changed.
+do $$ begin
+  if to_regclass('public.portfolio_positions_juicereel_once') is null
+     and not exists (select 1 from public.portfolio_positions where external_position_id like 'juicereel:%'
+                      group by user_id, external_position_id having count(*) > 1) then
+    create unique index portfolio_positions_juicereel_once on public.portfolio_positions (user_id, external_position_id)
+      where external_position_id like 'juicereel:%';
+  end if;
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- 3. THE SERVICE FUNCTIONS (service role only; each asserts its caller)
 -- ─────────────────────────────────────────────────────────────────────────────
 -- The PRODUCTION smoke test of Juice Reel that is running now, if any (the
--- edge function lets an operator link under it while the registry is off).
+-- edge function lets every signed-in reader link under it while the
+-- registry is off). It has no expiry: it runs until it is finished.
 create or replace function public.portfolio_svc_jr_smoke_current(p_env text)
 returns uuid language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
 begin
   perform public.portfolio_svc_assert();
   return (select t.id from portfolio_private.connector_smoke_tests t
            where t.platform_key = 'juicereel' and t.status = 'RUNNING' and t.environment = case p_env when 'production' then 'PRODUCTION' else 'DEMO' end
-             and t.started_at > now() - interval '30 days' order by t.started_at desc limit 1);
+           order by t.started_at desc limit 1);
 end $$;
 
 -- The reader's grant row, made on first use (DISCONNECTED, no tokens) — so a
@@ -161,82 +242,4 @@ begin
   on conflict (provider, environment, user_id) do nothing;
   select id into gid from portfolio_private.oauth_grants where provider = 'juicereel' and environment = p_env and user_id = p_user;
   return gid;
-end $$;
-
--- A completed authorization: the sealed pair, the Juice Reel user it belongs
--- to, the scopes granted. The grant reads CONNECTED only from here — after a
--- real code exchange. A Juice Reel account already connected to another
--- EdgeDesk reader is refused. Reconnecting the same Juice Reel account keeps
--- the checkpoint; another account starts a fresh import.
-create or replace function public.portfolio_svc_jr_grant_store(p_grant uuid, p_provider_user_id text, p_display_name text, p_ciphertext_b64 text,
-    p_nonce_b64 text, p_key_version int, p_access_expires_at timestamptz, p_scopes text[], p_smoke_test uuid default null)
-returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare g record; same boolean;
-begin
-  perform public.portfolio_svc_assert();
-  select * into g from portfolio_private.oauth_grants where id = p_grant for update;
-  if not found then raise exception 'portfolio: no such grant' using errcode = 'P0002'; end if;
-  if not public.portfolio_svc_ag_allowed(g.provider, g.environment, p_smoke_test) then
-    raise exception 'portfolio: automatic connection through % is not enabled', g.provider using errcode = '42501';
-  end if;
-  if coalesce(p_provider_user_id, '') !~ '^[0-9]{1,18}$' then raise exception 'portfolio: a Juice Reel user id is required' using errcode = '22023'; end if;
-  if nullif(p_ciphertext_b64, '') is null or nullif(p_nonce_b64, '') is null or p_key_version is null or p_access_expires_at is null then
-    raise exception 'portfolio: a sealed token pair is required' using errcode = '22023';
-  end if;
-  if exists (select 1 from portfolio_private.oauth_grants o where o.provider = g.provider and o.environment = g.environment
-              and o.provider_user_id = p_provider_user_id and o.user_id <> g.user_id and o.status <> 'DISCONNECTED') then
-    raise exception 'portfolio: JR_ACCOUNT_IN_USE — that Juice Reel account is connected to another EdgeDesk account' using errcode = '23505';
-  end if;
-  same := g.provider_user_id is not distinct from p_provider_user_id;
-  update portfolio_private.oauth_grants set provider_user_id = p_provider_user_id, display_name = left(nullif(btrim(p_display_name), ''), 60),
-         scopes = p_scopes, ciphertext = decode(p_ciphertext_b64, 'base64'), nonce = decode(p_nonce_b64, 'base64'), key_version = p_key_version,
-         access_expires_at = p_access_expires_at, token_generation = token_generation + 1, refresh_lease = null, refresh_lease_until = null,
-         sync_lease = null, sync_lease_until = null, sync_cursor = case when same then sync_cursor end, smoke_test = p_smoke_test,
-         status = 'CONNECTED', last_error = null, last_error_code = null, consecutive_failures = 0, last_issues = '[]'::jsonb,
-         next_sync_at = now(), connected_at = now(), rotated_at = now(), revoked_at = null, updated_at = now()
-   where id = p_grant;
-  return jsonb_build_object('grant_id', p_grant, 'reconnected', g.connected_at is not null, 'same_account', same);
-end $$;
-
--- The sealed pair, for the edge function to open in memory (with what it
--- needs to decide whether to refresh). Never readable by any client role.
-create or replace function public.portfolio_svc_jr_grant_tokens(p_grant uuid)
-returns table (user_id uuid, status text, provider_user_id text, ciphertext_b64 text, nonce_b64 text, key_version int, access_expires_at timestamptz, generation bigint)
-language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-begin
-  perform public.portfolio_svc_assert();
-  return query select g.user_id, g.status, g.provider_user_id, encode(g.ciphertext, 'base64'), encode(g.nonce, 'base64'), g.key_version, g.access_expires_at,
-         g.token_generation from portfolio_private.oauth_grants g where g.id = p_grant;
-end $$;
-
--- THE REFRESH LEASE: for the generation the caller read, if nobody holds an
--- unexpired lease. Null: someone else is refreshing, or already has.
-create or replace function public.portfolio_svc_jr_refresh_lease(p_grant uuid, p_generation bigint, p_seconds int default 60)
-returns uuid language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare l uuid;
-begin
-  perform public.portfolio_svc_assert();
-  update portfolio_private.oauth_grants set refresh_lease = gen_random_uuid(),
-         refresh_lease_until = now() + make_interval(secs => greatest(10, least(coalesce(p_seconds, 60), 120))), updated_at = now()
-   where id = p_grant and token_generation = p_generation and ciphertext is not null and status <> 'DISCONNECTED'
-     and (refresh_lease is null or refresh_lease_until < now())
-  returning refresh_lease into l;
-  return l;
-end $$;
-
--- THE ROTATION: the new pair replaces the old in one statement — only for the
--- lease holder (its lease id is unchanged even if the lease time ran out, as
--- no one else has taken it), only from the generation it refreshed, never on
--- a grant disconnected meanwhile. false: not stored (the caller revokes it).
-create or replace function public.portfolio_svc_jr_rotate(p_grant uuid, p_lease uuid, p_generation bigint, p_ciphertext_b64 text, p_nonce_b64 text,
-    p_key_version int, p_access_expires_at timestamptz, p_scopes text[] default null)
-returns boolean language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-begin
-  perform public.portfolio_svc_assert();
-  if nullif(p_ciphertext_b64, '') is null or nullif(p_nonce_b64, '') is null or p_key_version is null then return false; end if;
-  update portfolio_private.oauth_grants set ciphertext = decode(p_ciphertext_b64, 'base64'), nonce = decode(p_nonce_b64, 'base64'), key_version = p_key_version,
-         access_expires_at = p_access_expires_at, scopes = coalesce(p_scopes, scopes), token_generation = token_generation + 1,
-         refresh_lease = null, refresh_lease_until = null, rotated_at = now(), updated_at = now()
-   where id = p_grant and refresh_lease = p_lease and token_generation = p_generation and status <> 'DISCONNECTED' and ciphertext is not null;
-  return found;
 end $$;

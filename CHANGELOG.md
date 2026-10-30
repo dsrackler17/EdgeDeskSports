@@ -38,6 +38,129 @@
   - SQL 223 -> 237. On the old registry builder the new checks fail: 142 passed and 2 failed, with H-RADAR-02 not registered. Before `radar_sync_state()` existed, the suite stopped on its first call.
   - UI 84 -> 95. Before the change, 6 of the 7 new checks failed. The seventh, observed activity shown when nobody is featured, already passed.
 
+## 2026-10-30 — Juice Reel: readers can connect while the PRODUCTION live test runs (methodology change)
+
+**What was wrong.** Add a position and Accounts told every reader "EdgeDesk's Juice Reel application is awaiting Juice Reel's approval". That rested on the 2026-10-22 check, when Juice Reel answered 401. Today's check (Actions → Juice Reel setup → `check`, run 41091907710) says: *"Juice Reel accepted EdgeDesk's client id and secret (the application's owner: EdgeDeskSports)."* `start_live_test` (run 41092029965) then started PRODUCTION live test `eab424e0-44c5-4f47-b890-7be64e3d3ce7`.
+
+**The change.**
+- **Who may link (methodology change, the account owner's decision).** `portfolio_connect` admitted only operators under a running PRODUCTION live test. It now admits every signed-in reader under it. A reader cannot name a test: the server uses the running one. The database already admitted any grant under a running PRODUCTION test (`portfolio_svc_ag_allowed`), and is unchanged. When the test is finished, linking and scheduled syncs of those grants stop until the registry row is switched on, which still needs a PASSED ten-stage test and a cleared terms review (`portfolio_registry_guard`, unchanged).
+- **No expiry.** A running PRODUCTION live test of Juice Reel used to lapse after 30 days (`portfolio_svc_ag_allowed`, `portfolio_svc_jr_smoke_current`). It now runs until it is finished. Other connectors' tests keep the 30 days. The 30-day freshness of the PASSED test needed to throw the switch is unchanged.
+- **Wording.** "Awaiting provider approval" / "awaiting Juice Reel's approval" becomes **Not open yet**: Juice Reel opens with EdgeDesk's live test of the connection.
+- `portfolio_connect` build `2026-10-30-jr5`. `app.html` loads the Portfolio page and the connector core at `?v=20261030jr5`.
+
+**Evidence.**
+- `tools/portfolio/juicereel.test.js`: three new checks. A reader under the running live test may connect and is not told the test. They start linking under the running test, whatever id they send. Once the test is over and the switch is off, they can no longer start. On the old gate: 193 passed, 2 failed. On the change: 195/0.
+- The same suite: a live test started 45 days ago and still running still lets a reader connect, and the database still admits its grants. With the 30-day window: 195 passed, 1 failed. Without it: 196/0. `sharpsports.test.js` (which shares `portfolio_svc_ag_allowed`): 97/0.
+- `tools/portfolio/juicereel_ui.e2e.js`: the reader sees Not open yet before the test, then a working Connect once it starts. 34/0.
+
+**Deploy:** after merge, Actions → **Deploy Portfolio schema** with `deploy_function` ticked. It applies the SQL (the window) and deploys the function (the gate). Production still runs build `2026-10-22-jr3`, so the 2026-10-30 jr4 changes ship with it too.
+## 2026-10-30 — Data pushes to `main` carry an "All checks" certificate, so `main` can require All checks of every pull request
+
+**Why.** Nothing stops a pull request from merging while its checks are red or still running. #926, #928 and #930 merged within 11 seconds of their checks starting today, and `main` went red. The fix is one rule on `main`: require `All checks`. That rule also binds the 65 data jobs that push straight to `main` with `GITHUB_TOKEN`, and this account has no bypass that lets them through. GitHub refused the GitHub Actions app as a bypass actor ("invalid actor", 2026-10-27). A Write-role bypass still refused a `GITHUB_TOKEN` push (TEMP bypass probe, run 41092698463, `GH013: Required status check "All checks" is expected`).
+
+**What.** `tools/ci/certified_push.sh` is `git push`, certified first when it updates `main` from GitHub Actions:
+- the commit goes to a `ci-certify/…` side branch;
+- the job's own token posts an `All checks` check run on it, titled "Data publish, not the pull-request gate" and naming the workflow and run;
+- then the push, then the side branch is deleted.
+
+Against a scratch ruleset with no bypass, that push was **accepted** where a plain one was refused (run 41094226276).
+- `push_generated.sh` certifies every attempt, so the commit that lands is the one certified.
+- The 12 workflows with their own `git push` to `main` now call the certifier. Each of these is a one-line swap with the same refspec.
+- The 66 jobs that push to `main` get `checks: write`, in whichever permissions block is in effect for each job.
+- Pushes to any other branch, and the suites' local repositories, are plain `git push`. A certificate that cannot be made never stops the push: it warns.
+- `docs/ci/BRANCH_PROTECTION.md` and `docs/ci/main-ruleset.json` describe the rule: `All checks` required, bypass list empty, no pull-request rule (that rule binds direct pushes too, and no certificate can satisfy it).
+
+**What it is not.** The certificate does what a bypass would. Data commits are no more checked than before. Any workflow with `checks: write` could post an `All checks` success, so the rule stops accidents, not someone faking the check.
+
+**Not yet on.** The rule itself is a repository setting for the owner, after one data push shows the certificate. The steps are in `docs/ci/BRANCH_PROTECTION.md`, "Applying it".
+
+**Tests.** `tools/ci/certified_push.test.js`: 32/0, against a real bare repository with a stand-in check-runs API. With `main`'s old `push_generated.sh` it fails (31/1: no certificate on the commit that landed). With the certificate on the wrong commit it fails 28/4. `tools/ci/push_generated.test.js`: 32/0, unchanged.
+
+## 2026-10-30 — Game research test: the "lower" Kalshi check prices the home side from the model, not at a fixed 70.5
+
+**What broke.** `tools/football/game_research.test.js` §14 put Kalshi's home mid at a fixed 70.5% and required the card to say EdgeDesk is "lower" on the home team. That held only while the first NFL game on the hourly slate had its home side under 70.5%. Once CAR at GB (69.6%) kicked off, the slate's first game became ARI at DAL (76.0%), and the card correctly said "EdgeDesk 5.5 pts higher on DAL". `main` went red with no code change (254 passed, 1 failed), and so did NFL model suites and Game research tests on every pull request that started them (#926, #928).
+
+**The fix.** The fixture was nondeterministic: it depended on the hourly slate. The home quote is now one cent above EdgeDesk's home %, rounded down to the cent (a mid half a point to a point and a half above the model). The assertion is unchanged: the team is the home team and the sentence says "lower" by exactly that gap. On CAR at GB it is the same 0.70/0.71 quote as before. No code changed.
+
+**Evidence.** Today's slate: before 254/1, after 255/0. Yesterday's slate (`84859411`): after 253/0. With each of the 28 NFL games on today's slate forced as the card's game, the "lower" check holds for 28 of 28. The fixed 70.5 held for 20 and failed 8. With "higher" and "lower" swapped in `lib/edgedesk_game_graphic.js`, the check fails.
+## 2026-10-30 — NHL goalie sync: one slow database answer no longer fails a run
+
+- **What failed.** The pg_cron run at 12:10 UTC hit a database request past its 20-second deadline ("Signal timed out."). The function's database helper had no handling for it, unlike the source readers, so the whole run became `sync_error`. Readiness keeps the last check's error until the next due slot (14:00 UTC). So NHL goalie sync failed every time it ran in between: run 23 at 13:18 failed with "readiness: the last check failed: sync error: Signal timed out."
+- **Restored.** A forced run of NHL goalie sync at 13:23 UTC recorded a successful check. Readiness went back to warn (the standing "Confirmed by T-30" KPI), and the job passed (run 24).
+- **Fix** (`supabase/functions/nhl_goalie_sync/index.ts`, build `nhl_goalie_sync@2026-10-30.1`). A read that times out or loses its connection is sent once more. A write is never sent twice: it may have landed, and every table is append-only. An HTTP error from the database is not retried either.
+- **Tests** (`tools/hockey/nhl_goalie_sync.test.js`). The fake network can make a chosen database request throw Deno's `TimeoutError` ("Signal timed out."). Three new checks:
+  - one timed-out read: the run completes with no sync error;
+  - the same read timing out twice: still a named sync error;
+  - a timed-out write: never sent again.
+
+  On the old code: 82 passed, 2 failed, with production's exact error. On the fix: 84/0.
+- **Deploy:** after merge, run Deploy NHL goalie layer with `deploy_function`.
+## 2026-10-30 — Brief wiring test: a `window.fb*` hook defined by a script the page loads counts as defined
+
+**What broke.** `tools/football/brief_wiring.test.js` §2 requires every `window.fb*` that `app.html` reaches for outside the football module to be defined by somebody. It looked for definitions only in `app.html`. Novig (#928) is the first hook defined by a script the page loads: `lib/edgedesk_market_compare_ui.js` puts `fbNovigHTML` on the page's global, and `app.html` names `window.fbNovigHTML` beside that script's tag. Collective suites never ran on #928, so `main` merged with that step red (71 of 72). Every pull request that starts Collective suites inherited the failure.
+
+**The fix.** For a name not defined in `app.html`, the test runs each `/lib/` script the page loads that names it, in a bare global, and counts the name defined only if the script actually puts a function there. A script that only mentions the name does not count. No code changed.
+
+**Evidence.** Before 71 of 72, after 72 of 72. Each of these still fails:
+- page code outside the module reaching for a `window.fbNopeHTML` nobody defines (also with a loaded script that only mentions it);
+- the Novig script tag removed from the page;
+- the lib's `root.fbNovigHTML =` assignment removed.
+
+## 2026-10-30 — Novig: DraftKings vs Novig at the price a stake actually gets (built and tested; not deployed)
+
+- **Why.** A line's price is not what it costs. An exchange's best price holds only so much size, a larger stake walks the book, and a sportsbook's margin is inside its price. EdgeDesk now compares the SAME bet at DraftKings and at Novig, at the reader's stake, and says when it cannot.
+- **What.** (`docs/novig/README.md`)
+  - `lib/novig_signing.js`: NOVIG-V3 signing (Ed25519 and P-256 via WebCrypto, no package), 30/30 of Novig's published vectors.
+  - `lib/edgedesk_venue_compare.js`: the executable-price engine in exact integer arithmetic (1¢ contracts, the price grid, per-fill fees half up to $0.00001, VWAP, partial fills), implied probability, hold on complete markets only, no-vig as an estimate, EV only through a model gate, freshness rules shared with SQL.
+  - `lib/novig_market_map.js`: matching to `public.signals` on teams, home/away, kickoff, market type, period, exact line and orientation; anything else queued with its reason.
+  - `supabase/functions/novig_sync` + `supabase/novig_market_data.sql` (+ cron, rollback, migrations): signed REST ingestion, append-only snapshots, links, the comparison against the existing DraftKings tape (`sharp_price_snapshots`), history, a research summary, readiness.
+  - Credentials: a transient bootstrap and `novig-provision.yml` register a `management::read` key from the existing management key (public key only; the private key goes straight to Edge Function secrets).
+  - `lib/novig_stream.js` + `tools/novig/stream_worker.js`: the websocket book channel, off until a persistent host and a `trading::read` key exist.
+  - `lib/edgedesk_market_compare_ui.js` on the NFL/CFB cards (beside Kalshi), `lib/edgedesk_compare_cards.js` (seven PNG templates), `lib/edgedesk_lead_lag.js`, `admin/novig/`.
+- **Gates.** Public display is OFF in the database (`novig_config.public_display`) and in code (`NOVIG_PUBLIC_DISPLAY_ENABLED = false`) until Novig's written permission is on record; until then only operators see Novig prices, and graphics are watermarked internal. Ingestion is off until `NOVIG_INGEST_ENABLED=true`. No model, ranking, threshold, grade or historical record changed; no order route exists.
+- **Tests.** New suites, all green here: signing 98, venue compare 59, market map 34, novig_sync 44, bootstrap 17, stream 30, SQL 53 (real PostgreSQL), lead-lag 11, UI and graphics 38. `.github/workflows/novig.yml` runs them (category market-odds).
+- **Not verified here.** No deploy, no signed call to Novig and no read of the production database were possible from the build environment (no Supabase or Novig credentials); real Novig prices were read only from Novig's unsigned public catalog for the test fixture.
+
+## 2026-10-30 — Juice Reel: connect from Add a position, and no bet counted twice (look-alikes held for the reader's review)
+
+- **What was already built.** Juice Reel's OAuth 2.0 + PKCE connection, sealed tokens, the refresh lease, the initial import, the `/bets/changed` sync, the 10-minute schedule and the Accounts panel (`docs/juicereel.md`). It is not live for readers: the registry row stays off until Juice Reel approves the application, the PRODUCTION smoke test passes and the terms review clears (§ 9). This change does not touch that switch.
+- **The bug.** Connecting Juice Reel over bets the reader had already recorded counted many of them twice. The sync adopted a typed or imported bet only when exactly one matched within 15 minutes. It kept two identical bets apart and reported them, and it never compared a screenshot whose time was hours off, or a bet typed later. Both copies then counted in P&L, ROI, the record and every count.
+- **The fix** (`supabase/portfolio_juicereel.sql` 2b, `portfolio_svc_jr_ingest`). A synced bet that resembles one of the reader's own records is no longer stored. It is HELD in `public.portfolio_sync_matches`, its newest copy kept, until the reader decides. A look-alike is the same book, the stake within a cent, the same price, and either:
+  - placed within 2 hours;
+  - placed within 36 hours with the same event start or a word of the pick in common;
+  - the same event start, placed up to 14 days later.
+
+  "The same bet" merges it into the record the reader picks. The record takes the Juice Reel id and figures, keeps its notes and journal, and keeps what it said before on the decision. "A different bet" stores it as its own position. Until then the reader's own record is the one counted. Nothing is merged without the reader, including the exact matches the old automatic adoption took: those are marked exact and can be confirmed together. The shared ingest gains `"adopt": false` for this, and SharpSports is unchanged.
+- **Also.**
+  - **Add a position** opens with **Connect Juice Reel** and its description. It offers only what the server allows: disabled with the reason before approval, the connection's state once connected. The manual and import options are underneath, unchanged.
+  - **Accounts** counts the bets imported and the platforms they came from, both from the stored bets, and prompts the review when bets are held.
+  - History and Open label each position's source quietly.
+  - A Juice Reel bet's details show Juice Reel's own `clvPct`, labelled as Juice Reel's figure, never EdgeDesk's closing-line value or a Decision Grade input.
+  - Odds or a line adjusted in Juice Reel are flagged.
+  - The database enforces one position per reader and Juice Reel bet id.
+  - New edge function actions: `jr_matches` and `jr_match_resolve`.
+- **Tests.** On the code before the fix, the new reader-D scenario in `tools/portfolio/juicereel.test.js` failed. P&L went from +105 to +192.73 after connecting, where the fix gives +90: four bets were counted twice. That run had 140 passed and 11 failed. On the fix, `juicereel.test.js` gives 192/0 and `juicereel_ui.e2e.js` gives 33/0 in Chromium at 1280 and 390 px.
+
+## 2026-10-30 — NHL goalie sync: the card table shows when the NHL boxscore listed each game's lineups
+
+- **Why.** The card table's first run (01:39 UTC) showed that the lineup lock priced none of the night's games. Eight had started, and all eight were still at the slate's price. For every one of them both starters were Confirmed and the inputs carried the lineup block (35/35 games). That leaves the one input nothing showed: whether the NHL boxscore listed at least 12 skaters a side before puck drop. Each sync run records what every boxscore read saw (the timing probe, `nhl_goalie_sync_runs.sources`), but no job read it.
+- **What.** `tools/hockey/sql/nhl_goalie_cards_check.sql` gives each card its game's boxscore reads, from the runs recorded from 4 hours before puck drop to an hour after:
+  - the number of reads;
+  - the minutes before puck drop at which both lineups were first listed (negative: after puck drop);
+  - the last read before puck drop: its game state, the skaters listed a side and the starters flagged.
+
+  NHL goalie sync's card table adds an "NHL boxscore lineups" column: "listed T−22 min", "listed T+4 min, after puck drop (…)", "not listed by T−3 (PRE, 0 / 0 skaters, 2 starters flagged; 7 reads)" or "not read". Its summary line also counts the started games whose lineups were listed before puck drop. Read-only, as before.
+- **Tests.** On the code before this change: `nhl_goalie_sync.test.js` passed 80 and failed 1, and `nhl_goalie_sql.test.js` passed 80 and failed 2. On the change: 81/0 and 82/0 on a real PostgreSQL. The SQL suite records three runs whose probe has one game listed at T−30 and one never listed by T−21, and checks that each card reads only its own game's reads.
+## 2026-10-30 — Research OS journey: the workspace's links are read once Market Foresight's card has its answer
+
+- **What failed.** On #924, the Research OS browser job failed one check on the phone: "the workspace links Signals, Foresight and the Simulator for this game" found `["#signals/cfb","#simulator/cfb"]` (run 41008198329; 125 passed, 1 failed). The same check passed on the desktop in that run.
+- **Why.** The game page draws its Market Foresight card as "Checking the record…", with no link, and `EDContext.railFill` adds the record's link when `mf_game` answers. The test read the links as soon as `#gvWs` appeared. Its step 4 already waits for that card to settle; this check did not.
+- **The fix** (`tools/research_os/journey.e2e.js`, test only). Before reading the links, the check waits for the Foresight card the same way step 4 does. The assertion is unchanged.
+- **Regression.** The test's PostgREST stand-in now answers `mf_game` 2 seconds late, every run, so the race is always exercised.
+  - Before the fix, with the late answer: 124 passed, 2 failed (desktop and phone, `["#signals/cfb","#simulator/cfb"]`).
+  - After: 126 passed, 0 failed.
+- **How it reached `main`.** #924 carried the same change, byte for byte, and merged first; this entry records it.
+
 ## 2026-10-30 — Methodology change (owner's decision, DRAFT for review): Prediction Radar H-RADAR-02, featured bettors from complete recent histories, at what a follower pays
 
 **Methodology change; needs the owner's explicit review. Not registered: its SQL is not to be applied until H-RADAR-02 is registered.**

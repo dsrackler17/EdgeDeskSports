@@ -16,6 +16,9 @@
 -- same line where both have one, placed within 15 minutes) — and that record
 -- matches exactly one wager arriving — ADOPTS it: one position, the reader's
 -- journal kept. Two or more candidates stay apart and are reported, never guessed.
+-- A payload with "adopt": false adopts nothing: its caller has already decided
+-- which records are the same bet (portfolio_juicereel.sql holds every look-alike
+-- for the reader to decide, and stores only what they decided).
 -- Each wager is its own sub-transaction: a bad one is rejected and reported alone.
 create or replace function public.portfolio_svc_ingest_wagers(p_account uuid, p_run uuid, p_payload jsonb)
 returns jsonb language plpgsql set search_path = public, pg_temp as $$
@@ -48,7 +51,7 @@ begin
       select id, status, reported_payout, settled_at into cur from public.portfolio_positions
        where user_id = a.user_id and platform = a.platform and external_position_id = p->>'external_position_id';
       had := found; did_adopt := false;
-      if not had then
+      if not had and coalesce(p_payload->>'adopt', 'true') <> 'false' then
         select array_agg(x.id order by x.placed_at) into adopt from public.portfolio_positions x
          where x.user_id = a.user_id and x.platform = a.platform and x.platform_type = 'SPORTSBOOK'
            -- a bet the reader typed or imported, the book's own bet id from its file included; never one a
@@ -194,6 +197,3 @@ end $$;
 -- 8. ROW LEVEL SECURITY AND GRANTS
 -- ─────────────────────────────────────────────────────────────────────────────
 alter table public.portfolio_refresh_requests enable row level security;
-alter table public.portfolio_position_settlements enable row level security;
-drop policy if exists portfolio_refresh_requests_own on public.portfolio_refresh_requests;
-create policy portfolio_refresh_requests_own on public.portfolio_refresh_requests for select to authenticated using (user_id = auth.uid());

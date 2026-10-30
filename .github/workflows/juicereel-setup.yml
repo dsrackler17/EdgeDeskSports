@@ -23,14 +23,15 @@
 #                    are never set here: the run says if they are missing.
 #   start_live_test  setup, then starts the PRODUCTION live test of Juice
 #                    Reel (portfolio_svc_ag_smoke_begin), unless one is
-#                    running. For 30 days an EdgeDesk operator (an admin)
-#                    can then connect their OWN Juice Reel in the app:
-#                    Portfolio → Accounts → Connect Juice Reel. Readers still
-#                    see "Awaiting provider approval" until the switch in
-#                    docs/juicereel.md § 9 is thrown.
+#                    running. Until the test is finished (it has no
+#                    expiry) every signed-in reader, operators included,
+#                    can connect their OWN Juice Reel in the app:
+#                    Portfolio → Accounts → Connect Juice Reel. Once it is
+#                    finished, readers see "Not open yet" until the switch
+#                    in docs/juicereel.md § 9 is thrown.
 #
-# Nothing here switches Juice Reel on for readers. That stays one SQL
-# statement after a PASSED live test and a cleared terms review (§ 9).
+# Nothing here throws the reader switch (the registry row). That stays one
+# SQL statement after a PASSED live test and a cleared terms review (§ 9).
 #
 # BEFORE IT: portfolio_connect must be deployed from a commit that has
 # jr_check (Actions → Deploy Portfolio schema, deploy_function ticked).
@@ -201,6 +202,6 @@ jobs:
             echo "2. Open **Portfolio → Accounts → Juice Reel → Connect Juice Reel**, sign in on Juice Reel and allow open and settled bets."
             echo "3. You come back to EdgeDesk connected; your sportsbooks appear as accounts and your history imports."
             echo ""
-            echo "It stays open for operators for 30 days. Readers see *Awaiting provider approval* until the stages in docs/juicereel.md § 9 pass and Juice Reel is switched on."
+            echo "Every signed-in reader can connect while this test runs; it has no expiry. Once it is finished, readers see *Not open yet* until the stages in docs/juicereel.md § 9 pass and Juice Reel is switched on."
             printf 'Next stages: `node tools/portfolio/juicereel_smoke.js stage %s IMPORT` (and the rest of § 9).\n' "$id"
           } >> "$GITHUB_STEP_SUMMARY"

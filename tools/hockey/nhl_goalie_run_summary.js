@@ -20,6 +20,14 @@ const cell = (v) => (v == null || v === '' ? '—' : String(v).replace(/\|/g, '\
 const pct = (p) => (p == null ? '—' : (p * 100).toFixed(1) + '%');
 const yesNo = (b) => (b === true ? 'yes' : b === false ? 'no' : '—');
 const ageMin = (iso, nowMs) => (iso ? Math.round((nowMs - Date.parse(iso)) / 60000) : null);
+/* the timing probe for one game (tools/hockey/sql/nhl_goalie_cards_check.sql): when the NHL boxscore first listed both dressed lineups, else what the last read before puck drop saw */
+function probeText(p) {
+  if (!p || !p.reads) return 'not read';
+  const pre = p.last_pre ? 'T−' + p.last_pre.min + ': ' + (p.last_pre.state || '?') + ', ' + ((p.last_pre.skaters || {}).home ?? '?') + ' / ' + ((p.last_pre.skaters || {}).away ?? '?') + ' skaters, ' + (p.last_pre.starters ?? '?') + ' starters flagged' : null;
+  if (p.first_listed_min != null && p.first_listed_min >= 0) return 'listed T−' + p.first_listed_min + ' min';
+  if (p.first_listed_min != null) return 'listed T+' + (-p.first_listed_min) + ' min, after puck drop (' + (pre ? 'by ' + pre + '; ' : '') + p.reads + ' reads)';
+  return 'not listed' + (pre ? ' by ' + pre.replace(/^T−(\d+): /, 'T−$1 (') + ';' : ' before puck drop (') + ' ' + p.reads + ' reads)';
+}
 const utc = (iso, withDate) => { const t = Date.parse(iso); return isFinite(t) ? new Date(t).toISOString().slice(withDate ? 0 : 11, 16).replace('T', ' ') + ' UTC' : '—'; };
 
 /** a JSON file: the value, null when empty, or { _unreadable } */
@@ -155,13 +163,14 @@ function render(o, nowMs) {
     else if (!K.length) L.push('No game in the window.', '');
     else {
       const started = K.filter((k) => Date.parse(k.start_utc) <= nowMs), locked = started.filter((k) => k.basis === 'lineup_lock');
-      if (started.length) L.push('Started: ' + started.length + ' game' + (started.length === 1 ? '' : 's') + ', ' + locked.length + ' priced at lineup lock before puck drop.', '');
-      L.push('| Game | Puck drop | v | Written | Status (home / away) | Gate | Headline home win % | Priced at |', '|---|---|---|---|---|---|---|---|');
+      const listed = started.filter((k) => k.probe && k.probe.first_listed_min != null && k.probe.first_listed_min >= 0);
+      if (started.length) L.push('Started: ' + started.length + ' game' + (started.length === 1 ? '' : 's') + ', ' + locked.length + ' priced at lineup lock before puck drop. The NHL boxscore listed both lineups before puck drop for ' + listed.length + ' of them.', '');
+      L.push('| Game | Puck drop | v | Written | Status (home / away) | Gate | Headline home win % | Priced at | NHL boxscore lineups |', '|---|---|---|---|---|---|---|---|---|');
       for (const k of K) {
         const sk = k.skaters && k.skaters.home != null ? ', ' + k.skaters.home + ' / ' + k.skaters.away + ' skaters' : '';
         const at = k.basis === 'lineup_lock' ? 'lineup lock' + sk + (k.before_p_home != null ? ' (before lock ' + pct(k.before_p_home) + ')' : '') : 'slate (' + (k.model_id || '—') + ')';
         L.push('| ' + [k.matchup, utc(k.start_utc, true), k.version, utc(k.generated_at) + ' (T−' + Math.round((Date.parse(k.start_utc) - Date.parse(k.generated_at)) / 60000) + ' min)',
-          (k.status || []).join(' / ') + (k.conflict ? ', conflict' : ''), k.gate, pct(k.p_home), at].map(cell).join(' | ') + ' |');
+          (k.status || []).join(' / ') + (k.conflict ? ', conflict' : ''), k.gate, pct(k.p_home), at, probeText(k.probe)].map(cell).join(' | ') + ' |');
       }
       L.push('');
     }
