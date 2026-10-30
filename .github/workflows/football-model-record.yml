@@ -41,6 +41,7 @@ on:
         default: false
 
 permissions:
+  checks: write
   contents: write
 
 concurrency:
@@ -111,7 +112,7 @@ jobs:
           fi
           git commit -m 'record: football model — pregame numbers graded against the close'
           for i in 1 2 3 4; do
-            git push origin HEAD:main && exit 0
+            bash "$(git rev-parse --show-toplevel)/tools/ci/certified_push.sh" origin HEAD:main && exit 0
             git pull --rebase origin main || true
             sleep $((2 ** i))
           done

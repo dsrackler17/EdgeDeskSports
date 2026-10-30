@@ -52,7 +52,7 @@ const CRON = fs.readFileSync(F('polymarket_sync_cron.sql'), 'utf8');
 const REGSQL = fs.readFileSync(F('radar_registry.sql'), 'utf8');
 const RECSQL = fs.readFileSync(F('radar_record.sql'), 'utf8');
 const MIRROR = F('migrations/20261029120000_radar.sql');
-const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'radar', 'registration_h_radar_02.json'), 'utf8'));   /* the live rules' hypothesis (a DRAFT) */
+const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'radar', 'registration_h_radar_02.json'), 'utf8'));   /* the live rules' hypothesis, registered 2026-10-30 */
 const REG1 = JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'radar', 'registration_h_radar_01.json'), 'utf8'));   /* H-RADAR-01: registered, its result stands */
 
 /* ── STATIC: the folder's conventions ──────────────────────────────────── */
@@ -302,6 +302,9 @@ try {
   const grades = [gradeOf(T1, 60, 1.5), gradeOf(T2, 60, 1.4), gradeOf(T3, 60, 1.3), gradeOf(T4, 60, 1.2), gradeOf(MM, 60, 1.6, 'Market Maker'), gradeOf(SS, 20, 2)];
   R.rankWallets(grades, RULES);
   const gRows = grades.map((g) => Object.assign({}, g, { first_bet_at: iso(g.first_bet_at), last_bet_at: iso(g.last_bet_at), rank: g.rank == null ? null : g.rank }));
+  /* THE SYNC STATE (presentation only): before any grading run under the live rules, the page says the sync is pending */
+  const syncSvc = () => JSON.parse(db.service('select public.radar_sync_state();'));
+  chk('sync: no grading run under the live rules yet reads pending (first_grade), never "nobody holds a position"', syncSvc().state === 'pending' && syncSvc().reason === 'first_grade', syncSvc());
   const RUN1 = crypto.randomUUID();
   const put = (runId, rowsJ, rulesJ) => db.service(`select public.radar_put_grades(${lit(JSON.stringify({ run_id: runId, started_at: new Date().toISOString(), grading_version: R.gradingVersion(rules), rules: rulesJ || rules }))}::jsonb, ${lit(JSON.stringify(rowsJ))}::jsonb);`);
   chk('a run graded with other rules is refused', fails(() => put(crypto.randomUUID(), gRows, Object.assign({}, rules, { min_graded: 30 }))));
@@ -359,28 +362,33 @@ try {
     create table public.research_model_results (id bigserial primary key, version_id bigint references public.research_model_versions (id), passed boolean, metrics jsonb, games_tested integer not null, computed_at timestamptz not null default now());
     create view public.research_model_current as select m.model_key, v.version, v.status, r.passed from public.research_models m join public.research_model_versions v on v.model_id = m.id left join public.research_model_results r on r.version_id = v.id;`);
   out = db.applyFileAtomic(F('radar_registry.sql'));
-  chk('registered: the report says ok on every row', (out.match(/\|ok/g) || []).length === 3 && !/CHECK THIS/.test(out), out.slice(-600));
-  const regRow = one("select m.model_key, v.version, v.status::text as status, v.holdout_window::text as holdout, v.forking_paths ->> 'comparisons_made' as cm, v.min_sample from public.research_models m join public.research_model_versions v on v.model_id = m.id");
+  chk('registered: the report says ok on every row, for both hypotheses', (out.match(/\|ok/g) || []).length === 5 && !/CHECK THIS/.test(out), out.slice(-800));
+  const regRow = one("select m.model_key, v.version, v.status::text as status, v.holdout_window::text as holdout, v.forking_paths ->> 'comparisons_made' as cm, v.min_sample from public.research_models m join public.research_model_versions v on v.model_id = m.id where m.model_key = 'H-RADAR-01'");
   chk('H-RADAR-01 v0.1.0 is EXPERIMENTAL with its holdout window and its forking-paths disclosure', regRow.model_key === 'H-RADAR-01' && regRow.version === '0.1.0' && regRow.status === 'experimental'
     && regRow.holdout === '[2026-09-01,2026-10-26)' && regRow.cm === '1' && regRow.min_sample === 200, regRow);
+  const reg2 = one("select m.model_key, v.version, v.status::text as status, v.holdout_window::text as holdout, v.training_window::text as training, v.forking_paths ->> 'comparisons_made' as cm, v.min_sample from public.research_models m join public.research_model_versions v on v.model_id = m.id where m.model_key = 'H-RADAR-02'");
+  chk('H-RADAR-02 v0.2.0 is EXPERIMENTAL with its 12-week prospective window [2026-10-31, 2027-01-23), its rolling training left blank, and its disclosure',
+    reg2.version === '0.2.0' && reg2.status === 'experimental' && reg2.holdout === '[2026-10-31,2027-01-23)' && reg2.training === null && reg2.cm === String(REG.forking_paths.comparisons_made) && reg2.min_sample === 200, reg2);
+  chk('…registered before its window opens', Date.parse(REG.registered_at) < Date.parse(REG.machine.window_dates.holdout[0] + 'T00:00:00Z'), REG.registered_at);
   const reportFile = path.join(ROOT, 'research', 'radar', 'H-RADAR-01', 'report.json');
   const hasReport = fs.existsSync(reportFile);
-  chk(hasReport ? 'the validation report\'s verdict is ONE result row' : 'no validation report yet: no result row (nothing is claimed)',
+  chk(hasReport ? 'the validation report\'s verdict is ONE result row (H-RADAR-01\'s; H-RADAR-02 has none until its window has run)' : 'no validation report yet: no result row (nothing is claimed)',
     V('select count(*) from public.research_model_results') === (hasReport ? '1' : '0'));
   if (hasReport) chk('the result row carries the games its verdict stands on (games_tested, required in production)',
     V('select games_tested from public.research_model_results') === String(JSON.parse(fs.readFileSync(reportFile, 'utf8')).holdout.games));
   const found = JSON.parse(V("select value from public.radar_config where key = 'h_radar_01_result'"));
   chk('what the holdout test found is recorded for the pages, verbatim', found.hypothesis_id === 'H-RADAR-01' && (hasReport ? found.status === JSON.parse(fs.readFileSync(reportFile, 'utf8')).status : found.status === 'not_run'), found);
   const again = db.applyFileAtomic(F('radar_registry.sql'));
-  chk('applying it again writes nothing new', !/CHECK THIS/.test(again) && V('select count(*) from public.research_model_versions') === '1');
+  chk('applying it again writes nothing new', !/CHECK THIS/.test(again) && V('select count(*) from public.research_model_versions') === '2');
   chk('a client cannot register', fails(() => asSub("insert into public.radar_config (key, value) values ('registry_ref:H-RADAR-01', 'x');")));
   /* REGISTERED BEFORE SHOWN, under H-RADAR-02's rules: H-RADAR-01's registration (and its result) stays, but it does not
      open the doors for rules it did not register */
+  V("delete from public.radar_config where key = 'registry_ref:H-RADAR-02';");
   chk('H-RADAR-01 registered alone does not open the doors under H-RADAR-02\'s rules', V('select public.radar_registered()') === 'f'
     && db.anon('select count(*) from public.poly_wallet_grades;') === '0' && fn('public.radar_leaderboard(50)', db.anon).status === 'not_registered');
-  /* H-RADAR-02's registration is a DRAFT: this stands in for it, as supabase/radar_registry.sql will write it once registered */
-  db.service("insert into public.radar_config (key, value, note) values ('registry_ref:H-RADAR-02', 'test', 'stands in for H-RADAR-02''s registration (a draft)');");
-  chk('…its own registration does', V('select public.radar_registered()') === 't');
+  const restored = db.applyFileAtomic(F('radar_registry.sql'));
+  chk('…its own registration does (applying the registry again restores the link, and nothing else)', V('select public.radar_registered()') === 't'
+    && !/CHECK THIS/.test(restored) && V('select count(*) from public.research_model_versions') === '2');
   /* an H-RADAR-01 grading run (rules version 1) is never the current run under H-RADAR-02's rules: its top 25 are not featured */
   const RUNV1 = crypto.randomUUID();
   V(`set session_replication_role = replica;
@@ -454,6 +462,24 @@ try {
     oE3.sides && oE3.sides.length === 1 && oE3.sides[0].outcome === 'Patriots' && Number(oE3.sides[0].dollars) === 600 && !obs.some((o) => o.event_id === 'E4'), oE3);
   chk('v2: …and names no wallet', !JSON.stringify(obs).includes('0x') || !obs.some((o) => 'wallets' in o || (o.sides || []).some((x) => 'wallet' in x || 'wallets' in x)));
   chk('v2: observed activity is subscribers only, like the cards', !('observed' in fn('public.radar_tonight()', db.anon)) && !('observed' in fn('public.radar_tonight()', asA)));
+  /* THE SYNC STATE: "sync failed" and "no current position" read differently. The holders sync runs every 10 minutes;
+     30 minutes without a good run, or an error as its latest, is a failure; the nightly grade, 36 hours */
+  const syncOf = () => fn('public.radar_tonight()', asSub).sync || {};
+  const syncRun = (mode, status, ago, message) => db.service(`insert into public.poly_sync_runs (run_id, mode, trigger, status, started_at, finished_at, message)
+    values (${lit(crypto.randomUUID())}, '${mode}', 'cron', '${status}', now() - interval '${ago}', now() - interval '${ago}', ${message ? lit(message) : 'null'});`);
+  chk('sync: graded, but no holders run on record: failed (holders_stale), never "nobody holds a position"', syncOf().state === 'failed' && syncOf().reason === 'holders_stale', syncOf());
+  syncRun('tonight', 'ok', '45 minutes');
+  chk('sync: the last good holders run 45 minutes ago is stale: failed, and says when it was', syncOf().state === 'failed' && syncOf().reason === 'holders_stale' && !!syncOf().holders_at, syncOf());
+  syncRun('tonight', 'warn', '5 minutes');
+  chk('sync: a holders run 5 minutes ago (warn counts as done) and a current grade: ok', syncOf().state === 'ok' && syncOf().reason === null && !!syncOf().graded_at, syncOf());
+  syncRun('tonight', 'error', '1 minute', 'tonight error: Polymarket answered 503');
+  chk('sync: the latest holders run ended in error: failed, with its message', syncOf().state === 'failed' && syncOf().reason === 'holders_error' && /503/.test(syncOf().last_error || ''), syncOf());
+  syncRun('tonight', 'ok', '0 seconds');
+  chk('sync: the next good holders run clears it', syncOf().state === 'ok', syncOf());
+  chk('sync: the state is in the subscribers\' door only', !('sync' in fn('public.radar_tonight()', db.anon)) && !('sync' in fn('public.radar_tonight()', asA)));
+  chk('sync: no client may call radar_sync_state()', fails(() => db.anon('select public.radar_sync_state();')) && fails(() => asA('select public.radar_sync_state();')) && fails(() => asSub('select public.radar_sync_state();')));
+  syncRun('grade', 'error', '0 seconds', 'grade error: out of compute');
+  chk('sync: a grade that failed after the current one: failed (grade_error), with its message', syncOf().state === 'failed' && syncOf().reason === 'grade_error' && /compute/.test(syncOf().last_error || ''), syncOf());
   /* the price moves above the fair: smart money disagrees */
   price(C('1'), 0, 0.66, 1, crypto.randomUUID());
   chk('the price above EdgeDesk\'s fair: smart money disagrees', fn('public.radar_tonight()', asSub).cards[0].agrees === false);
@@ -542,6 +568,20 @@ try {
     && rec.hypothesis === 'H-RADAR-02' && rec.priced_at === 'best_ask' && rec.earlier_cards === 0, rec);
   chk('it carries what H-RADAR-01 found, verbatim from the registry', rec.h_radar_01 && rec.h_radar_01.hypothesis_id === 'H-RADAR-01' && rec.h_radar_01.status === found.status);
   chk('the cards themselves, newest first', rec.recent.length === 2 && rec.recent[0].home_team === 'Las Vegas Raiders' && rec.recent[0].result === 'win');
+
+  /* THE STAGE REPORT (tools/radar/sql/radar_pipeline_report.sql, run by Deploy Prediction Radar): read-only, every stage counted */
+  const writes = () => V("select (select count(*) from public.poly_sync_runs) || '/' || (select count(*) from public.radar_cards) || '/' || (select count(*) from public.poly_wallets) || '/' || (select count(*) from public.poly_wallet_grades)");
+  const w0 = writes();
+  const stageRep = db.applyFileAtomic(path.join(ROOT, 'tools', 'radar', 'sql', 'radar_pipeline_report.sql'));
+  const stages = (stageRep.match(/^\d+\|[^|\n]*[a-z][^|\n]*\|\d+\|.*$/gm) || []).map((l) => { const x = l.split('|'); return { n: +x[0], stage: x[1], cnt: +x[2], note: x[3] }; });
+  const firstZero = stages.filter((x) => x.n <= 9 && x.cnt === 0).map((x) => x.n)[0];
+  const door = fn('public.radar_tonight()', asSub);
+  chk('the stage report counts all 11 stages: the cards and the observed cards the subscribers\' door shows, and the record, under H-RADAR-02', stages.length === 11
+    && stages.find((x) => x.n === 9).cnt === door.cards.length && stages.find((x) => x.n === 10).cnt === door.observed.length
+    && stages.find((x) => x.n === 11).cnt === +V("select count(*) from public.radar_cards where published_at > now() - interval '24 hours'") && /hypothesis\|H-RADAR-02/.test(stageRep),
+    { stages, cards: door.cards.length, observed: door.observed.length });
+  chk('…marks the first stage of the featured path at zero, and only that one', stages.filter((x) => /first reaches zero/.test(x.note)).map((x) => x.n).join() === (firstZero == null ? '' : String(firstZero)), stages);
+  chk('…and writes nothing', writes() === w0, { before: w0, after: writes() });
 
   /* ===================================================================== */
   /* 10. THE SCHEDULE                                                      */
