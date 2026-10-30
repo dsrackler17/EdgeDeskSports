@@ -144,15 +144,60 @@ market's own schedule at the time, never assumed.
   allowance to the midpoint. Prospective records take the real ask from the
   book when a card is published.
 
+### Screening the 30-day board: pace and style, not performance
+
+[Run 40977654862](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40977654862)
+read one newest-first page of the last 90 days (at most 1,000 actions) for
+each wallet ranked 1 to 300 on the 30-day board. A **position change** is a
+run of fills on one token and one side, each fill within 10 minutes of the
+last. So a large order filled in many pieces counts once.
+
+- **Screened:** 300, none failed.
+- **Flagged** (1,000 actions in under 3 days): 119, or 40%.
+- **Complete in one page** (90 days in at most 1,000 actions): 25.
+- **With any covered-league trade:** 219.
+
+| Per wallet (10th / 50th / 90th percentile) | Flagged (119) | Not flagged (181) |
+|---|---|---|
+| Actions a day | 496 / 1,184 / 9,744 | 21 / 113 / 279 |
+| **Position changes a day** | **64 / 341 / 2,449** | **2.4 / 14.7 / 57.7** |
+| Fills per position change | 1.5 / 2.9 / 12.5 | 1.9 / 6.4 / 19.9 |
+| Markets a day | 21 / 164 / 1,167 | 1.3 / 7.3 / 34 |
+| Share of markets bought on both sides | 0 / 0.22 / 0.76 | 0 / 0.02 / 0.28 |
+| Covered-league share of actions | 0 / 0.08 / 0.91 | 0 / 0.11 / 1.00 |
+| Median fill, dollars | 5 / 21 / 62 | 10 / 49 / 431 |
+
+- **The two groups barely overlap on position changes a day.** The flagged
+  10th percentile (64) is above the unflagged 90th (58). Flagged wallets
+  also trade many more markets a day, buy both sides far more often, and fill
+  in smaller pieces.
+- **A flag still needs confirmation.** One page covers only the last few days
+  of a flagged wallet, so it cannot show sustained activity over 90 days
+  (decision 7).
+- **Cost.** An unflagged wallet's 90 days are about 113 actions a day at the
+  median, or about 10 pages. Reading the 181 unflagged wallets completely
+  costs about 2,000 requests, inside one day's 40,000.
+
+### Proposed rules from this evidence (for the owner's review)
+
+- **Processing cap: 30 pages (30,000 actions) for the 90-day window.** The
+  unflagged 90th percentile is 279 actions a day, about 25,000 in 90 days, so
+  almost every non-high-frequency wallet fits. A wallet over the cap that the
+  followability test does not mark is **insufficient history — ungraded**.
+- **Followability test (sustained high frequency).** Sample three
+  newest-first pages, ending now, 30 days ago and 60 days ago. If each sample
+  shows more than **100 position changes a day**, the wallet is
+  **high-frequency — not followable**. That is above every unflagged
+  wallet's 90th percentile (58) and well under the flagged median (341).
+  Otherwise it is read and judged like any other wallet.
+- **Discovery walks down the 30-day board** until 200 wallets are eligible,
+  and reports how many were screened, marked, ungraded and evaluated.
+
 ## Open, for the registration
 
 - The minimum number of covered pregame bets in 90 days (decision 3).
-- The processing cap in pages, and the observed-behaviour test for
-  "high-frequency — not followable" (decision 7). Candidates for the test:
-  - position changes a day, counting a position's first buy and its exits,
-    not its fills;
-  - the share of markets traded on both sides;
-  - median holding time.
+- The processing cap and the followability test: proposed above, from the
+  screening evidence (decision 7). They need the owner's review.
 - The historical cost allowance over the midpoint, and the fee formula
   applied to each market's schedule.
 - The prospective test: its window or sample, its criteria and its stopping
