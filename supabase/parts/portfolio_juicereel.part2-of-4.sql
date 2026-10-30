@@ -1,6 +1,84 @@
--- portfolio_juicereel -- part 2 of 3.
+-- portfolio_juicereel -- part 2 of 4.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+
+-- A completed authorization: the sealed pair, the Juice Reel user it belongs
+-- to, the scopes granted. The grant reads CONNECTED only from here — after a
+-- real code exchange. A Juice Reel account already connected to another
+-- EdgeDesk reader is refused. Reconnecting the same Juice Reel account keeps
+-- the checkpoint; another account starts a fresh import.
+create or replace function public.portfolio_svc_jr_grant_store(p_grant uuid, p_provider_user_id text, p_display_name text, p_ciphertext_b64 text,
+    p_nonce_b64 text, p_key_version int, p_access_expires_at timestamptz, p_scopes text[], p_smoke_test uuid default null)
+returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare g record; same boolean;
+begin
+  perform public.portfolio_svc_assert();
+  select * into g from portfolio_private.oauth_grants where id = p_grant for update;
+  if not found then raise exception 'portfolio: no such grant' using errcode = 'P0002'; end if;
+  if not public.portfolio_svc_ag_allowed(g.provider, g.environment, p_smoke_test) then
+    raise exception 'portfolio: automatic connection through % is not enabled', g.provider using errcode = '42501';
+  end if;
+  if coalesce(p_provider_user_id, '') !~ '^[0-9]{1,18}$' then raise exception 'portfolio: a Juice Reel user id is required' using errcode = '22023'; end if;
+  if nullif(p_ciphertext_b64, '') is null or nullif(p_nonce_b64, '') is null or p_key_version is null or p_access_expires_at is null then
+    raise exception 'portfolio: a sealed token pair is required' using errcode = '22023';
+  end if;
+  if exists (select 1 from portfolio_private.oauth_grants o where o.provider = g.provider and o.environment = g.environment
+              and o.provider_user_id = p_provider_user_id and o.user_id <> g.user_id and o.status <> 'DISCONNECTED') then
+    raise exception 'portfolio: JR_ACCOUNT_IN_USE — that Juice Reel account is connected to another EdgeDesk account' using errcode = '23505';
+  end if;
+  same := g.provider_user_id is not distinct from p_provider_user_id;
+  update portfolio_private.oauth_grants set provider_user_id = p_provider_user_id, display_name = left(nullif(btrim(p_display_name), ''), 60),
+         scopes = p_scopes, ciphertext = decode(p_ciphertext_b64, 'base64'), nonce = decode(p_nonce_b64, 'base64'), key_version = p_key_version,
+         access_expires_at = p_access_expires_at, token_generation = token_generation + 1, refresh_lease = null, refresh_lease_until = null,
+         sync_lease = null, sync_lease_until = null, sync_cursor = case when same then sync_cursor end, smoke_test = p_smoke_test,
+         status = 'CONNECTED', last_error = null, last_error_code = null, consecutive_failures = 0, last_issues = '[]'::jsonb,
+         next_sync_at = now(), connected_at = now(), rotated_at = now(), revoked_at = null, updated_at = now()
+   where id = p_grant;
+  return jsonb_build_object('grant_id', p_grant, 'reconnected', g.connected_at is not null, 'same_account', same);
+end $$;
+
+-- The sealed pair, for the edge function to open in memory (with what it
+-- needs to decide whether to refresh). Never readable by any client role.
+create or replace function public.portfolio_svc_jr_grant_tokens(p_grant uuid)
+returns table (user_id uuid, status text, provider_user_id text, ciphertext_b64 text, nonce_b64 text, key_version int, access_expires_at timestamptz, generation bigint)
+language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+begin
+  perform public.portfolio_svc_assert();
+  return query select g.user_id, g.status, g.provider_user_id, encode(g.ciphertext, 'base64'), encode(g.nonce, 'base64'), g.key_version, g.access_expires_at,
+         g.token_generation from portfolio_private.oauth_grants g where g.id = p_grant;
+end $$;
+
+-- THE REFRESH LEASE: for the generation the caller read, if nobody holds an
+-- unexpired lease. Null: someone else is refreshing, or already has.
+create or replace function public.portfolio_svc_jr_refresh_lease(p_grant uuid, p_generation bigint, p_seconds int default 60)
+returns uuid language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare l uuid;
+begin
+  perform public.portfolio_svc_assert();
+  update portfolio_private.oauth_grants set refresh_lease = gen_random_uuid(),
+         refresh_lease_until = now() + make_interval(secs => greatest(10, least(coalesce(p_seconds, 60), 120))), updated_at = now()
+   where id = p_grant and token_generation = p_generation and ciphertext is not null and status <> 'DISCONNECTED'
+     and (refresh_lease is null or refresh_lease_until < now())
+  returning refresh_lease into l;
+  return l;
+end $$;
+
+-- THE ROTATION: the new pair replaces the old in one statement — only for the
+-- lease holder (its lease id is unchanged even if the lease time ran out, as
+-- no one else has taken it), only from the generation it refreshed, never on
+-- a grant disconnected meanwhile. false: not stored (the caller revokes it).
+create or replace function public.portfolio_svc_jr_rotate(p_grant uuid, p_lease uuid, p_generation bigint, p_ciphertext_b64 text, p_nonce_b64 text,
+    p_key_version int, p_access_expires_at timestamptz, p_scopes text[] default null)
+returns boolean language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+begin
+  perform public.portfolio_svc_assert();
+  if nullif(p_ciphertext_b64, '') is null or nullif(p_nonce_b64, '') is null or p_key_version is null then return false; end if;
+  update portfolio_private.oauth_grants set ciphertext = decode(p_ciphertext_b64, 'base64'), nonce = decode(p_nonce_b64, 'base64'), key_version = p_key_version,
+         access_expires_at = p_access_expires_at, scopes = coalesce(p_scopes, scopes), token_generation = token_generation + 1,
+         refresh_lease = null, refresh_lease_until = null, rotated_at = now(), updated_at = now()
+   where id = p_grant and refresh_lease = p_lease and token_generation = p_generation and status <> 'DISCONNECTED' and ciphertext is not null;
+  return found;
+end $$;
 
 -- A refresh that did not complete (Juice Reel down, rate limited): the lease
 -- is given back, the pair is unchanged.
@@ -164,87 +242,4 @@ begin
   update public.platform_accounts set last_error = left(p_message, 500), consecutive_failures = least(1000, consecutive_failures + 1),
          status = case when st = 'ERROR' then 'ERROR' else status end
    where id in (select public.portfolio_svc_jr_book_ids(g.user_id, g.environment)) and status <> 'DISCONNECTED';
-end $$;
-
--- What the scheduler syncs now: connected (or failing) grants that are due,
--- whose sync is not running — and only while Juice Reel is switched on, or
--- the grant belongs to a running PRODUCTION smoke test.
-create or replace function public.portfolio_svc_jr_due(p_env text, p_limit int default 10)
-returns table (grant_id uuid, user_id uuid, has_success boolean)
-language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
-begin
-  perform public.portfolio_svc_assert();
-  return query select g.id, g.user_id, g.last_success_at is not null and g.sync_cursor is not null
-    from portfolio_private.oauth_grants g
-   where g.provider = 'juicereel' and g.environment = p_env and g.status in ('CONNECTED', 'ERROR') and g.ciphertext is not null
-     and g.next_sync_at is not null and g.next_sync_at <= now() and (g.sync_lease is null or g.sync_lease_until < now())
-     and public.portfolio_svc_ag_allowed('juicereel', p_env, g.smoke_test)
-   order by g.next_sync_at limit greatest(1, least(coalesce(p_limit, 10), 200));
-end $$;
-
--- The reader's grant, for the reader's own page: state and times only — no
--- token, no ciphertext, no Juice Reel user id.
-create or replace function public.portfolio_svc_jr_grant_for_user(p_user uuid, p_env text)
-returns jsonb language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
-declare g record;
-begin
-  perform public.portfolio_svc_assert();
-  select * into g from portfolio_private.oauth_grants where provider = 'juicereel' and environment = p_env and user_id = p_user;
-  if not found then return null; end if;
-  return jsonb_build_object('grant_id', g.id, 'status', g.status, 'display_name', g.display_name, 'scopes', to_jsonb(coalesce(g.scopes, '{}'::text[])),
-    'connected_at', g.connected_at, 'last_sync_at', g.last_sync_at, 'last_success_at', g.last_success_at, 'next_sync_at', g.next_sync_at,
-    'last_error_code', g.last_error_code, 'last_error', g.last_error, 'consecutive_failures', g.consecutive_failures,
-    'syncing', g.sync_lease is not null and g.sync_lease_until > now(), 'imported', g.sync_cursor is not null and g.sync_cursor like '%"initial_done":true%',
-    'issues', (select coalesce(jsonb_agg(e), '[]'::jsonb) from (select e from jsonb_array_elements(g.last_issues) e limit 5) q),
-    'revoked_at', g.revoked_at, 'smoke_test', g.smoke_test,
-    'books', (select count(*) from public.platform_accounts a where a.id in (select public.portfolio_svc_jr_book_ids(g.user_id, g.environment)) and a.status <> 'DISCONNECTED'),
-    'open_bets', (select count(*) from public.portfolio_positions p where p.user_id = g.user_id and p.status = 'OPEN' and p.external_position_id like 'juicereel:%'));
-end $$;
-
--- DISCONNECT: the ciphertext goes now (the edge function revokes the pair at
--- Juice Reel with the copy it read just before), syncing stops, every Juice
--- Reel book account reads DISCONNECTED. History stays, unless the reader
--- asks: then the bets this connection synced go with its book accounts —
--- a bet the reader recorded or imported themselves stays, unlinked.
-create or replace function public.portfolio_svc_jr_disconnect(p_user uuid, p_env text, p_delete_history boolean default false)
-returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare had boolean; accts uuid[]; pos int := 0; n int := 0; g record;
-begin
-  perform public.portfolio_svc_assert();
-  -- the pair as stored at this instant, a rotation committed a moment ago
-  -- included (the row is locked): exactly this one is handed back to be
-  -- revoked at Juice Reel, so no live pair survives a disconnect
-  select id, ciphertext, nonce, key_version into g from portfolio_private.oauth_grants
-   where provider = 'juicereel' and environment = p_env and user_id = p_user and status <> 'DISCONNECTED' for update;
-  had := found;
-  if had then
-    update portfolio_private.oauth_grants set status = 'DISCONNECTED', ciphertext = null, nonce = null, key_version = null, access_expires_at = null,
-           token_generation = token_generation + 1, refresh_lease = null, refresh_lease_until = null, sync_lease = null, sync_lease_until = null,
-           sync_cursor = null, next_sync_at = null, last_error = null, last_error_code = null, consecutive_failures = 0, revoked_at = now(), updated_at = now()
-     where id = g.id;
-  end if;
-  select array_agg(x) into accts from public.portfolio_svc_jr_book_ids(p_user, p_env) x;
-  if accts is not null then
-    if p_delete_history then
-      delete from public.portfolio_positions where platform_account_id = any (accts) and user_id = p_user and source = 'SYNC';
-      get diagnostics pos = row_count;
-      delete from public.platform_accounts where id = any (accts) and user_id = p_user;
-      get diagnostics n = row_count;
-    else
-      update public.platform_accounts set status = 'DISCONNECTED', next_sync_at = null where id = any (accts) and status <> 'DISCONNECTED';
-      get diagnostics n = row_count;
-    end if;
-  end if;
-  return jsonb_build_object('grant_disconnected', had, 'accounts', n, 'positions_deleted', pos, 'grant_id', case when had then g.id end,
-    'sealed', case when had and g.ciphertext is not null then jsonb_build_object('ciphertext_b64', encode(g.ciphertext, 'base64'),
-      'nonce_b64', encode(g.nonce, 'base64'), 'key_version', g.key_version) end);
-end $$;
-
--- Forget a grant's checkpoint, so its next sync re-reads the whole history
--- (the smoke test's NO DUPLICATES stage; an operator's repair).
-create or replace function public.portfolio_svc_jr_reset_cursor(p_grant uuid)
-returns void language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-begin
-  perform public.portfolio_svc_assert();
-  update portfolio_private.oauth_grants set sync_cursor = null, next_sync_at = now(), updated_at = now() where id = p_grant and status <> 'DISCONNECTED';
 end $$;
