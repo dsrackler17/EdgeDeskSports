@@ -21,8 +21,8 @@
   "game_time": "2026-11-01T02:30:00.000Z",
   "game_when_label": "2026-11-01 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-30T00:50:38.302Z",
-  "generated_at": "2026-10-30T00:50:38.302Z",
+  "updated_at": "2026-10-30T09:54:04.516Z",
+  "generated_at": "2026-10-30T09:54:04.516Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -138,11 +138,35 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 1,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 2
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 4
         },
         "absent": [
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for UNLV and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Northern Illinois and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
           {
             "field": "off_field",
             "side": "home",
@@ -1515,11 +1539,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 86,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether UNLV or Northern Illinois’s starting QB can play",
-        "score": 89,
+        "text": "86 · STRONG",
+        "sub": "main deduction: Northern Illinois’s availability sources refused",
+        "score": 86,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1533,7 +1557,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1545,7 +1569,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1561,15 +1585,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether UNLV or Northern Illinois’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Northern Illinois’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Northern Illinois’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
+            "action": "Restore an injury/availability source for Northern Illinois",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
+            "action": "Restore an injury/availability source for UNLV",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
             "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2 once re-read availability inside the filing window (UNLV) and Re-read availability inside the filing window (Northern Illinois) is done"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1828,13 +1860,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1qarx97muvrll",
+    "packet_hash": "1f58ntz12hicg5",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can UNLV’s pass rush get to Taron Dickens?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward UNLV, and its own breakdown accounts for about 0.7 of the 3.7 points, but not the full gap. Input warning: EdgeDesk’s published number sits 7.9 points from the middle of its own other models. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward UNLV, and its own breakdown accounts for about 0.7 of the 4.7 points, but not the full gap. Input warning: EdgeDesk’s published number sits 7.9 points from the middle of its own other models. It is a research question, not a bet.",
     "gap": {
-      "points": 3.7,
+      "points": 4.7,
       "toward": "UNLV",
       "other": "Northern Illinois"
     },
@@ -1894,7 +1926,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-29T22:48:03.785Z",
+        "observed_at": "2026-10-30T05:53:54.856Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1910,6 +1942,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-30T00:50:38.302Z"
+    "at": "2026-10-30T09:54:04.516Z"
   }
 }

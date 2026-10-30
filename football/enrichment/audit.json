@@ -1,30 +1,30 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-29T22:54:00.628Z",
+ "generated_at": "2026-10-30T06:02:45.811Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-29T22:54:00.628Z",
-  "reliability_generated_at": "2026-10-29T22:54:00.628Z",
-  "enrichment_generated_at": "2026-10-29T22:53:53.301Z",
+  "at": "2026-10-30T06:02:45.811Z",
+  "reliability_generated_at": "2026-10-30T06:02:45.811Z",
+  "enrichment_generated_at": "2026-10-30T06:02:39.616Z",
   "counts": {
-   "games": 115,
-   "mean": 85.9,
+   "games": 113,
+   "mean": 86.2,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 15,
-    "ADEQUATE": 36,
+    "VERY_STRONG": 19,
+    "ADEQUATE": 34,
     "CAUTION": 2,
-    "STRONG": 61,
+    "STRONG": 57,
     "LOW": 1
    },
-   "missing_qb_status": 184,
-   "qb_conflicts_open": 17,
+   "missing_qb_status": 170,
+   "qb_conflicts_open": 15,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 28,
-   "unrated_meaningful_absences": 314,
+   "games_lacking_injury_information": 25,
+   "unrated_meaningful_absences": 407,
    "fcs_games_thin_data": 1,
-   "games_under_two_market_sources": 115,
-   "stale_evidence_records": 56,
+   "games_under_two_market_sources": 113,
+   "stale_evidence_records": 2,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -198,10 +198,9 @@
      "qb_identity": 4.4,
      "qb_conflict": 2.3,
      "qb_status": 2,
-     "attribution": 2.1,
+     "attribution": 2.2,
      "transfer_turnover": 0.3,
-     "stability": 0.2,
-     "player_identity": 0.2
+     "stability": 0.2
     },
     "qb": {
      "home": "EXPECTED",
@@ -396,7 +395,7 @@
     "grade": "ADEQUATE",
     "fam": {
      "qb_identity": 3.7,
-     "attribution": 3,
+     "attribution": 2.5,
      "qb_conflict": 1.4,
      "contract_conflicts": 1.2,
      "transfer_turnover": 0.3
@@ -431,16 +430,16 @@
    },
    "401856845": {
     "game": "Kansas @ TCU",
-    "score": 96,
+    "score": 95,
     "grade": "VERY_STRONG",
     "fam": {
+     "qb_identity": 2.6,
      "attribution": 2,
-     "qb_identity": 1.3,
      "transfer_turnover": 0.6
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "EXPECTED"
+     "away": "UNCERTAIN"
     },
     "avail": {
      "home": "COMPREHENSIVE_OFFICIAL",
@@ -457,8 +456,7 @@
      "availability": 1.5,
      "attribution": 0.7,
      "transfer_turnover": 0.3,
-     "stability": 0.2,
-     "player_identity": 0.2
+     "stability": 0.2
     },
     "qb": {
      "home": "EXPECTED",
@@ -489,10 +487,10 @@
    },
    "401856848": {
     "game": "Utah @ Cincinnati",
-    "score": 97,
+    "score": 98,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 1.7,
+     "attribution": 1.5,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -684,7 +682,7 @@
     "grade": "ADEQUATE",
     "fam": {
      "qb_identity": 3.3,
-     "attribution": 2.1,
+     "attribution": 2.4,
      "qb_conflict": 0.9,
      "player_identity": 0.3
     },
@@ -717,11 +715,67 @@
    },
    "401858280": {
     "game": "Clemson @ Florida State",
-    "score": 89,
-    "grade": "STRONG",
+    "score": 96,
+    "grade": "VERY_STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "attribution": 2,
+     "qb_identity": 1.1,
+     "starters": 0.6,
+     "transfer_turnover": 0.6,
+     "player_identity": 0.1
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
+    }
+   },
+   "401858281": {
+    "game": "Georgia Tech @ Pittsburgh",
+    "score": 79,
+    "grade": "ADEQUATE",
+    "fam": {
+     "qb_identity": 2.4,
+     "qb_conflict": 1.6,
+     "attribution": 2.4,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
+    }
+   },
+   "401858282": {
+    "game": "Miami @ North Carolina",
+    "score": 97,
+    "grade": "VERY_STRONG",
+    "fam": {
+     "attribution": 1.7,
+     "qb_identity": 0.8,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
+    }
+   },
+   "401858283": {
+    "game": "Stanford @ Louisville",
+    "score": 95,
+    "grade": "VERY_STRONG",
+    "fam": {
+     "attribution": 3,
      "qb_identity": 1.1,
      "starters": 0.6,
      "transfer_turnover": 0.6
@@ -731,87 +785,28 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
-    }
-   },
-   "401858281": {
-    "game": "Georgia Tech @ Pittsburgh",
-    "score": 79,
-    "grade": "ADEQUATE",
-    "fam": {
-     "availability": 4.6,
-     "qb_conflict": 1.9,
-     "qb_identity": 2.4,
-     "qb_status": 2,
-     "transfer_turnover": 0.6
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
-    }
-   },
-   "401858282": {
-    "game": "Miami @ North Carolina",
-    "score": 89,
-    "grade": "STRONG",
-    "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
-     "qb_identity": 0.8,
-     "transfer_turnover": 0.6
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
-    }
-   },
-   "401858283": {
-    "game": "Stanford @ Louisville",
-    "score": 88,
-    "grade": "STRONG",
-    "fam": {
-     "availability": 6,
-     "qb_status": 4,
-     "starters": 0.8,
-     "qb_identity": 1.1,
-     "transfer_turnover": 0.6
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "PROVIDER_FAILED",
-     "away": "PROVIDER_FAILED"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401858284": {
     "game": "Virginia @ Wake Forest",
-    "score": 88,
-    "grade": "STRONG",
+    "score": 96,
+    "grade": "VERY_STRONG",
     "fam": {
-     "availability": 6,
-     "qb_status": 4,
-     "starters": 0.8,
+     "attribution": 2.1,
+     "starters": 0.6,
      "qb_identity": 0.8,
-     "transfer_turnover": 0.6
+     "transfer_turnover": 0.6,
+     "player_identity": 0.1
     },
     "qb": {
      "home": "EXPECTED",
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "PROVIDER_FAILED",
-     "away": "PROVIDER_FAILED"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401858285": {
@@ -981,7 +976,7 @@
     "score": 96,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 2,
+     "attribution": 1.9,
      "qb_identity": 1.6,
      "transfer_turnover": 0.3,
      "player_identity": 0.1
@@ -1003,7 +998,7 @@
      "qb_identity": 4,
      "qb_conflict": 1.4,
      "contract_conflicts": 1.2,
-     "attribution": 2,
+     "attribution": 1.9,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -1040,7 +1035,7 @@
     "score": 93,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 2.9,
+     "attribution": 3,
      "qb_identity": 1.3,
      "qb_conflict": 0.8,
      "starters": 1.2,
@@ -1061,7 +1056,7 @@
     "score": 95,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 2.4,
+     "attribution": 2.2,
      "qb_identity": 1.6,
      "qb_conflict": 0.8,
      "transfer_turnover": 0.3
@@ -1388,7 +1383,7 @@
      "qb_status": 4,
      "availability": 3.6,
      "qb_conflict": 1.7,
-     "player_identity": 0.3
+     "player_identity": 0.4
     },
     "qb": {
      "home": "EXPECTED",
@@ -1463,9 +1458,10 @@
     "grade": "STRONG",
     "fam": {
      "qb_status": 4,
-     "availability": 2.2,
+     "availability": 2.3,
      "starters": 1.2,
-     "qb_identity": 0.8
+     "qb_identity": 0.8,
+     "player_identity": 0.2
     },
     "qb": {
      "home": "EXPECTED",
@@ -1495,25 +1491,6 @@
     },
     "avail": {
      "home": "NOT_REQUIRED",
-     "away": "PROVIDER_FAILED"
-    }
-   },
-   "401862812": {
-    "game": "Florida Atlantic @ North Texas",
-    "score": 89,
-    "grade": "STRONG",
-    "fam": {
-     "availability": 6,
-     "qb_status": 4,
-     "qb_identity": 0.9,
-     "transfer_turnover": 0.3
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "PROVIDER_FAILED",
      "away": "PROVIDER_FAILED"
     }
    },
@@ -1594,7 +1571,7 @@
     },
     "qb": {
      "home": "UNCERTAIN",
-     "away": "EXPECTED"
+     "away": "UNCERTAIN"
     },
     "avail": {
      "home": "NOT_DUE_YET",
@@ -1651,7 +1628,7 @@
      "transfer_turnover": 0.6
     },
     "qb": {
-     "home": "EXPECTED",
+     "home": "UNCERTAIN",
      "away": "EXPECTED"
     },
     "avail": {
@@ -1766,12 +1743,12 @@
    },
    "401864530": {
     "game": "Northern Illinois @ UNLV",
-    "score": 89,
+    "score": 88,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
-     "starters": 0.6,
+     "availability": 6,
+     "qb_status": 4,
+     "starters": 0.8,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
@@ -1780,8 +1757,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401864531": {
@@ -2031,19 +2008,17 @@
    },
    "401869846": {
     "game": "App State @ Georgia Southern",
-    "score": 79,
-    "grade": "ADEQUATE",
+    "score": 86,
+    "grade": "STRONG",
     "fam": {
      "availability": 6,
-     "qb_identity": 2.9,
+     "qb_identity": 2.4,
      "qb_status": 4,
-     "qb_conflict": 1.7,
      "starters": 1.5,
-     "contract_conflicts": 1.4,
      "transfer_turnover": 0.6
     },
     "qb": {
-     "home": "CONFLICTED",
+     "home": "UNCERTAIN",
      "away": "EXPECTED"
     },
     "avail": {
@@ -2135,38 +2110,18 @@
    },
    "401869951": {
     "game": "Marshall @ Georgia Southern",
-    "score": 79,
-    "grade": "ADEQUATE",
-    "fam": {
-     "availability": 6,
-     "qb_identity": 2.9,
-     "qb_status": 4,
-     "qb_conflict": 2.6,
-     "starters": 1.7,
-     "contract_conflicts": 1.4,
-     "transfer_turnover": 0.3
-    },
-    "qb": {
-     "home": "CONFLICTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "PROVIDER_FAILED",
-     "away": "PROVIDER_FAILED"
-    }
-   },
-   "401869963": {
-    "game": "Troy @ James Madison",
-    "score": 87,
+    "score": 84,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
-     "qb_identity": 2.7,
+     "qb_identity": 2.4,
      "qb_status": 4,
-     "transfer_turnover": 0.6
+     "starters": 2.5,
+     "qb_conflict": 0.9,
+     "transfer_turnover": 0.3
     },
     "qb": {
-     "home": "EXPECTED",
+     "home": "UNCERTAIN",
      "away": "EXPECTED"
     },
     "avail": {
@@ -2201,6 +2156,7 @@
      "availability": 6,
      "qb_status": 4,
      "qb_conflict": 0.9,
+     "starters": 0.8,
      "qb_identity": 0.8
     },
     "qb": {
@@ -2234,12 +2190,13 @@
    },
    "401871059": {
     "game": "Florida International @ Liberty",
-    "score": 88,
+    "score": 87,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
      "qb_status": 4,
      "qb_conflict": 0.9,
+     "starters": 0.8,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -2261,6 +2218,7 @@
      "qb_identity": 4.1,
      "qb_status": 4,
      "qb_conflict": 1,
+     "starters": 0.8,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -2274,12 +2232,13 @@
    },
    "401871074": {
     "game": "Missouri State @ Florida International",
-    "score": 87,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
      "qb_status": 4,
      "venue": 1.4,
+     "starters": 1.6,
      "qb_identity": 0.9,
      "transfer_turnover": 0.6
     },
@@ -2313,13 +2272,13 @@
    },
    "401871076": {
     "game": "Western Kentucky @ Middle Tennessee",
-    "score": 86,
+    "score": 85,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
      "qb_identity": 2.4,
      "qb_status": 4,
-     "starters": 0.8,
+     "starters": 1.6,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -2352,13 +2311,14 @@
    },
    "401871096": {
     "game": "Marshall @ Old Dominion",
-    "score": 87,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
      "qb_status": 4,
      "qb_identity": 1.3,
      "qb_conflict": 1.8,
+     "starters": 0.8,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -2372,12 +2332,13 @@
    },
    "401871097": {
     "game": "Louisiana Tech @ South Alabama",
-    "score": 88,
+    "score": 87,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
      "qb_status": 4,
      "qb_conflict": 0.9,
+     "starters": 0.8,
      "qb_identity": 1.1
     },
     "qb": {
@@ -2411,7 +2372,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-29T19:30:10.063Z",
+  "at": "2026-10-29T22:54:00.628Z",
   "counts": {
    "games": 115,
    "mean": 85.9,
@@ -2426,7 +2387,7 @@
    "missing_qb_status": 184,
    "qb_conflicts_open": 17,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 25,
+   "games_lacking_injury_information": 28,
    "unrated_meaningful_absences": 314,
    "fcs_games_thin_data": 1,
    "games_under_two_market_sources": 115,
@@ -2436,36 +2397,29 @@
   },
   "baseline_of": null
  },
- "what_improved": [],
- "what_degraded": [
-  "+3 games lacking injury information (25 → 28)"
+ "what_improved": [
+  "+0.3 mean reliability (85.9 → 86.2)",
+  "-14 QB statuses missing (184 → 170)",
+  "-2 open QB conflicts (17 → 15)",
+  "-3 games lacking injury information (28 → 25)",
+  "-2 games under two market sources (115 → 113)",
+  "-54 stale evidence records (56 → 2)",
+  "4 games moved STRONG → VERY STRONG",
+  "2 games moved ADEQUATE → STRONG"
  ],
- "why": [],
+ "what_degraded": [
+  "+93 unrated meaningful absences (314 → 407)"
+ ],
+ "why": [
+  "the slate itself changed: 0 games entered the window, 2 left it (kicked off or rolled out)",
+  "Clemson @ Florida State: STRONG → VERY STRONG (89 → 96); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
+  "Miami @ North Carolina: STRONG → VERY STRONG (89 → 97); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
+  "Stanford @ Louisville: STRONG → VERY STRONG (88 → 95); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
+  "Virginia @ Wake Forest: STRONG → VERY STRONG (88 → 96); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
+  "App State @ Georgia Southern: ADEQUATE → STRONG (79 → 86); largest change: qb_conflict +1.7 pts; home QB CONFLICTED → UNCERTAIN",
+  "Marshall @ Georgia Southern: ADEQUATE → STRONG (79 → 84); largest change: qb_conflict +1.7 pts; home QB CONFLICTED → UNCERTAIN"
+ ],
  "history": [
-  {
-   "at": "2026-10-23T11:51:03.820Z",
-   "counts": {
-    "games": 105,
-    "mean": 87.4,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 20,
-     "ADEQUATE": 22,
-     "STRONG": 61,
-     "CAUTION": 2
-    },
-    "missing_qb_status": 155,
-    "qb_conflicts_open": 10,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 22,
-    "unrated_meaningful_absences": 398,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 105,
-    "stale_evidence_records": 4,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-23T13:07:18.650Z",
    "counts": {
@@ -3847,6 +3801,31 @@
     "fcs_games_thin_data": 1,
     "games_under_two_market_sources": 115,
     "stale_evidence_records": 56,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-30T06:02:45.811Z",
+   "counts": {
+    "games": 113,
+    "mean": 86.2,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 19,
+     "ADEQUATE": 34,
+     "CAUTION": 2,
+     "STRONG": 57,
+     "LOW": 1
+    },
+    "missing_qb_status": 170,
+    "qb_conflicts_open": 15,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 25,
+    "unrated_meaningful_absences": 407,
+    "fcs_games_thin_data": 1,
+    "games_under_two_market_sources": 113,
+    "stale_evidence_records": 2,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }

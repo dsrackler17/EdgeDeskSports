@@ -62,7 +62,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-29.7";
+export const BUILD = "polymarket_sync@2026-10-30.8";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -115,11 +115,19 @@ export const BUILD = "polymarket_sync@2026-10-29.7";
     'score_weight_follow_roi', 'score_weight_clv_pct', 'score_weight_roi', 'score_shrink_n',
     'leagues', 'market_types', 'validation_min_followed', 'ci_level', 'bootstrap_resamples', 'bootstrap_seed',
     'follow_slippage_sensitivity'];
+  /* H-RADAR-02's rules (rules_version 2) carry these as well: discovery by recent covered-league dollars, the
+     high-frequency screen, the featured bar and the follower's cost (research/radar/H-RADAR-02/DESIGN.md).
+     H-RADAR-01's frozen rules have no rules_version: they are version 1, and mean what they meant */
+  R.RULE_KEYS_V2 = ['rules_version', 'pool_window_days', 'pool_min_covered_bets', 'discovery_max_rank', 'screen_actions', 'screen_days',
+    'hf_changes_per_day', 'hf_sample_hours', 'hf_sample_days_ago', 'hf_change_gap_min', 'featured_min_score', 'follow_cost'];
+  R.rulesVersion = function (r) { return r && Number(r.rules_version) >= 2 ? 2 : 1; };
+  R.gradingVersion = function (r) { return R.rulesVersion(r) >= 2 ? 'radar-grade-2' : R.GRADING_VERSION; };
   /* the rules every function needs, or an error naming the missing ones:
      there is no default here (supabase/radar.sql radar_rules() is the constant) */
   R.rules = function (r) {
     if (!r || typeof r !== 'object') throw new Error('radar: the rules are required (public.radar_rules())');
-    var missing = R.RULE_KEYS.filter(function (k) { return r[k] === undefined || r[k] === null; });
+    var keys = R.rulesVersion(r) >= 2 ? R.RULE_KEYS.concat(R.RULE_KEYS_V2) : R.RULE_KEYS;
+    var missing = keys.filter(function (k) { return r[k] === undefined || r[k] === null; });
     if (missing.length) throw new Error('radar: the rules are missing ' + missing.join(', ') + ' (public.radar_rules())');
     return r;
   };
@@ -268,8 +276,33 @@ export const BUILD = "polymarket_sync@2026-10-29.7";
       outcomes: outcomes.map(String), token_ids: tokens, game_start_at: start,
       closed: closed, settle: settle,
       last_prices: closed ? null : prices.map(price),
-      end_at: ms(pick(m, ['endDate', 'end_date', 'endDateIso'])), active: !!pick(m, ['active']), accepting: pick(m, ['acceptingOrders', 'accepting_orders'])
+      end_at: ms(pick(m, ['endDate', 'end_date', 'endDateIso'])), active: !!pick(m, ['active']), accepting: pick(m, ['acceptingOrders', 'accepting_orders']),
+      /* what the market charges a taker, as it says itself (probe run 40975470572: covered sports markets send
+         feesEnabled true, feeType "zero_fees" and feeSchedule.rate 0). A market without fees enabled charges none */
+      fees_enabled: pick(m, ['feesEnabled', 'fees_enabled']) == null ? null : !!pick(m, ['feesEnabled', 'fees_enabled']), fee_schedule: feeSchedule(m)
     };
+  };
+  function feeSchedule(m) {
+    var s = pick(m, ['feeSchedule', 'fee_schedule']);
+    if (typeof s === 'string') { try { s = JSON.parse(s); } catch (e) { s = null; } }
+    if (!s || typeof s !== 'object') return null;
+    return { rate: num(s.rate), exponent: num(s.exponent), taker_only: s.takerOnly != null ? !!s.takerOnly : (s.taker_only != null ? !!s.taker_only : null),
+      fee_type: pick(m, ['feeType', 'fee_type']) || null };
+  }
+  /* a market's fee schedule as the fee formula reads it (docs.polymarket.com, trading/fees and market-data/market-details):
+     fees not enabled -> no fee (rate 0); enabled with a rate and an exponent -> that schedule; a status never read, or
+     enabled without a readable schedule -> null: unknown, and a fee that is unknown is never guessed */
+  R.feeSchedule = function (market) {
+    if (!market || market.fees_enabled == null) return null;
+    if (market.fees_enabled === false) return { rate: 0, exponent: 1 };
+    var s = market.fee_schedule;
+    return s && typeof s.rate === 'number' && isFinite(s.rate) && s.rate >= 0 && typeof s.exponent === 'number' && isFinite(s.exponent) ? { rate: s.rate, exponent: s.exponent } : null;
+  };
+  /* the taker fee a share at price p, in USDC: fee = C x rate x (p x (1 - p))^exponent, takers only (Polymarket's
+     formula, exponent 1 in every published schedule). A follower buying is a taker */
+  R.takerFee = function (p, schedule) {
+    if (!schedule || p == null || !(p > 0 && p < 1)) return null;
+    return r6(schedule.rate * Math.pow(p * (1 - p), schedule.exponent));
   };
 
   /* a CLOB price history: [{t, p}] ascending, t in ms */
@@ -355,7 +388,8 @@ export const BUILD = "polymarket_sync@2026-10-29.7";
         stake: r6(stake), shares_pregame: r6(preShares), buy_cost: r6(buyCost), sell_proceeds: r6(proceeds), shares_held: r6(Math.max(held, 0)),
         trades: ts.length, txs: ts.map(function (x) { return x.tx_hash; }).filter(function (h, i, a) { return a.indexOf(h) === i; }),
         settle: settle, result: settle == null ? (m.closed ? 'void' : 'open') : (settle === 1 ? 'win' : settle === 0 ? 'loss' : 'push'),
-        profit: settle == null ? null : r6(proceeds + settle * Math.max(held, 0) - buyCost)
+        profit: settle == null ? null : r6(proceeds + settle * Math.max(held, 0) - buyCost),
+        fee_schedule: R.feeSchedule(m)   /* what a follower would pay the market (version 2 grades only) */
       };
       out.bets.push(bet);
     });
@@ -383,6 +417,32 @@ export const BUILD = "polymarket_sync@2026-10-29.7";
       g['follow' + L[1] + '_roi'] = p != null && bet.settle != null ? r6(bet.settle / p - 1) : null;
       g['beat_close' + L[1]] = p != null && c ? c.p > p : null;
     });
+    return R.rulesVersion(rules) >= 2 ? R.followCost(g, rules) : g;
+  };
+  /* version 2 (H-RADAR-02): what a follower really pays. The price history is the midpoint (probe run
+     40975470572), and a follower buys at the ask, so the follow price is the midpoint plus follow_cost (1 cent);
+     on top of it the market's taker fee at that price (R.takerFee, from its own schedule), so the ROI is
+     settlement / (price + fee) - 1. A follow on a market whose fee schedule is unknown is not graded, with its
+     reason. A price of 1 or more cannot be bought. Beat-the-close compares the close with the price paid. The grade
+     reads only the midpoints a version-1 grade stored, so a stored version-1 bet is graded to version 2 with no new
+     read (R.followCost on it gives the same as on the history) */
+  R.followCost = function (g1, rules) {
+    rules = R.rules(rules);
+    var g = Object.assign({}, g1), sched = g1.fee_schedule !== undefined ? g1.fee_schedule : null;
+    ['5', '15'].forEach(function (k) {
+      var mid = g1['follow' + k + '_mid'] != null ? Number(g1['follow' + k + '_mid']) : (g1['follow' + k + '_price'] != null ? Number(g1['follow' + k + '_price']) : null);
+      g['follow' + k + '_mid'] = mid;
+      if (mid == null) { g['follow' + k + '_price'] = null; g['follow' + k + '_fee'] = null; g['follow' + k + '_roi'] = null; g['beat_close' + k] = null; return; }
+      var p = r6(mid + rules.follow_cost), why = null, fee = null;
+      if (!(p < 1)) why = 'price_at_bound';
+      else if (!sched) why = 'fee_unknown';
+      else fee = R.takerFee(p, sched);
+      if (why || fee == null) { g['follow' + k + '_price'] = null; g['follow' + k + '_fee'] = null; g['follow' + k + '_at'] = null; g['follow' + k + '_reason'] = why || 'fee_unknown'; g['follow' + k + '_roi'] = null; g['beat_close' + k] = null; return; }
+      g['follow' + k + '_price'] = p; g['follow' + k + '_fee'] = fee;
+      g['follow' + k + '_roi'] = g1.settle != null ? r6(Number(g1.settle) / (p + fee) - 1) : null;
+      g['beat_close' + k] = g1.close_price != null ? Number(g1.close_price) > p : null;
+    });
+    g.grading_version = R.gradingVersion(rules);
     return g;
   };
 
@@ -492,14 +552,62 @@ export const BUILD = "polymarket_sync@2026-10-29.7";
     rules = R.rules(rules);
     var ranked = (grades || []).filter(function (g) { return g && g.sample === 'ranked' && g.radar_score != null; })
       .sort(function (a, b) { return b.radar_score - a.radar_score || b.graded_bets - a.graded_bets || (a.wallet < b.wallet ? -1 : 1); });
-    var top = 0;
+    var top = 0, v2 = R.rulesVersion(rules) >= 2;
     ranked.forEach(function (g, i) {
       g.rank = i + 1;
-      g.top_directional = g.style === 'Directional' && !g.history_truncated && top < rules.top_wallets;
+      /* version 2 (H-RADAR-02): featured only with a Radar Score above featured_min_score, never a high-frequency
+         wallet, at most top_wallets of them; fewer when fewer qualify */
+      g.top_directional = g.style === 'Directional' && !g.history_truncated && top < rules.top_wallets
+        && (!v2 || (!g.high_frequency && g.radar_score > rules.featured_min_score));
       if (g.top_directional) top++;
     });
     (grades || []).forEach(function (g) { if (g && g.sample !== 'ranked') { g.rank = null; g.top_directional = false; } });
     return ranked;
+  };
+
+  /* ------------------------------------------------------------ the high-frequency screen (H-RADAR-02) */
+  /* position changes, not fills: a run of fills on one token and one side, each within hf_change_gap_min of the
+     last, is one change (a large order filled in pieces counts once). Rows: activity rows (R.activityRow) */
+  R.positionChanges = function (rows, rules) {
+    rules = R.rules(rules);
+    var gap = rules.hf_change_gap_min * MIN, last = {}, n = 0;
+    (rows || []).filter(function (t) { return t && t.kind === 'TRADE' && t.ts != null; }).sort(function (a, b) { return a.ts - b.ts; }).forEach(function (t) {
+      var k = t.token_id + '|' + t.side;
+      if (!(last[k] != null && t.ts - last[k] <= gap)) n++;
+      last[k] = t.ts;
+    });
+    return n;
+  };
+  /* the screening flag: one newest-first page held screen_actions with more to come, inside screen_days. A flag
+     only sends a wallet to the samples; it proves nothing */
+  R.screenFlag = function (rows, hasMore, nowMs, rules) {
+    rules = R.rules(rules);
+    var ts = (rows || []).map(function (r) { return r && r.ts; }).filter(function (t) { return t != null; });
+    if (!hasMore || ts.length < rules.screen_actions) return false;
+    return nowMs - Math.min.apply(null, ts) < rules.screen_days * 24 * 60 * MIN;
+  };
+  /* one sample: the hf_sample_hours ending at its moment. read = the rows read for that span (null when the read
+     failed), complete = the span was read to its start. Unknown when the read failed, or when it stopped short and
+     the changes it holds do not already exceed the bar: a missing sample is never low activity */
+  R.hfSample = function (read, complete, rules) {
+    rules = R.rules(rules);
+    if (read == null) return { known: false, changes_per_day: null, reason: 'unread' };
+    var perDay = R.positionChanges(read, rules) * 24 / rules.hf_sample_hours, bar = rules.hf_changes_per_day;
+    if (!complete && !(perDay > bar)) return { known: false, changes_per_day: null, at_least: r4(perDay), reason: 'incomplete' };
+    return { known: true, changes_per_day: r4(perDay), complete: !!complete };
+  };
+  /* high-frequency, not followable: every sample known and above hf_changes_per_day. Anything less is not that
+     label (a wallet with an unknown sample is judged on its history, or left ungraded at the cap) */
+  R.hfVerdict = function (samples, rules) {
+    rules = R.rules(rules);
+    var want = rules.hf_sample_days_ago.length;
+    var ok = (samples || []).length === want && samples.every(function (x) { return x && x.known && x.changes_per_day > rules.hf_changes_per_day; });
+    return { high_frequency: ok, samples: samples || [] };
+  };
+  /* the spans of the three samples, [from, to) in ms, for a moment now */
+  R.hfSpans = function (nowMs, rules) {
+    rules = R.rules(rules);
+    return rules.hf_sample_days_ago.map(function (d) { var to = nowMs - d * 24 * 60 * MIN; return { days_ago: d, from: to - rules.hf_sample_hours * 60 * MIN, to: to }; });
   };
 
   /* ------------------------------------------------------------ the bootstrap */
@@ -731,7 +839,11 @@ export const BUILD = "polymarket_sync@2026-10-29.7";
     sports: { host: 'gamma', path: '/sports' },                  /* the leagues and their series */
     events: { host: 'gamma', path: '/events' },                  /* game events and their markets */
     markets: { host: 'gamma', path: '/markets' },                /* market metadata, by condition id */
-    prices_history: { host: 'clob', path: '/prices-history' }    /* one outcome token's price over time */
+    prices_history: { host: 'clob', path: '/prices-history' },   /* one outcome token's price over time */
+    book: { host: 'clob', path: '/book' },                       /* one outcome token's order book now: the ask a follower pays */
+    price: { host: 'clob', path: '/price' },                     /* one outcome token's best price now, on one side */
+    midpoint: { host: 'clob', path: '/midpoint' },               /* one outcome token's midpoint now */
+    fee_rate: { host: 'clob', path: '/fee-rate' }                /* one outcome token's fee rate */
   };
   G.DEFAULTS = { pace_ms: { data: 120, gamma: 80, clob: 120 }, max_retries: 3, timeout_ms: 20000, backoff_base_ms: 1000, backoff_cap_ms: 16000,
     retry_after_cap_ms: 60000, breaker_after: 6, user_agent: 'EdgeDesk Prediction Radar (+https://edgedesksports.com/radar/)' };
@@ -909,6 +1021,9 @@ async function inChunks(rows: any[], n: number, fn: (c: any[]) => Promise<any>) 
 const inList = (xs: string[]) => "(" + xs.map((x) => '"' + String(x).replace(/"/g, '\\"') + '"').join(",") + ")";
 
 /* ---------------------------------------------------------------- shapes for the database */
+/* rules version 2 (H-RADAR-02) is on for this run: set from radar_rules() at the start of each run. Its columns
+   (fees, mids, discovery) exist only once supabase/radar.sql version 2 is applied, so version 1 never writes them */
+let V2 = false;
 function marketRecord(m: any, withSettle: boolean) {
   const r: any = {
     condition_id: m.condition_id, market_id: m.market_id, question: m.question, slug: m.slug, event_slug: m.event_slug, event_ref: m.event_ref,
@@ -916,6 +1031,7 @@ function marketRecord(m: any, withSettle: boolean) {
     outcomes: m.outcomes, token_ids: m.token_ids, game_start_at: iso(m.game_start_at), closed: !!m.closed,
   };
   if (withSettle) { r.settle = m.settle; r.resolved_at = m.settle ? new Date().toISOString() : null; }
+  if (V2 && m.fees_enabled != null) { r.fees_enabled = m.fees_enabled; r.fee_schedule = m.fee_schedule; }
   return r;
 }
 function tradeRecord(t: any, m: any, runId: string) {
@@ -932,14 +1048,16 @@ function betRecord(b: any, runId: string) {
     close_price: b.close_price, close_at: iso(b.close_at), clv_pp: b.clv_pp, clv_pct: b.clv_pct,
     follow5_price: b.follow5_price, follow5_at: iso(b.follow5_at), follow5_reason: b.follow5_reason, follow5_roi: b.follow5_roi,
     follow15_price: b.follow15_price, follow15_at: iso(b.follow15_at), follow15_reason: b.follow15_reason, follow15_roi: b.follow15_roi,
-    beat_close5: b.beat_close5, grading_version: R.GRADING_VERSION, run_id: runId,
+    beat_close5: b.beat_close5, grading_version: V2 ? "radar-grade-2" : R.GRADING_VERSION, run_id: runId,
+    ...(V2 ? { follow5_mid: b.follow5_mid ?? null, follow15_mid: b.follow15_mid ?? null, follow5_fee: b.follow5_fee ?? null, follow15_fee: b.follow15_fee ?? null } : {}),
   };
 }
 /* a stored market row read back into the core's shape */
 function fromStored(m: any) {
   return { condition_id: m.condition_id, question: m.question, slug: m.slug, event_slug: m.event_slug, event_ref: m.event_ref, event_title: m.event_title,
     league: m.league, market_type: m.market_type, line: m.line == null ? null : Number(m.line), outcomes: m.outcomes || [], token_ids: (m.token_ids || []).map(String),
-    game_start_at: R.ms(m.game_start_at), closed: !!m.closed, settle: m.settle || null };
+    game_start_at: R.ms(m.game_start_at), closed: !!m.closed, settle: m.settle || null,
+    fees_enabled: m.fees_enabled === undefined ? null : m.fees_enabled, fee_schedule: m.fee_schedule || null };
 }
 function tradeFromStored(t: any) {
   return { wallet: t.wallet, kind: t.kind, side: t.side, condition_id: t.condition_id, token_id: t.token_id, outcome_index: t.outcome_index,
@@ -1086,7 +1204,7 @@ async function tonight(ctx: any) {
      at the price a follower could take now; every started one is graded once */
   if (!ctx.dry) {
     try {
-      ctx.run.details.cards_published = await rpc("radar_publish_cards", {});
+      ctx.run.details.cards_published = V2 ? await rpc("radar_publish_cards", { p_quotes: await cardQuotes(ctx) }) : await rpc("radar_publish_cards", {});
       ctx.run.details.cards_graded = await rpc("radar_grade_cards", {});
     } catch (e) {
       if ((e as any).status === 404 || /PGRST202|Could not find the function|does not exist/.test(msg(e))) ctx.alert("WARNING", "record_not_installed", "supabase/radar_record.sql is not applied: Smart Money Tonight is not being recorded");
@@ -1190,24 +1308,9 @@ async function wallets(ctx: any) {
     }
     d.pages = pages; d.rows = rows.length; d.truncated = truncated;
     if (!ok) { d.status = "activity_failed"; if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: cur, updated_at: iso(now) }); continue; }
-    /* 2. the markets: the new ones, and stored ones not resolved yet */
-    const conds = Array.from(new Set(rows.map((t: any) => t.condition_id)));
-    const known: Record<string, any> = {};
-    await inChunks(conds, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) known[m.condition_id] = m; });
-    const want = conds.filter((c) => !known[c] || (!known[c].settle && known[c].game_start_at && R.ms(known[c].game_start_at)! < now));
-    const fresh: Record<string, any> = await gammaMarkets(ctx, want, false);
-    const newMarkets = Object.values(fresh).filter((m: any) => !known[m.condition_id]);
-    if (!ctx.dry && newMarkets.length) await inChunks(newMarkets.map((m: any) => marketRecord(m, true)), 200, (c) => insertOnce("poly_markets", c, "condition_id"));
-    for (const m of Object.values(fresh) as any[]) if (known[m.condition_id] && m.settle && !known[m.condition_id].settle && !ctx.dry) {
-      await patch("poly_markets?condition_id=eq." + m.condition_id + "&settle=is.null", { settle: m.settle, closed: true, resolved_at: iso(now) });
-    }
-    const markets: Record<string, any> = {};
-    for (const c of conds) markets[c] = fresh[c] || (known[c] ? fromStored(known[c]) : null);
-    /* 3. the covered trades, with their transaction hashes (append-only, once) */
-    const coveredRows = rows.filter((t: any) => markets[t.condition_id] && R.covered(markets[t.condition_id], rules));
+    /* 2-3. the markets they traded, and the covered trades with their hashes */
+    const { markets, coveredRows } = await storeActivity(ctx, rows);
     d.covered = coveredRows.length;
-    if (!ctx.dry) await inChunks(coveredRows.map((t: any) => tradeRecord(t, markets[t.condition_id], ctx.run.run_id)), 500,
-      (c) => insertOnce("poly_trades", c, "tx_hash,wallet,kind,token_key,side_key,size_key,price_key"));
     if (rows.length) last = Math.max(last || 0, Math.floor(Math.max(...rows.map((t: any) => t.ts)) / 1000));
     /* 4. once the read has reached the present, the newly resolved bets the grade reads, graded once (the rest next
        run, if time runs out). A read stopped short of the present (by time, the run's pages or the page cap) grades
@@ -1223,6 +1326,29 @@ async function wallets(ctx: any) {
       Object.assign({ activity_cursor: kept, history_truncated: truncated, updated_at: iso(now) }, partial ? {} : { activity_synced_at: iso(now) }));
   }
   if (ctx.drift) ctx.alert("DRIFT", "activity_unreadable", ctx.drift + " activity row(s) could not be read (no transaction hash, time, market, or price)");
+}
+
+/* a page (or pages) of a wallet's activity, stored: the markets it traded (the new ones from Gamma, and stored ones not
+   resolved yet: their resolution), then its covered trades with their transaction hashes (append-only, once) */
+async function storeActivity(ctx: any, rows: any[]) {
+  const rules = ctx.rules, now = ctx.nowMs;
+  const conds = Array.from(new Set(rows.map((t: any) => t.condition_id)));
+  const known: Record<string, any> = {};
+  await inChunks(conds, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) known[m.condition_id] = m; });
+  const want = conds.filter((c) => !known[c] || (!known[c].settle && known[c].game_start_at && R.ms(known[c].game_start_at)! < now));
+  const fresh: Record<string, any> = await gammaMarkets(ctx, want, false);
+  const newMarkets = Object.values(fresh).filter((m: any) => !known[m.condition_id]);
+  if (!ctx.dry && newMarkets.length) await inChunks(newMarkets.map((m: any) => marketRecord(m, true)), 200, (c) => insertOnce("poly_markets", c, "condition_id"));
+  for (const m of Object.values(fresh) as any[]) if (known[m.condition_id] && m.settle && !known[m.condition_id].settle && !ctx.dry) {
+    await patch("poly_markets?condition_id=eq." + m.condition_id + "&settle=is.null", Object.assign({ settle: m.settle, closed: true, resolved_at: iso(now) },
+      V2 && m.fees_enabled != null ? { fees_enabled: m.fees_enabled, fee_schedule: m.fee_schedule } : {}));
+  }
+  const markets: Record<string, any> = {};
+  for (const c of conds) markets[c] = fresh[c] || (known[c] ? fromStored(known[c]) : null);
+  const coveredRows = rows.filter((t: any) => markets[t.condition_id] && R.covered(markets[t.condition_id], rules));
+  if (!ctx.dry) await inChunks(coveredRows.map((t: any) => tradeRecord(t, markets[t.condition_id], ctx.run.run_id)), 500,
+    (c) => insertOnce("poly_trades", c, "tx_hash,wallet,kind,token_key,side_key,size_key,price_key"));
+  return { markets, coveredRows };
 }
 
 async function gradeNewBets(ctx: any, wallet: string, dryTrades: any[] | null, seenMarkets: Record<string, any>, late?: () => boolean) {
@@ -1288,6 +1414,357 @@ async function grade(ctx: any) {
     note: "polymarket_sync " + BUILD }, p_grades: rows });
 }
 
+/* ================================================================ H-RADAR-02 (rules version 2)
+   research/radar/registration_h_radar_02.json, research/radar/H-RADAR-02/DESIGN.md. Discovery: the 30-day board ranks
+   candidates (it qualifies nobody). Evaluation, in board order until pool_size wallets are eligible: each candidate's
+   last pool_window_days read newest first, the screening flag on its first page, the three samples when flagged,
+   then the complete read up to wallet_max_pages pages. The pool: the eligible wallets with the most covered-league
+   dollars in the window. The grade: their newest bets in the window, at what a follower pays. */
+const HF_SAMPLE_PAGES = 5;
+const ACT = "TRADE,REDEEM,SPLIT,MERGE";
+
+/* pool (version 2): the 30-day board, down to discovery_max_rank, as candidates. It writes no pool membership */
+async function poolV2(ctx: any) {
+  const rules = ctx.rules, at = iso(ctx.nowMs)!;
+  const out: any[] = [];
+  for (let off = 0; off < rules.discovery_max_rank; off += 50) {
+    const r = await ask(ctx, "leaderboard", { category: "SPORTS", timePeriod: rules.pool_period, orderBy: rules.pool_order, limit: 50, offset: off });
+    if (!r.ok) break;
+    const rows = R.page(r.data).rows.map(R.leaderRow).filter(Boolean);
+    if (!rows.length) break;
+    out.push(...rows);
+  }
+  const seen = new Set<string>(), cands = out.filter((w: any) => !seen.has(w.wallet) && seen.add(w.wallet)).slice(0, rules.discovery_max_rank);
+  ctx.run.details.candidates = cands.length;
+  if (!cands.length) { ctx.alert("FAILURE", "board_empty", "the 30-day sports board named no wallet: the candidates are unchanged"); return; }
+  if (ctx.dry) { ctx.out.candidates = cands.slice(0, 10); return; }
+  await inChunks(cands.map((w: any, i: number) => ({ wallet: w.wallet, board_rank: i + 1, board_shares: w.volume, board_seen_at: at, updated_at: at })), 200,
+    (c) => upsert("poly_wallets", c, "wallet"));
+  /* a wallet the board no longer names is no longer a candidate (its evaluation, grades and history stay) */
+  await patch("poly_wallets?board_rank=not.is.null&or=(board_seen_at.is.null,board_seen_at.lt." + encodeURIComponent(at) + ")", { board_rank: null, updated_at: at });
+}
+
+/* one span's rows -> its position changes a day, known only when read to its start (R.hfSample) */
+async function readSpan(ctx: any, wallet: string, from: number, to: number) {
+  const rows: any[] = [];
+  let cursor: any = null, pages = 0;
+  for (;;) {
+    const r = await ask(ctx, "activity", { user: wallet, type: ACT, limit: 1000, sort_direction: "DESC", start: Math.floor(from / 1000), end: Math.floor(to / 1000), cursor });
+    if (!r.ok) return { rows: null, complete: false };
+    pages++;
+    const pg = R.page(r.data);
+    for (const a of pg.rows) { const x = R.activityRow(a, wallet); if (x && x.ts >= from && x.ts < to) rows.push(x); }
+    if (!pg.has_more) return { rows, complete: true };
+    if (pages >= HF_SAMPLE_PAGES) return { rows, complete: false };
+    cursor = pg.next_cursor;
+  }
+}
+
+/* the window's covered dollars and covered pregame bets, from the wallet's stored trades (covered trades only are
+   stored, and they are what both count) */
+async function windowStats(ctx: any, wallet: string) {
+  const rules = ctx.rules, from = ctx.nowMs - rules.pool_window_days * DAY;
+  const trades = (await dbAll("poly_trades?select=wallet,kind,side,condition_id,token_id,outcome_index,size,price,traded_at,tx_hash&wallet=eq." + wallet
+    + "&traded_at=gte." + encodeURIComponent(iso(from)!) + "&order=traded_at")).map(tradeFromStored);
+  const conds = Array.from(new Set(trades.map((t: any) => t.condition_id)));
+  const markets: Record<string, any> = {};
+  await inChunks(conds, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) markets[m.condition_id] = fromStored(m); });
+  const usd = trades.filter((t: any) => t.kind === "TRADE").reduce((a: number, t: any) => a + (t.size || 0) * (t.price || 0), 0);
+  const bets = R.buildBets(trades, markets, rules).bets.filter((b: any) => b.entry_at >= from).length;
+  return { usd: Math.round(usd * 100) / 100, bets };
+}
+
+/* evaluate a candidate, as far as this run's time and pages allow; the cursor keeps its place */
+async function evaluateV2(ctx: any, w: any, d: any, late: () => boolean) {
+  const rules = ctx.rules, now = ctx.nowMs;
+  const c0 = w.activity_cursor || {};
+  /* a copy: a read that fails keeps the cursor it started from, so no page is skipped */
+  const cur: any = w.eval_status === "evaluating" && c0.v2 ? JSON.parse(JSON.stringify(c0)) : { v2: 1, start_s: Math.floor((now - rules.pool_window_days * DAY) / 1000), end_s: Math.floor(now / 1000),
+    next: null, pages: 0, newest_s: null, flag: null, samples: null, spans: R.hfSpans(now, rules).map((x: any) => ({ from: x.from, to: x.to, days_ago: x.days_ago, keys: [] })) };
+  const save = async (fields: any) => { if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, Object.assign({ updated_at: iso(now) }, fields)); };
+  /* the samples, when the first page flagged the wallet: they decide high-frequency before any more is read */
+  const sampleIfFlagged = async () => {
+    if (!cur.flag || cur.samples) return false;
+    const samples: any[] = [];
+    for (const sp of R.hfSpans(R.ms(cur.end_s * 1000)!, rules)) { const r = await readSpan(ctx, w.wallet, sp.from, sp.to); samples.push(Object.assign({ days_ago: sp.days_ago }, R.hfSample(r.rows, r.complete, rules))); }
+    cur.samples = samples;
+    const v = R.hfVerdict(samples, rules);
+    d.samples = samples.map((x: any) => x.known ? x.changes_per_day : "unknown");
+    if (v.high_frequency) {
+      d.status = "high_frequency";
+      await save({ eval_status: "high_frequency", high_frequency: true, screen_flag: true, hf: { samples, verdict: "high_frequency", decided_at: iso(now) },
+        evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: {}, in_pool: false });
+      return true;
+    }
+    return false;
+  };
+  if (await sampleIfFlagged()) return;
+  /* the read, newest first, from where it stopped */
+  /* a read already complete whose grading ran out of time goes straight on to its grading */
+  let pages = 0, ok = true, complete = !!cur.graded_only, capHit = false, cut = false;
+  const rows: any[] = [];
+  for (; !complete;) {
+    if (pages > 0 && late()) { cut = true; break; }
+    const r = await ask(ctx, "activity", { user: w.wallet, type: ACT, limit: 1000, sort_direction: "DESC", start: cur.start_s, end: cur.end_s, cursor: cur.next });
+    if (!r.ok) { ok = false; break; }
+    pages++; cur.pages++;
+    const pg = R.page(r.data), pageRows: any[] = [];
+    for (const a of pg.rows) { const x = R.activityRow(a, w.wallet); if (x) pageRows.push(x); else ctx.drift++; }
+    rows.push(...pageRows);
+    if (cur.pages === 1) cur.flag = R.screenFlag(pageRows, pg.has_more, now, rules);
+    /* each span's fills, kept so a complete read counts its own position changes (no span is unknown then) */
+    for (const x of pageRows) for (const sp of cur.spans) if (x.kind === "TRADE" && x.ts >= sp.from && x.ts < sp.to) sp.keys.push([x.ts, x.token_id + "|" + x.side, x.tx_hash]);
+    if (pageRows.length) cur.newest_s = Math.max(cur.newest_s || 0, Math.floor(Math.max(...pageRows.map((x: any) => x.ts)) / 1000));
+    if (!pg.has_more) { complete = true; break; }
+    cur.next = pg.next_cursor;
+    if (cur.pages >= rules.wallet_max_pages) { capHit = true; break; }
+    if (cur.flag && !cur.samples) break;   /* flagged on its first page: the samples come first */
+    if (pages >= WALLET_PAGES_PER_RUN) { cut = true; break; }
+  }
+  d.pages = pages; d.rows = rows.length; d.flag = cur.flag;
+  if (!ok) { d.status = "activity_failed"; await save({ activity_cursor: c0 }); return; }
+  const { coveredRows } = await storeActivity(ctx, rows);
+  d.covered = coveredRows.length;
+  if (cur.flag && !cur.samples && !complete) {
+    if (!late() && await sampleIfFlagged()) return;
+    d.status = "partial"; ctx.run.details.time_up = true;
+    await save({ eval_status: "evaluating", screen_flag: true, activity_cursor: cur });
+    return;
+  }
+  if (capHit) {
+    d.status = "insufficient_history";
+    await save({ eval_status: "insufficient_history", screen_flag: !!cur.flag, hf: cur.samples ? { samples: cur.samples, verdict: "not_high_frequency" } : null,
+      evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: {}, in_pool: false });
+    return;
+  }
+  if (!complete) {
+    d.status = "partial"; ctx.run.details.time_up = true;
+    await save({ eval_status: "evaluating", screen_flag: !!cur.flag, activity_cursor: cur });
+    return;
+  }
+  /* complete: the three spans counted from its own history (all known), then the window's numbers and the grade */
+  const own = cur.spans.map((sp: any) => {
+    const seen = new Set<string>(), fills: any[] = [];
+    for (const k of sp.keys) { const id = k.join("|"); if (!seen.has(id)) { seen.add(id); const [tok, side] = String(k[1]).split("|"); fills.push({ kind: "TRADE", ts: k[0], token_id: tok, side }); } }
+    return Object.assign({ days_ago: sp.days_ago }, R.hfSample(fills, true, rules));
+  });
+  const verdict = R.hfVerdict(own, rules);
+  if (verdict.high_frequency) {
+    d.status = "high_frequency";
+    await save({ eval_status: "high_frequency", high_frequency: true, screen_flag: !!cur.flag, hf: { samples: own, verdict: "high_frequency", from: "complete_history" },
+      evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: {}, in_pool: false });
+    return;
+  }
+  const st = await windowStats(ctx, w.wallet);
+  const gr = await gradeNewBetsV2(ctx, w.wallet, late);
+  d.graded = gr.n; d.covered_usd = st.usd; d.covered_bets = st.bets;
+  d.status = gr.cut ? "partial" : "evaluated";
+  if (gr.cut) ctx.run.details.time_up = true;
+  await save(Object.assign({ eval_status: gr.cut ? "evaluating" : "evaluated", screen_flag: !!cur.flag, high_frequency: false,
+    hf: { samples: cur.samples || own, verdict: "not_high_frequency", from: cur.samples ? "samples" : "complete_history" },
+    window_covered_usd: st.usd, window_covered_bets: st.bets,
+    activity_cursor: gr.cut ? Object.assign({}, cur, { graded_only: true }) : { ts_s: cur.newest_s || cur.end_s } },
+    gr.cut ? {} : { evaluated_at: iso(now), activity_synced_at: iso(now) }));
+}
+
+/* refresh an evaluated wallet: its activity since its cursor (oldest first, as version 1), the window's numbers again,
+   its new bets graded */
+async function refreshV2(ctx: any, w: any, d: any, late: () => boolean) {
+  const rules = ctx.rules, now = ctx.nowMs, cur = w.activity_cursor || {};
+  let start = Math.max(1, Number(cur.ts_s || Math.floor((now - rules.pool_window_days * DAY) / 1000)) - 1), cursor: any = null, pages = 0, ok = true, cut = false, last = cur.ts_s || null;
+  const rows: any[] = [];
+  for (;;) {
+    if (pages > 0 && late()) { cut = true; break; }
+    const r = await ask(ctx, "activity", { user: w.wallet, type: ACT, limit: 1000, sort_direction: "ASC", start, cursor });
+    if (!r.ok) { ok = false; break; }
+    pages++;
+    const pg = R.page(r.data);
+    for (const a of pg.rows) { const x = R.activityRow(a, w.wallet); if (x) rows.push(x); else ctx.drift++; }
+    if (!pg.has_more) break;
+    if (pages >= WALLET_PAGES_PER_RUN) { cut = true; break; }
+    cursor = pg.next_cursor;
+  }
+  d.pages = pages; d.rows = rows.length; d.refresh = true;
+  if (!ok) { d.status = "activity_failed"; if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: cur, updated_at: iso(now) }); return; }
+  const { coveredRows } = await storeActivity(ctx, rows);
+  d.covered = coveredRows.length;
+  if (rows.length) last = Math.max(last || 0, Math.floor(Math.max(...rows.map((t: any) => t.ts)) / 1000));
+  const gr = cut ? { n: 0, cut: false } : await gradeNewBetsV2(ctx, w.wallet, late);
+  const st = cut ? null : await windowStats(ctx, w.wallet);
+  d.graded = gr.n; d.status = cut || gr.cut ? "partial" : "done";
+  if (cut || gr.cut) ctx.run.details.time_up = true;
+  if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, Object.assign({ activity_cursor: { ts_s: last }, updated_at: iso(now) },
+    st ? { window_covered_usd: st.usd, window_covered_bets: st.bets } : {}, cut || gr.cut ? {} : { evaluated_at: iso(now), activity_synced_at: iso(now) }));
+}
+
+/* the bets a version-2 grade reads, graded once: the newest max_bets_per_wallet resolved bets entered in the window. A
+   bet with a version-1 grade moves to version 2 from its stored midpoints (no new read); a market whose fee status was
+   never read is read from Gamma first; an unknown fee leaves the follow ungraded (R.followCost) */
+async function gradeNewBetsV2(ctx: any, wallet: string, late?: () => boolean) {
+  const rules = ctx.rules, from = ctx.nowMs - rules.pool_window_days * DAY;
+  const trades = (await dbAll("poly_trades?select=wallet,kind,side,condition_id,token_id,outcome_index,size,price,traded_at,tx_hash&wallet=eq." + wallet + "&order=traded_at")).map(tradeFromStored);
+  const conds = Array.from(new Set(trades.map((t: any) => t.condition_id)));
+  const markets: Record<string, any> = {};
+  await inChunks(conds, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) markets[m.condition_id] = fromStored(m); });
+  const built = R.buildBets(trades, markets, rules);
+  const stored = await dbAll("poly_bets?select=*&wallet=eq." + wallet);
+  const have2 = new Set(stored.filter((b: any) => b.grading_version === "radar-grade-2").map((b: any) => String(b.token_id)));
+  const v1: Record<string, any> = {};
+  for (const b of stored) if (b.grading_version !== "radar-grade-2") v1[String(b.token_id)] = b;
+  const todo = built.bets.filter((b: any) => b.settle != null && b.entry_at >= from).sort((a: any, b: any) => b.entry_at - a.entry_at || (a.token_id < b.token_id ? -1 : 1))
+    .slice(0, rules.max_bets_per_wallet).filter((b: any) => !have2.has(b.token_id));
+  /* the fee status of the markets they are on, read once where it never was */
+  const unread = Array.from(new Set(todo.filter((b: any) => markets[b.condition_id] && markets[b.condition_id].fees_enabled == null).map((b: any) => b.condition_id)));
+  if (unread.length) {
+    const g = await gammaMarkets(ctx, unread, true);
+    for (const m of Object.values(g) as any[]) {
+      if (m.fees_enabled == null) continue;
+      markets[m.condition_id] = Object.assign({}, markets[m.condition_id], { fees_enabled: m.fees_enabled, fee_schedule: m.fee_schedule });
+      if (!ctx.dry) await patch("poly_markets?condition_id=eq." + m.condition_id, { fees_enabled: m.fees_enabled, fee_schedule: m.fee_schedule });
+    }
+  }
+  let n = 0, cut = false;
+  for (const b0 of todo) {
+    if (late && late()) { cut = true; break; }
+    const b = Object.assign({}, b0, { fee_schedule: R.feeSchedule(markets[b0.condition_id]) });
+    const old = v1[b.token_id];
+    let g: any;
+    if (old) {
+      /* its version-1 grade read the same history: its follow prices are the midpoints */
+      g = R.followCost(Object.assign({}, b, { close_price: old.close_price == null ? null : Number(old.close_price), close_at: R.ms(old.close_at),
+        clv_pp: old.clv_pp == null ? null : Number(old.clv_pp), clv_pct: old.clv_pct == null ? null : Number(old.clv_pct),
+        follow5_price: old.follow5_price == null ? null : Number(old.follow5_price), follow5_at: R.ms(old.follow5_at), follow5_reason: old.follow5_reason,
+        follow15_price: old.follow15_price == null ? null : Number(old.follow15_price), follow15_at: R.ms(old.follow15_at), follow15_reason: old.follow15_reason }), rules);
+    } else {
+      let hist: any[] = [], failed = false, stop = false;
+      for (const wn of R.gradeWindows(b, rules)) {
+        const r = await ask(ctx, "prices_history", { market: b.token_id, startTs: Math.floor(wn.from / 1000), endTs: Math.floor(wn.to / 1000), fidelity: 1 });
+        if (!r.ok) { failed = true; stop = r.decision === "budget_exhausted" || r.decision === "breaker_open"; break; }
+        hist = hist.concat(R.priceHistory(r.data));
+      }
+      if (stop) break;
+      if (failed) continue;
+      hist.sort((x: any, y: any) => x.t - y.t);
+      g = R.gradeBet(b, hist, rules);
+    }
+    if (!ctx.dry) await insertOnce("poly_bets", [betRecord(g, ctx.run.run_id)], "wallet,token_id,grading_version");
+    n++;
+  }
+  return { n, cut };
+}
+
+/* wallets (version 2): the pool's wallets due a refresh first, then the candidates in board order while fewer than
+   pool_size are eligible (discovery goes on past every exclusion); then the pool is chosen again */
+async function walletsV2(ctx: any) {
+  const rules = ctx.rules, now = ctx.nowMs;
+  const eligible = (await dbAll("poly_wallets?select=wallet&eval_status=eq.evaluated&window_covered_bets=gte." + rules.pool_min_covered_bets)).length;
+  const refresh = (await db("poly_wallets?select=wallet,activity_cursor,eval_status&eval_status=eq.evaluated&or=(evaluated_at.is.null,evaluated_at.lt."
+    + encodeURIComponent(iso(now - 20 * H)!) + ")&order=in_pool.desc,evaluated_at.asc.nullsfirst&limit=" + DUE_LOOKAHEAD)) || [];
+  const fresh = eligible < rules.pool_size ? ((await db("poly_wallets?select=wallet,activity_cursor,eval_status&board_rank=not.is.null&eval_status=in.(evaluating,pending)"
+    + "&order=eval_status.asc,board_rank.asc&limit=" + DUE_LOOKAHEAD)) || []) : [];
+  ctx.run.details.eligible = eligible; ctx.run.details.discovering = eligible < rules.pool_size;
+  const skipped: string[] = [];
+  const due = refresh.concat(fresh).filter((w: any) => {
+    const c = w.activity_cursor || {}, at = c.attempt_at ? R.ms(c.attempt_at) : null;
+    if (at == null || !(now - at < ATTEMPT_COOLDOWN_MS || (Number(c.attempts || 0) >= MAX_ATTEMPTS && now - at < DAY))) return true;
+    skipped.push(w.wallet);
+    return false;
+  }).slice(0, WALLETS_PER_RUN);
+  if (skipped.length) {
+    ctx.run.details.skipped = skipped;
+    ctx.alert("WARNING", "wallet_skipped", skipped.length + " wallet(s) set aside: a run died part way through them (each is read again later)", { wallets: skipped });
+  }
+  const late = () => hooks.now() - ctx.t0 > WALLETS_TIME_MS;
+  ctx.run.details.wallets = [];
+  for (const w of due) {
+    if (late()) { ctx.run.details.time_up = true; break; }
+    const d: any = { wallet: w.wallet };
+    ctx.run.details.wallets.push(d);
+    const cur = w.activity_cursor || {};
+    if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: Object.assign({}, cur, { attempt_at: iso(now), attempts: Number(cur.attempts || 0) + 1 }), updated_at: iso(now) });
+    w.activity_cursor = cur;
+    if (w.eval_status === "evaluated") await refreshV2(ctx, w, d, late); else await evaluateV2(ctx, w, d, late);
+  }
+  if (!ctx.dry) await repool(ctx);
+  if (ctx.drift) ctx.alert("DRIFT", "activity_unreadable", ctx.drift + " activity row(s) could not be read (no transaction hash, time, market, or price)");
+}
+
+/* the pool: the pool_size evaluated wallets with the most covered-league dollars in the window, each with at least
+   pool_min_covered_bets covered pregame bets in it. Every other wallet leaves it */
+async function repool(ctx: any) {
+  const rules = ctx.rules, at = iso(ctx.nowMs)!;
+  const top = (await db("poly_wallets?select=wallet&eval_status=eq.evaluated&window_covered_bets=gte." + rules.pool_min_covered_bets
+    + "&order=window_covered_usd.desc.nullslast,wallet.asc&limit=" + rules.pool_size)) || [];
+  const ids = top.map((w: any) => w.wallet);
+  ctx.run.details.pool = ids.length;
+  await patch("poly_wallets?in_pool=is.true" + (ids.length ? "&wallet=not.in." + inList(ids) : ""), { in_pool: false, pool_rank: null, updated_at: at });
+  for (let i = 0; i < ids.length; i++) await patch("poly_wallets?wallet=eq." + ids[i] + "&or=(in_pool.is.false,pool_rank.is.null,pool_rank.neq." + (i + 1) + ")",
+    { in_pool: true, pool_rank: i + 1, pool_refreshed_at: at, updated_at: at });
+}
+
+/* how discovery stands, for the grade run and the page: screened, flagged, sampled, marked, ungraded, evaluated */
+async function discoveryCounts(ctx: any) {
+  const rules = ctx.rules;
+  const ws = await dbAll("poly_wallets?select=eval_status,screen_flag,hf,window_covered_bets,in_pool,board_rank&or=(board_rank.not.is.null,eval_status.neq.pending)");
+  const c = (f: (w: any) => boolean) => ws.filter(f).length;
+  return { candidates: c((w) => w.board_rank != null), screened: c((w) => w.eval_status !== "pending"), in_progress: c((w) => w.eval_status === "evaluating"),
+    flagged: c((w) => !!w.screen_flag), sampled: c((w) => !!(w.hf && w.hf.from !== "complete_history" && Array.isArray(w.hf.samples))),
+    high_frequency: c((w) => w.eval_status === "high_frequency"), insufficient_history: c((w) => w.eval_status === "insufficient_history"),
+    fully_evaluated: c((w) => w.eval_status === "evaluated"), eligible: c((w) => w.eval_status === "evaluated" && Number(w.window_covered_bets || 0) >= rules.pool_min_covered_bets),
+    pool: c((w) => !!w.in_pool) };
+}
+
+/* grade (version 2): every pool wallet, from its version-2 bets entered in the window */
+async function gradeV2(ctx: any) {
+  const rules = ctx.rules, now = ctx.nowMs, since = iso(now - rules.pool_window_days * DAY)!;
+  if (!ctx.dry) await repool(ctx);
+  const pool = await dbAll("poly_wallets?select=wallet&in_pool=is.true&order=wallet");
+  const grades: any[] = [];
+  for (const w of pool) {
+    const bets = (await db("poly_bets?select=*&wallet=eq." + w.wallet + "&grading_version=eq.radar-grade-2&entry_at=gte." + encodeURIComponent(since)
+      + "&order=entry_at.desc&limit=" + rules.max_bets_per_wallet) || []).map((b: any) => Object.assign({}, b, {
+      entry_at: R.ms(b.entry_at), game_start_at: R.ms(b.game_start_at), settle: Number(b.settle), profit: Number(b.profit), buy_cost: Number(b.buy_cost), stake: Number(b.stake),
+      clv_pp: b.clv_pp == null ? null : Number(b.clv_pp), clv_pct: b.clv_pct == null ? null : Number(b.clv_pct),
+      follow5_roi: b.follow5_roi == null ? null : Number(b.follow5_roi), follow15_roi: b.follow15_roi == null ? null : Number(b.follow15_roi) }));
+    const stats = (await rpc("radar_style_stats", { p_wallet: w.wallet, p_since: since })) || [];
+    const g = R.gradeWallet(bets, R.styleFromStats(stats, rules), rules);
+    g.wallet = w.wallet; g.history_truncated = false; g.high_frequency = false;
+    grades.push(g);
+  }
+  R.rankWallets(grades, rules);
+  const rows = grades.map((g: any) => Object.assign({}, g, { first_bet_at: iso(g.first_bet_at), last_bet_at: iso(g.last_bet_at), rank: g.rank ?? null, top_directional: !!g.top_directional }));
+  const discovery = await discoveryCounts(ctx);
+  ctx.run.details.graded_wallets = rows.length;
+  ctx.run.details.ranked = rows.filter((g: any) => g.sample === "ranked").length;
+  ctx.run.details.top = rows.filter((g: any) => g.top_directional).length;
+  ctx.run.details.discovery = discovery;
+  if (ctx.dry) { ctx.out.grades = rows.slice(0, 50); return; }
+  if (!rows.length) { ctx.alert("WARNING", "nothing_to_grade", "no wallet is in the pool yet: no grading run written (discovery: " + JSON.stringify(discovery) + ")"); return; }
+  ctx.out.put = await rpc("radar_put_grades", { p_run: { run_id: ctx.run.run_id, started_at: ctx.run.started_at, grading_version: R.gradingVersion(rules), rules: ctx.rawRules,
+    note: "polymarket_sync " + BUILD, discovery }, p_grades: rows });
+}
+
+/* the cards' quotes (version 2): the order book's best ask for each card's token, so the record publishes it at the
+   price a subscriber can really take */
+async function cardQuotes(ctx: any) {
+  const cards = (await rpc("radar_tonight_cards", {})) || [];
+  const quotes: any[] = [], seen = new Set<string>();
+  for (const c of cards) {
+    const tok = String(c.token_id || "");
+    if (!tok || seen.has(tok)) continue;
+    seen.add(tok);
+    const r = await ask(ctx, "book", { token_id: tok });
+    if (!r.ok || !r.data) continue;
+    const lv = (side: string) => ((r.data[side] || []) as any[]).map((x: any) => ({ p: Number(x.price), s: Number(x.size) })).filter((x: any) => x.p > 0 && x.p < 1);
+    const asks = lv("asks"), bids = lv("bids");
+    if (!asks.length) continue;
+    const ask0 = Math.min(...asks.map((x: any) => x.p)), bid0 = bids.length ? Math.max(...bids.map((x: any) => x.p)) : null;
+    quotes.push({ token_id: tok, best_ask: ask0, best_bid: bid0, ask_size: asks.filter((x: any) => x.p === ask0).reduce((a: number, x: any) => a + (x.s || 0), 0), quoted_at: iso(Date.now()) });
+  }
+  ctx.run.details.quotes = quotes.length;
+  return quotes;
+}
+
 /* ---------------------------------------------------------------- one run */
 const ON = (v: string) => /^(1|true|yes|on)$/i.test(v || "");
 export async function syncOnce(opts: any = {}) {
@@ -1311,6 +1788,8 @@ export async function syncOnce(opts: any = {}) {
     } else {
       ctx.rawRules = await rpc("radar_rules", {});
       ctx.rules = R.rules(ctx.rawRules);
+      V2 = R.rulesVersion(ctx.rules) >= 2;
+      run.details.rules_version = V2 ? 2 : 1;
       let used = 0;
       if (ASK[mode] > 0) {
         grant = await rpc("poly_api_acquire", { p: { run_id: run.run_id, caller: "polymarket_sync:" + mode, requested: ASK[mode] } });
@@ -1323,9 +1802,9 @@ export async function syncOnce(opts: any = {}) {
         const limit = grant ? Number(grant.granted) : 0;
         ctx.gw = G.make({ enabled: true, sleep: hooks.sleep, budget: { take: () => { if (used >= limit) return false; used++; return true; } } });
         if (mode === "tonight") await tonight(ctx);
-        else if (mode === "pool") await pool(ctx);
-        else if (mode === "wallets") await wallets(ctx);
-        else await grade(ctx);
+        else if (mode === "pool") await (V2 ? poolV2(ctx) : pool(ctx));
+        else if (mode === "wallets") await (V2 ? walletsV2(ctx) : wallets(ctx));
+        else await (V2 ? gradeV2(ctx) : grade(ctx));
       }
     }
     if (alerts.some((a) => a.severity === "FAILURE")) run.status = "error";

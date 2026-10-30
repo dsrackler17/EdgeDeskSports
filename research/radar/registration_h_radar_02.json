@@ -1,0 +1,186 @@
+{
+ "schema": "edgedesk_research_registration_v1",
+ "model_key": "H-RADAR-02",
+ "hypothesis_id": "H-RADAR-02",
+ "name": "Prediction Radar — following the featured Polymarket sports wallets (complete recent history, net of what a follower pays) at the live best ask",
+ "version": "0.2.0-draft",
+ "status": "DRAFT",
+ "draft_note": "NOT REGISTERED. This is the owner's H-RADAR-02 design (research/radar/H-RADAR-02/DESIGN.md) written as a registration for review. It is registered only when the owner approves it: status becomes EXPERIMENTAL, version 0.2.0, registered_at is set and the file is frozen (its sha256 recorded), before the prospective window starts. Open before then: the window's start date, and the registry builder for H-RADAR-02. Polymarket's fee formula was confirmed from its documentation on 2026-10-30 (below, spec.fees).",
+ "provenance": "T3",
+ "provenance_label": "EdgeDesk research",
+ "sport": "NFL, NCAAF, NBA, NHL, MLB",
+ "registered_at": null,
+ "registered_before": "the prospective window starts: every card the test counts is published after registration, at a price recorded when it is published.",
+ "supersedes": "H-RADAR-01 (FAILED on its holdout, 2026-10-29: research/radar/H-RADAR-01/RESULTS.md). H-RADAR-01 stays registered and its result stands; this is a new hypothesis with new rules, not a second look at its holdout.",
+ "hypothesis": "Smart Money Tonight cards built from the featured wallets, followed at the best ask in the order book when each card is published and net of the market's fee, beat the closing midpoint more than 50% of the time and have positive ROI.",
+ "objective": "Measure, once, on a 12-week prospective window fixed before it starts, whether a subscriber who takes each published Smart Money Tonight card at the price really available when it is published (the order book's best ask, plus the market's fee) beats the close more than half the time and makes money holding to settlement. The featured wallets are chosen by the frozen rules below, from complete recent histories, on what a follower would really have paid. Report what the test finds, good or bad.",
+ "primary_metric": "Two, both required: (a) the beat-close rate of graded cards, beat = the closing midpoint is strictly above the price paid (the best ask at publication); (b) the mean ROI per graded card, ROI = settlement / (best ask + the market's taker fee per share at the ask) - 1 (one share-unit staked per card, held to settlement). Each with its game-clustered 95% bootstrap interval.",
+ "unit": "One published Radar card (supabase/radar_record.sql radar_cards): one EdgeDesk game, the side most featured wallets hold, published once before its game starts, with the best ask, the depth at it, the midpoint and the market's fee schedule recorded at that moment. Clusters: the game (signals.event_id).",
+ "baseline": "A follower who buys at a random moment pays the ask and, with no information, beats the closing midpoint less than half the time (the ask sits above the midpoint) and loses the spread and any fee: a beat-close rate of 50% and an ROI of 0 is above the no-skill line, not at it.",
+ "training_window": "Grading only (nothing is fitted): each night every evaluated pool wallet is graded on its complete last pool_window_days (90) days of activity, using at most its max_bets_per_wallet (150) most recent graded bets in them. The featured set is whatever the frozen rules select that night.",
+ "validation_window": "None. Nothing is tuned; every threshold below is fixed before the window starts.",
+ "holdout_window": "Prospective: every card published from the window's start (00:00 UTC on the day after registration and deployment, set at registration) for 84 days (12 weeks), whose game starts in the window. Fixed end date; looked at once, after the last game in it has settled or been void for 7 days.",
+ "machine": {
+  "window_dates": {
+   "training": "rolling, the 90 days before each nightly grade",
+   "validation": null,
+   "holdout": [
+    "start: set at registration",
+    "start + 84 days"
+   ]
+  },
+  "window_note": "[from, to) in UTC",
+  "minimum_sample": 200,
+  "version": "0.2.0-draft",
+  "status": "DRAFT",
+  "provenance": "T3"
+ },
+ "minimum_sample": {
+  "graded_cards": 200,
+  "note": "Below 200 graded cards (a best ask, a close and a settlement of 0, 0.5 or 1) by the end date, the result is descriptive and H-RADAR-02 cannot pass. The window is not extended to reach 200. Every graded card counts, losses included."
+ },
+ "promotion_criteria": {
+  "decision_rule": "passed = true only if ALL THREE criteria hold on the window. A criterion that cannot be evaluated is not met. Passing makes the featured cards eligible to be called evidence-backed; it does not call them so: a person does that through a validation report. Software tests passing is never evidence for any criterion. The point estimates in the hypothesis (above 50%, above zero) are reported beside the criteria but do not by themselves pass the test.",
+  "criteria": [
+   {
+    "id": "C1_SAMPLE",
+    "rule": "At least 200 graded cards in the window, each with a best ask recorded at publication, a close and a settlement of 0, 0.5 or 1."
+   },
+   {
+    "id": "C2_BEAT_CLOSE",
+    "rule": "The lower end of the two-sided 95% percentile interval of the beat-close rate (close midpoint strictly above the price paid) is above 0.50."
+   },
+   {
+    "id": "C3_ROI",
+    "rule": "The lower end of the two-sided 95% percentile interval of the mean ROI per card (settlement / (best ask + the market's taker fee per share at the ask) - 1) is above zero."
+   }
+  ],
+  "interval": "A cluster bootstrap that resamples whole games with replacement: 2,000 resamples, mulberry32 seeded 20261030 (lib/edgedesk_radar.js clusterBootstrap), because cards on one game share its news, its close and its result.",
+  "family_correction": "All three are required (an intersection test); none is reported as a pass on its own."
+ },
+ "forking_paths": {
+  "candidates_tried": [
+   {
+    "version": "0.1.0 (H-RADAR-01)",
+    "pool": "Polymarket sports leaderboard, all time, ordered by volume, top 200; histories read oldest first, 30 pages",
+    "selection": "Directional, at least 50 graded bets, history not truncated, top 25 by Radar Score",
+    "price": "the recorded price (the midpoint) 5 minutes after entry",
+    "result": "FAILED: 41 followed bets; beat-close 24.4% (95% CI 10.3% to 39.0%); follow ROI -1.7% (95% CI -33.4% to 30.5%)"
+   },
+   {
+    "version": "0.2.0 (this)",
+    "pool": "candidates from Polymarket's 30-day sports volume board (shares), each read newest first for its complete last 90 days; the pool is the 200 eligible wallets with the most dollars on covered-league games in those 90 days, each with at least 20 covered pregame bets in them",
+    "screen": "1,000 actions in under 3 days flags a wallet for three 24-hour samples (now, 30 and 60 days ago); high-frequency (not followable) only when all three are known and above 100 position changes a day; more than 30 pages (30,000 actions) in the 90 days and not high-frequency is insufficient history (ungraded)",
+    "selection": "Directional, at least 50 graded bets, complete history, not high-frequency, a Radar Score above 0, at most 10 by Radar Score (fewer when fewer qualify)",
+    "price": "historical grades: the midpoint 5 minutes after entry plus 1 cent, a follow graded only when the market's fee is known; the test: the best ask in the order book when the card is published, plus the market's fee",
+    "evaluated_against_outcomes": false
+   }
+  ],
+  "alternatives_considered_not_tried": [
+   "a pool of the top 100 instead of 200 (the owner kept 200: the top 10 is a display limit, not a reason to shrink discovery)",
+   "a 90-day leaderboard (Polymarket has none: QUARTER, YEAR, 3M and 90D are refused, probe run 40975470572)",
+   "the 30-day board's own ranking (it counts shares, not dollars, so a 5-cent longshot share counts as much as a 95-cent favourite)",
+   "a pool ordered by profit (it would select on the outcomes it is meant to predict)",
+   "always showing 10 wallets by rank (5 of H-RADAR-01's 10 best had negative scores)",
+   "midpoint + half a spread, or + 2 cents, for historical follows (the owner chose + 1 cent)",
+   "a test that ends at 200 cards (an open length; the owner chose a fixed 12 weeks)"
+  ],
+  "choice_and_reason": "The owner's decisions of 2026-10-29 and 2026-10-30 (research/radar/H-RADAR-02/DESIGN.md): discovery by recent covered-league dollars, which Radar measures itself because the board counts shares; complete history before any judgment, so no wallet is excluded or graded on a partial view; follower returns at what a follower really pays; featured only with a positive score; a fixed 12-week window so the test cannot stop on a lucky run.",
+  "data_already_seen": "H-RADAR-01's full holdout result (above). Polymarket's live data, read by tools/radar/probe_h02.js before this draft (runs 40975470572, 40975893030 and 40977654862): the leaderboard's periods and what its volume counts, the pace and style of the 30-day board's top 300 wallets (behaviour only: no wallet's results were computed), fees and prices on covered NBA markets. The production Radar's summary counts of 2026-10-29 (200 pool wallets, 6 read in full, 6 ranked, 1 top-graded). No card in the window exists yet: the window starts after registration.",
+  "comparisons_made": 2,
+  "secondary_reported_not_tested": [
+   "the beat-close rate and ROI at the midpoint instead of the ask",
+   "the featured wallets' own ROI and CLV in the window",
+   "the same metrics for every graded wallet's positions, not only the featured",
+   "how many wallets were screened, excluded (high-frequency, insufficient history) and fully evaluated each night"
+  ],
+  "stopping_rule": "One look, after the fixed end date. Nothing is evaluated against the criteria before then; the Radar record's running numbers stay on the page, labelled as such, as for every card."
+ },
+ "spec": {
+  "rules": {
+   "rules_version": 2,
+   "min_graded": 50,
+   "top_wallets": 10,
+   "pool_size": 200,
+   "pool_period": "MONTH",
+   "pool_order": "VOL",
+   "pool_window_days": 90,
+   "pool_min_covered_bets": 20,
+   "discovery_max_rank": 1000,
+   "max_bets_per_wallet": 150,
+   "wallet_max_pages": 30,
+   "screen_actions": 1000,
+   "screen_days": 3,
+   "hf_changes_per_day": 100,
+   "hf_sample_hours": 24,
+   "hf_sample_days_ago": [
+    0,
+    30,
+    60
+   ],
+   "hf_change_gap_min": 10,
+   "featured_min_score": 0,
+   "follow_cost": 0.01,
+   "follow_lag_min": 5,
+   "follow_lag_alt_min": 15,
+   "follow_max_gap_min": 10,
+   "close_max_gap_min": 60,
+   "conviction_high_x": 3,
+   "mm_two_sided_share": 0.5,
+   "mm_median_trades": 6,
+   "mm_max_net_ratio": 0.3,
+   "hedger_two_sided_share": 0.2,
+   "score_weight_follow_roi": 0.5,
+   "score_weight_clv_pct": 0.3,
+   "score_weight_roi": 0.2,
+   "score_shrink_n": 50,
+   "leagues": [
+    "nfl",
+    "cfb",
+    "nba",
+    "nhl",
+    "mlb"
+   ],
+   "market_types": [
+    "moneyline",
+    "spreads",
+    "totals"
+   ],
+   "validation_min_followed": 200,
+   "ci_level": 0.95,
+   "bootstrap_resamples": 2000,
+   "bootstrap_seed": 20261030,
+   "follow_slippage_sensitivity": 0.01
+  },
+  "discovery": "Candidates are read from Polymarket's sports leaderboard, timePeriod MONTH, ordered by volume, 50 a page, from rank 1 down to discovery_max_rank. Each candidate is evaluated in board order until pool_size wallets are eligible. The board ranks candidates only; it never qualifies or excludes one.",
+  "evaluation": "A candidate's activity is read newest first, from now back pool_window_days. Screening: the first page (screen_actions actions) flags the wallet when it holds screen_actions actions within screen_days and more remain; a flag sends it to the samples and proves nothing. Samples: the hf_sample_hours ending now, hf_sample_days_ago[1] and hf_sample_days_ago[2] days ago, each read completely; a sample that cannot be read, or whose read stops short of its start without already exceeding the bar, is unknown, never low activity. A wallet whose window fits within wallet_max_pages pages is read completely, and its samples are counted from its own history. A position change is a run of fills on one token and one side, each within hf_change_gap_min minutes of the last. High-frequency (not followable): every sample known and above hf_changes_per_day. Otherwise, a window over wallet_max_pages pages is insufficient history (ungraded). Otherwise the wallet is fully evaluated: its covered-league dollars and covered pregame bets in the window are counted, and it is graded.",
+  "pool": "The pool is the pool_size fully evaluated wallets with the most dollars traded on covered-league game markets in the window, each with at least pool_min_covered_bets covered pregame bets in it. Each night's run reports how many wallets were screened, flagged, sampled, marked high-frequency, left ungraded (insufficient history) and fully evaluated.",
+  "covered_games": "A Polymarket market is on an EdgeDesk-covered game when it is a game market (moneyline, spreads or totals) of a covered league with a game start time; the live product matches each to one EdgeDesk game (signals.event_id), and only matched markets make cards.",
+  "bet": "A wallet's position in one outcome token of a covered market whose first BUY came before the game start. Entry time: that first BUY. Entry price: the volume-weighted price of its BUYs before the start. Stake: the cost of those BUYs. Graded once the market resolved with each outcome settling at 0, 0.5 or 1; otherwise void and excluded.",
+  "wallet_grade": {
+   "record": "wins (settlement 1), losses (0), pushes (0.5) of the outcome held",
+   "profit": "sell proceeds + settlement x shares still held - buy cost, over every trade on the token: the money the wallet actually made",
+   "roi": "total profit / total buy cost",
+   "clv": "close midpoint - entry price (probability points) and close / entry - 1 (CLV%), averaged over bets with a close",
+   "follow_roi": "settlement / (follow price + the market's taker fee at that price) - 1, follow price = the midpoint at or before entry + 5 minutes (also 15), no older than 10 minutes, plus follow_cost (1 cent), only if entry + lag is before the start, the price is under 1, and the market's fee schedule can be read; averaged over bets with a follow price",
+   "style": "Market Maker: at least half of its covered markets two-sided, a median of 6 or more trades per market and a median net ratio of 0.3 or less. Hedger: not a market maker, at least 20% of markets two-sided. Directional: everything else.",
+   "sample": "graded bets (at most the 150 most recent in the window); fewer than 50 is a small sample with no rank and no Radar Score",
+   "radar_score": "EXPERIMENTAL composite, ranked wallets only: 100 x (0.5 s(follow ROI) + 0.3 s(CLV%) + 0.2 s(ROI)), s(x) = x x m / (m + 50); always shown with its components",
+   "featured": "Directional, ranked, complete history, not high-frequency, a Radar Score above featured_min_score (0), at most top_wallets (10) by Radar Score; fewer when fewer qualify, and the page says how many"
+  },
+  "card": "Smart Money Tonight's card for a game: the side most featured wallets hold (then the most dollars), from Polymarket's holders lists at the board's own lines. Published to the record once, before the game starts, with the order book's best ask and the depth at it, the midpoint, the market's fee schedule and its taker fee at the ask at that moment. Graded once after the game: the close is the last midpoint at or before the start, at most 60 minutes before it; the result is the market's own resolution; a market not resolved 7 days after its start is void.",
+  "observed_activity": "Separate from the featured cards and from this test: what other fully evaluated pool wallets hold on tonight's games, labelled observed activity, never a signal. High-frequency wallets are not shown in it.",
+  "fees": "From each market's own fee status and schedule when it is read (Gamma feesEnabled and feeSchedule), never hardcoded. Polymarket's formula (docs.polymarket.com, trading/fees and market-data/market-details, read 2026-10-30): the taker fee in USDC = shares x feeSchedule.rate x (p x (1 - p))^feeSchedule.exponent, takers only, at the trade price p; a follower buying is a taker. Fees not enabled: no fee. Polymarket lists 0.05 as the Sports category rate; every covered NBA market probed on 2026-10-29 had fees enabled at rate 0 (feeType zero_fees). A market whose fee status was never read, or whose schedule cannot be read, leaves a follow or a card ungraded, never guessed. lib/edgedesk_radar.js R.takerFee and supabase/radar.sql radar_taker_fee compute it the same way and match Polymarket's published fee tables.",
+  "data_access": "Polymarket's public Data API (leaderboard, activity, holders), Gamma API (markets) and CLOB (price history, order book), read only through the Radar gateway (lib/edgedesk_poly_gateway.js) by supabase/functions/polymarket_sync; the test's numbers come from the Radar record (radar_cards, radar_card_results), append-only.",
+  "code": "lib/edgedesk_radar.js (grading, the screen, the follower's cost, the bootstrap), lib/edgedesk_poly_gateway.js (every request), supabase/functions/polymarket_sync (discovery, evaluation, the record), supabase/radar.sql and supabase/radar_record.sql (the rules, the guards, the doors)",
+  "known_limitations": [
+   "Polymarket's public data is its international platform; a US reader may not be able to trade the same markets",
+   "the best ask is recorded when a card is published; a subscriber who reads the card later may pay more, and the depth at the ask is limited",
+   "the pool is drawn from today's 30-day board, so it can favour wallets that are active and growing now",
+   "Polymarket's holders lists show each side's top 100 holders; a featured wallet with a small position may not appear",
+   "high-frequency wallets are excluded from the featured group by design; a skilled wallet that trades that often cannot be followed here",
+   "past results do not predict future results, and some large traders may have information others do not"
+  ]
+ },
+ "result": null
+}
