@@ -16,7 +16,8 @@
         product's own refusals through;
      6  the sender: nothing without secrets, nothing while switched off, one
         Resend call per claimed row with an Idempotency-Key per row, every row
-        marked, a refused email never sent, a dry run releasing every row.
+        marked, a refused email never sent, a dry run releasing every row;
+        with the board unreadable, day 1 and day 3 held for the next run.
 
    Run: node tools/lifecycle/lifecycle.test.js
    =========================================================================== */
@@ -97,7 +98,10 @@ function fakeRpc(state) {
     state.calls.push([name, body]);
     if (name === 'lifecycle_plan') return { ok: true, scheduled: 2 };
     if (name === 'lifecycle_due') return state.due;
-    if (name === 'public_home_board') return RPC;
+    if (name === 'public_home_board') {
+      if (state.board === 'throw') throw new Error('public_home_board HTTP 503: upstream timeout');
+      return state.board !== undefined ? state.board : RPC;
+    }
     if (name === 'lifecycle_mark') { state.marks.push(body); return true; }
     throw new Error('unexpected ' + name);
   };
@@ -139,6 +143,26 @@ const due = (n) => ({ ok: true, sending_enabled: true, from: 'EdgeDesk <research
   r = await SEND.run({ url: 'u', key: 'k', apiKey: 're_key', rpc: fakeRpc(st), fetch: fakeFetch(st), stat: STAT, log: () => {} });
   TPL.build = orig;
   chk('an email the copy rule refuses is never sent', r.refused === 1 && st.sent.length === 0 && /copy rule/.test(st.marks[0].p_error));
+
+  /* an unreadable board is not an empty one: day 1 and day 3 are the board's
+     research, so they wait for the next run instead of saying no game clears
+     the gates; the welcome and the billing reminder still go */
+  const mixed = () => Object.assign(due(0), { messages: ['trial_day1', 'trial_day3', 'trial_welcome', 'renewal_reminder']
+    .map((k, i) => Object.assign({}, base, { id: 200 + i, kind: k, charge_at: charge, previous_visit_at: base.trial_at })) });
+  for (const [label, board] of [['the board RPC fails', 'throw'], ['the board answers without ok', { ok: false }]]) {
+    st = { calls: [], marks: [], sent: [], due: mixed(), board };
+    r = await SEND.run({ url: 'u', key: 'k', apiKey: 're_key', rpc: fakeRpc(st), fetch: fakeFetch(st), stat: STAT, log: () => {} });
+    const mk = (id) => st.marks.find((m) => m.p_id === id) || {};
+    chk(label + ': day 1 and day 3 are held, not sent', r.held === 2 && st.sent.every((s) => !/^(Today on EdgeDesk|New on EdgeDesk|What changed)/.test(s.body.subject)), r);
+    chk(label + ': …marked failed with the reason, so the next run retries them', [200, 201].every((id) => mk(id).p_status === 'failed' && /board could not be read/.test(mk(id).p_error)), st.marks);
+    chk(label + ': the welcome and the billing reminder still go', r.sent === 2 && mk(202).p_status === 'sent' && mk(203).p_status === 'sent', st.marks);
+  }
+  st = { calls: [], marks: [], sent: [], due: mixed(), board: 'throw' };
+  r = await SEND.run({ url: 'u', key: 'k', driver: 'console', rpc: fakeRpc(st), fetch: fakeFetch(st), stat: STAT, log: () => {} });
+  chk('a dry run with the board unreadable releases the held rows too', r.held === 2 && r.printed === 2 && st.sent.length === 0 && st.marks.length === 4 && st.marks.every((m) => m.p_status === 'release'), st.marks);
+  st = { calls: [], marks: [], sent: [], due: mixed() };
+  r = await SEND.run({ url: 'u', key: 'k', apiKey: 're_key', rpc: fakeRpc(st), fetch: fakeFetch(st), stat: STAT, log: () => {} });
+  chk('with the board read, day 1 and day 3 go as before', r.sent === 4 && !r.held && st.marks.every((m) => m.p_status === 'sent'), r);
 
   const WF = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'lifecycle-email.yml'), 'utf8');
   chk('the workflow runs hourly and on demand', /schedule:/.test(WF) && /cron: '17 \* \* \* \*'/.test(WF) && /workflow_dispatch/.test(WF));
