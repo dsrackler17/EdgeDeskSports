@@ -78,13 +78,17 @@ let DB;
 const KEY = { novig_events: 'event_id', novig_markets: 'market_id', novig_market_links: 'market_id' };
 function resetDb() {
   DB = { novig_events: [], novig_markets: [], novig_book_snapshots: [], novig_book_depth: [], novig_market_links: [], novig_sync_runs: [], novig_alerts: [], novig_unmapped: [],
-    signals: [], sharp_price_snapshots: [], seq: 0, calls: [] };
+    signals: [], novig_dk_tape: [], seq: 0, calls: [] };
   const book = (id, home, away, ms) => { for (const s of [home, away]) DB.signals.push({ sig_key: id + '|h2h|' + s, event_id: id, sport_key: 'americanfootball_nfl', market: 'h2h', selection: s, home_team: home, away_team: away, commence_time: new Date(ms).toISOString() }); };
   const evB = FX.events.find((e) => /Buffalo/.test(e.description)), evD = FX.events.find((e) => /Denver/.test(e.description));
   book('odds-bufbal', 'Buffalo Bills', 'Baltimore Ravens', evB.startsTs);
   book('odds-denkc', 'Denver Broncos', 'Kansas City Chiefs', evD.startsTs);
-  DB.sharp_price_snapshots.push({ id: 1, event_id: 'odds-bufbal', book: 'draftkings', market: 'spreads', side: 'Buffalo Bills', point: -3.5, price_dec: 1.909, captured_at: new Date(CLOCK - 3600e3).toISOString() },
-    { id: 2, event_id: 'odds-bufbal', book: 'draftkings', market: 'spreads', side: 'Baltimore Ravens', point: 3.5, price_dec: 1.909, captured_at: new Date(CLOCK - 3600e3).toISOString() });
+  /* production's steady state: the daily probe ran an hour ago and saw Novig list the key as management::read */
+  for (const environment of ['production', 'paper']) DB.novig_sync_runs.push({ run_id: 'probe-' + environment, trigger: 'cron', mode: 'probe', environment, status: 'ok',
+    started_at: new Date(CLOCK - 3600e3).toISOString(), finished_at: new Date(CLOCK - 3600e3).toISOString(), auth: { scope: 'management::read' } });
+  /* public.novig_dk_tape: the DraftKings prices the layer's view exposes (supabase/novig_market_data.sql) */
+  DB.novig_dk_tape.push({ tick_id: 1, event_id: 'odds-bufbal', market: 'spreads', side: 'Buffalo Bills', point: -3.5, price_dec: 1.909, captured_at: new Date(CLOCK - 3600e3).toISOString() },
+    { tick_id: 2, event_id: 'odds-bufbal', market: 'spreads', side: 'Baltimore Ravens', point: 3.5, price_dec: 1.909, captured_at: new Date(CLOCK - 3600e3).toISOString() });
 }
 function cmpOp(v, op, x) {
   if (op === 'eq') return String(v) === x;
@@ -103,7 +107,8 @@ function filterRows(rows, q) {
     if (!m) throw new Error('mock: unparsed filter ' + k + '=' + raw);
     out = out.filter((r) => cmpOp(r[k], m[1], m[2]));
   }
-  if (q.get('order') === 'halt_until.desc') out = out.slice().sort((a, b) => (a.halt_until < b.halt_until ? 1 : -1));
+  const desc = /^([a-z_]+)\.desc$/.exec(q.get('order') || '');
+  if (desc) out = out.slice().sort((a, b) => (a[desc[1]] < b[desc[1]] ? 1 : a[desc[1]] > b[desc[1]] ? -1 : 0));
   const off = Number(q.get('offset') || 0), lim = q.get('limit') ? Number(q.get('limit')) : Infinity;
   return out.slice(off, off + lim);
 }
@@ -252,7 +257,26 @@ globalThis.fetch = async (u, init) => {
   chk('probe: the POST carries Content-Type and its exact bytes are hashed (else Novig hashes zero bytes)', W.calls.includes('POST /v3/echo'));
   resetNovig({ scope: 'management' });
   o = await run({ mode: 'probe' });
-  chk('probe: a full management key used for ingestion is flagged as over-privileged', codes(o).includes('WARNING:over_privileged_key'));
+  chk('probe: a full management key used for ingestion is a FAILURE (key_not_read_only), and the probe run is an error', codes(o).includes('FAILURE:key_not_read_only') && !o.ok && lastRun().status === 'error' && lastRun().auth.scope === 'management');
+  W.calls = [];
+  let g = await run({ mode: 'discover' });
+  const g2 = await run({ mode: 'snapshot' });
+  chk('scope gate: after that probe, discover and snapshot call nobody — the older verified probe does not shadow the newer refusal', g.status === 'skipped' && g.skipped_reason === 'scope_unverified' && g.scope === 'management'
+    && g2.skipped_reason === 'scope_unverified' && W.calls.length === 0, [g, W.calls]);
+  resetDb(); resetNovig({ scope: 'trading' }); DB.novig_sync_runs.length = 0; W.calls = [];
+  g = await run({ mode: 'discover' });
+  chk('scope gate: with no probe on record, discover calls nobody and says to probe first', g.skipped_reason === 'scope_unverified' && g.scope === null && /mode.*probe/.test(g.hint) && W.calls.length === 0, g);
+  o = await run({ mode: 'probe' });
+  g = await run({ mode: 'discover' });
+  chk('scope gate: a trading key (it can place orders) is refused the same way', codes(o).includes('FAILURE:key_not_read_only') && g.skipped_reason === 'scope_unverified' && g.scope === 'trading', [codes(o), g.scope]);
+  resetDb(); resetNovig(); DB.novig_sync_runs.length = 0;
+  DB.novig_sync_runs.push({ run_id: 'old', trigger: 'cron', mode: 'probe', environment: 'production', status: 'ok', started_at: new Date(CLOCK - 31 * 3600e3).toISOString(),
+    finished_at: new Date(CLOCK - 31 * 3600e3).toISOString(), auth: { scope: 'management::read' } });
+  g = await run({ mode: 'snapshot' });
+  chk('scope gate: a verified probe older than 30 hours no longer counts', g.skipped_reason === 'scope_unverified', g);
+  o = await run({ mode: 'probe' });
+  g = await run({ mode: 'discover' });
+  chk('scope gate: a fresh probe that sees management::read opens discover again', o.ok && o.auth.scope === 'management::read' && g.ok && g.status !== 'skipped' && g.links && g.links.new > 0, [o.status, g.status, g.skipped_reason]);
 
   /* ---- clock skew ---- */
   resetDb(); resetNovig(); LOCAL_SKEW = -45000;
@@ -298,6 +322,8 @@ globalThis.fetch = async (u, init) => {
   const spreadB = FX.markets.find((m) => m.eventId === EV_B.eventId && m.marketType === 'SPREAD' && m.strike === '-3.5').marketId;
   chk('snapshot: only comparable markets are read (both moneylines, the first-half moneylines, BUF −3.5 at DraftKings\' line, the consensus total)', o.ok && bookCalls.length === o.snapshot.due
     && bookCalls.some((c) => c.includes(moneyB)) && bookCalls.some((c) => c.includes(spreadB)) && bookCalls.length < 12 && W.bad.length === 0, { due: o.snapshot, calls: bookCalls.length });
+  chk('snapshot: DraftKings\' lines come from the layer\'s view public.novig_dk_tape (whichever source it was built from), never a source table directly',
+    DB.calls.includes('GET novig_dk_tape') && !DB.calls.some((c) => /sharp_price_snapshots|book_quote_ticks/.test(c)) && !o.alerts.some((a) => a.code === 'dk_lines_unread'), DB.calls.filter((c) => /dk|sharp|tick/.test(c)));
   const sB = DB.novig_book_snapshots.find((s) => s.market_id === moneyB);
   const realQ = EV.executableQuote(FX.books[moneyB], FX.markets.find((m) => m.marketId === moneyB).outcomes[0].outcomeId, FX.markets.find((m) => m.marketId === moneyB).outcomes.map((x) => x.outcomeId), { fee: { coefficient: '0.06', charged: 'WHEN_LIVE' }, eventStatus: 'OPEN_PREGAME' });
   const oB = FX.markets.find((m) => m.marketId === moneyB).outcomes[0].outcomeId;
@@ -365,7 +391,8 @@ globalThis.fetch = async (u, init) => {
   /* ---- dry ---- */
   resetDb(); resetNovig();
   o = await run({ mode: 'discover', dry: true });
-  chk('dry: reads and computes (links proposed), writes nothing', o.ok && o.dry && o.links.new === nMk && DB.novig_markets.length === 0 && DB.novig_sync_runs.length === 0 && !DB.calls.some((c) => /^(POST|PATCH)/.test(c)));
+  chk('dry: reads and computes (links proposed), writes nothing (the run log holds only the seeded daily probes)', o.ok && o.dry && o.links.new === nMk && DB.novig_markets.length === 0
+    && DB.novig_sync_runs.every((r) => /^probe-/.test(r.run_id)) && !DB.calls.some((c) => /^(POST|PATCH)/.test(c)));
 
   /* ---- the cadence equals the SQL rules ---- */
   const sql = fs.readFileSync(path.join(ROOT, 'supabase', 'novig_market_data.sql'), 'utf8');

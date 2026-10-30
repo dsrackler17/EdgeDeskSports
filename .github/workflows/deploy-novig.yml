@@ -26,7 +26,7 @@ on:
         type: boolean
         default: true
       apply_sql:
-        description: 'Apply novig_market_data.sql and novig_market_data_cron.sql (needs signals, sharp_price_snapshots, pg_cron, pg_net)'
+        description: 'Apply novig_market_data.sql and novig_market_data_cron.sql (needs signals, DraftKings prices in sharp_price_snapshots or book_quote_ticks, pg_cron, pg_net)'
         type: boolean
         default: false
       set_cron_secret:

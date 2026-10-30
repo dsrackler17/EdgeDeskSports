@@ -83,7 +83,7 @@
 //   NOVIG_RUN_BUDGET_MS (default 110000)
 // ============================================================
 
-export const BUILD = "novig_sync@2026-10-30.1";
+export const BUILD = "novig_sync@2026-10-30.2";
 const UA = "edgedesk-research/1.0 (+https://edgedesksports.com)";
 const GAME_TYPES = "MONEY,SPREAD,TOTAL,MONEY_1H,SPREAD_1H,TOTAL_1H";
 const LIVE_STATUSES = "OPEN_PREGAME,OPEN_INGAME,DELAYED";
@@ -1836,11 +1836,14 @@ async function probe(ctx: Any, nv: Any) {
     const k = await nv.req("GET", "/v3/keys", {});
     const mine = (Array.isArray(k.json) ? k.json : (k.json && k.json.items) || []).find((x: Any) => x && x.keyId === env("NOVIG_READ_KEY_ID"));
     auth.scope = mine ? mine.scope : "unlisted";
-    if (mine && mine.scope === "management") ctx.alert("WARNING", "over_privileged_key", "the ingestion key is a full management key; provision a management::read key (docs/novig/README.md §Credentials)");
   } catch (e) {
-    /* a trading::read key may not list keys: that is not an error of the probe */
+    /* a key that cannot list keys is not management::read: recorded, and refused below */
     auth.scope = e instanceof NovigError && e.kind === "scope" ? "not management (cannot list keys)" : "unknown: " + msg(e);
   }
+  /* least privilege, proved by Novig itself: discover and snapshot run only after a probe saw this key listed as
+     management::read (syncOnce reads it back). A key that can move money or place orders never ingests. */
+  if (auth.scope !== READ_SCOPE) ctx.alert("FAILURE", "key_not_read_only", "Novig lists the ingestion key's scope as " + auth.scope + "; discover and snapshot run only on a " + READ_SCOPE
+    + " key and are skipped until a probe sees one (docs/novig/README.md §Credentials)");
   ctx.run.auth = auth;
   ctx.out.auth = auth;
 }
@@ -2030,13 +2033,14 @@ async function snapshot(ctx: Any, nv: Any) {
       for (const e of await nv.pages("/v3/catalog/events", { league: L, status: LIVE_STATUSES, startsBefore: ctx.nowMs + horizonMs(), limit: 1000 })) evStatus[e.eventId] = e.status;
     } catch (e) { if (fatal(e)) throw e; ctx.alert("DEGRADED", "event_status_unread", L + ": event statuses could not be read; fees treated as unknown (" + msg(e) + ")"); }
   }
-  /* which lines DraftKings has quoted for these events in the last day */
+  /* which lines DraftKings has quoted for these events in the last day, from public.novig_dk_tape: the
+     DraftKings prices this project keeps, whichever source supabase/novig_market_data.sql built it from */
   const dkLines = new Set<string>();
   try {
     const evIds = [...new Set(links.map((l: Any) => l.odds_event_id))] as string[];
-    for (let i = 0; i < evIds.length; i += 100) for (const r of await dbAll("sharp_price_snapshots?select=event_id,market,point&book=eq.draftkings&event_id=in." + inList(evIds.slice(i, i + 100))
+    for (let i = 0; i < evIds.length; i += 100) for (const r of await dbAll("novig_dk_tape?select=event_id,market,point&event_id=in." + inList(evIds.slice(i, i + 100))
       + "&captured_at=gte." + encodeURIComponent(iso(ctx.nowMs - 864e5)) + "&order=event_id")) dkLines.add(r.event_id + "|" + r.market + "|" + (r.point == null ? "" : Math.abs(Number(r.point))));
-  } catch (e) { ctx.alert("WARNING", "dk_lines_unread", "the DraftKings tape could not be read; only moneylines and consensus lines are snapshotted (" + msg(e) + ")"); }
+  } catch (e) { ctx.alert("WARNING", "dk_lines_unread", "the DraftKings prices (novig_dk_tape) could not be read; only moneylines and consensus lines are snapshotted (" + msg(e) + ")"); }
   const wanted = links.filter((l: Any) => {
     const m = markets[l.market_id];
     if (!m || m.gone_at || (m.status && m.status !== "OPEN")) return false;
@@ -2098,6 +2102,17 @@ async function snapshot(ctx: Any, nv: Any) {
 }
 
 /* ---------------------------------------------------------------- one run */
+/** the scope REST ingestion runs on, and how recent the probe that saw it must be */
+const READ_SCOPE = "management::read", VERIFIED_PROBE_HOURS = 30;
+/** the newest probe that recorded the key's scope (a probe that died before reading it does not count either way);
+    of probes that finished at the same instant, a refusal wins */
+async function lastScope(environment: string, nowMs: number) {
+  const r = ((await db("novig_sync_runs?select=auth,status,finished_at&mode=eq.probe&environment=eq." + encodeURIComponent(environment)
+    + "&finished_at=gt." + encodeURIComponent(iso(nowMs - VERIFIED_PROBE_HOURS * 3600e3)) + "&order=finished_at.desc&limit=20")) || []).filter((x: Any) => x && x.auth && x.auth.scope);
+  if (!r.length) return null;
+  const at = Date.parse(r[0].finished_at), same = r.filter((x: Any) => Date.parse(x.finished_at) === at);
+  return same.find((x: Any) => x.auth.scope !== READ_SCOPE) || same[0];
+}
 async function lastHalt(nowMs: number) {
   const r = (await db("novig_sync_runs?select=halt_until,halt_reason&halt_until=gt." + encodeURIComponent(iso(nowMs)) + "&order=halt_until.desc&limit=1")) || [];
   return r[0] || null;
@@ -2136,6 +2151,16 @@ export async function syncOnce(opts: Any = {}) {
       return Object.assign(out, { status: "skipped", skipped_reason: "halted", halted_until: halt.halt_until, halt_reason: halt.halt_reason });
     }
   } catch (e) { return Object.assign(out, { ok: false, status: "error", error: "the run log could not be read: " + msg(e) }); }
+  if (mode !== "probe") {
+    try {
+      const p = await lastScope(environment, nowMs);
+      if (!p || p.auth.scope !== READ_SCOPE) {
+        if (!dry) await skipOnce(mode, "scope_unverified", nowMs, 60);
+        return Object.assign(out, { status: "skipped", skipped_reason: "scope_unverified", scope: p ? p.auth.scope : null,
+          hint: "run {\"mode\":\"probe\"}: discover and snapshot run only after a probe in the last " + VERIFIED_PROBE_HOURS + " h saw Novig list the key as " + READ_SCOPE });
+      }
+    } catch (e) { return Object.assign(out, { ok: false, status: "error", error: "the run log could not be read: " + msg(e) }); }
+  }
   let nv: Any = null;
   try {
     if (!FI || !NS || !EV || !MAP) throw new Error("an inlined core did not load");
