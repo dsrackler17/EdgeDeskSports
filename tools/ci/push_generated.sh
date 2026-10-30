@@ -66,6 +66,9 @@ shift 3
 PATHS=("$@")
 REMOTE="${PUSH_REMOTE:-origin}"
 ATTEMPTS="${PUSH_ATTEMPTS:-6}"
+# every push to main carries the data job's All checks certificate, which
+# main's ruleset requires (tools/ci/certified_push.sh)
+CERTIFIED_PUSH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/certified_push.sh"
 
 # paths that exist in the working tree or are tracked: `git add -A -- x`
 # aborts on a pathspec that matches nothing, and a new artifact's first run
@@ -114,7 +117,7 @@ is_merge() {
 i=0
 while [ "$i" -lt "$ATTEMPTS" ]; do
   i=$((i + 1))
-  if git push "$REMOTE" "HEAD:refs/heads/$BRANCH"; then
+  if bash "$CERTIFIED_PUSH" "$REMOTE" "HEAD:refs/heads/$BRANCH"; then
     echo "pushed to $BRANCH on attempt $i"
     exit 0
   fi

@@ -19,6 +19,7 @@ on:
     - cron: '0 10 * * 1'   # Mondays 10:00 UTC — after the weekend's roster moves
 
 permissions:
+  checks: write
   contents: write
 
 concurrency:
@@ -58,7 +59,7 @@ jobs:
           fi
           git commit -m 'roster sync: FBS rosters from ESPN public API'
           for i in 1 2 3 4; do
-            git push origin "${{ github.ref_name }}" && exit 0
+            bash "$(git rev-parse --show-toplevel)/tools/ci/certified_push.sh" origin "${{ github.ref_name }}" && exit 0
             git pull --rebase origin "${{ github.ref_name }}" || true
             sleep $((2 ** i))
           done
