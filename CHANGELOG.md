@@ -10,6 +10,16 @@
 
   NHL goalie sync's card table adds an "NHL boxscore lineups" column: "listed T−22 min", "listed T+4 min, after puck drop (…)", "not listed by T−3 (PRE, 0 / 0 skaters, 2 starters flagged; 7 reads)" or "not read". Its summary line also counts the started games whose lineups were listed before puck drop. Read-only, as before.
 - **Tests.** On the code before this change: `nhl_goalie_sync.test.js` passed 80 and failed 1, and `nhl_goalie_sql.test.js` passed 80 and failed 2. On the change: 81/0 and 82/0 on a real PostgreSQL. The SQL suite records three runs whose probe has one game listed at T−30 and one never listed by T−21, and checks that each card reads only its own game's reads.
+## 2026-10-30 — Research OS journey: the workspace's links are read once Market Foresight's card has its answer
+
+- **What failed.** On #924, the Research OS browser job failed one check on the phone: "the workspace links Signals, Foresight and the Simulator for this game" found `["#signals/cfb","#simulator/cfb"]` (run 41008198329; 125 passed, 1 failed). The same check passed on the desktop in that run.
+- **Why.** The game page draws its Market Foresight card as "Checking the record…", with no link, and `EDContext.railFill` adds the record's link when `mf_game` answers. The test read the links as soon as `#gvWs` appeared. Its step 4 already waits for that card to settle; this check did not.
+- **The fix** (`tools/research_os/journey.e2e.js`, test only). Before reading the links, the check waits for the Foresight card the same way step 4 does. The assertion is unchanged.
+- **Regression.** The test's PostgREST stand-in now answers `mf_game` 2 seconds late, every run, so the race is always exercised.
+  - Before the fix, with the late answer: 124 passed, 2 failed (desktop and phone, `["#signals/cfb","#simulator/cfb"]`).
+  - After: 126 passed, 0 failed.
+- **How it reached `main`.** #924 carried the same change, byte for byte, and merged first; this entry records it.
+
 ## 2026-10-30 — Methodology change (owner's decision, DRAFT for review): Prediction Radar H-RADAR-02, featured bettors from complete recent histories, at what a follower pays
 
 **Methodology change; needs the owner's explicit review. Not registered: its SQL is not to be applied until H-RADAR-02 is registered.**

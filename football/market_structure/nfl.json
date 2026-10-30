@@ -1,14 +1,14 @@
 {
  "schema": "edgedesk_nfl_market_structure_v1",
  "version": 1,
- "generated_at": "2026-10-30T05:53:41.197Z",
+ "generated_at": "2026-10-30T13:00:52.252Z",
  "engine": "edgedesk_market_structure_v1",
  "tier": "T0 observations and T2 deterministic transforms; nothing here is a model, a price, a projection or a grade",
  "source": {
   "lines": {
    "file": "football/pricing/lines_nfl.json",
    "schema": "edgedesk_lines_archive_v1",
-   "generated_at": "2026-10-30T05:53:40.628Z",
+   "generated_at": "2026-10-30T13:00:51.844Z",
    "basis": "nflverse/nfldata games.csv; the spread, total and moneyline columns are the consensus close as nflverse carries them, no book, no capture time"
   },
   "schedule": {
@@ -5427,6 +5427,14 @@
     "divisional": false,
     "location": "Home"
    },
+   "2026_09_DEN_CAR": {
+    "week": 9,
+    "home": "CAR",
+    "away": "DEN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
    "2026_09_DET_MIA": {
     "week": 9,
     "home": "MIA",
@@ -5501,7 +5509,7 @@
    }
   },
   "division_check": {
-   "checked": 135,
+   "checked": 136,
    "mismatches": []
   },
   "neutral_source": "nflverse games.csv location"
