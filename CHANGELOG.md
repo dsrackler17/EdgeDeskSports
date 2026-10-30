@@ -12,6 +12,12 @@
   - a source that stays down is retried 10, 20, then 40 minutes apart.
 
   On the old code: 86 passed, 8 failed. On the fix: 94/0.
+## 2026-10-30 — Football situational pipeline: a failure after the build no longer throws away the derived seasons
+
+- **Why.** All four scheduled runs since the pipeline was added failed. Three were market refreshes (`build --offline`): `no derived season` for NFL and CFB at ingest. The fourth, a full build (run 41093420059), built and committed its data, then the Supabase copy failed (`fsie_source_files` does not exist in production; `supabase/football_situational.sql` has not been applied there). `actions/cache` saves only when every step passes, so its "Post Cached source downloads" was skipped and the derived seasons that build made were discarded. The market refreshes read only that cache.
+- **The change.** `football-situational.yml` restores the cache with `actions/cache/restore@v4` and saves it with `actions/cache/save@v4` right after the engine stages, before the commit and the Supabase copy. A failed build still saves nothing.
+- **Not fixed here.** The Supabase step fails on every run until the migration is applied to production. That is the owner's deployment.
+- **Test.** `football/situational/tests/integration.test.js`: on the old workflow 25 passed and 4 failed (the 4 new checks); now 29 of 29. Each new check also fails when the save is moved after the Supabase copy, runs on `always()`, or uses a key the next run does not restore.
 ## 2026-10-30 — Franchise SQL: the founding-age spread is held on forty fixed rosters, not on one random roster per run
 
 **What failed.** A full `npm run verify` on 2026-10-30 went red at `games-sql.yml` "Refuse a silent skip". The franchise SQL suite had stopped after 724 checks:
