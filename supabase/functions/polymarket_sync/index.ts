@@ -1471,7 +1471,8 @@ async function windowStats(ctx: any, wallet: string) {
 async function evaluateV2(ctx: any, w: any, d: any, late: () => boolean) {
   const rules = ctx.rules, now = ctx.nowMs;
   const c0 = w.activity_cursor || {};
-  const cur: any = w.eval_status === "evaluating" && c0.v2 ? c0 : { v2: 1, start_s: Math.floor((now - rules.pool_window_days * DAY) / 1000), end_s: Math.floor(now / 1000),
+  /* a copy: a read that fails keeps the cursor it started from, so no page is skipped */
+  const cur: any = w.eval_status === "evaluating" && c0.v2 ? JSON.parse(JSON.stringify(c0)) : { v2: 1, start_s: Math.floor((now - rules.pool_window_days * DAY) / 1000), end_s: Math.floor(now / 1000),
     next: null, pages: 0, newest_s: null, flag: null, samples: null, spans: R.hfSpans(now, rules).map((x: any) => ({ from: x.from, to: x.to, days_ago: x.days_ago, keys: [] })) };
   const save = async (fields: any) => { if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, Object.assign({ updated_at: iso(now) }, fields)); };
   /* the samples, when the first page flagged the wallet: they decide high-frequency before any more is read */
@@ -1485,16 +1486,17 @@ async function evaluateV2(ctx: any, w: any, d: any, late: () => boolean) {
     if (v.high_frequency) {
       d.status = "high_frequency";
       await save({ eval_status: "high_frequency", high_frequency: true, screen_flag: true, hf: { samples, verdict: "high_frequency", decided_at: iso(now) },
-        evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: { attempts: 0 }, in_pool: false });
+        evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: {}, in_pool: false });
       return true;
     }
     return false;
   };
   if (await sampleIfFlagged()) return;
   /* the read, newest first, from where it stopped */
-  let pages = 0, ok = true, complete = false, capHit = false, cut = false;
+  /* a read already complete whose grading ran out of time goes straight on to its grading */
+  let pages = 0, ok = true, complete = !!cur.graded_only, capHit = false, cut = false;
   const rows: any[] = [];
-  for (;;) {
+  for (; !complete;) {
     if (pages > 0 && late()) { cut = true; break; }
     const r = await ask(ctx, "activity", { user: w.wallet, type: ACT, limit: 1000, sort_direction: "DESC", start: cur.start_s, end: cur.end_s, cursor: cur.next });
     if (!r.ok) { ok = false; break; }
@@ -1513,7 +1515,7 @@ async function evaluateV2(ctx: any, w: any, d: any, late: () => boolean) {
     if (pages >= WALLET_PAGES_PER_RUN) { cut = true; break; }
   }
   d.pages = pages; d.rows = rows.length; d.flag = cur.flag;
-  if (!ok) { d.status = "activity_failed"; await save({ activity_cursor: Object.assign({}, cur, { attempt_at: null, attempts: 0 }) }); return; }
+  if (!ok) { d.status = "activity_failed"; await save({ activity_cursor: c0 }); return; }
   const { coveredRows } = await storeActivity(ctx, rows);
   d.covered = coveredRows.length;
   if (cur.flag && !cur.samples && !complete) {
@@ -1525,7 +1527,7 @@ async function evaluateV2(ctx: any, w: any, d: any, late: () => boolean) {
   if (capHit) {
     d.status = "insufficient_history";
     await save({ eval_status: "insufficient_history", screen_flag: !!cur.flag, hf: cur.samples ? { samples: cur.samples, verdict: "not_high_frequency" } : null,
-      evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: { attempts: 0 }, in_pool: false });
+      evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: {}, in_pool: false });
     return;
   }
   if (!complete) {
@@ -1543,7 +1545,7 @@ async function evaluateV2(ctx: any, w: any, d: any, late: () => boolean) {
   if (verdict.high_frequency) {
     d.status = "high_frequency";
     await save({ eval_status: "high_frequency", high_frequency: true, screen_flag: !!cur.flag, hf: { samples: own, verdict: "high_frequency", from: "complete_history" },
-      evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: { attempts: 0 }, in_pool: false });
+      evaluated_at: iso(now), activity_synced_at: iso(now), activity_cursor: {}, in_pool: false });
     return;
   }
   const st = await windowStats(ctx, w.wallet);
@@ -1554,7 +1556,7 @@ async function evaluateV2(ctx: any, w: any, d: any, late: () => boolean) {
   await save(Object.assign({ eval_status: gr.cut ? "evaluating" : "evaluated", screen_flag: !!cur.flag, high_frequency: false,
     hf: { samples: cur.samples || own, verdict: "not_high_frequency", from: cur.samples ? "samples" : "complete_history" },
     window_covered_usd: st.usd, window_covered_bets: st.bets,
-    activity_cursor: gr.cut ? Object.assign({}, cur, { graded_only: true }) : { ts_s: cur.newest_s || cur.end_s, attempts: 0 } },
+    activity_cursor: gr.cut ? Object.assign({}, cur, { graded_only: true }) : { ts_s: cur.newest_s || cur.end_s } },
     gr.cut ? {} : { evaluated_at: iso(now), activity_synced_at: iso(now) }));
 }
 
@@ -1576,7 +1578,7 @@ async function refreshV2(ctx: any, w: any, d: any, late: () => boolean) {
     cursor = pg.next_cursor;
   }
   d.pages = pages; d.rows = rows.length; d.refresh = true;
-  if (!ok) { d.status = "activity_failed"; if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: Object.assign({}, cur, { attempt_at: null, attempts: 0 }), updated_at: iso(now) }); return; }
+  if (!ok) { d.status = "activity_failed"; if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: cur, updated_at: iso(now) }); return; }
   const { coveredRows } = await storeActivity(ctx, rows);
   d.covered = coveredRows.length;
   if (rows.length) last = Math.max(last || 0, Math.floor(Math.max(...rows.map((t: any) => t.ts)) / 1000));
@@ -1584,7 +1586,7 @@ async function refreshV2(ctx: any, w: any, d: any, late: () => boolean) {
   const st = cut ? null : await windowStats(ctx, w.wallet);
   d.graded = gr.n; d.status = cut || gr.cut ? "partial" : "done";
   if (cut || gr.cut) ctx.run.details.time_up = true;
-  if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, Object.assign({ activity_cursor: { ts_s: last, attempts: 0 }, updated_at: iso(now) },
+  if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, Object.assign({ activity_cursor: { ts_s: last }, updated_at: iso(now) },
     st ? { window_covered_usd: st.usd, window_covered_bets: st.bets } : {}, cut || gr.cut ? {} : { evaluated_at: iso(now), activity_synced_at: iso(now) }));
 }
 
