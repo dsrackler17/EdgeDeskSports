@@ -41,6 +41,48 @@
   - the window's start date;
   - the registry builder for H-RADAR-02.
 
+## 2026-10-29 — NHL goalie sync: the job lists every game's card, and whether the lineup lock priced it
+
+- **Why.** On the first night of the lineup lock (#902), nothing on GitHub could say whether a game had locked. The job summary listed only the cards a run wrote, and pg_cron writes the lock. A dry run at 22:54 UTC, six minutes before the 7 PM ET games, changed none of the 14 cards: either they had locked already or they never would. And Supabase could not be reached from the agent's environment to read the cards directly.
+- **What.** A read-only query, `tools/hockey/sql/nhl_goalie_cards_check.sql`, returns the current version of every game from 6 hours ago to 24 hours ahead (`public.nhl_game_cards_current`). NHL goalie sync runs it in a new step, and `tools/hockey/nhl_goalie_run_summary.js` lists the cards.
+  - Each row has the puck drop, the version and when it was written (T−minutes), both statuses, the gate, the headline's home win %, and what priced it: "lineup lock" with the skaters listed and the slate's price before lock, or "slate" with its model.
+  - Above the table: the started games, and how many were priced at lineup lock before puck drop.
+  - The watchdog runs every half hour, so the night's locks can be read from it. Cards that cannot be read fail the job, as readiness does.
+- **Tests.** On the code before this change, `nhl_goalie_sync.test.js` passed 78 and failed 3 (no cards table, an unreadable result passing, no empty-window line), and `nhl_goalie_sql.test.js` crashed (no query file). On the change: sync 81/0, and SQL 81/0 on a real PostgreSQL. The SQL suite checks that a locked game reads as "lineup lock" with its price before lock, that a slate card reads as the slate, that each game appears once, and that nothing over a day ahead is listed.
+## 2026-10-29 — Trial emails: day 1 and day 3 wait when the board cannot be read
+
+**What was wrong.** The trial email sender reads the live board, `public_home_board()`, once per run. When that call failed, it logged "emails go without live research" and sent day 1 and day 3 anyway, built from the committed `football/home/board.json` alone. That file carries no game lines, so:
+- day 1 told the reader "No game clears EdgeDesk's research gates right now. PASS is a normal answer.";
+- day 3 said "EdgeDesk re-priced 0 games … and priced 0 research-grade player props."
+
+Both statements were made about a board nobody had read.
+
+**What changed** (`tools/lifecycle/send.js`):
+- **When the board call throws or answers without `ok`,** day 1 and day 3 are held: marked `failed` with "held: the board could not be read (…)". The next run retries them, at most three times, and `lifecycle_due()` already skips a tip that is more than a day late.
+- **The welcome and the renewal reminder still go.** The welcome leaves out its board lines when there is no data, and the reminder is a billing notice that doesn't use the board.
+- **A dry run** releases held rows, as it does every other row.
+- **The run's summary line** now counts `held`.
+
+**Tests.** `tools/lifecycle/lifecycle.test.js` §6 runs the sender with the board failing, with it answering without `ok`, in a dry run, and with it read normally.
+- On `main`'s sender, 7 of those checks fail: all four emails go out, day 1 and day 3 included (66 passed, 7 failed).
+- With this change, 73 passed, 0 failed.
+
+## 2026-10-29 — Prediction Radar: the wallet sync grades only the bets the grade reads, and reads the wallets that can be top-graded first
+
+- **Bug.** Smart Money Tonight showed "No top-graded bettor holds a position" because there was almost no one to show. `run_now` on build `.6` ([run 40916807612](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40916807612)) made 123 wallet calls in 2 h 45 m. At the end 6 of the pool's 200 wallets had been read in full, 6 were ranked and 1 was top-graded. The Radar record had no card to publish, so "How following has done" stayed at 0 graded.
+- **Cause** (`supabase/functions/polymarket_sync/index.ts`, `wallets`).
+  - Every resolved bet in a wallet's history was graded, at one or two price reads a bet. The grade reads only the newest 150 (`max_bets_per_wallet`).
+  - Bets were graded while the activity read was still short of the present. Newer bets read later pushed them out of the grade.
+  - Due wallets were taken by pool rank, which is by volume. So the busiest wallets were read first and kept the queue for dozens of runs each. Most of them (172 of 200 in H-RADAR-01) have truncated histories and can never be top-graded.
+- **Fix** (build `polymarket_sync@2026-10-29.7`). A wallet's bets are graded only once its activity is read up to the present, and only the newest 150 resolved ones, newest first. The grade reads exactly these, so every grade is the same as before. Wallets whose history is not truncated are read before truncated ones. No rule in `radar_rules()` changes.
+- **Visible change.** A trader page lists a wallet's newest 150 resolved bets from Radar's first read of it, and every one after. Before, it listed up to 500.
+- **Tests** (`tools/radar/sync_fn.test.js`, with `max_bets_per_wallet` at 20 against a wallet with 63 bets):
+  - a read stopped at 10 pages grades nothing yet;
+  - once the read is complete, exactly the newest 20 bets are graded, in at most 4 runs;
+  - a wallet that is not truncated is read before truncated wallets that rank higher and have waited longer.
+
+  On the old code: 64 passed, 3 failed. It graded 20 bets before the read was complete, then all 63 over 5 more runs, and took the three truncated wallets first. On the fix: 67 passed, 0 failed.
+
 ## 2026-10-29 — Authorization change: Juice Reel `set_product *` opens every product of the seller, so buyers get access without its id
 
 **Authorization change; needs the owner's explicit review.**
@@ -105,22 +147,6 @@ Tests: `tools/billing/juicereel_checkout.e2e.js` gains the login window: switch 
 - **Why.** #902 (the lineup lock) left two gaps. The function's build stayed at `nhl_goalie_sync@2026-10-25.1`, so after its deploy a `GET` could not tell the new code from the old. And the job summary's "Home win %" is the goalie pairing's number, so a lock never showed in NHL goalie sync or in the deploy's first run.
 - **What.** `supabase/functions/nhl_goalie_sync/index.ts` answers `nhl_goalie_sync@2026-10-29.1`. Nothing else in the function changes. `tools/hockey/nhl_goalie_run_summary.js` adds a "Headline home win %" column, marked "(lineup lock)" once the card is locked, and labels the old column "(pairing)".
 - **Tests.** `tools/hockey/nhl_goalie_sync.test.js`: the summary row carries the headline, and at lock it shows the lock price marked "(lineup lock)". On the old summary code: 76 passed, 2 failed. On the fix: 78/0. `docs/engine/NHL_GOALIES.md` §11 records the first deploy: Deploy NHL goalie layer run 4 deployed it, and its first run read the site's previous inputs, which the site had not yet replaced.
-
-## 2026-10-29 — Prediction Radar: the wallet sync grades only the bets the grade reads, and reads the wallets that can be top-graded first
-
-- **Bug.** Smart Money Tonight showed "No top-graded bettor holds a position" because there was almost no one to show. `run_now` on build `.6` ([run 40916807612](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40916807612)) made 123 wallet calls in 2 h 45 m. At the end 6 of the pool's 200 wallets had been read in full, 6 were ranked and 1 was top-graded. The Radar record had no card to publish, so "How following has done" stayed at 0 graded.
-- **Cause** (`supabase/functions/polymarket_sync/index.ts`, `wallets`).
-  - Every resolved bet in a wallet's history was graded, at one or two price reads a bet. The grade reads only the newest 150 (`max_bets_per_wallet`).
-  - Bets were graded while the activity read was still short of the present. Newer bets read later pushed them out of the grade.
-  - Due wallets were taken by pool rank, which is by volume. So the busiest wallets were read first and kept the queue for dozens of runs each. Most of them (172 of 200 in H-RADAR-01) have truncated histories and can never be top-graded.
-- **Fix** (build `polymarket_sync@2026-10-29.7`). A wallet's bets are graded only once its activity is read up to the present, and only the newest 150 resolved ones, newest first. The grade reads exactly these, so every grade is the same as before. Wallets whose history is not truncated are read before truncated ones. No rule in `radar_rules()` changes.
-- **Visible change.** A trader page lists a wallet's newest 150 resolved bets from Radar's first read of it, and every one after. Before, it listed up to 500.
-- **Tests** (`tools/radar/sync_fn.test.js`, with `max_bets_per_wallet` at 20 against a wallet with 63 bets):
-  - a read stopped at 10 pages grades nothing yet;
-  - once the read is complete, exactly the newest 20 bets are graded, in at most 4 runs;
-  - a wallet that is not truncated is read before truncated wallets that rank higher and have waited longer.
-
-  On the old code: 64 passed, 3 failed. It graded 20 bets before the read was complete, then all 63 over 5 more runs, and took the three truncated wallets first. On the fix: 67 passed, 0 failed.
 
 ## 2026-10-29 — Changelog: eleven entries that merges dropped are back
 
@@ -311,6 +337,12 @@ The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads wi
 - `verify:core`: green.
 
 **To apply.** After merging, run **Actions → Deploy Juice Reel billing → deploy**. The function's health answer then reads build `juicereel_billing-2026-10-29-1`.
+
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 

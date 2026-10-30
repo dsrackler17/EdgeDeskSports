@@ -8,7 +8,14 @@
                               reader's state (cancelled, opted out, bounced,
                               charge date moved → skipped with the reason)
      3  the board, once       public_home_board() and football/home/board.json
-                              (this checkout) through lib/edgedesk_home.js
+                              (this checkout) through lib/edgedesk_home.js.
+                              If public_home_board() cannot be read, day 1 and
+                              day 3 are HELD: marked failed with the reason, so
+                              the next run retries them (at most three times;
+                              lifecycle_due skips a tip a day late). They are
+                              the board's research, and without it they would
+                              say "no game clears the gates" about a board
+                              nobody read. The welcome and the reminder go.
      4  each email            built from the board NOW, refused if its words
                               fail the copy rule, sent through Resend with an
                               Idempotency-Key per message row (a retry after a
@@ -80,12 +87,20 @@ async function run(o) {
   const msgs = due.messages || [];
   if (!msgs.length) { log('lifecycle: nothing due.'); return { status: 'OK', sent: 0, plan }; }
   /* the board, once, for every email in this run */
-  let pub = null, stat = null;
-  try { pub = await rpc('public_home_board', {}); } catch (e) { log('lifecycle: the board RPC failed (' + e.message + '); emails go without live research.'); }
+  let pub = null, stat = null, boardErr = null;
+  try { pub = await rpc('public_home_board', {}); } catch (e) { boardErr = e.message; }
+  if (!boardErr && !(pub && pub.ok)) boardErr = 'it answered without ok';
+  if (boardErr) log('lifecycle: the board could not be read (' + boardErr + '); day 1 and day 3 wait for the next run.');
   try { stat = o.stat !== undefined ? o.stat : JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'home', 'board.json'), 'utf8')); } catch (e) { stat = null; }
   const view = (pub && pub.ok) || stat ? H.build(pub && pub.ok ? pub : null, stat, o.now || Date.now()) : null;
-  const res = { status: 'OK', sent: 0, failed: 0, refused: 0, printed: 0, plan };
+  const res = { status: 'OK', sent: 0, failed: 0, refused: 0, printed: 0, held: 0, plan };
   for (const m of msgs) {
+    if (boardErr && (m.kind === 'trial_day1' || m.kind === 'trial_day3')) {
+      /* a dry run claims nothing for good, held or not */
+      await rpc('lifecycle_mark', driver === 'console' ? { p_id: m.id, p_status: 'release' }
+        : { p_id: m.id, p_status: 'failed', p_error: 'held: the board could not be read (' + boardErr + ')' });
+      res.held++; log('lifecycle: HELD ' + m.kind + ' #' + m.id + ' until the board can be read'); continue;
+    }
     const mail = TPL.build(m, view, { site_url: due.site_url, mailing_address: due.mailing_address });
     if (!mail) { await rpc('lifecycle_mark', { p_id: m.id, p_status: 'failed', p_error: 'unknown kind' }); res.failed++; continue; }
     if (!mail.copy.ok) {
@@ -105,7 +120,7 @@ async function run(o) {
     await rpc('lifecycle_mark', { p_id: m.id, p_status: r.ok ? 'sent' : 'failed', p_provider_id: r.id || null, p_error: r.ok ? null : r.error });
     if (r.ok) res.sent++; else { res.failed++; log('lifecycle: FAILED ' + m.kind + ' #' + m.id + ' — ' + r.error); }
   }
-  log('lifecycle: ' + JSON.stringify({ sent: res.sent, failed: res.failed, refused: res.refused, printed: res.printed }));
+  log('lifecycle: ' + JSON.stringify({ sent: res.sent, failed: res.failed, refused: res.refused, printed: res.printed, held: res.held }));
   return res;
 }
 
