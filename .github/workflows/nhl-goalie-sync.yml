@@ -16,17 +16,19 @@
 #
 # BY HAND (Run workflow) it calls the sync now: forced by default, dry or with a
 # simulated outage when asked. Either way the job summary shows what the run
-# wrote (cards, starters, gates), pg_cron's last call and the readiness KPIs
-# (public.nhl_goalie_readiness: Confirmed by T-30, conflicts, sync failures).
+# wrote (cards, starters, gates), pg_cron's last call, the readiness KPIs
+# (public.nhl_goalie_readiness: Confirmed by T-30, conflicts, sync failures) and
+# every game's current card with its headline, marked "lineup lock" once the
+# lock priced it (tools/hockey/sql/nhl_goalie_cards_check.sql).
 #
 # It FAILS when the sync refuses or errors, when pg_cron has stopped calling it
-# or its pokes are refused, or when readiness is in error (the last check
-# failed, or no run in 90 minutes).
+# or its pokes are refused, when readiness is in error (the last check failed,
+# or no run in 90 minutes), or when the cards cannot be read.
 # A source that is down (Daily Faceoff, the NHL API) is a warning, not a failure:
 # the cards say so themselves and stay gated.
 #
 # SECRETS (those Deploy NHL goalie layer uses): SUPABASE_PROJECT_REF for the
-# function URL, SB_DB_URL to read pg_cron, readiness and the Vault cron secret
+# function URL, SB_DB_URL to read pg_cron, readiness, the cards and the Vault cron secret
 # (nhl_goalie_cron_secret, the value pg_cron sends; never printed).
 name: NHL goalie sync
 
@@ -122,6 +124,14 @@ jobs:
           psql "$PGURL" -At -v ON_ERROR_STOP=1 -f tools/hockey/sql/nhl_goalie_readiness_check.sql > "$RUNNER_TEMP/readiness.json" 2> "$RUNNER_TEMP/readiness.err" \
             || { head -c 400 "$RUNNER_TEMP/readiness.err"; echo; : > "$RUNNER_TEMP/readiness.json"; }
 
+      - name: The cards (each game's current version, and whether the lineup lock priced its headline)
+        if: ${{ always() && steps.cron.outcome == 'success' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          psql "$PGURL" -At -v ON_ERROR_STOP=1 -f tools/hockey/sql/nhl_goalie_cards_check.sql > "$RUNNER_TEMP/cards.json" 2> "$RUNNER_TEMP/cards.err" \
+            || { head -c 400 "$RUNNER_TEMP/cards.err"; echo; : > "$RUNNER_TEMP/cards.json"; }
+
       - name: Summary and verdict
         if: ${{ always() && steps.cron.outcome == 'success' }}
         env:
@@ -129,7 +139,7 @@ jobs:
           HTTP: ${{ steps.run.outputs.http }}
           EVENT: ${{ github.event_name }}
         run: |
-          set -- --cron "$RUNNER_TEMP/cron.json" --readiness "$RUNNER_TEMP/readiness.json"
+          set -- --cron "$RUNNER_TEMP/cron.json" --readiness "$RUNNER_TEMP/readiness.json" --cards "$RUNNER_TEMP/cards.json"
           if [ -n "$CALLED" ] && [ "$CALLED" != skipped ]; then
             set -- "$@" --run "$RUNNER_TEMP/run.json" --http "${HTTP:-000}"
             if [ "$EVENT" = workflow_dispatch ]; then title="NHL goalie sync — run by hand"; else title="NHL goalie sync — pg_cron missed its call, so this job called the sync"; fi

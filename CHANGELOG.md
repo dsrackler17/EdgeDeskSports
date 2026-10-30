@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-29 — NHL goalie sync: the job lists every game's card, and whether the lineup lock priced it
+
+- **Why.** On the first night of the lineup lock (#902), nothing on GitHub could say whether a game had locked. The job summary listed only the cards a run wrote, and pg_cron writes the lock. A dry run at 22:54 UTC, six minutes before the 7 PM ET games, changed none of the 14 cards: either they had locked already or they never would. And Supabase could not be reached from the agent's environment to read the cards directly.
+- **What.** A read-only query, `tools/hockey/sql/nhl_goalie_cards_check.sql`, returns the current version of every game from 6 hours ago to 24 hours ahead (`public.nhl_game_cards_current`). NHL goalie sync runs it in a new step, and `tools/hockey/nhl_goalie_run_summary.js` lists the cards.
+  - Each row has the puck drop, the version and when it was written (T−minutes), both statuses, the gate, the headline's home win %, and what priced it: "lineup lock" with the skaters listed and the slate's price before lock, or "slate" with its model.
+  - Above the table: the started games, and how many were priced at lineup lock before puck drop.
+  - The watchdog runs every half hour, so the night's locks can be read from it. Cards that cannot be read fail the job, as readiness does.
+- **Tests.** On the code before this change, `nhl_goalie_sync.test.js` passed 78 and failed 3 (no cards table, an unreadable result passing, no empty-window line), and `nhl_goalie_sql.test.js` crashed (no query file). On the change: sync 81/0, and SQL 81/0 on a real PostgreSQL. The SQL suite checks that a locked game reads as "lineup lock" with its price before lock, that a slate card reads as the slate, that each game appears once, and that nothing over a day ahead is listed.
 ## 2026-10-29 — Trial emails: day 1 and day 3 wait when the board cannot be read
 
 **What was wrong.** The trial email sender reads the live board, `public_home_board()`, once per run. When that call failed, it logged "emails go without live research" and sent day 1 and day 3 anyway, built from the committed `football/home/board.json` alone. That file carries no game lines, so:
@@ -288,6 +296,12 @@ The step was fixed in the paywall change (`a5f15fb6600`, below): it now reads wi
 - `verify:core`: green.
 
 **To apply.** After merging, run **Actions → Deploy Juice Reel billing → deploy**. The function's health answer then reads build `juicereel_billing-2026-10-29-1`.
+
+## 2026-10-29 — Prediction Radar: a grade reads only the price stretches it uses, and a wallets run holds at most 10 activity pages
+
+- **Bug.** The first `run_now` on build `.4` ([run 40902894704](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40902894704)) answered four wallet calls in about 75 s each (HTTP 200, 131 to 172 requests), then got HTTP 546 on the fifth: "Function failed due to not having enough compute resources". A run fetched every bet's price history a point a minute, from 15 minutes before the entry to the start. A bet placed days early is thousands of points, and up to 150 bets a run. It also held up to 30 pages (30,000 rows) of a wallet's activity at once.
+- **Fix.** The grade reads only the follows' stretch ([entry − 6, entry + 16] minutes) and the close's ([start − 61, start + 1]), two short reads; a bet placed shortly before its game is one read, as before. `R.priceAt` takes the last point at or before its moment, at most a gap older, so the grade is identical. A wallets run holds at most 10 activity pages; the 30-page cap still counts across runs. Build `polymarket_sync@2026-10-29.5`.
+- **Tests.** `tools/radar/core.test.js`: 3,000 random bets graded from only those stretches come out exactly as from the whole history, and each stretch is at most 62 minutes. `tools/radar/sync_fn.test.js`: every price read is at most 62 minutes, and a never-ending history is read 10, 10 and 10 pages, then truncated. On the old code: core failed (no `R.gradeWindows`); sync 58 passed, 2 failed (reads of 136 minutes; 30 pages in one run). Fixed: core 100/0, sync 60/0.
 
 ## 2026-10-29 — Prediction Radar: a wallets run answers within Supabase's 150 s limit, and finishes a big wallet over several runs
 
