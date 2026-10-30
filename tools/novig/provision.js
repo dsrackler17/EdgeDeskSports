@@ -10,9 +10,11 @@
          to $GITHUB_OUTPUT. Exit 0: one environment accepted the key.
          Exit 3: Novig answered and neither environment accepted it (a 451
          location refusal, a wrong key, the clock): final, never retried,
-         because repeated 451s can lock the account. Exit 1: the bootstrap
-         could not be asked (not deployed yet, not JSON): the only answer
-         the workflow retries.
+         because repeated 451s can lock the account. Exit 4: the bootstrap
+         could not sign a request at all, so Novig was never asked (the
+         management key is not set on the project, or is not a key): final.
+         Exit 1: the bootstrap could not be asked (not deployed yet, not
+         JSON): the only answer the workflow retries.
 
      node tools/novig/provision.js register --kind read|stream --environment <env>
                                     --env-file <path> [--subaccount <trading key id>]
@@ -67,11 +69,14 @@ async function whoami(o) {
   return { json: j, text: lines.join('\n') };
 }
 
-/** whoami as the workflow runs it: 0 found, 3 Novig answered without one (never retried), 1 the bootstrap could not be asked */
+/** whoami as the workflow runs it: 0 found; 3 Novig answered without one; 4 Novig was never asked (the bootstrap
+    could not sign: its management key is missing or malformed); 1 the bootstrap could not be asked — only 1 is retried */
 async function whoamiCli(o) {
   let r;
   try { r = await whoami(o); } catch (e) { return { code: 1, text: 'FAILED: ' + e.message, json: null }; }
-  return { code: r.json.ok ? 0 : 3, text: r.text, json: r.json };
+  if (r.json.ok) return { code: 0, text: r.text, json: r.json };
+  const asked = Object.values(r.json.probes || {}).some((p) => p && Number(p.status) > 0);
+  return { code: asked ? 3 : 4, text: r.text, json: r.json };
 }
 
 /** the single-line base64 body of a PKCS#8 PEM */

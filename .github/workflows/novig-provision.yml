@@ -113,12 +113,14 @@ jobs:
           echo "::add-mask::$NOVIG_BOOTSTRAP_SECRET"
           # Retry only while the bootstrap cannot be asked yet (exit 1: just deployed). Exit 3 is
           # Novig's own answer (a 451 location refusal, a wrong key, the clock) and is never
-          # retried: repeated 451s can lock the account (docs/novig/README.md §2).
+          # retried: repeated 451s can lock the account (docs/novig/README.md §2). Exit 4: the
+          # bootstrap could not sign at all (its management key is not set), so Novig was never asked.
           ok=no
           for i in $(seq 1 10); do
             rc=0; node tools/novig/provision.js whoami || rc=$?
             if [ "$rc" = 0 ]; then ok=yes; break; fi
             if [ "$rc" = 3 ]; then echo "::error::Novig answered, and neither environment accepted the management key (each host's answer is above). Not retried."; exit 1; fi
+            if [ "$rc" = 4 ]; then echo "::error::The bootstrap could not sign a request, so Novig was never asked: NOVIG_MANAGEMENT_KEY_ID / NOVIG_MANAGEMENT_PRIVATE_KEY are missing or malformed on this Supabase project (each host's reason is above). Not retried."; exit 1; fi
             sleep 6
           done
           if [ "$ok" != yes ]; then echo "::error::the bootstrap could not establish the management key's environment (see above)"; exit 1; fi
