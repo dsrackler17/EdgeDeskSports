@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-30 — NHL goalie sync: a failed check is tried again instead of waiting for the next slot (the header's "1 failing")
+
+- **What the header showed.** The site's System pill read "1 failing" from 16:34 UTC. The one failing check was `nhl_goalie_readiness` (state `error`): "the last check failed: no starter source could be read (Daily Faceoff)". Deploy NHL goalie layer (run 41090811837) ended with a forced run at 16:34. Daily Faceoff answered HTTP 403 to both date pages, and the NHL API was not due (no game inside three hours). The cron run at 16:00 had read both pages, 18 rows. Daily Faceoff refused the function the same way on 2026-10-26 at 00:35 UTC. These are intermittent refusals from an outside source; EdgeDesk's parser and data were fine.
+- **What was ours.** After an error run the sync asked nothing until the next scheduled slot (18:00 UTC), so one refused read held readiness, and the site-wide header, in error for 86 minutes. The starters on file were kept and nothing was written in their place, so readers lost freshness, not data.
+- **Fix** (`supabase/functions/nhl_goalie_sync/index.ts`, build `nhl_goalie_sync@2026-10-30.4`). It complements #941, which retries a refused page inside one run and adds ESPN as a second source. A run still ends in error when every source is down, and #941 carries nothing over between runs. After an error run, the sync runs again 10 minutes later, then 20, then every 40 while it keeps failing, besides the schedule's own slots (`due_kinds` `retry_after_error`). The error run's `next_due_at` names the retry time. No change to what a run writes, how readiness judges a run, or the header's rule: a failed check still shows as failing until a check succeeds.
+- **Tests** (`tools/hockey/nhl_goalie_sync.test.js`), replaying production. A forced off-slot run refused with 403 is an error, and its `next_due_at` is 10 minutes on. Then:
+  - nothing runs at 6 minutes;
+  - at 11 minutes it runs and recovers;
+  - after the recovery, nothing extra runs;
+  - a source that stays down is retried 10, 20, then 40 minutes apart.
+
+  On the old code: 86 passed, 8 failed. On the fix: 94/0.
 ## 2026-10-30 — Football situational pipeline: a failure after the build no longer throws away the derived seasons
 
 - **Why.** All four scheduled runs since the pipeline was added failed. Three were market refreshes (`build --offline`): `no derived season` for NFL and CFB at ingest. The fourth, a full build (run 41093420059), built and committed its data, then the Supabase copy failed (`fsie_source_files` does not exist in production; `supabase/football_situational.sql` has not been applied there). `actions/cache` saves only when every step passes, so its "Post Cached source downloads" was skipped and the derived seasons that build made were discarded. The market refreshes read only that cache.
