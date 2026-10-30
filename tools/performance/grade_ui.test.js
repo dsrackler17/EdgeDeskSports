@@ -62,7 +62,7 @@ chk('A /today/ loads the same games module (the public host decides), and no gra
 /* B the boards */
 chk('B Today\'s Games: grades only on the terminal host with EdgeDesk\'s numbers on', /function gradeOn\(\) \{ return S\.opts\.host !== 'public' && O\('model'\) !== false && !!window\.EDGradeUI; \}/.test(GAMES));
 chk('B Today\'s Games: a badge on both cards, the letter filter and the matchup view\'s breakdown', (GAMES.match(/\+ gradeSlot\(e\)/g) || []).length === 2 && /GU\.filterHTML\(gf/.test(GAMES) && /window\.EDGradeUI\.breakdown\(e\.id\)/.test(GAMES));
-chk('B the FBS board: a badge in the game cell, a filter kept in the URL (fbs_grade), the card section', /window\.EDGradeUI\.slot\(fbP4GradeKey\(gid\)\)/.test(APP) && /q\.fbs_grade=f\.grade/.test(APP) && /fbGxSec\(gid,'grade'/.test(APP) && /grade:false\}/.test(APP));
+chk('B the FBS board: a badge in the game cell, a filter kept in the URL (fbs_grade), the card section', /window\.EDGradeUI\.slot\(fbP4GradeKey\(gid\)\)/.test(APP) && /q\.fbs_grade=f\.grade/.test(APP) && /fbGxSec\(gid,'grade'/.test(APP) && /[{,]grade:false[,}]/.test(APP));
 chk('B the FBS filter is a no-op without the module (the board\'s own tests run without it)', /if\(f\.grade&&f\.grade!=='all'&&!\(window\.EDGradeUI&&window\.EDGradeUI\.matches/.test(APP) && /if\(window\.EDGradeUI&&window\.EDGradeUI\.ready\(\)\)\{/.test(APP));
 chk('B the NFL card carries a badge', /window\.EDGradeUI\.slot\('NFL\|'\+g\.game_id\)/.test(APP));
 chk('B the NHL and NBA boards: a badge on each card (no guide tap inside a button) and the breakdown in the game view', /slot\('NHL\|' \+ g\.game_id, \{ term: false \}\)/.test(read('lib/edgedesk_engine_ui.js')) && /breakdown\('NHL\|' \+ g\.game_id\)/.test(read('lib/edgedesk_engine_ui.js'))
