@@ -55,7 +55,7 @@
 //      NBA_INPUTS_URL (default https://edgedesksports.com/nba/roster_inputs.json)
 // ============================================================
 
-export const BUILD = "nba_injury_sync@2026-10-21.3";
+export const BUILD = "nba_injury_sync@2026-10-30.1";
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 const INPUTS_URL = "https://edgedesksports.com/nba/roster_inputs.json";
 // A browser's headers. The crawler-style "EdgeDesk research (+https://...)" agent
@@ -68,7 +68,7 @@ const UA = {
   "accept": "*/*",
   "accept-language": "en-US,en;q=0.9",
 };
-const PARSER_VERSION = "nba-official-lines-1";
+const PARSER_VERSION = "nba-official-lines-2"; // 2: centred and page-split wrapped reasons (nbaAssignWraps)
 
 // ── BEGIN NBA DIST ─────────────────────────────────────────────────────
 // Canonical source: nba/model/distribution.js, copied whole by tools/nba/inline_injury_core.js.
@@ -367,7 +367,7 @@ const PARSER_VERSION = "nba-official-lines-1";
 // Canonical source: nba/injury/core.js (copied verbatim by
 // tools/nba/inline_injury_core.js; edit the canonical file, never the copy).
 
-var NBA_INJURY_CORE_VERSION = 'nba-injury-core-2026-10-21-1';
+var NBA_INJURY_CORE_VERSION = 'nba-injury-core-2026-10-30-1';
 
 /* THE MODEL VERSION, registered before any holdout evaluation
    (nba/research/roster_adjusted/registration.json carries the same numbers;
@@ -506,14 +506,15 @@ var NBA_PLAYER_RE = /^(.+?,\s*\S.*?)\s+(Out|Doubtful|Questionable|Probable|Avail
  * The official report's lines -> rows. The table's columns are Game Date,
  * Game Time, Matchup, Team, Player Name, Current Status, Reason; a column is
  * printed only where its value changes, so each is carried down. A team that
- * has not filed reads "NOT YET SUBMITTED". A line that is none of these and
- * follows a player is the wrapped end of his reason. Anything else is UNREAD,
- * returned, never guessed at.
+ * has not filed reads "NOT YET SUBMITTED". A line that is none of these, has
+ * no status word and no column prefix, is part of a wrapped reason and is
+ * given to its row by nbaAssignWraps. Anything else is UNREAD, returned,
+ * never guessed at.
  */
 function nbaParseOfficialLines(lines, meta) {
   var out = { published_ms: null, rows: [], not_submitted: [], matchups: [], unread: [], header_seen: false };
-  var cur = { date: null, time: null, matchup: null, team: null }, last = null, orphan = [];
-  var seenMatch = {};
+  var cur = { date: null, time: null, matchup: null, team: null };
+  var seenMatch = {}, seq = [];
   function noteMatchup() {
     if (!cur.date || !cur.matchup) return;
     var k = cur.date + '|' + cur.matchup;
@@ -522,6 +523,7 @@ function nbaParseOfficialLines(lines, meta) {
     var ab = cur.matchup.split('@'), a = nbaTeam(ab[0]), h = nbaTeam(ab[1]);
     out.matchups.push({ game_date: cur.date, game_time_et: cur.time, matchup: cur.matchup, away_id: a ? a.id : null, home_id: h ? h.id : null });
   }
+  function unread(raw) { out.unread.push(raw); seq.push({ stop: true }); }
   (lines || []).forEach(function (raw) {
     var s = String(raw || '').replace(/\s+/g, ' ').trim();
     if (!s) return;
@@ -540,24 +542,82 @@ function nbaParseOfficialLines(lines, meta) {
     if (!s) return;
     var ctx = { game_date: cur.date, game_time_et: cur.time, matchup: cur.matchup, team_id: cur.team };
     if (/^NOT YET SUBMITTED$/i.test(s)) {
-      if (cur.team && cur.matchup) out.not_submitted.push(ctx); else out.unread.push(raw);
-      last = null; return;
+      if (cur.team && cur.matchup) { out.not_submitted.push(ctx); seq.push({ stop: true }); } else unread(raw);
+      return;
     }
     var pm = NBA_PLAYER_RE.exec(s);
     if (pm && cur.team && cur.matchup && cur.date) {
       var row = { game_date: ctx.game_date, game_time_et: ctx.game_time_et, matchup: ctx.matchup, team_id: ctx.team_id,
         player_raw: pm[1].trim(), player_name: nbaDisplayName(pm[1]), status: NBA_STATUS_OFFICIAL[pm[2].toLowerCase()], source_status: pm[2], reason: (pm[3] || '').trim() };
-      /* a vertically centred reason can print its first line above the row */
-      if (!row.reason && orphan.length) { row.reason = orphan.join(' '); orphan = []; }
-      else if (orphan.length && last) { last.reason = (last.reason + ' ' + orphan.join(' ')).trim(); orphan = []; }
-      out.rows.push(row); last = row; return;
+      out.rows.push(row); seq.push({ row: row }); return;
     }
-    if (!prefix && !/(Out|Doubtful|Questionable|Probable|Available)\b/.test(s) && s.length <= 120 && (last || out.rows.length)) { orphan.push(s); return; }
-    out.unread.push(raw);
+    if (!prefix && !/(Out|Doubtful|Questionable|Probable|Available)\b/.test(s) && s.length <= 120 && (out.header_seen || cur.date)) { seq.push({ text: s, raw: raw }); return; }
+    unread(raw);
   });
-  if (orphan.length) { if (last) last.reason = (last.reason + ' ' + orphan.join(' ')).trim(); else orphan.forEach(function (x) { out.unread.push(x); }); }
+  nbaAssignWraps(seq, out.unread);
   if (out.published_ms == null && meta && meta.url) out.published_ms = nbaReportTimeFromName(meta.url);
   return out;
+}
+/**
+ * Wrapped reason lines -> their rows. The report centres every cell of a row
+ * vertically, so a reason of two lines prints one line above the player's
+ * line and one below it (his own line then has no reason), and one of three
+ * lines prints above, on and below it: a row takes as many lines below as it
+ * took above. A row the page breaks after prints its reason's first line on
+ * his own line and the rest after the page break (and the earlier one-line-
+ * plus-wrap layout looks the same): it takes none above and the rest below.
+ * Between two rows the lines are split between the upper row's below and the
+ * lower row's above, so the whole run of rows is solved together: the split
+ * that needs the fewest top-aligned rows (and rows with no reason) wins, and
+ * it must be the only such split. No split, or two equally good ones: the
+ * run's wrapped lines are UNREAD, never guessed onto a row. A NOT YET
+ * SUBMITTED line or an unread line ends a run (a line is never carried across
+ * it).
+ */
+function nbaAssignWraps(seq, unread) {
+  var runs = [[]];
+  seq.forEach(function (t) { if (t.stop) runs.push([]); else runs[runs.length - 1].push(t); });
+  runs.forEach(function (run) {
+    var rows = [], groups = [[]];
+    run.forEach(function (t) { if (t.row) { rows.push(t.row); groups.push([]); } else groups[groups.length - 1].push(t); });
+    var texts = run.filter(function (t) { return !t.row; });
+    if (!texts.length) return;
+    var plan = rows.length ? nbaSolveWraps(rows.map(function (r) { return !!r.reason; }), groups.map(function (g) { return g.length; })) : null;
+    if (!plan) { texts.forEach(function (t) { unread.push(t.raw); }); return; }
+    rows.forEach(function (r, i) {
+      var above = groups[i].slice(groups[i].length - plan[i].a).map(function (t) { return t.text; });
+      var below = groups[i + 1].slice(0, plan[i].b).map(function (t) { return t.text; });
+      r.reason = above.concat(r.reason ? [r.reason] : [], below).join(' ').trim();
+    });
+  });
+}
+/** own[i]: row i printed reason text on its own line; g[i]: lines between row i-1 and row i (g[0] before the first, g[n] after the last) -> [{ a, b }] or null (no split, or more than one best) */
+function nbaSolveWraps(own, g) {
+  var n = own.length, best = [];
+  /* best[i][a] = { cost, ways, prev }: rows 0..i-1 placed and row i takes a lines above */
+  for (var i = 0; i <= n; i++) best.push({});
+  best[0][g[0]] = { cost: 0, ways: 1, prev: null };
+  for (i = 0; i < n; i++) {
+    Object.keys(best[i]).forEach(function (ka) {
+      var a = +ka, st = best[i][ka], opts = [];
+      if (own[i] || a > 0) opts.push({ b: a, c: 0 });               /* centred */
+      else opts.push({ b: 0, c: 1 });                               /* a row with no reason at all */
+      if (a === 0 && own[i]) for (var b = 1; b <= g[i + 1]; b++) opts.push({ b: b, c: 1 }); /* first line on his own line, the rest below */
+      opts.forEach(function (o) {
+        if (o.b > g[i + 1]) return;
+        var na = g[i + 1] - o.b;
+        if (i === n - 1 && na !== 0) return;                      /* nothing follows the last row: every line after it is his */
+        var c = st.cost + o.c, cell = best[i + 1][na];
+        if (!cell || c < cell.cost) best[i + 1][na] = { cost: c, ways: st.ways, prev: { a: a, b: o.b } };
+        else if (c === cell.cost) cell.ways += st.ways;
+      });
+    });
+  }
+  var end = best[n][0];
+  if (!end || end.ways !== 1) return null;
+  var plan = new Array(n), na = 0;
+  for (i = n; i > 0; i--) { var p = best[i][na].prev; plan[i - 1] = { a: p.a, b: p.b }; na = p.a; }
+  return plan;
 }
 
 /* ---------------------------------------------------------------- the ESPN feeds (fallback statuses, rosters) */
@@ -604,14 +664,18 @@ function nbaParseEspnRoster(json, teamId) {
 }
 
 /* ---------------------------------------------------------------- names */
-/** "White, Coby" -> "Coby White"; "Porter Jr., Michael" -> "Michael Porter Jr." */
+/** "White, Coby" -> "Coby White"; "Porter Jr., Michael" -> "Michael Porter Jr."; "Udeh, Jr., Ernest" -> "Ernest Udeh Jr." (the report prints a suffix both ways) */
 function nbaDisplayName(s) {
   s = String(s || '').replace(/\s+/g, ' ').trim();
-  var m = /^([^,]+),\s*(.+)$/.exec(s);
+  var m = /^([^,]+),\s*(Jr\.?|Sr\.?|II|III|IV|V)\s*,\s*(.+)$/i.exec(s);
+  if (m) return (m[3] + ' ' + m[1] + ' ' + m[2]).trim();
+  m = /^([^,]+),\s*(.+)$/.exec(s);
   return m ? (m[2] + ' ' + m[1]).trim() : s;
 }
 /* official spelling -> the spelling ESPN's roster uses, where they differ (keys as nbaNameKey makes them) */
-var NBA_NAME_ALIASES = { 'nicolas claxton': 'nic claxton', 'herbert jones': 'herb jones', 'cameron thomas': 'cam thomas', 'kenyon martin': 'kj martin', 'moe wagner': 'moritz wagner', 'alex sarr': 'alexandre sarr' };
+var NBA_NAME_ALIASES = { 'nicolas claxton': 'nic claxton', 'herbert jones': 'herb jones', 'cameron thomas': 'cam thomas', 'kenyon martin': 'kj martin', 'moe wagner': 'moritz wagner', 'alex sarr': 'alexandre sarr',
+  /* the report prints "Yang, Hansen"; ESPN's Portland roster (player 5217746) prints him family name first, "Yang Hansen" */
+  'hansen yang': 'yang hansen' };
 function nbaNameKey(s) {
   s = nbaDisplayName(s);
   if (s.normalize) s = s.normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -990,7 +1054,7 @@ export async function readOfficial(nowMs: number) {
     try { lines = await hooks.pdfLines(bytes); } catch (e) { return { ok: false, error: "the report PDF would not read: " + String((e as Error)?.message ?? e).slice(0, 200), url: c.url, tried }; }
     const parsed = nbaParseOfficialLines(lines, { url: c.url });
     if (!parsed.header_seen && !parsed.matchups.length) return { ok: false, error: "the report PDF read, but not as the league's table (layout drift)", url: c.url, tried, parsed, drift: true };
-    return { ok: true, url: c.url, published_ms: parsed.published_ms ?? c.published_ms, parsed, pdf_sha256: await sha256hex(bytes), tried, via: links.length ? "season_page" : "file_pattern" };
+    return { ok: true, url: c.url, published_ms: parsed.published_ms ?? c.published_ms, parsed, pdf_sha256: await sha256hex(bytes), tried, via: links.length ? "season_page" : "file_pattern", newest_listed_ms: links.length ? links[0].published_ms : null };
   }
   return { ok: false, error: (links.length ? "the newest reports linked from the season page would not download" : "no report found (season page unreadable and no file at the published pattern in the last 8 hours)") + (why.length ? ": " + why.join(", ") : ""), tried };
 }
@@ -1035,6 +1099,8 @@ export async function syncOnce(opts: Any = {}) {
   const run: Any = { run_id: crypto.randomUUID(), build: BUILD, trigger: opts.trigger || "manual", status: "ok", started_at: new Date(nowMs).toISOString(), simulated: sim.length > 0, details: {} };
   const alerts: Any[] = [];
   const alert = (severity: string, code: string, message: string, detail?: Any) => alerts.push({ severity, code, message, detail: detail ?? null });
+  /* what the league had published when this run looked: the dashboard can tell "the league has not published since" from "the sync is behind" */
+  let official: Any = undefined;
   const out: Any = { ok: true, build: BUILD, run_id: run.run_id, dry };
   try {
     /* 1 · the slate's roster inputs */
@@ -1120,6 +1186,7 @@ export async function syncOnce(opts: Any = {}) {
     let rep: Any = null;
     const off = sim.includes("official") ? { ok: false, error: "simulated outage" } : await readOfficial(nowMs);
     run.official_ok = !!off.ok;
+    official = { via: (off as Any).via || null, read_url: (off as Any).url || null, newest_listed_at: (off as Any).newest_listed_ms ? new Date((off as Any).newest_listed_ms).toISOString() : null, tried: ((off as Any).tried || []).length };
     if (off.ok) {
       rep = { source: "nba_official", url: off.url, published_ms: off.published_ms, rows: off.parsed.rows, matchups: off.parsed.matchups, not_submitted: off.parsed.not_submitted, unread: off.parsed.unread, pdf_sha256: off.pdf_sha256 };
       if (off.parsed.unread.length) alert("DRIFT", "report_unread_lines", off.parsed.unread.length + " line(s) of the league's report did not read as a row; they are kept with the report", { lines: off.parsed.unread.slice(0, 20), url: off.url });
@@ -1262,7 +1329,7 @@ export async function syncOnce(opts: Any = {}) {
   } finally {
     run.finished_at = new Date(Math.max(Date.now(), nowMs)).toISOString();
     if (run.status !== "skipped" && !run.message) run.message = alerts.filter((a) => a.severity !== "WARNING").map((a) => a.message).join("; ").slice(0, 600) || null;
-    run.details = { alerts: alerts.map((a) => a.code), simulate_outage: sim.length ? sim : undefined };
+    run.details = { alerts: alerts.map((a) => a.code), simulate_outage: sim.length ? sim : undefined, official };
     out.status = run.status; out.alerts = alerts; out.ok = run.status !== "error";
     if (!dry) {
       try {

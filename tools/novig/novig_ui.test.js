@@ -50,6 +50,14 @@ chk('app.html: the guarded hook sits in the four pregame football cards (NFL and
 chk('app.html: every Novig hook follows a Kalshi hook, and the Kalshi hooks are untouched (5)', (APP.match(/window\.fbKalshiHTML\?window\.fbKalshiHTML\(/g) || []).length === 5
   && hooks.every((h) => APP.indexOf("(window.fbKalshiHTML?window.fbKalshiHTML('" + (/'nfl'/.test(h) ? 'nfl' : 'cfb')) >= 0));
 chk('app.html: no Novig price, key or flag is set in the page itself', !/NOVIG_(READ|MANAGEMENT|STREAM)_|novig_config/.test(APP));
+/* the page defines its card hooks itself (tools/football/brief_wiring.test.js holds every window.fb* to that), so
+   window.fbNovigHTML is app.html's, and every render below goes through it */
+const HOOK = (APP.match(/<script>\s*(window\.fbNovigHTML=function\(sport,g,t,ev,opts\)\{[\s\S]*?\n\};)\s*<\/script>/) || [])[1] || '';
+chk('app.html: defines window.fbNovigHTML once, guarded, calling EDMarketCompareUI.html and returning \'\' when the module is missing or throws',
+  (APP.match(/window\.fbNovigHTML=/g) || []).length === 1 && /window\.EDMarketCompareUI\?window\.EDMarketCompareUI\.html\(sport,g,t,ev,opts\):''/.test(HOOK) && /catch\(e\)\{[\s\S]*return '';\}/.test(HOOK), HOOK);
+{ const bare = { console }; bare.window = bare; vm.createContext(bare); vm.runInContext(HOOK, bare);
+  chk('app.html\'s hook without the module loaded: \'\' (the card is unchanged)', bare.fbNovigHTML('nfl', { game_id: 'x' }, null, null) === ''); }
+chk('the module leaves the window.fbNovigHTML global to the page', !/fbNovigHTML\s*=/.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_market_compare_ui.js'), 'utf8')));
 
 /* ---------------------------------------------------------------- the operator console */
 const ADMIN = fs.readFileSync(path.join(ROOT, 'admin', 'novig', 'index.html'), 'utf8');
@@ -87,6 +95,7 @@ function boot(answer) {
   ctx.globalThis = ctx; ctx.window = ctx; ctx.self = ctx;
   vm.createContext(ctx);
   for (const f of ['edgedesk_venue_compare.js', 'edgedesk_lead_lag.js', 'edgedesk_compare_cards.js', 'edgedesk_market_compare_ui.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8'), ctx, { filename: f });
+  vm.runInContext(HOOK, ctx, { filename: 'app.html#fbNovigHTML' });
   ctx.EDFootball = { meta: () => ({ model_version: 'edgedesk_football_v1.0.0', built_at: '2026-08-21T19:18:15+00:00' }) };
   return { ctx, calls };
 }

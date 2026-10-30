@@ -25,7 +25,9 @@
      alerts      unmapped games settling soon warn at most hourly; one series
                  down is DEGRADED; every series down is a FAILURE; the book
                  unreadable is DEGRADED and links nothing; nothing tracked
-                 warns; the external host refusing hands over to the shared
+                 warns; the external host refusing hands over to the shared;
+                 a database read that times out or answers 503 is retried
+                 (bounded), a database write is never resent
      dry         reads and computes, writes nothing
 
    Run: node tools/kalshi/kalshi_sync.test.js
@@ -93,7 +95,7 @@ function resetDb(o) {
   DB = { kalshi_series: (o.series || [{ ticker: 'KXNFLGAME', tracked: true }, { ticker: 'KXNCAAFGAME', tracked: true }]).map((x) => Object.assign({}, x)),
     kalshi_link_series: [{ series_ticker: 'KXNFLGAME', sport: 'nfl' }, { series_ticker: 'KXNCAAFGAME', sport: 'cfb' }],
     kalshi_markets: [], kalshi_price_snapshots: [], kalshi_game_links: [], kalshi_sync_runs: [], kalshi_alerts: [],
-    signals: SIGNALS.slice(), game_research_state: (o.research || RESEARCH0).slice(), seq: 0, calls: [], down: o.down || {} };
+    signals: SIGNALS.slice(), game_research_state: (o.research || RESEARCH0).slice(), seq: 0, calls: [], down: o.down || {}, stall: o.stall || {}, flaky: o.flaky || {} };
 }
 const KEY = { kalshi_series: 'ticker', kalshi_markets: 'ticker', kalshi_game_links: 'market_ticker' };
 function cmp(v, op, x) {
@@ -148,7 +150,13 @@ let W;
 function resetKalshi(o) { W = Object.assign({ externalStatus: 200, externalDown: false, sharedDown: false, seriesShape: true, failSeries: [], calls: [], pageSize: 7, extraNfl: [] }, o || {}); }
 globalThis.fetch = async (u, init) => {
   u = String(u);
-  if (u.startsWith(ENV.SUPABASE_URL)) { const [s, b] = rest(u, init); return resp(s, b); }
+  if (u.startsWith(ENV.SUPABASE_URL)) {
+    /* a stalled read: the request's own 20 s deadline fires, as Deno words it (production run 2026-10-30 09:20Z) */
+    const t = new URL(u).pathname.replace('/rest/v1/', ''), mth = (init && init.method) || 'GET';
+    if (mth === 'GET' && DB.stall[t] > 0) { DB.stall[t]--; DB.calls.push('STALL ' + t); const e = new Error('Signal timed out.'); e.name = 'TimeoutError'; throw e; }
+    if (mth === 'GET' && DB.flaky[t] > 0) { DB.flaky[t]--; DB.calls.push('503 ' + t); return resp(503, { message: 'upstream connect error' }); }
+    const [s, b] = rest(u, init); return resp(s, b);
+  }
   const ext = u.startsWith('https://external-api.kalshi.com/trade-api/v2'), sh = u.startsWith('https://api.elections.kalshi.com/trade-api/v2');
   if (!ext && !sh) return resp(404, 'unmocked ' + u);
   W.calls.push((ext ? 'ext ' : 'shared ') + u.replace(/^https:\/\/[^/]+\/trade-api\/v2/, ''));
@@ -304,9 +312,25 @@ globalThis.fetch = async (u, init) => {
   resetDb({ series: [{ ticker: 'KXNFLGAME', tracked: false }] }); resetKalshi();
   o = await run({ mode: 'snapshot' });
   chk('nothing tracked: a warn run with a WARNING that says what to do; Kalshi is not called', lastRun().status === 'warn' && codes(o) === 'WARNING:no_tracked_series' && /tracked = true/.test(o.alerts[0].message) && W.calls.length === 0);
+  /* regression (2026-10-30 09:20Z, run ec23a067): the run's first database read
+     stalled past its 20 s deadline and the whole snapshot failed; nothing was
+     retried. An idempotent read is retried; a write never is (a snapshot
+     insert has no natural key, so a resend after a timeout could double it) */
+  resetDb({ stall: { kalshi_series: 1 } }); resetKalshi();
+  o = await run({ mode: 'snapshot' });
+  chk('a database read that times out once is retried: the run succeeds and snapshots every market', o.ok && lastRun().status === 'warn' && !o.alerts.some((a) => a.severity === 'FAILURE')
+    && DB.kalshi_price_snapshots.length === 17 && DB.calls.filter((c) => c === 'STALL kalshi_series').length === 1, [codes(o), lastRun().message]);
+  resetDb({ flaky: { kalshi_link_series: 2 } }); resetKalshi();
+  o = await run({ mode: 'snapshot' });
+  chk('a database read answered 503 twice is retried: the links are still made', o.ok && DB.kalshi_game_links.length === 8 && DB.calls.filter((c) => c === '503 kalshi_link_series').length === 2, [codes(o), lastRun().message]);
+  resetDb({ stall: { kalshi_series: 9 } }); resetKalshi();
+  o = await run({ mode: 'snapshot' });
+  chk('a database read that keeps timing out is still a FAILURE (bounded retries, then the error is reported)', !o.ok && lastRun().status === 'error' && codes(o) === 'FAILURE:snapshot_error'
+    && /timed out/.test(lastRun().message) && DB.calls.filter((c) => c === 'STALL kalshi_series').length === 3 && W.calls.length === 0, [codes(o), DB.calls]);
   resetDb({ down: { kalshi_price_snapshots: 500 } }); resetKalshi();
   o = await run({ mode: 'snapshot' });
   chk('a database write failing is a FAILURE (snapshot_error), not a quiet success', !o.ok && lastRun().status === 'error' && codes(o) === 'FAILURE:snapshot_error', codes(o));
+  chk('a failed write is not resent (no duplicate snapshot rows from a retry)', DB.calls.filter((c) => c === 'POST kalshi_price_snapshots').length === 1, DB.calls.filter((c) => /snapshots/.test(c)));
 
   /* ---- dry ---- */
   resetDb(); resetKalshi();
