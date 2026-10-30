@@ -707,9 +707,13 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
     KC.team === nm.t && KC.diff === (nm.d === 0 ? 'EdgeDesk matches Kalshi on ' + nm.t : 'EdgeDesk ' + Math.abs(nm.d).toFixed(1) + ' pts ' + (nm.d > 0 ? 'higher' : 'lower') + ' on ' + nm.t + ' than Kalshi'), [KC, dA, dH]);
   if (NE.game_key === 'nfl|2026_07_NE_CHI') chk('…NE at CHI: "EdgeDesk 9.5 pts higher on NE than Kalshi"', KC.diff === 'EdgeDesk 9.5 pts higher on NE than Kalshi', KC.diff);
   chk('…drawn once, in Kalshi’s columns, and no "PP HIGHER" / "PP LOWER" anywhere', drawn(r.c).filter((t) => t === KC.diff).length === 1 && !drawn(r.c).some((t) => /\bPP (HIGHER|LOWER)\b/.test(t)) && !/\bPP (HIGHER|LOWER)\b/.test(GG.altText(r.c)));
-  r = card([q(1, MIN, 0.70, 0.71)]);
+  /* only the home team priced, 4.0 points ABOVE the model's own home number (on the card's 0.1-point grid, kept
+     under 99%), so "lower" holds whichever game the committed slate puts first: a fixed 70.5% read "higher" once
+     that game's model passed it */
   const ph = Math.round(NE.model.win_prob.home * 1000) / 10;
-  chk('difference: lower, and the team is picked from the data (only the home team priced here)', r.c.compare.kalshi.team === HB && r.c.compare.kalshi.diff === 'EdgeDesk ' + (Math.round((70.5 - ph) * 10) / 10).toFixed(1) + ' pts lower on ' + HB + ' than Kalshi', r.c.compare.kalshi);
+  const up = Math.min(4, Math.floor((99 - ph) * 5) / 10), hm = Math.round((ph + up) * 10) / 1000;
+  r = card([q(1, MIN, Math.round((hm - 0.005) * 1e4) / 1e4, Math.round((hm + 0.005) * 1e4) / 1e4)]);
+  chk('difference: lower, and the team is picked from the data (only the home team priced here)', up > 0 && r.c.compare.kalshi.team === HB && r.c.compare.kalshi.diff === 'EdgeDesk ' + (Math.round((hm * 100 - ph) * 10) / 10).toFixed(1) + ' pts lower on ' + HB + ' than Kalshi', [ph, hm, r.c.compare.kalshi]);
   const evenAt = (Math.round(NE.model.win_prob.away * 1000) / 1000);
   r = card([q(0, MIN, evenAt - 0.005, evenAt + 0.005)]);
   chk('difference: equal numbers read "EdgeDesk matches Kalshi on …"', r.c.compare.kalshi.diff === 'EdgeDesk matches Kalshi on ' + AB, [r.c.compare.cols, r.c.compare.kalshi.diff]);
