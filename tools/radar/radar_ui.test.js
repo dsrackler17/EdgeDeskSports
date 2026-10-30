@@ -98,6 +98,22 @@ chk('v2: observed activity is its own section, labelled observed and not a signa
 chk('v2: …it counts and sums, by side, and names no bettor', /Chiefs -3 8 \(\$52K\) · Raiders \+3 4 \(\$18K\)/.test(t2t) && !/data-radar-wallet/.test(t2.slice(t2.indexOf('rd-obs'))), t2t.slice(t2t.indexOf('Observed activity'), t2t.indexOf('Observed activity') + 400));
 chk('v2: how discovery stands: screened, fully evaluated, high-frequency and ungraded, with why', /Radar has screened 240 wallets from Polymarket’s 30-day sports board: 150 fully evaluated, 60 high-frequency \(not followable\), 12 with too much history to read in full \(ungraded\)\./.test(t2t), t2t.slice(-500));
 chk('v2: no featured card: says so, invents nothing', /No featured bettor holds a position/.test(U.tonightHTML(Object.assign({}, T2, { cards: [] }))));
+/* the sync state: "pending", "failed" and "no current qualifying position" never read alike */
+const S0 = Object.assign({}, T2, { featured: 0, cards: [], observed: [], graded_at: null });
+const pend = textOf(keep(U.tonightHTML(Object.assign({}, S0, { sync: { state: 'pending', reason: 'first_grade', candidates: 412, evaluated: 37 } }))));
+chk('sync pending: says so, with how far the first read has got, and claims neither an empty slate nor that nobody qualifies', /Sync pending/.test(pend) && /37 of 412/.test(pend)
+  && !/holds a position/.test(pend) && !/qualifies to be featured/.test(pend), pend);
+const failed = textOf(keep(U.tonightHTML(Object.assign({}, S0, { featured: 2, sync: { state: 'failed', reason: 'holders_stale', holders_at: '2026-10-30T12:00:00Z', graded_at: '2026-10-30T10:17:00Z' } }))));
+chk('sync failed: says so, why, and since when, and does not say nobody holds a position', /Sync failed/.test(failed) && /has not succeeded for over 30 minutes/.test(failed) && /ET/.test(failed)
+  && !/holds a position on tonight/.test(failed), failed);
+chk('sync failed: an error carries its message', /Polymarket answered 503/.test(textOf(U.tonightHTML(Object.assign({}, S0, { sync: { state: 'failed', reason: 'holders_error', last_error: 'tonight error: Polymarket answered 503', holders_at: '2026-10-30T12:00:00Z' } })))));
+const okEmpty = textOf(keep(U.tonightHTML(Object.assign({}, S0, { featured: 3, sync: { state: 'ok', holders_at: '2026-10-30T17:40:00Z', graded_at: '2026-10-30T10:17:00Z' } }))));
+chk('sync ok, no card: no featured bettor holds a position right now, and when the holders were checked', /No featured bettor holds a position on tonight’s covered games right now/.test(okEmpty)
+  && /checked .*ET/.test(okEmpty) && !/Sync (pending|failed)/.test(okEmpty), okEmpty);
+chk('sync ok: no observed activity says so under its own heading, apart from the featured cards', /Observed activity/.test(okEmpty) && /No other evaluated bettor holds a position on tonight’s covered games right now/.test(okEmpty), okEmpty);
+const obsOnly = textOf(keep(U.tonightHTML(Object.assign({}, S0, { featured: 0, observed: T2.observed, sync: { state: 'ok', holders_at: '2026-10-30T17:40:00Z' } }))));
+chk('observed activity shows when no bettor qualifies to be featured', /No bettor qualifies to be featured yet/.test(obsOnly) && /Observed activity/.test(obsOnly) && /Chiefs -3 8/.test(obsOnly), obsOnly);
+chk('the footer dates the grade from the sync state when the door has none', /Graded/.test(okEmpty) && !/Graded —/.test(okEmpty), okEmpty.slice(-200));
 chk('v2: a subscriber-only refusal shows no observed activity either', !/Observed activity/.test(U.tonightHTML({ status: 'subscribers_only', hypothesis: 'H-RADAR-02', cards: [], observed: T2.observed })));
 chk('v2: the leaderboard marks a featured bettor in words', /Featured/.test(U.leaderboardHTML({ status: 'ok', rows: [{ rank: 1, wallet: '0x' + '1'.repeat(40), sample: 'ranked', style: 'Directional', graded_bets: 60, wins: 40, losses: 20, roi: 0.1, clv_pp: 2, follow5_roi: 0.05, radar_score: 3, score_parts: { follow_roi: 0.01, clv_pct: 0.01, roi: 0.01 }, top_directional: true }] })));
 const rec2 = textOf(keep(U.recordHTML({ status: 'ok', label: 'EXPERIMENTAL', hypothesis: 'H-RADAR-02', priced_at: 'best_ask', small_sample: true, min_sample: 200, earlier_cards: 4,

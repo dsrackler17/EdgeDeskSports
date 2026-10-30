@@ -255,6 +255,34 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     await page.click('#pfoHost [data-r="juicereel"] [data-act="jr-sync"]');
     await page.waitForFunction(() => /Synced from Juice Reel/.test(document.body.innerText), null, { timeout: 20000 }).catch(() => null);
     chk('Sync now runs and says what it did', /Synced from Juice Reel: 0 new, 0 updated/.test(await page.evaluate(() => document.body.innerText)));
+
+    /* ── LATER, WITH NOBODY CLICKING: Juice Reel settles a bet and records a new one; the scheduler (pg_cron → sweep) brings both in ── */
+    const later = new Date().toISOString();
+    Object.assign(u4.bets.find((b) => b.id === 502), { result: 'Won', netResult: 35, dateClosed: later, BetStatus: { id: 2, statusName: 'Closed' }, updatedAt: later });
+    u4.bets.push(FAKE.bet(504, { oddsAmerican: 105, amountRisked: 20, toWin: 21, datePlaced: new Date(Date.now() - 60000).toISOString(), createdAt: later, updatedAt: later,
+      Site: { id: 20, name: 'FanDuel' }, Subbets: [FAKE.subbet({ position: 'Oregon Ducks', home: 'Oregon Ducks', away: 'USC Trojans', league: 'NCAAF', sport: 'Football', start: '2026-11-07T20:00:00.000Z' })] }));
+    db.sql(`update portfolio_private.oauth_grants set next_sync_at = now() - interval '1 minute';`);
+    const sweep = await handler(new Request('https://fn.local/portfolio_connect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'sweep' }) }));
+    const swept = await sweep.json();
+    chk('the scheduler\'s sweep (what pg_cron calls every 10 minutes, no reader involved) syncs the due connection', sweep.status === 200 && swept.ok === true && swept.due >= 1, swept);
+    const s502 = jq1(db.sql(`select row_to_json(p) from (select status, profit_loss::text as pl from public.portfolio_positions where external_position_id = 'juicereel:502') p;`));
+    chk('…the bet Juice Reel settled is settled here (OPEN → WON, +$35, recorded in the settlement history), and the new bet is stored — without any upload',
+      s502 && s502.status === 'WON' && s502.pl === '35' && one(db.sql(`select count(*) from public.portfolio_positions where external_position_id = 'juicereel:504' and status = 'OPEN';`)) === '1'
+        && one(db.sql(`select count(*) from public.portfolio_position_settlements where external_position_id = 'juicereel:502' and previous_status = 'OPEN' and status = 'WON';`)) === '1', s502);
+    chk('…P&L now +$135: the hand-recorded win once, plus the new settlement — the held copy still not counted', pnl() === 135, pnl());
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => !!(window.EDPortfolioUI && document.querySelector('#pfoHost.pfo-root')), null, { timeout: 40000 });
+    await tab(page, 'open');
+    await waitText(page, /Oregon Ducks/);
+    chk('Open, after a reload: the new Juice Reel bet is there; the settled one has left Open', /Oregon Ducks/.test(await text(page)) && !/Ohio State/.test(await text(page)), await text(page));
+    await tab(page, 'history');
+    await waitText(page, /Ohio State/);
+    t = await text(page);
+    chk('History: the settled Juice Reel bet, +$35, labelled as from Juice Reel', /Ohio State/.test(t) && /\+\$35\.00/.test(t)
+      && await page.evaluate(() => [...document.querySelectorAll('#pfoHost [data-r="src"]')].some((e) => e.innerText.trim() === 'Juice Reel')), t.slice(0, 600));
+    await tab(page, 'accounts');
+    await waitJr(page, /Connected as Sharp Bettor/);
+    chk('Accounts counts it: 3 bets imported (502, 503, 504), one still held for review', /3 bets imported from Juice Reel/.test(await jrText(page)) && /1 synced bet looks like/.test(await jrText(page)), await jrText(page));
     await noSideways(page, '1280px Accounts, Juice Reel connected');
     chk('no page errors (desktop)', errors.length === 0, errors);
     await ctx.close();
@@ -274,8 +302,8 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     await page.click('#pfoHost [data-r="sheet"] [data-act="jr-merge"]');
     await page.waitForFunction(() => /Merged: one bet, your notes kept/.test(document.body.innerText), null, { timeout: 20000 }).catch(() => null);
     const merged = jq1(db.sql(`select row_to_json(p) from (select external_position_id, source, notes, profit_loss::text as pl from public.portfolio_positions where notes = 'my pick') p;`));
-    chk('"Same bet — merge": ONE position — the hand-recorded one, now carrying Juice Reel\'s id, its note kept — and P&L still +$100',
-      merged && merged.external_position_id === 'juicereel:501' && merged.source === 'MANUAL' && merged.pl === '100' && pnl() === 100
+    chk('"Same bet — merge": ONE position — the hand-recorded one, now carrying Juice Reel\'s id, its note kept — and P&L unchanged (+$135)',
+      merged && merged.external_position_id === 'juicereel:501' && merged.source === 'MANUAL' && merged.pl === '100' && pnl() === 135
         && /Merged: one bet, your notes kept/.test(await page.evaluate(() => document.body.innerText)), merged);
     chk('the positions are the real rows: the database derived +$100 on the synced win', one(db.sql(`select profit_loss::text from public.portfolio_positions where external_position_id = 'juicereel:501';`)) === '100');
     await page.click('#pfoHost [data-r="sheet"] [data-act="close"]').catch(() => null);
@@ -283,7 +311,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     await waitText(page, /Miami Dolphins \+4\.5/);
     chk('History shows the merged bet in Juice Reel\'s words, quietly labelled where it came from', /Miami Dolphins \+4\.5/.test(await text(page))
       && await page.evaluate(() => [...document.querySelectorAll('#pfoHost [data-r="src"]')].some((e) => /Juice Reel · Manual/.test(e.innerText))));
-    await page.click('#pfoHost .pfo-hcard[data-act="edit"]');
+    await page.click('#pfoHost .pfo-hcard[data-act="edit"]:has-text("Dolphins")');
     await page.waitForSelector('#pfoHost [data-r="sheet"] [data-r="jr-clv"]', { timeout: 15000 }).catch(() => null);
     const clvText = await page.evaluate(() => { const e = document.querySelector('#pfoHost [data-r="jr-clv"]'); return e ? e.innerText : ''; });
     chk('its details show Juice Reel\'s own CLV (+2.5%) as Juice Reel\'s figure — not EdgeDesk\'s closing-line value, not in the Decision Grade',
@@ -291,7 +319,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     await page.click('#pfoHost [data-r="sheet"] [data-act="close"]').catch(() => null);
     await tab(page, 'accounts');
     await waitJr(page, /Connected as Sharp Bettor/);
-    chk('…nothing left to review', !(await page.$('#pfoHost [data-r="juicereel"] [data-act="jr-review"]')) && /3 bets imported from Juice Reel/.test(await jrText(page)), await jrText(page));
+    chk('…nothing left to review', !(await page.$('#pfoHost [data-r="juicereel"] [data-act="jr-review"]')) && /4 bets imported from Juice Reel/.test(await jrText(page)), await jrText(page));
     await page.click('#pfoHost [data-act="add"]');
     await page.waitForSelector('#pfoHost [data-r="sheet"] [data-r="jr-add"][data-state="CONNECTED"]', { timeout: 15000 });
     chk('Add a position once connected (390 px): the connection\'s state and the way to Accounts — no second Connect', !(await page.$('#pfoHost [data-r="sheet"] [data-act="jr-add-connect"]'))
@@ -305,7 +333,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     await page.click('#pfoHost [data-r="juicereel"] [data-act="jr-disconnect"]:not([data-delete])');
     await waitJr(page, /Disconnected — your synced history is kept/, 20000);
     chk('Disconnect: revoked at Juice Reel, "Disconnected — your synced history is kept", Connect again offered',
-      /Disconnected — your synced history is kept/.test(await jrText(page)) && J.revokes.length === 2 && +db.sql(`select count(*) from public.portfolio_positions where external_position_id like 'juicereel:%';`) === 3
+      /Disconnected — your synced history is kept/.test(await jrText(page)) && J.revokes.length === 2 && +db.sql(`select count(*) from public.portfolio_positions where external_position_id like 'juicereel:%';`) === 4
         && !!(await page.$('#pfoHost [data-r="juicereel"] [data-act="jr-connect"]')));
     denyNext = true;
     await page.click('#pfoHost [data-r="juicereel"] [data-act="jr-connect"]');
