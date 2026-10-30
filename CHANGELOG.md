@@ -40,6 +40,16 @@ So a correct generator puts 13 or more of 38 at one age (over a third) about onc
 The suite runs 999 checks, or 996 when the simulated first season earns no bowl. The bowl branch guards three checks; that was true before, when the counts were 996 and 993. The file has three more checks than before:
 - the two spread claims moved from the fresh roster to the forty fixed ones;
 - three are new: forty rosters of 38 were built, the forty are flat, and the fresh franchise has 38 founding players.
+## 2026-10-30 — Novig in production: DraftKings from the prices production keeps; ingestion only on a key Novig lists as read-only
+
+- **What production showed.** Deploy run 41112694540 applied nothing. The layer's guard refused: `needs public.sharp_price_snapshots (the DraftKings tape): apply supabase/sharp_lag.sql first`. Production has no Sharp-lag tape. It keeps DraftKings in `book_quote_ticks` (capture's per-book history, joined to `signals` by `sig_key`), and only for actionable signals. The project's secret names (run 41113406385, names only) show `NOVIG_MANAGEMENT_KEY_ID` and `NOVIG_MANAGEMENT_PRIVATE_KEY` NOT set, and an unexplained `NOVIG_READ_KEY_ID` / `NOVIG_READ_PRIVATE_KEY` pair set.
+- **DraftKings source.** `novig_market_data.sql` reads DraftKings through one service-only view, `novig_dk_tape`. It is built from the Sharp-lag tape where it exists, otherwise from `book_quote_ticks`. `novig_dk_price`, `novig_history`, the report, `novig_sync`'s line choice and the deploy check all read the view. Nothing is written to either source. Applied again after `sharp_lag.sql`, the layer switches to the full tape. The comparison's source line says which one is in use.
+- **Least privilege, enforced.** `discover` and `snapshot` now run only after a probe in the last 30 hours saw Novig list the key as `management::read`. A `management` or `trading` key, or an unlisted one, is a FAILURE (`key_not_read_only`; it used to be a WARNING). Every later run is skipped (`scope_unverified`) and calls nobody. A newer refusal is never shadowed by an older pass.
+- **Provisioning.** When the bootstrap cannot sign at all (the management key is not set), `whoami` exits 4: "Novig was never asked". It no longer reports that as Novig's answer. Not retried.
+- **Tests.**
+  - `novig_sql.test.js`: 65 → 74, adding a second real-PostgreSQL world shaped like production (`signals` and `book_quote_ticks` only). On the old layer: 2 failed, with production's exact guard error.
+  - `novig_sync.test.js`: 44 → 50. On the old code the source check fails (`GET sharp_price_snapshots`), and a management key only warned.
+  - `novig_bootstrap.test.js`: 22 → 23.
 
 ## 2026-10-30 — NBA injury report: two-line reasons go to the right player, and nothing is left unread
 

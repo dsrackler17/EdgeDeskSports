@@ -310,4 +310,84 @@ try {
 } catch (e) {
   T.chk('the suite ran without an unexpected error', false, String(e.message).slice(0, 1500));
 } finally { db.stop(); }
+
+/* ---- production's DraftKings source before sharp_lag.sql: capture's per-book history ----
+   Production has public.signals and public.book_quote_ticks and no public.sharp_price_snapshots: the layer must
+   read DraftKings from capture's history (actionable signals only), through its own view, and switch to the full
+   tape once sharp_lag.sql is applied and the layer applied again. */
+const db2 = PG.start('novig_ticks');
+if (!db2.skip) try {
+  const J2 = (q, who) => J((who || db2.sql)(`select coalesce(jsonb_agg(x), '[]'::jsonb) from (${q}) x;`));
+  db2.sql(`create table public.signals (id bigserial primary key, sig_key text unique not null, event_id text, sport_key text, commence_time timestamptz,
+      home_team text, away_team text, market text, selection text, point numeric);
+    create or replace function public.has_active_sub() returns boolean language sql stable as $$ select auth.uid() in (${lit(SUB)}::uuid, ${lit(OP)}::uuid) $$;
+    create or replace function public.billing_is_admin() returns boolean language sql stable as $$ select auth.uid() = ${lit(OP)}::uuid $$;`);
+  let err = null; try { db2.applyFile(F('novig_market_data.sql')); } catch (e) { err = String(e.message); }
+  T.chk('ticks: with neither DraftKings source the layer names both files and installs nothing', /sharp_lag\.sql/.test(err || '') && /book_quote_ticks\.sql/.test(err || '')
+    && db2.sql("select to_regclass('public.novig_markets') is null") === 't', err);
+  /* supabase/book_quote_ticks.sql's table, service-only as there */
+  db2.sql(`create table public.book_quote_ticks (id bigserial primary key, sig_key text not null, book_key text, book_title text, dec numeric, fair numeric,
+      is_sharp boolean, event_id text, seen_at timestamptz not null default now(), payload jsonb);
+    alter table public.book_quote_ticks enable row level security; revoke all on public.book_quote_ticks from anon, authenticated;
+    grant select, insert on public.book_quote_ticks to service_role;`);
+  let out2 = db2.applyFile(F('novig_market_data.sql'));
+  T.chk('ticks: the layer applies; every report row is ok, and row 7 names capture\'s per-book history as the DraftKings source', !/CHECK THIS/.test(out2)
+    && /7 the DraftKings prices are readable by the layer \(public\.novig_dk_tape\)\|ok \(capture's per-book history: DraftKings for actionable signals only\)/.test(out2)
+    && db2.sql('select public.novig_dk_source()') === 'book_quote_ticks', out2);
+  /* the world: BAL @ BUF in 3 hours; capture flagged both moneyline sides, so it kept their per-book quotes */
+  db2.sql(`insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection, point) values
+      ('odds-1|h2h|Buffalo Bills|', 'odds-1', 'americanfootball_nfl', now() + interval '3 hours', 'Buffalo Bills', 'Baltimore Ravens', 'h2h', 'Buffalo Bills', null),
+      ('odds-1|h2h|Baltimore Ravens|', 'odds-1', 'americanfootball_nfl', now() + interval '3 hours', 'Buffalo Bills', 'Baltimore Ravens', 'h2h', 'Baltimore Ravens', null);`);
+  db2.service(`insert into public.book_quote_ticks (sig_key, book_key, book_title, dec, seen_at, payload) values
+      ('odds-1|h2h|Buffalo Bills|', 'draftkings', 'DraftKings', 1.606, now() - interval '5 minutes', '{"quote_age_s": 30}'),
+      ('odds-1|h2h|Buffalo Bills|', 'draftkings', 'DraftKings', 1.588, now() - interval '50 minutes', '{"quote_age_s": 12}'),
+      ('odds-1|h2h|Buffalo Bills|', 'fanduel', 'FanDuel', 1.629, now() - interval '2 minutes', '{"quote_age_s": 5}'),
+      ('odds-1|h2h|Baltimore Ravens|', 'draftkings', 'DraftKings', 2.45, now() - interval '200 minutes', '{}');
+    insert into public.novig_events (event_id, environment, league, sport, description, status, starts_at, home_competitor_id, away_competitor_id, home_name, away_name) values
+      ('nv-e1', 'production', 'NFL', 'FOOTBALL', 'Baltimore Ravens @ Buffalo Bills', 'OPEN_PREGAME', now() + interval '3 hours', 'c-buf', 'c-bal', 'Buffalo Bills', 'Baltimore Ravens');
+    insert into public.novig_markets (market_id, environment, event_id, market_type, strike, status, voids, fee_coefficient, fee_maker_credit, fee_charged, outcomes) values
+      ('nv-m1', 'production', 'nv-e1', 'MONEY', '0', 'OPEN', 'FMV', '0.06', '0.25', 'WHEN_LIVE', '[{"outcomeId":"o-buf","name":"BUF"},{"outcomeId":"o-bal","name":"BAL"}]');
+    insert into public.novig_market_links (market_id, environment, novig_event_id, novig_market_type, league, sport, odds_event_id, odds_sport_key, book_market, period, line, outcomes,
+      home_team, away_team, kickoff_at, match_confidence, match_method, linker_version) values
+      ('nv-m1', 'production', 'nv-e1', 'MONEY', 'NFL', 'nfl', 'odds-1', 'americanfootball_nfl', 'h2h', 'game', null,
+       '[{"outcome_id":"o-buf","side":"Buffalo Bills","point":null},{"outcome_id":"o-bal","side":"Baltimore Ravens","point":null}]', 'Buffalo Bills', 'Baltimore Ravens',
+       now() + interval '3 hours', 'medium', 'test', 'test');
+    insert into public.novig_book_snapshots (environment, market_id, captured_at, source, book_seq, event_status, market_status, fee_charged_now, top, exec, levels) values
+      ('production', 'nv-m1', now() - interval '2 minutes', 'rest_book', 4233, 'OPEN_PREGAME', 'OPEN', false,
+       '{"o-buf":{"bid":"0.620","bid_qty":3282,"ask":"0.625","ask_qty":995607},"o-bal":{"bid":"0.375","bid_qty":480391,"ask":"0.380","ask_qty":3282}}', '{}', 10);`);
+  const C2 = J2('select c from public.novig_compare() c', (q) => db2.as(OP, q)).map((r) => r.c);
+  const buf = C2.find((r) => r.side === 'Buffalo Bills'), bal = C2.find((r) => r.side === 'Baltimore Ravens');
+  T.chk('ticks: the admin\'s comparison carries DraftKings\' latest tick for each side (never FanDuel\'s), dated by its capture, its book update the capture less the quote\'s age',
+    C2.length === 2 && Number(buf.draftkings.price_dec) === 1.606 && buf.draftkings.state === 'LIVE' && Number(bal.draftkings.price_dec) === 2.45
+    && Date.parse(buf.draftkings.observed_at) - Date.parse(buf.draftkings.book_last_update) === 30000 && !JSON.stringify(C2).includes('1.629'), C2.map((r) => [r.side, r.draftkings]));
+  T.chk('ticks: a DraftKings tick older than the book rules is STALE (historical, never compared as current), and the source line says actionable signals only',
+    bal.draftkings.state === 'STALE' && /book_quote_ticks: actionable signals only/.test(buf.draftkings.source), [bal.draftkings, buf.draftkings.source]);
+  T.chk('ticks: the history has both DraftKings ticks of the BUF side, at their own times', J2("select h from public.novig_history('odds-1') h", (q) => db2.as(OP, q))
+    .map((r) => r.h).filter((h) => h.venue === 'draftkings' && h.side === 'Buffalo Bills').length === 2);
+  T.chk('ticks: the view is service-only — anon, a subscriber and a signed-in reader read none of it; nobody but the admin gets a comparison row',
+    fails(() => db2.anon('select count(*) from public.novig_dk_tape;')) && fails(() => db2.as(SUB, 'select count(*) from public.novig_dk_tape;'))
+    && fails(() => db2.as(NOSUB, 'select count(*) from public.novig_dk_tape;')) && db2.service('select count(*) from public.novig_dk_tape;').split('\n').pop() === '3'
+    && J2('select c from public.novig_compare() c', (q) => db2.as(SUB, q)).length === 0);
+  /* production has pg_cron and Vault; the deploy check reads both */
+  db2.sql(`create schema if not exists cron; create table if not exists cron.job (jobid bigserial primary key, jobname text, schedule text, command text, active boolean default true);
+    create or replace function cron.unschedule(j bigint) returns boolean language sql as $$ delete from cron.job where jobid = j returning true $$;
+    create schema if not exists vault; create table if not exists vault.decrypted_secrets (name text, decrypted_secret text);`);
+  const R2 = Object.fromEntries(db2.sql(require(path.join(__dirname, 'deploy_check.js')).checkSql(OP)).split('\n').filter((l) => /^\d+\|/.test(l)).map((l) => { const p = l.split('|'); return [p[0], p.slice(2).join('|')]; }));
+  T.chk('ticks: the deploy check reads the same view: its source, its rows (DraftKings only) and the newest, and nothing else', /^book_quote_ticks · 3 rows · newest /.test(R2['18'] || ''), R2['18']);
+  /* sharp_lag.sql arrives: the layer, applied again, reads the full tape */
+  db2.sql(`create table public.sharp_price_snapshots (id bigint generated always as identity primary key, captured_at timestamptz not null, sport_key text not null, event_id text not null,
+      book text not null, book_last_update timestamptz, market text not null, side text not null, participant text, point numeric, price_dec numeric not null);
+    insert into public.sharp_price_snapshots (captured_at, sport_key, event_id, book, book_last_update, market, side, point, price_dec) values
+      (now() - interval '1 minute', 'americanfootball_nfl', 'odds-1', 'draftkings', now() - interval '2 minutes', 'h2h', 'Buffalo Bills', null, 1.612);`);
+  out2 = db2.applyFile(F('novig_market_data.sql'));
+  const after = J2('select c from public.novig_compare() c', (q) => db2.as(OP, q)).map((r) => r.c).find((r) => r.side === 'Buffalo Bills');
+  T.chk('ticks: applied again after sharp_lag.sql, the layer reads the Sharp-lag tape (row 7 says so; BUF\'s DraftKings price is the tape\'s)',
+    /\|ok \(the Sharp-lag tape\)/.test(out2) && db2.sql('select public.novig_dk_source()') === 'sharp_price_snapshots' && Number(after.draftkings.price_dec) === 1.612, [after && after.draftkings]);
+  out2 = db2.applyFile(F('novig_market_data_rollback.sql'));
+  T.chk('ticks: the rollback drops the view and leaves signals, book_quote_ticks and the tape exactly as they were',
+    db2.sql("select to_regclass('public.novig_dk_tape') is null") === 't' && db2.service('select count(*) from public.book_quote_ticks;').split('\n').pop() === '4'
+    && db2.sql('select count(*) from public.signals') === '2' && db2.sql('select count(*) from public.sharp_price_snapshots') === '1', out2);
+} catch (e) {
+  T.chk('the ticks suite ran without an unexpected error', false, String(e.message).slice(0, 1500));
+} finally { db2.stop(); }
 process.exit(T.done());

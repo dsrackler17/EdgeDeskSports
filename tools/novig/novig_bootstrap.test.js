@@ -124,6 +124,11 @@ async function novig(u, init) {
   chk('whoami (CLI): a location refusal (451) on both hosts is exit 3 — Novig answered, so the run must stop — with each host\'s answer printed, after one echo per host and nothing else',
     g.code === 3 && /echo on production: 451 /.test(g.text) && /echo on paper: 451 /.test(g.text) && W.calls.length === 2 && W.calls.every((c) => / POST \/v3\/echo$/.test(c)), [g, W.calls]);
   resetNovig();
+  const keepId = ENV.NOVIG_MANAGEMENT_KEY_ID; delete ENV.NOVIG_MANAGEMENT_KEY_ID;
+  const nokey = typeof PROV.whoamiCli === 'function' ? await PROV.whoamiCli() : { code: null, text: '' };
+  ENV.NOVIG_MANAGEMENT_KEY_ID = keepId;
+  chk('whoami (CLI): the management key not set on the project is exit 4 — Novig was never asked (no call), and the run must stop', nokey.code === 4
+    && /echo on production: 0 /.test(nokey.text) && /echo on paper: 0 /.test(nokey.text) && W.calls.length === 0, [nokey, W.calls]);
   const fetch0 = globalThis.fetch;
   globalThis.fetch = async (u, init) => (String(u) === URL_ ? resp(503, '<html>booting</html>') : fetch0(u, init));
   const u1 = typeof PROV.whoamiCli === 'function' ? await PROV.whoamiCli() : { code: null };
@@ -131,8 +136,9 @@ async function novig(u, init) {
   chk('whoami (CLI): a bootstrap that is not up yet (503, not JSON) is exit 1, the only answer the workflow retries; Novig was not called', u1.code === 1 && W.calls.length === 0, u1);
   const PY = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'novig-provision.yml'), 'utf8');
   const loop = (PY.match(/for i in \$\(seq 1 10\); do[\s\S]*?\n\s*done/) || [''])[0];
-  chk('workflow: the whoami loop retries only exit 1; exit 3 (Novig answered) ends the run at once',
-    /rc=0; node tools\/novig\/provision\.js whoami \|\| rc=\$\?/.test(loop) && /if \[ "\$rc" = 3 \]; then[^\n]*exit 1; fi/.test(loop) && !/if node tools\/novig\/provision\.js whoami; then/.test(PY), loop);
+  chk('workflow: the whoami loop retries only exit 1; exit 3 (Novig answered) and exit 4 (Novig never asked) end the run at once',
+    /rc=0; node tools\/novig\/provision\.js whoami \|\| rc=\$\?/.test(loop) && /if \[ "\$rc" = 3 \]; then[^\n]*exit 1; fi/.test(loop) && /if \[ "\$rc" = 4 \]; then[^\n]*exit 1; fi/.test(loop)
+      && !/if node tools\/novig\/provision\.js whoami; then/.test(PY), loop);
 
   /* ---- the read key ---- */
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'novig-prov-'));

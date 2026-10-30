@@ -9,8 +9,9 @@
      node tools/novig/deploy_check.js check --admin <uuid>  | psql -qAt …
          the layer's facts, none of them a price: the tables, RLS, grants,
          policies, indexes, the switches, the cron jobs and the Vault secret's
-         presence, rows by environment, the runs, a halt in force, the
-         DraftKings tape's newest capture, and what novig_access() and
+         presence, rows by environment, the runs, a halt in force, which
+         DraftKings source novig_dk_tape reads and its newest price, and
+         what novig_access() and
          novig_compare() give a signed-in reader who is not an admin and the
          admin. Each row reads `n|item|result`; a result that starts
          CHECK THIS fails the workflow.
@@ -98,8 +99,10 @@ select 16, 'runs: the newest per mode', coalesce(string_agg(x, ', '), 'none')
   from (select distinct on (mode) mode || ' ' || status || coalesce(' (' || skipped_reason || ')', '') || ' at ' || finished_at::text x
           from public.novig_sync_runs order by mode, finished_at desc) s;
 select 17, 'no halt in force', coalesce((select 'CHECK THIS: halted until ' || halt_until::text || ' — ' || coalesce(halt_reason, '') from public.novig_sync_runs where halt_until > now() order by finished_at desc limit 1), 'ok');
-select 18, 'the DraftKings tape (read, never written): its newest DraftKings capture',
-  coalesce((select max(captured_at)::text || ' (' || round(extract(epoch from now() - max(captured_at)) / 3600, 1) || ' h ago)' from public.sharp_price_snapshots where book = 'draftkings'), 'none');
+select 18, 'the DraftKings prices (read, never written), through public.novig_dk_tape: the source, the rows and the newest',
+  coalesce(public.novig_dk_source(), 'CHECK THIS: no source') || ' · ' || count(*) || ' rows · newest '
+  || coalesce(max(captured_at)::text || ' (' || round(extract(epoch from now() - max(captured_at)) / 3600, 1) || ' h ago)', 'none')
+  from public.novig_dk_tape;
 set local role authenticated;
 ${as(19, 'a signed-in reader who is not an admin', NOBODY)}
 select 20, 'that reader: novig_access() says none, and novig_compare(), the snapshots and the runs give no row',
