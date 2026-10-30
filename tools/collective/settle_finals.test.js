@@ -597,7 +597,8 @@ chk('--record names the directory the record is written to',
     code.indexOf('--record collective/settled') >= 0 &&
     /push_generated\.sh main "collective: settlement record[^"]*" -- collective\/settled/.test(code) &&
     code.indexOf('git pull --rebase') < 0 && code.indexOf('push -f') < 0 &&
-    /permissions:\s*\n\s*contents:\s*write/.test(code));
+    /* a permissions block grants contents: write, in any position in it (the certified push adds checks: write) */
+    [...code.matchAll(/permissions:[ \t]*\n((?:[ \t]+[\w-]+:[^\n]*\n)+)/g)].some((m) => /^[ \t]+contents:[ \t]*write[ \t]*$/m.test(m[1])));
   chk('a missing credential no longer ends the run before the script has a chance to build the record',
     (() => {
       const i = code.indexOf('- name: Settle\n');
