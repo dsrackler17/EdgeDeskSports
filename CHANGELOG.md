@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-29 — Trial emails: day 1 and day 3 wait when the board cannot be read
+
+**What was wrong.** The trial email sender reads the live board, `public_home_board()`, once per run. When that call failed, it logged "emails go without live research" and sent day 1 and day 3 anyway, built from the committed `football/home/board.json` alone. That file carries no game lines, so:
+- day 1 told the reader "No game clears EdgeDesk's research gates right now. PASS is a normal answer.";
+- day 3 said "EdgeDesk re-priced 0 games … and priced 0 research-grade player props."
+
+Both statements were made about a board nobody had read.
+
+**What changed** (`tools/lifecycle/send.js`):
+- **When the board call throws or answers without `ok`,** day 1 and day 3 are held: marked `failed` with "held: the board could not be read (…)". The next run retries them, at most three times, and `lifecycle_due()` already skips a tip that is more than a day late.
+- **The welcome and the renewal reminder still go.** The welcome leaves out its board lines when there is no data, and the reminder is a billing notice that doesn't use the board.
+- **A dry run** releases held rows, as it does every other row.
+- **The run's summary line** now counts `held`.
+
+**Tests.** `tools/lifecycle/lifecycle.test.js` §6 runs the sender with the board failing, with it answering without `ok`, in a dry run, and with it read normally.
+- On `main`'s sender, 7 of those checks fail: all four emails go out, day 1 and day 3 included (66 passed, 7 failed).
+- With this change, 73 passed, 0 failed.
+
 ## 2026-10-29 — Prediction Radar: the wallet sync grades only the bets the grade reads, and reads the wallets that can be top-graded first
 
 - **Bug.** Smart Money Tonight showed "No top-graded bettor holds a position" because there was almost no one to show. `run_now` on build `.6` ([run 40916807612](https://github.com/dsrackler17/EdgeDeskSports/actions/runs/40916807612)) made 123 wallet calls in 2 h 45 m. At the end 6 of the pool's 200 wallets had been read in full, 6 were ranked and 1 was top-graded. The Radar record had no card to publish, so "How following has done" stayed at 0 graded.
@@ -15,6 +33,7 @@
   - a wallet that is not truncated is read before truncated wallets that rank higher and have waited longer.
 
   On the old code: 64 passed, 3 failed. It graded 20 bets before the read was complete, then all 63 over 5 more runs, and took the three truncated wallets first. On the fix: 67 passed, 0 failed.
+
 ## 2026-10-29 — Authorization change: Juice Reel `set_product *` opens every product of the seller, so buyers get access without its id
 
 **Authorization change; needs the owner's explicit review.**
