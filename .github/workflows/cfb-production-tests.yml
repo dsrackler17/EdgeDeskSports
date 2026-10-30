@@ -110,6 +110,8 @@ jobs:
         run: node football/cfb_production/replay.test.js
       - name: The shared push helper every publishing job uses (races, conflicts, source paths merged not overwritten)
         run: node tools/ci/push_generated.test.js
+      - name: A data push to main carries its All checks certificate, and nothing else is certified
+        run: node tools/ci/certified_push.test.js
       - name: Postgres — contract, chaos (locks, deadlock, lock timeout), idempotency 1x/2x/3x, disaster recovery
         env:
           CFB_PRODUCTION_SQL_REQUIRED: '1'
