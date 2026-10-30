@@ -4362,7 +4362,7 @@ window.mcRefresh=function(){
 </script>
 <script src="/lib/edgedesk_intel_ui.js?v=20261012ia9"></script>
 <script src="/lib/edgedesk_portfolio_connectors.js?v=20261005pf3"></script>
-<script src="/lib/edgedesk_portfolio_connect_core.js?v=20261030jr4"></script>
+<script src="/lib/edgedesk_portfolio_connect_core.js?v=20261030jr5"></script>
 <script src="/lib/edgedesk_portfolio_process.js?v=20261005pf3"></script>
 <!-- THE DECISION RECORD: context quality, edge capture, process memory and Card → Record Position (supabase/portfolio_decision.sql) -->
 <script src="/lib/edgedesk_decision_record.js?v=20261005dr1"></script>
@@ -4370,7 +4370,7 @@ window.mcRefresh=function(){
 <!-- IMPORT PICKS: screenshots or pasted text → Claude reads them (supabase/functions/parse_bet_import) → the reader reviews every row → the Portfolio's own import commit (supabase/bet_import.sql). Core first: the review table checks rows with the same code the server does. -->
 <script src="/lib/edgedesk_bet_import_core.js?v=20261024bi4"></script>
 <script src="/lib/edgedesk_bet_import.js?v=20261024bi4"></script>
-<script src="/lib/edgedesk_portfolio_ui.js?v=20261030jr4"></script>
+<script src="/lib/edgedesk_portfolio_ui.js?v=20261030jr5"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -66969,6 +66969,14 @@ try{
     catch(e){try{console.error('EdgeDesk Kalshi: the section failed in the page',e);}catch(_){}return '';}
   };
 })();
+</script>
+<!-- DraftKings vs Novig on the football cards (lib/edgedesk_market_compare_ui.js, docs/novig/README.md):
+     '' for every reader who may not see Novig prices, and '' when the module did not load -->
+<script>
+window.fbNovigHTML=function(sport,g,t,ev,opts){
+  try{return window.EDMarketCompareUI?window.EDMarketCompareUI.html(sport,g,t,ev,opts):'';}
+  catch(e){try{console.error('EdgeDesk Novig: the section failed in the page',e);}catch(_){}return '';}
+};
 </script>
 <!-- ═══ ADDED: FOOTBALL SITUATIONAL INTELLIGENCE (football/situational/README.md) ═══
      A "Situational Intelligence" section on every NFL and FBS game card in the

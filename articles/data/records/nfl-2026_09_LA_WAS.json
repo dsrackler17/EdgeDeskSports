@@ -23,11 +23,11 @@
   "game_time": "2026-11-08T18:00:00.000Z",
   "game_when_label": "2026-11-08 18:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-28T20:14:07.027Z",
-  "generated_at": "2026-10-30T09:54:04.516Z",
+  "updated_at": "2026-10-30T17:59:12.117Z",
+  "generated_at": "2026-10-30T17:59:12.117Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.7-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Washington Commanders +4.0",
@@ -43,7 +43,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 107 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 108 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": null,
   "research": {
     "kind": "NFL_GAME",
@@ -66,17 +66,17 @@
       "Los Angeles Rams carries the stronger EdgeDesk offensive profile (#8 in EPA per play) and the better defensive rating with it, so the ratings point the same way on both sides of the ball.",
       "EdgeDesk’s independent projection makes it Washington Commanders +4.0 with a fair total of 49.0 — inside a touchdown, before any sportsbook number is consulted.",
       "The widest measured matchup on the board is Los Angeles Rams pass offence vs Washington Commanders pass defence, which sits +0.141 from the league mean once the two ratings are combined the way the model combines them.",
-      "The largest uncertainty is quarterback information: Los Angeles Rams and Washington Commanders have no confirmed starter on file, which materially affects how much confidence the exact number deserves."
+      "The largest uncertainty is availability: NFL injury report — not loaded in this session."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -3.827844639055488,
+      "fair_spread": -3.9833541046238845,
       "fair_spread_text": "Washington Commanders +4.0",
-      "fair_spread_raw_text": "Washington Commanders +3.8",
+      "fair_spread_raw_text": "Washington Commanders +4.0",
       "favourite": "Los Angeles Rams",
       "underdog": "Washington Commanders",
       "margin": "4.0",
-      "margin_raw": "3.8",
+      "margin_raw": "4.0",
       "total": "49.0",
       "total_raw": "48.9",
       "display_policy": "football_half_point_v1",
@@ -87,12 +87,12 @@
         },
         "home": {
           "team": "Washington Commanders",
-          "points": "23"
+          "points": "22"
         },
         "expected": {
-          "text": "Los Angeles Rams 26.35, Washington Commanders 22.52",
-          "home": 22.52,
-          "away": 26.35,
+          "text": "Los Angeles Rams 26.43, Washington Commanders 22.45",
+          "home": 22.45,
+          "away": 26.43,
           "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
         },
         "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
@@ -114,24 +114,24 @@
       "moneyline": {
         "home": "Washington Commanders",
         "away": "Los Angeles Rams",
-        "home_odds": "+184",
-        "away_odds": "-184",
+        "home_odds": "+189",
+        "away_odds": "-189",
         "note": "EdgeDesk’s own fair price, with no margin in it. It is not a quote and nobody offers it."
       },
       "outcome_range": {
         "basis_team": "Washington Commanders",
         "p10": "-22.0",
         "median": "-4.0",
-        "p90": "+12.0",
+        "p90": "+11.0",
         "sigma": "10.7",
         "note": "Quoted from the perspective of Washington Commanders, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 107 absorbed 2026 games.",
-      "sample_games": 107,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 108 absorbed 2026 games.",
+      "sample_games": 108,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.7-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -156,10 +156,10 @@
           "favours": "Los Angeles Rams"
         },
         {
-          "points": "0.0",
-          "points_n": 0,
-          "text": "Quarterback — no lean",
-          "favours": null
+          "points": "-0.2",
+          "points_n": -0.15550946556839643,
+          "text": "Quarterback — Los Angeles Rams by 0.2 points",
+          "favours": "Los Angeles Rams"
         },
         {
           "points": "+3.2",
@@ -240,14 +240,14 @@
               "h": {
                 "v": "−0.075",
                 "n": -0.07482216840352167,
-                "rank": "#26 of 32",
-                "rank_n": 26,
+                "rank": "#25 of 32",
+                "rank_n": 25,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.18592605851139435,
-                "rank_gap": 21
+                "rank_gap": 20
               }
             },
             {
@@ -435,8 +435,8 @@
               "a": {
                 "v": "−0.032",
                 "n": -0.03242683750995423,
-                "rank": "#8 of 32",
-                "rank_n": 8,
+                "rank": "#9 of 32",
+                "rank_n": 9,
                 "note": null
               },
               "h": {
@@ -449,7 +449,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.10821130366182459,
-                "rank_gap": 21
+                "rank_gap": 20
               }
             },
             {
@@ -531,8 +531,8 @@
               "a": {
                 "v": "−0.7 pp",
                 "n": -0.0070531335429384,
-                "rank": "#12 of 32",
-                "rank_n": 12,
+                "rank": "#13 of 32",
+                "rank_n": 13,
                 "note": null
               },
               "h": {
@@ -545,7 +545,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.007285451443322019,
-                "rank_gap": 6
+                "rank_gap": 5
               }
             }
           ]
@@ -567,14 +567,14 @@
               "h": {
                 "v": "+0.4 pp",
                 "n": 0.0043438972353015,
-                "rank": "#24 of 32",
-                "rank_n": 24,
+                "rank": "#23 of 32",
+                "rank_n": 23,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.027736263186318146,
-                "rank_gap": 21
+                "rank_gap": 20
               }
             },
             {
@@ -656,33 +656,33 @@
       "away": [
         {
           "k": "Net EPA per play",
-          "rank_gap": 21,
+          "rank_gap": 20,
           "gap": 0.18592605851139435,
           "lead": "Los Angeles Rams",
           "trail": "Washington Commanders",
           "lead_cell": "+0.111 · #5 of 32",
-          "trail_cell": "−0.075 · #26 of 32",
-          "text": "Los Angeles Rams +0.111 (#5 of 32) vs Washington Commanders −0.075 (#26 of 32) — 21 places on the league board."
+          "trail_cell": "−0.075 · #25 of 32",
+          "text": "Los Angeles Rams +0.111 (#5 of 32) vs Washington Commanders −0.075 (#25 of 32) — 20 places on the league board."
         },
         {
           "k": "Defence · EPA allowed per play",
-          "rank_gap": 21,
+          "rank_gap": 20,
           "gap": 0.10821130366182459,
           "lead": "Los Angeles Rams",
           "trail": "Washington Commanders",
-          "lead_cell": "−0.032 · #8 of 32",
+          "lead_cell": "−0.032 · #9 of 32",
           "trail_cell": "+0.076 · #29 of 32",
-          "text": "Los Angeles Rams −0.032 (#8 of 32) vs Washington Commanders +0.076 (#29 of 32) — 21 places on the league board."
+          "text": "Los Angeles Rams −0.032 (#9 of 32) vs Washington Commanders +0.076 (#29 of 32) — 20 places on the league board."
         },
         {
           "k": "Sacks taken per dropback",
-          "rank_gap": 21,
+          "rank_gap": 20,
           "gap": 0.027736263186318146,
           "lead": "Los Angeles Rams",
           "trail": "Washington Commanders",
           "lead_cell": "−2.3 pp · #3 of 32",
-          "trail_cell": "+0.4 pp · #24 of 32",
-          "text": "Los Angeles Rams −2.3 pp (#3 of 32) vs Washington Commanders +0.4 pp (#24 of 32) — 21 places on the league board."
+          "trail_cell": "+0.4 pp · #23 of 32",
+          "text": "Los Angeles Rams −2.3 pp (#3 of 32) vs Washington Commanders +0.4 pp (#23 of 32) — 20 places on the league board."
         },
         {
           "k": "Points scored",
@@ -849,7 +849,7 @@
           "team": "Washington Commanders",
           "label": "pass protection",
           "v": "+0.4 pp",
-          "rank": "#24 of 32",
+          "rank": "#23 of 32",
           "note": null
         },
         "def": {
@@ -861,7 +861,7 @@
         },
         "complete": true,
         "net": -0.005643371529266713,
-        "read": "Washington Commanders’ pass protection rates +0.4 pp (#24 of 32) and Los Angeles Rams’ pass rush rates −1.0 pp (#25 of 32). Added the way the model adds them, this pairing sits −0.6 pp from the league mean, which favours Washington Commanders."
+        "read": "Washington Commanders’ pass protection rates +0.4 pp (#23 of 32) and Los Angeles Rams’ pass rush rates −1.0 pp (#25 of 32). Added the way the model adds them, this pairing sits −0.6 pp from the league mean, which favours Washington Commanders."
       },
       {
         "title": "Los Angeles Rams explosive passing vs Washington Commanders explosive passes allowed",
@@ -936,12 +936,12 @@
           "team": "Los Angeles Rams",
           "label": "explosive runs allowed",
           "v": "−0.7 pp",
-          "rank": "#12 of 32",
+          "rank": "#13 of 32",
           "note": null
         },
         "complete": true,
         "net": -0.002052620974708247,
-        "read": "Washington Commanders’ explosive running rates +0.5 pp (#17 of 32) and Los Angeles Rams’ explosive runs allowed rates −0.7 pp (#12 of 32). Added the way the model adds them, this pairing sits −0.2 pp from the league mean, which favours Los Angeles Rams."
+        "read": "Washington Commanders’ explosive running rates +0.5 pp (#17 of 32) and Los Angeles Rams’ explosive runs allowed rates −0.7 pp (#13 of 32). Added the way the model adds them, this pairing sits −0.2 pp from the league mean, which favours Los Angeles Rams."
       }
     ],
     "panels": [
@@ -955,26 +955,26 @@
         "rows": [
           {
             "k": "Confirmation",
-            "a": "STARTER NOT CONFIRMED",
-            "h": "STARTER NOT CONFIRMED",
+            "a": "STARTER CONFIRMED",
+            "h": "STARTER CONFIRMED",
             "note": "from the schedule feed’s own starter id"
           },
           {
             "k": "Quarterback",
-            "a": "not named — nobody has confirmed a starter",
-            "h": "not named — nobody has confirmed a starter",
+            "a": "Matthew Stafford",
+            "h": "Jayden Daniels",
             "note": null
           },
           {
             "k": "Roster check",
-            "a": "nothing to check until a starter is named",
-            "h": "nothing to check until a starter is named",
+            "a": "on the active roster",
+            "h": "on the active roster",
             "note": null
           },
           {
             "k": "Learned sample",
-            "a": "no starter to look up",
-            "h": "no starter to look up",
+            "a": "256 learned starts",
+            "h": "29 learned starts",
             "note": "starts the QB layer has actually absorbed"
           },
           {
@@ -991,9 +991,8 @@
           }
         ],
         "reads": [
-          "The quarterback difference is worth 0.0 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
-          "Los Angeles Rams’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Los Angeles Rams contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Matthew Stafford, Stetson Bennett, Ty Simpson.",
-          "Washington Commanders’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Washington Commanders contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Marcus Mariota, Jayden Daniels, Athan Kaliakmanis.",
+          "The quarterback difference is worth -0.2 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
+          "Both starters are confirmed by the schedule feed, so the quarterback term is priced from the learned value of the two players actually named.",
           "The learned QB layer is identity-keyed and value-only: it says how a quarterback has played, never how he is feeling, and it knows nothing about a start nobody has announced."
         ]
       },
@@ -1066,7 +1065,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 107 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 108 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1079,7 +1078,7 @@
           "Passing — Los Angeles Rams by 0.3 points (last season -0.2, this season -0.1) (-0.3 pts).",
           "Rushing — Los Angeles Rams by 0.5 points (last season -0.2, this season -0.3) (-0.5 pts).",
           "Context (venue, division) — Los Angeles Rams by 0.7 points (-0.7 pts).",
-          "Net EPA per play: Los Angeles Rams +0.111 (#5 of 32) vs Washington Commanders −0.075 (#26 of 32) — 21 places on the league board."
+          "Net EPA per play: Los Angeles Rams +0.111 (#5 of 32) vs Washington Commanders −0.075 (#25 of 32) — 20 places on the league board."
         ]
       },
       "underdog": {
@@ -1090,25 +1089,13 @@
           "Sacks generated per dropback: Washington Commanders +0.1 pp (#13 of 32) vs Los Angeles Rams −1.0 pp (#25 of 32) — 12 places on the league board.",
           "Explosive run rate: Washington Commanders +0.5 pp (#17 of 32) vs Los Angeles Rams −0.3 pp (#20 of 32) — 3 places on the league board.",
           "Explosive pass rate: Washington Commanders +0.3 pp (#12 of 32) vs Los Angeles Rams +0.3 pp (#13 of 32) — 1 place on the league board.",
-          "The outcome range runs -22.0 to +12.0 for Washington Commanders, off the engine’s own learned margin distribution. A projection of about 4.0 points still loses outright often."
+          "The outcome range runs -22.0 to +11.0 for Washington Commanders, off the engine’s own learned margin distribution. A projection of about 4.0 points still loses outright often."
         ]
       },
       "note": "Football cases assembled from measured states — a fitted driver, a rating gap, a combined matchup or the model’s own range. Neither side is a bet and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "Los Angeles Rams — starting quarterback unknown",
-          "text": "No confirmed starter id for Los Angeles Rams. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
-          "label": "Washington Commanders — starting quarterback unknown",
-          "text": "No confirmed starter id for Washington Commanders. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "availability not on file",
@@ -1119,18 +1106,6 @@
           "sev": "HIGH",
           "label": "the model does not beat the closing line",
           "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "home QB starter unknown",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "away QB starter unknown",
           "widening": null
         },
         {
@@ -1171,10 +1146,10 @@
     "market": {
       "available": true,
       "model": "Washington Commanders +4.0",
-      "model_raw": "Washington Commanders +3.8",
+      "model_raw": "Washington Commanders +4.0",
       "market": "Washington Commanders +5.5",
-      "difference": "1.7 points",
-      "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "difference": "1.5 points",
+      "rounding_note": null,
       "key_number": null,
       "total_model": "49.0",
       "total_model_raw": "48.9",
@@ -1185,14 +1160,14 @@
       "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.7-point gap is context only and the game is excluded from research ranking.",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
-    "headline": "EdgeDesk projects Los Angeles Rams 26, Washington Commanders 23.",
+    "headline": "EdgeDesk projects Los Angeles Rams 26, Washington Commanders 22.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.7-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1202,12 +1177,12 @@
       },
       "home": {
         "team": "Washington Commanders",
-        "points": "23"
+        "points": "22"
       },
       "expected": {
-        "text": "Los Angeles Rams 26.35, Washington Commanders 22.52",
-        "home": 22.52,
-        "away": 26.35,
+        "text": "Los Angeles Rams 26.43, Washington Commanders 22.45",
+        "home": 22.45,
+        "away": 26.43,
         "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
       },
       "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
@@ -1221,7 +1196,7 @@
         {
           "k": "Net EPA per play",
           "a": "+0.111  #5 of 32",
-          "h": "−0.075  #26 of 32",
+          "h": "−0.075  #25 of 32",
           "note": "offence EPA per play minus defence EPA allowed per play — the engine’s own net_epa half"
         },
         {
@@ -1268,7 +1243,7 @@
         },
         {
           "k": "Defence · EPA allowed per play",
-          "a": "−0.032  #8 of 32",
+          "a": "−0.032  #9 of 32",
           "h": "+0.076  #29 of 32",
           "note": null
         },
@@ -1292,14 +1267,14 @@
         },
         {
           "k": "Explosive runs allowed",
-          "a": "−0.7 pp  #12 of 32",
+          "a": "−0.7 pp  #13 of 32",
           "h": "+0.0 pp  #18 of 32",
           "note": null
         },
         {
           "k": "Sacks taken per dropback",
           "a": "−2.3 pp  #3 of 32",
-          "h": "+0.4 pp  #24 of 32",
+          "h": "+0.4 pp  #23 of 32",
           "note": "pass protection — the only offensive-line number the NFL model carries"
         },
         {
@@ -1329,11 +1304,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 107 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 108 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-30T09:54:04.516Z"
+    "at": "2026-10-30T17:59:12.117Z"
   }
 }

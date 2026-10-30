@@ -11,7 +11,11 @@
      auth        no one-time secret set: 401 for everyone; a wrong secret: 401
      whoami      the management key answers on production and is refused on
                  paper ("api key not found"): environment = production; keys
-                 and subaccounts listed, no balance returned
+                 and subaccounts listed, no balance returned; as the workflow
+                 runs it: exit 0 found, exit 3 when Novig answered without one
+                 (a 451 on both hosts: one echo each, then the run stops),
+                 exit 1 only when the bootstrap cannot be asked yet — the one
+                 answer the workflow's loop retries
      read key    POST /v3/keys carries name, the SPKI public key and the
                  algorithm, and NO scope (Novig refuses one there); the runner's
                  fingerprint must equal Novig's; the secrets file holds the key
@@ -61,6 +65,7 @@ function resp(status, body) { return { ok: status >= 200 && status < 300, status
 async function novig(u, init) {
   const url = new URL(u), method = init.method || 'GET', p = url.pathname, H = init.headers || {};
   W.calls.push(url.host + ' ' + method + ' ' + p);
+  if (W.geo451) return resp(451, { code: 'RESTRICTED_NETWORK_REGION', message: 'requests from this network are not permitted' });
   const body = init.body ? Buffer.from(init.body).toString() : '';
   const kid = H['Novig-Key-Id'];
   /* paper does not know this key (environments.md: a key works only where it was made) */
@@ -110,6 +115,24 @@ async function novig(u, init) {
   chk('whoami: production accepts the management key, paper says "api key not found": the key is production\'s', who.json.ok && who.json.environment === 'production' && who.json.probes.paper.status === 401 && W.bad.length === 0, who.json);
   chk('whoami: keys and existing subaccounts are listed; the management key is marked; no balance is returned', who.json.keys[0].is_management_key === true && who.json.subaccounts.length === 1
     && !JSON.stringify(who.json).includes('1234.50000') && /existing subaccounts \(1\)/.test(who.text));
+  chk('whoami: the printed text (a public log) shows a subaccount id by its first 8 characters only', who.text.includes('99999999…') && !who.text.includes('99999999-8888-4777-8666-555555555555'), who.text);
+
+  /* ---- whoami must never be retried once Novig has answered: repeated 451s can lock the account ---- */
+  chk('whoami (CLI): the environment found is exit 0', typeof PROV.whoamiCli === 'function' && (await PROV.whoamiCli()).code === 0);
+  resetNovig({ geo451: true });
+  const g = typeof PROV.whoamiCli === 'function' ? await PROV.whoamiCli() : { code: null, text: '' };
+  chk('whoami (CLI): a location refusal (451) on both hosts is exit 3 — Novig answered, so the run must stop — with each host\'s answer printed, after one echo per host and nothing else',
+    g.code === 3 && /echo on production: 451 /.test(g.text) && /echo on paper: 451 /.test(g.text) && W.calls.length === 2 && W.calls.every((c) => / POST \/v3\/echo$/.test(c)), [g, W.calls]);
+  resetNovig();
+  const fetch0 = globalThis.fetch;
+  globalThis.fetch = async (u, init) => (String(u) === URL_ ? resp(503, '<html>booting</html>') : fetch0(u, init));
+  const u1 = typeof PROV.whoamiCli === 'function' ? await PROV.whoamiCli() : { code: null };
+  globalThis.fetch = fetch0;
+  chk('whoami (CLI): a bootstrap that is not up yet (503, not JSON) is exit 1, the only answer the workflow retries; Novig was not called', u1.code === 1 && W.calls.length === 0, u1);
+  const PY = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'novig-provision.yml'), 'utf8');
+  const loop = (PY.match(/for i in \$\(seq 1 10\); do[\s\S]*?\n\s*done/) || [''])[0];
+  chk('workflow: the whoami loop retries only exit 1; exit 3 (Novig answered) ends the run at once',
+    /rc=0; node tools\/novig\/provision\.js whoami \|\| rc=\$\?/.test(loop) && /if \[ "\$rc" = 3 \]; then[^\n]*exit 1; fi/.test(loop) && !/if node tools\/novig\/provision\.js whoami; then/.test(PY), loop);
 
   /* ---- the read key ---- */
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'novig-prov-'));
