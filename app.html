@@ -4191,6 +4191,11 @@ window.mcRefresh=function(){
 <!-- the model integrity audit's warnings on each game (engine/model_integrity.json), read by the games board -->
 <script src="/lib/edgedesk_model_integrity_ui.js?v=20261026mi1"></script>
 <script src="/lib/edgedesk_games_ui.js?v=20261027sl1"></script>
+<!-- DraftKings vs Novig on the football cards (window.fbNovigHTML): renders nothing for a reader who may not see Novig prices. docs/novig/README.md -->
+<script src="/lib/edgedesk_venue_compare.js?v=20261030nv1"></script>
+<script src="/lib/edgedesk_lead_lag.js?v=20261030nv1"></script>
+<script src="/lib/edgedesk_compare_cards.js?v=20261030nv1"></script>
+<script src="/lib/edgedesk_market_compare_ui.js?v=20261030nv1"></script>
 <!-- THE RESEARCH OS (docs/research-os/DESIGN.md): the research context carried between features, the
      shell (navigation, quiet reads, services), the Overview, search and Performance; Market Foresight's
      small service (its record and controller load on first use) -->
@@ -52081,7 +52086,7 @@ function fbGameCardNfl(u){
   var p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season));
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div></div>'
-      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+(window.fbSituationalHTML?window.fbSituationalHTML('nfl',g.game_id):'')+'</div>';
+      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+(window.fbNovigHTML?window.fbNovigHTML('nfl',g,u.t,M.ev):'')+(window.fbSituationalHTML?window.fbSituationalHTML('nfl',g.game_id):'')+'</div>';
   var mdl=p.model;
   var cov=p.cover,ov=p.over;
   var lines='';
@@ -52120,7 +52125,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
     +fbGameResearchLead('nfl',g.game_id,homeName,awayName,mdl.fair_spread,mdl.fair_total,mdl.home_win_prob,u.t!=null&&u.t<=Date.now())
-    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+(window.fbSituationalHTML?window.fbSituationalHTML('nfl',g.game_id):'')+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+(window.fbKalshiHTML?window.fbKalshiHTML('nfl',g,u.t,M.ev):'')+(window.fbNovigHTML?window.fbNovigHTML('nfl',g,u.t,M.ev,{pred:p}):'')+(window.fbSituationalHTML?window.fbSituationalHTML('nfl',g.game_id):'')+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -52782,7 +52787,7 @@ function fbGameCardCfb(u){
     neutral_site:String(g.neutral_site).toUpperCase()==='TRUE'},mkt,fbNum(g.season));
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div></div>'
-      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+(window.fbKalshiHTML?window.fbKalshiHTML('cfb',g,u.t,ev):'')+'</div>';
+      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+(window.fbKalshiHTML?window.fbKalshiHTML('cfb',g,u.t,ev):'')+(window.fbNovigHTML?window.fbNovigHTML('cfb',g,u.t,ev):'')+'</div>';
   var mdl=p.model,cov=p.cover,ov=p.over;
   var lines='';
   lines+='<div class="gd-line"><span class="l" data-ed-term="fair-line">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)
@@ -52801,7 +52806,7 @@ function fbGameCardCfb(u){
   return '<div class="mdl-card">'
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div>'
     +'<div class="mdl-card-when">CFB · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>'
-    +lines+(window.fbKalshiHTML?window.fbKalshiHTML('cfb',g,u.t,ev):'')+fbQualityLine(p,['no market backtest exists for CFB — gaps are context, not edges'])+(window.fbBriefBtn?fbBriefBtn('cfb',g,u):'')+'</div>';
+    +lines+(window.fbKalshiHTML?window.fbKalshiHTML('cfb',g,u.t,ev):'')+(window.fbNovigHTML?window.fbNovigHTML('cfb',g,u.t,ev,{pred:p}):'')+fbQualityLine(p,['no market backtest exists for CFB — gaps are context, not edges'])+(window.fbBriefBtn?fbBriefBtn('cfb',g,u):'')+'</div>';
 }
 function fbRatingsBoard(sport){
   var E=window.EDFootball;
