@@ -47,8 +47,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
   checks: write
+  contents: write
 
 concurrency:
   group: simulator-sports-data-${{ github.head_ref || github.ref }}
