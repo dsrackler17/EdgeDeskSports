@@ -35,11 +35,23 @@ permission is on record (§Data rights). Nothing here places an order.
 - **The sportsbook path.** The Odds API is reached only through
   `supabase/functions/odds_gateway` (budget, breaker, ledger;
   `supabase/odds_api_gateway.sql`). DraftKings is one of the gateway's
-  bookmakers. Every Pinnacle and DraftKings price the gateway buys is copied,
-  append-only, into **`public.sharp_price_snapshots`** by the Sharp-lag
-  pipeline (`supabase/sharp_lag.sql`): `event_id, book, market, side, point,
-  price_dec, captured_at, book_last_update`. That tape is the DraftKings side
-  of every comparison here; it is service-role only and stays so.
+  bookmakers. The layer reads DraftKings through one service-only view,
+  **`public.novig_dk_tape`**, built from whichever of two sources the project
+  has when `novig_market_data.sql` is applied:
+  - **`public.sharp_price_snapshots`**, the Sharp-lag tape
+    (`supabase/sharp_lag.sql`): every Pinnacle and DraftKings price the
+    gateway buys. This is the complete source.
+  - **`public.book_quote_ticks`** joined to `public.signals` by `sig_key`:
+    capture's per-book history. It holds DraftKings **only for the
+    selections that became actionable signals**
+    (`supabase/functions/capture`, `CAPTURE_BOOK_QUOTES`).
+
+  **Production on 2026-10-30 has only the second.** The Sharp-lag layer was
+  never applied there, so most Novig markets have no DraftKings price to
+  compare with (they read *awaiting DraftKings*). Applying `sharp_lag.sql` is
+  a change to the DraftKings pipeline and the owner's decision. After it,
+  applying this layer again switches the view to the full tape (tested).
+  Both sources stay service-role only.
 - **Paid retrieval is paused** by the emergency stop until The Odds API's
   credit reset (2026-11-01 00:00 UTC; `docs/odds-api-incident-2026-10/INCIDENT.md`).
   Until it resumes, DraftKings prices age into **Stale** and are shown as
@@ -165,7 +177,12 @@ base64 lines of `read.pem` joined, without the BEGIN/END lines) and
 **Verify:** Actions → "Deploy Novig market data" with `first_run`, or POST
 `{"mode":"probe"}` to `novig_sync` with the cron secret. The probe records the
 clock offset, the echo, the throttle, the key holder's geolocation standing
-and the key's scope (a full `management` key is flagged as over-privileged).
+and the key's scope. **Discover and snapshot run only after a probe in the
+last 30 hours saw Novig itself list the key as `management::read`.** A
+`management` or `trading` key, or one Novig does not list, is a FAILURE
+(`key_not_read_only`), and every later discover and snapshot is skipped
+(`scope_unverified`) and calls nobody. A key that can move money or place
+orders never ingests.
 
 ## 4. Coverage
 
@@ -373,6 +390,8 @@ and never touching the incumbent until it wins under that protocol.
 ## 12. Known limitations
 
 - Not deployed or authenticated yet (§Credentials). REST snapshots, not live.
+- In production, DraftKings prices exist only for actionable signals
+  (`book_quote_ticks`) until the Sharp-lag tape is applied (§1).
 - DraftKings prices are stale until The Odds API resumes (2026-11-01 reset);
   NBA/NHL have no DraftKings side until the owner enables them at the gateway.
 - Only full-game and first-half moneylines, spreads and totals; no props or
