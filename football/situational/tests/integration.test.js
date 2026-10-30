@@ -116,6 +116,22 @@ function strip(o) { const c = JSON.parse(JSON.stringify(o)); delete c.generated_
   const stages = (st.runs || []).flatMap((r) => Object.keys(r.stages || {}).map((sp) => r.stages[sp]));
   chk('every recorded build stage keeps its timings (ms.total, ms.projections) apart from its counts', stages.length > 0 && stages.every((s) => s.ms && Number.isFinite(s.ms.total) && Number.isFinite(s.ms.projections) && Number.isInteger(s.projections)), JSON.stringify(stages[0]).slice(0, 300));
 
+  /* the scheduled pipeline keeps what its build derived. The market refresh (--offline) reads the derived
+     seasons the last build left in football/situational/.cache, and actions/cache saves only when the whole
+     job passes: the Supabase copy failing after a good build (2026-10-30 16:50) threw the cache away, and
+     every market refresh after it stopped on "no derived season" */
+  const W = require(path.join(ROOT, 'tools', 'ci', 'workflows.js'));
+  const steps = W.parseYaml(fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'football-situational.yml'), 'utf8')).jobs.run.steps;
+  const CACHE = 'football/situational/.cache';
+  const onCache = (re) => steps.findIndex((s) => re.test(s.uses || '') && s.with && s.with.path === CACHE);
+  const runs = (re) => steps.findIndex((s) => re.test(s.run || ''));
+  const restore = onCache(/^actions\/cache\/restore@/), save = onCache(/^actions\/cache\/save@/);
+  const lastStage = Math.max(...steps.map((s, i) => (/football\/situational\/run\.js/.test(s.run || '') ? i : -1)));
+  chk('the pipeline restores the source cache without tying its save to the whole job', restore >= 0 && onCache(/^actions\/cache@/) < 0);
+  chk('it saves the cache after every engine stage, before the commit and the Supabase copy', save > lastStage && lastStage > restore && save < runs(/push_generated\.sh/) && save < runs(/sync_supabase\.js/));
+  chk('only when the engine stages passed (a failed build saves nothing)', save >= 0 && !/always\(\)|failure\(\)|cancelled\(\)/.test(steps[save].if || ''));
+  chk('under a key the next run restores', save >= 0 && restore >= 0 && String(steps[save].with.key).startsWith(String(steps[restore].with['restore-keys'])));
+
   fs.rmSync(stage, { recursive: true, force: true });
   process.exit(T.done());
 })().catch((e) => { console.error(e); process.exit(1); });
