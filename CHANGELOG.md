@@ -11,6 +11,60 @@
   - `novig_sync.test.js`: 44 → 50. On the old code the source check fails (`GET sharp_price_snapshots`), and a management key only warned.
   - `novig_bootstrap.test.js`: 22 → 23.
 
+## 2026-10-30 — NBA injury report: two-line reasons go to the right player, and nothing is left unread
+
+- **The 5 drift alerts in 24 h were a parser bug, not a format change.** They are `report_unread_lines`, from 2026-10-29 17:07 to 19:07Z, and each one is the line `"/ Bone Bruise"` (Jalen Suggs, ORL). The league's PDF centres each row vertically. A two-line reason prints one line above the player's row and one below it. A row cut by a page break carries its reason over to the next page. The parser knew only the "line above" case. So the line below a row was given to the next player, and a trailing line before NOT YET SUBMITTED was left unread. 56 of 92 official reports since 10-21 were affected. On 1,029 of 6,231 rows the stored reason text belongs to another player. Statuses and names were unaffected, so no projection was mispriced. The stored rows are append-only and were left as they are.
+- **Fix** (`nba/injury/core.js` `nbaAssignWraps`/`nbaSolveWraps`, core `nba-injury-core-2026-10-30-1`; `nba_injury_sync@2026-10-30.1`, parser `nba-official-lines-2`). The parser assigns the wrapped lines for a whole run of rows at once. It prefers the centred layout and allows the page split. A layout that fits no split, or two splits equally well, is counted as unread, never guessed.
+- **Names.** "Udeh, Jr., Ernest" now reads as "Ernest Udeh Jr.". An alias maps "Hansen Yang" to "Yang Hansen", checked against ESPN's POR roster (5217746). Michael Ajayi (CHA, two-way) is on no captured roster, so he stays unmatched. That is missing roster data, and no fuzzy match is made.
+- **Freshness.** On 10-30 the league published nothing after 6:00 AM ET: every later slot answered S3 AccessDenied. Each run now records `details.official` (`newest_listed_at`, `read_url`, `tried`). System health keeps the two ages apart: a quiet league with a current sync is information, and a sync that has not checked in 75 min is attention.
+- **Tests:** a new fixture `tools/nba/fixtures/nba_injury_report_wraps_2026-10-28_29.json` holds three real reports' line streams, with their expected reasons taken from page geometry. `nba_injury_core.test.js` went from 80/16 to 96/0. `nba_injury_sync.test.js` went from 41/1 to 42/0.
+- **Deploy:** run Deploy NBA injury layer (`deploy-nba-injury.yml`).
+
+## 2026-10-30 — Kalshi sync: a timed-out database read is retried; readiness always says why it is not ok
+
+- **What failed.** The snapshot run at 09:20 UTC (`ec23a067…`) failed after exactly 20 s with "snapshot error: Signal timed out.". Its first database read (`kalshi_series?tracked=is.true`) stalled. Kalshi was never called and nothing was written. Every snapshot from 09:25 on succeeded (268 markets). `db()` retried Kalshi's 429/5xx answers but never a PostgREST read.
+- **Fix** (`supabase/functions/kalshi_sync/index.ts`, build `kalshi_sync@2026-10-30.1`). A read (GET) is tried at most 3 times, after a timeout, a lost connection or a 429/5xx, with waits of 250 ms and then 500 ms. A write is never resent: `kalshi_price_snapshots` has no natural key, so a resent insert could duplicate rows.
+- **Readiness** (`supabase/kalshi_market_data.sql` and its byte-identical migration mirror). One recovered failure held `kalshi_readiness` at `warn` for 24 h, with `state_reason` null. A failed run is now judged by what came after it:
+  - 2 or more failed runs in 24 h: warn.
+  - Not recovered: a snapshot is error, a discover is warn.
+  - Recovering, with less than 30 min of good runs: warn, and the reason says so.
+  - One failure followed by 30 min of good runs of the same mode: ok. It stays named in `recent_incident`, `last_failure_at` and `last_failure_message`, and it is still counted in `failures_24h`.
+  - DEGRADED and DRIFT alerts still warn for 24 h.
+  - `state_reason` is never null when the state is not ok.
+  - New rule key `recovery_confirm_minutes` = 30.
+  - `open_game_events_unmapped` reconciles events with markets. Each game event has 2 markets, so 231 unmapped events are 462 markets.
+- **The 462 unmatched markets are not mapping faults.** All are CFB, all have the reason `no_book_event`, and none is a name or alias failure. The breakdown:
+  - 118 events are FCS vs FCS, out of scope.
+  - 113 events are FBS games with no book event in the capture:
+    - 69 are on this week's slate, and an offline replay of the deployed linker links all 69, so the gap is in the CFB moneyline capture;
+    - 32 carry Kalshi's placeholder date (`26OCT30` for Saturday games);
+    - 3 have a TBA kickoff;
+    - 8 are beyond the horizon;
+    - 1 is FBS vs FCS.
+
+  No matching rule was changed. The 6¢ spread exclusion and the trusted mid are untouched.
+- **System health** shows `recent_incident` on the Kalshi row while the view reads ok.
+- **Tests:** `kalshi_sync.test.js` went from 48/3 to 51/0. `kalshi_sql.test.js` went from 75/7 to 82/0; on the old view, five reads were warn with a null reason.
+- **Deploy:** run Deploy Kalshi market data with `deploy_function` and `apply_sql`.
+
+## 2026-10-30 — System health: every count names its subsystem, and the odds capture shows its real state
+
+- **"Model health 21/22, 1 failing" was not a model failure.** `sysHealthState` added the NHL goalie sync's `error` into the football self-check's fail count, and the Model health row printed that count. In production that day the self-check had 22 checks: 21 passed, 1 warned (the NFL line guard), and none failed. Model health now counts the self-check alone (22/22, amber for its warning, which it names). The syncs still add to the header's count, and the header, its title and its aria-label name the subsystems the count is made of ("2 failing (database, NHL goalie sync)").
+- **The odds capture read "unknown", and that was wrong.** The heartbeat came only from `public.signals`, which the paywall rule hides from a reader without access, so most accounts saw no row. The panel now also reads `rpc/odds_feed_status` (anon, security definer), and shows one of six states: healthy, delayed, paused, quota exhausted, degraded, or unknown (the status read failed: monitoring failed, not the feed). Production answers `paused` / `quota_unconfirmed`: the October quota was spent on 2026-10-10, and paid calls wait for the November cycle's quota to be confirmed (docs/odds-api-incident-2026-10/INCIDENT.md §9). The pause is now reported as such. "Last successful sync" shows a write on record or "none on record", never the time of the read.
+- **Pipeline jobs "15/15" counted keys, not jobs, and could not see a failure.** It counted every `pipeline_meta` key (timestamps and row counts), and it compared the string statuses against `ok===false`. It now counts the six `<job>_last_status` jobs, and a status other than `ok` is attention, named.
+- **Build freshness "68d ago" now says what the date means.** The football parameters (`edgedesk_football_v1.0.0`, `edgedesk_cfb_p4_v1.0.0`, trained through 2025) are fitted before each season and held fixed through it by design (model_loop/adapters/nfl/baselines/README.md: "refit before each season"). The ratings learn daily. The row reads `season-fixed`, beside the date results were absorbed through. Nothing was retrained.
+- **The not-served learning loop** (MLB lab brain, research-only by governance: the card uses `mlb/engine.js`) is named with its reason under Research governance, not left as a bare count.
+- **Kalshi** shows a reason when the view leaves `state_reason` empty ("1 failed run in 24 h, recovered").
+- **Six sections:** model health, data sources, scheduled jobs, data quality and coverage, research governance, and historical performance (7 days). The NHL starter sources have their own row.
+- **Entities.** The source data and the renderer never produced `&#x34;21 min`. In Chromium, the panel's text on production data holds no entity. What was missing were separators between the label, the note and the value. The row is a flex box, so the separators draw nothing, but without them the row's text ran together ("(game day)421 min") for anything that reads text rather than pixels, and the tool that produced the report encoded each value's first character. Each row now has the separators. Every value is still escaped exactly once (`edEsc`), and a reason that holds markup or an entity is shown as written.
+- **Tests:** `tools/app/system_health.test.js` (new, run by Research OS tests). On the old `app.html`: 14 passed, 37 failed. On the new one: 51 passed, 0 failed. One static assertion in `tools/kalshi/kalshi_ui.test.js` was updated to the shared rule (an error fails, a warn asks for attention), and the new suite runs that rule.
+
+## 2026-10-30 — NHL goalie sync: a Daily Faceoff page Cloudflare refuses is tried again in the same run
+
+- **What failed.** The manual run at 16:34 UTC (build `nhl_goalie_sync@2026-10-30.1`) found both Daily Faceoff pages answering HTTP 403. The previous run, at 16:00, had read them. More than three hours before puck drop Daily Faceoff is the only source, so the run was `sources_down` and readiness went to error. The page is up: from a test container it answers 200 with the function's browser headers, and its parser reads it (3 games, 6 rows). With other headers it answers 403 with Cloudflare's "Attention Required!" page. The refusal is Cloudflare's bot protection, and it comes and goes. The function never tried a page a second time.
+- **Fix** (`supabase/functions/nhl_goalie_sync/index.ts`, build `nhl_goalie_sync@2026-10-30.2`). Each page is tried at most twice more in the same run, after a 403, 408, 425, 429 or 5xx, a timeout or a lost connection. The waits are 2 s and then 4 s, plus up to 1 s of jitter, or the server's Retry-After, capped at 8 s. All the retries in one run share a 45-second budget. A 404 is not retried, and neither is a page that changed shape (DRIFT). A Cloudflare block page (its title or a `cf-mitigated` header) is named "Daily Faceoff blocked by Cloudflare bot protection (HTTP 403)". An empty 200 or a challenge served as 200 is never parsed into starters. Each page's attempts are kept in the run row. Unchanged: an unreadable page writes nothing, the starters on file stay, and nothing becomes Confirmed. Nothing carries over between runs.
+- **Tests** (`tools/hockey/nhl_goalie_sync.test.js`). The fake network can script Daily Faceoff's answers call by call, with headers. The backoff records its waits instead of sleeping. 14 new checks cover: a 403 and then a 200 (read in the same run); a 429 with Retry-After and then a 503; a lost connection; a 404 (not retried); three refusals (an error run named as Cloudflare, nothing written, nothing Confirmed, the next run recovers); the stored starters untouched by a block, an empty 200 or a 200 challenge; the shared budget; DRIFT not fetched again. On the old function: 89 passed, 9 failed. On the fix: 98 passed, 0 failed.
+- **Deploy:** after merge, run Deploy NHL goalie layer with `deploy_function`.
 ## 2026-10-30 — Novig provisioning: Novig's own refusal stops the run (no 451 retries); the card hook is defined in app.html
 
 - **What was wrong.** The `whoami` step of `.github/workflows/novig-provision.yml` retried `provision.js whoami` up to 10 times on any failure. That includes the answer where Novig refuses the management key on both hosts with a 451 location check. Each try signs one echo per host, so a refused network would have sent up to 20 signed requests into 451s, and Novig warns that repeated 451 retries can lock the account. The workflow had never run.

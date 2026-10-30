@@ -62,7 +62,7 @@
 //      NHL_GOALIE_INPUTS_URL (default https://edgedesksports.com/hockey/goalie_inputs.json)
 // ============================================================
 
-export const BUILD = "nhl_goalie_sync@2026-10-30.1";
+export const BUILD = "nhl_goalie_sync@2026-10-30.2";
 const INPUTS_URL = "https://edgedesksports.com/hockey/goalie_inputs.json";
 // A browser's headers, as nba_injury_sync sends: a crawler-style agent was
 // refused by ESPN's edge on the NBA layer's first live runs.
@@ -1100,16 +1100,72 @@ async function getResp(url: string, ms = 20000) {
 }
 
 /* ---------------------------------------------------------------- the sources */
-/** Daily Faceoff's page for one Eastern date: parsed rows, or why not */
-export async function readDailyFaceoff(etDate: string, nowMs: number) {
+// Daily Faceoff sits behind Cloudflare, whose bot protection refuses some requests from Supabase's network
+// and lets the next one through: on 2026-10-30 at 16:34 UTC both pages answered 403 ("Attention Required!
+// | Cloudflare") 34 minutes after a run that read them. A refusal, a rate limit (429), a server error, a
+// timeout or a lost connection is tried again, at most twice per page, after a backoff with jitter (or the
+// server's Retry-After, capped). The retries of one run share one time budget, so a refusing source cannot
+// hold the run past its wall clock. A page that answers 200 but is not the page (an empty body, a challenge
+// page) is never parsed into starters; a page that changed shape is DRIFT and is not retried. Nothing here
+// is sticky: the next run starts afresh.
+export const DF_RETRY = { attempts: 3, first_timeout_ms: 20000, retry_timeout_ms: 15000, base_ms: 2000, jitter_ms: 1000, retry_after_cap_ms: 8000, budget_ms: 45000 };
+// the clock and the sleep, replaceable by the tests
+export const NET = { sleep: (ms: number) => new Promise<void>((res) => setTimeout(res, ms)), random: () => Math.random(), now: () => Date.now() };
+const DF_RETRY_STATUS = (s: number) => s === 403 || s === 408 || s === 425 || s === 429 || s >= 500;
+function hdr(r: Any, k: string): string | null { try { const v = r && r.headers && typeof r.headers.get === "function" ? r.headers.get(k) : null; return v == null ? null : String(v); } catch { return null; } }
+/** Cloudflare's challenge or block page, by its header or its title, whatever the status */
+export function nhlgCloudflareBlock(r: Any, body: string): boolean {
+  if (hdr(r, "cf-mitigated")) return true;
+  return /<title>\s*(Attention Required!?\s*\|\s*Cloudflare|Just a moment\.\.\.)\s*<\/title>/i.test(String(body || "").slice(0, 4000));
+}
+function retryAfterMs(r: Any): number | null {
+  const v = hdr(r, "retry-after"); if (v == null || v === "") return null;
+  const s = Number(v); if (isFinite(s)) return Math.max(0, s * 1000);
+  const t = Date.parse(v); return isFinite(t) ? Math.max(0, t - NET.now()) : null;
+}
+/** Daily Faceoff's page for one Eastern date: parsed rows, or why not (with how many attempts it took) */
+export async function readDailyFaceoff(etDate: string, nowMs: number, budget?: { until: number }) {
   const url = nhlgDailyFaceoffUrl(etDate);
-  try {
-    const r = await getResp(url, 20000);
-    if (!r.ok) return { ok: false, url, error: "Daily Faceoff answered HTTP " + r.status, http: r.status };
-    const p = nhlgParseDailyFaceoff(await r.text(), { url, fetched_at: nowMs });
-    if (!p.ok) return { ok: false, url, error: "Daily Faceoff's page did not read: " + p.drift, drift: true, parsed: p };
-    return { ok: true, url, parsed: p };
-  } catch (e) { return { ok: false, url, error: "Daily Faceoff: " + String((e as Error)?.message ?? e).slice(0, 160) }; }
+  const until = budget ? budget.until : NET.now() + DF_RETRY.budget_ms;
+  const log: string[] = [];
+  let last: Any = null;
+  for (let i = 0; i < DF_RETRY.attempts; i++) {
+    if (i > 0) {
+      const ra = last && last.retry_after != null ? Math.min(DF_RETRY.retry_after_cap_ms, last.retry_after) : null;
+      const wait = ra != null ? ra : DF_RETRY.base_ms * Math.pow(2, i - 1) + Math.floor(NET.random() * DF_RETRY.jitter_ms);
+      // another attempt only when it can finish inside the run's budget
+      if (NET.now() + wait + 1000 > until) { log.push("no retry: out of budget"); break; }
+      await NET.sleep(wait);
+    }
+    const ms = i === 0 ? DF_RETRY.first_timeout_ms : Math.max(1000, Math.min(DF_RETRY.retry_timeout_ms, until - NET.now()));
+    let r: Any, body = "";
+    try { r = await getResp(url, ms); body = await r.text(); }
+    catch (e) {
+      const msg = String((e as Error)?.message ?? e).slice(0, 160);
+      log.push("error: " + msg);
+      last = { ok: false, url, error: "Daily Faceoff: " + msg, retry: true };
+      continue;
+    }
+    const blocked = nhlgCloudflareBlock(r, body);
+    if (!r.ok) {
+      log.push("HTTP " + r.status + (blocked ? " (Cloudflare)" : ""));
+      last = { ok: false, url, http: r.status, blocked, retry_after: retryAfterMs(r), retry: DF_RETRY_STATUS(r.status),
+        error: blocked ? "Daily Faceoff blocked by Cloudflare bot protection (HTTP " + r.status + ")" : "Daily Faceoff answered HTTP " + r.status };
+      if (!last.retry) break;
+      continue;
+    }
+    if (blocked) { log.push("HTTP 200 (Cloudflare challenge)"); last = { ok: false, url, http: r.status, blocked, error: "Daily Faceoff blocked by Cloudflare bot protection (HTTP 200 challenge page)", retry: true }; continue; }
+    if (!body.trim()) { log.push("HTTP 200 (empty)"); last = { ok: false, url, http: r.status, error: "Daily Faceoff answered HTTP 200 with an empty page", retry: true }; continue; }
+    log.push("HTTP 200");
+    const p = nhlgParseDailyFaceoff(body, { url, fetched_at: nowMs });
+    if (!p.ok) return { ok: false, url, error: "Daily Faceoff's page did not read: " + p.drift, drift: true, parsed: p, attempts: i + 1, attempt_log: log };
+    return { ok: true, url, parsed: p, attempts: i + 1, attempt_log: log };
+  }
+  const out: Any = { ok: false, url, error: last.error, attempts: log.filter((x) => !/^no retry/.test(x)).length, attempt_log: log };
+  if (last.http != null) out.http = last.http;
+  if (last.blocked) out.blocked = true;
+  if (out.attempts > 1) out.error += " on " + out.attempts + " attempts";
+  return out;
 }
 /** the NHL's boxscore for one game: starters once lineups post, or why not */
 export async function readBoxscore(gameId: string, nowMs: number) {
@@ -1181,9 +1237,10 @@ export async function syncOnce(opts: Any = {}) {
     const obs: Any[] = [];
     const dates = [...new Set(games.map((g: Any) => nhlgEtDate(Date.parse(g.start_utc))))].sort();
     const df: Any = { ok: null, pages: [], rows: 0, unmatched_games: [] };
+    const dfBudget = { until: NET.now() + DF_RETRY.budget_ms };   // one retry budget for every page of the run
     for (const d of dates) {
-      const res = sim.includes("daily_faceoff") ? { ok: false, url: nhlgDailyFaceoffUrl(d), error: "simulated outage: daily_faceoff" } : await readDailyFaceoff(d, nowMs);
-      df.pages.push({ date: d, ok: res.ok, url: res.url, error: res.ok ? null : res.error, games: res.ok ? res.parsed.games : 0 });
+      const res: Any = sim.includes("daily_faceoff") ? { ok: false, url: nhlgDailyFaceoffUrl(d), error: "simulated outage: daily_faceoff" } : await readDailyFaceoff(d, nowMs, dfBudget);
+      df.pages.push({ date: d, ok: res.ok, url: res.url, error: res.ok ? null : res.error, games: res.ok ? res.parsed.games : 0, attempts: res.attempts ?? null, blocked: !!res.blocked, attempt_log: res.attempt_log ?? null });
       if (!res.ok) { df.ok = false; if ((res as Any).drift) alert("DRIFT", "daily_faceoff_drift", res.error, { url: res.url }); continue; }
       if (df.ok === null) df.ok = true;
       for (const r of res.parsed.rows) {

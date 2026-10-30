@@ -31,7 +31,10 @@
      readiness    never run, discover only, a silent scheduler and a failed
                   snapshot are errors; a priced game left unmatched, close
                   capture under 90% and no tracked series are warnings; a game
-                  no book prices is counted apart, never a warning
+                  no book prices is counted apart, never a warning; one failed
+                  run that has recovered for 30 minutes is a recent incident
+                  (counted, named, ok), a repeated, unrecovered or recovering
+                  one a warning; a state other than ok always says why
      cron         the poke without its secret records a failed run and a
                   FAILURE alert; with it, both modes queue with the header
      rollback     removes the layer and its jobs
@@ -228,7 +231,9 @@ try {
   T.chk('card: a linked market never snapshotted before kickoff is NO_SNAPSHOT', c.state === 'NO_SNAPSHOT' && c.yes_mid === null && c.gap_pp === null, c);
 
   /* ---- readiness ---- */
-  const rd = () => J(db.anon('select row_to_json(r) from public.kalshi_readiness r;'));
+  /* every state other than ok must say why: collected on every read, checked once at the end */
+  const reasonless = [];
+  const rd = () => { const x = J(db.anon('select row_to_json(r) from public.kalshi_readiness r;')); if (x.state !== 'ok' && !x.state_reason) reasonless.push({ state: x.state, failures_24h: x.failures_24h, consecutive_failures: x.consecutive_failures }); return x; };
   const runRow = (mode, status, at, extra) => db.service(`insert into public.kalshi_sync_runs (trigger, mode, status, started_at, finished_at, markets_snapshotted, message, details)
     values ('test', ${lit(mode)}, ${lit(status)}, ${at} - interval '20 seconds', ${at}, ${(extra && extra.n) || 0}, ${lit(extra && extra.message || null)}, ${lit(JSON.stringify((extra && extra.details) || {}))}::jsonb) returning run_id;`).split('\n').filter(Boolean).pop();
   let r = rd();
@@ -261,7 +266,8 @@ try {
     db.anon("select value from public.kalshi_meta where key = 'kalshi_snapshot_last_status';") === 'error' && db.anon("select value from public.kalshi_meta where key = 'row_count_kalshi_snapshot';") === '4');
   runRow('snapshot', 'ok', 'now()', { n: 5 });
   r = rd();
-  T.chk('readiness: a good snapshot after it clears the streak; the failure still counts in 24 h (degradation is a warning)', r.state === 'warn' && r.consecutive_failures === 0 && r.failures_24h === 1, r);
+  T.chk('readiness: a good snapshot after it clears the streak; until the recovery holds, the failure is a warning that says it is recovering', r.state === 'warn' && r.consecutive_failures === 0 && r.failures_24h === 1
+    && /recovering/.test(String(r.state_reason)) && /Kalshi could not be reached/.test(String(r.state_reason)) && r.failure_recovered === false, r);
 
   /* ---- cron ---- */
   db.sql(`create schema if not exists cron;
@@ -304,6 +310,45 @@ try {
   db.sql("update public.kalshi_series set tracked = false;");
   r = rd();
   T.chk('readiness: running with nothing tracked is a warning that says what to do', r.state === 'warn' && /tracked = true/.test(r.state_reason), r);
+
+  /* ---- one failed run, then recovery (production, 2026-10-30: one timed-out
+     snapshot at 09:20Z, then every run good; the feed read warn, with no
+     reason, for 24 hours). A recovered isolated failure is a recent incident,
+     counted and named; a repeated or ongoing one stays a warning ---- */
+  db.applyFile(F('kalshi_market_data_rollback.sql'));
+  db.applyFile(F('kalshi_market_data.sql'));
+  db.service("insert into public.kalshi_series (ticker, tracked) values ('KXNFLGAME', true);");
+  runRow('discover', 'ok', "now() - interval '4 hours'");
+  runRow('snapshot', 'ok', "now() - interval '3 hours 5 minutes'", { n: 3 });
+  const failAt = (at, msg) => { const id = runRow('snapshot', 'error', at, { message: 'snapshot error: ' + msg });
+    db.service(`insert into public.kalshi_alerts (run_id, severity, code, message, created_at) values (${lit(id)}, 'FAILURE', 'snapshot_error', ${lit('snapshot error: ' + msg)}, ${at});`); };
+  failAt("now() - interval '3 hours'", 'Signal timed out.');
+  for (const m of [175, 120, 60, 5, 0]) runRow('snapshot', 'ok', `now() - interval '${m} minutes'`, { n: 3 });
+  r = rd();
+  T.chk('readiness: one failed run, recovered for hours: ok, not degraded', r.state === 'ok' && r.state_reason === null && r.consecutive_failures === 0, r);
+  T.chk('readiness: the recovered failure stays visible: counted in 24 h and named as a recent incident', r.failures_24h === 1 && r.errors_24h === 1 && r.failed_runs_24h === 1 && r.failure_recovered === true
+    && /recovered/.test(String(r.recent_incident)) && /Signal timed out/.test(String(r.recent_incident)) && /5 good run/.test(String(r.recent_incident)) && r.last_failure_at !== null, r);
+  failAt("now() - interval '30 minutes'", 'db 503 kalshi_series');
+  runRow('snapshot', 'ok', 'now()', { n: 3 });
+  r = rd();
+  T.chk('readiness: a second failure in 24 h is repeated, not isolated: a warning naming the count and the last one, even recovered', r.state === 'warn' && r.failed_runs_24h === 2
+    && /2 failed runs in 24 hours/.test(String(r.state_reason)) && /db 503 kalshi_series/.test(String(r.state_reason)), r);
+  db.applyFile(F('kalshi_market_data_rollback.sql'));
+  db.applyFile(F('kalshi_market_data.sql'));
+  db.service("insert into public.kalshi_series (ticker, tracked) values ('KXNFLGAME', true);");
+  runRow('discover', 'ok', "now() - interval '26 hours'");
+  { const id = runRow('discover', 'error', "now() - interval '2 hours'", { message: 'discover error: Kalshi answered 503 on /series' });
+    db.service(`insert into public.kalshi_alerts (run_id, severity, code, message, created_at) values (${lit(id)}, 'FAILURE', 'discover_error', 'discover error: Kalshi answered 503 on /series', now() - interval '2 hours');`); }
+  runRow('snapshot', 'ok', "now() - interval '1 hour'", { n: 3 });
+  runRow('snapshot', 'ok', 'now()', { n: 3 });
+  r = rd();
+  T.chk('readiness: a failed discover is not recovered by good snapshots (only a later good discover recovers it): a warning that says so', r.state === 'warn' && r.failure_recovered === false
+    && /discover run failed/.test(String(r.state_reason)) && /503 on \/series/.test(String(r.state_reason)), r);
+  db.service(`insert into public.kalshi_alerts (severity, code, message) values ('DEGRADED', 'series_failed', '1 of 2 tracked series failed: KXNCAAFGAME: Kalshi answered 503');`);
+  runRow('discover', 'ok', "now() - interval '90 minutes'");
+  r = rd();
+  T.chk('readiness: a DEGRADED alert in 24 h is a warning that names it (its state is never reasonless)', r.state === 'warn' && /DEGRADED/.test(String(r.state_reason)) && /series_failed/.test(String(r.state_reason)), r);
+  T.chk('readiness: every state other than ok carried a reason, in every scenario read above', reasonless.length === 0, reasonless);
 
   /* ---- over the starter schema (kalshi_schema.sql, as it was handed over) ---- */
   db.applyFile(F('kalshi_market_data_rollback.sql'));
