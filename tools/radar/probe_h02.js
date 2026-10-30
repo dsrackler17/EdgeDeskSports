@@ -4,7 +4,7 @@
    GitHub runner (the build environment cannot reach them) BEFORE anything is
    registered. Read-only: no secret, no database, nothing committed. Every
    request goes through the Radar gateway (lib/edgedesk_poly_gateway.js, a
-   budget of 300). It grades nothing and selects no wallet; it answers what
+   budget of 500). It grades nothing and selects no wallet; it answers what
    the owner's H-RADAR-02 spec (2026-10-29) needs to know first:
 
      Q1 periods  which timePeriod values the sports leaderboard accepts (is
@@ -24,6 +24,12 @@
      Q5 prices   what a follower can pay now: the order book's best ask, the
                  CLOB's best price on each side and midpoint, Gamma's bid, ask
                  and last trade, and the price history's last point, side by side
+     Q6 screen   for each wallet ranked 1 to 300 on the 30-day board, what one
+                 newest-first page of its last 90 days says about its pace and
+                 style: actions and position changes (not fills) a day, fills
+                 per change, two-sided markets, round trips, sells, splits and
+                 merges, the covered-league share. Behaviour only, never
+                 performance: the owner's high-frequency rule is set from it
 
    Prints each answer and FINDINGS (also FINDINGS.json in --out, with every
    body). Fails only when it cannot ask at all (no leaderboard answered).
@@ -42,7 +48,7 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 && proc
 const OUT = arg('--out', path.join(ROOT, 'tools', 'radar', 'out', 'h02'));
 fs.mkdirSync(OUT, { recursive: true });
 
-const gw = G.make({ enabled: true, budget: G.fixedBudget(300) });
+const gw = G.make({ enabled: true, budget: G.fixedBudget(500) });
 const DAY = 86400e3;
 const COVERED = /^(nfl|cfb|ncaaf|college-football|nba|nhl|mlb)-/;
 const PERIODS = ['DAY', 'WEEK', 'MONTH', 'ALL', 'QUARTER', 'YEAR', '3M', '90D'];
@@ -154,6 +160,44 @@ const round = (x, k) => (x == null ? null : Math.round(x * Math.pow(10, k)) / Ma
     console.log('\nQ2/Q3 ' + JSON.stringify(p));
   }
 
+  /* ── Q6 screening: what one newest-first page (the last 90 days, 1,000 actions at most) says about the pace and
+     the style of each wallet ranked 1 to SCREEN on the 30-day board. Behaviour only, never performance. A position
+     change is a run of fills on one token and one side, each within 10 minutes of the last: fills are not changes ── */
+  const SCREEN = 300, quant = (xs, q) => { const s = xs.filter((x) => x != null).sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.floor(q * s.length))] : null; };
+  F.screen = { wallets: [] };
+  for (const x of month.slice(0, SCREEN)) {
+    const r = await ask('screen ' + x.wallet.slice(0, 10), 'activity', { user: x.wallet, type: 'TRADE,REDEEM,SPLIT,MERGE', limit: 1000, sort_direction: 'DESC', start: start90, end: endS }, true);
+    if (!r.ok) { F.screen.wallets.push({ wallet: x.wallet, rank: month.indexOf(x) + 1, status: r.status }); continue; }
+    const pg = R.page(r.data), rows = pg.rows.map((a) => ({ ts: num(a.timestamp) * 1000, type: String(a.type || '').toUpperCase(), side: String(a.side || '').toUpperCase(),
+      token: String(a.asset || a.token_id || ''), cond: String(a.condition_id || a.conditionId || ''), oi: num(a.outcome_index != null ? a.outcome_index : a.outcomeIndex),
+      usdc: num(a.usdc_size != null ? a.usdc_size : a.usdcSize), covered: COVERED.test(String(a.event_slug || a.eventSlug || a.slug || '')) })).filter((a) => a.ts);
+    const trades = rows.filter((a) => a.type === 'TRADE').sort((a, b) => a.ts - b.ts);
+    const oldest = rows.length ? Math.min(...rows.map((a) => a.ts)) : now, days = Math.max((now - oldest) / DAY, 1 / 24);
+    let changes = 0; const last = {};
+    for (const t of trades) { const k = t.token + '|' + t.side; if (!(last[k] != null && t.ts - last[k] <= 10 * 60e3)) changes++; last[k] = t.ts; }
+    const markets = {}, tokens = {};
+    for (const t of trades) { (markets[t.cond] = markets[t.cond] || { buyOi: {} }); if (t.side === 'BUY' && t.oi != null) markets[t.cond].buyOi[t.oi] = 1; (tokens[t.token] = tokens[t.token] || {})[t.side] = 1; }
+    const mk = Object.keys(markets), tk = Object.keys(tokens);
+    const w = { wallet: x.wallet, rank: month.indexOf(x) + 1, month_shares: x.volume, rows: rows.length, has_more: pg.has_more, span_days: round(days, 2),
+      flag_1000_in_3_days: !!(pg.has_more && days < 3), actions_per_day: round(rows.length / days, 1), changes_per_day: round(changes / days, 1),
+      fills_per_change: changes ? round(trades.length / changes, 2) : null, markets_per_day: round(mk.length / days, 1),
+      two_sided_share: mk.length ? round(mk.filter((c) => Object.keys(markets[c].buyOi).length > 1).length / mk.length, 3) : null,
+      round_trip_share: tk.length ? round(tk.filter((t) => tokens[t].BUY && tokens[t].SELL).length / tk.length, 3) : null,
+      sell_share: trades.length ? round(trades.filter((t) => t.side === 'SELL').length / trades.length, 3) : null,
+      split_merge: rows.filter((a) => a.type === 'SPLIT' || a.type === 'MERGE').length,
+      covered_share: rows.length ? round(rows.filter((a) => a.covered).length / rows.length, 3) : null,
+      median_fill_usdc: round(quant(trades.map((t) => t.usdc), 0.5), 2) };
+    F.screen.wallets.push(w);
+  }
+  const sw = F.screen.wallets.filter((w) => w.rows != null), part = (f) => sw.filter(f);
+  const dist = (ws, k) => ({ n: ws.length, p10: quant(ws.map((w) => w[k]), 0.1), p50: quant(ws.map((w) => w[k]), 0.5), p90: quant(ws.map((w) => w[k]), 0.9) });
+  F.screen.summary = { screened: sw.length, failed: F.screen.wallets.length - sw.length, flagged: part((w) => w.flag_1000_in_3_days).length,
+    complete_in_one_page: part((w) => !w.has_more).length, with_covered_trades: part((w) => w.covered_share > 0).length };
+  for (const k of ['actions_per_day', 'changes_per_day', 'fills_per_change', 'markets_per_day', 'two_sided_share', 'round_trip_share', 'sell_share', 'covered_share', 'median_fill_usdc'])
+    F.screen.summary[k] = { flagged: dist(part((w) => w.flag_1000_in_3_days), k), not_flagged: dist(part((w) => !w.flag_1000_in_3_days), k) };
+  console.log('\nQ6 SCREEN ' + JSON.stringify(F.screen.summary));
+  for (const w of sw) console.log('Q6 ' + JSON.stringify(w));
+
   /* ── Q4 and Q5: fees and the price a follower can pay, on covered games starting soon ── */
   const sp = await ask('gamma sports', 'sports', {});
   const series = {};
@@ -202,5 +246,5 @@ const round = (x, k) => (x == null ? null : Math.round(x * Math.pow(10, k)) / Ma
 
   F.gateway = gw.stats();
   fs.writeFileSync(path.join(OUT, 'FINDINGS.json'), JSON.stringify(F, null, 1));
-  console.log('\nFINDINGS ' + JSON.stringify(F));
+  console.log('\nFINDINGS ' + JSON.stringify(Object.assign({}, F, { screen: { summary: F.screen.summary, wallets: 'printed above as Q6 lines, and in FINDINGS.json' } })));
 })().catch((e) => { console.error(e && e.stack || e); process.exit(1); });
