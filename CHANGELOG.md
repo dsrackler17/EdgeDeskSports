@@ -7,6 +7,16 @@
 **The fix.** The fixture was nondeterministic: it depended on the hourly slate. The home quote is now one cent above EdgeDesk's home %, rounded down to the cent (a mid half a point to a point and a half above the model). The assertion is unchanged: the team is the home team and the sentence says "lower" by exactly that gap. On CAR at GB it is the same 0.70/0.71 quote as before. No code changed.
 
 **Evidence.** Today's slate: before 254/1, after 255/0. Yesterday's slate (`84859411`): after 253/0. With each of the 28 NFL games on today's slate forced as the card's game, the "lower" check holds for 28 of 28. The fixed 70.5 held for 20 and failed 8. With "higher" and "lower" swapped in `lib/edgedesk_game_graphic.js`, the check fails.
+## 2026-10-30 — Brief wiring test: a `window.fb*` hook defined by a script the page loads counts as defined
+
+**What broke.** `tools/football/brief_wiring.test.js` §2 requires every `window.fb*` that `app.html` reaches for outside the football module to be defined by somebody. It looked for definitions only in `app.html`. Novig (#928) is the first hook defined by a script the page loads: `lib/edgedesk_market_compare_ui.js` puts `fbNovigHTML` on the page's global, and `app.html` names `window.fbNovigHTML` beside that script's tag. Collective suites never ran on #928, so `main` merged with that step red (71 of 72). Every pull request that starts Collective suites inherited the failure.
+
+**The fix.** For a name not defined in `app.html`, the test runs each `/lib/` script the page loads that names it, in a bare global, and counts the name defined only if the script actually puts a function there. A script that only mentions the name does not count. No code changed.
+
+**Evidence.** Before 71 of 72, after 72 of 72. Each of these still fails:
+- page code outside the module reaching for a `window.fbNopeHTML` nobody defines (also with a loaded script that only mentions it);
+- the Novig script tag removed from the page;
+- the lib's `root.fbNovigHTML =` assignment removed.
 
 ## 2026-10-30 — Novig: DraftKings vs Novig at the price a stake actually gets (built and tested; not deployed)
 
