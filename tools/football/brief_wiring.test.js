@@ -27,6 +27,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
@@ -89,8 +90,23 @@ section('1b. the board explains its confidence from the shared module, not from 
 section('2. every window.fb* the rest of the page reaches for is defined by somebody');
 const definedOutside = new Set((REST.match(/window\.(fb[A-Za-z0-9_]+)\s*=/g) || []).map(s => s.slice(7).replace(/\s*=$/, '')));
 const referencedOutside = new Set((REST.match(/window\.(fb[A-Za-z0-9_]+)/g) || []).map(s => s.slice(7)));
+/* a script the page loads can define one too (lib/edgedesk_market_compare_ui.js puts fbNovigHTML on
+   the page's global). Run each /lib/ script the page loads that names it, in a bare global, and take
+   what it actually defines there: a script that only mentions the name does not count. */
+const pageScripts = (REST.match(/<script\b[^>]*\bsrc="\/lib\/[^"?#]+\.js/g) || []).map(s => s.replace(/^[\s\S]*src="\//, ''));
+const definedByScript = function (name) {
+  return pageScripts.some(function (rel) {
+    const file = path.join(ROOT, rel);
+    if (!fs.existsSync(file)) return false;
+    const src = fs.readFileSync(file, 'utf8');
+    if (src.indexOf(name) < 0) return false;
+    const g = {};
+    try { vm.runInNewContext(src, g, { filename: rel, timeout: 2000 }); } catch (_) { return false; }
+    return typeof g[name] === 'function';
+  });
+};
 referencedOutside.forEach(function (name) {
-  ok(exported.has(name) || definedOutside.has(name),
+  ok(exported.has(name) || definedOutside.has(name) || definedByScript(name),
     'window.' + name + ' is referenced outside the football module and something defines it');
 });
 ok(referencedOutside.size > 0, 'the page does reach across the boundary, so this contract is load-bearing');

@@ -92,6 +92,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
+  checks: write
   contents: write
 
 jobs:
@@ -266,7 +267,7 @@ jobs:
           fi
           git commit -m "mlb: historical archive refresh $(date -u +%Y-%m-%d)"
           for i in 1 2 3 4; do
-            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && bash "$(git rev-parse --show-toplevel)/tools/ci/certified_push.sh" origin "HEAD:${GITHUB_REF_NAME}" && exit 0
             sleep $((2 ** i))
           done
           echo "::warning::the snapshot could not be pushed; the import itself succeeded and is live"

@@ -1,0 +1,100 @@
+# EdgeDesk — Novig exchange market data (docs/novig/README.md).
+#
+#   tests  on every pull request and push that touches this work: NOVIG-V3
+#          signing against all 30 of Novig's published vectors; the
+#          executable-price engine against Novig's own worked examples and a
+#          real order book; the matcher on Novig's real catalog; the deployed
+#          edge functions against a mock Novig that verifies every signature
+#          (every documented error path, halts, ETag/304, fees in play, paper);
+#          the stream state machine (seq, gaps, resnapshot, reconnect,
+#          limits, lifecycle); the layer on a real PostgreSQL (access before
+#          and after public display, append-only, the comparison, the history,
+#          the research summary, prune, the cron poke, the rollback); the
+#          lead-lag study; the card module and the comparison graphics as
+#          app.html ships them.
+# Deploying is .github/workflows/deploy-novig.yml (manual), which runs the
+# same tests first; keys are .github/workflows/novig-provision.yml (manual).
+name: Novig market data
+run-name: Novig market data · ${{ github.event_name }}
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/novig_market_data.sql'
+      - 'supabase/novig_market_data_cron.sql'
+      - 'supabase/novig_market_data_rollback.sql'
+      - 'supabase/migrations/20261030120000_novig_market_data.sql'
+      - 'supabase/migrations/20261030120100_novig_market_data_cron.sql'
+      - 'supabase/functions/novig_sync/**'
+      - 'supabase/functions/novig_key_bootstrap/**'
+      - 'lib/novig_signing.js'
+      - 'lib/novig_market_map.js'
+      - 'lib/novig_stream.js'
+      - 'lib/edgedesk_venue_compare.js'
+      - 'lib/edgedesk_lead_lag.js'
+      - 'lib/edgedesk_market_compare_ui.js'
+      - 'lib/edgedesk_compare_cards.js'
+      - 'lib/football_identity.js'
+      - 'tools/novig/**'
+      - 'tools/personal/_pg.js'
+      - 'app.html'
+      - 'admin/novig/**'
+      - '.github/workflows/novig.yml'
+      - '.github/workflows/deploy-novig.yml'
+      - '.github/workflows/novig-provision.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/novig_market_data*.sql'
+      - 'supabase/functions/novig_sync/**'
+      - 'supabase/functions/novig_key_bootstrap/**'
+      - 'lib/novig_*.js'
+      - 'lib/edgedesk_venue_compare.js'
+      - 'lib/edgedesk_lead_lag.js'
+      - 'lib/edgedesk_market_compare_ui.js'
+      - 'lib/edgedesk_compare_cards.js'
+      - 'lib/football_identity.js'
+      - 'tools/novig/**'
+
+permissions:
+  contents: read
+
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: novig-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The inlined cores are lib/, byte for byte
+        run: node tools/novig/inline.js --check
+      - name: NOVIG-V3 signing against Novig's 30 published vectors
+        run: node tools/novig/signing.test.js
+      - name: The executable-price engine and the comparison metrics
+        run: node tools/novig/venue_compare.test.js
+      - name: Market matching on Novig's real catalog
+        run: node tools/novig/market_map.test.js
+      - name: The deployed novig_sync against a signature-checking mock Novig and PostgREST
+        run: node tools/novig/novig_sync.test.js
+      - name: Credential provisioning (the transient bootstrap and the runner helper)
+        run: node tools/novig/novig_bootstrap.test.js
+      - name: The stream state machine (seq, gaps, resnapshot, reconnect, limits, lifecycle)
+        run: node tools/novig/stream.test.js
+      - name: The layer on a real PostgreSQL (access, append-only, the comparison, research, prune, cron, rollback)
+        env: { NOVIG_SQL_REQUIRED: '1' }
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/novig/novig_sql.test.js
+      - name: The lead-lag study (observations, not causation)
+        run: node tools/novig/lead_lag.test.js
+      - name: The comparison module and the graphics, as app.html ships them
+        run: node tools/novig/novig_ui.test.js

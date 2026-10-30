@@ -128,7 +128,12 @@ function resp(status, body) {
 }
 globalThis.fetch = async (u, init) => {
   u = String(u);
-  if (u.startsWith(ENV.SUPABASE_URL)) { const [s, b] = rest(u, init); return resp(s, b); }
+  if (u.startsWith(ENV.SUPABASE_URL)) {
+    /* a database request that times out, as Deno's AbortSignal.timeout throws it (production, 2026-10-30 12:10 UTC) */
+    const T = W.dbTimeout, m = (init && init.method) || 'GET';
+    if (T && T.left > 0 && T.method === m && T.match.test(u)) { T.left--; T.hit++; const e = new Error('Signal timed out.'); e.name = 'TimeoutError'; throw e; }
+    const [s, b] = rest(u, init); return resp(s, b);
+  }
   W.calls.push(u);
   if (u === ENV.NHL_GOALIE_INPUTS_URL) return W.inputsUp ? resp(200, W.inputs) : resp(503, 'down');
   if (u.startsWith('https://www.dailyfaceoff.com/starting-goalies/')) return W.dfStatus !== 200 ? resp(W.dfStatus, 'blocked') : resp(200, typeof W.df === 'string' && W.df.startsWith('<') ? W.df : FX.minVanPage(W.df));
@@ -249,6 +254,23 @@ globalThis.fetch = async (u, init) => {
   e = DB.nhl_card_edge_events;
   chk('conflict: never BOTH_CONFIRMED — at +150 the edge holds under both named goalies (Lankinen 41.2%, Meriläinen 42.4% with Pickard), so it passes only as HOLDS_EVERY_PAIRING', e.length === 1 && e[0].gate_basis === 'HOLDS_EVERY_PAIRING' && e[0].flag_allowed === true && e[0].ev_min_pairings >= 0.02, e);
 
+  /* ============================================================ the database timing out (2026-10-30 12:10 UTC: "sync error: Signal timed out.") */
+  resetDb(); W.box = null; W.df = 'evening';
+  W.dbTimeout = { method: 'GET', match: /\/nhl_goalie_sync_runs\?/, left: 1, hit: 0 };
+  r = await run('2026-10-25T23:00:20Z');
+  chk('db: a read that times out once is tried again, and the run completes (no sync error)', W.dbTimeout.hit === 1 && r.status !== 'error' && runs().length === 1 && runs()[0].status !== 'error' && cards().length === 1
+    && !DB.nhl_goalie_alerts.some((a) => a.code === 'sync_error'), [r.status, r.alerts, W.dbTimeout]);
+  resetDb();
+  W.dbTimeout = { method: 'GET', match: /\/nhl_goalie_sync_runs\?/, left: 2, hit: 0 };
+  r = await run('2026-10-25T23:00:20Z');
+  chk('db: the same read timing out twice is still a sync error, named (one retry, never a loop)', W.dbTimeout.hit === 2 && r.status === 'error' && DB.nhl_goalie_alerts.some((a) => a.code === 'sync_error' && /Signal timed out/.test(a.message)), [r.status, W.dbTimeout]);
+  resetDb();
+  W.dbTimeout = { method: 'POST', match: /\/nhl_goalie_starters/, left: 1, hit: 0 };
+  r = await run('2026-10-25T23:00:20Z');
+  chk('db: a write that times out is never sent again (it may have landed in an append-only table): a sync error', W.dbTimeout.hit === 1 && !DB.calls.includes('POST nhl_goalie_starters') && r.status === 'error'
+    && DB.nhl_goalie_alerts.some((a) => a.code === 'sync_error'), [r.status, DB.calls.filter((c) => /POST/.test(c))]);
+  W.dbTimeout = null;
+
   /* ============================================================ outages */
   resetDb(); W.box = null; W.df = 'evening';
   r = await run('2026-10-25T23:00:20Z', { simulate_outage: ['daily_faceoff', 'nhl_api'] });
@@ -323,13 +345,16 @@ globalThis.fetch = async (u, init) => {
   sm = S.render({ cards: [] }, NOW);
   chk('summary: no card in the window says so, and passes', /No game in the window/.test(sm.markdown) && sm.verdict.errors.length === 0, sm.markdown);
   const CARDS = [{ game_id: '2026020184', matchup: 'MIN@VAN', start_utc: '2026-10-25T17:30:00+00:00', version: 5, generated_at: '2026-10-25T17:20:10+00:00', trigger: 'inputs_changed', status: ['confirmed', 'confirmed'], conflict: false, gate: 'OPEN',
-    basis: 'lineup_lock', model_id: 'edgedesk_nhl_v1:xg_all_confirmed', p_home: 0.4051, before_p_home: 0.4174, skaters: { home: 18, away: 18 } },
+    basis: 'lineup_lock', model_id: 'edgedesk_nhl_v1:xg_all_confirmed', p_home: 0.4051, before_p_home: 0.4174, skaters: { home: 18, away: 18 }, probe: { reads: 4, first_listed_min: 10, last_pre: { min: 5, state: 'PRE', skaters: { home: 18, away: 18 }, starters: 2 } } },
   { game_id: '2026020185', matchup: 'LAK@NYR', start_utc: '2026-10-25T23:00:00+00:00', version: 2, generated_at: '2026-10-25T17:00:20+00:00', trigger: 'status_changed', status: ['likely', 'projected'], conflict: false, gate: 'GATED',
-    basis: 'slate', model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.5522, before_p_home: null, skaters: null }];
+    basis: 'slate', model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.5522, before_p_home: null, skaters: null, probe: { reads: 0, first_listed_min: null, last_pre: null } },
+  { game_id: '2026020186', matchup: 'TOR@CGY', start_utc: '2026-10-25T17:45:00+00:00', version: 4, generated_at: '2026-10-25T17:15:00+00:00', trigger: 'status_changed', status: ['confirmed', 'confirmed'], conflict: false, gate: 'OPEN',
+    basis: 'slate', model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.4811, before_p_home: null, skaters: null, probe: { reads: 7, first_listed_min: -4, last_pre: { min: 3, state: 'PRE', skaters: { home: 0, away: 0 }, starters: 2 } } }];
   sm = S.render({ cards: CARDS }, NOW);
-  chk('summary: every card with its version, statuses, gate, headline and what priced it; a started game\'s lock is counted', /\| MIN@VAN \| 2026-10-25 17:30 UTC \| 5 \| 17:20 UTC \(T−10 min\) \| confirmed \/ confirmed \| OPEN \| 40\.5% \| lineup lock, 18 \/ 18 skaters \(before lock 41\.7%\) \|/.test(sm.markdown)
-    && /\| LAK@NYR \| 2026-10-25 23:00 UTC \| 2 \| 17:00 UTC \(T−360 min\) \| likely \/ projected \| GATED \| 55\.2% \| slate \(edgedesk_nhl_v1:xg_core\) \|/.test(sm.markdown)
-    && /Started: 1 game, 1 priced at lineup lock before puck drop\./.test(sm.markdown) && sm.verdict.errors.length === 0, sm.markdown);
+  chk('summary: every card with its version, statuses, gate, headline, what priced it and when the NHL boxscore listed its lineups; the started games\' locks and listings are counted', /\| MIN@VAN \| 2026-10-25 17:30 UTC \| 5 \| 17:20 UTC \(T−10 min\) \| confirmed \/ confirmed \| OPEN \| 40\.5% \| lineup lock, 18 \/ 18 skaters \(before lock 41\.7%\) \| listed T−10 min \|/.test(sm.markdown)
+    && /\| LAK@NYR \| 2026-10-25 23:00 UTC \| 2 \| 17:00 UTC \(T−360 min\) \| likely \/ projected \| GATED \| 55\.2% \| slate \(edgedesk_nhl_v1:xg_core\) \| not read \|/.test(sm.markdown)
+    && /\| TOR@CGY \|[^\n]*\| slate \(edgedesk_nhl_v1:xg_core\) \| listed T\+4 min, after puck drop \(by T−3: PRE, 0 \/ 0 skaters, 2 starters flagged; 7 reads\) \|/.test(sm.markdown)
+    && /Started: 2 games, 1 priced at lineup lock before puck drop\. The NHL boxscore listed both lineups before puck drop for 1 of them\./.test(sm.markdown) && sm.verdict.errors.length === 0, sm.markdown);
   vd = S.verdict({ cron: null, readiness: S.readJson(path.join(__dirname, 'no-such-file.json')) }, NOW);
   chk('verdict: a check that could not be made (empty pg_cron answer, unreadable readiness) fails, never passes', vd.errors.length === 2, vd);
   res = await F.handle(new Request('https://fn.test/', { method: 'POST', headers: { 'x-cron-secret': 'not-the-secret' }, body: '{}' }));

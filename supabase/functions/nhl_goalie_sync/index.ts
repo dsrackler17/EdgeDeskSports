@@ -62,7 +62,7 @@
 //      NHL_GOALIE_INPUTS_URL (default https://edgedesksports.com/hockey/goalie_inputs.json)
 // ============================================================
 
-export const BUILD = "nhl_goalie_sync@2026-10-29.1";
+export const BUILD = "nhl_goalie_sync@2026-10-30.1";
 const INPUTS_URL = "https://edgedesksports.com/hockey/goalie_inputs.json";
 // A browser's headers, as nba_injury_sync sends: a crawler-style agent was
 // refused by ESPN's edge on the NBA layer's first live runs.
@@ -1073,7 +1073,16 @@ const sameTime = (a: Any, b: Any) => (a == null && b == null) || (a != null && b
 const inList = (ids: string[]) => "in.(" + ids.map((x) => '"' + String(x).replace(/"/g, "") + '"').join(",") + ")";
 
 /* ---------------------------------------------------------------- the database (PostgREST, service role) */
+// A read that times out or loses its connection is sent once more: on 2026-10-30 at 12:10 UTC one slow
+// answer ("Signal timed out.") failed a whole run, and readiness stayed in error until the next slot.
+// A write is never sent twice: it may have landed, and every table here is append-only.
+const transient = (e: Any) => !!e && (e.name === "TimeoutError" || e.name === "AbortError" || e instanceof TypeError);
 async function db(path: string, init?: RequestInit): Promise<Any> {
+  const read = !init || !init.method || init.method === "GET";
+  try { return await dbOnce(path, init); } catch (e) { if (!read || !transient(e)) throw e; }
+  return await dbOnce(path, init);
+}
+async function dbOnce(path: string, init?: RequestInit): Promise<Any> {
   const key = env("SUPABASE_SERVICE_ROLE_KEY");
   const r = await fetch(env("SUPABASE_URL").replace(/\/$/, "") + "/rest/v1/" + path, {
     ...init, signal: deadline(20000),

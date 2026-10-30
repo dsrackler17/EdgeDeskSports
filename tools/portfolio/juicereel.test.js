@@ -163,7 +163,8 @@ chk('Juice Reel is an aggregator, not a sportsbook with a direct connection', K.
     bet(114, { result: 'Graded', netResult: 12.34, dateClosed: '2026-09-21T00:00:00.000Z' }),
     bet(115, { userId: 77 }),
     bet(101, { result: 'Lost', netResult: -110, dateClosed: '2026-09-20T23:00:00.000Z', updatedAt: '2026-09-19T00:00:00.000Z' }),
-    bet(116, { Subbets: [subbet({ type: 'Player Prop', position: 'Over', value: 250.5, player: 'Patrick Mahomes', metric: 'Passing Yards', league: 'NFL', sport: 'Football' })] })
+    bet(116, { Subbets: [subbet({ type: 'Player Prop', position: 'Over', value: 250.5, player: 'Patrick Mahomes', metric: 'Passing Yards', league: 'NFL', sport: 'Football' })] }),
+    bet(117, { isAdjustedOdds: true, oddsAmerican: -105 })
   ], { providerUserId: '4' });
   const by = {}, books = {};
   r.books.forEach((b) => { books[b.platform] = b; b.positions.forEach((x) => { by[x.external_position_id] = x; }); });
@@ -188,8 +189,9 @@ chk('Juice Reel is an aggregator, not a sportsbook with a direct connection', K.
   chk('a player prop: the player, side, line and metric', by['juicereel:116'].position_type === 'PLAYER_PROP' && by['juicereel:116'].selection === 'Patrick Mahomes Over 250.5 Passing Yards'
     && by['juicereel:116'].market_name === 'Player Prop · Passing Yards', by['juicereel:116']);
   const codes = [].concat(r.issues, ...r.books.map((b) => b.issues)).map((x) => x.code + ':' + x.ref).sort().join(',');
-  chk('skipped and listed, never guessed: a cash-out with no amount, no placement time, a non-USD bet, losing more than the stake, another user\'s bet; an adjusted risk is stored and flagged',
-    codes === 'ADJUSTED_RISK:111,CURRENCY_UNSUPPORTED:107,MALFORMED_BET:112,NOT_THIS_USER:115,NO_PAYOUT:105,NO_PLACED_TIME:106' && r.skipped === 5
+  chk('skipped and listed, never guessed: a cash-out with no amount, no placement time, a non-USD bet, losing more than the stake, another user\'s bet; an adjusted risk, and odds adjusted in Juice Reel, are stored and flagged',
+    codes === 'ADJUSTED_ODDS:117,ADJUSTED_RISK:111,CURRENCY_UNSUPPORTED:107,MALFORMED_BET:112,NOT_THIS_USER:115,NO_PAYOUT:105,NO_PLACED_TIME:106' && r.skipped === 5
+      && by['juicereel:117'] && by['juicereel:117'].odds_american === -105 && r.stats.adjusted_odds === 1
       && !by['juicereel:105'] && !by['juicereel:106'] && !by['juicereel:107'] && !by['juicereel:112'] && !by['juicereel:115'] && by['juicereel:111'], codes);
   chk('the checkpoint candidate is the newest updatedAt seen', r.max_updated_at === '2026-09-20T13:05:00.000Z');
   const tok = K.jrTokenSet({ access_token: 'jra_aaaaaaaaaaaa', refresh_token: 'jrr_bbbbbbbbbbbb', token_type: 'Bearer', expires_in: 3600, scope: 'bets.open.read bets.settled.read' }, Date.parse('2026-10-14T00:00:00Z'));
@@ -231,9 +233,9 @@ function uiRender() {
   const off = view({ juicereel: null });
   chk('UI: without Juice Reel on the server, no Juice Reel panel and the sportsbook copy is unchanged', off.indexOf('data-r="juicereel"') < 0 && /Sportsbooks · import/.test(off) && !/jr-connect/.test(off));
   const wait = view({ juicereel: jr({ available: false, reason: 'awaiting_approval', approval: 'PENDING', message: K.ERRORS.JR_AWAITING_APPROVAL }) });
-  chk('UI: a reader before approval sees "Awaiting provider approval", a disabled Connect, the import fallback — and no way to start linking',
-    stateOf(wait) === 'AWAITING_APPROVAL' && /Awaiting provider approval/.test(wait) && /<button class="pfo-btn ghost" disabled aria-disabled="true"[^>]*>Connect Juice Reel/.test(wait)
-      && !/data-act="jr-connect"/.test(wait) && /awaiting Juice Reel/.test(wait) && /Sportsbooks · import/.test(wait) && !/\bConnected\b/.test(wait));
+  chk('UI: a reader before it opens sees "Not open yet", a disabled Connect, the import fallback — no way to start linking, and no claim that Juice Reel has not approved',
+    stateOf(wait) === 'AWAITING_APPROVAL' && /Not open yet/.test(wait) && /<button class="pfo-btn ghost" disabled aria-disabled="true"[^>]*>Connect Juice Reel/.test(wait)
+      && !/data-act="jr-connect"/.test(wait) && /live test/.test(wait) && !/awaiting Juice Reel|provider approval|Juice Reel(&#39;|')s approval/i.test(wait) && /Sportsbooks · import/.test(wait) && !/\bConnected\b/.test(wait), wait);
   const none = view({ juicereel: jr() });
   chk('UI: available and not connected → "Not connected", Connect Juice Reel, what EdgeDesk reads, never a password field',
     stateOf(none) === 'NOT_CONNECTED' && /data-act="jr-connect">Connect Juice Reel/.test(none) && /open and settled bets/.test(none) && /never sees your Juice Reel or sportsbook password/.test(none)
@@ -266,6 +268,46 @@ function uiRender() {
   chk('UI: a Juice Reel book\'s card: "Juice Reel", synced through the one connection, Sync now — no per-book disconnect, no SharpSports words',
     /Sportsbook · Juice Reel · 4 positions/.test(card) && /Synced through your Juice Reel connection · DraftKings in Juice Reel/.test(card) && /data-act="acct-sync" data-id="a1"/.test(card)
       && !/data-act="acct-disconnect" data-id="a1"/.test(card) && !/sb-refresh|SharpSports/.test(card), card.slice(card.indexOf('pfo-acct"'), card.indexOf('pfo-acct"') + 900));
+  /* what was imported, and the synced bets held for review */
+  const counted = view({ juicereel: jr({}, grant({ bets: 412, platforms: ['DraftKings', 'FanDuel'], review: 3, review_exact: 2 })) });
+  chk('UI: Connected shows how many bets were imported and the platforms they came from (from the stored bets), and what is held for review',
+    /412 bets imported from Juice Reel · synced platforms: DraftKings, FanDuel/.test(counted) && /3 synced bets look like bets you already recorded\./.test(counted)
+      && /held out of your totals until you decide, so nothing is counted twice/.test(counted) && /2 are exact matches/.test(counted) && /data-act="jr-review">Review 3</.test(counted));
+  chk('UI: nothing held → no review prompt', !/data-act="jr-review"/.test(view({ juicereel: jr({}, grant({ bets: 5, platforms: ['DraftKings'], review: 0 })) })));
+  const retH = view({ juicereel: jr({}, grant()), jrReturn: { ok: true, display_name: 'Sharp Bettor', sync: { status: 'SUCCEEDED', complete: true, totals: { positions_inserted: 7, positions_review: 2 }, books: [{ label: 'DraftKings' }] } } });
+  chk('UI: the first sync says how many were held for review', /First sync: 7 bets imported from DraftKings; 2 held for your review because they look like bets you already recorded\./.test(retH));
+  /* Add a position: Juice Reel first, honestly */
+  const choose = (j) => UI.jrChooseBlock(Object.assign({}, base, { juicereel: j }));
+  chk('UI · Add a position: no Juice Reel on the server → nothing offered', choose(null) === '' && choose(jr({ available: false, reason: 'SYNC_OFF', approval: null })) === '');
+  const cNone = choose(jr());
+  chk('UI · Add a position: "Connect Juice Reel" at the top, with the promised description, the read-only promise, and a working Connect',
+    /Connect Juice Reel<\/div>/.test(cNone) && /Connect your Juice Reel account to automatically import and sync your betting history\./.test(cNone)
+      && /data-act="jr-add-connect">Connect Juice Reel</.test(cNone) && /can never place, change or cancel one/.test(cNone) && /Or add one yourself/.test(cNone), cNone);
+  const cWait = choose(jr({ available: false, reason: 'awaiting_approval', approval: 'PENDING', message: K.ERRORS.JR_AWAITING_APPROVAL }));
+  chk('UI · Add a position, before it opens: Connect shown disabled with the reason — no way to start linking (no placeholder that pretends), no claim that Juice Reel has not approved',
+    /disabled aria-disabled="true"[^>]*>Connect Juice Reel</.test(cWait) && !/jr-add-connect/.test(cWait) && /Not open yet: Juice Reel opens with EdgeDesk(&#39;|')s live test/.test(cWait)
+      && !/awaiting Juice Reel|provider approval|Juice Reel(&#39;|')s approval/i.test(cWait), cWait);
+  const cCon = choose(jr({}, grant({ review: 2 })));
+  chk('UI · Add a position, connected: the connection\'s state, who, the held bets to review, and the way to Accounts — no second Connect',
+    /data-state="CONNECTED"/.test(cCon) && /Connected as Sharp Bettor/.test(cCon) && /data-act="jr-review">Review 2 held bets</.test(cCon) && /data-act="jr-add-manage"/.test(cCon) && !/jr-add-connect/.test(cCon));
+  chk('UI · Add a position, sync switched off with a connection: says so, offers no sync', /switched off/.test(choose(jr({ available: false, reason: 'SYNC_OFF', approval: null }, grant())))
+    && !/jr-add-connect/.test(choose(jr({ available: false, reason: 'SYNC_OFF', approval: null }, grant()))));
+  /* the review sheet */
+  const rv = { pending: 2, exact: 1, matches: [
+    { id: 'm1', ref: 'juicereel:1', exact: true, wager: { platform: 'draftkings', platform_label: 'DraftKings', event_name: 'Saints @ Falcons', market_name: 'Moneyline', selection: 'Saints', stake: '10', odds_american: 200, status: 'WON', placed_at: '2026-09-15T12:00:00Z' },
+      candidates: [{ id: 'p1', source: 'CSV', event_name: 'Saints @ Falcons', selection: 'Saints', stake: '10', odds_american: 200, status: 'WON', placed_at: '2026-09-15T12:03:00Z', minutes_apart: 3, note: '<img src=x onerror=alert(1)>' }] },
+    { id: 'm2', ref: 'juicereel:2', exact: false, wager: { platform: 'draftkings', platform_label: 'DraftKings', event_name: 'Lions @ Packers', selection: 'Lions', stake: '40', odds_american: -150, status: 'LOST', placed_at: '2026-09-18T20:00:00Z' },
+      candidates: [] }] };
+  const sheet = UI.jrReviewSheet(rv, base);
+  chk('UI · review: each held bet beside the reader\'s record(s): "Same bet — merge" (that record), "Different bet — add it"; exact matches mergeable at once; nothing decided for the reader',
+    /data-act="jr-merge-exact"[^>]*>Merge the exact match</.test(sheet) && /data-act="jr-merge" data-id="m1" data-pos="p1"/.test(sheet) && /data-act="jr-separate" data-id="m1"/.test(sheet)
+      && /data-act="jr-separate" data-id="m2"/.test(sheet) && /Exact match/.test(sheet) && /Possible match/.test(sheet) && /placed 3 min apart/.test(sheet)
+      && /held out of your totals/.test(sheet) && /Nothing is merged unless you say so/.test(sheet), sheet.slice(0, 1200));
+  chk('UI · review: the reader\'s own note is shown escaped; a held bet whose look-alike is gone says so and can only be added',
+    !/<img src=x/.test(sheet) && /&lt;img src=x/.test(sheet) && /no longer in your portfolio/.test(sheet) && !/data-act="jr-merge" data-id="m2"/.test(sheet));
+  chk('UI · source labels: synced from Juice Reel, a record merged with Juice Reel, a manual bet — quietly', /Juice Reel</.test(UI.srcTag({ source: 'SYNC', external_position_id: 'juicereel:1' }))
+    && /Juice Reel · CSV import/.test(UI.srcTag({ source: 'CSV', external_position_id: 'juicereel:2' })) && />Manual</.test(UI.srcTag({ source: 'MANUAL' }))
+    && /Synced/.test(UI.srcTag({ source: 'SYNC', external_position_id: 'kalshi:x' })));
   /* the server's switch off: SPORTSBOOK_SYNC_PROVIDER unset */
   const offNone = view({ juicereel: jr({ available: false, reason: 'SYNC_OFF', approval: null, message: K.ERRORS.SYNC_OFF }) });
   chk('UI: sportsbook sync switched off and no connection: no Juice Reel panel, nothing to connect', offNone.indexOf('data-r="juicereel"') < 0 && !/jr-connect|sb-link/.test(offNone));
@@ -284,9 +326,9 @@ async function live() {
     process.exit(T.done());
   }
   const OP = 'e7e46801-80c4-4f47-b718-4aff211c8d3a';   // an operator (portfolio_is_admin's fallback)
-  const B = '00000000-0000-0000-0000-00000000000b', C = '00000000-0000-0000-0000-00000000000c';
+  const B = '00000000-0000-0000-0000-00000000000b', C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d';
   const SB = 'https://project.supabase.co', SERVICE = 'service-role-key-for-tests', ANON = 'anon-key-for-tests';
-  const TOKENS = { 'tok-op': OP, 'tok-b': B, 'tok-c': C };
+  const TOKENS = { 'tok-op': OP, 'tok-b': B, 'tok-c': C, 'tok-d': D };
   const one = (s) => String(s).split('\n')[0];
   const jq = (s) => JSON.parse(String(s).trim() || 'null');
   const count = (sql) => +db.sql(sql);
@@ -301,7 +343,7 @@ async function live() {
     const reapplied = ['portfolio.sql', 'portfolio_journal.sql'].map((f) => db.applyFileAtomic(path.join(PG.ROOT, 'supabase', f))).join('\n');
     chk('portfolio_juicereel.sql applied twice reports ok; re-applying portfolio.sql and portfolio_journal.sql afterwards opens no Juice Reel function to readers',
       !/CHECK THIS/.test(again) && !/CHECK THIS/.test(reapplied) && db.sql(`select count(*) from pg_proc where proname like 'portfolio_svc_jr%' and has_function_privilege('authenticated', oid, 'execute');`) === '0');
-    db.sql(`insert into auth.users (id, email) values (${L(OP)}, 'op@example.com'), (${L(B)}, 'b@example.com'), (${L(C)}, 'c@example.com');`);
+    db.sql(`insert into auth.users (id, email) values (${L(OP)}, 'op@example.com'), (${L(B)}, 'b@example.com'), (${L(C)}, 'c@example.com'), (${L(D)}, 'd@example.com');`);
     const rest = REST.make(db, { tokens: Object.assign({ [SERVICE]: 'service_role' }, TOKENS) });
 
     const logs = [], fnResponses = [];
@@ -481,6 +523,22 @@ async function live() {
     const smoke = one(db.service(`select public.portfolio_svc_ag_smoke_begin('juicereel', 'production', 'operator');`));
     r = await call({ action: 'jr_status' }, 'tok-op');
     chk('an operator under a running PRODUCTION smoke test may connect (and is told which test)', r.body.available === true && r.body.smoke_test === smoke && r.body.operator === true);
+    r = await call({ action: 'jr_status' }, 'tok-b');
+    chk('a reader, while that PRODUCTION live test runs, may connect too — not told the test, not an operator', r.status === 200 && r.body.available === true
+      && r.body.operator === false && r.body.smoke_test === null && r.body.approval === 'PENDING', r.body);
+    r = await call({ action: 'jr_start', smoke_test: demo }, 'tok-b');
+    const sessB = jq(db.sql(`select row_to_json(s) from (select state_hash, challenge from portfolio_private.connect_sessions where user_id = ${L(B)}) s;`));
+    const openedB = sessB && await K.jrOpenSession({ keyring: { current: '1', keys: KEYS } }, B, sessB.state_hash, sessB.challenge);
+    chk('…the reader starts linking under the RUNNING test, whatever test id they send (here the failed sandbox one)', r.status === 200
+      && new URL(r.body.url).origin === 'https://www.juicereel.com' && !!openedB && openedB.smoke_test === smoke, { start: r.body, opened: openedB && openedB.smoke_test });
+    db.service(`delete from portfolio_private.connect_sessions where user_id = ${L(B)};`);
+    const startedAt = one(db.service(`select started_at::text from portfolio_private.connector_smoke_tests where id = ${L(smoke)};`));
+    db.service(`update portfolio_private.connector_smoke_tests set started_at = now() - interval '45 days' where id = ${L(smoke)};`);
+    r = await call({ action: 'jr_status' }, 'tok-b');
+    chk('the live test has no expiry: started 45 days ago and still running, it still lets a reader connect, and the database still admits its grants',
+      r.body.available === true && one(db.service(`select public.portfolio_svc_jr_smoke_current('production');`)) === smoke
+        && one(db.service(`select public.portfolio_svc_ag_allowed('juicereel', 'production', ${L(smoke)})::text;`)) === 'true', r.body);
+    db.service(`update portfolio_private.connector_smoke_tests set started_at = ${L(startedAt)}::timestamptz where id = ${L(smoke)};`);
 
     /* the operator's history before connecting: a DraftKings file import with one bet the sync will match */
     db.as(OP, `insert into public.platform_accounts (platform, platform_label, platform_type, connection_type, status) values ('draftkings', 'DraftKings', 'SPORTSBOOK', 'CSV', 'IMPORT_ONLY');`);
@@ -569,13 +627,26 @@ async function live() {
       dk && dk.id === csvAcct.id && dk.connection_type === 'AGGREGATOR' && dk.ingestion_method === 'AUTHORIZED_API' && dk.connection_tier === 1 && dk.metadata.provider === 'juicereel'
         && dk.metadata.environment === 'production' && dk.external_account_id === 'juicereel:site:id:10' && fd && nv && acc1.every((a) => a.status === 'CONNECTED'), acc1);
     let P = positions(OP);
-    chk('the history imported, exact money from the database\'s own derivation: the docs\' example −0.5886, a win +100, a parlay with legs +10, a push 0, a void 0, the open bets OPEN',
+    chk('the history imported, exact money from the database\'s own derivation: the docs\' example −0.5886, a parlay with legs +10, a push 0, the open bets OPEN',
       P.by['juicereel:9531'].profit_loss === '-0.5886' && P.by['juicereel:9531'].stake === '0.59' && P.by['juicereel:9531'].platform === 'novig'
         && P.by['juicereel:203'].profit_loss === '10' && P.by['juicereel:203'].legs.length === 2 && P.by['juicereel:203'].legs[1].result === 'PUSH'
-        && P.by['juicereel:204'].profit_loss === '0' && P.by['juicereel:205'].status === 'VOID' && P.by['juicereel:205'].profit_loss === '0'
+        && P.by['juicereel:204'].profit_loss === '0'
         && P.by['juicereel:202'].status === 'OPEN' && P.by['juicereel:202'].platform === 'fanduel' && P.by['juicereel:207'].status === 'OPEN', P.rows.map((p) => [p.external_position_id, p.status, p.profit_loss]));
-    chk('RECONCILED: the bet the operator imported from a file was ADOPTED by its Juice Reel copy — one position, their note kept, +100',
-      P.rows.length === 8 && P.by['juicereel:201'].source === 'CSV' && P.by['juicereel:201'].notes === 'my own note' && P.by['juicereel:201'].profit_loss === '100');
+    chk('HELD, NOT MERGED: the synced copy of the bet the operator imported from a file — and a cancelled Mets bet a day later at the same book, stake and price — wait for their review; the file bet still counted once (+100), no second position',
+      P.rows.length === 7 && !P.by['juicereel:201'] && !P.by['juicereel:205'] && P.by['local:Mets'] && P.by['local:Mets'].profit_loss === '100' && P.by['local:Mets'].notes === 'my own note',
+      P.rows.map((p) => [p.external_position_id, p.selection, p.profit_loss]));
+    const csvPos = one(db.sql(`select id from public.portfolio_positions where user_id = ${L(OP)} and source = 'CSV';`));
+    const opM = await call({ action: 'jr_matches' }, 'tok-op');
+    const opBy = {}; ((opM.body && opM.body.matches) || []).forEach((x) => { opBy[x.ref] = x; });
+    r = await call({ action: 'jr_match_resolve', match_id: opBy['juicereel:201'] && opBy['juicereel:201'].id, decision: 'MERGE', position_id: csvPos }, 'tok-op');
+    const r205 = await call({ action: 'jr_match_resolve', match_id: opBy['juicereel:205'] && opBy['juicereel:205'].id, decision: 'SEPARATE' }, 'tok-op');
+    P = positions(OP);
+    chk('…201 an EXACT match, offered as one; the operator confirms it: ONE position, the file bet carrying the Juice Reel id, their note kept, +100',
+      opM.body.pending === 2 && opM.body.exact === 1 && opBy['juicereel:201'] && opBy['juicereel:201'].exact === true && opBy['juicereel:205'].exact === false
+        && r.status === 200 && P.by['juicereel:201'] && P.by['juicereel:201'].source === 'CSV'
+        && P.by['juicereel:201'].notes === 'my own note' && P.by['juicereel:201'].profit_loss === '100', { m: opM.body, r: r.body });
+    chk('…205 "a different bet": stored as its own position, the cancelled bet VOID at 0; 8 positions in all',
+      r205.status === 200 && P.rows.length === 8 && P.by['juicereel:205'] && P.by['juicereel:205'].status === 'VOID' && P.by['juicereel:205'].profit_loss === '0', r205.body);
     chk('the non-USD bet was not stored, and is listed with its run', !P.by['juicereel:206'] && one(db.sql(`select count(*) from public.portfolio_sync_runs r, jsonb_array_elements(r.issues) e where e->>'code' = 'CURRENCY_UNSUPPORTED';`)) === '1');
     chk('settlement history: every settled result the sync recorded (the adopted file bet already had its result)', count(`select count(*) from public.portfolio_position_settlements where user_id = ${L(OP)};`) === 4);
     const cur1 = JSON.parse(grantRow(OP).sync_cursor);
@@ -690,8 +761,12 @@ async function live() {
       BetStatus: { id: 2, statusName: 'Closed' }, updatedAt: nowIso(-15000) }));
     syncable(); r = await call({ action: 'jr_sync' }, 'tok-op');
     P = positions(OP);
-    chk('a bet imported from DraftKings\' own file WITH its bet id is ADOPTED by its Juice Reel copy: one position, the note kept, its P&L counted once (+30)',
-      r.body.ok && P.rows.filter((p) => p.notes === 'from the DK export').length === 1 && P.by['juicereel:211'] && P.by['juicereel:211'].source === 'CSV'
+    chk('a bet imported from DraftKings\' own file WITH its bet id: its Juice Reel copy is held for review, not stored — counted once (+30), as the file bet',
+      r.body.ok && r.body.totals.positions_review === 1 && !P.by['juicereel:211'] && P.by['DK-55120'] && P.by['DK-55120'].profit_loss === '30', r.body);
+    r = await call({ action: 'jr_match_resolve', decision: 'MERGE_EXACT' }, 'tok-op');
+    P = positions(OP);
+    chk('…"Merge exact matches" adopts it: one position, the note kept, its P&L counted once (+30)',
+      r.body.ok && r.body.merged === 1 && P.rows.filter((p) => p.notes === 'from the DK export').length === 1 && P.by['juicereel:211'] && P.by['juicereel:211'].source === 'CSV'
         && P.by['juicereel:211'].notes === 'from the DK export' && P.by['juicereel:211'].profit_loss === '30' && !P.by['DK-55120'],
       P.rows.filter((p) => /211|DK-/.test(p.external_position_id || '')));
     /* a later run that carries only a second, identical bet (the first is not re-read with it) */
@@ -699,7 +774,7 @@ async function live() {
     const runT = one(db.service(`select public.portfolio_svc_run_begin(${L(dkA.id)}, 'INCREMENTAL');`));
     const twin = { platform: 'draftkings', platform_label: 'DraftKings', external_position_id: 'juicereel:213', position_type: 'MONEYLINE', event_name: 'Cubs @ Reds',
       market_name: 'Moneyline', selection: 'Cubs', odds_american: 120, stake: '25', status: 'WON', reported_payout: '55', placed_at: '2026-09-27T18:02:00Z', settled_at: '2026-09-28T02:00:00Z' };
-    db.service(`select public.portfolio_svc_ingest_wagers(${L(dkA.id)}, ${L(runT)}, ${L(JSON.stringify({ positions: [twin] }))}::jsonb);`);
+    db.service(`select public.portfolio_svc_jr_ingest(${L(dkA.id)}, ${L(runT)}, ${L(JSON.stringify({ positions: [twin] }))}::jsonb);`);
     db.service(`select public.portfolio_svc_run_finish(p_run => ${L(runT)}, p_status => 'SUCCEEDED');`);
     P = positions(OP);
     chk('…and a second, identical bet arriving later never takes over the one already adopted: its own position; the adopted one keeps its Juice Reel id and note',
@@ -851,6 +926,9 @@ async function live() {
     due();
     const sw2 = await call({ action: 'sweep' });
     chk('with the test finished and Juice Reel still off, not even the operator\'s grant is synced', sw2.body.due === 0);
+    r = await call({ action: 'jr_start' }, 'tok-b');
+    chk('…and a reader can no longer start linking: the live test is over and the switch is not thrown', r.status === 403 && r.body.reason === 'awaiting_approval'
+      && count(`select count(*) from portfolio_private.connect_sessions where user_id = ${L(B)};`) === 0, r.body);
     chk('the switch cannot be thrown without a PASSED PRODUCTION test of juicereel_v1 and a cleared review', /cannot be enabled/.test(db.mustFail(() => db.service(
       `update public.portfolio_platform_registry set automatic_enabled = true, tos_review = 'CLEARED', enabled_by_smoke_test = gen_random_uuid() where platform_key = 'juicereel';`)) || '')
       && /enabled_evidence|violates/.test(db.mustFail(() => db.service(`update public.portfolio_platform_registry set automatic_enabled = true, enabled_by_smoke_test = ${L(smoke)} where platform_key = 'juicereel';`)) || ''));
@@ -880,6 +958,120 @@ async function live() {
     const steal = await connectAs('tok-c', 4);
     chk('reader C connecting the operator\'s Juice Reel account: refused (already connected elsewhere), the tokens issued to C revoked at once, C has nothing',
       steal.cb.body.reason === 'JR_ACCOUNT_IN_USE' && J.revokes.length === revB + 2 && !grantRow(C) === false && grantRow(C).status === 'DISCONNECTED' && positions(C).rows.length === 0, steal.cb.body);
+
+    /* ── PHASE 8 · a reader whose history was recorded BEFORE connecting: nothing counted twice, nothing merged without them ── */
+    const own = (sel, stake, odds, placed, status, payout, settled, source, notes, ev) => `('draftkings', 'DraftKings', 'SPORTSBOOK', 'MONEYLINE', ${L(ev)}, 'Moneyline', ${L(sel)}, ${odds}, ${stake},
+        ${L(status)}, ${payout == null ? 'null' : payout}, ${L(placed)}, ${L(settled)}, ${L(source)}, ${notes ? L(notes) : 'null'})`;
+    db.as(D, `insert into public.portfolio_positions (platform, platform_label, platform_type, position_type, event_name, market_name, selection, odds_american, stake,
+        status, reported_payout, placed_at, settled_at, source, notes) values
+      ${own('Ravens', 50, 120, '2026-09-19T17:55:00Z', 'WON', 110, '2026-09-19T23:00:00Z', 'MANUAL', 'typed by hand', 'Ravens @ Steelers')},
+      ${own('Ravens', 50, 120, '2026-09-19T18:10:00Z', 'WON', 110, '2026-09-19T23:00:00Z', 'IMPORT_SCREENSHOT', null, 'Ravens @ Steelers')},
+      ${own('Lions', 40, -150, '2026-09-19T09:30:00Z', 'LOST', null, '2026-09-19T09:30:00Z', 'IMPORT_SCREENSHOT', 'from a screenshot', 'Lions @ Packers')},
+      ${own('Bills', 25, -110, '2026-09-17T19:00:00Z', 'LOST', null, '2026-09-17T23:00:00Z', 'MANUAL', null, 'Jets @ Bills')},
+      ${own('Saints', 10, 200, '2026-09-15T12:03:00Z', 'WON', 30, '2026-09-15T20:00:00Z', 'CSV', 'exact twin', 'Saints @ Falcons')},
+      ('fanduel', 'FanDuel', 'SPORTSBOOK', 'MONEYLINE', 'Cubs @ Reds', 'Moneyline', 'Cubs', 100, 30, 'WON', 60, '2026-09-16T12:00:00Z', '2026-09-16T20:00:00Z', 'MANUAL', null);`);
+    const ownId = (sel, src) => one(db.sql(`select id from public.portfolio_positions where user_id = ${L(D)} and selection = ${L(sel)}${src ? ' and source = ' + L(src) : ''} order by placed_at limit 1;`));
+    const M1 = ownId('Ravens', 'MANUAL'), S1 = ownId('Ravens', 'IMPORT_SCREENSHOT'), S2 = ownId('Lions'), M2 = ownId('Bills'), X1 = ownId('Saints'), M3 = ownId('Cubs');
+    const d88 = J.user(88, 'Reader D');
+    const won = (o) => Object.assign({ userId: 88, BetStatus: { id: 2, statusName: 'Closed' } }, o);
+    const nfl = (pos, home, away, start) => [subbet({ position: pos, home, away, league: 'NFL', sport: 'Football', start, userId: 88 })];
+    d88.bets.push(
+      bet(230, won({ oddsAmerican: 120, amountRisked: 50, toWin: 60, result: 'Won', netResult: 60, datePlaced: '2026-09-19T18:00:00.000Z', dateClosed: '2026-09-19T23:00:00.000Z',
+        Subbets: nfl('Baltimore Ravens', 'Pittsburgh Steelers', 'Baltimore Ravens', '2026-09-19T20:00:00.000Z') })),
+      bet(231, won({ oddsAmerican: 120, amountRisked: 50, toWin: 60, result: 'Won', netResult: 60, datePlaced: '2026-09-19T18:12:00.000Z', dateClosed: '2026-09-19T23:00:00.000Z',
+        Subbets: nfl('Baltimore Ravens', 'Pittsburgh Steelers', 'Baltimore Ravens', '2026-09-19T20:00:00.000Z') })),
+      bet(232, won({ oddsAmerican: -150, amountRisked: 40, toWin: 26.67, result: 'Lost', netResult: -40, datePlaced: '2026-09-18T20:00:00.000Z', dateClosed: '2026-09-19T02:00:00.000Z',
+        Subbets: nfl('Detroit Lions', 'Green Bay Packers', 'Detroit Lions', '2026-09-18T23:00:00.000Z') })),
+      bet(233, won({ oddsAmerican: -110, amountRisked: 25, toWin: 22.73, result: 'Won', netResult: 22.73, datePlaced: '2026-09-17T12:00:00.000Z', dateClosed: '2026-09-17T16:00:00.000Z',
+        Subbets: nfl('Buffalo Bills', 'Buffalo Bills', 'Miami Dolphins', '2026-09-17T13:00:00.000Z') })),
+      bet(234, won({ oddsAmerican: 200, amountRisked: 10, toWin: 20, result: 'Won', netResult: 20, datePlaced: '2026-09-15T12:00:00.000Z', dateClosed: '2026-09-15T20:00:00.000Z', clvPct: 3.2,
+        Subbets: nfl('New Orleans Saints', 'Atlanta Falcons', 'New Orleans Saints', '2026-09-15T17:00:00.000Z') })),
+      bet(235, won({ oddsAmerican: 300, amountRisked: 15, toWin: 45, result: 'Lost', netResult: -15, datePlaced: '2026-09-14T12:00:00.000Z', dateClosed: '2026-09-14T20:00:00.000Z',
+        Subbets: nfl('Carolina Panthers', 'Carolina Panthers', 'Tampa Bay Buccaneers', '2026-09-14T17:00:00.000Z') })),
+      bet(236, { userId: 88, oddsAmerican: -120, amountRisked: 60, toWin: 50, datePlaced: '2026-09-29T15:00:00.000Z', Site: { id: 20, name: 'FanDuel' } }));
+    const pnlD = () => +JSON.parse(one(db.as(D, `select public.portfolio_summary(null, null, 'UTC', null);`))).settled.pnl;
+    const pnl0 = pnlD();
+    const okD = await connectAs('tok-d', 88);
+    let PD = positions(D);
+    chk('REGRESSION (double counting): connecting Juice Reel over bets the reader had recorded themselves counts none of them twice — settled P&L is their own +105 plus the one synced bet nothing resembles (−15) = +90',
+      pnl0 === 105 && okD.cb.body.ok === true && Math.abs(pnlD() - 90) < 1e-9, { before: pnl0, after: pnlD(), rows: PD.rows.map((p) => [p.external_position_id, p.source, p.selection, p.profit_loss]) });
+    chk('…the five synced bets that resemble the reader\'s own are HELD for their review, not stored as positions; the two nothing resembles are imported',
+      ['230', '231', '232', '233', '234'].every((n) => !PD.by['juicereel:' + n]) && !!PD.by['juicereel:235'] && !!PD.by['juicereel:236'] && PD.rows.length === 8,
+      PD.rows.map((p) => p.external_position_id || p.selection));
+    chk('…and the first sync says so', okD.cb.body.sync && okD.cb.body.sync.totals && okD.cb.body.sync.totals.positions_review === 5 && okD.cb.body.sync.totals.positions_inserted === 2,
+      okD.cb.body.sync);
+    let mD = await call({ action: 'jr_matches' }, 'tok-d');
+    const ofRef = (m) => { const o = {}; ((m.body && m.body.matches) || []).forEach((x) => { o[x.ref] = x; }); return o; };
+    let byRef = ofRef(mD);
+    const cids = (x) => (x ? x.candidates.map((c) => c.id) : []);
+    chk('the review queue: five pending, one an EXACT match (same book, stake, price, placed within 15 minutes, one each way) — the CSV bet with its note',
+      mD.status === 200 && mD.body.pending === 5 && mD.body.exact === 1 && byRef['juicereel:234'] && byRef['juicereel:234'].exact === true
+        && cids(byRef['juicereel:234']).join() === X1 && byRef['juicereel:234'].candidates[0].note === 'exact twin' && byRef['juicereel:234'].candidates[0].source === 'CSV', mD.body);
+    chk('…two identical Ravens bets: each synced copy lists BOTH of the reader\'s Ravens records (nearest first), neither exact — never guessed',
+      byRef['juicereel:230'] && byRef['juicereel:230'].exact === false && cids(byRef['juicereel:230']).join() === [M1, S1].join()
+        && byRef['juicereel:231'] && cids(byRef['juicereel:231']).join() === [S1, M1].join(), [byRef['juicereel:230'], byRef['juicereel:231']]);
+    chk('…a screenshot recorded with the wrong time (13½ hours late) and a same-price bet 7 hours apart are still caught for review, with how far apart they are',
+      cids(byRef['juicereel:232']).join() === S2 && byRef['juicereel:232'].candidates[0].minutes_apart === 810
+        && cids(byRef['juicereel:233']).join() === M2 && byRef['juicereel:233'].candidates[0].minutes_apart === 420, [byRef['juicereel:232'], byRef['juicereel:233']]);
+    chk('…the held copy says what Juice Reel reported — the book, the pick, stake, price, result — and nothing secret',
+      byRef['juicereel:230'].wager.platform_label === 'DraftKings' && byRef['juicereel:230'].wager.stake === '50' && byRef['juicereel:230'].wager.odds_american === 120
+        && byRef['juicereel:230'].wager.status === 'WON' && !/raw|ciphertext|jra_|jrr_/.test(JSON.stringify(mD.body)), byRef['juicereel:230'].wager);
+    let stD = await call({ action: 'jr_status' }, 'tok-d');
+    chk('status: 5 to review, 2 bets imported, platforms from the imported bets themselves', stD.body.grant.review === 5 && stD.body.grant.review_exact === 1 && stD.body.grant.bets === 2
+      && JSON.stringify(stD.body.grant.platforms) === '["DraftKings","FanDuel"]', stD.body.grant);
+    chk('isolation: B lists none of D\'s held bets, and cannot decide one', (await call({ action: 'jr_matches' }, 'tok-b')).body.pending === 0
+      && (await call({ action: 'jr_match_resolve', match_id: byRef['juicereel:230'].id, decision: 'MERGE', position_id: M1 }, 'tok-b')).status === 404
+      && !positions(D).by['juicereel:230']);
+    chk('…row level security: D reads their own held bets, B none, nobody signed out; no reader writes one directly',
+      db.as(D, `select count(*) from public.portfolio_sync_matches;`) === '5' && db.as(B, `select count(*) from public.portfolio_sync_matches;`) === '0'
+        && /permission denied/.test(db.mustFail(() => db.anon(`select count(*) from public.portfolio_sync_matches;`)) || '')
+        && /permission denied/.test(db.mustFail(() => db.as(D, `update public.portfolio_sync_matches set status = 'MERGED';`)) || '')
+        && /permission denied/.test(db.mustFail(() => db.as(D, `delete from public.portfolio_sync_matches;`)) || ''));
+    r = await call({ action: 'jr_match_resolve', match_id: byRef['juicereel:230'].id, decision: 'MERGE', position_id: M3 }, 'tok-d');
+    chk('a merge into a bet that is not one of its matches is refused; nothing changes', r.status === 400 && !positions(D).by['juicereel:230'] && (await call({ action: 'jr_matches' }, 'tok-d')).body.pending === 5, r.body);
+    r = await call({ action: 'jr_match_resolve', decision: 'MERGE_EXACT' }, 'tok-d');
+    PD = positions(D);
+    chk('"Merge exact matches": the CSV bet takes the synced id — ONE position, the reader\'s note kept, still +20; four left to review',
+      r.status === 200 && r.body.merged === 1 && PD.by['juicereel:234'] && PD.by['juicereel:234'].source === 'CSV' && PD.by['juicereel:234'].notes === 'exact twin'
+        && PD.by['juicereel:234'].profit_loss === '20' && Math.abs(pnlD() - 90) < 1e-9 && (await call({ action: 'jr_matches' }, 'tok-d')).body.pending === 4, r.body);
+    r = await call({ action: 'jr_match_resolve', match_id: byRef['juicereel:230'].id, decision: 'MERGE', position_id: M1 }, 'tok-d');
+    mD = await call({ action: 'jr_matches' }, 'tok-d'); byRef = ofRef(mD);
+    chk('the reader picks which Ravens record is which: 230 → the one typed by hand (note kept); 231 now lists only the other',
+      r.status === 200 && positions(D).by['juicereel:230'] && positions(D).by['juicereel:230'].notes === 'typed by hand' && cids(byRef['juicereel:231']).join() === S1, mD.body);
+    r = await call({ action: 'jr_match_resolve', match_id: byRef['juicereel:231'].id, decision: 'MERGE', position_id: S1 }, 'tok-d');
+    chk('…231 → the screenshot one; P&L unchanged (+90) — nothing counted twice at any step', r.status === 200 && positions(D).by['juicereel:231'] && positions(D).by['juicereel:231'].source === 'IMPORT_SCREENSHOT'
+      && Math.abs(pnlD() - 90) < 1e-9);
+    /* Juice Reel corrects a held bet before the reader decides: the held copy is updated, not stored */
+    Object.assign(d88.bets.find((x) => x.id === 233), { netResult: 22.72, updatedAt: nowIso(-4000) });
+    syncable(); r = await call({ action: 'jr_sync' }, 'tok-d');
+    mD = await call({ action: 'jr_matches' }, 'tok-d'); byRef = ofRef(mD);
+    chk('a held bet that changes at Juice Reel stays held (not stored), its held copy now the newest (payout 47.72)', r.body.ok && !positions(D).by['juicereel:233']
+      && byRef['juicereel:233'] && byRef['juicereel:233'].wager.reported_payout === '47.72' && mD.body.pending === 2 && Math.abs(pnlD() - 90) < 1e-9, { sync: r.body, w: byRef['juicereel:233'] });
+    r = await call({ action: 'jr_match_resolve', match_id: byRef['juicereel:232'].id, decision: 'MERGE', position_id: S2 }, 'tok-d');
+    PD = positions(D);
+    chk('the screenshot with the wrong time merged: Juice Reel\'s own placement time and result now, the reader\'s note kept, −40 counted once',
+      r.status === 200 && PD.by['juicereel:232'] && PD.by['juicereel:232'].notes === 'from a screenshot' && PD.by['juicereel:232'].profit_loss === '-40'
+        && one(db.sql(`select to_char(placed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI') from public.portfolio_positions where id = ${L(S2)};`)) === '2026-09-18T20:00');
+    r = await call({ action: 'jr_match_resolve', match_id: byRef['juicereel:233'].id, decision: 'SEPARATE' }, 'tok-d');
+    PD = positions(D);
+    chk('"Different bet — add it": the synced bet becomes its own position (+22.72, the newest copy), the reader\'s own Bills bet untouched; P&L +112.72',
+      r.status === 200 && PD.by['juicereel:233'] && PD.by['juicereel:233'].source === 'SYNC' && PD.by['juicereel:233'].profit_loss === '22.72'
+        && one(db.sql(`select external_position_id is null from public.portfolio_positions where id = ${L(M2)};`)) === 't' && Math.abs(pnlD() - 112.72) < 1e-9, { body: r.body, pnl: pnlD() });
+    r = await call({ action: 'jr_match_resolve', match_id: byRef['juicereel:233'].id, decision: 'MERGE', position_id: M2 }, 'tok-d');
+    chk('a decision is made once: deciding again is refused', r.status === 409, r.body);
+    stD = await call({ action: 'jr_status' }, 'tok-d');
+    chk('all decided: nothing to review; 9 positions, 7 of them carrying a Juice Reel id; the counts on the panel say so',
+      positions(D).rows.length === 9 && positions(D).rows.filter((p) => /^juicereel:/.test(p.external_position_id || '')).length === 7 && stD.body.grant.review === 0 && stD.body.grant.bets === 7, stD.body.grant);
+    const gD = grantRow(D).id;
+    db.service(`select public.portfolio_svc_jr_reset_cursor(${L(gD)});`);
+    for (let i = 0; i < 20; i++) { const x = await K.juicereelSync(ctx, cfg, gD, 'INITIAL'); if (x.complete) break; }
+    chk('the whole history read again: no new position, nothing held again, P&L unchanged', positions(D).rows.length === 9 && (await call({ action: 'jr_matches' }, 'tok-d')).body.pending === 0
+      && Math.abs(pnlD() - 112.72) < 1e-9);
+    chk('one position per reader, provider and Juice Reel bet id — enforced by the database, even across books',
+      /duplicate key|unique/.test(db.mustFail(() => db.service(`insert into public.portfolio_positions (user_id, platform, platform_label, platform_type, external_position_id, position_type, event_name, market_name,
+        selection, odds_american, stake, status, placed_at, source) values (${L(D)}, 'betmgm', 'BetMGM', 'SPORTSBOOK', 'juicereel:235', 'MONEYLINE', 'x', 'x', 'x', 100, 10, 'OPEN', now(), 'SYNC');`)) || ''));
+    chk('Juice Reel\'s own CLV is kept as Juice Reel reported it (raw source data) — never written into EdgeDesk\'s closing-line value',
+      one(db.sql(`select coalesce(raw_payload->>'clvPct', '-') || '|' || coalesce(clv::text, 'null') from public.portfolio_positions where id = ${L(X1)};`)) === '3.2|null');
 
     /* ── the provider seam, and the server's switch ── */
     r = await call({ action: 'sb_status' }, 'tok-b');
@@ -951,7 +1143,7 @@ async function live() {
       secrets.every((s) => everything.indexOf(s) < 0) && logs.every((l) => { try { return JSON.parse(l).fn === 'portfolio_connect'; } catch (_) { return false; } }), secrets.filter((s) => everything.indexOf(s) >= 0).slice(0, 3));
     const dump = db.sql(`select coalesce(string_agg(t::text, ' '), '') from (select row_to_json(x)::text as t from public.platform_accounts x union all select row_to_json(x)::text from public.portfolio_positions x
         union all select row_to_json(x)::text from public.portfolio_sync_runs x union all select row_to_json(x)::text from portfolio_private.connect_sessions x
-        union all select row_to_json(x)::text from portfolio_private.oauth_grants x) q;`);
+        union all select row_to_json(x)::text from portfolio_private.oauth_grants x union all select row_to_json(x)::text from public.portfolio_sync_matches x) q;`);
     chk('…nor in any table, in any form (the grants hold ciphertext only)', J.issued.concat([J.clientSecret]).every((s) => dump.indexOf(s) < 0));
     chk('no SharpSports request was made while it is retired', !hostsSeen['api.sharpsports.io']);
     const health = JSON.parse(one(db.as(OP, `select public.portfolio_admin_juicereel_health();`)));

@@ -2,12 +2,12 @@
  "alerts": [
   {
    "evidence": {
-    "brier": 0.2127,
-    "mean_gap": -0.0147
+    "brier": 0.2142,
+    "mean_gap": -0.0119
    },
    "kind": "calibration",
    "level": "warn",
-   "message": "season-to-date win probabilities are off by -0.015 on average (Brier 0.213)"
+   "message": "season-to-date win probabilities are off by -0.012 on average (Brier 0.214)"
   },
   {
    "evidence": {
@@ -193,13 +193,13 @@
    "week": 8
   },
   {
-   "ats_at_close": 0.25,
-   "ats_at_freeze_line": 0.25,
-   "bias": 9.795,
-   "brier": 0.2468,
-   "clv_mean": -0.062,
+   "ats_at_close": 0.5,
+   "ats_at_freeze_line": 0.5,
+   "bias": 10.763,
+   "brier": 0.2939,
+   "clv_mean": 0.167,
    "disagreement_c_d_mean": 1.851,
-   "final": 4,
+   "final": 6,
    "frozen_games": 56,
    "largest_misses": [
     {
@@ -209,46 +209,46 @@
      "v2": 4.0
     },
     {
+     "abs_error": 19.5,
+     "final": -3.0,
+     "game": "Troy @ James Madison",
+     "v2": 16.5
+    },
+    {
      "abs_error": 19.3,
      "final": -24.0,
      "game": "Jacksonville State @ New Mexico State",
      "v2": -4.7
-    },
-    {
-     "abs_error": 16.8,
-     "final": 21.0,
-     "game": "Sam Houston @ Missouri State",
-     "v2": 4.2
     }
    ],
-   "mae": 18.219,
-   "mae_candidate_001_same_games": 18.281,
-   "mae_close": 17.188,
-   "mae_line_at_freeze": 17.125,
-   "mae_v1_same_games": 17.947,
-   "mae_v2_same_close_games": 18.219,
-   "mae_v2_same_line_at_freeze_games": 18.219,
-   "mae_v2_vs_candidate_001_games": 18.219,
-   "mae_v2_vs_v1_games": 18.219,
-   "rmse": 18.28,
+   "mae": 16.378,
+   "mae_candidate_001_same_games": 16.492,
+   "mae_close": 16.375,
+   "mae_line_at_freeze": 16.542,
+   "mae_v1_same_games": 18.175,
+   "mae_v2_same_close_games": 16.378,
+   "mae_v2_same_line_at_freeze_games": 16.378,
+   "mae_v2_vs_candidate_001_games": 16.378,
+   "mae_v2_vs_v1_games": 16.378,
+   "rmse": 17.085,
    "week": 9
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.068,
+  "ens_pred": 0.076,
   "ens_pred_noise_q99": 0.183,
-  "ens_sd": 0.185,
+  "ens_sd": 0.141,
   "ens_sd_noise_q99": 0.183,
-  "pred_total": 0.108,
+  "pred_total": 0.103,
   "pred_total_noise_q99": 0.183,
   "reference_weeks": "week9",
-  "sigma": 0.166,
+  "sigma": 0.18,
   "sigma_noise_q99": 0.183
  },
- "generated_at": "2026-10-30T10:51:15Z",
+ "generated_at": "2026-10-30T16:52:39Z",
  "learning": {
-  "bias": -1.1021158798283262,
+  "bias": -0.9846723404255319,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -261,20 +261,20 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -1.1021158798283262,
+    "bias": -0.9846723404255319,
     "fcs_not_priced_games": 6,
-    "games_scored": 233,
-    "mae": 12.185618025751072,
-    "major_miss_share": 0.11587982832618025,
+    "games_scored": 235,
+    "mae": 12.189974468085106,
+    "major_miss_share": 0.1148936170212766,
     "sources": {
-     "FROZEN": 233
+     "FROZEN": 235
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 233,
-  "mae": 12.185618025751072,
-  "major_miss_share": 0.11587982832618025,
+  "games_scored": 235,
+  "mae": 12.189974468085106,
+  "major_miss_share": 0.1148936170212766,
   "miss_classes": {
    "explosive_variance": 3,
    "garbage_time": 4,
@@ -286,7 +286,7 @@
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 233
+   "FROZEN": 235
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1968,8 +1968,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 233,
+  "final": 235,
   "frozen_games": 285,
-  "mae": 12.186
+  "mae": 12.19
  }
 }

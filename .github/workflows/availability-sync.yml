@@ -46,6 +46,7 @@ on:
     - cron: '5 1,2 * * 3,4,5'    # the same evenings, 9-10pm ET
 
 permissions:
+  checks: write
   contents: write
 
 concurrency:
@@ -137,7 +138,7 @@ jobs:
           fi
           git commit -m 'availability sync: college football player availability'
           for i in 1 2 3 4; do
-            git push origin "${{ github.ref_name }}" && exit 0
+            bash "$(git rev-parse --show-toplevel)/tools/ci/certified_push.sh" origin "${{ github.ref_name }}" && exit 0
             git pull --rebase origin "${{ github.ref_name }}" || true
             sleep $((2 ** i))
           done
