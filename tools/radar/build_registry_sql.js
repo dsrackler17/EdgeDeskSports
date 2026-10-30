@@ -3,13 +3,15 @@
    Generate supabase/radar_registry.sql from
      research/radar/registration_h_radar_01.json   H-RADAR-01 v0.1.0
      research/radar/H-RADAR-01/report.json         its validation report, once it exists
-   It registers H-RADAR-01 EXPERIMENTAL in the research registry with its
+     research/radar/registration_h_radar_02.json   H-RADAR-02 v0.2.0 (registered 2026-10-30)
+   It registers each hypothesis EXPERIMENTAL in the research registry with its
    objective, holdout window, minimum sample, metrics, promotion criteria and
-   forking-paths disclosure, BEFORE anything is shown; writes the report's
-   verdict as ONE research_model_results row once the holdout has run
-   (passed = the report's own verdict, good or bad); and names the version in
-   public.radar_config (registry_ref:H-RADAR-01), which every Radar reader
-   door requires: no registration, nothing shown.
+   forking-paths disclosure, BEFORE anything is shown; writes a report's
+   verdict as ONE research_model_results row once its holdout has run
+   (passed = the report's own verdict, good or bad); and names each version in
+   public.radar_config (registry_ref:<hypothesis>). Every Radar reader door
+   requires the live rules' hypothesis (radar_hypothesis()) to be named there:
+   no registration, nothing shown.
 
    The registry's DDL is not in this repository, so the SQL reads the live
    columns and enum labels (the session helpers supabase/
@@ -29,6 +31,11 @@ const ROOT = path.join(__dirname, '..', '..');
 const SOURCE = 'research/radar/registration_h_radar_01.json';
 const REPORT = 'research/radar/H-RADAR-01/report.json';
 const OUT = path.join(ROOT, 'supabase', 'radar_registry.sql');
+/* every registration this file writes, oldest first; a report (and its result row) exists only for a holdout that has run */
+const REGS = [
+  { id: 'H-RADAR-01', source: SOURCE, report: REPORT, resultKey: 'h_radar_01_result' },
+  { id: 'H-RADAR-02', source: 'research/radar/registration_h_radar_02.json', report: null, resultKey: null }
+];
 
 /* the session helpers, as the NFL studies file carries them */
 function helpers() {
@@ -38,27 +45,32 @@ function helpers() {
   return f.slice(a, b).replace('map it in tools/football/build_prereg_sql.js', 'map it in tools/radar/build_registry_sql.js').trim();
 }
 
-function load() {
-  const raw = fs.readFileSync(path.join(ROOT, SOURCE), 'utf8');
+function load(src) {
+  src = src || REGS[0];
+  const raw = fs.readFileSync(path.join(ROOT, src.source), 'utf8');
   const R = JSON.parse(raw);
   const sha = crypto.createHash('sha256').update(raw).digest('hex');
-  if (R.result !== null) throw new Error(SOURCE + ' carries a result: a registration is written before any result');
-  if (R.status !== 'EXPERIMENTAL') throw new Error(SOURCE + ': a registration starts EXPERIMENTAL');
+  if (R.result !== null) throw new Error(src.source + ' carries a result: a registration is written before any result');
+  if (R.status !== 'EXPERIMENTAL') throw new Error(src.source + ': a registration starts EXPERIMENTAL');
+  if (R.model_key !== src.id || !R.registered_at || !R.version) throw new Error(src.source + ': not a registration of ' + src.id + ' (model_key, registered_at and version are required)');
   return { R, sha, raw };
 }
 
-/* the verdict the registry and the pages carry: the report's own, or "not run" */
-function verdict(reg) {
+/* the verdict the registry and the pages carry: the report's own, or "not run"; none for a hypothesis with no report */
+function verdict(reg, src) {
+  src = src || REGS[0];
+  if (!src.report) return { summary: null, result: null };
+  const REPORT = src.report;
   const file = path.join(ROOT, REPORT);
   if (!fs.existsSync(file)) {
-    return { summary: { status: 'not_run', hypothesis_id: 'H-RADAR-01', version: reg.R.version, registration_sha256: reg.sha,
+    return { summary: { status: 'not_run', hypothesis_id: src.id, version: reg.R.version, registration_sha256: reg.sha,
       note: 'The holdout test has not run yet. Nothing is claimed about following until it has.' }, result: null };
   }
   const rep = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (rep.registration_sha256 !== reg.sha) throw new Error(REPORT + ' was run against a different registration (' + rep.registration_sha256 + ', not ' + reg.sha + ')');
   const h = rep.holdout || {};
   const summary = {
-    status: rep.status, hypothesis_id: 'H-RADAR-01', version: reg.R.version, registration_sha256: reg.sha, report: REPORT, run: rep.run || null,
+    status: rep.status, hypothesis_id: src.id, version: reg.R.version, registration_sha256: reg.sha, report: REPORT, run: rep.run || null,
     passed: rep.status === 'complete' ? !!h.passed : null,
     followed: h.followed ?? null, games: h.games ?? null,
     beat_close_rate: h.beat_close ? h.beat_close.rate : null, beat_close_ci: h.beat_close ? [h.beat_close.lo, h.beat_close.hi] : null,
@@ -73,62 +85,13 @@ function verdict(reg) {
   };
 }
 
-function build() {
-  const reg = load();
-  const v = verdict(reg);
-  const payload = JSON.stringify(Object.assign({}, reg.R, { content_sha256: reg.sha }));
-  const summary = JSON.stringify(v.summary);
-  const result = v.result ? JSON.stringify(v.result) : null;
-  [payload, summary, result || ''].forEach((p) => { if (p.indexOf('$rdreg$') >= 0) throw new Error('the payload contains the dollar-quote tag'); });
-  return `-- =============================================================================
--- radar_registry.sql — register H-RADAR-01 (Prediction Radar) as EXPERIMENTAL in
--- the research registry, BEFORE anything is shown. docs/prediction-radar.md.
---
--- GENERATED by tools/radar/build_registry_sql.js from
---   ${SOURCE}
---     H-RADAR-01 v${reg.R.version}, content sha256 ${reg.sha}
---   ${REPORT} (${v.result ? 'the validation report: ' + (v.result.passed ? 'PASSED' : 'FAILED') : v.summary.status === 'not_run' ? 'absent: the holdout has not run' : 'status ' + v.summary.status})
--- Do not edit by hand.
---
--- WHAT IT DOES. One research_models row (EXPERIMENTAL, provenance T3) and one
--- research_model_versions row carrying the objective, the holdout window, the
--- minimum sample (200 followed bets), the primary metrics, the promotion
--- criteria (C1 200+ followed bets AND C2 the beat-close rate's 95% lower bound
--- above 0.50 AND C3 the follow ROI's 95% lower bound above zero), the
--- forking-paths disclosure and the full specification, in whatever form the
--- live columns take.${v.result ? `
--- Then ONE research_model_results row: the report's verdict (passed =
--- ${v.result.passed}), written once and never changed.` : ''}
--- Then the version row is named in public.radar_config (registry_ref:
--- H-RADAR-01), with what the test found (h_radar_01_result): every Radar
--- reader door refuses to show anything without the link, and the record shows
--- the finding verbatim.
---
--- WHAT IT DOES NOT DO. No change to a registered row. No promotion: the status
--- stays EXPERIMENTAL whatever the result says. A person promotes, through a
--- validation report.
---
--- REQUIRES supabase/radar.sql and the research registry.
--- CONVENTION (supabase/README.md): idempotent, additive, pasted into the SQL
--- editor, no psql meta-commands, ends in a report. Safe to run again.
--- =============================================================================
-
-do $req$ begin
-  if to_regclass('public.research_models') is null or to_regclass('public.research_model_versions') is null then
-    raise exception 'the research registry (public.research_models, public.research_model_versions) is not in this database: nothing was registered';
-  end if;
-  if to_regclass('public.radar_config') is null then raise exception 'apply supabase/radar.sql first'; end if;
-end $req$;
-
-${helpers()}
-
-begin;
-
-do $reg$
+/* one registration's DO block: the model, the version, the result (when its report exists) and the link the doors need */
+function block(x) {
+  return `do $reg$
 declare
-  S jsonb := $rdreg$${payload}$rdreg$::jsonb;
-  SUM jsonb := $rdreg$${summary}$rdreg$::jsonb;
-  RES jsonb := ${result ? '$rdreg$' + result + '$rdreg$::jsonb' : 'null'};
+  S jsonb := $rdreg$${x.payload}$rdreg$::jsonb;
+  SUM jsonb := ${x.summary ? '$rdreg$' + x.summary + '$rdreg$::jsonb' : 'null'};
+  RES jsonb := ${x.result ? '$rdreg$' + x.result + '$rdreg$::jsonb' : 'null'};
   m regclass := 'public.research_models';
   v regclass := 'public.research_model_versions';
   rs regclass := to_regclass('public.research_model_results');
@@ -209,10 +172,10 @@ begin
     c := pg_temp.edr_has(v, array['forking_paths', 'forking_paths_disclosure', 'disclosure', 'garden_of_forking_paths']);
     if c is not null then vv := vv || jsonb_build_object(c, pg_temp.edr_val(v, c, null, S -> 'forking_paths', null)); end if;
     c := pg_temp.edr_has(v, array['spec', 'metadata', 'meta', 'params', 'config', 'details', 'definition', 'protocol']);
-    if c is not null then vv := vv || jsonb_build_object(c, pg_temp.edr_val(v, c, null, S -> 'spec' || jsonb_build_object('content_sha256', S ->> 'content_sha256', 'registration', '${SOURCE}'), null)); end if;
+    if c is not null then vv := vv || jsonb_build_object(c, pg_temp.edr_val(v, c, null, S -> 'spec' || jsonb_build_object('content_sha256', S ->> 'content_sha256', 'registration', '${x.src.source}'), null)); end if;
     c := pg_temp.edr_has(v, array['notes', 'description']);
     if c is not null then vv := vv || jsonb_build_object(c, pg_temp.edr_val(v, c,
-      'Preregistered ' || (S ->> 'registered_at') || ': ${SOURCE} sha256 ' || (S ->> 'content_sha256') || '. The result is the validation report''s, never edited.', null, null)); end if;
+      'Preregistered ' || (S ->> 'registered_at') || ': ${x.src.source} sha256 ' || (S ->> 'content_sha256') || '. The result is the validation report''s, never edited.', null, null)); end if;
     perform pg_temp.edr_insert(v, vv, fkcol);
   end if;
 
@@ -254,43 +217,115 @@ begin
       c := pg_temp.edr_has(rs, array['games_tested', 'n_games', 'holdout_games', 'games']); if c is not null then rv := rv || jsonb_build_object(c, pg_temp.edr_val(rs, c, null, RES -> 'metrics' -> 'games', null)); end if;
       c := pg_temp.edr_has(rs, array['bets_tested', 'n_bets', 'n_followed', 'sample_size']); if c is not null then rv := rv || jsonb_build_object(c, pg_temp.edr_val(rs, c, null, RES -> 'metrics' -> 'followed', null)); end if;
       perform pg_temp.edr_insert(rs, rv, coalesce(rfk, rmcol));
-      raise notice 'research registry: the H-RADAR-01 result was written (passed = %)', RES ->> 'passed';
+      raise notice 'research registry: the ${x.src.id} result was written (passed = %)', RES ->> 'passed';
     end if;
   end if;
 
   insert into public.radar_config (key, value, note) values
     ('registry_ref:' || (S ->> 'model_key'), vref, 'research_model_versions row (as text) the Radar reader doors require; written only by supabase/radar_registry.sql'),
-    ('registry_sha256:' || (S ->> 'model_key'), S ->> 'content_sha256', '${SOURCE}'),
-    ('h_radar_01_result', SUM::text, 'what the registered holdout test found, verbatim from ${REPORT} (or not_run); written only by supabase/radar_registry.sql')
+    ('registry_sha256:' || (S ->> 'model_key'), S ->> 'content_sha256', '${x.src.source}')${x.src.resultKey ? `,
+    ('${x.src.resultKey}', SUM::text, 'what the registered holdout test found, verbatim from ${x.src.report} (or not_run); written only by supabase/radar_registry.sql')` : ''}
   on conflict (key) do update set value = excluded.value, note = excluded.note, updated_at = now()
     where public.radar_config.value is distinct from excluded.value;
 end $reg$;
+`;
+}
 
+function build() {
+  const regs = REGS.map((src) => {
+    const reg = load(src);
+    const v = verdict(reg, src);
+    const x = { src, reg, v, payload: JSON.stringify(Object.assign({}, reg.R, { content_sha256: reg.sha })),
+      summary: v.summary ? JSON.stringify(v.summary) : null, result: v.result ? JSON.stringify(v.result) : null };
+    [x.payload, x.summary || '', x.result || ''].forEach((p) => { if (p.indexOf('$rdreg$') >= 0) throw new Error('the payload contains the dollar-quote tag'); });
+    return x;
+  });
+  const [h1, h2] = regs, v = h1.v;
+  return `-- =============================================================================
+-- radar_registry.sql — register H-RADAR-01 and H-RADAR-02 (Prediction Radar) as
+-- EXPERIMENTAL in the research registry, BEFORE anything is shown.
+-- docs/prediction-radar.md.
+--
+-- GENERATED by tools/radar/build_registry_sql.js from
+--   ${h1.src.source}
+--     H-RADAR-01 v${h1.reg.R.version}, content sha256 ${h1.reg.sha}
+--   ${h1.src.report} (${v.result ? 'the validation report: ' + (v.result.passed ? 'PASSED' : 'FAILED') : v.summary.status === 'not_run' ? 'absent: the holdout has not run' : 'status ' + v.summary.status})
+--   ${h2.src.source}
+--     H-RADAR-02 v${h2.reg.R.version}, registered ${h2.reg.R.registered_at}, content sha256 ${h2.reg.sha}
+--     (its prospective window: ${h2.reg.R.machine.window_dates.holdout.join(' to ')}, [from, to) UTC; no report yet)
+-- Do not edit by hand.
+--
+-- WHAT IT DOES. For each hypothesis, one research_models row (EXPERIMENTAL,
+-- provenance T3) and one research_model_versions row carrying the objective,
+-- the holdout window, the minimum sample, the primary metrics, the promotion
+-- criteria, the forking-paths disclosure and the full specification, in
+-- whatever form the live columns take.${v.result ? `
+-- Then ONE research_model_results row for H-RADAR-01: its report's verdict
+-- (passed = ${v.result.passed}), written once and never changed.` : ''}
+-- Then each version row is named in public.radar_config (registry_ref:
+-- H-RADAR-01, registry_ref:H-RADAR-02), with what H-RADAR-01's test found
+-- (h_radar_01_result). Every Radar reader door refuses to show anything
+-- without the link for the live rules' hypothesis (radar_hypothesis()), and the
+-- record shows H-RADAR-01's finding verbatim.
+--
+-- WHAT IT DOES NOT DO. No change to a registered row. No promotion: the status
+-- stays EXPERIMENTAL whatever the result says. A person promotes, through a
+-- validation report.
+--
+-- REQUIRES supabase/radar.sql and the research registry.
+-- CONVENTION (supabase/README.md): idempotent, additive, pasted into the SQL
+-- editor, no psql meta-commands, ends in a report. Safe to run again.
+-- =============================================================================
+
+do $req$ begin
+  if to_regclass('public.research_models') is null or to_regclass('public.research_model_versions') is null then
+    raise exception 'the research registry (public.research_models, public.research_model_versions) is not in this database: nothing was registered';
+  end if;
+  if to_regclass('public.radar_config') is null then raise exception 'apply supabase/radar.sql first'; end if;
+end $req$;
+
+${helpers()}
+
+begin;
+
+${regs.map(block).join('\n')}
 commit;
 
--- THE REPORT: H-RADAR-01 as research_model_current reads it, and the link the doors need. Every row should say ok.
+-- THE REPORT: each hypothesis as research_model_current reads it, and the links the doors need. Every row should say ok.
+create or replace function pg_temp.rdr_current(p_key text) returns jsonb
+language plpgsql as $f$
+declare j jsonb;
+begin
+  if to_regclass('public.research_model_current') is null then return null; end if;
+  execute 'select to_jsonb(r) from public.research_model_current r where lower(coalesce(to_jsonb(r) ->> ''model_key'', to_jsonb(r) ->> ''key'', to_jsonb(r) ->> ''model_name'', to_jsonb(r) ->> ''model'', to_jsonb(r) ->> ''name'')) = lower($1) limit 1'
+    into j using p_key;
+  return j;
+end $f$;
 create or replace function pg_temp.rdr_report() returns table (piece text, state text)
 language plpgsql as $f$
-declare j jsonb; s text;
+declare j jsonb; s text; k text; n int := 0;
 begin
-  j := null;
-  if to_regclass('public.research_model_current') is not null then
-    execute 'select to_jsonb(r) from public.research_model_current r where lower(coalesce(to_jsonb(r) ->> ''model_key'', to_jsonb(r) ->> ''key'', to_jsonb(r) ->> ''model_name'', to_jsonb(r) ->> ''model'', to_jsonb(r) ->> ''name'')) = lower($1) limit 1'
-      into j using 'H-RADAR-01';
-  end if;
-  s := lower(coalesce(j ->> 'status', j ->> 'model_status', j ->> 'maturity', ''));
-  piece := '1 H-RADAR-01 is registered and EXPERIMENTAL';
-  state := case when to_regclass('public.research_model_current') is null then 'CHECK THIS: research_model_current is not in this database'
-                when j is null then 'CHECK THIS: not in research_model_current'
-                when s <> 'experimental' then 'CHECK THIS: status reads ' || s
-                else 'ok' end;
-  return next;
-  piece := '2 the Radar doors may show it (registry_ref:H-RADAR-01 is in radar_config)';
-  state := case when exists (select 1 from public.radar_config where key = 'registry_ref:H-RADAR-01') then 'ok' else 'CHECK THIS' end;
-  return next;
-  piece := '3 what the holdout test found is recorded (h_radar_01_result)';
-  state := case when exists (select 1 from public.radar_config where key = 'h_radar_01_result' and value::jsonb ->> 'status' = '${v.summary.status}') then 'ok' else 'CHECK THIS' end;
-  return next;
+  foreach k in array array['H-RADAR-01', 'H-RADAR-02'] loop
+    j := pg_temp.rdr_current(k);
+    s := lower(coalesce(j ->> 'status', j ->> 'model_status', j ->> 'maturity', ''));
+    n := n + 1;
+    piece := n || ' ' || k || ' is registered and EXPERIMENTAL';
+    state := case when to_regclass('public.research_model_current') is null then 'CHECK THIS: research_model_current is not in this database'
+                  when j is null then 'CHECK THIS: not in research_model_current'
+                  when s <> 'experimental' then 'CHECK THIS: status reads ' || s
+                  else 'ok' end;
+    return next;
+    n := n + 1;
+    piece := n || ' the Radar doors may show it (registry_ref:' || k || ' is in radar_config)';
+    state := case when exists (select 1 from public.radar_config where key = 'registry_ref:' || k) then 'ok' else 'CHECK THIS' end;
+    return next;
+    if k = 'H-RADAR-01' then
+      n := n + 1;
+      piece := n || ' what the H-RADAR-01 holdout test found is recorded (h_radar_01_result)';
+      state := case when exists (select 1 from public.radar_config where key = 'h_radar_01_result' and value::jsonb ->> 'status' = '${v.summary.status}') then 'ok' else 'CHECK THIS' end;
+      return next;
+    end if;
+  end loop;
 end $f$;
 select * from pg_temp.rdr_report();
 `;

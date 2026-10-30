@@ -323,13 +323,13 @@ chk('"St." at the end is State ("Michigan St." is Michigan State)', R.teamScore(
 chk('"St. Louis Blues" keeps its saint', R.teamScore('Blues', 'St. Louis Blues') === 2);
 chk('accents fold ("Montréal" is "Montreal")', R.teamScore('Montréal Canadiens', 'Montreal Canadiens') === 3);
 
-/* ── H-RADAR-02 (rules_version 2): research/radar/registration_h_radar_02.json, a DRAFT ── */
+/* ── H-RADAR-02 (rules_version 2): research/radar/registration_h_radar_02.json, registered 2026-10-30 ── */
 const RULES2 = require(path.join(ROOT, 'research', 'radar', 'registration_h_radar_02.json')).spec.rules;
-chk('v2: the draft registration carries every rule the core reads, both versions', R.RULE_KEYS.concat(R.RULE_KEYS_V2).every((k) => RULES2[k] !== undefined),
+chk('v2: the registration carries every rule the core reads, both versions', R.RULE_KEYS.concat(R.RULE_KEYS_V2).every((k) => RULES2[k] !== undefined),
   R.RULE_KEYS.concat(R.RULE_KEYS_V2).filter((k) => RULES2[k] === undefined));
 chk('v2: a version-2 rule that is missing is named', (() => { try { R.rules(Object.assign({}, RULES2, { follow_cost: undefined })); return false; } catch (e) { return /missing follow_cost/.test(e.message); } })());
 chk('v2: H-RADAR-01\'s frozen rules are still version 1, whole', R.rulesVersion(RULES) === 1 && R.rules(RULES) === RULES && R.gradingVersion(RULES) === 'radar-grade-1');
-chk('v2: the draft is version 2, graded as radar-grade-2', R.rulesVersion(RULES2) === 2 && R.gradingVersion(RULES2) === 'radar-grade-2');
+chk('v2: the registration is version 2, graded as radar-grade-2', R.rulesVersion(RULES2) === 2 && R.gradingVersion(RULES2) === 'radar-grade-2');
 /* fees: as the probe saw them (run 40975470572): fees enabled, feeType zero_fees, schedule rate 0 */
 const v2feeM = (o) => R.marketRow(Object.assign({ conditionId: '0x' + 'c'.repeat(64), question: 'Kings vs. Pelicans', outcomes: '["Kings", "Pelicans"]', outcomePrices: '["0.315", "0.685"]',
   clobTokenIds: '["1", "2"]', sportsMarketType: 'moneyline', gameStartTime: '2026-10-30 00:00:00+00', slug: 'nba-sac-nop-2026-10-29' }, o));
