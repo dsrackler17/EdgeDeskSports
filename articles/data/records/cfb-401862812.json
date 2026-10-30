@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-29T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1880,91 +1880,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "n7xyv71qssvxd",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can North Texas’ pass rush get to Caden Veltkamp?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward North Texas, and its own breakdown accounts for about 1.3 of the 2.3 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 2.3,
-      "toward": "North Texas",
-      "other": "Florida Atlantic"
-    },
-    "supporting": [
-      "When North Texas has the ball (pass protection against the pass rush): North Texas’ offense has allowed a sack on 1.9% of its dropbacks, and Florida Atlantic’s defense sacks the quarterback on 5.8% of opponent dropbacks (FBS average 5.7%).",
-      "When North Texas has the ball (the passing game against the pass defense): North Texas’ offense averages 10.2 yards per pass attempt, and Florida Atlantic’s defense allows 8.7 yards per pass attempt (FBS average 7.4).",
-      "When North Texas has the ball (the run game against the run defense): North Texas’ offense averages 6.0 yards per carry, and Florida Atlantic’s defense allows 7.4 yards per carry (FBS average 5.0).",
-      "When North Texas has the ball (big plays through the air): North Texas’ offense turns 15.7% of its pass plays into explosive gains, and Florida Atlantic’s defense gives up explosive gains on 12.4% of opponent pass plays (FBS average 10.2%)."
-    ],
-    "contradicting": [
-      "When Florida Atlantic has the ball (third down): Florida Atlantic’s offense converts 50.8% of its third downs, and North Texas’ defense allows opponents to convert 37.7% of their third downs (FBS average 39.5%).",
-      "When Florida Atlantic has the ball (the red zone): Florida Atlantic’s offense succeeds on 49.9% of its red-zone plays, and North Texas’ defense allows success on 54.3% of opponent red-zone plays (FBS average 43.6%).",
-      "In his last two games (houstonchristian and Charlotte), Ditta averaged 7.8 yards per attempt, against 17.0 in his two games before that.",
-      "When Florida Atlantic has the ball (the passing game against the pass defense): Florida Atlantic’s offense averages 8.2 yards per pass attempt, and North Texas’ defense allows 8.3 yards per pass attempt (FBS average 7.4)."
-    ],
-    "quarterbacks": [
-      "Tayven Jackson has completed 159 of 220 passes (72.3%) for 2,144 yards, 9.7 yards per attempt, 17 touchdowns and 5 interceptions in seven games for North Texas, and has been sacked on 4 of 224 dropbacks.",
-      "Chaston Ditta has completed 15 of 20 passes (75.0%) for 183 yards, 9.2 yards per attempt, 1 touchdown and no interceptions in four games for North Texas, and has been sacked on 2 of 22 dropbacks.",
-      "Caden Veltkamp has completed 191 of 260 passes (73.5%) for 2,164 yards, 8.3 yards per attempt, 18 touchdowns and 3 interceptions in seven games for Florida Atlantic, and has been sacked on 13 of 273 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "North Texas’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.9% of opponent dropbacks, against an offense that has allowed a sack on 4.4% of its dropbacks.",
-        "North Texas’ defense has to slow Florida Atlantic in the red zone — Florida Atlantic’s offense succeeds on 49.9% of its red-zone plays.",
-        "North Texas’ defense has to slow Florida Atlantic on third down — Florida Atlantic’s offense converts 50.8% of its third downs.",
-        "North Texas’ offense has to keep winning on long runs: it turns 7.9% of its runs into explosive gains, and Florida Atlantic’s defense gives up explosive gains on 11.8% of opponent runs."
-      ],
-      "market": [
-        "Florida Atlantic’s offense has to keep winning in the red zone: it succeeds on 49.9% of its red-zone plays, and North Texas’ defense allows success on 54.3% of opponent red-zone plays.",
-        "Florida Atlantic’s offense has to keep winning on third down: it converts 50.8% of its third downs, and North Texas’ defense allows opponents to convert 37.7% of their third downs.",
-        "Florida Atlantic’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 4.4% of its dropbacks, and North Texas’ defense sacks the quarterback on 7.9% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for North Texas and Florida Atlantic.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (North Texas), sack rate allowed (Florida Atlantic) and sack rate (Florida Atlantic); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 4.1 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "North Texas: new head coach; returning roster share at the 8th percentile; returning production at the 1st percentile; transfers out at the 87th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-29T16:27:54.289Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-28T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T18:25:10.361Z"
+    "at": "2026-10-30T00:50:38.302Z"
   }
 }

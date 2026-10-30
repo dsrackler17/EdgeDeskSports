@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T20:00:00.000Z",
   "game_when_label": "2026-10-31 20:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-29T18:25:10.361Z",
-  "generated_at": "2026-10-29T18:25:10.361Z",
+  "updated_at": "2026-10-30T00:50:38.302Z",
+  "generated_at": "2026-10-30T00:50:38.302Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -138,9 +138,9 @@
           "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 4
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 6
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for San José State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for New Mexico and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
           },
           {
             "field": "recruiting_talent",
@@ -258,7 +282,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-25T02:00:00.000Z",
-        "retrieved_at": "2026-10-29T16:25:42.209Z"
+        "retrieved_at": "2026-10-29T19:32:16.418Z"
       },
       "home": {
         "team": "San José State",
@@ -332,7 +356,7 @@
         "published_at": null,
         "retrieved_at": null
       },
-      "generated_at": "2026-10-29T16:26:38.488Z",
+      "generated_at": "2026-10-29T19:32:14.219Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -743,15 +767,15 @@
               "a": {
                 "v": "55.3",
                 "n": 55.3,
-                "rank": "#106 of 138",
-                "rank_n": 106,
+                "rank": "#104 of 138",
+                "rank_n": 104,
                 "note": null
               },
               "h": {
                 "v": "55.2",
                 "n": 55.2,
-                "rank": "#109 of 138",
-                "rank_n": 109,
+                "rank": "#107 of 138",
+                "rank_n": 107,
                 "note": null
               },
               "edge": {
@@ -839,15 +863,15 @@
               "a": {
                 "v": "54.2",
                 "n": 54.2,
-                "rank": "#114 of 138",
-                "rank_n": 114,
+                "rank": "#113 of 137",
+                "rank_n": 113,
                 "note": null
               },
               "h": {
                 "v": "53.8",
                 "n": 53.8,
-                "rank": "#125 of 138",
-                "rank_n": 125,
+                "rank": "#124 of 137",
+                "rank_n": 124,
                 "note": null
               },
               "edge": {
@@ -1133,7 +1157,7 @@
           "team": "New Mexico",
           "label": "running backs",
           "v": "55.3",
-          "rank": "#106 of 138",
+          "rank": "#104 of 138",
           "note": null
         },
         "def": {
@@ -1144,7 +1168,7 @@
           "note": null
         },
         "complete": true,
-        "read": "New Mexico’s running backs rates 55.3 (#106 of 138) against San José State’s linebackers at 52.0 (#87 of 138). San José State’s unit stands higher among its own position group, by 19 places."
+        "read": "New Mexico’s running backs rates 55.3 (#104 of 138) against San José State’s linebackers at 52.0 (#87 of 138). San José State’s unit stands higher among its own position group, by 17 places."
       },
       {
         "title": "San José State running backs vs New Mexico linebackers",
@@ -1152,7 +1176,7 @@
           "team": "San José State",
           "label": "running backs",
           "v": "55.2",
-          "rank": "#109 of 138",
+          "rank": "#107 of 138",
           "note": null
         },
         "def": {
@@ -1163,7 +1187,7 @@
           "note": null
         },
         "complete": true,
-        "read": "San José State’s running backs rates 55.2 (#109 of 138) against New Mexico’s linebackers at 59.7 (#9 of 138). New Mexico’s unit stands higher among its own position group, by 100 places."
+        "read": "San José State’s running backs rates 55.2 (#107 of 138) against New Mexico’s linebackers at 59.7 (#9 of 138). New Mexico’s unit stands higher among its own position group, by 98 places."
       },
       {
         "title": "New Mexico receivers vs San José State secondary",
@@ -1548,7 +1572,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 8.8,
+            "score": 5.3,
             "max": 20
           },
           {
@@ -1560,7 +1584,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 11.8,
+            "score": 10.9,
             "max": 15
           },
           {
@@ -1583,18 +1607,18 @@
         "next_actions": [
           {
             "action": "Identify San José State’s starting QB",
-            "potential_gain": 14,
-            "text": "up to +14"
+            "potential_gain": 10,
+            "text": "up to +10"
           },
           {
-            "action": "Re-read availability inside the filing window (New Mexico)",
-            "potential_gain": 4,
-            "text": "up to +4 once identify San José State’s starting QB is done"
+            "action": "Restore an injury/availability source for New Mexico",
+            "potential_gain": 5,
+            "text": "up to +5 once identify San José State’s starting QB is done"
           },
           {
-            "action": "Re-read availability inside the filing window (San José State)",
-            "potential_gain": 4,
-            "text": "up to +4 once identify San José State’s starting QB is done"
+            "action": "Restore an injury/availability source for San José State",
+            "potential_gain": 5,
+            "text": "up to +5 once identify San José State’s starting QB is done"
           }
         ],
         "stability": {
@@ -1781,8 +1805,8 @@
         },
         {
           "k": "Running backs",
-          "a": "55.3  #106",
-          "h": "55.2  #109",
+          "a": "55.3  #104",
+          "h": "55.2  #107",
           "note": null
         },
         {
@@ -1847,7 +1871,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1ykzoos42tc66",
+    "packet_hash": "ugzmx2paaz1g",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can San José State take away New Mexico’s big plays?",
@@ -1905,14 +1929,14 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-29T16:27:54.289Z",
+        "observed_at": "2026-10-29T22:48:03.785Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-28T00:00:00.000Z",
+        "observed_at": "2026-10-29T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -1921,6 +1945,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T18:25:10.361Z"
+    "at": "2026-10-30T00:50:38.302Z"
   }
 }
