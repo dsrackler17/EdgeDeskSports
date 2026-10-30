@@ -63,7 +63,7 @@
 //      NHL_GOALIE_INPUTS_URL (default https://edgedesksports.com/hockey/goalie_inputs.json)
 // ============================================================
 
-export const BUILD = "nhl_goalie_sync@2026-10-30.3";
+export const BUILD = "nhl_goalie_sync@2026-10-30.4";
 const INPUTS_URL = "https://edgedesksports.com/hockey/goalie_inputs.json";
 // A browser's headers, as nba_injury_sync sends: a crawler-style agent was
 // refused by ESPN's edge on the NBA layer's first live runs.
