@@ -137,6 +137,34 @@ jobs:
             summary "| GITHUB_TOKEN, side ref + passed $how run first | $r | |"
           done
 
+          # the real tools/ci/certified_push.sh from claude/data-push-certify, as a
+          # data job runs it: a github.com remote, GITHUB_ACTIONS=true, and the
+          # token either in GH_TOKEN or only in actions/checkout's extraheader
+          git fetch -q --depth=1 "$token_url" claude/data-push-certify
+          git show FETCH_HEAD:tools/ci/certified_push.sh > "$RUNNER_TEMP/certified_push.sh"
+          b="claude/bypass-probe-control/target"
+          for cred in env extraheader; do
+            rm -rf "$RUNNER_TEMP/rc" && git clone -q --depth=1 --branch "$b" "https://github.com/$GITHUB_REPOSITORY.git" "$RUNNER_TEMP/rc"
+            ( cd "$RUNNER_TEMP/rc"
+              git config user.name 'github-actions[bot]'
+              git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+              git config http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+              echo "run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT, real certified_push.sh ($cred) at $(date -u +%FT%T.%NZ)" > probe.txt
+              git add probe.txt && git commit -q -m "bypass probe: real certified_push.sh ($cred) updates $b"
+              sha=$(git rev-parse HEAD)
+              if [ "$cred" = env ]; then export GH_TOKEN="$TOKEN"; else unset GH_TOKEN GITHUB_TOKEN; fi
+              if CERTIFY_BRANCH="$b" GITHUB_ACTIONS=true bash "$RUNNER_TEMP/certified_push.sh" origin "HEAD:$b" > out.txt 2>&1; then r=ACCEPTED
+              elif grep -q 'GH013' out.txt; then r=REFUSED
+              else r='FAILED (see the log)'
+              fi
+              left=$(git ls-remote origin "refs/heads/ci-certify/*" | wc -l)
+              landed=$(git ls-remote origin "refs/heads/$b" | cut -f1)
+              echo "PROBE_RESULT real certified_push.sh ($cred) -> $b: $r; landed $landed (ours $sha); ci-certify branches left: $left"
+              sed 's/^/    | /' out.txt
+              echo "| real certified_push.sh, token in $cred | $r (landed ours: $([ "$landed" = "$sha" ] && echo yes || echo no); side branches left: $left) | |" >> "$GITHUB_STEP_SUMMARY"
+            )
+          done
+
           summary ""
           summary "Expected: **control** REFUSED on every row (the rules bind that kind of push)."
           summary "**write** ACCEPTED on the GITHUB_TOKEN row: a Write-role bypass lets today's data jobs through unchanged."
