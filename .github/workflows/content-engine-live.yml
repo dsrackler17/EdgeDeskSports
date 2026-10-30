@@ -1,0 +1,57 @@
+# EdgeDesk — the Content Engine's daily live sweep (see content-engine.yml for the
+# tests a pull request runs).
+#
+# tools/content/evidence.test.js --live: every article the engine would draft from
+# today's committed research, at the real clock, must pass the editorial gate, and
+# every claim the evidence builder makes from it must cite only numbers its own text
+# prints. A pull request checks the same rules on the research pinned in
+# tools/content/fixtures/research_2026_w9.json.gz, so a data push or the clock
+# never turns a pull request red; this sweep is what notices when today's data
+# exposes the writer or the builder (as Week 9 did on 2026-10-29).
+#
+# A failure is a red run here, and GitHub's failed-run e-mail; it blocks no pull
+# request. Fix the writer or the builder in a pull request, never the gate
+# (AGENTS.md §3, §4), and re-run this by hand (Actions → Run workflow; `now`
+# replays the sweep as of the moment it failed).
+#
+# 12:41 UTC daily: before the Tuesday and Wednesday drafting run at 13:23
+# (content-engine-weekly.yml), and not on the hour (GitHub's scheduler drops runs
+# there). Nothing here writes, deploys or sends; no secret is read.
+name: Content engine live sweep
+run-name: Content engine live sweep · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '41 12 * * *'
+  workflow_dispatch:
+    inputs:
+      now:
+        description: 'Sweep as of this moment (ISO 8601, e.g. 2026-10-29T20:14:42Z); empty is now'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-engine-live-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Every article drafted from today's research passes the editorial gate (evidence.test.js --live)
+        env:
+          NOW: ${{ github.event.inputs.now }}
+        run: |
+          if [ -n "$NOW" ]; then
+            node tools/content/evidence.test.js --live --now "$NOW"
+          else
+            node tools/content/evidence.test.js --live
+          fi

@@ -212,6 +212,32 @@ function build(opts) {
   out.counts = { cfb: out.cfb ? Object.keys(out.cfb.packets).length : 0, nfl: out.nfl ? Object.keys(out.nfl.packets).length : 0, built_this_run: builds };
   return out;
 }
+/* ── a week's packets from captured inputs (a test fixture) ─────────────────
+   tools/content/fixtures/freeze_live.js captures, for each game, the inputs
+   cfbInputs()/nflInputs() gathered (what every game of a league shares, once,
+   under `shared`; `keys` keeps their order) and the committed packet's hashes.
+   buildFrom builds them with this code at opts.now, as build() would have: a
+   packet whose inputs and content match the committed one keeps its build time. */
+function buildFrom(frozen, opts) {
+  const now = opts.now, clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+  const out = { schema: 'edgedesk_football_evidence_set_v1', version: FE.VERSION, built_at: new Date(now).toISOString(), inputs: clone(frozen.inputs), cfb: null, nfl: null };
+  let built = 0;
+  ['cfb', 'nfl'].forEach((league) => {
+    const L = frozen[league];
+    if (!L) return;
+    const packets = {};
+    Object.keys(L.games).forEach((id) => {
+      const G = L.games[id], x = {};
+      L.keys.forEach((k) => { x[k] = clone(k in G.inputs ? G.inputs[k] : L.shared[k]); });
+      let p = league === 'cfb' ? FE.buildCfb(x, { now }) : FE.buildNfl(x, { now });
+      if (G.previous && G.previous.inputs_hash === p.inputs_hash && G.previous.hash === p.hash) p = Object.assign({}, p, { built_at: G.previous.built_at });
+      packets[id] = p; built++;
+    });
+    out[league] = { season: L.season, week: L.week, packets };
+  });
+  out.counts = { cfb: out.cfb ? Object.keys(out.cfb.packets).length : 0, nfl: out.nfl ? Object.keys(out.nfl.packets).length : 0, built_this_run: built };
+  return out;
+}
 function stats() { return { builds, cached: CACHE.size }; }
 
 /* ── CLI ─────────────────────────────────────────────────────────────────── */
@@ -273,4 +299,4 @@ function main() {
   process.exit(2);
 }
 if (require.main === module) main();
-module.exports = { build, packetFor, sources, cfbInputs, nflInputs, stats, showPacket, parseCsv, PATHS };
+module.exports = { build, buildFrom, packetFor, sources, cfbInputs, nflInputs, stats, showPacket, parseCsv, PATHS };
