@@ -35,17 +35,28 @@ function finish() { console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | situationa
 const GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 const CACHED = path.join(ROOT, 'football', 'nfl', '.cache', GAMES_URL.replace(/[^a-z0-9.]+/gi, '_').slice(-120));
 async function gamesCsv() { if (fs.existsSync(CACHED)) return fs.readFileSync(CACHED, 'utf8'); try { const r = await fetch(GAMES_URL); if (r.ok) return await r.text(); } catch (_) { /* below */ } return null; }
-function cfbSchedule(y) {
+/* the FBS schedule the board reads: a local cache when a build left one, else
+   the published file the page itself asks for (a CI runner has no cache) */
+const CFB_URL = (y) => 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_' + y + '.csv';
+const cfbFetched = {};
+async function cfbSchedule(y) {
   for (const d of [path.join(ROOT, 'football', 'situational', '.cache', 'raw', 'cfb_schedule_' + y + '.csv'), path.join(ROOT, 'football', 'fbs', '.cache', 'cfb_schedules_' + y + '.csv')]) if (fs.existsSync(d)) return fs.readFileSync(d, 'utf8');
-  return null;
+  if (!(y in cfbFetched)) cfbFetched[y] = fetch(CFB_URL(y)).then((r) => (r.ok ? r.text() : null)).catch(() => null);
+  return cfbFetched[y];
+}
+
+/* missing tooling or data is NOT VERIFIED, never a pass: CI sets FSIE_E2E_REQUIRED=1, so there it fails */
+function unavailable(why) {
+  if (process.env.FSIE_E2E_REQUIRED === '1') { console.log('FAIL | ' + why + ' (FSIE_E2E_REQUIRED=1)'); process.exit(1); }
+  console.log('SKIPPED (not verified): ' + why); process.exit(0);
 }
 
 (async function main() {
   let pw = null;
   for (const p of ['playwright', '/opt/node22/lib/node_modules/playwright', '/opt/node-tools/node_modules/playwright']) { try { pw = require(p); break; } catch (_) { /* next */ } }
-  if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
+  if (!pw) unavailable('playwright is not installed here');
   const ART = path.join(ROOT, 'football', 'situational', 'data', 'cards.json');
-  if (!fs.existsSync(ART)) { console.log('SKIPPED: no committed cards.json'); process.exit(0); }
+  if (!fs.existsSync(ART)) unavailable('no committed cards.json');
   const cards = JSON.parse(fs.readFileSync(ART, 'utf8'));
   const PIN = Date.parse(cards.built_at);
   const nflIds = Object.keys(cards.games).filter((k) => cards.games[k].sport === 'nfl');
@@ -81,7 +92,7 @@ function cfbSchedule(y) {
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       if (url === GAMES_URL || /nfldata\/master\/data\/games\.csv/.test(url)) return route.fulfill({ status: 200, contentType: 'text/csv', body: csv });
       const m = url.match(/cfb_schedules_(\d{4})\.csv/);
-      if (m) { const b = cfbSchedule(+m[1]); return b ? route.fulfill({ status: 200, contentType: 'text/csv', body: b }) : route.fulfill({ status: 404, body: 'not published' }); }
+      if (m) { const b = await cfbSchedule(+m[1]); return b ? route.fulfill({ status: 200, contentType: 'text/csv', body: b }) : route.fulfill({ status: 404, body: 'not published' }); }
       if (/supabase\.co/.test(url)) {
         if (/\/subscriptions/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', price_id: 'price_e2e', current_period_end: new Date(PIN + 30 * 864e5).toISOString(), cancel_at_period_end: false, stripe_customer_id: 'cus_e2e' }]) });
         return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
