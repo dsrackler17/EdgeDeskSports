@@ -119,6 +119,8 @@ const ORPHAN = { c: cid('orphan'), start: NOW + 5 * H, tokens: [tok(cid('orphan'
 const LIVE_ALT = { c: cid('live-alt'), start: NOW + 3 * H, tokens: [tok(cid('live-alt'), 0), tok(cid('live-alt'), 1)], slug: 'nfl-kc-lv-live' };
 const FAR = { c: cid('far'), start: NOW + 9 * DAY, tokens: [tok(cid('far'), 0), tok(cid('far'), 1)], slug: 'nfl-buf-mia-far' };
 const BULK = Array.from({ length: 1200 }, (_, i) => { const c = cid('bulk' + i); return { c, start: NOW + 3 * H, tokens: [tok(c, 0), tok(c, 1)], slug: 'nfl-kc-lv-bulk' }; });
+/* a game the board does not carry, at the board's game's time, with its alternate totals: none can be matched (production, 2026-10-30: 2,535 of them) */
+const ORPHANS = Array.from({ length: 300 }, (_, i) => { const c = cid('orph' + i); return { c, start: NOW + 3 * H, tokens: [tok(c, 0), tok(c, 1)], slug: 'nfl-orphan-bulk' }; });
 const STARTED = { c: cid('started'), start: NOW - 20 * H, tokens: [tok(cid('started'), 0), tok(cid('started'), 1)], slug: 'nfl-den-sea-done', settle: ['1', '0'] };
 let scenario = {};
 let fake = 0;   /* fake milliseconds the function's clock is ahead of the real one: scenario.costMs per Polymarket request */
@@ -178,6 +180,8 @@ function polymarket(url) {
     /* a full slate: the game's alternate totals, as many as a real night carries (production's first run, 2026-10-29) */
     if (scenario.bulk) all.push({ id: 'e-bulk', slug: 'nfl-kc-lv-bulk', title: 'Chiefs vs. Raiders', startTime: gt(LIVE.start), endDate: new Date(LIVE.start).toISOString(), tags: [{ slug: 'nfl' }],
       markets: BULK.slice(0, scenario.bulk).map((m, i) => gammaMarket(m, { question: 'Chiefs vs. Raiders: O/U ' + (60.5 + i), outcomes: '["Over", "Under"]', sportsMarketType: 'totals', line: 60.5 + i, outcomePrices: '["0.5", "0.5"]', events: undefined })) });
+    if (scenario.orphans) all.push({ id: 'e-orphans', slug: 'nfl-orphan-bulk', title: 'Alabama State vs. Alabama A&M', startTime: gt(LIVE.start), endDate: new Date(LIVE.start).toISOString(), tags: [{ slug: 'nfl' }],
+      markets: ORPHANS.slice(0, scenario.orphans).map((m, i) => gammaMarket(m, { question: 'Alabama State vs. Alabama A&M: O/U ' + (40.5 + i), outcomes: '["Over", "Under"]', sportsMarketType: 'totals', line: 40.5 + i, outcomePrices: '["0.5", "0.5"]', events: undefined })) });
     const lo = q('end_date_min') ? Date.parse(q('end_date_min')) : -Infinity, hi = q('end_date_max') ? Date.parse(q('end_date_max')) : Infinity;
     const off = +(q('offset') || 0), lim = +(q('limit') || 100);
     return ok(all.filter((e) => Date.parse(e.endDate) >= lo && Date.parse(e.endDate) <= hi).slice(off, off + lim));
@@ -218,9 +222,10 @@ let rest;
     V('insert into public.signals values ' + [s('k1', 'h2h', 'Kansas City Chiefs', null, 0.62), s('k2', 'h2h', 'Las Vegas Raiders', null, 0.38), s('k3', 'totals', 'Over', 47.5, 0.5), s('k4', 'totals', 'Under', 47.5, 0.5)].join(', ') + ';');
     db.applyFileAtomic(path.join(ROOT, 'supabase', 'radar.sql'));
     rest = REST.make(db);
-    let longestRest = 0;
+    let longestRest = 0, pendingWrites = null;
     globalThis.fetch = async (url, init) => {
       url = String(url);
+      if (pendingWrites && init && init.method === 'PATCH' && /\/rest\/v1\/poly_markets\?/.test(url) && /"match_status":"pending"/.test(String(init.body || ''))) pendingWrites.push(url);
       /* as Deno's fetch does: its request URI holds at most 65,534 bytes, and a longer one is refused "Invalid URL" */
       const href = new URL(url).href;
       if (href.length > 65534) throw new TypeError('Invalid URL: ' + href.slice(0, 120));
@@ -415,6 +420,18 @@ let rest;
     chk('tonight: a full slate of 1,200 more markets is stored and looked up in chunks, every database URL within fetch\'s 65,534 bytes',
       big.status !== 'error' && V("select count(*) from public.poly_markets where slug = 'nfl-kc-lv-bulk' and event_id = 'ev1'") === '1200' && longestRest > 0 && longestRest <= 65534,
       { status: big.status, message: big.message, longestRest });
+
+    /* ── unmatched markets are written once, not on every run: production's tonight runs died (HTTP 546, 502) rewriting 2,535 of them every 10 minutes, 2026-10-30 ── */
+    scenario.orphans = 300;
+    const firstOrph = await go('tonight');
+    pendingWrites = [];
+    const nextOrph = await go('tonight');
+    const rewritten = pendingWrites.length;
+    pendingWrites = null;
+    scenario.orphans = 0;
+    chk('tonight: 300 markets of a game the board does not carry are stored pending with their reason, once',
+      firstOrph.status !== 'error' && V("select count(*) from public.poly_markets where slug = 'nfl-orphan-bulk' and match_status = 'pending' and match_reason = 'team_unresolved'") === '300', { status: firstOrph.status, message: firstOrph.message });
+    chk('tonight: the next run rewrites none of them (an unmatched market whose reason has not changed is not written again)', nextOrph.status !== 'error' && rewritten === 0, { rewritten, status: nextOrph.status });
 
     /* ── time: a wallets run answers within Supabase's 150 s request limit (production's first one did not, 2026-10-29) ── */
     scenario.costMs = 4000;   /* every Polymarket request takes 4 s */

@@ -70,6 +70,9 @@ and whose result stands.
 - `tonight`: reads each card's best ask from the order book (`/book`).
   `radar_publish_cards(p_quotes)` publishes a card only at that ask, with its
   market's taker fee at it, and only when that fee can be read.
+  An unmatched market is written once per reason, not on every run:
+  rewriting a night's unmatched alternate lines (2,535 on 2026-10-30) ran
+  the runs out of time and compute before they recorded anything.
 
 ### What a subscriber sees
 

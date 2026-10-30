@@ -13,6 +13,11 @@
   The page says which, and with no card says "no featured bettor holds a position on tonight's covered games right now", with when the holders were checked. Observed Activity says the same under its own heading. These thresholds are presentation only.
 - **The report.** `tools/radar/sql/radar_pipeline_report.sql` is read-only. Deploy Prediction Radar prints it last (`report`, on by default), together with the four schedules' last runs. It shows the rules, the hypothesis and the sync state, then the runs, discovery with exclusions by reason, the grade by style, the matched games, and every stage in order to the cards, marking where the featured path first reaches zero.
 - **run_now** ends with one tonight run, so the holders and the cards are current at once. A failed tonight run fails the step.
+- **The tonight runs stop dying (`polymarket_sync` build `.9`).**
+  - What the report found on 2026-10-30 (run 41066621513): the holders sync had not succeeded since 2026-10-29 15:02 UTC. pg_net shows the function answering HTTP 546 (out of compute) 9 times, 500 five times and 502 five times, besides runs refused for the budget.
+  - Each run rewrote every unmatched covered market (2,535 college football alternate lines) one request at a time.
+  - Runs that die never settle their request grant, so they also held about 22,000 of the day's 40,000 requests (used: 17,785).
+  - Now an unmatched market is written once per reason. Test: on the old code, the next run rewrote 301 of 301 unmatched markets; on the new, none (sync 81 -> 83).
 - **Tests**, each failing first:
   - SQL 223 -> 237. On the old registry builder the new checks fail: 142 passed and 2 failed, with H-RADAR-02 not registered. Before `radar_sync_state()` existed, the suite stopped on its first call.
   - UI 84 -> 95. Before the change, 6 of the 7 new checks failed. The seventh, observed activity shown when nobody is featured, already passed.
