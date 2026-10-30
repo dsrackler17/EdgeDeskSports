@@ -123,8 +123,9 @@ function rest(u, init) {
     return [200, JSON.parse(JSON.stringify(filt(DB[name], q)))];
   } catch (e) { return [e.status || 500, { message: e.message }]; }
 }
-function resp(status, body) {
-  return { ok: status >= 200 && status < 300, status, json: async () => (typeof body === 'string' ? JSON.parse(body) : body), text: async () => (typeof body === 'string' ? body : JSON.stringify(body)) };
+function resp(status, body, headers) {
+  const h = Object.fromEntries(Object.entries(headers || {}).map(([k, v]) => [k.toLowerCase(), String(v)]));
+  return { ok: status >= 200 && status < 300, status, headers: { get: (k) => (h[String(k).toLowerCase()] ?? null) }, json: async () => (typeof body === 'string' ? JSON.parse(body) : body), text: async () => (typeof body === 'string' ? body : JSON.stringify(body)) };
 }
 globalThis.fetch = async (u, init) => {
   u = String(u);
@@ -136,6 +137,13 @@ globalThis.fetch = async (u, init) => {
   }
   W.calls.push(u);
   if (u === ENV.NHL_GOALIE_INPUTS_URL) return W.inputsUp ? resp(200, W.inputs) : resp(503, 'down');
+  if (u.startsWith('https://www.dailyfaceoff.com/starting-goalies/')) {
+    W.dfCalls = (W.dfCalls || 0) + 1;
+    /* a scripted answer per call (Cloudflare's refusals, a network error), then the page as usual */
+    const next = W.dfSeq && W.dfSeq.length ? W.dfSeq.shift() : null;
+    if (next && next.throw) { const e = new TypeError(next.throw); throw e; }
+    if (next) return resp(next.status, next.body, next.headers);
+  }
   if (u.startsWith('https://www.dailyfaceoff.com/starting-goalies/')) return W.dfStatus !== 200 ? resp(W.dfStatus, 'blocked') : resp(200, typeof W.df === 'string' && W.df.startsWith('<') ? W.df : FX.minVanPage(W.df));
   if (u.startsWith('https://api-web.nhle.com/v1/gamecenter/2026020184/boxscore')) return W.boxStatus !== 200 ? resp(W.boxStatus, 'down') : resp(200, W.box || FX.boxscore({ id: 2026020184, home: 'VAN', away: 'MIN' }));
   return resp(404, 'unmocked ' + u);
@@ -146,6 +154,9 @@ globalThis.fetch = async (u, init) => {
   let F;
   try { F = await import(FN); } catch (e) { console.log('SKIP | nhl goalie sync | the deployed function could not be imported: ' + (e && e.message) + ' (needs Node 22+ type stripping)'); process.exit(0); }
   const run = (now, o) => F.syncOnce(Object.assign({ now }, o || {}));
+  /* the retry backoff does not really sleep here: each wait is recorded instead */
+  W.sleeps = [];
+  if (F.NET) { F.NET.sleep = async (ms) => { W.sleeps.push(ms); }; F.NET.random = () => 0.5; }
   const cards = () => DB.nhl_game_cards.filter((c) => c.game_id === '2026020184').sort((a, b) => a.version - b.version);
   const cons = (team) => DB.nhl_goalie_starters.find((s) => s.team === team && s.source === 'consensus' && s.is_current);
   const runs = () => DB.nhl_goalie_sync_runs;
@@ -282,10 +293,74 @@ globalThis.fetch = async (u, init) => {
   r = await run('2026-10-25T23:00:20Z');
   chk('Daily Faceoff refusing (HTTP 403) is DEGRADED and named; the NHL API still read', DB.nhl_goalie_alerts.some((a) => a.code === 'daily_faceoff_unavailable' && /HTTP 403/.test(a.message)) && runs()[0].daily_faceoff_ok === false && runs()[0].nhl_api_ok === true && runs()[0].status === 'warn', [runs()[0], DB.nhl_goalie_alerts]);
   W.dfStatus = 200;
+  /* ============================================================ Daily Faceoff behind Cloudflare (2026-10-30 16:34 UTC: both pages 403) */
+  const CF_PAGE = '<!DOCTYPE html><html><head><title>Attention Required! | Cloudflare</title></head><body>Sorry, you have been blocked</body></html>';
+  const CF = { status: 403, body: CF_PAGE, headers: { server: 'cloudflare', 'cf-ray': '8d1e0000000-IAD' } };
+  const dfRows = () => DB.nhl_goalie_starters.filter((s) => s.source === 'daily_faceoff');
+  const pages = () => (runs()[runs().length - 1].sources.daily_faceoff || {}).pages || [];
+  resetDb(); W.box = null; W.df = 'evening'; W.sleeps = []; W.dfCalls = 0;
+  W.dfSeq = [CF];
+  r = await run('2026-10-25T23:00:20Z');
+  chk('cloudflare: a 403 then a 200 recovers inside the run — Daily Faceoff read, its starters written, no DEGRADED alert', runs()[0].daily_faceoff_ok === true && W.dfCalls === 2
+    && !DB.nhl_goalie_alerts.some((a) => a.code === 'daily_faceoff_unavailable') && dfRows().some((s) => s.team === 'VAN' && s.status === 'confirmed'), [runs()[0].daily_faceoff_ok, W.dfCalls, DB.nhl_goalie_alerts.map((a) => a.code)]);
+  chk('cloudflare: the page records the two attempts and one backoff of 2.0–3.0 s (base 2 s plus jitter)', pages()[0] && pages()[0].attempts === 2 && W.sleeps.length === 1 && W.sleeps[0] >= 2000 && W.sleeps[0] < 3000, [pages()[0], W.sleeps]);
+
+  resetDb(); W.sleeps = []; W.dfCalls = 0;
+  W.dfSeq = [{ status: 429, body: 'slow down', headers: { 'retry-after': '120' } }, { status: 503, body: 'busy' }];
+  r = await run('2026-10-25T23:00:20Z');
+  chk('a 429 with Retry-After: 120 waits at most 8 s; a 503 is tried again too; the third attempt reads', runs()[0].daily_faceoff_ok === true && W.dfCalls === 3 && W.sleeps[0] === 8000 && W.sleeps[1] >= 4000 && W.sleeps[1] < 5000, [W.dfCalls, W.sleeps]);
+
+  resetDb(); W.sleeps = []; W.dfCalls = 0;
+  W.dfSeq = [{ throw: 'error sending request: connection reset' }];
+  r = await run('2026-10-25T23:00:20Z');
+  chk('a lost connection is tried again and the run reads Daily Faceoff', runs()[0].daily_faceoff_ok === true && W.dfCalls === 2, [W.dfCalls, runs()[0].daily_faceoff_ok]);
+
+  resetDb(); W.sleeps = []; W.dfCalls = 0;
+  W.dfSeq = [{ status: 404, body: 'not found' }];
+  r = await run('2026-10-25T23:00:20Z');
+  chk('a 404 is not retried (the page is not there; another try will not change that)', W.dfCalls === 1 && runs()[0].daily_faceoff_ok === false && W.sleeps.length === 0, [W.dfCalls, W.sleeps]);
+
+  /* a persistent block, more than three hours out (Daily Faceoff is the only source): what production saw at 16:34 */
+  resetDb(); W.df = 'afternoon'; W.sleeps = []; W.dfCalls = 0;
+  W.dfSeq = [CF, Object.assign({}, CF, { headers: { 'cf-mitigated': 'challenge' }, body: '<html><head><title>Just a moment...</title></head></html>' }), CF];
+  r = await run('2026-10-25T18:00:20Z');
+  const cfAlert = DB.nhl_goalie_alerts.find((a) => a.code === 'daily_faceoff_unavailable');
+  chk('cloudflare: refused three times → ok:false, an error run (sources_down), the alert says "blocked by Cloudflare bot protection (HTTP 403)"', r.ok === false && runs()[0].status === 'error' && runs()[0].daily_faceoff_ok === false
+    && !!cfAlert && /blocked by Cloudflare bot protection \(HTTP 403\) on 3 attempts/.test(cfAlert.message) && DB.nhl_goalie_alerts.some((a) => a.code === 'sources_down'), [r.ok, runs()[0].status, cfAlert && cfAlert.message]);
+  chk('cloudflare: the run row keeps the page\'s attempts and the classification (diagnostics)', pages()[0] && pages()[0].blocked === true && pages()[0].attempts === 3 && W.dfCalls === 3 && W.sleeps.length === 2, pages()[0]);
+  chk('cloudflare: nothing from Daily Faceoff is written, no starter is Confirmed, and no DRIFT is blamed on the parser', dfRows().length === 0 && !DB.nhl_goalie_starters.some((s) => s.status === 'confirmed')
+    && !DB.nhl_goalie_alerts.some((a) => a.severity === 'DRIFT') && cards().every((x) => x.goalie_status_home !== 'confirmed' && x.goalie_status_away !== 'confirmed'), DB.nhl_goalie_starters.map((s) => s.source + ':' + s.status));
+  W.dfSeq = null;
+  r = await run('2026-10-25T20:00:20Z');
+  chk('cloudflare: the next run recovers on its own (nothing sticky): Daily Faceoff read, Likely written, the run ok', runs()[1].daily_faceoff_ok === true && ['ok', 'warn'].includes(runs()[1].status) && dfRows().some((s) => s.team === 'VAN' && s.status === 'likely'), [runs()[1].status, runs()[1].daily_faceoff_ok]);
+
+  /* starters on file are never overwritten by an unreadable page */
+  resetDb(); W.df = 'evening'; W.sleeps = []; W.dfSeq = null;
+  r = await run('2026-10-25T23:00:20Z');
+  const before = JSON.stringify(dfRows().filter((s) => s.is_current).map((s) => [s.id, s.team, s.goalie_name, s.status]));
+  W.dfSeq = [CF, CF, CF];
+  r = await run('2026-10-25T23:15:20Z');
+  chk('cloudflare: a blocked page leaves the stored Daily Faceoff starters exactly as they were (Vancouver stays Confirmed from 23:00, nothing new)', JSON.stringify(dfRows().filter((s) => s.is_current).map((s) => [s.id, s.team, s.goalie_name, s.status])) === before
+    && runs()[1].daily_faceoff_ok === false && cons('VAN').status === 'confirmed' && cons('MIN').status !== 'confirmed', [before, runs()[1].status]);
+  W.dfSeq = [{ status: 200, body: '' }, { status: 200, body: '   ' }, { status: 200, body: '' }];
+  r = await run('2026-10-25T23:30:20Z');
+  chk('an empty 200 is not a page: tried again, named, nothing written over the stored starters, no DRIFT', JSON.stringify(dfRows().filter((s) => s.is_current).map((s) => [s.id, s.team, s.goalie_name, s.status])) === before
+    && runs()[2].daily_faceoff_ok === false && DB.nhl_goalie_alerts.some((a) => a.code === 'daily_faceoff_unavailable' && /HTTP 200 with an empty page/.test(a.message)) && !DB.nhl_goalie_alerts.some((a) => a.severity === 'DRIFT'), DB.nhl_goalie_alerts.map((a) => a.code + ':' + a.message).slice(-3));
+  W.dfSeq = [{ status: 200, body: CF_PAGE.replace('Attention Required! | Cloudflare', 'Just a moment...') }, { status: 200, body: CF_PAGE }, { status: 200, body: CF_PAGE }];
+  r = await run('2026-10-25T23:45:20Z');
+  chk('a Cloudflare challenge served as 200 is a block, not a page: nothing written, no DRIFT', JSON.stringify(dfRows().filter((s) => s.is_current).map((s) => [s.id, s.team, s.goalie_name, s.status])) === before
+    && runs()[3].daily_faceoff_ok === false && DB.nhl_goalie_alerts.some((a) => /blocked by Cloudflare bot protection \(HTTP 200 challenge page\)/.test(a.message)) && !DB.nhl_goalie_alerts.some((a) => a.severity === 'DRIFT'), DB.nhl_goalie_alerts.map((a) => a.message).slice(-2));
+  W.dfSeq = null; W.df = 'evening';
+  W.dfSeq = [CF, CF, CF]; W.dfCalls = 0; W.sleeps = [];
+  let rd = await F.readDailyFaceoff('2026-10-25', ms('2026-10-25T23:00:00Z'), { until: (F.NET ? F.NET.now() : Date.now()) + 2500 });
+  chk('the retries share the run\'s time budget: no attempt is started that could not finish inside it', rd.ok === false && W.dfCalls === 1 && W.sleeps.length === 0 && /blocked by Cloudflare bot protection \(HTTP 403\)$/.test(rd.error), [W.dfCalls, rd.error, rd.attempt_log]);
+  W.dfSeq = null; W.dfCalls = 0;
   resetDb();
   W.df = '<html><body>a new layout</body></html>';
+  W.dfCalls = 0;
   r = await run('2026-10-25T23:00:20Z');
   chk('a Daily Faceoff page that changed shape is a DRIFT alert, not an empty slate', DB.nhl_goalie_alerts.some((a) => a.code === 'daily_faceoff_drift' && a.severity === 'DRIFT'));
+  chk('a page that changed shape is not fetched again (a retry cannot fix a new layout)', W.dfCalls === 1, W.dfCalls);
   W.df = 'evening';
   resetDb();
   W.inputsUp = false;

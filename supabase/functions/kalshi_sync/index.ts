@@ -75,7 +75,7 @@
 //      out keep their metadata current but are not snapshotted)
 // ============================================================
 
-export const BUILD = "kalshi_sync@2026-10-21.2";
+export const BUILD = "kalshi_sync@2026-10-30.1";
 export const LINKER_VERSION = "kalshi-link-1";
 const DEFAULT_BASE = "https://external-api.kalshi.com/trade-api/v2";
 const SHARED_BASE = "https://api.elections.kalshi.com/trade-api/v2";
@@ -595,15 +595,34 @@ function deadline(ms: number): AbortSignal | undefined { try { return (AbortSign
 export const hooks: Any = { sleep: (ms: number) => new Promise((r) => setTimeout(r, ms)) };
 
 /* ---------------------------------------------------------------- the database (PostgREST, service role) */
+/* A READ that times out, cannot connect, or is answered 429 / 5xx is tried
+   again (3 attempts, each with its own 20 s deadline, backing off): it is
+   idempotent. A WRITE is sent once: a timed-out insert may have committed, and
+   kalshi_price_snapshots has no natural key, so a resend could double a row.
+   (Run ec23a067, 2026-10-30 09:20Z: one stalled read failed the snapshot.) */
+const DB_READ_ATTEMPTS = 3;
 async function db(path: string, init?: RequestInit): Promise<Any> {
   const key = env("SUPABASE_SERVICE_ROLE_KEY");
-  const r = await fetch(env("SUPABASE_URL").replace(/\/$/, "") + "/rest/v1/" + path, {
-    ...init, signal: deadline(20000),
-    headers: { apikey: key, authorization: "Bearer " + key, "content-type": "application/json", ...((init?.headers as Any) ?? {}) },
-  });
-  const t = await r.text();
-  if (!r.ok) { const e: Any = new Error("db " + r.status + " " + path.split("?")[0] + ": " + t.slice(0, 300)); e.status = r.status; throw e; }
-  return t ? JSON.parse(t) : null;
+  const read = !init?.method || init.method === "GET";
+  for (let attempt = 0; ; attempt++) {
+    const retry = read && attempt + 1 < DB_READ_ATTEMPTS;
+    let r: Response, t: string;
+    try {   // the deadline covers the body too
+      r = await fetch(env("SUPABASE_URL").replace(/\/$/, "") + "/rest/v1/" + path, {
+        ...init, signal: deadline(20000),
+        headers: { apikey: key, authorization: "Bearer " + key, "content-type": "application/json", ...((init?.headers as Any) ?? {}) },
+      });
+      t = await r.text();
+    } catch (e) {
+      if (retry) { await hooks.sleep(250 * 2 ** attempt); continue; }
+      throw e;
+    }
+    if (!r.ok) {
+      if (retry && (r.status === 429 || r.status >= 500)) { await hooks.sleep(250 * 2 ** attempt); continue; }
+      const e: Any = new Error("db " + r.status + " " + path.split("?")[0] + ": " + t.slice(0, 300)); e.status = r.status; throw e;
+    }
+    return t ? JSON.parse(t) : null;
+  }
 }
 const insert = (table: string, rows: Any) =>
   db(table, { method: "POST", body: JSON.stringify(rows), headers: { prefer: "return=minimal" } });
