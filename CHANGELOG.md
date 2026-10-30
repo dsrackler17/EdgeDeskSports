@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-30 — NHL goalie sync: one slow database answer no longer fails a run
+
+- **What failed.** The pg_cron run at 12:10 UTC hit a database request past its 20-second deadline ("Signal timed out."). The function's database helper had no handling for it, unlike the source readers, so the whole run became `sync_error`. Readiness keeps the last check's error until the next due slot (14:00 UTC). So NHL goalie sync failed every time it ran in between: run 23 at 13:18 failed with "readiness: the last check failed: sync error: Signal timed out."
+- **Restored.** A forced run of NHL goalie sync at 13:23 UTC recorded a successful check. Readiness went back to warn (the standing "Confirmed by T-30" KPI), and the job passed (run 24).
+- **Fix** (`supabase/functions/nhl_goalie_sync/index.ts`, build `nhl_goalie_sync@2026-10-30.1`). A read that times out or loses its connection is sent once more. A write is never sent twice: it may have landed, and every table is append-only. An HTTP error from the database is not retried either.
+- **Tests** (`tools/hockey/nhl_goalie_sync.test.js`). The fake network can make a chosen database request throw Deno's `TimeoutError` ("Signal timed out."). Three new checks:
+  - one timed-out read: the run completes with no sync error;
+  - the same read timing out twice: still a named sync error;
+  - a timed-out write: never sent again.
+
+  On the old code: 82 passed, 2 failed, with production's exact error. On the fix: 84/0.
+- **Deploy:** after merge, run Deploy NHL goalie layer with `deploy_function`.
+
 ## 2026-10-30 — NHL goalie sync: the card table shows when the NHL boxscore listed each game's lineups
 
 - **Why.** The card table's first run (01:39 UTC) showed that the lineup lock priced none of the night's games. Eight had started, and all eight were still at the slate's price. For every one of them both starters were Confirmed and the inputs carried the lineup block (35/35 games). That leaves the one input nothing showed: whether the NHL boxscore listed at least 12 skaters a side before puck drop. Each sync run records what every boxscore read saw (the timing probe, `nhl_goalie_sync_runs.sources`), but no job read it.

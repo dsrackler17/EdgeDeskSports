@@ -128,7 +128,12 @@ function resp(status, body) {
 }
 globalThis.fetch = async (u, init) => {
   u = String(u);
-  if (u.startsWith(ENV.SUPABASE_URL)) { const [s, b] = rest(u, init); return resp(s, b); }
+  if (u.startsWith(ENV.SUPABASE_URL)) {
+    /* a database request that times out, as Deno's AbortSignal.timeout throws it (production, 2026-10-30 12:10 UTC) */
+    const T = W.dbTimeout, m = (init && init.method) || 'GET';
+    if (T && T.left > 0 && T.method === m && T.match.test(u)) { T.left--; T.hit++; const e = new Error('Signal timed out.'); e.name = 'TimeoutError'; throw e; }
+    const [s, b] = rest(u, init); return resp(s, b);
+  }
   W.calls.push(u);
   if (u === ENV.NHL_GOALIE_INPUTS_URL) return W.inputsUp ? resp(200, W.inputs) : resp(503, 'down');
   if (u.startsWith('https://www.dailyfaceoff.com/starting-goalies/')) return W.dfStatus !== 200 ? resp(W.dfStatus, 'blocked') : resp(200, typeof W.df === 'string' && W.df.startsWith('<') ? W.df : FX.minVanPage(W.df));
@@ -248,6 +253,23 @@ globalThis.fetch = async (u, init) => {
   chk('conflict: a WARNING alert and a warn run', DB.nhl_goalie_alerts.some((a) => a.code === 'source_conflict' && a.severity === 'WARNING') && runs()[0].status === 'warn' && runs()[0].conflicts_open === 1, runs()[0]);
   e = DB.nhl_card_edge_events;
   chk('conflict: never BOTH_CONFIRMED — at +150 the edge holds under both named goalies (Lankinen 41.2%, Meriläinen 42.4% with Pickard), so it passes only as HOLDS_EVERY_PAIRING', e.length === 1 && e[0].gate_basis === 'HOLDS_EVERY_PAIRING' && e[0].flag_allowed === true && e[0].ev_min_pairings >= 0.02, e);
+
+  /* ============================================================ the database timing out (2026-10-30 12:10 UTC: "sync error: Signal timed out.") */
+  resetDb(); W.box = null; W.df = 'evening';
+  W.dbTimeout = { method: 'GET', match: /\/nhl_goalie_sync_runs\?/, left: 1, hit: 0 };
+  r = await run('2026-10-25T23:00:20Z');
+  chk('db: a read that times out once is tried again, and the run completes (no sync error)', W.dbTimeout.hit === 1 && r.status !== 'error' && runs().length === 1 && runs()[0].status !== 'error' && cards().length === 1
+    && !DB.nhl_goalie_alerts.some((a) => a.code === 'sync_error'), [r.status, r.alerts, W.dbTimeout]);
+  resetDb();
+  W.dbTimeout = { method: 'GET', match: /\/nhl_goalie_sync_runs\?/, left: 2, hit: 0 };
+  r = await run('2026-10-25T23:00:20Z');
+  chk('db: the same read timing out twice is still a sync error, named (one retry, never a loop)', W.dbTimeout.hit === 2 && r.status === 'error' && DB.nhl_goalie_alerts.some((a) => a.code === 'sync_error' && /Signal timed out/.test(a.message)), [r.status, W.dbTimeout]);
+  resetDb();
+  W.dbTimeout = { method: 'POST', match: /\/nhl_goalie_starters/, left: 1, hit: 0 };
+  r = await run('2026-10-25T23:00:20Z');
+  chk('db: a write that times out is never sent again (it may have landed in an append-only table): a sync error', W.dbTimeout.hit === 1 && !DB.calls.includes('POST nhl_goalie_starters') && r.status === 'error'
+    && DB.nhl_goalie_alerts.some((a) => a.code === 'sync_error'), [r.status, DB.calls.filter((c) => /POST/.test(c))]);
+  W.dbTimeout = null;
 
   /* ============================================================ outages */
   resetDb(); W.box = null; W.df = 'evening';
