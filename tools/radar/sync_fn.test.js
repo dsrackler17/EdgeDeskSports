@@ -433,6 +433,11 @@ let rest;
       firstOrph.status !== 'error' && V("select count(*) from public.poly_markets where slug = 'nfl-orphan-bulk' and match_status = 'pending' and match_reason = 'team_unresolved'") === '300', { status: firstOrph.status, message: firstOrph.message });
     chk('tonight: the next run rewrites none of them (an unmatched market whose reason has not changed is not written again)', nextOrph.status !== 'error' && rewritten === 0, { rewritten, status: nextOrph.status });
 
+    /* ── progress (owner's decision, 2026-10-30): a run reports what it has used every 20 requests, so the gateway can settle a dead run's grant at its last report ── */
+    const prog = J('select p.used as reported, s.used as settled, g.granted from public.poly_api_progress p join public.poly_api_grants g on g.grant_id = p.grant_id join public.poly_api_settlements s on s.grant_id = p.grant_id');
+    chk('progress: runs of 20 requests or more reported as they went, in steps of 20, never more than they finally used', prog.length > 0
+      && prog.every((x) => x.reported > 0 && x.reported % 20 === 0 && x.reported <= x.settled && x.settled <= x.granted), prog.slice(0, 5));
+
     /* ── time: a wallets run answers within Supabase's 150 s request limit (production's first one did not, 2026-10-29) ── */
     scenario.costMs = 4000;   /* every Polymarket request takes 4 s */
     scenario.leaderboard = POOL.concat([W7]);

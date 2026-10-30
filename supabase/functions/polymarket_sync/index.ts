@@ -62,7 +62,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-30.9";
+export const BUILD = "polymarket_sync@2026-10-30.10";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -966,6 +966,9 @@ function deadline(ms: number) { try { return (AbortSignal as any).timeout(ms); }
 const H = 3600e3, MIN = 60e3, DAY = 864e5;
 /* the run's budget: requests it asks poly_api_acquire for, by mode */
 export const ASK: Record<string, number> = { tonight: 400, pool: 20, wallets: 900, grade: 0 };
+/* the run reports what it has used every PROGRESS_EVERY requests (poly_api_progress), without waiting: if it dies, the
+   gateway settles its grant at its last report plus 100 after 15 minutes instead of holding all of it for the day */
+export const PROGRESS_EVERY = 20;
 const WALLETS_PER_RUN = 3;
 /* a wallets run must answer within Supabase's 150 s request limit (production's
    first one, three new wallets, did not: HTTP 504). After WALLETS_TIME_MS it
@@ -1804,7 +1807,13 @@ export async function syncOnce(opts: any = {}) {
       }
       if (run.status !== "skipped") {
         const limit = grant ? Number(grant.granted) : 0;
-        ctx.gw = G.make({ enabled: true, sleep: hooks.sleep, budget: { take: () => { if (used >= limit) return false; used++; return true; } } });
+        const gid = grant ? grant.grant_id : null;
+        ctx.gw = G.make({ enabled: true, sleep: hooks.sleep, budget: { take: () => {
+          if (used >= limit) return false;
+          used++;
+          if (gid != null && used % PROGRESS_EVERY === 0) rpc("poly_api_progress", { p: { grant_id: gid, used } }).catch(() => {});
+          return true;
+        } } });
         if (mode === "tonight") await tonight(ctx);
         else if (mode === "pool") await (V2 ? poolV2(ctx) : pool(ctx));
         else if (mode === "wallets") await (V2 ? walletsV2(ctx) : wallets(ctx));
