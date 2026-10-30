@@ -3,13 +3,12 @@
  "model_key": "H-RADAR-02",
  "hypothesis_id": "H-RADAR-02",
  "name": "Prediction Radar — following the featured Polymarket sports wallets (complete recent history, net of what a follower pays) at the live best ask",
- "version": "0.2.0-draft",
- "status": "DRAFT",
- "draft_note": "NOT REGISTERED. This is the owner's H-RADAR-02 design (research/radar/H-RADAR-02/DESIGN.md) written as a registration for review. It is registered only when the owner approves it: status becomes EXPERIMENTAL, version 0.2.0, registered_at is set and the file is frozen (its sha256 recorded), before the prospective window starts. Open before then: the window's start date, and the registry builder for H-RADAR-02. Polymarket's fee formula was confirmed from its documentation on 2026-10-30 (below, spec.fees).",
+ "version": "0.2.0",
+ "status": "EXPERIMENTAL",
  "provenance": "T3",
  "provenance_label": "EdgeDesk research",
  "sport": "NFL, NCAAF, NBA, NHL, MLB",
- "registered_at": null,
+ "registered_at": "2026-10-30T13:30:16Z",
  "registered_before": "the prospective window starts: every card the test counts is published after registration, at a price recorded when it is published.",
  "supersedes": "H-RADAR-01 (FAILED on its holdout, 2026-10-29: research/radar/H-RADAR-01/RESULTS.md). H-RADAR-01 stays registered and its result stands; this is a new hypothesis with new rules, not a second look at its holdout.",
  "hypothesis": "Smart Money Tonight cards built from the featured wallets, followed at the best ask in the order book when each card is published and net of the market's fee, beat the closing midpoint more than 50% of the time and have positive ROI.",
@@ -19,20 +18,20 @@
  "baseline": "A follower who buys at a random moment pays the ask and, with no information, beats the closing midpoint less than half the time (the ask sits above the midpoint) and loses the spread and any fee: a beat-close rate of 50% and an ROI of 0 is above the no-skill line, not at it.",
  "training_window": "Grading only (nothing is fitted): each night every evaluated pool wallet is graded on its complete last pool_window_days (90) days of activity, using at most its max_bets_per_wallet (150) most recent graded bets in them. The featured set is whatever the frozen rules select that night.",
  "validation_window": "None. Nothing is tuned; every threshold below is fixed before the window starts.",
- "holdout_window": "Prospective: every card published from the window's start (00:00 UTC on the day after registration and deployment, set at registration) for 84 days (12 weeks), whose game starts in the window. Fixed end date; looked at once, after the last game in it has settled or been void for 7 days.",
+ "holdout_window": "Prospective: every card published from the window's start, 2026-10-31 00:00 UTC (the day after registration and deployment, 2026-10-30), for 84 days (12 weeks), to 2027-01-23 00:00 UTC, whose game starts in the window. Fixed end date; looked at once, after the last game in it has settled or been void for 7 days.",
  "machine": {
   "window_dates": {
    "training": "rolling, the 90 days before each nightly grade",
    "validation": null,
    "holdout": [
-    "start: set at registration",
-    "start + 84 days"
+    "2026-10-31",
+    "2027-01-23"
    ]
   },
   "window_note": "[from, to) in UTC",
   "minimum_sample": 200,
-  "version": "0.2.0-draft",
-  "status": "DRAFT",
+  "version": "0.2.0",
+  "status": "EXPERIMENTAL",
   "provenance": "T3"
  },
  "minimum_sample": {
@@ -86,7 +85,7 @@
    "a test that ends at 200 cards (an open length; the owner chose a fixed 12 weeks)"
   ],
   "choice_and_reason": "The owner's decisions of 2026-10-29 and 2026-10-30 (research/radar/H-RADAR-02/DESIGN.md): discovery by recent covered-league dollars, which Radar measures itself because the board counts shares; complete history before any judgment, so no wallet is excluded or graded on a partial view; follower returns at what a follower really pays; featured only with a positive score; a fixed 12-week window so the test cannot stop on a lucky run.",
-  "data_already_seen": "H-RADAR-01's full holdout result (above). Polymarket's live data, read by tools/radar/probe_h02.js before this draft (runs 40975470572, 40975893030 and 40977654862): the leaderboard's periods and what its volume counts, the pace and style of the 30-day board's top 300 wallets (behaviour only: no wallet's results were computed), fees and prices on covered NBA markets. The production Radar's summary counts of 2026-10-29 (200 pool wallets, 6 read in full, 6 ranked, 1 top-graded). No card in the window exists yet: the window starts after registration.",
+  "data_already_seen": "H-RADAR-01's full holdout result (above). Polymarket's live data, read by tools/radar/probe_h02.js before this draft (runs 40975470572, 40975893030 and 40977654862): the leaderboard's periods and what its volume counts, the pace and style of the 30-day board's top 300 wallets (behaviour only: no wallet's results were computed), fees and prices on covered NBA markets. The production Radar's summary counts of 2026-10-29 (200 pool wallets, 6 read in full, 6 ranked, 1 top-graded). Since the draft and before registration: probe run 40982170115 (Q7, whether a newest-first read resumes); production's H-RADAR-01 counts of 2026-10-30 after #919 (198 of 200 read, 26 ranked, 18 top-graded); and, on 2026-10-30, the open positions of those 18 H-RADAR-01 wallets on Polymarket (one ending within 60 hours, on an uncovered esports market). No H-RADAR-02 wallet has been graded. No card in the window exists yet: the window starts after registration.",
   "comparisons_made": 2,
   "secondary_reported_not_tested": [
    "the beat-close rate and ROI at the midpoint instead of the ask",

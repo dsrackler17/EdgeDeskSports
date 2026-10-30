@@ -367,7 +367,7 @@ let rest;
     await go('pool');
 
     /* ── tonight ── */
-    V(`insert into public.radar_config (key, value, note) values ('registry_ref:H-RADAR-02', 'test', 'stands in for H-RADAR-02''s registration (a draft), as supabase/radar_registry.sql will write it');`);
+    V(`insert into public.radar_config (key, value, note) values ('registry_ref:H-RADAR-02', 'test', 'stands in for H-RADAR-02''s registration, as supabase/radar_registry.sql writes it (this test has no research registry)');`);
     db.service(`insert into public.poly_markets (condition_id, question, league, market_type, outcomes, token_ids, game_start_at, event_ref) values
       (${lit(STARTED.c)}, 'Seahawks vs. Broncos', 'nfl', 'moneyline', '["Seahawks","Broncos"]'::jsonb, ${lit(JSON.stringify(STARTED.tokens))}::jsonb, now() - interval '20 hours', 'done');`);
     db.service(`update public.poly_markets set event_id = 'ev-done', sport_key = 'americanfootball_nfl', match_status = 'mapped', sides = '[{"selection":"Seattle Seahawks"},{"selection":"Denver Broncos"}]'::jsonb where condition_id = ${lit(STARTED.c)};`);
