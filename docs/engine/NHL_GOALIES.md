@@ -380,6 +380,20 @@ mismatch fails within half an hour, not after a 90-minute silence.
     Daily Faceoff is its only source; System health shows it, and NHL goalie
     sync warns.
 
+  On 2026-10-30 at 16:34 UTC both pages answered 403 again, with Cloudflare's
+  "Attention Required!" page, 34 minutes after a run that read them. Since
+  build `nhl_goalie_sync@2026-10-30.2` each page is tried at most twice more
+  in the same run: after a refusal (403), a rate limit (429, its Retry-After
+  honored up to 8 seconds), a server error (5xx), a timeout or a lost
+  connection. The waits are about 2 and then 4 seconds, plus up to a second
+  of jitter. All the retries of one run share a 45-second budget. A 404 is
+  not retried, and neither is a page that changed shape (DRIFT). An empty
+  200, or a Cloudflare challenge served as 200, is never parsed into
+  starters. Cloudflare's block page (its title, or a `cf-mitigated` header)
+  is named "blocked by Cloudflare bot protection (HTTP 403)" in the alert,
+  and the run row keeps each page's attempts. Nothing carries over: the next
+  run tries afresh.
+
   The NHL API parser read live boxscores on the first run. Routing requests
   around the refusal is not a fix. A licensed starter feed is (see Daily
   Faceoff's terms below), or manual entries until then.
