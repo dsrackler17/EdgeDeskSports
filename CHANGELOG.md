@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-30 — Deploy football situational tables (SQL): a button that applies supabase/football_situational.sql
+
+- **Why.** The Football situational pipeline's last step copies its artifacts into the `fsie_` tables, which do not exist in production (`Could not find the table 'public.fsie_source_files'`, run 41093420059). Until they do, every run of the pipeline fails.
+- **The workflow.** `deploy-football-situational.yml`, manual only (`workflow_dispatch`), `contents: read`. It runs `football/situational/tests/sql.test.js` against a throwaway PostgreSQL first, and fails if that suite fails or prints NOT VERIFIED. It applies the file with `SB_DB_URL` in one transaction (`--single-transaction`, `ON_ERROR_STOP`). It fails on any report row saying CHECK THIS, or unless all eleven `public.fsie_*` tables exist afterwards. Without `SB_DB_URL` the run fails: nothing was applied.
+- **What it installs.** Eleven `fsie_` tables (RLS on), the `fsie_team_games_current` view and the `fsie_prune()` retention function. It drops, truncates and deletes nothing. The registry file is not part of it.
+- **Checked here, not in production.** Each run step, taken from the workflow, was run against a throwaway PostgreSQL 16 with the Supabase shim. A first run applied it (SQL suite 35/35, 11 tables) and a second run was idempotent. A missing secret fails at the credential step, a suite printing NOT VERIFIED fails at the suite step, and a failing suite fails with its output shown. The production apply is NOT VERIFIED: no credential here.
+
 ## 2026-10-30 — Novig provisioning: Novig's own refusal stops the run (no 451 retries); the card hook is defined in app.html
 
 - **What was wrong.** The `whoami` step of `.github/workflows/novig-provision.yml` retried `provision.js whoami` up to 10 times on any failure. That includes the answer where Novig refuses the management key on both hosts with a 451 location check. Each try signs one echo per host, so a refused network would have sent up to 20 signed requests into 451s, and Novig warns that repeated 451 retries can lock the account. The workflow had never run.

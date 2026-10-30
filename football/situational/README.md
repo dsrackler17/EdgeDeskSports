@@ -329,6 +329,13 @@ real sync payload are tested on a throwaway PostgreSQL 16 with the Supabase
 shim (`tests/sql.test.js`). They have not been applied to the production
 project, and no credential was available here.
 
+To apply the migration: Actions → **Deploy football situational tables (SQL)**
+(`.github/workflows/deploy-football-situational.yml`). It runs the SQL suite
+first, applies the file in one transaction with `SB_DB_URL`, and fails unless
+every report row says ok and all eleven `fsie_` tables exist. Without the
+secret, paste the file into the Supabase SQL editor instead. The registry
+(`supabase/football_situational_registry.sql`) is not part of it.
+
 ## Tests
 
 | Suite | What |
