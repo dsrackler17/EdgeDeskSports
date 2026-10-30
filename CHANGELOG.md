@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-10-30 — Methodology change (owner's decision, DRAFT for review): Prediction Radar H-RADAR-02, featured bettors from complete recent histories, at what a follower pays
+
+**Methodology change; needs the owner's explicit review. Not registered: its SQL is not to be applied until H-RADAR-02 is registered.**
+
+- **Why.** H-RADAR-01 failed its holdout and left almost nobody to show. 172 of 200 wallets were excluded for histories longer than 30 pages. That left 13 qualifying wallets, 5 of whose top 10 scored below zero, and they bet on about 4 to 5 covered games a week. Smart Money Tonight is a paid feature that needs current research every day, without lowering any standard.
+- **Evidence first** (`tools/radar/probe_h02.js`, from GitHub's runner, 4 runs).
+  - There is no 90-day leaderboard. The 30-day board counts shares, not dollars, and was exact to the cent against wallets' own trades.
+  - Its top is high-frequency wallets: about 3,000 pages for 90 days at rank 1.
+  - Screening the top 300 separated the two groups: flagged wallets' 10th percentile is 64 position changes a day; unflagged wallets' 90th percentile is 58.
+  - Covered sports markets charge no fee today.
+  - Every price Radar records is the midpoint, half a cent under the ask.
+  - A newest-first read can be resumed with its cursor.
+  - All of it is in `research/radar/H-RADAR-02/DESIGN.md`.
+- **The rules** (`radar_rules()` version 2, `research/radar/registration_h_radar_02.json`, a draft).
+  - Candidates come from the 30-day board. Each is read completely for 90 days, newest first; more than 30 pages is insufficient history, ungraded.
+  - High-frequency (not followable) only when three known 24-hour samples each exceed 100 position changes a day.
+  - The pool is the 200 evaluated wallets with the most covered-league dollars, each with at least 20 covered bets.
+  - Grades follow at the midpoint plus 1 cent, on a known fee.
+  - Featured: a Radar Score above 0, at most 10, fewer when fewer qualify.
+  - The record publishes at the order book's best ask.
+  - The prospective test runs 12 weeks, with a fixed end.
+- **Built**:
+  - the grading core (rules versioned: H-RADAR-01's frozen rules still grade exactly as before);
+  - the SQL: rules, discovery state, fee schedules, version-2 bets beside version 1's, the featured guard, Observed Activity, the record at the ask, the current run of the live version, registration of the live hypothesis;
+  - `polymarket_sync` build `.8`: discovery, the screen, the complete read, the pool, quotes;
+  - the page: featured bettors, how many qualify, Observed Activity apart, discovery counts;
+  - the docs (`docs/prediction-radar.md`, H-RADAR-02).
+- **Tests**:
+  - core 100 -> 128;
+  - SQL 199 -> 218;
+  - sync rewritten for version 2, 80 (its cursor check fails without its fix: 79/1);
+  - UI 72 -> 84;
+  - browser 54 -> 56;
+  - gateway 29 -> 30.
+  - The version-1 sync suite passes 67/0 against the new function.
+  - Applying the version-2 SQL over a version-1 database with data was checked on PostgreSQL.
+- **Open before registration:**
+  - Polymarket's fee formula, confirmed from its documentation;
+  - the window's start date;
+  - the registry builder for H-RADAR-02.
+
 ## 2026-10-29 — Authorization change: Juice Reel `set_product *` opens every product of the seller, so buyers get access without its id
 
 **Authorization change; needs the owner's explicit review.**
