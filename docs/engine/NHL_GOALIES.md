@@ -48,6 +48,7 @@ The `confirmed_starters` registry entry was manual-only. The NHL API client
 | Source | What it gives | Status mapping | Tier |
 |---|---|---|---|
 | Daily Faceoff starting-goalies page (`/starting-goalies/<ET date>`, its Next.js `__NEXT_DATA__` JSON) | each game's named goalies, each with a strength word and a news time | Confirmed → Confirmed, Likely / Expected → Likely, Unconfirmed → Projected, nothing → Unknown | T0, third party |
+| ESPN's public NHL scoreboard (`site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=<ET date>`), since 2026-10-30 (§10) | each team's `probableStartingGoalie`, with ESPN's status word; no update time | Confirmed → Confirmed, Expected → Likely, no probable → Unknown | T0, third party |
 | NHL API game boxscore (`api-web.nhle.com/v1/gamecenter/{id}/boxscore`), read in the last three hours | the goalie flagged `starter: true`, by player id, once lineups post | Confirmed | T0, the league |
 | `hockey/data/confirmed_starters.json` (unchanged, carried in the goalie inputs) | a hand entry with its source and time | Confirmed | T0 |
 | EdgeDesk's usage projection | the likeliest goalie, with his start probability | Projected (labelled "EdgeDesk usage projection") | T2, the fallback only |
@@ -64,7 +65,7 @@ replacement-level prior and the card says so.
 - **Sources name different goalies:**
   - both observations stay on file;
   - the lead source's goalie is shown (the NHL, then a manual entry, then
-    Daily Faceoff);
+    Daily Faceoff, then ESPN);
   - the status is the **lower** of the two, and never Confirmed (two
     confirmations of different goalies are not a confirmation);
   - the conflict is flagged.
@@ -241,12 +242,19 @@ evaluator has been written yet: the registration precedes it.
 | `node tools/hockey/nhl_goalie_sync.test.js` | 94. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth, and the GitHub jobs' summary and verdict (`tools/hockey/nhl_goalie_run_summary.js`) on the function's real answers, its own 401 told from the gateway's, and pg_cron's pokes refused. After v4, the timing probe at T−30 (no lineup yet), then v5 at T−10 when both lineups post: priced at lineup lock, lower than v4 for Vancouver with a regular scratched, the gate open, and the edge judged at the lock price; T−5 writes nothing new, nor does a run with the NHL API down after lock. A database read that times out once is sent again and the run completes; the same read timing out twice is a named sync error; a write that times out is never sent twice. A failed check is tried again: a forced off-slot run refused by Daily Faceoff (HTTP 403) runs again 10 minutes later and recovers, and a source that stays down is retried 10, 20, then 40 minutes apart. The job summary shows the lock price as the headline, marked "(lineup lock)". The cards table: each row's version, T−minutes, statuses, gate, headline, what priced it and when the boxscore listed its lineups (before, after or never), the counts of started games locked and listed before puck drop, and cards that cannot be read failing the job |
 | `NHL_SQL_REQUIRED=1 node tools/hockey/nhl_goalie_sql.test.js` | 82. The layer on a real PostgreSQL: roles, append-only, the supersede, card versions, the confirmation and variant rules, edges attached to the version that existed, CLV, the KPIs (confirmed by T−30 with the grace, conflicts, failures, a silent scheduler), the card's freshness, the v2 registry, cron (each poke's answer kept and read back), a re-apply over live rows, and rollback, and the two queries the GitHub job reads (`tools/hockey/sql/`), and a lineup-lock version under `inputs_changed`, and the cards query the job reads (each game's current version once, the lock at lineup lock with its price before lock, nothing over a day ahead, and each game's own boxscore reads from the runs' timing probe) |
 | `node tools/hockey/nhl_goalie_ui.test.js` | 46. The block's badges, sources, times, range, limitations and change note; the slate fallback; the market gate; compare with and without the live card; at lineup lock, the block's lock line, compare's lock price (full and compact) and the EV at it |
+| `node tools/hockey/nhl_goalie_core.test.js` | 113. Statuses, team identity, name matching, both parsers and their drift cases, the merge (agree, conflict, the lower status, projection fallback), exact re-pricing of the real MIN @ VAN scenarios, the card, change detection, the edge gate on all three markets, the cadence across the DST change, the inline copy. The lineup lock (§11): the boxscore's dressed skaters, the lock price against its formula, a call-up lowering his club's price, no lock with fewer than 12 skaters, a starter not Confirmed or a conflict, the new version and its trigger, the lock kept from the card's own lineups, and `build_slate --check` passing real lock inputs and failing tampered ones. ESPN's parser on its real 2026-10-30 response (three games, six probable goalies, "NJ" read as NJD, Confirmed and Expected kept apart), a side with no probable, a response that is not a scoreboard, and ESPN agreeing or disagreeing with Daily Faceoff in the merge |
+| `node tools/hockey/nhl_goalie_sync.test.js` | 104. The deployed function under Node with an in-memory PostgREST that enforces the triggers' rules. **The 2026-10-25 MIN @ VAN replay:** v1 at 8 AM ET names Lankinen as Projected (usage projection). Daily Faceoff's Meriläinen (Likely) writes v2 with "Updated: starter changed from K. Lankinen to L. Meriläinen" and 41.2% → 42.4%. Vancouver Confirmed writes v3, still GATED. Both Confirmed at the T−30 final pass write v4 and open the gate. The headline is 0.4174 on every version, and each edge names v1, v2, v3 and v4 in turn. Also: a conflict, outages, drift, unmatched names, dry runs and auth, and the GitHub jobs' summary and verdict (`tools/hockey/nhl_goalie_run_summary.js`) on the function's real answers, its own 401 told from the gateway's, and pg_cron's pokes refused. After v4, the timing probe at T−30 (no lineup yet), then v5 at T−10 when both lineups post: priced at lineup lock, lower than v4 for Vancouver with a regular scratched, the gate open, and the edge judged at the lock price; T−5 writes nothing new, nor does a run with the NHL API down after lock. A database read that times out once is sent again and the run completes; the same read timing out twice is a named sync error; a write that times out is never sent twice. The job summary shows the lock price as the headline, marked "(lineup lock)". The cards table: each row's version, T−minutes, statuses, gate, headline, what priced it and when the boxscore listed its lineups (before, after or never), the counts of started games locked and listed before puck drop, and cards that cannot be read failing the job. ESPN (§10): with Daily Faceoff refusing (HTTP 403), ESPN's probable goalies are observations (Vancouver Confirmed, Minnesota Expected → Likely), the run is `warn`, not `sources_down`, and both Confirmed by ESPN at T−30 open the gate; ESPN naming another goalie than Daily Faceoff is a conflict that Daily Faceoff leads; a response that changed shape is a DRIFT; `sources_down` now needs Daily Faceoff and ESPN both down (three DEGRADED with the NHL API) |
+| `NHL_SQL_REQUIRED=1 node tools/hockey/nhl_goalie_sql.test.js` | 85. The layer on a real PostgreSQL: roles, append-only, the supersede, card versions, the confirmation and variant rules, edges attached to the version that existed, CLV, the KPIs (confirmed by T−30 with the grace, conflicts, failures, a silent scheduler), the card's freshness, the v2 registry, cron (each poke's answer kept and read back), a re-apply over live rows, and rollback, and the two queries the GitHub job reads (`tools/hockey/sql/`), and a lineup-lock version under `inputs_changed`, and the cards query the job reads (each game's current version once, the lock at lineup lock with its price before lock, nothing over a day ahead, and each game's own boxscore reads from the runs' timing probe), and the `espn` source: a table created before it refuses its rows until the layer is applied again, then stores them current beside Daily Faceoff's, and an unknown source is still refused |
+| `node tools/hockey/nhl_goalie_ui.test.js` | 48. The block's badges, sources, times, range, limitations and change note; the slate fallback; the market gate; compare with and without the live card; at lineup lock, the block's lock line, compare's lock price (full and compact) and the EV at it; ESPN's goalie labelled as an Observed (T0) source, and named by its label when it disagrees with Daily Faceoff |
 | `node tools/engine/engine_ui.e2e.js` | +24, in Chromium on desktop and a 390 px phone: the block on the slate fallback, and a live card's version, change note and range. At lineup lock: the Overview headline, the block, the Markets banner, Check a price and the list card |
 
 The Daily Faceoff and NHL boxscore pages in the tests are **constructed** in
 each source's documented shape (`tools/hockey/fixtures/nhl_goalie_sources.js`).
-The build environment's network policy denies both hosts, so no live page was
-captured. The goalie inputs fixture is the real build output for the
+The build environment's network policy denied both hosts, so no live page was
+captured. ESPN's scoreboard is a **real response**, captured on 2026-10-30 and
+trimmed to the fields the parser reads
+(`tools/hockey/fixtures/espn_nhl_scoreboard_2026-10-30.json`); the replay's ESPN
+answers are constructed in its shape. The goalie inputs fixture is the real build output for the
 2026-10-25 slate.
 
 ## 9. Deploy
@@ -397,12 +405,37 @@ mismatch fails within half an hour, not after a 90-minute silence.
   The NHL API parser read live boxscores on the first run. Routing requests
   around the refusal is not a fix. A licensed starter feed is (see Daily
   Faceoff's terms below), or manual entries until then.
-- **Daily Faceoff's terms.** Daily Faceoff is a third-party aggregator with
-  its own terms. The owner should review them, or license a starter feed,
-  before NHL output is sold in a paid tier (`hockey/sources/registry.js`).
+
+  **Since build `nhl_goalie_sync@2026-10-30.3`, ESPN is a second source.** On
+  2026-10-30 Daily Faceoff refused the function from 16:34 UTC (the 16:00 run
+  had read it), so every run more than three hours out was a `sources_down`
+  error and tonight's starters could only be confirmed by hand. ESPN's public
+  NHL scoreboard answered a plain request with each team's probable goalie and
+  ESPN's status word. On that day it named all six starters (two Confirmed,
+  four Expected), and every name matched a rated goalie. The sync now reads it
+  on the same cadence, for each Eastern date, from the function's own network;
+  nothing is routed around anyone.
+  - Its "Confirmed" is Confirmed, its "Expected" is Likely, exactly as Daily
+    Faceoff's words are read. A goalie only Expected never opens the gate or
+    the lineup lock.
+  - It is a source of its own (`espn` in `nhl_goalie_starters`; the layer's
+    source check names it, so `supabase/nhl_goalie_layer.sql` must be applied
+    before the function is deployed, or every insert with an ESPN row is
+    refused).
+  - When it names another goalie than Daily Faceoff, that is a conflict, and
+    Daily Faceoff leads, at Likely at most.
+  - `sources_down` now means Daily Faceoff and ESPN were both unreadable (and
+    the NHL API too, inside three hours). ESPN down alone is DEGRADED; a
+    response that changed shape is a DRIFT, which fails NHL goalie sync like
+    Daily Faceoff's.
+- **Daily Faceoff's and ESPN's terms.** Daily Faceoff is a third-party
+  aggregator with its own terms, and ESPN's scoreboard is a public but
+  unlicensed response (like the ESPN NHL pack). The owner should review both,
+  or license a starter feed, before NHL output is sold in a paid tier
+  (`hockey/sources/registry.js`).
 - **The NHL boxscore confirms late.** It usually names starters only near
   puck drop. For most games the confirmation before T−30 comes from Daily
-  Faceoff, when it answers (above).
+  Faceoff or ESPN (above).
 - **Edge events wait for NHL prices.** They need captured NHL prices
   (`NHL_PRICES`), which are off. Until then the gate shapes the price check
   and the market labels, and the event table stays empty. The CLV grade table
