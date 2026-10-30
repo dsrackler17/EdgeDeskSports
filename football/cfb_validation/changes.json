@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-30T22:08:19.157Z",
+ "generated_at": "2026-10-30T23:08:49.936Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-24T22:08:12.253Z",
+  "since": "2026-10-24T23:08:10.239Z",
   "changes": [
    {
     "what": "pricing code",
@@ -28,14 +28,14 @@
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
-    "from": 81,
+    "from": 80,
     "to": 73
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 20,
-    "to": 56
+    "from": 15,
+    "to": 55
    }
   ],
   "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -294,42 +294,6 @@
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-21T01:09:40.260Z",
-   "to_at": "2026-10-26T15:03:38.857Z",
-   "old_fair": -18.73,
-   "new_fair": -13.46,
-   "change": 5.27,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Trace Johnson (COMPETITION) → Trace Johnson (PREVIOUS_GAME)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.79
-    }
-   ],
-   "unexplained": 0.02,
-   "game_id": "401862813",
-   "game": "Tulane @ Charlotte",
-   "market_then": null,
-   "market_now": 10,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-10-21T21:52:56.312Z",
