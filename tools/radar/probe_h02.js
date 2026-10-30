@@ -24,6 +24,8 @@
      Q5 prices   what a follower can pay now: the order book's best ask, the
                  CLOB's best price on each side and midpoint, Gamma's bid, ask
                  and last trade, and the price history's last point, side by side
+     Q7 resume   whether `end` bounds a newest-first read, and whether a
+                 next_cursor saved now carries on in a request made later
      Q6 screen   for each wallet ranked 1 to 300 on the 30-day board, what one
                  newest-first page of its last 90 days says about its pace and
                  style: actions and position changes (not fills) a day, fills
@@ -197,6 +199,33 @@ const round = (x, k) => (x == null ? null : Math.round(x * Math.pow(10, k)) / Ma
     F.screen.summary[k] = { flagged: dist(part((w) => w.flag_1000_in_3_days), k), not_flagged: dist(part((w) => !w.flag_1000_in_3_days), k) };
   console.log('\nQ6 SCREEN ' + JSON.stringify(F.screen.summary));
   for (const w of sw) console.log('Q6 ' + JSON.stringify(w));
+
+  /* ── Q7 continuing a newest-first read across runs (H-RADAR-02's evaluation reads 10 pages a run): does `end`
+     bound a DESC read, and does a next_cursor saved now carry on, unchanged, in a request made later? ── */
+  F.continuation = [];
+  for (const x of month.slice(99, 102)) {
+    const base = { user: x.wallet, type: 'TRADE,REDEEM,SPLIT,MERGE', limit: 1000, sort_direction: 'DESC', start: start90, end: endS };
+    const a = await ask('continue p1 ' + x.wallet.slice(0, 10), 'activity', base, true);
+    const pa = a.ok ? R.page(a.data) : { rows: [], has_more: false };
+    const tsA = pa.rows.map((r) => num(r.timestamp)).filter((t) => t != null);
+    const rec = { wallet: x.wallet, p1_rows: pa.rows.length, has_more: pa.has_more, next_cursor_len: pa.next_cursor ? String(pa.next_cursor).length : 0 };
+    if (pa.has_more && tsA.length) {
+      const oldest = Math.min(...tsA);
+      /* the same page again, bounded by end = the oldest second read: every row at or before it */
+      const b = await ask('continue end ' + x.wallet.slice(0, 10), 'activity', Object.assign({}, base, { end: oldest }), true);
+      const tsB = b.ok ? R.page(b.data).rows.map((r) => num(r.timestamp)).filter((t) => t != null) : [];
+      rec.end_bounds = b.ok && tsB.length > 0 && tsB.every((t) => t <= oldest);
+      rec.end_first = tsB.length ? Math.max(...tsB) : null; rec.end_oldest_asked = oldest;
+      await new Promise((res) => setTimeout(res, 20000));   /* a later request */
+      const c = await ask('continue cursor ' + x.wallet.slice(0, 10), 'activity', Object.assign({}, base, { cursor: pa.next_cursor }), true);
+      const tsC = c.ok ? R.page(c.data).rows.map((r) => num(r.timestamp)).filter((t) => t != null) : [];
+      rec.cursor_status = c.status; rec.cursor_rows = tsC.length;
+      rec.cursor_continues = c.ok && tsC.length > 0 && Math.max(...tsC) <= oldest;
+      rec.cursor_newest = tsC.length ? Math.max(...tsC) : null;
+    }
+    F.continuation.push(rec);
+    console.log('\nQ7 ' + JSON.stringify(rec));
+  }
 
   /* ── Q4 and Q5: fees and the price a follower can pay, on covered games starting soon ── */
   const sp = await ask('gamma sports', 'sports', {});
