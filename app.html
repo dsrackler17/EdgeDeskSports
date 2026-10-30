@@ -21373,6 +21373,8 @@ function sysHealthHTML(){
   if(KS){
     var ksWhy=KS.state_reason||(KS.state==='warn'&&KS.failures_24h&&!KS.consecutive_failures&&KS.last_snapshot_run_status==='ok'
       ?shPl(KS.failures_24h,'failed run')+' in 24 h, recovered: the latest snapshot succeeded':'every 5 minutes, every tracked series');
+    /* a recovered failure turns the state back to ok but stays named (kalshi_readiness.recent_incident) */
+    if(KS.recent_incident&&KS.state==='ok')ksWhy=KS.recent_incident;
     out+=shRow('Kalshi snapshot sync',ksWhy
       +' \u00b7 '+(KS.failures_24h||0)+' failure'+(KS.failures_24h===1?'':'s')+', '+(KS.degraded_24h||0)+' degraded, '+(KS.drift_24h||0)+' drift in 24 h'+(KS.consecutive_failures?' \u00b7 '+KS.consecutive_failures+' failed in a row':''),
       KS.state==='error'?'failing':(KS.state==='warn'?'degraded':'healthy'),KS.state==='error'?'err':(KS.state==='warn'?'warn':'ok'));

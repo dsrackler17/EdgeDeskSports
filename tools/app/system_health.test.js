@@ -187,6 +187,11 @@ chk('governance: and it is not attention', C.sysHealthState().state === 'warn' ?
 C = makeCtx({ ks: KS });
 H = C.sysHealthHTML();
 has(row(H, 'Kalshi snapshot sync'), '1 failed run in 24 h, recovered: the latest snapshot succeeded', 'kalshi: a recovered failure is said from the counts');
+C = makeCtx({ ks: Object.assign({}, KS, { state: 'ok', recent_incident: '1 failed snapshot run in 24 hours, recovered: 2026-10-30 09:20 UTC (snapshot error: Signal timed out.)' }) });
+has(row(C.sysHealthHTML(), 'Kalshi snapshot sync'), 'recovered: 2026-10-30 09:20 UTC', 'kalshi: a recovered incident stays named when the view reads ok');
+chk('kalshi: and is not counted as an outage', C.sysHealthState().warning.indexOf('Kalshi snapshot sync') < 0 && C.sysHealthState().failing.indexOf('Kalshi snapshot sync') < 0);
+C = makeCtx({ ks: KS });
+H = C.sysHealthHTML();
 chk('kalshi: and still counted as the view states it (degraded)', (valOf(H, 'Kalshi snapshot sync') || {}).text === 'degraded');
 
 /* ---------------------------------------------------------------- text */

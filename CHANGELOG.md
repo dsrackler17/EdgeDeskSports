@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-30 — Kalshi sync: a timed-out database read is retried; readiness always says why it is not ok
+
+- **What failed.** The snapshot run at 09:20 UTC (`ec23a067…`) failed after exactly 20 s with "snapshot error: Signal timed out.". Its first database read (`kalshi_series?tracked=is.true`) stalled. Kalshi was never called and nothing was written. Every snapshot from 09:25 on succeeded (268 markets). `db()` retried Kalshi's 429/5xx answers but never a PostgREST read.
+- **Fix** (`supabase/functions/kalshi_sync/index.ts`, build `kalshi_sync@2026-10-30.1`). A read (GET) is tried at most 3 times, after a timeout, a lost connection or a 429/5xx, with waits of 250 ms and then 500 ms. A write is never resent: `kalshi_price_snapshots` has no natural key, so a resent insert could duplicate rows.
+- **Readiness** (`supabase/kalshi_market_data.sql` and its byte-identical migration mirror). One recovered failure held `kalshi_readiness` at `warn` for 24 h, with `state_reason` null. A failed run is now judged by what came after it:
+  - 2 or more failed runs in 24 h: warn.
+  - Not recovered: a snapshot is error, a discover is warn.
+  - Recovering, with less than 30 min of good runs: warn, and the reason says so.
+  - One failure followed by 30 min of good runs of the same mode: ok. It stays named in `recent_incident`, `last_failure_at` and `last_failure_message`, and it is still counted in `failures_24h`.
+  - DEGRADED and DRIFT alerts still warn for 24 h.
+  - `state_reason` is never null when the state is not ok.
+  - New rule key `recovery_confirm_minutes` = 30.
+  - `open_game_events_unmapped` reconciles events with markets. Each game event has 2 markets, so 231 unmapped events are 462 markets.
+- **The 462 unmatched markets are not mapping faults.** All are CFB, all have the reason `no_book_event`, and none is a name or alias failure. The breakdown:
+  - 118 events are FCS vs FCS, out of scope.
+  - 113 events are FBS games with no book event in the capture:
+    - 69 are on this week's slate, and an offline replay of the deployed linker links all 69, so the gap is in the CFB moneyline capture;
+    - 32 carry Kalshi's placeholder date (`26OCT30` for Saturday games);
+    - 3 have a TBA kickoff;
+    - 8 are beyond the horizon;
+    - 1 is FBS vs FCS.
+
+  No matching rule was changed. The 6¢ spread exclusion and the trusted mid are untouched.
+- **System health** shows `recent_incident` on the Kalshi row while the view reads ok.
+- **Tests:** `kalshi_sync.test.js` went from 48/3 to 51/0. `kalshi_sql.test.js` went from 75/7 to 82/0; on the old view, five reads were warn with a null reason.
+- **Deploy:** run Deploy Kalshi market data with `deploy_function` and `apply_sql`.
+
 ## 2026-10-30 — System health: every count names its subsystem, and the odds capture shows its real state
 
 - **"Model health 21/22, 1 failing" was not a model failure.** `sysHealthState` added the NHL goalie sync's `error` into the football self-check's fail count, and the Model health row printed that count. In production that day the self-check had 22 checks: 21 passed, 1 warned (the NFL line guard), and none failed. Model health now counts the self-check alone (22/22, amber for its warning, which it names). The syncs still add to the header's count, and the header, its title and its aria-label name the subsystems the count is made of ("2 failing (database, NHL goalie sync)").
