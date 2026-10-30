@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-30 — NBA injury report: two-line reasons go to the right player, and nothing is left unread
+
+- **The 5 drift alerts in 24 h were a parser bug, not a format change.** They are `report_unread_lines`, from 2026-10-29 17:07 to 19:07Z, and each one is the line `"/ Bone Bruise"` (Jalen Suggs, ORL). The league's PDF centres each row vertically. A two-line reason prints one line above the player's row and one below it. A row cut by a page break carries its reason over to the next page. The parser knew only the "line above" case. So the line below a row was given to the next player, and a trailing line before NOT YET SUBMITTED was left unread. 56 of 92 official reports since 10-21 were affected. On 1,029 of 6,231 rows the stored reason text belongs to another player. Statuses and names were unaffected, so no projection was mispriced. The stored rows are append-only and were left as they are.
+- **Fix** (`nba/injury/core.js` `nbaAssignWraps`/`nbaSolveWraps`, core `nba-injury-core-2026-10-30-1`; `nba_injury_sync@2026-10-30.1`, parser `nba-official-lines-2`). The parser assigns the wrapped lines for a whole run of rows at once. It prefers the centred layout and allows the page split. A layout that fits no split, or two splits equally well, is counted as unread, never guessed.
+- **Names.** "Udeh, Jr., Ernest" now reads as "Ernest Udeh Jr.". An alias maps "Hansen Yang" to "Yang Hansen", checked against ESPN's POR roster (5217746). Michael Ajayi (CHA, two-way) is on no captured roster, so he stays unmatched. That is missing roster data, and no fuzzy match is made.
+- **Freshness.** On 10-30 the league published nothing after 6:00 AM ET: every later slot answered S3 AccessDenied. Each run now records `details.official` (`newest_listed_at`, `read_url`, `tried`). System health keeps the two ages apart: a quiet league with a current sync is information, and a sync that has not checked in 75 min is attention.
+- **Tests:** a new fixture `tools/nba/fixtures/nba_injury_report_wraps_2026-10-28_29.json` holds three real reports' line streams, with their expected reasons taken from page geometry. `nba_injury_core.test.js` went from 80/16 to 96/0. `nba_injury_sync.test.js` went from 41/1 to 42/0.
+- **Deploy:** run Deploy NBA injury layer (`deploy-nba-injury.yml`).
+
 ## 2026-10-30 — Kalshi sync: a timed-out database read is retried; readiness always says why it is not ok
 
 - **What failed.** The snapshot run at 09:20 UTC (`ec23a067…`) failed after exactly 20 s with "snapshot error: Signal timed out.". Its first database read (`kalshi_series?tracked=is.true`) stalled. Kalshi was never called and nothing was written. Every snapshot from 09:25 on succeeded (268 markets). `db()` retried Kalshi's 429/5xx answers but never a PostgREST read.

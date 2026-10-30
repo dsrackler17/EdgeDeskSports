@@ -194,6 +194,15 @@ C = makeCtx({ ks: KS });
 H = C.sysHealthHTML();
 chk('kalshi: and still counted as the view states it (degraded)', (valOf(H, 'Kalshi snapshot sync') || {}).text === 'degraded');
 
+/* ---------------------------------------------------------------- nba freshness */
+const NI = { state: 'warn', state_reason: 'drift', game_day: true, last_official_report_at: iso(425 * 60000), minutes_since_official_report: 425, minutes_since_success: 28, unmatched_players: 1, teams_with_roster: 30 };
+C = makeCtx({ nbaInj: NI });
+H = C.sysHealthHTML();
+chk('nba: a quiet league with a current sync is information, not degraded', (valOf(H, 'NBA injury report freshness') || {}).cls === 'na', valOf(H, 'NBA injury report freshness'));
+has(row(H, 'NBA injury report freshness'), 'the league has not published a newer one', 'nba: and says whose side the gap is on');
+C = makeCtx({ nbaInj: Object.assign({}, NI, { minutes_since_success: 140 }) });
+chk('nba: a sync that stopped checking is attention', (valOf(C.sysHealthHTML(), 'NBA injury report freshness') || {}).cls === 'warn');
+
 /* ---------------------------------------------------------------- text */
 C = makeCtx({ ngl: NGL, ks: KS, odds: PAUSED, loops: LOOPS });
 H = C.sysHealthHTML();

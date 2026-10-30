@@ -21328,9 +21328,15 @@ function sysHealthHTML(){
     od.last?shAgo(od.last):'none on record',od.last?(od.status==='healthy'?'ok':''):'mut');
   var NI=SH.nbaInj,KS=SH.ks,NG=SH.ngl;
   if(NI){
-    var offMin=NI.minutes_since_official_report;
-    out+=shRow('NBA injury report freshness',NI.last_official_report_at?('league report published '+shAgo(shStamp(NI.last_official_report_at))+(NI.game_day?' (game day)':' (no game today)')+(NI.fallback_in_use?' \u00b7 ESPN fallback in use':'')):'no league report read yet',
-      offMin==null?'\u2014':offMin+' min',NI.fallback_in_use||(NI.game_day&&offMin!=null&&offMin>120)?'warn':(offMin==null?'mut':'ok'));
+    /* TWO AGES, KEPT APART: how old the league's newest report is (their side — on 2026-10-30 the league
+       published nothing between 6:00 AM and 2 PM ET, and every later slot answered AccessDenied) and how long
+       since the sync last checked (ours). A quiet league is information; a sync that stopped checking is the
+       fault. 75 min is the sync's own check_max_age_minutes. */
+    var offMin=NI.minutes_since_official_report,chkMin=NI.minutes_since_success,syncStale=chkMin==null||chkMin>75;
+    out+=shRow('NBA injury report freshness',NI.last_official_report_at?('league report published '+shAgo(shStamp(NI.last_official_report_at))+(NI.game_day?' (game day)':' (no game today)')
+        +(chkMin!=null?' \u00b7 sync last checked '+chkMin+' min ago'+(syncStale?', which is late':', so the league has not published a newer one'):'')
+        +(NI.fallback_in_use?' \u00b7 ESPN fallback in use':'')):'no league report read yet',
+      offMin==null?'\u2014':offMin+' min',NI.fallback_in_use||(NI.game_day&&offMin!=null&&offMin>120&&syncStale)?'warn':(offMin==null?'mut':(NI.game_day&&offMin>120?'na':'ok')));
   }
   if(KS){
     var ksAge=KS.minutes_since_snapshot;
