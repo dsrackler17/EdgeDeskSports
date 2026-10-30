@@ -47,8 +47,8 @@ on:
         default: '2025-09-01'
 
 permissions:
-  checks: write
   contents: write
+  checks: write
 
 concurrency:
   group: props-factory-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
