@@ -9,7 +9,7 @@
   - There is no 90-day leaderboard. The 30-day board counts shares, not dollars, and was exact to the cent against wallets' own trades.
   - Its top is high-frequency wallets: about 3,000 pages for 90 days at rank 1.
   - Screening the top 300 separated the two groups: flagged wallets' 10th percentile is 64 position changes a day; unflagged wallets' 90th percentile is 58.
-  - Covered sports markets charge no fee today.
+  - Polymarket's fee formula, confirmed from its documentation on 2026-10-30: the taker fee is shares × rate × (p × (1 − p))^exponent from each market's own schedule. Sports lists 0.05; the covered markets probed charge 0 today.
   - Every price Radar records is the midpoint, half a cent under the ask.
   - A newest-first read can be resumed with its cursor.
   - All of it is in `research/radar/H-RADAR-02/DESIGN.md`.
@@ -17,9 +17,9 @@
   - Candidates come from the 30-day board. Each is read completely for 90 days, newest first; more than 30 pages is insufficient history, ungraded.
   - High-frequency (not followable) only when three known 24-hour samples each exceed 100 position changes a day.
   - The pool is the 200 evaluated wallets with the most covered-league dollars, each with at least 20 covered bets.
-  - Grades follow at the midpoint plus 1 cent, on a known fee.
+  - Grades follow at the midpoint plus 1 cent, plus the market's taker fee; a schedule that cannot be read is never guessed.
   - Featured: a Radar Score above 0, at most 10, fewer when fewer qualify.
-  - The record publishes at the order book's best ask.
+  - The record publishes at the order book's best ask, plus the market's taker fee at it.
   - The prospective test runs 12 weeks, with a fixed end.
 - **Built**:
   - the grading core (rules versioned: H-RADAR-01's frozen rules still grade exactly as before);
@@ -28,16 +28,15 @@
   - the page: featured bettors, how many qualify, Observed Activity apart, discovery counts;
   - the docs (`docs/prediction-radar.md`, H-RADAR-02).
 - **Tests**:
-  - core 100 -> 128;
-  - SQL 199 -> 218;
-  - sync rewritten for version 2, 80 (its cursor check fails without its fix: 79/1);
+  - core 100 -> 130 (the fee against Polymarket's published fee tables);
+  - SQL 199 -> 223 (the fee in SQL equals the core's; a card on a market charging the Sports rate is graded net of its fee);
+  - sync rewritten for version 2, 81 (its cursor check fails without its fix: 79/1);
   - UI 72 -> 84;
   - browser 54 -> 56;
   - gateway 29 -> 30.
   - The version-1 sync suite passes 67/0 against the new function.
   - Applying the version-2 SQL over a version-1 database with data was checked on PostgreSQL.
 - **Open before registration:**
-  - Polymarket's fee formula, confirmed from its documentation;
   - the window's start date;
   - the registry builder for H-RADAR-02.
 

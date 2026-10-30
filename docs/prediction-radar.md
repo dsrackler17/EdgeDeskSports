@@ -42,9 +42,9 @@ which stay registered and whose result stands.
 | History | oldest first, at most 30 pages; more is truncated (172 of 200) | each candidate's **complete last 90 days**, newest first, 10 pages a run, resumed with its cursor; more than 30 pages is **insufficient history — ungraded** |
 | High-frequency | not screened | 1,000 actions in under 3 days **flags** a wallet (nothing more). Three 24-hour samples (now, 30 and 60 days ago) mark it **high-frequency — not followable** only if all three are known and above 100 position changes a day. A sample that cannot be read is unknown, never low. Counted in position changes, not fills |
 | Pool | the 200 candidates | the 200 fully evaluated wallets with the most **dollars on covered-league game markets** in the 90 days, each with at least 20 covered pregame bets. Discovery continues past every exclusion |
-| Follow price (grades) | the price-history midpoint | the midpoint **plus 1 cent** (Polymarket keeps no ask history), graded only when the market's fee is known |
+| Follow price (grades) | the price-history midpoint | the midpoint **plus 1 cent** (Polymarket keeps no ask history), plus the market's taker fee from its own schedule |
 | Featured | top 25 Directional, any score | Directional, ranked, complete history, not high-frequency, **a Radar Score above 0**, **at most 10**, fewer when fewer qualify |
-| Record price | the recorded price (the midpoint) | the **best ask in the order book** when the card is published, with the depth, the midpoint and the market's fee schedule |
+| Record price | the recorded price (the midpoint) | the **best ask in the order book** when the card is published, plus the market's taker fee at it, with the depth and the midpoint |
 
 ### The pipeline (version 2)
 
@@ -65,8 +65,8 @@ which stay registered and whose result stands.
   the run's **discovery counts**: screened, flagged, sampled, high-frequency,
   insufficient history, fully evaluated, eligible and pool.
 - `tonight`: reads each card's best ask from the order book (`/book`).
-  `radar_publish_cards(p_quotes)` publishes a card only at that ask, and only
-  on a market whose fee is known to be none.
+  `radar_publish_cards(p_quotes)` publishes a card only at that ask, with its
+  market's taker fee at it, and only when that fee can be read.
 
 ### What a subscriber sees
 
@@ -107,13 +107,24 @@ shown as H-RADAR-02's featured bettors.
    and the report reads ok.
 4. **Run `run_now`.** Discovery, evaluation and the first version-2 grade.
 
+### Fees (confirmed from Polymarket's documentation, 2026-10-30)
+
+- **The formula.** The taker fee in USDC is shares × `feeSchedule.rate` ×
+  (p × (1 − p)) raised to `exponent`, at the trade price p. Takers only;
+  each market's own schedule decides (`docs.polymarket.com`, `trading/fees`
+  and `market-data/market-details`).
+- **Where it applies.** Grades and cards pay it on top of the price:
+  - a grade's ROI is settlement ÷ (price + fee) − 1;
+  - a card stores `fee_per_share` and is graded the same way.
+- **Unknown schedules.** A market whose schedule cannot be read is never
+  guessed: its follow or card is not graded.
+- **Today.** Polymarket lists 0.05 for Sports; the covered markets probed
+  charge 0.
+
 ### Open before registration
 
-- **Polymarket's fee formula**, confirmed from its documentation
-  (docs.polymarket.com could not be reached from the build session). Until
-  then any non-zero fee leaves a follow or a card ungraded. Every covered
-  market probed charges none.
-- **The prospective window's start date.**
+- The prospective window's start date.
+- The registry builder for H-RADAR-02.
 
 ## Contents
 

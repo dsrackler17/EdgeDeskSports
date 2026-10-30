@@ -464,13 +464,32 @@ create table if not exists public.poly_bets (
   check (result = case settle when 1 then 'win' when 0 then 'loss' else 'push' end),
   check (abs(profit - (sell_proceeds + settle * shares_held - buy_cost)) < 1e-4),
   check ((close_price is null) = (clv_pct is null)),
-  check (follow5_roi is null or abs(follow5_roi - (settle / follow5_price - 1)) < 1e-4),
-  check (follow15_roi is null or abs(follow15_roi - (settle / follow15_price - 1)) < 1e-4),
+  follow5_fee     numeric check (follow5_fee is null or follow5_fee >= 0),    -- version 2: the market's taker fee a share at the follow price
+  follow15_fee    numeric check (follow15_fee is null or follow15_fee >= 0),
+  constraint poly_bets_follow5_roi check (follow5_roi is null or abs(follow5_roi - (settle / (follow5_price + coalesce(follow5_fee, 0)) - 1)) < 1e-4),
+  constraint poly_bets_follow15_roi check (follow15_roi is null or abs(follow15_roi - (settle / (follow15_price + coalesce(follow15_fee, 0)) - 1)) < 1e-4),
   check (beat_close5 is null or beat_close5 = (close_price > follow5_price)),
   check (entry_tx = any (txs))
 );
 alter table public.poly_bets add column if not exists follow5_mid numeric check (follow5_mid is null or (follow5_mid > 0 and follow5_mid < 1));
 alter table public.poly_bets add column if not exists follow15_mid numeric check (follow15_mid is null or (follow15_mid > 0 and follow15_mid < 1));
+alter table public.poly_bets add column if not exists follow5_fee numeric check (follow5_fee is null or follow5_fee >= 0);
+alter table public.poly_bets add column if not exists follow15_fee numeric check (follow15_fee is null or follow15_fee >= 0);
+-- a follow's ROI is settlement / (price + the taker fee) - 1: the version-1 checks (no fee) become these, which read the
+-- same for every version-1 row (its fee is null)
+do $roi$ declare c record; begin
+  for c in select conname from pg_constraint where conrelid = 'public.poly_bets'::regclass and contype = 'c'
+            and conname not in ('poly_bets_follow5_roi', 'poly_bets_follow15_roi')
+            and pg_get_constraintdef(oid) ~ 'follow(5|15)_roi - \(\(?settle / follow(5|15)_price\)?' loop
+    execute format('alter table public.poly_bets drop constraint %I', c.conname);
+  end loop;
+  if not exists (select 1 from pg_constraint where conname = 'poly_bets_follow5_roi') then
+    alter table public.poly_bets add constraint poly_bets_follow5_roi check (follow5_roi is null or abs(follow5_roi - (settle / (follow5_price + coalesce(follow5_fee, 0)) - 1)) < 1e-4);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'poly_bets_follow15_roi') then
+    alter table public.poly_bets add constraint poly_bets_follow15_roi check (follow15_roi is null or abs(follow15_roi - (settle / (follow15_price + coalesce(follow15_fee, 0)) - 1)) < 1e-4);
+  end if;
+end $roi$;
 -- one grade of a bet per grading version: version 2 rows sit beside version 1's, which are never edited
 do $pk$ begin
   if (select array_agg(a.attname::text order by k.ord) from pg_constraint c cross join lateral unnest(c.conkey) with ordinality k(attnum, ord)
@@ -482,6 +501,18 @@ do $pk$ begin
 end $pk$;
 create index if not exists poly_bets_wallet_idx on public.poly_bets (wallet, entry_at desc);
 create index if not exists poly_bets_version_idx on public.poly_bets (wallet, grading_version, entry_at desc);
+-- THE TAKER FEE a share at price p, in USDC (docs.polymarket.com, trading/fees and market-data/market-details):
+-- rate x (p x (1 - p))^exponent from the market's own fee schedule; no fee when fees are not enabled; null (unknown)
+-- when the fee status was never read or the schedule cannot be read. Rounded as lib/edgedesk_radar.js R.takerFee does
+create or replace function public.radar_taker_fee(p numeric, schedule jsonb, enabled boolean)
+returns numeric language sql immutable as $t$
+  select case
+    when p is null or p <= 0 or p >= 1 or enabled is null then null
+    when not enabled then 0::numeric
+    when jsonb_typeof(schedule -> 'rate') = 'number' and jsonb_typeof(schedule -> 'exponent') = 'number' and (schedule ->> 'rate')::numeric >= 0
+      then round((schedule ->> 'rate')::numeric * power(p * (1 - p), (schedule ->> 'exponent')::numeric), 6)
+  end
+$t$;
 -- a bet is graded only on a resolved market, at its own outcome's settlement
 create or replace function public.poly_bets_guard()
 returns trigger language plpgsql as $g$
@@ -504,8 +535,14 @@ begin
   if new.close_at is not null and (new.close_at > new.game_start_at or new.close_at < new.game_start_at - make_interval(mins => public.radar_rule('close_max_gap_min')::int)) then
     raise exception 'poly_bets: a close must be the last price at or before the start, at most % minutes before it', public.radar_rule('close_max_gap_min');
   end if;
-  -- version 2: a follow pays the midpoint plus follow_cost, never less
+  -- version 2: a follow pays the midpoint plus follow_cost, never less, and the market's taker fee at that price
   if new.grading_version = 'radar-grade-2' then
+    if (new.follow5_price is not null and (new.follow5_fee is null or public.radar_taker_fee(new.follow5_price, m.fee_schedule, m.fees_enabled) is null
+          or abs(new.follow5_fee - public.radar_taker_fee(new.follow5_price, m.fee_schedule, m.fees_enabled)) > 1e-6))
+       or (new.follow15_price is not null and (new.follow15_fee is null or public.radar_taker_fee(new.follow15_price, m.fee_schedule, m.fees_enabled) is null
+          or abs(new.follow15_fee - public.radar_taker_fee(new.follow15_price, m.fee_schedule, m.fees_enabled)) > 1e-6)) then
+      raise exception 'poly_bets: a version-2 follow fee is the market''s taker fee at the follow price (rate x (p x (1 - p))^exponent)';
+    end if;
     if new.follow5_price is not null and (new.follow5_mid is null or abs(new.follow5_price - (new.follow5_mid + public.radar_rule('follow_cost'))) > 1e-6) then
       raise exception 'poly_bets: a version-2 follow price is the midpoint plus % (follow_cost)', public.radar_rule('follow_cost');
     end if;

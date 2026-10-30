@@ -242,22 +242,25 @@ last. So a large order filled in many pieces counts once.
     ROI, both on game-clustered 95% intervals, as in H-RADAR-01.
   - Fewer than 200 graded cards by the end date means it cannot pass, and
     the report says so.
-- **Fees.** Third-party guides disagree on Polymarket's formula and its
-  sports rate. Polymarket's own documentation (docs.polymarket.com) could not
-  be reached from the build session.
-  - So the fee is never hardcoded. Each card stores its market's
-    `feeSchedule` at publication, and the fee comes from it.
-  - Every covered market probed shows rate 0 today, so the fee is 0.
-  - Before the registration is frozen, the formula must be confirmed from
-    Polymarket's documentation. The fee must also be recomputed whenever a
-    covered market shows a non-zero rate.
+- **Fees: confirmed from Polymarket's documentation** (docs.polymarket.com,
+  `trading/fees` and `market-data/market-details`, read 2026-10-30).
+  - The taker fee in USDC is shares × `feeSchedule.rate` × (p × (1 − p))
+    raised to `feeSchedule.exponent`, at the trade price p.
+  - Makers never pay; a follower buying is a taker.
+  - Each market's own `feesEnabled` and `feeSchedule` decide.
+  - Polymarket lists 0.05 as the Sports category rate. Every covered NBA
+    market probed had fees enabled at rate 0 (`zero_fees`).
+  - Radar applies each market's schedule (`R.takerFee`, `radar_taker_fee`).
+    Both reproduce Polymarket's published fee tables: 100 shares at 50¢ in
+    Sports pay $1.25.
+  - A market whose fee schedule cannot be read is never guessed: its follow,
+    or its card, is not graded.
 
 ## Open, for the registration
 
 - The minimum number of covered pregame bets in 90 days (decision 3).
 - The processing cap and the followability test: proposed above, from the
   screening evidence (decision 7). They need the owner's review.
-- Polymarket's fee formula, confirmed from its own documentation.
 - The registration file itself, with the frozen rules, the forking-paths
   disclosure (this record and the probe runs are data seen before
   registration) and the test's start and end dates.

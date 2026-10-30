@@ -71,12 +71,14 @@ for (let g = 0; g < 60; g++) {
   const c = cid('past' + g), start = NOW - (61 - g) * DAY;
   PAST.push({ c, start, settle: g % 3 !== 0 ? ['1', '0'] : ['0', '1'], tokens: [tok(c, 0), tok(c, 1)], slug: 'nfl-aaa-bbb-' + g });
 }
+/* game 1's market charges the Sports taker rate (0.05, docs.polymarket.com trading/fees); every other covered market charges none */
+PAST[1].feeRate = 0.05;
 const EPL = { c: cid('epl'), start: NOW - 5 * DAY, tokens: [tok(cid('epl'), 0), tok(cid('epl'), 1)] };
 const gammaMarket = (m, o) => Object.assign({ id: 'm-' + m.c.slice(2, 8), conditionId: m.c, question: 'Chiefs vs. Raiders', slug: m.slug, outcomes: '["Chiefs", "Raiders"]',
   outcomePrices: JSON.stringify(m.settle || ['0.5', '0.5']), clobTokenIds: JSON.stringify(m.tokens), sportsMarketType: 'moneyline', gameStartTime: gt(m.start),
   closed: !!m.settle, active: !m.settle, umaResolutionStatus: m.settle ? 'resolved' : null, events: [{ id: 'ev-' + m.c.slice(2, 8), slug: m.slug, title: 'Chiefs vs. Raiders', tags: [{ slug: 'nfl', label: 'NFL' }] }],
   /* as covered markets send it (probe run 40975470572): fees enabled, no fee */
-  feesEnabled: true, feeType: 'zero_fees', feeSchedule: { exponent: 1, rate: 0, takerOnly: true, rebateRate: 0 } }, o || {});
+  feesEnabled: true, feeType: m.feeRate ? 'sports_fees' : 'zero_fees', feeSchedule: { exponent: 1, rate: m.feeRate || 0, takerOnly: true, rebateRate: m.feeRate ? 0.15 : 0 } }, o || {});
 /* each wallet's activity: W1-W3 buy outcome 0 of every past game 2 h before the start (directional);
    W5 buys BOTH outcomes many times (a market maker); W6 only 10 games (a small sample); W4's history never ends */
 function activityFor(user) {
@@ -282,11 +284,13 @@ let rest;
       && V(`select count(*) from public.poly_markets where condition_id = ${lit(EPL.c)}`) === '1');
     const bets = J(`select * from public.poly_bets where wallet = ${lit(W1)} and grading_version = 'radar-grade-2' order by entry_at`);
     chk('wallets: 60 resolved bets graded once each, at version 2', bets.length === 60 && V(`select count(*) from public.poly_bets where wallet = ${lit(W1)} and grading_version <> 'radar-grade-2'`) === '0', bets.length);
-    const b0 = bets[0] || {}, b1 = bets[1] || {};
+    const b0 = bets[0] || {}, b1 = bets[1] || {}, b2 = bets[2] || {};
     /* entry 2 h before the start at 0.50; at +5 min (1 h 55 m before) the midpoint is 0.55; the close (30 min before) 0.58 */
     chk('wallets: the close is the last price before the start (0.58), CLV +8 pp', Number(b0.close_price) === 0.58 && Number(b0.clv_pp) === 8, b0);
     chk('wallets: a follower pays the midpoint 0.55 plus 1 cent: 0.56, at 5 and 15 minutes', Number(b0.follow5_mid) === 0.55 && Number(b0.follow5_price) === 0.56 && Number(b0.follow15_price) === 0.56, b0);
-    chk('wallets: a loss follows at -1 (game 0), a win at 1 / 0.56 - 1 (game 1)', Number(b0.follow5_roi) === -1 && Math.abs(Number(b1.follow5_roi) - (1 / 0.56 - 1)) < 1e-5, { b0: b0.follow5_roi, b1: b1.follow5_roi });
+    chk('wallets: a loss follows at -1 (game 0), a win at 1 / 0.56 - 1 (game 2, no fee)', Number(b0.follow5_roi) === -1 && Number(b2.follow5_fee) === 0 && Math.abs(Number(b2.follow5_roi) - (1 / 0.56 - 1)) < 1e-5, { b0: b0.follow5_roi, b2: b2.follow5_roi });
+    chk('wallets: on a market charging the Sports rate the follower pays its taker fee: 0.05 x 0.56 x 0.44 = 0.01232 a share, ROI = 1 / (0.56 + 0.01232) - 1 (game 1)',
+      Number(b1.follow5_fee) === 0.01232 && Math.abs(Number(b1.follow5_roi) - (1 / 0.57232 - 1)) < 1e-5 && Number(b1.follow5_price) === 0.56, { fee: b1.follow5_fee, roi: b1.follow5_roi });
     const priceReads = pmCalls.slice(before).filter((u) => /prices-history\?/.test(u)).map((u) => { const q = new URL('https://' + u).searchParams; return (+q.get('endTs') - +q.get('startTs')) / 60; });
     chk('wallets: each of the three wallets\' 60 bets, held two hours, is read in two short stretches (360 reads), the follow\'s and the close\'s (at most 62 minutes each), never its whole history',
       priceReads.length === 360 && priceReads.every((m) => m <= 62), { reads: priceReads.length, longest: Math.max(...priceReads) });

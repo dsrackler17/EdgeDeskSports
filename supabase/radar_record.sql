@@ -78,6 +78,7 @@ alter table public.radar_cards add column if not exists bid_price     numeric ch
 alter table public.radar_cards add column if not exists mid_price     numeric check (mid_price is null or (mid_price > 0 and mid_price < 1));
 alter table public.radar_cards add column if not exists quoted_at     timestamptz;
 alter table public.radar_cards add column if not exists fee_schedule  jsonb;
+alter table public.radar_cards add column if not exists fee_per_share numeric check (fee_per_share is null or fee_per_share >= 0);   -- the market's taker fee at the ask
 do $c$ begin
   if not exists (select 1 from pg_constraint where conname = 'radar_cards_v2_at_the_ask') then
     alter table public.radar_cards add constraint radar_cards_v2_at_the_ask
@@ -94,7 +95,7 @@ create table if not exists public.radar_card_results (
   graded_at     timestamptz not null default now(),
   result        text not null check (result in ('win', 'loss', 'push', 'void')),
   settle        numeric check (settle is null or settle in (0, 0.5, 1)),
-  roi           numeric,                       -- one unit at the published price, held to settlement: settle / follow_price - 1
+  roi           numeric,                       -- one unit at the published price, held to settlement: settle / (follow_price + fee_per_share) - 1
   close_status  text not null check (close_status in ('graded', 'no_close', 'void')),
   close_price   numeric check (close_price is null or (close_price >= 0 and close_price <= 1)),
   close_at      timestamptz,
@@ -114,7 +115,7 @@ begin
   select * into c from public.radar_cards where card_id = new.card_id;
   if not found then raise exception 'radar_card_results: no card %', new.card_id; end if;
   if c.commence_time > now() then raise exception 'radar_card_results: card %''s game has not started', new.card_id; end if;
-  if new.roi is not null and abs(new.roi - (new.settle / c.follow_price - 1)) > 1e-6 then raise exception 'radar_card_results: roi must be settle / follow price - 1'; end if;
+  if new.roi is not null and abs(new.roi - (new.settle / (c.follow_price + coalesce(c.fee_per_share, 0)) - 1)) > 1e-6 then raise exception 'radar_card_results: roi must be settle / (follow price + its fee) - 1'; end if;
   if new.close_price is not null and new.beat_close is distinct from (new.close_price > c.follow_price) then raise exception 'radar_card_results: beat_close must be close > follow price'; end if;
   if new.close_price is not null and (new.clv_pct is null or abs(new.clv_pct - (new.close_price / c.follow_price - 1)) > 1e-6) then raise exception 'radar_card_results: clv_pct must be close / follow price - 1'; end if;
   if new.close_price is not null and new.beat_close is null then raise exception 'radar_card_results: a close needs its beat_close'; end if;
@@ -132,8 +133,8 @@ comment on table public.radar_card_results is 'Prediction Radar: each card grade
 
 -- ---------------------------------------------------------------- publishing: the cards subscribers saw
 -- Version 1 (H-RADAR-01): at the recorded price. Version 2 (H-RADAR-02): only with a quote from the order book for the
--- card's token (p_quotes, from polymarket_sync), at its best ask, and only when the market's fee is known to be none
--- (fees not enabled, or a schedule rate of 0): a card whose fee is unknown is not published, never guessed.
+-- card's token (p_quotes, from polymarket_sync), at its best ask, with the market's taker fee at that ask
+-- (radar_taker_fee, from the market's own schedule): a card whose fee is unknown is not published, never guessed.
 drop function if exists public.radar_publish_cards();
 create or replace function public.radar_publish_cards(p_quotes jsonb default null)
 returns integer language plpgsql security definer set search_path = public, pg_temp as $f$
@@ -153,21 +154,21 @@ begin
   else
     insert into public.radar_cards (event_id, sport_key, condition_id, token_id, market_type, selection, outcome, point, home_team, away_team, commence_time,
                                     n_wallets, dollars, avg_entry, follow_price, follow_price_at, fair, fair_current, agrees, wallets, grade_run_id,
-                                    rules_version, ask_price, ask_size, bid_price, mid_price, quoted_at, fee_schedule)
+                                    rules_version, ask_price, ask_size, bid_price, mid_price, quoted_at, fee_schedule, fee_per_share)
     select c ->> 'event_id', c ->> 'sport_key', c ->> 'condition_id', c ->> 'token_id', c ->> 'market_type', c ->> 'selection', c ->> 'outcome', (c ->> 'point')::numeric,
            c ->> 'home_team', c ->> 'away_team', (c ->> 'commence_time')::timestamptz, (c ->> 'n_wallets')::int, (c ->> 'dollars')::numeric, (c ->> 'avg_entry')::numeric,
            (q ->> 'best_ask')::numeric, (q ->> 'quoted_at')::timestamptz, (c ->> 'fair')::numeric, (c ->> 'fair_current')::boolean, (c ->> 'agrees')::boolean,
            coalesce(c -> 'wallets', '[]'::jsonb), public.radar_current_run(),
            v, (q ->> 'best_ask')::numeric, (q ->> 'ask_size')::numeric, (q ->> 'best_bid')::numeric,
            case when (q ->> 'best_bid') is not null then ((q ->> 'best_bid')::numeric + (q ->> 'best_ask')::numeric) / 2 end,
-           (q ->> 'quoted_at')::timestamptz, m.fee_schedule
+           (q ->> 'quoted_at')::timestamptz, m.fee_schedule, public.radar_taker_fee((q ->> 'best_ask')::numeric, m.fee_schedule, m.fees_enabled)
       from public.radar_tonight_cards() c
       join lateral (select x from jsonb_array_elements(coalesce(p_quotes, '[]'::jsonb)) x where x ->> 'token_id' = c ->> 'token_id' limit 1) qq(q) on true
       join public.poly_markets m on m.condition_id = c ->> 'condition_id'
      where (q ->> 'best_ask')::numeric > 0 and (q ->> 'best_ask')::numeric < 1 and (q ->> 'quoted_at')::timestamptz <= now()
        and (q ->> 'quoted_at')::timestamptz > now() - make_interval(mins => public.radar_rule('holders_fresh_min')::int)
        and (c ->> 'commence_time')::timestamptz > now()
-       and (m.fees_enabled = false or (m.fees_enabled and (m.fee_schedule ->> 'rate')::numeric = 0))
+       and public.radar_taker_fee((q ->> 'best_ask')::numeric, m.fee_schedule, m.fees_enabled) is not null
     on conflict (event_id, token_id) do nothing;
   end if;
   get diagnostics n = row_count;
@@ -204,7 +205,7 @@ begin
      where p.token_id = r.token_id and p.captured_at <= r.commence_time and p.captured_at >= r.commence_time - gap
      order by p.captured_at desc limit 1;
     insert into public.radar_card_results (card_id, result, settle, roi, close_status, close_price, close_at, beat_close, clv_pct)
-    values (r.card_id, case s when 1 then 'win' when 0 then 'loss' else 'push' end, s, s / r.follow_price - 1,
+    values (r.card_id, case s when 1 then 'win' when 0 then 'loss' else 'push' end, s, s / (r.follow_price + coalesce(r.fee_per_share, 0)) - 1,
             case when cp is null then 'no_close' else 'graded' end, cp, ca,
             case when cp is null then null else cp > r.follow_price end,
             case when cp is null then null else cp / r.follow_price - 1 end);

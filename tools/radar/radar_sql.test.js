@@ -62,7 +62,7 @@ for (const [name, text] of [['radar.sql', SQL], ['polymarket_sync_cron.sql', CRO
 }
 chk('the migration mirror is byte-identical', fs.existsSync(MIRROR) && fs.readFileSync(MIRROR, 'utf8') === SQL);
 chk('the record\'s migration mirror is byte-identical', fs.existsSync(F('migrations/20261029130000_radar_record.sql')) && fs.readFileSync(F('migrations/20261029130000_radar_record.sql'), 'utf8') === RECSQL);
-chk('the record grades with the house formulas: ROI = settle / follow - 1, CLV% = close / follow - 1', /s \/ r\.follow_price - 1/.test(RECSQL) && /cp \/ r\.follow_price - 1/.test(RECSQL));
+chk('the record grades with the house formulas: ROI = settle / (follow + its taker fee) - 1, CLV% = close / follow - 1', /s \/ \(r\.follow_price \+ coalesce\(r\.fee_per_share, 0\)\) - 1/.test(RECSQL) && /cp \/ r\.follow_price - 1/.test(RECSQL));
 chk('PostgREST is told to reload', /notify pgrst, 'reload schema'/.test(SQL));
 chk('nothing existing is dropped (only its own triggers are re-created)', !/\bdrop\s+(table|column|view|function|index|policy)/i.test(SQL.replace(/--.*$/gm, '')));
 chk('the cron file never writes the service-role key into a job', !/service_role_key|Bearer\s/i.test(CRON));
@@ -240,7 +240,8 @@ try {
   const tx6 = TX();
   /* the core builds and grades the bet, as polymarket_sync does */
   /* its fee status as covered markets send it (probe run 40975470572): fees enabled at a schedule rate of 0, so no fee */
-  const mk6 = { condition_id: C('6'), league: 'nfl', market_type: 'moneyline', outcomes: ['Chiefs', 'Broncos'], token_ids: [C('6') + ':0', C('6') + ':1'], game_start_at: START6, closed: true, settle: [1, 0], event_ref: 'g6', question: 'Chiefs vs. Broncos', fees_enabled: true, fee_schedule: { rate: 0 } };
+  const mk6 = { condition_id: C('6'), league: 'nfl', market_type: 'moneyline', outcomes: ['Chiefs', 'Broncos'], token_ids: [C('6') + ':0', C('6') + ':1'], game_start_at: START6, closed: true, settle: [1, 0], event_ref: 'g6', question: 'Chiefs vs. Broncos', fees_enabled: true, fee_schedule: { rate: 0, exponent: 1 } };
+  db.service(`update public.poly_markets set fees_enabled = true, fee_schedule = '{"rate": 0, "exponent": 1, "taker_only": true}'::jsonb where condition_id = ${lit(C('6'))};`);
   const bets6 = R.buildBets([{ wallet: T1, kind: 'TRADE', tx_hash: tx6, ts: START6 - 120 * 60000, condition_id: C('6'), token_id: C('6') + ':0', outcome_index: 0, side: 'BUY', size: 250, price: 0.4 }], { [C('6')]: mk6 }, RULES).bets;
   const hist6 = [{ t: START6 - 125 * 60000, p: 0.4 }, { t: START6 - 116 * 60000, p: 0.42 }, { t: START6 - 106 * 60000, p: 0.43 }, { t: START6 - 20 * 60000, p: 0.47 }];
   const b6 = R.gradeBet(bets6[0], hist6, RULES);
@@ -251,7 +252,8 @@ try {
     settle: b.settle, result: b.result, profit: b.profit, close_price: b.close_price, close_at: iso(b.close_at), clv_pp: b.clv_pp, clv_pct: b.clv_pct,
     follow5_price: b.follow5_price, follow5_at: iso(b.follow5_at), follow5_reason: b.follow5_reason, follow5_roi: b.follow5_roi,
     follow15_price: b.follow15_price, follow15_at: iso(b.follow15_at), follow15_reason: b.follow15_reason, follow15_roi: b.follow15_roi, beat_close5: b.beat_close5,
-    follow5_mid: b.follow5_mid == null ? null : b.follow5_mid, follow15_mid: b.follow15_mid == null ? null : b.follow15_mid, grading_version: b.grading_version || R.GRADING_VERSION }, over || {});
+    follow5_mid: b.follow5_mid == null ? null : b.follow5_mid, follow15_mid: b.follow15_mid == null ? null : b.follow15_mid,
+    follow5_fee: b.follow5_fee == null ? null : b.follow5_fee, follow15_fee: b.follow15_fee == null ? null : b.follow15_fee, grading_version: b.grading_version || R.GRADING_VERSION }, over || {});
   /* the columns it names (so every other keeps its default), as PostgREST inserts */
   const putBet = (row) => { const cols = Object.keys(row).join(', '); return db.service(`insert into public.poly_bets (${cols}) select ${cols} from jsonb_populate_record(null::public.poly_bets, ${lit(JSON.stringify(row))}::jsonb);`); };
   chk('a bet on a market that has not resolved is refused', fails(() => putBet(betRow(b6))));
@@ -265,6 +267,11 @@ try {
   chk('an entry after the start is refused', fails(() => putBet(betRow(b6, { entry_at: iso(START6 + 60000) }))));
   chk('the entry transaction must be one of the bet\'s', fails(() => putBet(betRow(b6, { entry_tx: TX() }))));
   chk('version 2: a follow price that is not the midpoint plus follow_cost is refused', fails(() => putBet(betRow(b6, { follow5_price: 0.42, follow5_roi: 1 / 0.42 - 1, beat_close5: true }))));
+  chk('version 2: a follow fee that is not the market\'s taker fee at that price is refused (this market charges none)', fails(() => putBet(betRow(b6, { follow5_fee: 0.01, follow5_roi: 1 / 0.44 - 1 }))));
+  /* the taker fee, as Polymarket publishes it (docs.polymarket.com, trading/fees): 100 shares at 50¢ in Sports (0.05) pay $1.25, at 30¢ $1.05; Crypto (0.07) at 50¢ $1.75 */
+  chk('the taker fee is Polymarket\'s formula: rate x (p x (1 - p))^exponent, as its fee tables', V(`select (100 * public.radar_taker_fee(0.5, '{"rate":0.05,"exponent":1}', true))::numeric(8,2) || ',' || (100 * public.radar_taker_fee(0.3, '{"rate":0.05,"exponent":1}', true))::numeric(8,2) || ',' || (100 * public.radar_taker_fee(0.5, '{"rate":0.07,"exponent":1}', true))::numeric(8,2)`) === '1.25,1.05,1.75');
+  chk('…no fee when the market has fees off; unknown (null) when never read or the schedule is unreadable', V(`select public.radar_taker_fee(0.5, null, false)::text || ',' || coalesce(public.radar_taker_fee(0.5, null, null)::text, 'null') || ',' || coalesce(public.radar_taker_fee(0.5, '{"rate":"x"}', true)::text, 'null')`) === '0,null,null');
+  chk('…and the SQL and the core give the same fee', [0.07, 0.31, 0.5, 0.56, 0.93].every((p) => Math.abs(Number(V(`select public.radar_taker_fee(${p}, '{"rate":0.05,"exponent":1}', true)`)) - R.takerFee(p, { rate: 0.05, exponent: 1 })) < 1e-9));
   putBet(betRow(b6));
   const stored6 = one(`select entry_price, stake, close_price, clv_pp, follow5_mid, follow5_price, follow5_roi, beat_close5, result, grading_version from public.poly_bets where wallet = ${lit(T1)}`);
   /* 250 @ 0.40: entry 0.40; the follow is the midpoint at entry + 5 min (0.42, observed at -116 min) plus 1 cent; the close 0.47 */
@@ -484,7 +491,8 @@ try {
   /* H-RADAR-02: a card is published at the order book's best ask (polymarket_sync reads it and hands it in), and only on
      a market whose fee is known to be none: E1's market says fees enabled at a rate of 0 (as the probe saw); E2's fee
      status has not been read yet */
-  db.service(`update public.poly_markets set fees_enabled = true, fee_schedule = '{"rate": 0, "exponent": 1, "taker_only": true, "fee_type": "zero_fees"}'::jsonb where condition_id = ${lit(C('1'))};`);
+  /* E1's market charges the Sports taker rate (0.05, docs.polymarket.com trading/fees), so its card pays the fee on top of the ask */
+  db.service(`update public.poly_markets set fees_enabled = true, fee_schedule = '{"rate": 0.05, "exponent": 1, "taker_only": true}'::jsonb where condition_id = ${lit(C('1'))};`);
   const quote = (c, ask, bid, size, ageMin) => ({ token_id: c + ':0', best_ask: ask, best_bid: bid, ask_size: size, quoted_at: new Date(Date.now() - ageMin * 60000).toISOString() });
   const Q = (qs) => `select public.radar_publish_cards(${lit(JSON.stringify(qs))}::jsonb);`;
   chk('v2: without a quote from the order book nothing is published', db.service('select public.radar_publish_cards();') === '0' && V('select count(*) from public.radar_cards') === '0');
@@ -494,10 +502,12 @@ try {
   db.service(`update public.poly_markets set fees_enabled = false where condition_id = ${lit(C('2'))};`);
   const pub = pub1 + Number(db.service(Q([quote(C('1'), 0.67, 0.65, 5000, 1), quote(C('2'), 0.51, 0.49, 800, 1)])));
   chk('every card on Smart Money Tonight is published once: E1 and E2 (E2 once its market says it charges no fee)', pub === 2 && V("select string_agg(event_id, ',' order by event_id) from public.radar_cards") === 'E1,E2');
-  const rc1 = one("select follow_price, ask_price, bid_price, mid_price, ask_size, rules_version, fee_schedule ->> 'rate' as rate, n_wallets, selection, agrees, jsonb_array_length(wallets) as w from public.radar_cards where event_id = 'E1'");
-  chk('…with the side and the price a subscriber could really take then: the best ask 0.67 (bid 0.65, midpoint 0.66), 5,000 shares at it, the fee schedule (rate 0)',
-    Number(rc1.follow_price) === 0.67 && Number(rc1.ask_price) === 0.67 && Number(rc1.mid_price) === 0.66 && Number(rc1.ask_size) === 5000 && rc1.rules_version === 2 && rc1.rate === '0'
+  const rc1 = one("select follow_price, ask_price, bid_price, mid_price, ask_size, rules_version, fee_schedule ->> 'rate' as rate, fee_per_share, n_wallets, selection, agrees, jsonb_array_length(wallets) as w from public.radar_cards where event_id = 'E1'");
+  chk('…with the side and the price a subscriber could really take then: the best ask 0.67 (bid 0.65, midpoint 0.66), 5,000 shares at it, and the taker fee at it (0.05 x 0.67 x 0.33 = 0.011055 a share)',
+    Number(rc1.follow_price) === 0.67 && Number(rc1.ask_price) === 0.67 && Number(rc1.mid_price) === 0.66 && Number(rc1.ask_size) === 5000 && rc1.rules_version === 2 && rc1.rate === '0.05'
+    && Number(rc1.fee_per_share) === 0.011055
     && rc1.selection === 'Kansas City Chiefs' && rc1.n_wallets === 3 && rc1.agrees === false && rc1.w === 3, rc1);
+  chk('…and no fee on a market that charges none (E2: fees not enabled)', Number(V("select fee_per_share from public.radar_cards where event_id = 'E2'")) === 0);
   chk('v2: a card whose price is not its ask is refused', fails(() => db.service(`insert into public.radar_cards (event_id, condition_id, token_id, market_type, commence_time, n_wallets, follow_price, follow_price_at, rules_version, ask_price, quoted_at)
     values ('EX', ${lit(C('1'))}, 'x', 'moneyline', now() + interval '1 day', 1, 0.66, now(), 2, 0.67, now());`)));
   chk('publishing again adds nothing (one entry per game and side)', db.service(Q([quote(C('1'), 0.60, 0.58, 5000, 1)])) === '0' && V('select count(*) from public.radar_cards') === '2');
@@ -518,7 +528,7 @@ try {
   const gr1 = JSON.parse(db.service('select public.radar_grade_cards();'));
   chk('graded once: E1 against its close and result, E2 void (no resolution in a week)', gr1.graded === 1 && gr1.void === 1, gr1);
   const res1 = one("select r.result, r.settle, r.roi, r.close_status, r.close_price, r.beat_close, r.clv_pct from public.radar_card_results r join public.radar_cards c using (card_id) where c.event_id = 'E1'");
-  chk('E1: a win; ROI = 1 / 0.67 - 1 (at the ask); the close is the last price before the start (0.70), not the in-play one', res1.result === 'win' && Math.abs(Number(res1.roi) - (1 / 0.67 - 1)) < 1e-6
+  chk('E1: a win; ROI = 1 / (0.67 + 0.011055) - 1 (at the ask, net of the fee); the close is the last price before the start (0.70), not the in-play one', res1.result === 'win' && Math.abs(Number(res1.roi) - (1 / 0.681055 - 1)) < 1e-6
     && Number(res1.close_price) === 0.7 && res1.beat_close === true && Math.abs(Number(res1.clv_pct) - (0.7 / 0.67 - 1)) < 1e-6, res1);
   chk('E2: void, with no ROI and no close', one("select r.result || ':' || coalesce(r.roi::text, '-') || ':' || r.close_status as x from public.radar_card_results r join public.radar_cards c using (card_id) where c.event_id = 'E2'").x === 'void:-:void');
   chk('grading again changes nothing', JSON.parse(db.service('select public.radar_grade_cards();')).graded === 0 && V('select count(*) from public.radar_card_results') === '2');
@@ -526,8 +536,8 @@ try {
   chk('the record is subscribers only', fn('public.radar_record(10)', db.anon).status === 'subscribers_only' && fn('public.radar_record(10)', asA).status === 'subscribers_only');
   chk('no client reads the record\'s tables directly', fails(() => asSub('select * from public.radar_cards;')) && fails(() => db.anon('select * from public.radar_card_results;')));
   const rec = fn('public.radar_record(10)', asSub);
-  chk('the record: 1 graded (1-0), ROI +49.3% (at the ask), beat the close 100%, 1 void', rec.status === 'ok' && rec.totals.graded === 1 && rec.totals.wins === 1 && rec.totals.void === 1
-    && Math.abs(Number(rec.totals.roi) - 0.4925) < 1e-4 && Number(rec.totals.beat_close_rate) === 1, rec.totals);
+  chk('the record: 1 graded (1-0), ROI +46.8% (at the ask, net of the fee), beat the close 100%, 1 void', rec.status === 'ok' && rec.totals.graded === 1 && rec.totals.wins === 1 && rec.totals.void === 1
+    && Math.abs(Number(rec.totals.roi) - 0.4683) < 1e-4 && Number(rec.totals.beat_close_rate) === 1, rec.totals);
   chk('labelled EXPERIMENTAL and a small sample (under 200 graded); H-RADAR-02\'s record, priced at the best ask', rec.label === 'EXPERIMENTAL' && rec.small_sample === true && rec.min_sample === 200
     && rec.hypothesis === 'H-RADAR-02' && rec.priced_at === 'best_ask' && rec.earlier_cards === 0, rec);
   chk('it carries what H-RADAR-01 found, verbatim from the registry', rec.h_radar_01 && rec.h_radar_01.hypothesis_id === 'H-RADAR-01' && rec.h_radar_01.status === found.status);

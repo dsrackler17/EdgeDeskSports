@@ -102,7 +102,7 @@ chk('v2: a subscriber-only refusal shows no observed activity either', !/Observe
 chk('v2: the leaderboard marks a featured bettor in words', /Featured/.test(U.leaderboardHTML({ status: 'ok', rows: [{ rank: 1, wallet: '0x' + '1'.repeat(40), sample: 'ranked', style: 'Directional', graded_bets: 60, wins: 40, losses: 20, roi: 0.1, clv_pp: 2, follow5_roi: 0.05, radar_score: 3, score_parts: { follow_roi: 0.01, clv_pct: 0.01, roi: 0.01 }, top_directional: true }] })));
 const rec2 = textOf(keep(U.recordHTML({ status: 'ok', label: 'EXPERIMENTAL', hypothesis: 'H-RADAR-02', priced_at: 'best_ask', small_sample: true, min_sample: 200, earlier_cards: 4,
   totals: { graded: 1, wins: 1, losses: 0, pushes: 0, roi: 0.49, beat_close_rate: 1, with_close: 1, pending: 0, void: 0 }, h_radar_01: { status: 'complete', passed: false }, recent: [] })));
-chk('v2: the record says it is priced at the best ask, what H-RADAR-02 tests, and counts earlier cards apart', /at the best ask in Polymarket’s order book/.test(rec2) && /one unit per card at the best ask/.test(rec2)
+chk('v2: the record says it is priced at the best ask, what H-RADAR-02 tests, and counts earlier cards apart', /at the best ask in Polymarket’s order book/.test(rec2) && /one unit per card at the best ask, plus the market’s fee/.test(rec2)
   && /H-RADAR-02 tests: a 12-week test at the best ask/.test(rec2) && /Until it passes, nothing here is called evidence/.test(rec2) && /4 earlier cards were published under H-RADAR-01’s rules, at the midpoint/.test(rec2), rec2.slice(0, 700));
 
 /* ── the leaderboard ─────────────────────────────────────────────────── */
