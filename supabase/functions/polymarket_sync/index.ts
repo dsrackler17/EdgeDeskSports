@@ -62,7 +62,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-30.8";
+export const BUILD = "polymarket_sync@2026-10-30.9";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -1124,7 +1124,7 @@ async function tonight(ctx: any) {
      is longer than fetch takes (65,534 bytes), and it refuses it "Invalid URL" */
   const ids = markets.map((m: any) => m.condition_id);
   const stored: any[] = [];
-  await inChunks(ids, 100, async (c) => { stored.push(...(await dbAll("poly_markets?select=condition_id,event_id,match_status,sides,game_start_at&condition_id=in." + inList(c)))); });
+  await inChunks(ids, 100, async (c) => { stored.push(...(await dbAll("poly_markets?select=condition_id,event_id,match_status,match_reason,sides,game_start_at&condition_id=in." + inList(c)))); });
   const byId: Record<string, any> = {};
   for (const s of stored) byId[s.condition_id] = s;
   const pending = markets.filter((m: any) => !byId[m.condition_id] || !byId[m.condition_id].event_id);
@@ -1152,7 +1152,11 @@ async function tonight(ctx: any) {
         byId[m.condition_id] = { condition_id: m.condition_id, event_id: r.event_id, sides: r.sides, game_start_at: iso(m.game_start_at) };
       } else {
         unmapped.push({ condition_id: m.condition_id, question: m.question, reason: r.reason, start: iso(m.game_start_at) });
-        if (!ctx.dry) await patch("poly_markets?condition_id=eq." + m.condition_id + "&event_id=is.null", { match_status: "pending", match_reason: r.reason, match_detail: r.detail ?? null });
+        /* written once per reason: a night's unmatched alternate lines rewritten every 10 minutes (2,535 on
+           2026-10-30) ran the runs out of time and compute before they recorded anything */
+        const was = byId[m.condition_id];
+        if (!ctx.dry && !(was && was.match_status === "pending" && was.match_reason === r.reason))
+          await patch("poly_markets?condition_id=eq." + m.condition_id + "&event_id=is.null", { match_status: "pending", match_reason: r.reason, match_detail: r.detail ?? null });
       }
     }
   }

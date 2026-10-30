@@ -42,6 +42,14 @@ on:
         description: 'Probe, discover and snapshot once now, and print the readiness and coverage'
         type: boolean
         default: false
+      verify:
+        description: 'Check the deployed layer (tables, RLS, grants, indexes, switches, jobs, rows by environment, what a non-admin and the admin can read). No price is printed: this log is public'
+        type: boolean
+        default: true
+      report_key:
+        description: 'Optional: an RSA public key (base64 SPKI DER, 3072+ bits). The admin''s view (prices included) is printed only SEALED to it, for whoever holds the private half'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -203,3 +211,23 @@ jobs:
           psql "$PGURL" -v ON_ERROR_STOP=1 -c "select state, state_reason, environment, links_active, links_high, unmapped_open, snapshot_rows_24h, linked_markets_next_48h, linked_markets_fresh, public_display from public.novig_readiness;"
           psql "$PGURL" -v ON_ERROR_STOP=1 -c "select reason, count(*) from public.novig_unmapped where resolved_at is null group by reason order by 2 desc;"
           psql "$PGURL" -v ON_ERROR_STOP=1 -c "select league, book_market, match_confidence, count(*) from public.novig_market_links where invalidated_at is null group by 1,2,3 order by 1,2,3;"
+
+      # The repository is public, so this log is too. tools/novig/deploy_check.js prints facts that
+      # are not prices; the admin's view (which is) goes straight from psql into `seal`, never to the log.
+      - name: Verify the layer in production (a public log, so no price is printed)
+        if: ${{ always() && inputs.verify && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          REPORT_KEY: ${{ inputs.report_key }}
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          # the owner's account: the admin public.billing_is_admin() names (supabase/billing_hardening.sql)
+          ADMIN=e7e46801-80c4-4f47-b718-4aff211c8d3a
+          out=$(node tools/novig/deploy_check.js check --admin "$ADMIN" | psql "$PGURL" -X -q -t -A -v ON_ERROR_STOP=1)
+          echo "$out"
+          if [ -n "$REPORT_KEY" ]; then
+            node tools/novig/deploy_check.js view --admin "$ADMIN" | psql "$PGURL" -X -q -t -A -v ON_ERROR_STOP=1 | node tools/novig/deploy_check.js seal "$REPORT_KEY"
+            echo "(the admin's view above is sealed to the report key; only its private half opens it)"
+          fi
+          if echo "$out" | grep -q '|CHECK THIS'; then echo "::error::a deploy check row says CHECK THIS (above)"; exit 1; fi

@@ -81,6 +81,7 @@ on:
         default: 'manual'
 
 permissions:
+  checks: write
   contents: write
 
 concurrency:
@@ -250,7 +251,7 @@ jobs:
           # deterministic and cannot conflict.
           MINE=$(git diff --name-only HEAD~1 HEAD)
           for i in 1 2 3 4; do
-            git push origin main && exit 0
+            bash "$(git rev-parse --show-toplevel)/tools/ci/certified_push.sh" origin main && exit 0
             SAVED=$(git rev-parse HEAD)
             git rebase --abort 2>/dev/null || true
             git merge --abort 2>/dev/null || true

@@ -964,6 +964,34 @@ begin
    order by x.n_wallets desc, x.event_id;
 end $f$;
 
+-- THE SYNC STATE, for the page: whether what Smart Money Tonight shows is current, so "the sync is pending",
+-- "the sync failed" and "no featured bettor holds a position right now" never read alike. Presentation only:
+-- no rule in radar_rules() changes and nothing here selects a wallet. pending: no grading run under the live
+-- rules yet. failed: the holders sync (every 10 minutes) last ended in error or has not succeeded for 30
+-- minutes, or a grade failed after the current one, or the current one is more than 36 hours old. ok: both are
+-- current, so an empty slate means no position. Internal: the door calls it.
+create or replace function public.radar_sync_state()
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
+declare rid uuid := public.radar_current_run(); g_at timestamptz; h_ok timestamptz;
+        h_status text; h_msg text; g_status text; g_msg text; g_fin timestamptz; st text; why text; cand int; done int;
+begin
+  select status, message into h_status, h_msg from public.poly_sync_runs where mode = 'tonight' order by finished_at desc limit 1;
+  select max(finished_at) into h_ok from public.poly_sync_runs where mode = 'tonight' and status in ('ok', 'warn');
+  select status, message, finished_at into g_status, g_msg, g_fin from public.poly_sync_runs where mode = 'grade' order by finished_at desc limit 1;
+  select finished_at into g_at from public.poly_grade_runs where run_id = rid;
+  select count(*) filter (where board_rank is not null), count(*) filter (where board_rank is not null and eval_status in ('evaluated', 'high_frequency', 'insufficient_history'))
+    into cand, done from public.poly_wallets;
+  if rid is null then st := 'pending'; why := 'first_grade';
+  elsif h_status = 'error' then st := 'failed'; why := 'holders_error';
+  elsif h_ok is null or h_ok < now() - interval '30 minutes' then st := 'failed'; why := 'holders_stale';
+  elsif g_status = 'error' and g_fin > g_at then st := 'failed'; why := 'grade_error';
+  elsif g_at < now() - interval '36 hours' then st := 'failed'; why := 'grade_stale';
+  else st := 'ok'; end if;
+  return jsonb_build_object('state', st, 'reason', why, 'holders_at', h_ok, 'graded_at', g_at,
+    'last_error', case why when 'holders_error' then left(h_msg, 200) when 'grade_error' then left(g_msg, 200) end,
+    'candidates', cand, 'evaluated', done);
+end $f$;
+
 -- the door: subscribers only, once on and registered
 create or replace function public.radar_tonight()
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
@@ -978,7 +1006,8 @@ begin
     'featured', (select count(*) from public.poly_wallet_grades where run_id = public.radar_current_run() and top_directional),
     'discovery', (select discovery from public.poly_grade_runs where run_id = public.radar_current_run()),
     'cards', coalesce((select jsonb_agg(c) from public.radar_tonight_cards() c), '[]'::jsonb),
-    'observed', coalesce((select jsonb_agg(o) from (select o from public.radar_observed_cards() o limit 40) x), '[]'::jsonb));
+    'observed', coalesce((select jsonb_agg(o) from (select o from public.radar_observed_cards() o limit 40) x), '[]'::jsonb),
+    'sync', public.radar_sync_state());
 end $f$;
 
 -- THE TEASER, for anyone (the public /radar/ page): the first card's game, how
@@ -1000,13 +1029,13 @@ do $g$ begin
   -- internal: no client may call these
   execute 'revoke all on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
        || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.radar_current_run(), public.radar_config_audit(), '
-       || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis() from public, anon, authenticated';
+       || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state() from public, anon, authenticated';
   execute 'revoke all on function public.radar_status(), public.radar_leaderboard(integer), public.radar_trader(text), public.radar_tonight(), public.radar_teaser() from public';
   execute 'revoke all on function public.radar_enabled(), public.radar_registered() from public, anon, authenticated';
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
          || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.radar_current_run(), public.radar_enabled(), public.radar_registered(), '
-         || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis() to service_role';
+         || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state() to service_role';
     execute 'grant select, insert, update on public.poly_wallets, public.poly_markets, public.poly_api_days to service_role';
   end if;
 end $g$;
