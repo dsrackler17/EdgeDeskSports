@@ -11,6 +11,12 @@
      NHL API        /v1/gamecenter/{id}/boxscore: homeTeam / awayTeam with
                     abbrev, and playerByGameStats.<side>.goalies[] carrying
                     playerId, name.default and starter once lineups post
+     ESPN           /apis/site/v2/sports/hockey/nhl/scoreboard?dates=YYYYMMDD:
+                    events[].competitions[0].competitors[] with homeAway,
+                    team.abbreviation and probables[] (probableStartingGoalie:
+                    athlete.displayName, status.name Confirmed / Expected), in
+                    the shape of the real response captured on 2026-10-30
+                    (espn_nhl_scoreboard_2026-10-30.json)
 
    The 2026-10-25 Minnesota at Vancouver replay: the only fact taken from the
    report is that Leevi Merilainen started for Vancouver while EdgeDesk's card
@@ -82,4 +88,15 @@ const TIMELINE = {
 };
 function minVanPage(step) { const t = TIMELINE[step]; return dfPage([Object.assign({}, MIN_VAN, { home: t.home, away: t.away })]); }
 
-Object.assign(module.exports, { dfGame, dfPage, boxscore, MIN_VAN, TIMELINE, minVanPage });
+/** ESPN's scoreboard: games [{ home, away, start, homeGoalie, awayGoalie }], each goalie { name, status } or null (no probable yet) */
+function espnScoreboard(games) {
+  const side = (abbr, homeAway, g) => ({ id: abbr, homeAway, team: { abbreviation: abbr, displayName: abbr },
+    probables: g ? [{ name: 'probableStartingGoalie', displayName: 'Probable Starting Goalie', abbreviation: 'SG', athlete: { id: '1', fullName: g.name, displayName: g.name },
+      status: { name: g.status, type: String(g.status).toLowerCase(), abbreviation: g.status } }] : [] });
+  return { events: games.map((g, i) => ({ id: String(i + 1), date: g.start, shortName: g.away + ' @ ' + g.home,
+    competitions: [{ id: String(i + 1), date: g.start, competitors: [side(g.home, 'home', g.homeGoalie), side(g.away, 'away', g.awayGoalie)] }] })) };
+}
+/** MIN at VAN on ESPN (puck drop 02:00 UTC): no probable goalie unless given */
+function minVanEspn(homeGoalie, awayGoalie) { return espnScoreboard([{ home: 'VAN', away: 'MIN', start: '2026-10-26T02:00Z', homeGoalie: homeGoalie || null, awayGoalie: awayGoalie || null }]); }
+
+Object.assign(module.exports, { dfGame, dfPage, boxscore, MIN_VAN, TIMELINE, minVanPage, espnScoreboard, minVanEspn });

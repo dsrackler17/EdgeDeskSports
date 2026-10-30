@@ -69,6 +69,11 @@ chk('block v4: both Confirmed → one line, "With these starters", no range tabl
 chk('block v4: the change after first posting is still shown', /Updated: starter changed from K\. Lankinen to L\. Meriläinen/.test(t));
 h = GL.html(live(cc, 2), g); t = text(h);
 chk('block conflict: "sources disagree", the range, the limitation naming both sources, never as fact', /sources disagree/.test(t) && /realistic pairings/.test(t) && /Sources disagree on the VAN starter/.test(t) && /Edge flag: gated/.test(t), t);
+/* ESPN (2026-10-30): Observed like Daily Faceoff, and named by its label when the sources disagree */
+const ce = G.nhlgBuildCard(GI, INPUTS, merged([o('daily_faceoff', '8482447', 'Leevi Merilainen', 'likely'), o('espn', '8480947', 'Kevin Lankinen', 'confirmed')], [o('espn', '8475717', 'Cam Pickard', 'confirmed')]), DIST, { now: '2026-10-26T01:30:15Z', first: r1 });
+h = GL.html(live(ce, 2), g); t = text(h);
+chk('block ESPN: its probable goalie is Observed (T0), labelled ESPN', /C\. Pickard\s+Confirmed\s+T0\s+ESPN scoreboard \(probable goalie\)/.test(t), t);
+chk('block ESPN: disagreeing with Daily Faceoff names both sources, never the raw source key', /sources disagree/.test(t) && /per ESPN scoreboard \(probable goalie\)/.test(h) && !/per espn/.test(h) && /Edge flag: gated/.test(t), h.slice(0, 400));
 h = GL.html(live(c2, 2, { freshness: 'STALE', reason: 'starters last checked Oct 25 02:05 PM ET' }), g); t = text(h);
 chk('block: a stale check says so, with the time', /Starter status may be out of date\. starters last checked Oct 25 02:05 PM ET/.test(t), t);
 chk('block: a failed check says so', /out of date/.test(text(GL.html(live(c2, 2, { freshness: 'FAILED', reason: 'the latest check failed: no starter source could be read' }), g))));
