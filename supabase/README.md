@@ -163,6 +163,22 @@ Run in that order (`.github/workflows/deploy-kalshi.yml` does it, tests first). 
 
 Tested against a real PostgreSQL by `tools/kalshi/kalshi_sql.test.js`.
 
+### `novig_market_data.sql` + `novig_market_data_cron.sql` — Novig exchange prices beside DraftKings, at a stake
+
+Run in that order (`.github/workflows/deploy-novig.yml` does it, tests first). A new data source, not a model change: nothing here touches a projection, ranking, threshold, EV guard, grade or the CLV record, and it writes nothing outside `novig_*`. `docs/novig/README.md` is the narrative.
+
+- **`novig_market_data.sql`** (needs `public.signals` and `sharp_lag.sql`'s `public.sharp_price_snapshots`, the DraftKings tape; mirrored in `migrations/20261030120000_novig_market_data.sql`) adds:
+  - `novig_events`, `novig_markets` (the catalog: fee schedule, void rule, outcomes, consensus flag, the last book seq and ETag, `book_confirmed_at`);
+  - `novig_book_snapshots` (T0, provider Novig; append-only, unique on environment/market/source/seq: the top of book and the $25–$500 fills) and `novig_book_depth` (the ladder; pruned after 7 days by `novig_prune()`, each market's close kept);
+  - `novig_market_links` (append-only; one invalidation allowed): a Novig market matched to exactly one book event, market, period, line and side, with confidence, method, constraints and settlement notes; `novig_unmapped` (the queue, `novig_record_unmapped()`);
+  - `novig_sync_runs`, `novig_alerts` (append-only; a run can carry `halt_until`), `novig_config` + `novig_config_log` (the operator's switches: `public_display` off, `expected_environment` production; every change logged);
+  - the rules in `novig_rule()` (= `lib/edgedesk_venue_compare.js` RULES);
+  - `novig_can_read()`: the operator, or — once `public_display` is on — a subscriber. Every table's RLS uses it (or `novig_is_operator()`); anon reads nothing. `novig_compare()`, `novig_history()` and `novig_price_gap_summary()` are SECURITY DEFINER and check it first, because the DraftKings tape stays service-role only; `novig_access()` tells the UI who the reader is; `novig_readiness` and `novig_meta` are the KPIs.
+- **`novig_market_data_cron.sql`** (mirrored in `migrations/20261030120100_novig_market_data_cron.sql`) pokes `novig_sync` through `novig_poke(mode)` and the Vault secret `novig_cron_secret`: probe daily 10:23 UTC, discover hourly at :07, snapshot every 5 minutes; `novig_prune()` daily 04:41 UTC. Safe before credentials exist: the function records one skipped run an hour.
+- **`novig_market_data_rollback.sql`** removes all of it (destructive: the snapshot history goes with its table).
+
+Tested against a real PostgreSQL by `tools/novig/novig_sql.test.js`.
+
 ### `simulator.sql` + `simulator_registry.sql` — the EdgeDesk Simulator (season probabilities, Kalshi futures)
 
 Run in that order (`.github/workflows/deploy-simulator.yml` does it, the SQL suite first). Requires `community_is_entitled(uuid)` (`community_posts.sql` / `billing_hardening.sql`): without it nobody can read a result (fail closed; report row 5 says CHECK THIS). `SIMULATOR_NOTES.md` §9 is the narrative; `docs/simulator/README.md` the runbook.

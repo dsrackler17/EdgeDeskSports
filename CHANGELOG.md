@@ -41,6 +41,61 @@ The suite runs 999 checks, or 996 when the simulated first season earns no bowl.
 - the two spread claims moved from the fresh roster to the forty fixed ones;
 - three are new: forty rosters of 38 were built, the forty are flat, and the fresh franchise has 38 founding players.
 
+## 2026-10-30 — Novig: DraftKings vs Novig at the price a stake actually gets (built and tested; not deployed)
+
+- **Why.** A line's price is not what it costs. An exchange's best price holds only so much size, a larger stake walks the book, and a sportsbook's margin is inside its price. EdgeDesk now compares the SAME bet at DraftKings and at Novig, at the reader's stake, and says when it cannot.
+- **What.** (`docs/novig/README.md`)
+  - `lib/novig_signing.js`: NOVIG-V3 signing (Ed25519 and P-256 via WebCrypto, no package), 30/30 of Novig's published vectors.
+  - `lib/edgedesk_venue_compare.js`: the executable-price engine in exact integer arithmetic (1¢ contracts, the price grid, per-fill fees half up to $0.00001, VWAP, partial fills), implied probability, hold on complete markets only, no-vig as an estimate, EV only through a model gate, freshness rules shared with SQL.
+  - `lib/novig_market_map.js`: matching to `public.signals` on teams, home/away, kickoff, market type, period, exact line and orientation; anything else queued with its reason.
+  - `supabase/functions/novig_sync` + `supabase/novig_market_data.sql` (+ cron, rollback, migrations): signed REST ingestion, append-only snapshots, links, the comparison against the existing DraftKings tape (`sharp_price_snapshots`), history, a research summary, readiness.
+  - Credentials: a transient bootstrap and `novig-provision.yml` register a `management::read` key from the existing management key (public key only; the private key goes straight to Edge Function secrets).
+  - `lib/novig_stream.js` + `tools/novig/stream_worker.js`: the websocket book channel, off until a persistent host and a `trading::read` key exist.
+  - `lib/edgedesk_market_compare_ui.js` on the NFL/CFB cards (beside Kalshi), `lib/edgedesk_compare_cards.js` (seven PNG templates), `lib/edgedesk_lead_lag.js`, `admin/novig/`.
+- **Gates.** Public display is OFF in the database (`novig_config.public_display`) and in code (`NOVIG_PUBLIC_DISPLAY_ENABLED = false`) until Novig's written permission is on record; until then only operators see Novig prices, and graphics are watermarked internal. Ingestion is off until `NOVIG_INGEST_ENABLED=true`. No model, ranking, threshold, grade or historical record changed; no order route exists.
+- **Tests.** New suites, all green here: signing 98, venue compare 59, market map 34, novig_sync 44, bootstrap 17, stream 30, SQL 53 (real PostgreSQL), lead-lag 11, UI and graphics 38. `.github/workflows/novig.yml` runs them (category market-odds).
+- **Not verified here.** No deploy, no signed call to Novig and no read of the production database were possible from the build environment (no Supabase or Novig credentials); real Novig prices were read only from Novig's unsigned public catalog for the test fixture.
+
+## 2026-10-30 — Juice Reel: connect from Add a position, and no bet counted twice (look-alikes held for the reader's review)
+
+- **What was already built.** Juice Reel's OAuth 2.0 + PKCE connection, sealed tokens, the refresh lease, the initial import, the `/bets/changed` sync, the 10-minute schedule and the Accounts panel (`docs/juicereel.md`). It is not live for readers: the registry row stays off until Juice Reel approves the application, the PRODUCTION smoke test passes and the terms review clears (§ 9). This change does not touch that switch.
+- **The bug.** Connecting Juice Reel over bets the reader had already recorded counted many of them twice. The sync adopted a typed or imported bet only when exactly one matched within 15 minutes. It kept two identical bets apart and reported them, and it never compared a screenshot whose time was hours off, or a bet typed later. Both copies then counted in P&L, ROI, the record and every count.
+- **The fix** (`supabase/portfolio_juicereel.sql` 2b, `portfolio_svc_jr_ingest`). A synced bet that resembles one of the reader's own records is no longer stored. It is HELD in `public.portfolio_sync_matches`, its newest copy kept, until the reader decides. A look-alike is the same book, the stake within a cent, the same price, and either:
+  - placed within 2 hours;
+  - placed within 36 hours with the same event start or a word of the pick in common;
+  - the same event start, placed up to 14 days later.
+
+  "The same bet" merges it into the record the reader picks. The record takes the Juice Reel id and figures, keeps its notes and journal, and keeps what it said before on the decision. "A different bet" stores it as its own position. Until then the reader's own record is the one counted. Nothing is merged without the reader, including the exact matches the old automatic adoption took: those are marked exact and can be confirmed together. The shared ingest gains `"adopt": false` for this, and SharpSports is unchanged.
+- **Also.**
+  - **Add a position** opens with **Connect Juice Reel** and its description. It offers only what the server allows: disabled with the reason before approval, the connection's state once connected. The manual and import options are underneath, unchanged.
+  - **Accounts** counts the bets imported and the platforms they came from, both from the stored bets, and prompts the review when bets are held.
+  - History and Open label each position's source quietly.
+  - A Juice Reel bet's details show Juice Reel's own `clvPct`, labelled as Juice Reel's figure, never EdgeDesk's closing-line value or a Decision Grade input.
+  - Odds or a line adjusted in Juice Reel are flagged.
+  - The database enforces one position per reader and Juice Reel bet id.
+  - New edge function actions: `jr_matches` and `jr_match_resolve`.
+- **Tests.** On the code before the fix, the new reader-D scenario in `tools/portfolio/juicereel.test.js` failed. P&L went from +105 to +192.73 after connecting, where the fix gives +90: four bets were counted twice. That run had 140 passed and 11 failed. On the fix, `juicereel.test.js` gives 192/0 and `juicereel_ui.e2e.js` gives 33/0 in Chromium at 1280 and 390 px.
+
+## 2026-10-30 — NHL goalie sync: the card table shows when the NHL boxscore listed each game's lineups
+
+- **Why.** The card table's first run (01:39 UTC) showed that the lineup lock priced none of the night's games. Eight had started, and all eight were still at the slate's price. For every one of them both starters were Confirmed and the inputs carried the lineup block (35/35 games). That leaves the one input nothing showed: whether the NHL boxscore listed at least 12 skaters a side before puck drop. Each sync run records what every boxscore read saw (the timing probe, `nhl_goalie_sync_runs.sources`), but no job read it.
+- **What.** `tools/hockey/sql/nhl_goalie_cards_check.sql` gives each card its game's boxscore reads, from the runs recorded from 4 hours before puck drop to an hour after:
+  - the number of reads;
+  - the minutes before puck drop at which both lineups were first listed (negative: after puck drop);
+  - the last read before puck drop: its game state, the skaters listed a side and the starters flagged.
+
+  NHL goalie sync's card table adds an "NHL boxscore lineups" column: "listed T−22 min", "listed T+4 min, after puck drop (…)", "not listed by T−3 (PRE, 0 / 0 skaters, 2 starters flagged; 7 reads)" or "not read". Its summary line also counts the started games whose lineups were listed before puck drop. Read-only, as before.
+- **Tests.** On the code before this change: `nhl_goalie_sync.test.js` passed 80 and failed 1, and `nhl_goalie_sql.test.js` passed 80 and failed 2. On the change: 81/0 and 82/0 on a real PostgreSQL. The SQL suite records three runs whose probe has one game listed at T−30 and one never listed by T−21, and checks that each card reads only its own game's reads.
+## 2026-10-30 — Research OS journey: the workspace's links are read once Market Foresight's card has its answer
+
+- **What failed.** On #924, the Research OS browser job failed one check on the phone: "the workspace links Signals, Foresight and the Simulator for this game" found `["#signals/cfb","#simulator/cfb"]` (run 41008198329; 125 passed, 1 failed). The same check passed on the desktop in that run.
+- **Why.** The game page draws its Market Foresight card as "Checking the record…", with no link, and `EDContext.railFill` adds the record's link when `mf_game` answers. The test read the links as soon as `#gvWs` appeared. Its step 4 already waits for that card to settle; this check did not.
+- **The fix** (`tools/research_os/journey.e2e.js`, test only). Before reading the links, the check waits for the Foresight card the same way step 4 does. The assertion is unchanged.
+- **Regression.** The test's PostgREST stand-in now answers `mf_game` 2 seconds late, every run, so the race is always exercised.
+  - Before the fix, with the late answer: 124 passed, 2 failed (desktop and phone, `["#signals/cfb","#simulator/cfb"]`).
+  - After: 126 passed, 0 failed.
+- **How it reached `main`.** #924 carried the same change, byte for byte, and merged first; this entry records it.
+
 ## 2026-10-30 — Methodology change (owner's decision, DRAFT for review): Prediction Radar H-RADAR-02, featured bettors from complete recent histories, at what a follower pays
 
 **Methodology change; needs the owner's explicit review. Not registered: its SQL is not to be applied until H-RADAR-02 is registered.**
