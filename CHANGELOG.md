@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-30 — NHL goalie sync: the card table shows when the NHL boxscore listed each game's lineups
+
+- **Why.** The card table's first run (01:39 UTC) showed that the lineup lock priced none of the night's games. Eight had started, and all eight were still at the slate's price. For every one of them both starters were Confirmed and the inputs carried the lineup block (35/35 games). That leaves the one input nothing showed: whether the NHL boxscore listed at least 12 skaters a side before puck drop. Each sync run records what every boxscore read saw (the timing probe, `nhl_goalie_sync_runs.sources`), but no job read it.
+- **What.** `tools/hockey/sql/nhl_goalie_cards_check.sql` gives each card its game's boxscore reads, from the runs recorded from 4 hours before puck drop to an hour after:
+  - the number of reads;
+  - the minutes before puck drop at which both lineups were first listed (negative: after puck drop);
+  - the last read before puck drop: its game state, the skaters listed a side and the starters flagged.
+
+  NHL goalie sync's card table adds an "NHL boxscore lineups" column: "listed T−22 min", "listed T+4 min, after puck drop (…)", "not listed by T−3 (PRE, 0 / 0 skaters, 2 starters flagged; 7 reads)" or "not read". Its summary line also counts the started games whose lineups were listed before puck drop. Read-only, as before.
+- **Tests.** On the code before this change: `nhl_goalie_sync.test.js` passed 80 and failed 1, and `nhl_goalie_sql.test.js` passed 80 and failed 2. On the change: 81/0 and 82/0 on a real PostgreSQL. The SQL suite records three runs whose probe has one game listed at T−30 and one never listed by T−21, and checks that each card reads only its own game's reads.
+
 ## 2026-10-29 — NHL goalie sync: the job lists every game's card, and whether the lineup lock priced it
 
 - **Why.** On the first night of the lineup lock (#902), nothing on GitHub could say whether a game had locked. The job summary listed only the cards a run wrote, and pg_cron writes the lock. A dry run at 22:54 UTC, six minutes before the 7 PM ET games, changed none of the 14 cards: either they had locked already or they never would. And Supabase could not be reached from the agent's environment to read the cards directly.

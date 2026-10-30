@@ -323,13 +323,16 @@ globalThis.fetch = async (u, init) => {
   sm = S.render({ cards: [] }, NOW);
   chk('summary: no card in the window says so, and passes', /No game in the window/.test(sm.markdown) && sm.verdict.errors.length === 0, sm.markdown);
   const CARDS = [{ game_id: '2026020184', matchup: 'MIN@VAN', start_utc: '2026-10-25T17:30:00+00:00', version: 5, generated_at: '2026-10-25T17:20:10+00:00', trigger: 'inputs_changed', status: ['confirmed', 'confirmed'], conflict: false, gate: 'OPEN',
-    basis: 'lineup_lock', model_id: 'edgedesk_nhl_v1:xg_all_confirmed', p_home: 0.4051, before_p_home: 0.4174, skaters: { home: 18, away: 18 } },
+    basis: 'lineup_lock', model_id: 'edgedesk_nhl_v1:xg_all_confirmed', p_home: 0.4051, before_p_home: 0.4174, skaters: { home: 18, away: 18 }, probe: { reads: 4, first_listed_min: 10, last_pre: { min: 5, state: 'PRE', skaters: { home: 18, away: 18 }, starters: 2 } } },
   { game_id: '2026020185', matchup: 'LAK@NYR', start_utc: '2026-10-25T23:00:00+00:00', version: 2, generated_at: '2026-10-25T17:00:20+00:00', trigger: 'status_changed', status: ['likely', 'projected'], conflict: false, gate: 'GATED',
-    basis: 'slate', model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.5522, before_p_home: null, skaters: null }];
+    basis: 'slate', model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.5522, before_p_home: null, skaters: null, probe: { reads: 0, first_listed_min: null, last_pre: null } },
+  { game_id: '2026020186', matchup: 'TOR@CGY', start_utc: '2026-10-25T17:45:00+00:00', version: 4, generated_at: '2026-10-25T17:15:00+00:00', trigger: 'status_changed', status: ['confirmed', 'confirmed'], conflict: false, gate: 'OPEN',
+    basis: 'slate', model_id: 'edgedesk_nhl_v1:xg_core', p_home: 0.4811, before_p_home: null, skaters: null, probe: { reads: 7, first_listed_min: -4, last_pre: { min: 3, state: 'PRE', skaters: { home: 0, away: 0 }, starters: 2 } } }];
   sm = S.render({ cards: CARDS }, NOW);
-  chk('summary: every card with its version, statuses, gate, headline and what priced it; a started game\'s lock is counted', /\| MIN@VAN \| 2026-10-25 17:30 UTC \| 5 \| 17:20 UTC \(T−10 min\) \| confirmed \/ confirmed \| OPEN \| 40\.5% \| lineup lock, 18 \/ 18 skaters \(before lock 41\.7%\) \|/.test(sm.markdown)
-    && /\| LAK@NYR \| 2026-10-25 23:00 UTC \| 2 \| 17:00 UTC \(T−360 min\) \| likely \/ projected \| GATED \| 55\.2% \| slate \(edgedesk_nhl_v1:xg_core\) \|/.test(sm.markdown)
-    && /Started: 1 game, 1 priced at lineup lock before puck drop\./.test(sm.markdown) && sm.verdict.errors.length === 0, sm.markdown);
+  chk('summary: every card with its version, statuses, gate, headline, what priced it and when the NHL boxscore listed its lineups; the started games\' locks and listings are counted', /\| MIN@VAN \| 2026-10-25 17:30 UTC \| 5 \| 17:20 UTC \(T−10 min\) \| confirmed \/ confirmed \| OPEN \| 40\.5% \| lineup lock, 18 \/ 18 skaters \(before lock 41\.7%\) \| listed T−10 min \|/.test(sm.markdown)
+    && /\| LAK@NYR \| 2026-10-25 23:00 UTC \| 2 \| 17:00 UTC \(T−360 min\) \| likely \/ projected \| GATED \| 55\.2% \| slate \(edgedesk_nhl_v1:xg_core\) \| not read \|/.test(sm.markdown)
+    && /\| TOR@CGY \|[^\n]*\| slate \(edgedesk_nhl_v1:xg_core\) \| listed T\+4 min, after puck drop \(by T−3: PRE, 0 \/ 0 skaters, 2 starters flagged; 7 reads\) \|/.test(sm.markdown)
+    && /Started: 2 games, 1 priced at lineup lock before puck drop\. The NHL boxscore listed both lineups before puck drop for 1 of them\./.test(sm.markdown) && sm.verdict.errors.length === 0, sm.markdown);
   vd = S.verdict({ cron: null, readiness: S.readJson(path.join(__dirname, 'no-such-file.json')) }, NOW);
   chk('verdict: a check that could not be made (empty pg_cron answer, unreadable readiness) fails, never passes', vd.errors.length === 2, vd);
   res = await F.handle(new Request('https://fn.test/', { method: 'POST', headers: { 'x-cron-secret': 'not-the-secret' }, body: '{}' }));
