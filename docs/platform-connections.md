@@ -6,7 +6,7 @@
 - Both are **switched off**. A database guard keeps them off until a live smoke test has passed (below).
 - Sportsbooks have no direct automatic method.
   - **No sportsbook sync provider is active by default.** SharpSports BetSync (an aggregator) was built and is **retired** (2026-10-14, cost); the provider seam it now sits behind, and the alternatives researched, are in [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md). Its own story is in [`sharpsports-betsync.md`](sharpsports-betsync.md).
-  - **Juice Reel** (a bet tracker with an OAuth 2.0 API that syncs the reader's books) is built into that seam and tested, **awaiting Juice Reel's approval of EdgeDesk's application**. With `SPORTSBOOK_SYNC_PROVIDER=juicereel`, readers see "Awaiting provider approval" until it is approved and switched on (below). Everything about it — the redirect URI to register, OAuth, tokens, sync, the switch-on procedure — is in [`juicereel.md`](juicereel.md).
+  - **Juice Reel** (a bet tracker with an OAuth 2.0 API that syncs the reader's books) is built into that seam and tested. **Juice Reel accepts EdgeDesk's credentials (checked 2026-10-30)**, and a PRODUCTION live test is running: while it runs, every signed-in reader can connect. With no live test and the registry row off, readers see "Not open yet". Everything about it — the redirect URI to register, OAuth, tokens, sync, the switch-on procedure — is in [`juicereel.md`](juicereel.md).
   - Sportsbooks are imported from a file the reader downloads, read from a bet slip screenshot on the reader's device, or recorded by hand.
 
 This page is the source of truth for **how** each platform's history reaches EdgeDesk, what was verified and how, and what must happen before anything is switched on. `docs/platform-support.md` is the short matrix.
@@ -58,7 +58,7 @@ A quick-import account is **upgraded in place** when the reader later connects t
 | bet365 | Sportsbook | none | — | — | `bet365` (unverified) | — |
 | BetRivers, Fanatics, theScore Bet (ESPN BET) | Sportsbook | none | — | — | `betrivers`, `fanatics`, `espnbet` (unverified) | — |
 | Any other | Either | none | — | — | the generic importers | — |
-| **Sportsbooks via Juice Reel** | Sportsbook | `AUTHORIZED_API` — the reader's Juice Reel account by OAuth 2.0 + PKCE, tier 1 | ✅ `juicereel_v1` | ❌ awaiting Juice Reel's approval, then a PRODUCTION smoke test + terms review | — | Juice Reel's full API reference (supplied by the account owner) and its official example server, 2026-10-14; every request DOCUMENTED (`juicereel.md` § 10) |
+| **Sportsbooks via Juice Reel** | Sportsbook | `AUTHORIZED_API` — the reader's Juice Reel account by OAuth 2.0 + PKCE, tier 1 | ✅ `juicereel_v1` | ⏳ open to readers during the PRODUCTION live test (started 2026-10-30); switched on after it passes + terms review | — | Juice Reel's full API reference (supplied by the account owner) and its official example server, 2026-10-14; every request DOCUMENTED (`juicereel.md` § 10) |
 | **Sportsbooks via SharpSports BetSync** | Sportsbook | `AUTHORIZED_API` through an aggregator, tier 1 | ✅ `sharpsports_v1` | ❌ retired 2026-10-14 (cost); active nowhere unless `SPORTSBOOK_SYNC_PROVIDER` names it | — | SharpSports docs as quoted in search excerpts, 2026-10-14; three read paths INFERRED (see `sharpsports-betsync.md` § 4) |
 
 **What was verified, and what was not.**

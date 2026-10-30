@@ -6,8 +6,9 @@
    a fake Juice Reel (tools/portfolio/_fake_juicereel.js) whose consent page
    sends the browser back to the redirect URI as Juice Reel documents.
 
-     a reader, before Juice Reel approves EdgeDesk: "Awaiting provider
-       approval", the Connect button disabled — no way to start linking;
+     a reader, before Juice Reel is open (no live test, switch off): "Not
+       open yet", the Connect button disabled — no way to start linking;
+     the same reader once the PRODUCTION live test runs: Connect enabled;
      the operator (under a running PRODUCTION smoke test): Not connected →
        Connect Juice Reel → Juice Reel's page (the browser leaves EdgeDesk) →
        the callback page → back in Accounts: connected as the Juice Reel
@@ -75,7 +76,6 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     FAKE.bet(503, { BetType: { id: 2, typeName: 'Parlay' }, oddsAmerican: 264, amountRisked: 10, toWin: 26.4, datePlaced: '2026-10-14T14:00:00.000Z',
       Subbets: [FAKE.subbet({ id: 1, position: 'Kansas City Chiefs', home: 'Kansas City Chiefs', away: 'Miami Dolphins', league: 'NFL', sport: 'Football', result: 'Won', odds: -150 }),
         FAKE.subbet({ id: 2, type: 'Total', position: 'Over', value: 47.5, home: 'Buffalo Bills', away: 'New York Jets', league: 'NFL', sport: 'Football', eventId: 430 })] }));
-  db.service(`select public.portfolio_svc_ag_smoke_begin('juicereel', 'production', 'e2e');`);
   /* the operator recorded 501 by hand before connecting: Juice Reel's copy must not count it twice */
   db.as(OP, `insert into public.portfolio_positions (platform, platform_label, platform_type, position_type, event_name, market_name, selection, line, odds_american, stake,
       status, reported_payout, placed_at, settled_at, source, notes)
@@ -177,20 +177,29 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
   }
 
   try {
-    /* ── a reader, before approval ── */
+    /* ── a reader, before Juice Reel is open ── */
     let { ctx, page, errors } = await open({ width: 1280, height: 900 }, 'e2e-b', B);
     await tab(page, 'accounts');
-    await waitJr(page, /Awaiting provider approval/i);
-    chk('a reader sees "Awaiting provider approval" and a disabled Connect — there is no way to start linking',
-      /awaiting Juice Reel's approval/.test(await jrText(page)) && await page.evaluate(() => { const b = [...document.querySelectorAll('#pfoHost [data-r="juicereel"] button')].find((x) => /Connect Juice Reel/.test(x.innerText)); return !!b && b.disabled && !b.getAttribute('data-act'); }));
+    await waitJr(page, /Not open yet/i);
+    chk('a reader sees "Not open yet" and a disabled Connect — there is no way to start linking, and no claim that Juice Reel has not approved',
+      /live test/.test(await jrText(page)) && !/awaiting Juice Reel|provider approval/i.test(await jrText(page)) && await page.evaluate(() => { const b = [...document.querySelectorAll('#pfoHost [data-r="juicereel"] button')].find((x) => /Connect Juice Reel/.test(x.innerText)); return !!b && b.disabled && !b.getAttribute('data-act'); }));
     chk('the reader is never shown "Connected" for Juice Reel', !/Connected as|\bConnected\b/.test(await jrText(page)));
     await page.click('#pfoHost [data-act="add"]');
     await page.waitForFunction(() => { const b = document.querySelector('#pfoHost [data-r="jr-add"]'); return !!b && /Connect Juice Reel/.test(b.innerText); }, null, { timeout: 15000 });
     const addB = await page.evaluate(() => { const sh = document.querySelector('#pfoHost [data-r="sheet"]'); const b = [...sh.querySelectorAll('[data-r="jr-add"] button')].find((x) => /Connect Juice Reel/.test(x.innerText));
       return { text: sh.innerText, disabled: !!b && b.disabled && !b.getAttribute('data-act') }; });
-    chk('Add a position, before approval: "Connect Juice Reel" at the top, disabled, saying why — and every way to add a bet by hand is still there',
-      addB.disabled && /awaiting Juice Reel's approval/.test(addB.text) && /Connect your Juice Reel account to automatically import and sync your betting history/.test(addB.text)
+    chk('Add a position, before it opens: "Connect Juice Reel" at the top, disabled, saying why — and every way to add a bet by hand is still there',
+      addB.disabled && /Not open yet: Juice Reel opens with EdgeDesk's live test/.test(addB.text) && !/awaiting Juice Reel/i.test(addB.text) && /Connect your Juice Reel account to automatically import and sync your betting history/.test(addB.text)
         && /Sportsbook bet/.test(addB.text) && /Prediction-market position/.test(addB.text) && /Import a CSV instead/.test(addB.text), addB.text);
+    await ctx.close();
+
+    /* ── the PRODUCTION live test starts: the same reader may connect ── */
+    db.service(`select public.portfolio_svc_ag_smoke_begin('juicereel', 'production', 'e2e');`);
+    ({ ctx, page, errors } = await open({ width: 1280, height: 900 }, 'e2e-b', B));
+    await page.click('#pfoHost [data-act="add"]');
+    await page.waitForFunction(() => !!document.querySelector('#pfoHost [data-r="jr-add"] [data-act="jr-add-connect"]'), null, { timeout: 15000 });
+    const addLive = await page.evaluate(() => { const b = document.querySelector('#pfoHost [data-r="jr-add"] [data-act="jr-add-connect"]'); return { enabled: !!b && !b.disabled, text: document.querySelector('#pfoHost [data-r="jr-add"]').innerText }; });
+    chk('Add a position, during the live test: the reader\'s "Connect Juice Reel" works — and no operator note', addLive.enabled && !/Not open yet|Operator/.test(addLive.text), addLive.text);
     await ctx.close();
 
     /* ── the operator connects ── */

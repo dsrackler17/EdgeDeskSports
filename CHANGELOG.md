@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-30 — Juice Reel: readers can connect while the PRODUCTION live test runs (methodology change)
+
+**What was wrong.** Add a position and Accounts told every reader "EdgeDesk's Juice Reel application is awaiting Juice Reel's approval". That rested on the 2026-10-22 check, when Juice Reel answered 401. Today's check (Actions → Juice Reel setup → `check`, run 41091907710) says: *"Juice Reel accepted EdgeDesk's client id and secret (the application's owner: EdgeDeskSports)."* `start_live_test` (run 41092029965) then started PRODUCTION live test `eab424e0-44c5-4f47-b890-7be64e3d3ce7`.
+
+**The change.**
+- **Who may link (methodology change, the account owner's decision).** `portfolio_connect` admitted only operators under a running PRODUCTION live test. It now admits every signed-in reader under it. A reader cannot name a test: the server uses the running one. The database already admitted any grant under a running PRODUCTION test (`portfolio_svc_ag_allowed`), and is unchanged. When the test ends, linking and scheduled syncs of those grants stop until the registry row is switched on, which still needs a PASSED ten-stage test and a cleared terms review (`portfolio_registry_guard`, unchanged).
+- **Wording.** "Awaiting provider approval" / "awaiting Juice Reel's approval" becomes **Not open yet**: Juice Reel opens with EdgeDesk's live test of the connection.
+- `portfolio_connect` build `2026-10-30-jr5`. `app.html` loads the Portfolio page and the connector core at `?v=20261030jr5`.
+
+**Evidence.**
+- `tools/portfolio/juicereel.test.js`: three new checks. A reader under the running live test may connect and is not told the test. They start linking under the running test, whatever id they send. Once the test is over and the switch is off, they can no longer start. On the old gate: 193 passed, 2 failed. On the change: 195/0.
+- `tools/portfolio/juicereel_ui.e2e.js`: the reader sees Not open yet before the test, then a working Connect once it starts. 34/0.
+
+**Deploy:** after merge, Actions → **Deploy Portfolio schema** with `deploy_function` ticked. Production still runs build `2026-10-22-jr3`, so the 2026-10-30 jr4 changes ship with it too.
+
 ## 2026-10-30 — Game research test: the "lower" Kalshi check prices the home side from the model, not at a fixed 70.5
 
 **What broke.** `tools/football/game_research.test.js` §14 put Kalshi's home mid at a fixed 70.5% and required the card to say EdgeDesk is "lower" on the home team. That held only while the first NFL game on the hourly slate had its home side under 70.5%. Once CAR at GB (69.6%) kicked off, the slate's first game became ARI at DAL (76.0%), and the card correctly said "EdgeDesk 5.5 pts higher on DAL". `main` went red with no code change (254 passed, 1 failed), and so did NFL model suites and Game research tests on every pull request that started them (#926, #928).
