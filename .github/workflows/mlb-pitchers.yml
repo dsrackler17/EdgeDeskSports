@@ -92,8 +92,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
-  contents: write
   checks: write
+  contents: write
 
 jobs:
   refresh:

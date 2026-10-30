@@ -75,8 +75,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write
       checks: write
+      contents: write
     concurrency:
       group: clv-openers
       cancel-in-progress: false
@@ -104,8 +104,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: write
       checks: write
+      contents: write
     concurrency:
       group: clv-openers-backfill
       cancel-in-progress: false

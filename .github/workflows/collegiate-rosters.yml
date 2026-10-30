@@ -29,8 +29,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
   checks: write
+  contents: write
 
 # one collector run at a time across the repository: two would each wait a
 # host's crawl delay and together read it twice as often as it asks

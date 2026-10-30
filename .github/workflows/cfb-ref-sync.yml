@@ -74,8 +74,8 @@ on:
       - '.github/workflows/cfb-ref-sync.yml'
 
 permissions:
-  contents: write
   checks: write
+  contents: write
 
 concurrency:
   group: cfb-ref-sync-${{ github.head_ref || github.ref }}
