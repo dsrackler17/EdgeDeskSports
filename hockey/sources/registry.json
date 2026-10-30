@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_source_registry_v1",
- "generated_at": "2026-10-30T10:27:23.266Z",
+ "generated_at": "2026-10-30T16:50:47.380Z",
  "counts": {
   "OPERATIONAL": 3,
   "RESEARCH_COPY": 1,
@@ -331,18 +331,18 @@
   },
   {
    "id": "confirmed_starters",
-   "name": "Starting goalies: Daily Faceoff, the NHL game boxscore, and manual entries",
+   "name": "Starting goalies: Daily Faceoff, ESPN, the NHL game boxscore, and manual entries",
    "url": "supabase/functions/nhl_goalie_sync (public.nhl_goalie_starters); hockey/data/confirmed_starters.json",
-   "access": "the nhl_goalie_sync edge function reads Daily Faceoff's starting-goalies page (Confirmed / Likely / Unconfirmed) and the NHL's gamecenter boxscore (the starter flag once lineups post) every two hours from 8 AM ET, every 15 minutes in the last three hours and at T-30; manual entries with source and time (schema in docs/engine/DATA.md) ride in hockey/goalie_inputs.json",
+   "access": "the nhl_goalie_sync edge function reads Daily Faceoff's starting-goalies page (Confirmed / Likely / Unconfirmed), ESPN's public NHL scoreboard (each team's probable goalie, Confirmed / Expected) and the NHL's gamecenter boxscore (the starter flag once lineups post) every two hours from 8 AM ET, every 15 minutes in the last three hours and at T-30; manual entries with source and time (schema in docs/engine/DATA.md) ride in hockey/goalie_inputs.json",
    "datasets": [
     "who starts, the source's status and its update time, per game and team, append-only"
    ],
    "coverage": "every game in the 30 hours ahead, from the day the layer is deployed (docs/engine/NHL_GOALIES.md)",
    "terms": {
-    "summary": "team announcements and the NHL's boxscore are public; Daily Faceoff is a third-party aggregator with its own terms of use, which the owner must review before NHL output is sold",
+    "summary": "team announcements and the NHL's boxscore are public; Daily Faceoff is a third-party aggregator with its own terms of use, and ESPN's scoreboard is a public but unlicensed response (as espn_nhl_pack), both of which the owner must review before NHL output is sold",
     "verified": false,
     "url": null,
-    "owner_action": "review Daily Faceoff's terms (or license a starter feed) before paid use"
+    "owner_action": "review Daily Faceoff's and ESPN's terms (or license a starter feed) before paid use"
    },
    "authorised_for": [
     "research display",

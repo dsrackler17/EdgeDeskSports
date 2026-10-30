@@ -46,7 +46,7 @@ globalThis.Deno = { env: { get: (k) => ENV[k] } };
 const QUOTE = { captured_at: '2026-10-25T11:50:00Z', ml_best: { home: { book: 'testbook', american: 150 }, away: { book: 'testbook', american: -170 } }, ml_novig_home: 0.381, books: 1 };
 /* with the lineup-lock block (tools/hockey/fixtures/nhl_goalie_sources.js withLineups: constructed, checkable by hand) */
 const INPUTS = FX.withLineups(BASE); INPUTS.games[0].quote = QUOTE;
-const W = { inputs: INPUTS, inputsUp: true, df: 'morning', dfStatus: 200, box: null, boxStatus: 200, calls: [] };
+const W = { inputs: INPUTS, inputsUp: true, df: 'morning', dfStatus: 200, espn: null, espnStatus: 200, box: null, boxStatus: 200, calls: [] };
 
 /* ---------------------------------------------------------------- PostgREST, in memory (the SQL triggers' rules included) */
 let DB;
@@ -137,6 +137,8 @@ globalThis.fetch = async (u, init) => {
   W.calls.push(u);
   if (u === ENV.NHL_GOALIE_INPUTS_URL) return W.inputsUp ? resp(200, W.inputs) : resp(503, 'down');
   if (u.startsWith('https://www.dailyfaceoff.com/starting-goalies/')) return W.dfStatus !== 200 ? resp(W.dfStatus, 'blocked') : resp(200, typeof W.df === 'string' && W.df.startsWith('<') ? W.df : FX.minVanPage(W.df));
+  /* ESPN answers for the game and names no probable goalie unless a check sets W.espn */
+  if (u.startsWith('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=')) return W.espnStatus !== 200 ? resp(W.espnStatus, 'blocked') : resp(200, W.espn || FX.minVanEspn());
   if (u.startsWith('https://api-web.nhle.com/v1/gamecenter/2026020184/boxscore')) return W.boxStatus !== 200 ? resp(W.boxStatus, 'down') : resp(200, W.box || FX.boxscore({ id: 2026020184, home: 'VAN', away: 'MIN' }));
   return resp(404, 'unmocked ' + u);
 };
@@ -273,15 +275,42 @@ globalThis.fetch = async (u, init) => {
 
   /* ============================================================ outages */
   resetDb(); W.box = null; W.df = 'evening';
-  r = await run('2026-10-25T23:00:20Z', { simulate_outage: ['daily_faceoff', 'nhl_api'] });
-  chk('outage: both sources down → an error run, a FAILURE alert, two DEGRADED', r.status === 'error' && runs()[0].status === 'error' && runs()[0].simulated === true && DB.nhl_goalie_alerts.some((a) => a.code === 'sources_down' && a.severity === 'FAILURE')
-    && DB.nhl_goalie_alerts.filter((a) => a.severity === 'DEGRADED').length === 2, DB.nhl_goalie_alerts.map((a) => a.code));
-  chk('outage: nothing is written in the sources\' place (only the labelled projection)', !DB.nhl_goalie_starters.some((s) => s.source === 'daily_faceoff' || s.source === 'nhl_api_boxscore') && cards().length === 1 && cards()[0].goalie_status_home === 'projected');
+  r = await run('2026-10-25T23:00:20Z', { simulate_outage: ['daily_faceoff', 'espn', 'nhl_api'] });
+  chk('outage: every source down → an error run, a FAILURE alert, three DEGRADED', r.status === 'error' && runs()[0].status === 'error' && runs()[0].simulated === true && DB.nhl_goalie_alerts.some((a) => a.code === 'sources_down' && a.severity === 'FAILURE')
+    && DB.nhl_goalie_alerts.filter((a) => a.severity === 'DEGRADED').length === 3, DB.nhl_goalie_alerts.map((a) => a.code));
+  chk('outage: nothing is written in the sources\' place (only the labelled projection)', !DB.nhl_goalie_starters.some((s) => s.source === 'daily_faceoff' || s.source === 'espn' || s.source === 'nhl_api_boxscore') && cards().length === 1 && cards()[0].goalie_status_home === 'projected');
   resetDb();
   W.dfStatus = 403;
   r = await run('2026-10-25T23:00:20Z');
   chk('Daily Faceoff refusing (HTTP 403) is DEGRADED and named; the NHL API still read', DB.nhl_goalie_alerts.some((a) => a.code === 'daily_faceoff_unavailable' && /HTTP 403/.test(a.message)) && runs()[0].daily_faceoff_ok === false && runs()[0].nhl_api_ok === true && runs()[0].status === 'warn', [runs()[0], DB.nhl_goalie_alerts]);
   W.dfStatus = 200;
+
+  /* ============================================================ ESPN: the second third-party source (2026-10-30: Daily Faceoff refused the function all afternoon) */
+  resetDb(); W.box = null; W.dfStatus = 403;
+  W.espn = FX.minVanEspn({ name: 'Leevi Merilainen', status: 'Confirmed' }, { name: 'Cam Pickard', status: 'Expected' });
+  r = await run('2026-10-25T18:00:20Z', { force: true });
+  c = cards();
+  chk('espn: Daily Faceoff refusing with ESPN up is not a sources_down error: the run is warn, ESPN is read', r.ok && runs()[0].status === 'warn' && !DB.nhl_goalie_alerts.some((a) => a.code === 'sources_down')
+    && DB.nhl_goalie_alerts.some((a) => a.code === 'daily_faceoff_unavailable') && runs()[0].sources.espn.ok === true && runs()[0].sources.espn.named === 2, [runs()[0] && runs()[0].status, DB.nhl_goalie_alerts.map((a) => a.code)]);
+  chk('espn: each probable goalie is an observation, matched to the rated goalie, with ESPN\'s own word kept', DB.nhl_goalie_starters.some((s) => s.source === 'espn' && s.team === 'VAN' && s.goalie_id === '8482447' && s.status === 'confirmed' && s.source_status === 'Confirmed' && /site\.api\.espn\.com/.test(s.source_url))
+    && DB.nhl_goalie_starters.some((s) => s.source === 'espn' && s.team === 'MIN' && s.goalie_id === '8475717' && s.status === 'likely' && s.source_status === 'Expected'), DB.nhl_goalie_starters.filter((s) => s.source === 'espn'));
+  chk('espn: the card follows it: Vancouver Confirmed (ESPN), Minnesota Likely (Expected), still GATED', c.length === 1 && c[0].home_goalie_name === 'L. Meriläinen' && c[0].goalie_status_home === 'confirmed' && c[0].goalie_pairing_used.home.source === 'espn'
+    && c[0].goalie_status_away === 'likely' && c[0].edge_gate_state === 'GATED', c[0] && [c[0].home_goalie_name, c[0].goalie_status_home, c[0].goalie_status_away, c[0].edge_gate_state]);
+  W.espn = FX.minVanEspn({ name: 'Leevi Merilainen', status: 'Confirmed' }, { name: 'Cam Pickard', status: 'Confirmed' });
+  r = await run('2026-10-26T01:30:20Z');
+  c = cards();
+  chk('espn: both Confirmed by ESPN at the T-30 pass opens the gate (Daily Faceoff still refusing)', c.length === 2 && c[1].goalie_status_home === 'confirmed' && c[1].goalie_status_away === 'confirmed' && c[1].edge_gate_state === 'OPEN', c.map((x) => [x.version, x.goalie_status_home, x.goalie_status_away, x.edge_gate_state]));
+  resetDb(); W.dfStatus = 200; W.df = 'evening';
+  W.espn = FX.minVanEspn({ name: 'Kevin Lankinen', status: 'Confirmed' }, { name: 'Cam Pickard', status: 'Confirmed' });
+  r = await run('2026-10-25T23:00:20Z');
+  c = cards();
+  chk('espn: naming a different goalie from Daily Faceoff is a conflict: Daily Faceoff leads, Likely at most, GATED', cons('VAN') && cons('VAN').conflict === true && cons('VAN').status !== 'confirmed' && cons('VAN').goalie_id === '8482447'
+    && c[c.length - 1].edge_gate_state === 'GATED' && DB.nhl_goalie_alerts.some((a) => a.code === 'source_conflict'), cons('VAN'));
+  resetDb();
+  W.espn = { not: 'a scoreboard' };
+  r = await run('2026-10-25T23:00:20Z');
+  chk('espn: a response that changed shape is a DRIFT alert, not an empty slate', DB.nhl_goalie_alerts.some((a) => a.code === 'espn_drift' && a.severity === 'DRIFT'));
+  W.espn = null;
   resetDb();
   W.df = '<html><body>a new layout</body></html>';
   r = await run('2026-10-25T23:00:20Z');
@@ -377,10 +406,10 @@ globalThis.fetch = async (u, init) => {
   sm = S.render({ cron: ANS([{ status: 200 }, { status: 401 }, { status: null }]) }, NOW);
   chk('summary: the sync\'s answers to pg_cron, latest first', /The sync's answers \(latest first\) \| HTTP 200, HTTP 401, no answer yet \|/.test(sm.markdown), sm.markdown);
   resetDb();
-  r = await run('2026-10-25T18:00:20Z', { force: true, simulate_outage: ['daily_faceoff'] });
-  // more than three hours out the NHL API is not read, so Daily Faceoff refusing leaves no source: the function records an error and answers 500
+  r = await run('2026-10-25T18:00:20Z', { force: true, simulate_outage: ['daily_faceoff', 'espn'] });
+  // more than three hours out the NHL API is not read, so Daily Faceoff and ESPN refusing leaves no source: the function records an error and answers 500
   vd = S.verdict({ run: r, http: '500', readiness: Object.assign({}, READY, { state: 'error', last_check_status: 'error', state_reason: 'the last check failed: ' + r.alerts.map((a) => a.message).join('; '), last_check_alerts: r.alerts.map((a) => a.severity + ':' + a.code) }) }, NOW);
-  chk('verdict: Daily Faceoff refused and nothing else to read is a warning, not a failure (an outside source: the cards keep the starters on file and stay gated)', !r.ok && r.alerts.map((a) => a.code).join() === 'daily_faceoff_unavailable,sources_down'
+  chk('verdict: Daily Faceoff and ESPN refused and nothing else to read is a warning, not a failure (an outside source: the cards keep the starters on file and stay gated)', !r.ok && r.alerts.map((a) => a.code).join() === 'daily_faceoff_unavailable,espn_unavailable,sources_down'
     && vd.errors.length === 0 && vd.warnings.some((w) => /DEGRADED daily_faceoff_unavailable/.test(w)) && vd.warnings.some((w) => /FAILURE sources_down \(an outside source/.test(w)) && vd.warnings.some((w) => /^readiness: the last check failed.*\(an outside source/.test(w)), vd);
   vd = S.verdict({ run: { ok: false, status: 'error', run: { status: 'error' }, alerts: [{ severity: 'FAILURE', code: 'sources_down', message: 'x' }, { severity: 'FAILURE', code: 'sync_error', message: 'sync error: boom' }] }, http: '500' }, NOW);
   chk('verdict: a source outage does not excuse EdgeDesk\'s own error in the same run', vd.errors.length === 1 && /HTTP 500: sources_down: x; sync_error: sync error: boom/.test(vd.errors[0]), vd);
