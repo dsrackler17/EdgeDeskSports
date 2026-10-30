@@ -11,6 +11,36 @@
   NHL goalie sync's card table adds an "NHL boxscore lineups" column: "listed T−22 min", "listed T+4 min, after puck drop (…)", "not listed by T−3 (PRE, 0 / 0 skaters, 2 starters flagged; 7 reads)" or "not read". Its summary line also counts the started games whose lineups were listed before puck drop. Read-only, as before.
 - **Tests.** On the code before this change: `nhl_goalie_sync.test.js` passed 80 and failed 1, and `nhl_goalie_sql.test.js` passed 80 and failed 2. On the change: 81/0 and 82/0 on a real PostgreSQL. The SQL suite records three runs whose probe has one game listed at T−30 and one never listed by T−21, and checks that each card reads only its own game's reads.
 
+## 2026-10-30 — Football evidence test: a pull request reads "today's" research pinned on 2026-10-29; a daily sweep reads today's
+
+**What kept breaking.** Two checks in `tools/content/evidence.test.js` read "today". S 3c checks every claim the evidence builder makes; section L checks every article the engine would offer. Both read today's committed research at the real clock, so `main` went red with no code change whenever new data exposed the writer:
+- `1c3b5c07a`, 197 of 198;
+- `c933dc468`;
+- Week 9 on 2026-10-29, red until 20:15 UTC and again until 23:35.
+
+Each time, every pull request that started Content engine was blocked until someone repaired the writer. The check was right each time: the writer was wrong.
+
+**The repair.**
+- **A pull request reads a pinned snapshot.** By default, S 3c and section L read `tools/content/fixtures/research_2026_w9.json.gz`: the research `main` held at `ca6f867a0`, read at 2026-10-29T20:14:42Z. That is the moment its own code blocked two Week 9 articles: the upset-watch preview (`injuries_addressed`) and Utah–Cincinnati (`numbers_in_evidence`).
+- **It keeps the inputs, not the outputs.** It stores the research files and each game's evidence-builder inputs. `ART.fromFiles()` builds the packets with the code under test (`tools/content/evidence.js` `buildFrom()`), and the engine drafts from them.
+- **It can't go stale silently.** `tools/content/fixtures/freeze_live.js` builds it. It trims what nothing reads and checks that the fixture, read back, gives byte for byte the evidence set, research, drafts and gate verdicts that the full files give. A new check requires the two Week 9 articles to still be drafted.
+- **Today's research still runs daily.** `--live` reads today's committed research at the real clock (`--now` replays a moment). `.github/workflows/content-engine-live.yml` runs it daily at 12:41 UTC and by hand. Its red run blocks no pull request.
+- **Nothing was weakened.** No check, gate, threshold or engine output changed. `ART.frozen()` and the Week 6 fixture are unchanged.
+
+**Before and after** (`node tools/content/evidence.test.js`):
+
+| | result |
+|---|---|
+| old test, `main`'s own code at `ca6f867a0`, clock at 20:14:42Z | 202 / 1: L, both Week 9 articles BLOCKED |
+| new test, pinned, this code | 213 / 0 |
+| … the wall clock at 2027-03-01 or at 2026-10-26 | 213 / 0 |
+| … on `ca6f867a0`'s data instead of today's | 213 / 0, byte-identical output |
+| … `lib/content_engine.js` as it was at `ca6f867a0` (mutation) | 208 / 5: L, the upset-watch preview BLOCKED |
+| … `lib/football_evidence.js` as it was at `ca6f867a0` (mutation) | 208 / 5: S 3c and L, Utah–Cincinnati BLOCKED |
+| `--live --now 2026-10-29T20:14:42Z` on `ca6f867a0`, this code | 212 / 0 |
+| … with both files as they were (what the sweep would have said) | 203 / 9: S 3c and L, both articles BLOCKED |
+| `--live` on today's `main` | 212 / 0 |
+
 ## 2026-10-29 — NHL goalie sync: the job lists every game's card, and whether the lineup lock priced it
 
 - **Why.** On the first night of the lineup lock (#902), nothing on GitHub could say whether a game had locked. The job summary listed only the cards a run wrote, and pg_cron writes the lock. A dry run at 22:54 UTC, six minutes before the 7 PM ET games, changed none of the 14 cards: either they had locked already or they never would. And Supabase could not be reached from the agent's environment to read the cards directly.

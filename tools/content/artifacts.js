@@ -13,7 +13,10 @@
    frozen() is the same research as committed for CFB Week 6 and NFL Week 5
    (fixtures/research_2026_w6.json.gz, written by fixtures/freeze_research.js):
    the suites that assert what that week said read it, so they do not move
-   when the hourly artifacts do.
+   when the hourly artifacts do. frozen(PINNED) is the research main held at
+   20:14 UTC on October 29 (fixtures/research_2026_w9.json.gz, written by
+   fixtures/freeze_live.js), which evidence.test.js (S 3c and section L) reads
+   on a pull request in place of today's.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -49,18 +52,24 @@ function load(opts) {
   return assemble(readJson, fs.existsSync(dir) ? fs.readdirSync(dir) : [], evidence);
 }
 
-/* the frozen week: { files: { repository path: its JSON }, at, commit, … }
-   (fixtures/freeze_research.js) */
+/* a frozen week: { files: { repository path: its JSON }, at, commit, … }
+   (fixtures/freeze_research.js; PINNED: fixtures/freeze_live.js) */
 const FROZEN = path.join(__dirname, 'fixtures', 'research_2026_w6.json.gz');
-function frozenFiles() { return JSON.parse(zlib.gunzipSync(fs.readFileSync(FROZEN)).toString('utf8')); }
-/* the same shape as load(), from the frozen week; a fresh copy on every call.
-   It carries no matchup packets: those move with the week, and Five Games to
-   Watch is tested from its own fixture (games_to_watch.test.js) */
-function frozen() {
-  const fx = frozenFiles();
+const PINNED = path.join(__dirname, 'fixtures', 'research_2026_w9.json.gz');
+function frozenFiles(file) { return JSON.parse(zlib.gunzipSync(fs.readFileSync(file || FROZEN)).toString('utf8')); }
+/* the same shape as load(), from a frozen week (FROZEN unless `file` names
+   another); a fresh copy on every call. It carries no matchup packets: those
+   move with the week, and Five Games to Watch is tested from its own fixture
+   (games_to_watch.test.js) */
+function frozen(file) { return fromFiles(frozenFiles(file)); }
+/* a fixture that carries the evidence builder's inputs (evidence_inputs,
+   fixtures/freeze_live.js) has its packets built by this code at its own
+   moment, as load() builds today's; one that carries packets is read as is */
+function fromFiles(fx) {
   const read = (rel) => (fx.files[rel] === undefined ? null : fx.files[rel]);
   const names = Object.keys(fx.files).filter((k) => path.posix.dirname(k) === 'articles/data/market').map((k) => path.posix.basename(k));
-  return assemble(read, names, read(CE.ARTIFACTS.evidence));
+  const evidence = fx.evidence_inputs ? require(path.join(ROOT, 'tools', 'content', 'evidence.js')).buildFrom(fx.evidence_inputs, { now: Date.parse(fx.at) }) : read(CE.ARTIFACTS.evidence);
+  return assemble(read, names, evidence);
 }
 
 function assemble(read, marketNames, evidence) {
@@ -95,4 +104,4 @@ function teamLists(art) {
   return { cfb: [...cfb].filter(Boolean), nfl: [...nfl].filter(Boolean) };
 }
 
-module.exports = { load, frozen, frozenFiles, FROZEN, teamLists, readJson, ROOT };
+module.exports = { load, frozen, frozenFiles, fromFiles, FROZEN, PINNED, teamLists, readJson, ROOT };

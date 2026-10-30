@@ -20,10 +20,14 @@
      F  formats       publisher and first-party pieces are different articles
      C  cost          one packet per matchup, reused; no repeated research;
                       at most two AI calls, each budgeted first
-     L  live          today's artifacts: every generated article passes
+     L  live          every generated article passes: on the research pinned
+                      in fixtures/research_2026_w9.json.gz (a pull request),
+                      or on today's committed artifacts with --live (the
+                      daily sweep, .github/workflows/content-engine-live.yml)
      W  first-party   the game page gets the evidence; suspect pages are held
 
    Run: node tools/content/evidence.test.js
+        node tools/content/evidence.test.js --live [--now 2026-10-29T20:14:42Z]
    =========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -44,6 +48,26 @@ function section(t) { console.log('\n' + t); }
 
 const NOW = Date.parse(FIX.frozen_at);
 const SR = CE.PUBLISHER_TEMPLATES['stadium-rant'];
+/* TODAY'S RESEARCH, PINNED ON A PULL REQUEST. Two checks read "today": S 3c
+   (every claim the evidence builder makes) and section L (every article the
+   engine would offer). Read live, they moved with the hourly data and the
+   clock, and section L went red on main with no code change (1c3b5c07a,
+   c933dc468, Week 9 on 2026-10-29). By default both read the research main
+   held at ca6f867a0, at 20:14 UTC on October 29, where its own code BLOCKED
+   two Week 9 articles until 05ad9abef and 64143ada2 repaired the writer and
+   the evidence builder (fixtures/research_2026_w9.json.gz, built by
+   fixtures/freeze_live.js: it keeps the inputs, so this code builds the
+   packets and drafts). --live reads today's committed artifacts at the real
+   clock, or at --now: the daily sweep (.github/workflows/content-engine-live.yml). */
+const ART = require(path.join(__dirname, 'artifacts.js'));
+const LIVE = process.argv.indexOf('--live') >= 0;
+const NOW_ARG = (() => { const i = process.argv.indexOf('--now'); return i > 0 ? process.argv[i + 1] : null; })();
+if (NOW_ARG !== null && (!LIVE || !isFinite(Date.parse(NOW_ARG)))) { console.error('--now takes an ISO 8601 moment, with --live'); process.exit(2); }
+const PIN = LIVE ? null : ART.frozenFiles(ART.PINNED);
+const LNOW = LIVE ? (NOW_ARG ? Date.parse(NOW_ARG) : Date.now()) : Date.parse(PIN.at);
+const TODAY = LIVE ? ART.load({ now: LNOW }) : ART.fromFiles(PIN);
+const WHOSE = LIVE ? 'today’s' : 'the pinned';
+console.log((LIVE ? 'today’s committed research' : 'the research pinned in ' + path.basename(ART.PINNED) + ' (' + PIN.commit.slice(0, 9) + ')') + ', at ' + new Date(LNOW).toISOString());
 const TL = FIX.teamLists;
 const byId = (id) => FIX.cfb.games.concat(FIX.nfl.games).find((p) => String(p.game_id) === String(id));
 const OM = byId('401856718'), GA = byId('401856712'), TX = byId('401856717'), MZ = byId('401856716'), UC = byId('401858484'), NF = FIX.nfl.games[0];
@@ -158,15 +182,16 @@ chk('S 3e a weekly-preview capsule says each quarterback listing once', (() => {
 /* 2026-10-29 (Utah at Cincinnati, week 9): a claim's citation numbers were rounded apart from its
    printed text (0.5185 printed 51.8% but was cited as 51.9), so an article quoting the claim word for
    word failed numbers_in_evidence. Every citation number must be one the claim itself prints. */
-/* scanned on packets this code builds now; the frozen week-6 fixture keeps the citations its own
-   build wrote (it is a record, not regenerated), and S 3d proves the rounding without live data */
-chk('S 3c every claim the current build makes cites only numbers its own text prints (today’s research)', (() => {
+/* scanned on packets this code builds from "today" (pinned on a pull request, above); the frozen
+   week-6 fixture keeps the citations its own build wrote (it is a record, not regenerated), and
+   S 3d proves the rounding on a constructed number */
+chk('S 3c every claim the current build makes cites only numbers its own text prints (' + WHOSE + ' research)', (() => {
   const bad = [];
   const scan = (packets) => packets.forEach((pk) => (pk.claims || []).forEach((c) => {
     const printed = (String(c.text) + ' ' + String(c.short || '')).match(/\d+(?:\.\d+)?/g) || [];
     ((c.cite && c.cite.nums) || []).forEach((n) => { if (!printed.some((t) => +t === +n)) bad.push(pk.game_id + ' ' + c.key + ' cites ' + n); });
   }));
-  const live = require(path.join(__dirname, 'evidence.js')).build({ now: Date.now() });
+  const live = LIVE ? require(path.join(__dirname, 'evidence.js')).build({ now: LNOW }) : TODAY.evidence;
   scan([].concat(Object.values((live.cfb || {}).packets || {}), Object.values((live.nfl || {}).packets || {})));
   return bad.length === 0 || (console.log('   ' + bad.slice(0, 5).join('\n   ')), false);
 })());
@@ -478,13 +503,12 @@ if (fs.existsSync(recFile)) {
 
 /* ── L live ───────────────────────────────────────────────────────────── */
 section('L live');
-const ART = require(path.join(__dirname, 'artifacts.js'));
-const LNOW = Date.now();
-const art = ART.load({ now: LNOW });
+/* "today": the research pinned on a pull request, or today's with --live (above) */
+const art = TODAY;
 /* the hourly matchup packets move with the week, and Five Games to Watch is
    tested from its frozen fixture in games_to_watch.test.js (as in content.test.js) */
 art.packets = null;
-chk('L today’s evidence set builds from committed files', art.evidence && art.evidence.counts && art.evidence.counts.cfb + art.evidence.counts.nfl > 0, art.evidence && art.evidence.counts);
+chk('L ' + WHOSE + ' evidence set builds from committed files', art.evidence && art.evidence.counts && art.evidence.counts.cfb + art.evidence.counts.nfl > 0, art.evidence && art.evidence.counts);
 const snap = CE.research.fromArtifacts(art, { now: LNOW });
 chk('L a packet built from different numbers than the research is refused, so the gate fails closed', (() => {
   const g0 = snap.cfb.games.find((p) => p.evidence && p.evidence.model && typeof p.evidence.model.home_line === 'number');
@@ -502,10 +526,18 @@ opps.forEach((o) => o.formats.filter((f) => f !== 'publisher_custom').forEach((f
   live.push({ key: o.key + '/' + f, ok: r.ok, failed: r.failed, readiness: r.readiness });
 }));
 const liveBad = live.filter((x) => !x.ok);
-chk('L every article generated from today’s research passes the gate', live.length > 0 && liveBad.length === 0, liveBad.slice(0, 5));
+console.log('  ' + live.length + ' articles drafted, ' + liveBad.length + ' blocked');
+chk('L every article generated from ' + WHOSE + ' research passes the gate', live.length > 0 && liveBad.length === 0, liveBad.slice(0, 5));
+/* the pin is not vacuous: it still drafts the two articles main's own code
+   BLOCKED there, so a regression of either repair is red here */
+if (!LIVE) chk('L the pinned research drafts the two Week 9 articles the gate blocked on 2026-10-29 (the upset-watch preview; Utah–Cincinnati)',
+  ['cfb:2026:w9:upset_watch/cfb_weekly_preview', 'cfb:2026:w9:market_discrepancy:401856848/matchup_analysis'].every((k) => live.some((x) => x.key === k)), live.map((x) => x.key));
 chk('L every packet’s explanation has a legal status and is never actionable', [].concat(Object.values((art.evidence.cfb || {}).packets || {}), Object.values((art.evidence.nfl || {}).packets || {}))
   .every((p) => ['EXPLAINED', 'PARTIALLY_EXPLAINED', 'UNEXPLAINED', 'NO_MATERIAL_DISAGREEMENT', 'NO_COMPARABLE_MARKET', 'NO_PROJECTION'].includes(p.explanation.status) && p.explanation.actionable === false));
-chk('L the facts ledger validates', (() => { const j = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'evidence', 'facts.json'), 'utf8')); return j.facts.every((f) => FE.validateFact(f, LNOW).ok); })());
+/* the ledger the evidence was built from: the pinned copy, or today's file
+   (content-engine.yml's next step, tools/content/add_fact.js --check, holds
+   today's file at the real clock) */
+chk('L the facts ledger validates', (() => { const j = LIVE ? JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'evidence', 'facts.json'), 'utf8')) : PIN.files['football/evidence/facts.json']; return j.facts.every((f) => FE.validateFact(f, LNOW).ok); })());
 
 console.log('');
 failures.forEach((f) => console.log('  × ' + f));
