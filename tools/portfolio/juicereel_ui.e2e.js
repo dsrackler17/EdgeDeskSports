@@ -40,6 +40,7 @@ function done(note) { console.log((fail ? 'FAIL' : 'PASS') + ' | juicereel UI e2
 function skip(why) { if (REQUIRED) { chk('environment: ' + why, false); done(); } console.log('SKIPPED: ' + why); process.exit(0); }
 const L = PG.lit;
 const one = (s) => String(s).split('\n')[0];
+const jq1 = (s) => JSON.parse(String(s).trim() || 'null');
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 function siteHandler(req, res) {
@@ -67,7 +68,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
   const ORIGIN = 'http://127.0.0.1:' + site.port, REDIRECT = ORIGIN + '/oauth/juicereel-callback.html';
   const J = FAKE.make({ pageSize: 2, redirects: [REDIRECT] });
   const u4 = J.user(4, 'Sharp Bettor');
-  u4.bets.push(FAKE.bet(501, { result: 'Won', netResult: 100, dateClosed: '2026-10-05T20:00:00.000Z', datePlaced: '2026-10-05T16:00:00.000Z',
+  u4.bets.push(FAKE.bet(501, { result: 'Won', netResult: 100, dateClosed: '2026-10-05T20:00:00.000Z', datePlaced: '2026-10-05T16:00:00.000Z', clvPct: 2.5,
       Subbets: [FAKE.subbet({ type: 'Spread', position: 'Miami Dolphins', value: 4.5, home: 'Kansas City Chiefs', away: 'Miami Dolphins', league: 'NFL', sport: 'Football', result: 'Won' })] }),
     FAKE.bet(502, { oddsAmerican: 140, amountRisked: 25, toWin: 35, datePlaced: '2026-10-14T13:00:00.000Z', Site: { id: 20, name: 'FanDuel' },
       Subbets: [FAKE.subbet({ position: 'Ohio State', home: 'Ohio State', away: 'Michigan', league: 'NCAAF', sport: 'Football', start: '2026-10-18T16:00:00.000Z' })] }),
@@ -75,6 +76,11 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       Subbets: [FAKE.subbet({ id: 1, position: 'Kansas City Chiefs', home: 'Kansas City Chiefs', away: 'Miami Dolphins', league: 'NFL', sport: 'Football', result: 'Won', odds: -150 }),
         FAKE.subbet({ id: 2, type: 'Total', position: 'Over', value: 47.5, home: 'Buffalo Bills', away: 'New York Jets', league: 'NFL', sport: 'Football', eventId: 430 })] }));
   db.service(`select public.portfolio_svc_ag_smoke_begin('juicereel', 'production', 'e2e');`);
+  /* the operator recorded 501 by hand before connecting: Juice Reel's copy must not count it twice */
+  db.as(OP, `insert into public.portfolio_positions (platform, platform_label, platform_type, position_type, event_name, market_name, selection, line, odds_american, stake,
+      status, reported_payout, placed_at, settled_at, source, notes)
+    values ('draftkings', 'DraftKings', 'SPORTSBOOK', 'SPREAD', 'Dolphins @ Chiefs', 'Spread', 'Dolphins +4.5', 4.5, -110, 110, 'WON', 210, '2026-10-05T16:05:00Z', '2026-10-05T20:00:00Z', 'MANUAL', 'my pick');`);
+  const pnl = () => +JSON.parse(one(db.as(OP, `select public.portfolio_summary(null, null, 'UTC', null);`))).settled.pnl;
 
   /* the shipped function, in a stub Deno; its network is the test's */
   const logs = [];
@@ -178,6 +184,13 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     chk('a reader sees "Awaiting provider approval" and a disabled Connect — there is no way to start linking',
       /awaiting Juice Reel's approval/.test(await jrText(page)) && await page.evaluate(() => { const b = [...document.querySelectorAll('#pfoHost [data-r="juicereel"] button')].find((x) => /Connect Juice Reel/.test(x.innerText)); return !!b && b.disabled && !b.getAttribute('data-act'); }));
     chk('the reader is never shown "Connected" for Juice Reel', !/Connected as|\bConnected\b/.test(await jrText(page)));
+    await page.click('#pfoHost [data-act="add"]');
+    await page.waitForFunction(() => { const b = document.querySelector('#pfoHost [data-r="jr-add"]'); return !!b && /Connect Juice Reel/.test(b.innerText); }, null, { timeout: 15000 });
+    const addB = await page.evaluate(() => { const sh = document.querySelector('#pfoHost [data-r="sheet"]'); const b = [...sh.querySelectorAll('[data-r="jr-add"] button')].find((x) => /Connect Juice Reel/.test(x.innerText));
+      return { text: sh.innerText, disabled: !!b && b.disabled && !b.getAttribute('data-act') }; });
+    chk('Add a position, before approval: "Connect Juice Reel" at the top, disabled, saying why — and every way to add a bet by hand is still there',
+      addB.disabled && /awaiting Juice Reel's approval/.test(addB.text) && /Connect your Juice Reel account to automatically import and sync your betting history/.test(addB.text)
+        && /Sportsbook bet/.test(addB.text) && /Prediction-market position/.test(addB.text) && /Import a CSV instead/.test(addB.text), addB.text);
     await ctx.close();
 
     /* ── the operator connects ── */
@@ -187,8 +200,17 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     chk('the operator (under the live smoke test) sees "Not connected", the operator note, what EdgeDesk reads, and no password field',
       /Connect Juice Reel to bring in your sportsbook bets/.test(await jrText(page)) && /live smoke test/.test(await jrText(page)) && /open and settled bets/.test(await jrText(page))
         && await page.evaluate(() => !document.querySelector('#pfoHost input[type="password"], #pfoHost [name="password"], #pfoHost [name="username"]')));
+    const pnl0 = pnl();
+    await tab(page, 'overview');
+    await page.click('#pfoHost [data-act="add"]');
+    await page.waitForSelector('#pfoHost [data-r="sheet"] [data-act="jr-add-connect"]', { timeout: 15000 });
+    const order = await page.evaluate(() => [...document.querySelectorAll('#pfoHost [data-r="sheet"] button')].map((b) => b.innerText.trim()));
+    chk('Add a position: "Connect Juice Reel" first, with its description; the manual and import options underneath, unchanged',
+      order.indexOf('Connect Juice Reel') >= 0 && order.indexOf('Connect Juice Reel') < order.indexOf('Sportsbook bet') && order.indexOf('Sportsbook bet') < order.indexOf('Prediction-market position')
+        && order.indexOf('Import a CSV instead') > order.indexOf('Sportsbook bet')
+        && /Connect your Juice Reel account to automatically import and sync your betting history\./.test(await page.$eval('#pfoHost [data-r="jr-add"]', (e) => e.innerText)), order);
     await Promise.all([page.waitForURL(/juicereel=return|juicereel-callback|app\.html/, { timeout: 30000 }).catch(() => null),
-      page.click('#pfoHost [data-r="juicereel"] [data-act="jr-connect"]')]);
+      page.click('#pfoHost [data-r="sheet"] [data-act="jr-add-connect"]')]);
     await page.waitForFunction(() => !!(window.EDPortfolioUI && document.querySelector('#pfoHost.pfo-root')), null, { timeout: 40000 });
     await waitJr(page, /Juice Reel connected as Sharp Bettor/, 40000);
     const consentUrl = new URL(consent[0]);
@@ -196,8 +218,8 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       consent.length === 1 && consentUrl.origin + consentUrl.pathname === 'https://www.juicereel.com/oauth2/authorize' && consentUrl.searchParams.get('redirect_uri') === REDIRECT
         && consentUrl.searchParams.get('scope') === 'bets.open.read bets.settled.read' && consentUrl.searchParams.get('code_challenge_method') === 'S256', consent);
     let t = await jrText(page);
-    chk('back through the callback page: connected as the Juice Reel user, and the first sync in words (3 bets, both books)',
-      /Juice Reel connected as Sharp Bettor\. First sync: 3 bets imported from DraftKings, FanDuel\./.test(t), t);
+    chk('back through the callback page: connected as the Juice Reel user, and the first sync in words (2 bets imported, the one the operator recorded by hand HELD for review)',
+      /Juice Reel connected as Sharp Bettor\. First sync: 2 bets imported from DraftKings, FanDuel; 1 held for your review because it looks like a bet you already recorded\./.test(t), t);
     await waitJr(page, /Connected as Sharp Bettor · last synchronized/);
     chk('…the panel then reads Connected, with when it last synchronized, its books and open bets',
       await page.$eval('#pfoHost [data-r="jr-state"]', (e) => e.getAttribute('data-state')) === 'CONNECTED' && /2 sportsbooks · 2 open bets/.test(await jrText(page)), await jrText(page));
@@ -207,15 +229,17 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     t = await text(page);
     chk('each book is a Juice Reel account, Connected', /DraftKings[\s\S]*Sportsbook · Juice Reel/i.test(t) && /FanDuel[\s\S]*Sportsbook · Juice Reel/i.test(t)
       && /Synced through your Juice Reel connection/i.test(t) && /Connected/i.test(t));
-    chk('the positions are the real rows: the database derived +$100 on the synced win', one(db.sql(`select profit_loss::text from public.portfolio_positions where external_position_id = 'juicereel:501';`)) === '100');
+    t = await jrText(page);
+    chk('the panel counts what was imported (from the stored bets) and says one synced bet is held for review — nothing counted twice',
+      /2 bets imported from Juice Reel · synced platforms: (DraftKings, FanDuel|FanDuel, DraftKings)/.test(t) && /1 synced bet looks like a bet you already recorded/.test(t)
+        && !!(await page.$('#pfoHost [data-r="juicereel"] [data-act="jr-review"]')), t);
+    chk('P&L is exactly what it was before connecting (+$100, the hand-recorded win): Juice Reel\'s copy is not counted while it waits', pnl0 === 100 && pnl() === 100
+      && one(db.sql(`select count(*) from public.portfolio_positions where external_position_id = 'juicereel:501';`)) === '0', { pnl0, now: pnl() });
     await tab(page, 'open');
     await waitText(page, /Ohio State/);
     t = await text(page);
     chk('Open shows the synced pending bets, the parlay with each leg and its state', /Ohio State/.test(t) && /Over 47\.5/.test(t)
       && await page.evaluate(() => !!document.querySelector('#pfoHost [data-r="legs"] .pfo-leg-st.WON')));
-    await tab(page, 'history');
-    await waitText(page, /Dolphins/);
-    chk('History shows the synced settled bet', /Miami Dolphins \+4\.5/.test(await text(page)));
     await tab(page, 'accounts');
     await waitJr(page, /Sync now/);
     db.sql(`update portfolio_private.oauth_grants set last_sync_at = now() - interval '5 minutes';`);
@@ -231,6 +255,41 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     await tab(page, 'accounts');
     await waitJr(page, /Connected as Sharp Bettor/);
     await noSideways(page, '390px Accounts, Juice Reel connected');
+    await page.click('#pfoHost [data-r="juicereel"] [data-act="jr-review"]');
+    await page.waitForSelector('#pfoHost [data-r="sheet"] [data-r="jr-match"]', { timeout: 20000 });
+    const rvText = await page.$eval('#pfoHost [data-r="sheet"]', (e) => e.innerText);
+    chk('the review sheet (390 px): Juice Reel\'s bet beside the operator\'s own, an exact match, their note, merge or add — nothing decided for them',
+      /From Juice Reel · DraftKings/.test(rvText) && /Exact match/i.test(rvText) && /Dolphins \+4\.5/.test(rvText) && /my pick/.test(rvText) && /Same bet — merge/.test(rvText)
+        && /Different bet — add it/.test(rvText), rvText);
+    await noSideways(page, '390px review sheet');
+    await page.click('#pfoHost [data-r="sheet"] [data-act="jr-merge"]');
+    await page.waitForFunction(() => /Merged: one bet, your notes kept/.test(document.body.innerText), null, { timeout: 20000 }).catch(() => null);
+    const merged = jq1(db.sql(`select row_to_json(p) from (select external_position_id, source, notes, profit_loss::text as pl from public.portfolio_positions where notes = 'my pick') p;`));
+    chk('"Same bet — merge": ONE position — the hand-recorded one, now carrying Juice Reel\'s id, its note kept — and P&L still +$100',
+      merged && merged.external_position_id === 'juicereel:501' && merged.source === 'MANUAL' && merged.pl === '100' && pnl() === 100
+        && /Merged: one bet, your notes kept/.test(await page.evaluate(() => document.body.innerText)), merged);
+    chk('the positions are the real rows: the database derived +$100 on the synced win', one(db.sql(`select profit_loss::text from public.portfolio_positions where external_position_id = 'juicereel:501';`)) === '100');
+    await page.click('#pfoHost [data-r="sheet"] [data-act="close"]').catch(() => null);
+    await tab(page, 'history');
+    await waitText(page, /Miami Dolphins \+4\.5/);
+    chk('History shows the merged bet in Juice Reel\'s words, quietly labelled where it came from', /Miami Dolphins \+4\.5/.test(await text(page))
+      && await page.evaluate(() => [...document.querySelectorAll('#pfoHost [data-r="src"]')].some((e) => /Juice Reel · Manual/.test(e.innerText))));
+    await page.click('#pfoHost .pfo-hcard[data-act="edit"]');
+    await page.waitForSelector('#pfoHost [data-r="sheet"] [data-r="jr-clv"]', { timeout: 15000 }).catch(() => null);
+    const clvText = await page.evaluate(() => { const e = document.querySelector('#pfoHost [data-r="jr-clv"]'); return e ? e.innerText : ''; });
+    chk('its details show Juice Reel\'s own CLV (+2.5%) as Juice Reel\'s figure — not EdgeDesk\'s closing-line value, not in the Decision Grade',
+      /Juice Reel reports a closing-line value of \+2\.5%/.test(clvText) && /not EdgeDesk's closing-line value/.test(clvText) && /Decision Grade/.test(clvText), clvText);
+    await page.click('#pfoHost [data-r="sheet"] [data-act="close"]').catch(() => null);
+    await tab(page, 'accounts');
+    await waitJr(page, /Connected as Sharp Bettor/);
+    chk('…nothing left to review', !(await page.$('#pfoHost [data-r="juicereel"] [data-act="jr-review"]')) && /3 bets imported from Juice Reel/.test(await jrText(page)), await jrText(page));
+    await page.click('#pfoHost [data-act="add"]');
+    await page.waitForSelector('#pfoHost [data-r="sheet"] [data-r="jr-add"][data-state="CONNECTED"]', { timeout: 15000 });
+    chk('Add a position once connected (390 px): the connection\'s state and the way to Accounts — no second Connect', !(await page.$('#pfoHost [data-r="sheet"] [data-act="jr-add-connect"]'))
+      && !!(await page.$('#pfoHost [data-r="sheet"] [data-act="jr-add-manage"]')));
+    await noSideways(page, '390px Add a position, Juice Reel connected');
+    await page.click('#pfoHost [data-r="sheet"] [data-act="jr-add-manage"]');
+    await waitJr(page, /Connected as Sharp Bettor/);
     chk('no page errors (phone)', errors.length === 0, errors);
 
     /* ── disconnect, then a refused consent ── */

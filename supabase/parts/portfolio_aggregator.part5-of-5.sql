@@ -3,6 +3,9 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
+alter table public.portfolio_position_settlements enable row level security;
+drop policy if exists portfolio_refresh_requests_own on public.portfolio_refresh_requests;
+create policy portfolio_refresh_requests_own on public.portfolio_refresh_requests for select to authenticated using (user_id = auth.uid());
 drop policy if exists portfolio_position_settlements_own on public.portfolio_position_settlements;
 create policy portfolio_position_settlements_own on public.portfolio_position_settlements for select to authenticated using (user_id = auth.uid());
 
