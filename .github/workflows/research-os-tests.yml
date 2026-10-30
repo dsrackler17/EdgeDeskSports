@@ -74,6 +74,7 @@ jobs:
       - name: The navigation model, the Portfolio seat and the public pages' links
         run: |
           node tools/app/navigation.test.js
+          node tools/app/system_health.test.js
           node tools/portfolio/portfolio_ui.test.js
           node tools/site/nav.test.js
           node tools/site/free_access.test.js

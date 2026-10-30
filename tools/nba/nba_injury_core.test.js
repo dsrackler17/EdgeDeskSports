@@ -94,7 +94,42 @@ const centred = K.nbaParseOfficialLines(['Injury Report: 10/21/26 05:30 PM', '10
 chk('report: a reason printed around its row still joins it', centred.rows[1].reason === 'Injury/Illness - Right Ankle; Sprain' && centred.rows[2].reason === 'Rest' && centred.unread.length === 0, centred.rows);
 const drift = K.nbaParseOfficialLines(['Injury Report: 10/21/26 05:30 PM', 'Something the parser has never seen Out of place 12 34 56 78 90 12 34 56 78 90 12 34 56 78 90 12 34 56 78 90 12 34 56 78 90 12 34 56 78 90 12 34 56 78 90 12 34 56 78 90']);
 chk('report: a line that reads as nothing is UNREAD, returned, never guessed into a row', drift.rows.length === 0 && drift.unread.length === 1);
-chk('report: with no title, the file name dates it', K.nbaParseOfficialLines(['10/21/2026 07:30 (ET) CHA@BKN Charlotte Hornets White, Coby Out Rest'], { url: 'Injury-Report_2026-10-21_05_30PM.pdf' }).published_ms === Date.parse('2026-10-21T21:30:00Z'));
+/* the real layouts behind the DRIFT alerts of 2026-10-28/29 (report_unread_lines): a two-line reason prints
+   one line above its row and one below, so between two rows the lines split between them; a row a page
+   break cuts prints its first line on his own line and the rest after the break */
+const WR = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'nba_injury_report_wraps_2026-10-28_29.json'), 'utf8'));
+for (const f of WR.reports) {
+  const P = K.nbaParseOfficialLines(f.lines, { url: f.url }), tag = f.url.replace(/^.*Injury-Report_|\.pdf$/g, '');
+  chk('report ' + tag + ': every line reads (production left ' + JSON.stringify(f.production.unread_lines) + ' unread: a DRIFT alert)', P.unread.length === 0, P.unread);
+  chk('report ' + tag + ': ' + f.expect.rows + ' rows and ' + f.expect.not_submitted + ' NOT YET SUBMITTED', P.rows.length === f.expect.rows && P.not_submitted.length === f.expect.not_submitted, [P.rows.length, P.not_submitted.length]);
+  for (const [who, why] of Object.entries(f.expect.reasons)) {
+    const r = P.rows.filter((x) => x.player_raw === who);
+    chk('report ' + tag + ': ' + who + '\'s reason is his own, whole (' + why + ')', r.length === 1 && r[0].reason === why, r.map((x) => x.reason));
+  }
+}
+/* no line is lost: every wrapped line is in exactly one row's reason, or unread */
+{
+  const f = WR.reports[0], P = K.nbaParseOfficialLines(f.lines, {});
+  const words = (a) => a.join(' ').split(/\s+/).filter(Boolean).sort().join(' ');
+  const wrapped = f.lines.filter((l) => !/Injury Report:|^Page \d|Game Date|NOT YET SUBMITTED|(Out|Doubtful|Questionable|Probable|Available)\b/.test(l));
+  const onRow = f.lines.filter((l) => /\b(Out|Doubtful|Questionable|Probable|Available)\b/.test(l) && !/NOT YET SUBMITTED|Injury Report:|Game Date/.test(l))
+    .map((l) => l.replace(/^.*?\b(Out|Doubtful|Questionable|Probable|Available)\b\s*/, ''));
+  chk('report: every wrapped line is in exactly one reason (none dropped, none doubled)', words(P.rows.map((r) => r.reason)) === words(onRow.concat(wrapped)) && P.unread.length === 0);
+}
+/* a split the layout does not decide is UNREAD, never guessed onto a row */
+const tie = K.nbaParseOfficialLines(['Injury Report: 10/29/26 03:00 PM', '10/29/2026 07:00 (ET) BOS@ORL Orlando Magic Black, Anthony Out Injury/Illness - Left', 'Ankle', 'Bane, Desmond Out Injury/Illness - Right', 'Knee', 'Banchero, Paolo Out Injury/Illness - Low', 'Back']);
+chk('report: two equally good splits leave the wrapped lines UNREAD (counted), the rows\' own text kept', tie.rows.length === 3 && tie.unread.length === 3 && tie.rows[0].reason === 'Injury/Illness - Left', [tie.unread, tie.rows.map((r) => r.reason)]);
+const nosplit = K.nbaParseOfficialLines(['Injury Report: 10/29/26 03:00 PM', '10/29/2026 07:00 (ET) BOS@ORL Orlando Magic Black, Anthony Out', 'Stray words', 'Bane, Desmond Out Rest']);
+chk('report: a line no split can place is UNREAD, not glued to the row before', nosplit.unread.length === 1 && nosplit.rows[0].reason === '' && nosplit.rows[1].reason === 'Rest', [nosplit.unread, nosplit.rows.map((r) => r.reason)]);
+chk('names: the report\'s "Last, Suffix, First" ("Udeh, Jr., Ernest") reads "Ernest Udeh Jr.", as "Udeh Jr., Ernest" does', K.nbaDisplayName('Udeh, Jr., Ernest') === 'Ernest Udeh Jr.' && K.nbaDisplayName('Udeh Jr., Ernest') === 'Ernest Udeh Jr.' && K.nbaDisplayName('Butler III, Jimmy') === 'Jimmy Butler III', K.nbaDisplayName('Udeh, Jr., Ernest'));
+{
+  const ix = K.nbaNameIndex({ 22: [{ player_id: '5217746', player_name: 'Yang Hansen' }, { player_id: '1', player_name: 'Shaedon Sharpe' }], 5: [{ player_id: '5106261', player_name: 'Ernest Udeh Jr.' }] });
+  const y = K.nbaMatchPlayer('Hansen Yang', '22', ix), u = K.nbaMatchPlayer(K.nbaDisplayName('Udeh, Jr., Ernest'), '5', ix);
+  chk('names: the report\'s "Yang, Hansen" is ESPN\'s "Yang Hansen" (Portland, 5217746), by the alias table', y.player_id === '5217746' && y.method === 'team_exact', y);
+  chk('names: "Udeh, Jr., Ernest" matches ESPN\'s "Ernest Udeh Jr." exactly', u.player_id === '5106261' && u.method === 'team_exact', u);
+  chk('names: a player on no captured roster (Michael Ajayi, a two-way) stays UNMATCHED, never the nearest name', K.nbaMatchPlayer('Michael Ajayi', '30', K.nbaNameIndex({ 30: [{ player_id: '9', player_name: 'Michael Porter Jr.' }, { player_id: '8', player_name: 'Mike Ajay' }] })).player_id === null);
+}
+chk('report: with no title, the file name dates it',K.nbaParseOfficialLines(['10/21/2026 07:30 (ET) CHA@BKN Charlotte Hornets White, Coby Out Rest'], { url: 'Injury-Report_2026-10-21_05_30PM.pdf' }).published_ms === Date.parse('2026-10-21T21:30:00Z'));
 const same1 = K.nbaReportContent(R), same2 = K.nbaReportContent({ rows: R.rows.slice().reverse(), not_submitted: R.not_submitted, matchups: R.matchups.slice().reverse() });
 const changed = K.nbaReportContent({ rows: R.rows.map((r, i) => (i === 3 ? Object.assign({}, r, { status: 'OUT' }) : r)), not_submitted: R.not_submitted, matchups: R.matchups });
 chk('dedupe: the same rows in another order are the same report; a changed status is not', same1 === same2 && same1 !== changed);
