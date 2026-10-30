@@ -25,6 +25,8 @@ on:
 
 permissions:
   contents: write
+  checks: write
+  statuses: write
 
 jobs:
   probe:
@@ -99,6 +101,40 @@ jobs:
               row="$row $r |"
             done
             summary "$row"
+          done
+
+          # self-certify: the commit goes to a side ref first, gets "All checks"
+          # passed on its SHA from this run's own token, then moves the target.
+          # Tried against the control target, which has no bypass at all.
+          for how in check status; do
+            b="claude/bypass-probe-control/target"
+            side="claude/bypass-probe-side/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$how"
+            git fetch -q --depth=1 "$token_url" "$b"
+            git checkout -q -B work FETCH_HEAD
+            echo "run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT, self-certified by $how at $(date -u +%FT%T.%NZ)" > probe.txt
+            git add probe.txt
+            git commit -q -m "bypass probe: self-certified ($how) update of $b (run $GITHUB_RUN_ID)"
+            sha=$(git rev-parse HEAD)
+            r=''
+            if ! git push -q "$token_url" "HEAD:refs/heads/$side" > out.txt 2>&1; then r='SIDE PUSH FAILED (see the log)'; fi
+            if [ -z "$r" ] && [ "$how" = check ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/check-runs" -f name='All checks' -f head_sha="$sha" \
+                -f status=completed -f conclusion=success -f 'output[title]=bypass probe' -f 'output[summary]=self-certified' >> out.txt 2>&1 \
+                || r='CHECK RUN NOT CREATED (see the log)'
+            elif [ -z "$r" ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$sha" -f state=success -f context='All checks' -f description='bypass probe' >> out.txt 2>&1 \
+                || r='STATUS NOT CREATED (see the log)'
+            fi
+            if [ -z "$r" ]; then
+              if git push "$token_url" "HEAD:refs/heads/$b" >> out.txt 2>&1; then r=ACCEPTED
+              elif grep -q 'GH013' out.txt; then r=REFUSED
+              else r='FAILED (see the log)'
+              fi
+            fi
+            git push -q "$token_url" ":refs/heads/$side" 2>/dev/null || true
+            echo "PROBE_RESULT self-certified $how -> $b: $r"
+            sed 's/^/    | /' out.txt | grep -v '"url"' | head -20
+            summary "| GITHUB_TOKEN, side ref + passed $how run first | $r | |"
           done
 
           summary ""
