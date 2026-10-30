@@ -589,7 +589,14 @@ npm run content:example   # write an example article (Word, Markdown, HTML, SEO 
 - each adversarial edit must fail the right check (29 cases: an invented statistic, a real number moved onto the wrong claim, edge language, a wrong injury status, undated history, a dropped disclosure or counterargument, a code identifier, and more);
 - Georgia–Alabama, Texas–Oklahoma, Missouri–Texas A&M, UCLA–Oregon and an NFL game must pass in both analysis formats (publisher and first-party);
 - the two formats must stay different articles;
-- today's research must also pass, generated end to end.
+- "today's" research must also pass, generated end to end: every claim the evidence builder makes (S 3c) and every article the engine would offer (section L).
+
+On a pull request, "today's" research is pinned: `tools/content/fixtures/research_2026_w9.json.gz`, the research `main` held at `ca6f867a0` at 20:14 UTC on October 29, read at that moment. There, `main`'s own code blocked two Week 9 articles until `05ad9abef` and `64143ada2` repaired the writer and the evidence builder.
+- The fixture keeps the inputs, not the outputs. `ART.fromFiles()` builds the packets with the code under test (`tools/content/evidence.js` `buildFrom()`), and the engine drafts from them, so a pull request goes red only when the code changes.
+- The fixture is not vacuous. Reverting either repair turns section L red on the article it broke, and the test requires both articles to be drafted.
+- `fixtures/freeze_live.js` builds the fixture from that commit's data and the code being tested. It checks that the fixture, read back, gives byte for byte the evidence set, research, drafts and gate verdicts that the full files give.
+
+`node tools/content/evidence.test.js --live` reads today's committed artifacts at the real clock instead, and `--now <ISO>` replays a moment. The **daily live sweep** (`.github/workflows/content-engine-live.yml`, 12:41 UTC, and by hand) runs it, so a writer that today's data exposes is still caught within a day. Its red run blocks no pull request. The fix goes in the writer or the builder, never the gate.
 
 The core, the weekly job, the Edge Function, the browser flow and the first-party features read the research as committed for CFB Week 6 and NFL Week 5 (`tools/content/fixtures/research_2026_w6.json.gz`, read by `ART.frozen()`; `fixtures/freeze_research.js` wrote it from the commit of 14:54 UTC on October 9 and checks that its trims leave the research unchanged). The live files roll to the next week every weekend; the fixture does not. Where a suite also runs the Edge Function or the database, both read the suite's Thursday clock (`tools/content/_clock.js`), so an opportunity is not expired by the wall clock before its games kick off in the test.
 
