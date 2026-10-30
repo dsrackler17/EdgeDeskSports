@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      checks: write
       contents: write
     concurrency:
       group: linemaker-artifacts
@@ -51,7 +52,7 @@ jobs:
           fi
           git commit -m 'linemaker: fair-line sheets, ledger and grades'
           for i in 1 2 3 4; do
-            git push origin main && exit 0
+            bash "$(git rev-parse --show-toplevel)/tools/ci/certified_push.sh" origin main && exit 0
             git pull --rebase origin main || true
             sleep $((2 ** i))
           done
