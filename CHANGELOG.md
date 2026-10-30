@@ -40,6 +40,22 @@ So a correct generator puts 13 or more of 38 at one age (over a third) about onc
 The suite runs 999 checks, or 996 when the simulated first season earns no bowl. The bowl branch guards three checks; that was true before, when the counts were 996 and 993. The file has three more checks than before:
 - the two spread claims moved from the fresh roster to the forty fixed ones;
 - three are new: forty rosters of 38 were built, the forty are flat, and the fresh franchise has 38 founding players.
+## 2026-10-30 — Methodology change (integrity guard, owner's decision): the Polymarket request budget settles a dead run's grant at what it may have used
+
+**A change to the gateway's budget guard (AGENTS.md §3). It needs the owner's explicit review before it is deployed.**
+
+- **Why.** A run that dies (out of compute, a 502 from the database) never calls `poly_api_settle`, so its whole grant stayed reserved for the rest of the UTC day.
+  - On 2026-10-30 (stage report, run 41069288565), 56 tonight grants were never settled and held 22,215 requests. The day read granted 40,000 and used 17,785.
+  - Every run after 09:55 UTC was refused (`denied_budget`), so Smart Money Tonight had no current holders.
+- **What.**
+  - Each run reports its requests so far every 20 requests (`poly_api_progress()`, a new table of the same name). The report never goes backwards, never exceeds the grant, and never lands after the settlement.
+  - Under the day's lock, `poly_api_acquire()` first settles every grant still unsettled 15 minutes after it was given, at its last report plus 100, capped at the grant. Each is recorded as expired. A run lives at most about 7 minutes, so it is gone by then.
+  - The day gets back only what the dead run cannot have used.
+  - The daily ceiling (40,000) and the per-run cap (3,000) are unchanged, and `radar_rules()` is unchanged. `polymarket_sync` is build `.10`.
+- **Tests, failing first.**
+  - SQL 237 -> 245: two dead grants (no report: 100 of 400; reported 300: 400 of 900), a fresh one left alone, the day's totals (910 granted, 500 used), a late settlement changing nothing, and no client access. Before `poly_api_progress()` existed, the suite stopped on its first call.
+  - Sync 83 -> 84: runs report in steps of 20, never more than they used. On the old function: 83 passed, 1 failed (no report).
+
 ## 2026-10-30 — NHL goalie sync: ESPN's probable goalies are a second starter source
 
 - **What failed.** Daily Faceoff refused the function (HTTP 403) from 16:34 UTC; the 16:00 run had read it. More than three hours out it is the only source, so every run was a `sources_down` error and tonight's starters could only be confirmed by hand (`hockey/data/confirmed_starters.json`).
