@@ -21,7 +21,7 @@ permission is on record (§Data rights). Nothing here places an order.
 | Storage, comparison, research, KPIs | `supabase/novig_market_data.sql` (+ `_cron`, `_rollback`, migrations `20261030120000`, `20261030120100`) |
 | Key provisioning (transient) | `supabase/functions/novig_key_bootstrap`, `tools/novig/provision.js`, `.github/workflows/novig-provision.yml` |
 | Stream (off) | `lib/novig_stream.js`, `tools/novig/stream_worker.js` |
-| Game-card module | `lib/edgedesk_market_compare_ui.js` (`window.fbNovigHTML`, beside `fbKalshiHTML`) |
+| Game-card module | `lib/edgedesk_market_compare_ui.js` (`EDMarketCompareUI.html`, called by `app.html`'s own `window.fbNovigHTML`, beside `fbKalshiHTML`) |
 | Graphics | `lib/edgedesk_compare_cards.js` (`window.EDCompareCards`) |
 | Lead-lag | `lib/edgedesk_lead_lag.js` (`window.EDLeadLag`) |
 | Operator console | `admin/novig/index.html` |
