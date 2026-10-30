@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-30T15:57:03.677Z",
+ "evaluated_at": "2026-10-30T18:12:01.329Z",
  "verdict": "PASS",
  "best": null,
  "why": [
@@ -5480,11 +5480,11 @@
    "prob": {
     "model": 0.8145,
     "push": 0,
-    "market_novig": 0.6038,
+    "market_novig": 0.6092,
     "shrink_k": 0.1286,
-    "posterior": 0.6309,
+    "posterior": 0.6356,
     "sd": 0.014,
-    "conservative": 0.6129,
+    "conservative": 0.6177,
     "components": {
      "model_sd": 0.03,
      "calibration_sd": 0.015,
@@ -5494,8 +5494,8 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -151,
-   "disagreement": 0.0091,
+   "min_acceptable_american": -154,
+   "disagreement": 0.0085,
    "gates": [
     {
      "gate": "PRICE",
@@ -5507,7 +5507,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -151 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -154 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
@@ -5585,6 +5585,77 @@
    "settlement": null,
    "evidence": [
     "fair spread 1.8 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, RESEARCH vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_nfl_v2.1.0"
+  },
+  {
+   "id": "0ac1d28d",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_09_GB_NE",
+   "event": {
+    "home": "New England Patriots",
+    "away": "Green Bay Packers",
+    "start_utc": "2026-11-08T21:25:00.000Z",
+    "label": "Green Bay Packers @ New England Patriots"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "New England Patriots",
+    "line": -2.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Green Bay Packers @ New England Patriots — New England Patriots -2.5",
+   "quote": null,
+   "fair_american": -165,
+   "break_even": null,
+   "prob": {
+    "model": 0.623,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5158,
+    "sd": 0.014,
+    "conservative": 0.4979,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 105,
+   "disagreement": -0.0021,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +105 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -5 vs consensus -2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -5798,77 +5869,6 @@
    "settlement": null,
    "evidence": [
     "fair spread 4.1 vs consensus 7 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, RESEARCH vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_nfl_v2.1.0"
-  },
-  {
-   "id": "c0b09a4b",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_09_GB_NE",
-   "event": {
-    "home": "New England Patriots",
-    "away": "Green Bay Packers",
-    "start_utc": "2026-11-08T21:25:00.000Z",
-    "label": "Green Bay Packers @ New England Patriots"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "New England Patriots",
-    "line": -3,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Green Bay Packers @ New England Patriots — New England Patriots -3",
-   "quote": null,
-   "fair_american": -147,
-   "break_even": null,
-   "prob": {
-    "model": 0.5451,
-    "push": 0.0834,
-    "market_novig": 0.4583,
-    "shrink_k": 0.1286,
-    "posterior": 0.4695,
-    "sd": 0.014,
-    "conservative": 0.4515,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 107,
-   "disagreement": -0.0068,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -5.3 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -6224,6 +6224,77 @@
    "settlement": null,
    "evidence": [
     "fair spread -4.9 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, RESEARCH vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_nfl_v2.1.0"
+  },
+  {
+   "id": "d1a7efc6",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_09_GB_NE",
+   "event": {
+    "home": "New England Patriots",
+    "away": "Green Bay Packers",
+    "start_utc": "2026-11-08T21:25:00.000Z",
+    "label": "Green Bay Packers @ New England Patriots"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New England Patriots",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Green Bay Packers @ New England Patriots — New England Patriots moneyline",
+   "quote": null,
+   "fair_american": -191,
+   "break_even": null,
+   "prob": {
+    "model": 0.6568,
+    "push": 0,
+    "market_novig": 0.579,
+    "shrink_k": 0.1286,
+    "posterior": 0.589,
+    "sd": 0.014,
+    "conservative": 0.5711,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -127,
+   "disagreement": -0.0079,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -127 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -5 vs consensus -2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -6611,16 +6682,16 @@
    },
    "label": "Green Bay Packers @ New England Patriots — under 47.5",
    "quote": null,
-   "fair_american": -133,
+   "fair_american": -132,
    "break_even": null,
    "prob": {
-    "model": 0.5705,
+    "model": 0.5693,
     "push": 0,
     "market_novig": 0.5,
     "shrink_k": 0.1286,
-    "posterior": 0.5091,
+    "posterior": 0.5089,
     "sd": 0.014,
-    "conservative": 0.4911,
+    "conservative": 0.491,
     "components": {
      "model_sd": 0.03,
      "calibration_sd": 0.015,
@@ -6631,7 +6702,7 @@
    "ev_posterior": null,
    "ev_conservative": null,
    "min_acceptable_american": 108,
-   "disagreement": -0.0089,
+   "disagreement": -0.009,
    "gates": [
     {
      "gate": "PRICE",
@@ -6649,7 +6720,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "fair spread -5.3 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "fair spread -5 vs consensus -2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -6863,77 +6934,6 @@
    "settlement": null,
    "evidence": [
     "fair spread -3.8 vs consensus -6 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, RESEARCH vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_nfl_v2.1.0"
-  },
-  {
-   "id": "71649700",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_09_DAL_IND",
-   "event": {
-    "home": "Indianapolis Colts",
-    "away": "Dallas Cowboys",
-    "start_utc": "2026-11-08T18:00:00.000Z",
-    "label": "Dallas Cowboys @ Indianapolis Colts"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 51.5,
-    "settles": "includes overtime"
-   },
-   "label": "Dallas Cowboys @ Indianapolis Colts — over 51.5",
-   "quote": null,
-   "fair_american": -127,
-   "break_even": null,
-   "prob": {
-    "model": 0.5593,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5076,
-    "sd": 0.014,
-    "conservative": 0.4897,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 108,
-   "disagreement": -0.0103,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -3.1 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -9555,15 +9555,15 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-30T15:57:03.643Z",
-  "nhl_slate_generated_at": "2026-10-30T10:27:09.912Z",
+  "registry_generated_at": "2026-10-30T18:12:01.304Z",
+  "nhl_slate_generated_at": "2026-10-30T18:11:55.775Z",
   "basketball_slate_generated_at": "2026-10-30T15:57:02.697Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-10-30T10:27:09.868Z",
+   "generated_at": "2026-10-30T18:11:55.731Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
-  "football_sheets_generated_at": "2026-10-30T10:14:23.402Z",
+  "football_sheets_generated_at": "2026-10-30T18:05:41.858Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
