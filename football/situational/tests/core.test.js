@@ -136,6 +136,10 @@ chk('bad down/distance on many plays fails the SITUATION gate and keeps the volu
   await T.achk('the season in progress refetches; a failed refetch serves the stale cache and says so', async () => {
     const body = Buffer.from('y'.repeat(600));
     await F.getFile('https://example.test/c.csv', 'c_2026.csv', { cache_dir: tmp, season: 2026, transport: async () => ({ status: 200, buf: body }) });
+    /* a minute old, not "just written": mtimeMs has sub-millisecond precision and Date.now() does not, so a
+       file read back within the millisecond it was written is 0 or less old, and fresh even at TTL 0 */
+    const aMinuteAgo = new Date(Date.now() - 60000);
+    fs.utimesSync(path.join(tmp, 'raw', 'c_2026.csv'), aMinuteAgo, aMinuteAgo);
     process.env.EDP_CACHE_TTL_MS = '0';
     const r = await F.getFile('https://example.test/c.csv', 'c_2026.csv', { cache_dir: tmp, season: 2026, retries: 1, backoff_ms: 1, transport: async () => ({ status: 502 }) });
     delete process.env.EDP_CACHE_TTL_MS;
