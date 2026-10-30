@@ -649,9 +649,13 @@ create or replace function public.radar_grading_version()
 returns text language sql immutable as $s$
   select case when coalesce((public.radar_rules() ->> 'rules_version')::int, 1) >= 2 then 'radar-grade-2' else 'radar-grade-1' end
 $s$;
+-- the latest grading run made under the live rules' version: an H-RADAR-01 run (its top 25, negative scores and all)
+-- is never shown as H-RADAR-02's featured bettors while the first version-2 grade has not run yet
 create or replace function public.radar_current_run()
 returns uuid language sql stable security definer set search_path = public, pg_temp as $s$
-  select run_id from public.poly_grade_runs order by finished_at desc, run_id limit 1
+  select run_id from public.poly_grade_runs
+   where coalesce((rules ->> 'rules_version')::int, 1) = coalesce((public.radar_rules() ->> 'rules_version')::int, 1)
+   order by finished_at desc, run_id limit 1
 $s$;
 
 -- grades and the runs are readable by anyone, once Radar is on and registered (RLS)
@@ -1007,6 +1011,6 @@ select piece, state from (
          case when (select count(*) from jsonb_object_keys(public.radar_rules())) >= 33 then 'ok' else 'CHECK THIS' end
   union all select '6 POLYMARKET_DATA_ENABLED (off until Polymarket''s terms are read)',
          case when public.radar_setting('POLYMARKET_DATA_ENABLED') = 'on' then 'ok' when public.radar_setting('POLYMARKET_DATA_ENABLED') = 'off' then 'pending: off' else 'CHECK THIS' end
-  union all select '7 H-RADAR-01 is registered before anything is shown (supabase/radar_registry.sql)',
+  union all select '7 ' || public.radar_hypothesis() || ' is registered before anything is shown (supabase/radar_registry.sql)',
          case when public.radar_registered() then 'ok' else 'pending: apply supabase/radar_registry.sql' end
 ) r order by 1;

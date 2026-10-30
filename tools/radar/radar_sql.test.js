@@ -110,7 +110,7 @@ try {
   let out = db.applyFileAtomic(F('radar.sql'));
   const rep = out.split('\n').filter((l) => /^\d /.test(l));
   chk('it installs: seven report rows; ok, and pending for the switch and the registry', rep.length === 7 && rep.filter((l) => /\|ok$/.test(l)).length === 5
-    && /6 POLYMARKET_DATA_ENABLED[^|]*\|pending: off/.test(out) && /7 H-RADAR-01[^|]*\|pending/.test(out), out);
+    && /6 POLYMARKET_DATA_ENABLED[^|]*\|pending: off/.test(out) && /7 H-RADAR-02[^|]*\|pending/.test(out), out);
   out = db.applyFileAtomic(F('radar.sql'));
   chk('applying it twice is harmless (idempotent)', !/CHECK THIS/.test(out) && V("select count(*) from public.radar_config where key = 'POLYMARKET_DATA_ENABLED'") === '1', out.slice(0, 300));
 
@@ -374,6 +374,13 @@ try {
   /* H-RADAR-02's registration is a DRAFT: this stands in for it, as supabase/radar_registry.sql will write it once registered */
   db.service("insert into public.radar_config (key, value, note) values ('registry_ref:H-RADAR-02', 'test', 'stands in for H-RADAR-02''s registration (a draft)');");
   chk('…its own registration does', V('select public.radar_registered()') === 't');
+  /* an H-RADAR-01 grading run (rules version 1) is never the current run under H-RADAR-02's rules: its top 25 are not featured */
+  const RUNV1 = crypto.randomUUID();
+  V(`set session_replication_role = replica;
+     insert into public.poly_grade_runs (run_id, started_at, finished_at, grading_version, rules, wallets, ranked, top_directional, note)
+     values (${lit(RUNV1)}, now(), now() + interval '1 hour', 'radar-grade-1', ${lit(JSON.stringify(REG1.spec.rules))}::jsonb, 0, 0, 0, 'an H-RADAR-01 run, newer than any');
+     set session_replication_role = default;`);
+  chk('the current run is the latest made under the live rules\' version, never a newer H-RADAR-01 run', V('select public.radar_current_run()') === RUN1, { current: V('select public.radar_current_run()'), v2: RUN1 });
 
   /* ===================================================================== */
   /* 9. THE DOORS                                                          */
