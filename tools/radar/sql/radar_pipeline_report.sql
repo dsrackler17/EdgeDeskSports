@@ -20,6 +20,10 @@
 --     which mode was granted what today
 --  10 the unmatched covered markets in the window, by league and reason, with
 --     an example of each
+--  11 the unmatched games, one by one: what Polymarket calls the teams, and
+--     the board's nearest games, as the matcher saw them
+--  12 the board's own games in the window (signals), by sport: what a market
+--     can be matched to at all
 -- =============================================================================
 
 -- 1 versions and state
@@ -121,3 +125,21 @@ select league, coalesce(match_reason, '(not tried)') as reason, count(*) as mark
   from public.poly_markets
  where event_id is null and game_start_at > now() and game_start_at <= now() + make_interval(hours => public.radar_rule('upcoming_hours')::int)
  group by 1, 2 order by markets desc limit 15;
+
+-- 11 the unmatched games in the window, one by one
+select m.league, m.event_title, coalesce(m.match_reason, '(not tried)') as reason, count(*) as markets,
+       to_char(min(m.game_start_at) at time zone 'utc', 'MM-DD HH24:MI') as starts_utc,
+       left(coalesce((array_agg(m.match_detail -> 'near') filter (where m.match_detail ? 'near'))[1]::text, ''), 150) as boards_nearest
+  from public.poly_markets m
+ where m.event_id is null and m.league in ('nfl', 'cfb', 'nba', 'nhl', 'mlb')
+   and m.game_start_at > now() and m.game_start_at <= now() + make_interval(hours => public.radar_rule('upcoming_hours')::int)
+ group by 1, 2, 3 order by 1, 2 limit 150;
+
+-- 12 the board's own games in the window, by sport
+select sport_key, count(distinct event_id) as games,
+       to_char(min(commence_time) at time zone 'utc', 'MM-DD HH24:MI') as first_utc, to_char(max(commence_time) at time zone 'utc', 'MM-DD HH24:MI') as last_utc,
+       left(string_agg(distinct away_team || ' @ ' || home_team, '; '), 600) as games_listed
+  from public.signals
+ where commence_time > now() - interval '6 hours' and commence_time <= now() + make_interval(hours => public.radar_rule('upcoming_hours')::int) + interval '1 day'
+   and sport_key in ('americanfootball_nfl', 'americanfootball_ncaaf', 'basketball_nba', 'icehockey_nhl', 'baseball_mlb')
+ group by 1 order by 1;
