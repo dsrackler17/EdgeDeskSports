@@ -13,6 +13,26 @@
   On the old code: 82 passed, 2 failed, with production's exact error. On the fix: 84/0.
 - **Deploy:** after merge, run Deploy NHL goalie layer with `deploy_function`.
 
+## 2026-10-30 — Juice Reel: connect from Add a position, and no bet counted twice (look-alikes held for the reader's review)
+
+- **What was already built.** Juice Reel's OAuth 2.0 + PKCE connection, sealed tokens, the refresh lease, the initial import, the `/bets/changed` sync, the 10-minute schedule and the Accounts panel (`docs/juicereel.md`). It is not live for readers: the registry row stays off until Juice Reel approves the application, the PRODUCTION smoke test passes and the terms review clears (§ 9). This change does not touch that switch.
+- **The bug.** Connecting Juice Reel over bets the reader had already recorded counted many of them twice. The sync adopted a typed or imported bet only when exactly one matched within 15 minutes. It kept two identical bets apart and reported them, and it never compared a screenshot whose time was hours off, or a bet typed later. Both copies then counted in P&L, ROI, the record and every count.
+- **The fix** (`supabase/portfolio_juicereel.sql` 2b, `portfolio_svc_jr_ingest`). A synced bet that resembles one of the reader's own records is no longer stored. It is HELD in `public.portfolio_sync_matches`, its newest copy kept, until the reader decides. A look-alike is the same book, the stake within a cent, the same price, and either:
+  - placed within 2 hours;
+  - placed within 36 hours with the same event start or a word of the pick in common;
+  - the same event start, placed up to 14 days later.
+
+  "The same bet" merges it into the record the reader picks. The record takes the Juice Reel id and figures, keeps its notes and journal, and keeps what it said before on the decision. "A different bet" stores it as its own position. Until then the reader's own record is the one counted. Nothing is merged without the reader, including the exact matches the old automatic adoption took: those are marked exact and can be confirmed together. The shared ingest gains `"adopt": false` for this, and SharpSports is unchanged.
+- **Also.**
+  - **Add a position** opens with **Connect Juice Reel** and its description. It offers only what the server allows: disabled with the reason before approval, the connection's state once connected. The manual and import options are underneath, unchanged.
+  - **Accounts** counts the bets imported and the platforms they came from, both from the stored bets, and prompts the review when bets are held.
+  - History and Open label each position's source quietly.
+  - A Juice Reel bet's details show Juice Reel's own `clvPct`, labelled as Juice Reel's figure, never EdgeDesk's closing-line value or a Decision Grade input.
+  - Odds or a line adjusted in Juice Reel are flagged.
+  - The database enforces one position per reader and Juice Reel bet id.
+  - New edge function actions: `jr_matches` and `jr_match_resolve`.
+- **Tests.** On the code before the fix, the new reader-D scenario in `tools/portfolio/juicereel.test.js` failed. P&L went from +105 to +192.73 after connecting, where the fix gives +90: four bets were counted twice. That run had 140 passed and 11 failed. On the fix, `juicereel.test.js` gives 192/0 and `juicereel_ui.e2e.js` gives 33/0 in Chromium at 1280 and 390 px.
+
 ## 2026-10-30 — NHL goalie sync: the card table shows when the NHL boxscore listed each game's lineups
 
 - **Why.** The card table's first run (01:39 UTC) showed that the lineup lock priced none of the night's games. Eight had started, and all eight were still at the slate's price. For every one of them both starters were Confirmed and the inputs carried the lineup block (35/35 games). That leaves the one input nothing showed: whether the NHL boxscore listed at least 12 skaters a side before puck drop. Each sync run records what every boxscore read saw (the timing probe, `nhl_goalie_sync_runs.sources`), but no job read it.
