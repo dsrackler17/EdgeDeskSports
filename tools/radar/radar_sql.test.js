@@ -52,7 +52,8 @@ const CRON = fs.readFileSync(F('polymarket_sync_cron.sql'), 'utf8');
 const REGSQL = fs.readFileSync(F('radar_registry.sql'), 'utf8');
 const RECSQL = fs.readFileSync(F('radar_record.sql'), 'utf8');
 const MIRROR = F('migrations/20261029120000_radar.sql');
-const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'radar', 'registration_h_radar_01.json'), 'utf8'));
+const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'radar', 'registration_h_radar_02.json'), 'utf8'));   /* the live rules' hypothesis (a DRAFT) */
+const REG1 = JSON.parse(fs.readFileSync(path.join(ROOT, 'research', 'radar', 'registration_h_radar_01.json'), 'utf8'));   /* H-RADAR-01: registered, its result stands */
 
 /* ── STATIC: the folder's conventions ──────────────────────────────────── */
 for (const [name, text] of [['radar.sql', SQL], ['polymarket_sync_cron.sql', CRON], ['radar_registry.sql', REGSQL], ['radar_record.sql', RECSQL]]) {
@@ -118,9 +119,10 @@ try {
   /* ===================================================================== */
   const rules = fn('public.radar_rules()');
   const differ = Object.keys(RULES).filter((k) => JSON.stringify(rules[k]) !== JSON.stringify(RULES[k]));
-  chk('the H-RADAR-01 registration\'s frozen rules equal radar_rules(), key by key', differ.length === 0, differ.map((k) => k + ': ' + JSON.stringify(rules[k]) + ' vs ' + JSON.stringify(RULES[k])));
+  chk('the H-RADAR-02 registration\'s frozen rules equal radar_rules(), key by key (rules version 2)', differ.length === 0, differ.map((k) => k + ': ' + JSON.stringify(rules[k]) + ' vs ' + JSON.stringify(RULES[k])));
   chk('radar_rules() carries every rule the core reads', R.RULE_KEYS.every((k) => rules[k] !== undefined));
-  chk('radar_rule() reads one', V("select public.radar_rule('min_graded')") === '50' && V("select public.radar_rule('top_wallets')") === '25');
+  chk('radar_rule() reads one', V("select public.radar_rule('min_graded')") === '50' && V("select public.radar_rule('top_wallets')") === '10');
+  chk('the live hypothesis is H-RADAR-02, graded as radar-grade-2', V('select public.radar_hypothesis()') === 'H-RADAR-02' && V('select public.radar_grading_version()') === 'radar-grade-2');
 
   /* ===================================================================== */
   /* 3. THE SWITCH                                                         */
@@ -237,7 +239,8 @@ try {
   const START6 = Date.parse(V("select to_char(game_start_at at time zone 'utc', 'YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') from public.poly_markets where condition_id = " + lit(C('6'))));
   const tx6 = TX();
   /* the core builds and grades the bet, as polymarket_sync does */
-  const mk6 = { condition_id: C('6'), league: 'nfl', market_type: 'moneyline', outcomes: ['Chiefs', 'Broncos'], token_ids: [C('6') + ':0', C('6') + ':1'], game_start_at: START6, closed: true, settle: [1, 0], event_ref: 'g6', question: 'Chiefs vs. Broncos' };
+  /* its fee status as covered markets send it (probe run 40975470572): fees enabled at a schedule rate of 0, so no fee */
+  const mk6 = { condition_id: C('6'), league: 'nfl', market_type: 'moneyline', outcomes: ['Chiefs', 'Broncos'], token_ids: [C('6') + ':0', C('6') + ':1'], game_start_at: START6, closed: true, settle: [1, 0], event_ref: 'g6', question: 'Chiefs vs. Broncos', fees_enabled: true, fee_schedule: { rate: 0 } };
   const bets6 = R.buildBets([{ wallet: T1, kind: 'TRADE', tx_hash: tx6, ts: START6 - 120 * 60000, condition_id: C('6'), token_id: C('6') + ':0', outcome_index: 0, side: 'BUY', size: 250, price: 0.4 }], { [C('6')]: mk6 }, RULES).bets;
   const hist6 = [{ t: START6 - 125 * 60000, p: 0.4 }, { t: START6 - 116 * 60000, p: 0.42 }, { t: START6 - 106 * 60000, p: 0.43 }, { t: START6 - 20 * 60000, p: 0.47 }];
   const b6 = R.gradeBet(bets6[0], hist6, RULES);
@@ -247,7 +250,8 @@ try {
     entry_price: b.entry_price, stake: b.stake, shares_pregame: b.shares_pregame, buy_cost: b.buy_cost, sell_proceeds: b.sell_proceeds, shares_held: b.shares_held, trades: b.trades,
     settle: b.settle, result: b.result, profit: b.profit, close_price: b.close_price, close_at: iso(b.close_at), clv_pp: b.clv_pp, clv_pct: b.clv_pct,
     follow5_price: b.follow5_price, follow5_at: iso(b.follow5_at), follow5_reason: b.follow5_reason, follow5_roi: b.follow5_roi,
-    follow15_price: b.follow15_price, follow15_at: iso(b.follow15_at), follow15_reason: b.follow15_reason, follow15_roi: b.follow15_roi, beat_close5: b.beat_close5, grading_version: R.GRADING_VERSION }, over || {});
+    follow15_price: b.follow15_price, follow15_at: iso(b.follow15_at), follow15_reason: b.follow15_reason, follow15_roi: b.follow15_roi, beat_close5: b.beat_close5,
+    follow5_mid: b.follow5_mid == null ? null : b.follow5_mid, follow15_mid: b.follow15_mid == null ? null : b.follow15_mid, grading_version: b.grading_version || R.GRADING_VERSION }, over || {});
   /* the columns it names (so every other keeps its default), as PostgREST inserts */
   const putBet = (row) => { const cols = Object.keys(row).join(', '); return db.service(`insert into public.poly_bets (${cols}) select ${cols} from jsonb_populate_record(null::public.poly_bets, ${lit(JSON.stringify(row))}::jsonb);`); };
   chk('a bet on a market that has not resolved is refused', fails(() => putBet(betRow(b6))));
@@ -260,13 +264,19 @@ try {
   chk('a close from more than 60 minutes before the start is refused', fails(() => putBet(betRow(b6, { close_at: iso(START6 - 90 * 60000) }))));
   chk('an entry after the start is refused', fails(() => putBet(betRow(b6, { entry_at: iso(START6 + 60000) }))));
   chk('the entry transaction must be one of the bet\'s', fails(() => putBet(betRow(b6, { entry_tx: TX() }))));
+  chk('version 2: a follow price that is not the midpoint plus follow_cost is refused', fails(() => putBet(betRow(b6, { follow5_price: 0.42, follow5_roi: 1 / 0.42 - 1, beat_close5: true }))));
   putBet(betRow(b6));
-  const stored6 = one(`select entry_price, stake, close_price, clv_pp, follow5_price, follow5_roi, beat_close5, result from public.poly_bets where wallet = ${lit(T1)}`);
-  /* 250 @ 0.40: entry 0.40; the follow is the price at entry + 5 min (0.42, observed at -116 min); the close 0.47 */
-  chk('the core\'s bet is stored as graded: entry 0.40, follow 0.42, close 0.47, CLV +7 pp, beat the close', Number(stored6.entry_price) === 0.4 && Number(stored6.follow5_price) === 0.42
-    && Number(stored6.close_price) === 0.47 && Number(stored6.clv_pp) === 7 && stored6.beat_close5 === true && stored6.result === 'win', stored6);
-  chk('…follow ROI = 1 / 0.42 - 1', Math.abs(Number(stored6.follow5_roi) - (1 / 0.42 - 1)) < 1e-5);
-  chk('a bet is graded once', fails(() => putBet(betRow(b6))));
+  const stored6 = one(`select entry_price, stake, close_price, clv_pp, follow5_mid, follow5_price, follow5_roi, beat_close5, result, grading_version from public.poly_bets where wallet = ${lit(T1)}`);
+  /* 250 @ 0.40: entry 0.40; the follow is the midpoint at entry + 5 min (0.42, observed at -116 min) plus 1 cent; the close 0.47 */
+  chk('the core\'s bet is stored as graded at version 2: entry 0.40, follow 0.42 + 1 cent = 0.43, close 0.47, CLV +7 pp, beat the close', Number(stored6.entry_price) === 0.4
+    && Number(stored6.follow5_mid) === 0.42 && Number(stored6.follow5_price) === 0.43 && Number(stored6.close_price) === 0.47 && Number(stored6.clv_pp) === 7 && stored6.beat_close5 === true
+    && stored6.result === 'win' && stored6.grading_version === 'radar-grade-2', stored6);
+  chk('…follow ROI = 1 / 0.43 - 1', Math.abs(Number(stored6.follow5_roi) - (1 / 0.43 - 1)) < 1e-5);
+  chk('a bet is graded once a version', fails(() => putBet(betRow(b6))));
+  /* the same bet's H-RADAR-01 grade (version 1, the midpoint itself) sits beside it, never edited */
+  const b6v1 = R.gradeBet(bets6[0], hist6, REG1.spec.rules);
+  putBet(betRow(b6v1));
+  chk('…its version-1 grade sits beside it: one row a version', V(`select string_agg(grading_version || ':' || follow5_price, ',' order by grading_version) from public.poly_bets where wallet = ${lit(T1)}`) === 'radar-grade-1:0.42,radar-grade-2:0.43');
   chk('poly_bets: the service role cannot update or delete', fails(() => db.service('update public.poly_bets set profit = 0;')) && fails(() => db.service('delete from public.poly_bets;')));
 
   /* ===================================================================== */
@@ -286,18 +296,26 @@ try {
   R.rankWallets(grades, RULES);
   const gRows = grades.map((g) => Object.assign({}, g, { first_bet_at: iso(g.first_bet_at), last_bet_at: iso(g.last_bet_at), rank: g.rank == null ? null : g.rank }));
   const RUN1 = crypto.randomUUID();
-  const put = (runId, rowsJ, rulesJ) => db.service(`select public.radar_put_grades(${lit(JSON.stringify({ run_id: runId, started_at: new Date().toISOString(), grading_version: R.GRADING_VERSION, rules: rulesJ || rules }))}::jsonb, ${lit(JSON.stringify(rowsJ))}::jsonb);`);
+  const put = (runId, rowsJ, rulesJ) => db.service(`select public.radar_put_grades(${lit(JSON.stringify({ run_id: runId, started_at: new Date().toISOString(), grading_version: R.gradingVersion(rules), rules: rulesJ || rules }))}::jsonb, ${lit(JSON.stringify(rowsJ))}::jsonb);`);
   chk('a run graded with other rules is refused', fails(() => put(crypto.randomUUID(), gRows, Object.assign({}, rules, { min_graded: 30 }))));
   const swapped = gRows.map((g) => Object.assign({}, g, { rank: g.rank === 1 ? 2 : g.rank === 2 ? 1 : g.rank }));
   chk('ranks that do not run 1..n by Radar Score are refused', fails(() => put(crypto.randomUUID(), swapped)));
   const tooMany = []; for (let i = 0; i < 26; i++) { const g = gradeOf('0x' + String(i).padStart(40, 'c'), 60, 1 + i / 10); tooMany.push(g); }
   R.rankWallets(tooMany, RULES);
-  chk('more than 25 top-graded wallets are refused', fails(() => put(crypto.randomUUID(), tooMany.map((g) => Object.assign({}, g, { top_directional: true, first_bet_at: iso(g.first_bet_at), last_bet_at: iso(g.last_bet_at) })))));
+  chk('more than 10 featured wallets are refused (H-RADAR-02\'s top_wallets)', fails(() => put(crypto.randomUUID(), tooMany.map((g) => Object.assign({}, g, { top_directional: true, first_bet_at: iso(g.first_bet_at), last_bet_at: iso(g.last_bet_at) })))));
   const mmTop = gRows.map((g) => g.wallet === MM ? Object.assign({}, g, { top_directional: true }) : g);
   chk('a market maker marked top-graded is refused', fails(() => put(crypto.randomUUID(), mmTop)));
   const smallRanked = gRows.map((g) => g.wallet === SS ? Object.assign({}, g, { sample: 'ranked', radar_score: 1, score_parts: {}, rank: 6 }) : g);
   chk('a 20-bet grade marked ranked is refused (the rules\' own 50)', fails(() => put(crypto.randomUUID(), smallRanked)));
   chk('a ROI that is not profit / staked is refused', fails(() => put(crypto.randomUUID(), gRows.map((g) => g.wallet === T1 ? Object.assign({}, g, { roi: 0.9 }) : g))));
+  /* H-RADAR-02: featured needs a Radar Score above 0 and is never a high-frequency wallet (the database's own rule) */
+  const loser = Object.assign(gradeOf('0x' + 'd'.repeat(40), 60, 0.1), {});
+  const withLoser = grades.concat([loser]);
+  R.rankWallets(withLoser, RULES);
+  const loserRows = withLoser.map((g) => Object.assign({}, g, { first_bet_at: iso(g.first_bet_at), last_bet_at: iso(g.last_bet_at), rank: g.rank == null ? null : g.rank }));
+  chk('v2: the core does not feature a wallet whose Radar Score is not above 0', loser.radar_score < 0 && loser.top_directional === false, { score: loser.radar_score });
+  chk('v2: a wallet featured with a Radar Score not above 0 is refused', fails(() => put(crypto.randomUUID(), loserRows.map((g) => g.wallet === loser.wallet ? Object.assign({}, g, { top_directional: true }) : g))));
+  chk('v2: a high-frequency wallet featured is refused', fails(() => put(crypto.randomUUID(), gRows.map((g) => g.wallet === T1 ? Object.assign({}, g, { high_frequency: true }) : g))));
   const putRes = JSON.parse(put(RUN1, gRows));
   chk('the core\'s grades are written as one run: 6 wallets, 5 ranked, 4 top-graded', putRes.wallets === 6 && putRes.ranked === 5 && putRes.top_directional === 4, putRes);
   const back = J(`select wallet, rank, sample, round(radar_score, 2) as s, round(roi, 6) as roi, round(follow5_roi, 6) as f5, top_directional from public.poly_wallet_grades where run_id = ${lit(RUN1)} order by rank nulls last`);
@@ -317,7 +335,7 @@ try {
     }
     chk(who + ' cannot write a grade', fails(() => run(`insert into public.poly_wallet_grades (run_id, wallet, graded_bets, wins, losses, pushes, staked, profit, clv_n, follow5_n, follow15_n, style, sample) values (${lit(RUN1)}, ${lit(OUT)}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Directional', 'small_sample');`)));
     chk(who + ' cannot call the internal functions', fails(() => run('select public.radar_tonight_cards();')) && fails(() => run(`select public.radar_put_grades('{}'::jsonb, '[]'::jsonb);`)));
-    chk(who + ': the grades are hidden by RLS until H-RADAR-01 is registered', run('select count(*) from public.poly_wallet_grades;') === '0');
+    chk(who + ': the grades are hidden by RLS until the live hypothesis is registered', run('select count(*) from public.poly_wallet_grades;') === '0');
   }
 
   /* ===================================================================== */
@@ -349,6 +367,13 @@ try {
   const again = db.applyFileAtomic(F('radar_registry.sql'));
   chk('applying it again writes nothing new', !/CHECK THIS/.test(again) && V('select count(*) from public.research_model_versions') === '1');
   chk('a client cannot register', fails(() => asSub("insert into public.radar_config (key, value) values ('registry_ref:H-RADAR-01', 'x');")));
+  /* REGISTERED BEFORE SHOWN, under H-RADAR-02's rules: H-RADAR-01's registration (and its result) stays, but it does not
+     open the doors for rules it did not register */
+  chk('H-RADAR-01 registered alone does not open the doors under H-RADAR-02\'s rules', V('select public.radar_registered()') === 'f'
+    && db.anon('select count(*) from public.poly_wallet_grades;') === '0' && fn('public.radar_leaderboard(50)', db.anon).status === 'not_registered');
+  /* H-RADAR-02's registration is a DRAFT: this stands in for it, as supabase/radar_registry.sql will write it once registered */
+  db.service("insert into public.radar_config (key, value, note) values ('registry_ref:H-RADAR-02', 'test', 'stands in for H-RADAR-02''s registration (a draft)');");
+  chk('…its own registration does', V('select public.radar_registered()') === 't');
 
   /* ===================================================================== */
   /* 9. THE DOORS                                                          */
@@ -404,6 +429,17 @@ try {
   chk('E1: the teams and the start come from the board', c1.home_team === 'Las Vegas Raiders' && c1.away_team === 'Kansas City Chiefs');
   chk('E2: a fair 3 hours old is not current: no agree / disagree line', c2.n_wallets === 1 && c2.fair_current === false && c2.agrees === null);
   chk('no game without a top-graded wallet gets a card (E3), and no stale snapshot shows (E4)', !tn.cards.some((c) => c.event_id === 'E3' || c.event_id === 'E4'));
+  /* H-RADAR-02: how many are featured, and OBSERVED ACTIVITY apart from the cards */
+  chk('v2: the door says how many wallets are featured (4 of at most 10), under H-RADAR-02', tn.featured === 4 && tn.top_wallets === 10 && tn.hypothesis === 'H-RADAR-02', { featured: tn.featured, top: tn.top_wallets, h: tn.hypothesis });
+  const obs = tn.observed || [];
+  const oE1 = obs.find((o) => o.event_id === 'E1') || {}, oE3 = obs.find((o) => o.event_id === 'E3') || {};
+  chk('v2: observed activity is apart from the cards, labelled observed: E1 and E3', obs.length === 2 && obs.every((o) => o.kind === 'observed') && oE1.n_wallets === 1 && oE3.n_wallets === 1, obs);
+  chk('v2: …it counts the evaluated wallets that are not featured (the small sample\'s $450 on the Chiefs), never a featured one', oE1.sides && oE1.sides.length === 1
+    && oE1.sides[0].outcome === 'Chiefs' && Number(oE1.sides[0].dollars) === 450 && oE1.sides[0].n_wallets === 1, oE1);
+  chk('v2: …never a market maker (its $400 on the Jets is not there: E3 shows only the small sample\'s $600 on the Patriots) and never a stale snapshot (E4)',
+    oE3.sides && oE3.sides.length === 1 && oE3.sides[0].outcome === 'Patriots' && Number(oE3.sides[0].dollars) === 600 && !obs.some((o) => o.event_id === 'E4'), oE3);
+  chk('v2: …and names no wallet', !JSON.stringify(obs).includes('0x') || !obs.some((o) => 'wallets' in o || (o.sides || []).some((x) => 'wallet' in x || 'wallets' in x)));
+  chk('v2: observed activity is subscribers only, like the cards', !('observed' in fn('public.radar_tonight()', db.anon)) && !('observed' in fn('public.radar_tonight()', asA)));
   /* the price moves above the fair: smart money disagrees */
   price(C('1'), 0, 0.66, 1, crypto.randomUUID());
   chk('the price above EdgeDesk\'s fair: smart money disagrees', fn('public.radar_tonight()', asSub).cards[0].agrees === false);
@@ -437,12 +473,27 @@ try {
   out = db.applyFileAtomic(F('radar_record.sql'));
   chk('the record installs; its report says ok', (out.match(/\|ok/g) || []).length === 3 && !/CHECK THIS/.test(out), out);
   chk('applying it twice is harmless', !/CHECK THIS/.test(db.applyFileAtomic(F('radar_record.sql'))));
-  chk('no client may publish or grade', fails(() => asSub('select public.radar_publish_cards();')) && fails(() => db.anon('select public.radar_grade_cards();')));
-  const pub = Number(db.service('select public.radar_publish_cards();'));
-  chk('every card on Smart Money Tonight is published once: E1 and E2', pub === 2 && V("select string_agg(event_id, ',' order by event_id) from public.radar_cards") === 'E1,E2');
-  const rc1 = one("select follow_price, n_wallets, selection, agrees, jsonb_array_length(wallets) as w from public.radar_cards where event_id = 'E1'");
-  chk('…with the side and the price a follower could take then (0.66)', Number(rc1.follow_price) === 0.66 && rc1.selection === 'Kansas City Chiefs' && rc1.n_wallets === 3 && rc1.agrees === false && rc1.w === 3, rc1);
-  chk('publishing again adds nothing (one entry per game and side)', db.service('select public.radar_publish_cards();') === '0' && V('select count(*) from public.radar_cards') === '2');
+  chk('no client may publish or grade', fails(() => asSub('select public.radar_publish_cards();')) && fails(() => asSub(`select public.radar_publish_cards('[]'::jsonb);`)) && fails(() => db.anon('select public.radar_grade_cards();')));
+  /* H-RADAR-02: a card is published at the order book's best ask (polymarket_sync reads it and hands it in), and only on
+     a market whose fee is known to be none: E1's market says fees enabled at a rate of 0 (as the probe saw); E2's fee
+     status has not been read yet */
+  db.service(`update public.poly_markets set fees_enabled = true, fee_schedule = '{"rate": 0, "exponent": 1, "taker_only": true, "fee_type": "zero_fees"}'::jsonb where condition_id = ${lit(C('1'))};`);
+  const quote = (c, ask, bid, size, ageMin) => ({ token_id: c + ':0', best_ask: ask, best_bid: bid, ask_size: size, quoted_at: new Date(Date.now() - ageMin * 60000).toISOString() });
+  const Q = (qs) => `select public.radar_publish_cards(${lit(JSON.stringify(qs))}::jsonb);`;
+  chk('v2: without a quote from the order book nothing is published', db.service('select public.radar_publish_cards();') === '0' && V('select count(*) from public.radar_cards') === '0');
+  chk('v2: a quote older than 30 minutes is not a price anyone can take: nothing is published', db.service(Q([quote(C('1'), 0.67, 0.65, 5000, 45)])) === '0');
+  const pub1 = Number(db.service(Q([quote(C('1'), 0.67, 0.65, 5000, 1), quote(C('2'), 0.51, 0.49, 800, 1)])));
+  chk('v2: E1 is published at its best ask; E2 is not, its market\'s fee unknown (never guessed)', pub1 === 1 && V("select string_agg(event_id, ',') from public.radar_cards") === 'E1');
+  db.service(`update public.poly_markets set fees_enabled = false where condition_id = ${lit(C('2'))};`);
+  const pub = pub1 + Number(db.service(Q([quote(C('1'), 0.67, 0.65, 5000, 1), quote(C('2'), 0.51, 0.49, 800, 1)])));
+  chk('every card on Smart Money Tonight is published once: E1 and E2 (E2 once its market says it charges no fee)', pub === 2 && V("select string_agg(event_id, ',' order by event_id) from public.radar_cards") === 'E1,E2');
+  const rc1 = one("select follow_price, ask_price, bid_price, mid_price, ask_size, rules_version, fee_schedule ->> 'rate' as rate, n_wallets, selection, agrees, jsonb_array_length(wallets) as w from public.radar_cards where event_id = 'E1'");
+  chk('…with the side and the price a subscriber could really take then: the best ask 0.67 (bid 0.65, midpoint 0.66), 5,000 shares at it, the fee schedule (rate 0)',
+    Number(rc1.follow_price) === 0.67 && Number(rc1.ask_price) === 0.67 && Number(rc1.mid_price) === 0.66 && Number(rc1.ask_size) === 5000 && rc1.rules_version === 2 && rc1.rate === '0'
+    && rc1.selection === 'Kansas City Chiefs' && rc1.n_wallets === 3 && rc1.agrees === false && rc1.w === 3, rc1);
+  chk('v2: a card whose price is not its ask is refused', fails(() => db.service(`insert into public.radar_cards (event_id, condition_id, token_id, market_type, commence_time, n_wallets, follow_price, follow_price_at, rules_version, ask_price, quoted_at)
+    values ('EX', ${lit(C('1'))}, 'x', 'moneyline', now() + interval '1 day', 1, 0.66, now(), 2, 0.67, now());`)));
+  chk('publishing again adds nothing (one entry per game and side)', db.service(Q([quote(C('1'), 0.60, 0.58, 5000, 1)])) === '0' && V('select count(*) from public.radar_cards') === '2');
   chk('nothing is graded before the start', JSON.parse(db.service('select public.radar_grade_cards();')).graded === 0);
   chk('the record is append-only: a card cannot be edited or removed', fails(() => db.service('update public.radar_cards set follow_price = 0.5;')) && fails(() => db.service('delete from public.radar_cards;'))
     && fails(() => V('truncate public.radar_cards;')));
@@ -450,8 +501,8 @@ try {
   /* the clock moves on (the test's only device: a card's start is write-once): E1 started an hour ago and the Chiefs won,
      its last price 10 minutes before the start 0.70; E2 started 8 days ago and its market never resolved */
   V(`set session_replication_role = replica;
-     update public.radar_cards set commence_time = now() - interval '1 hour', published_at = now() - interval '3 hours', follow_price_at = now() - interval '3 hours' where event_id = 'E1';
-     update public.radar_cards set commence_time = now() - interval '8 days', published_at = now() - interval '9 days', follow_price_at = now() - interval '9 days' where event_id = 'E2';
+     update public.radar_cards set commence_time = now() - interval '1 hour', published_at = now() - interval '3 hours', follow_price_at = now() - interval '3 hours', quoted_at = now() - interval '3 hours' where event_id = 'E1';
+     update public.radar_cards set commence_time = now() - interval '8 days', published_at = now() - interval '9 days', follow_price_at = now() - interval '9 days', quoted_at = now() - interval '9 days' where event_id = 'E2';
      set session_replication_role = default;`);
   db.service(`update public.poly_markets set settle = '[1,0]'::jsonb, closed = true where condition_id = ${lit(C('1'))};`);
   price(C('1'), 0, 0.70, 70, crypto.randomUUID());
@@ -460,17 +511,18 @@ try {
   const gr1 = JSON.parse(db.service('select public.radar_grade_cards();'));
   chk('graded once: E1 against its close and result, E2 void (no resolution in a week)', gr1.graded === 1 && gr1.void === 1, gr1);
   const res1 = one("select r.result, r.settle, r.roi, r.close_status, r.close_price, r.beat_close, r.clv_pct from public.radar_card_results r join public.radar_cards c using (card_id) where c.event_id = 'E1'");
-  chk('E1: a win; ROI = 1 / 0.66 - 1; the close is the last price before the start (0.70), not the in-play one', res1.result === 'win' && Math.abs(Number(res1.roi) - (1 / 0.66 - 1)) < 1e-6
-    && Number(res1.close_price) === 0.7 && res1.beat_close === true && Math.abs(Number(res1.clv_pct) - (0.7 / 0.66 - 1)) < 1e-6, res1);
+  chk('E1: a win; ROI = 1 / 0.67 - 1 (at the ask); the close is the last price before the start (0.70), not the in-play one', res1.result === 'win' && Math.abs(Number(res1.roi) - (1 / 0.67 - 1)) < 1e-6
+    && Number(res1.close_price) === 0.7 && res1.beat_close === true && Math.abs(Number(res1.clv_pct) - (0.7 / 0.67 - 1)) < 1e-6, res1);
   chk('E2: void, with no ROI and no close', one("select r.result || ':' || coalesce(r.roi::text, '-') || ':' || r.close_status as x from public.radar_card_results r join public.radar_cards c using (card_id) where c.event_id = 'E2'").x === 'void:-:void');
   chk('grading again changes nothing', JSON.parse(db.service('select public.radar_grade_cards();')).graded === 0 && V('select count(*) from public.radar_card_results') === '2');
   chk('a grade cannot be edited or removed', fails(() => db.service("update public.radar_card_results set result = 'loss';")) && fails(() => db.service('delete from public.radar_card_results;')));
   chk('the record is subscribers only', fn('public.radar_record(10)', db.anon).status === 'subscribers_only' && fn('public.radar_record(10)', asA).status === 'subscribers_only');
   chk('no client reads the record\'s tables directly', fails(() => asSub('select * from public.radar_cards;')) && fails(() => db.anon('select * from public.radar_card_results;')));
   const rec = fn('public.radar_record(10)', asSub);
-  chk('the record: 1 graded (1-0), ROI +51.5%, beat the close 100%, 1 void', rec.status === 'ok' && rec.totals.graded === 1 && rec.totals.wins === 1 && rec.totals.void === 1
-    && Math.abs(Number(rec.totals.roi) - 0.5152) < 1e-4 && Number(rec.totals.beat_close_rate) === 1, rec.totals);
-  chk('labelled EXPERIMENTAL (H-RADAR-01 has not passed) and a small sample (under 200 graded)', rec.label === 'EXPERIMENTAL' && rec.small_sample === true && rec.min_sample === 200);
+  chk('the record: 1 graded (1-0), ROI +49.3% (at the ask), beat the close 100%, 1 void', rec.status === 'ok' && rec.totals.graded === 1 && rec.totals.wins === 1 && rec.totals.void === 1
+    && Math.abs(Number(rec.totals.roi) - 0.4925) < 1e-4 && Number(rec.totals.beat_close_rate) === 1, rec.totals);
+  chk('labelled EXPERIMENTAL and a small sample (under 200 graded); H-RADAR-02\'s record, priced at the best ask', rec.label === 'EXPERIMENTAL' && rec.small_sample === true && rec.min_sample === 200
+    && rec.hypothesis === 'H-RADAR-02' && rec.priced_at === 'best_ask' && rec.earlier_cards === 0, rec);
   chk('it carries what H-RADAR-01 found, verbatim from the registry', rec.h_radar_01 && rec.h_radar_01.hypothesis_id === 'H-RADAR-01' && rec.h_radar_01.status === found.status);
   chk('the cards themselves, newest first', rec.recent.length === 2 && rec.recent[0].home_team === 'Las Vegas Raiders' && rec.recent[0].result === 'win');
 

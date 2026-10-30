@@ -78,14 +78,27 @@ begin;
 create or replace function public.radar_rules()
 returns jsonb language sql immutable as $r$
   select jsonb_build_object(
+    -- H-RADAR-02 (research/radar/registration_h_radar_02.json): rules version 2. H-RADAR-01's rules were version 1
+    'rules_version',           2,
     -- who is graded, and how
     'min_graded',              50,      -- graded bets to be ranked; fewer is a small sample with no rank and no Radar Score
-    'top_wallets',             25,      -- the top-graded wallets: the best ranked Directional wallets by Radar Score
-    'pool_size',               200,     -- the candidate pool: the sports leaderboard's top wallets
-    'pool_period',             'ALL',
-    'pool_order',              'VOL',   -- by volume, not profit: the pool is not chosen on results
+    'top_wallets',             10,      -- featured: at most this many, each with a Radar Score above featured_min_score; fewer when fewer qualify
+    'featured_min_score',      0,
+    'pool_size',               200,     -- the pool: the eligible wallets with the most covered-league dollars in the window
+    'pool_period',             'MONTH', -- candidates: Polymarket's 30-day sports board (it ranks candidates only: it qualifies nobody)
+    'pool_order',              'VOL',
+    'pool_window_days',        90,      -- each candidate's complete last 90 days, read newest first
+    'pool_min_covered_bets',   20,      -- covered pregame bets in the window to be eligible for the pool
+    'discovery_max_rank',      1000,    -- how far down the board discovery reads
     'max_bets_per_wallet',     150,     -- a grade reads a wallet's most recent graded bets
-    'wallet_max_pages',        30,      -- activity pages per wallet; more and its history is truncated (never top-graded)
+    'wallet_max_pages',        30,      -- the processing cap: more activity pages in the window is insufficient history (ungraded)
+    'screen_actions',          1000,    -- the screening flag: this many actions inside screen_days (it proves nothing)
+    'screen_days',             3,
+    'hf_changes_per_day',      100,     -- high-frequency, not followable: above this in every sample, each known
+    'hf_sample_hours',         24,      -- each sample: the 24 hours ending now, 30 and 60 days ago
+    'hf_sample_days_ago',      jsonb_build_array(0, 30, 60),
+    'hf_change_gap_min',       10,      -- fills on one token and side within this of the last are one position change
+    'follow_cost',             0.01,    -- a historical follow pays the midpoint plus this (the price history is the midpoint)
     'follow_lag_min',          5,       -- the follow: the market price this long after the wallet's first buy
     'follow_lag_alt_min',      15,
     'follow_max_gap_min',      10,      -- a follow price is no older than this
@@ -101,11 +114,11 @@ returns jsonb language sql immutable as $r$
     'score_shrink_n',          50,      -- each part shrunk by n / (n + 50)
     'leagues',                 jsonb_build_array('nfl', 'cfb', 'nba', 'nhl', 'mlb'),
     'market_types',            jsonb_build_array('moneyline', 'spreads', 'totals'),
-    -- H-RADAR-01 and the record
+    -- H-RADAR-02 and the record
     'validation_min_followed', 200,
     'ci_level',                0.95,
     'bootstrap_resamples',     2000,
-    'bootstrap_seed',          20261029,
+    'bootstrap_seed',          20261030,
     'follow_slippage_sensitivity', 0.01,
     -- Smart Money Tonight
     'upcoming_hours',          36,      -- games starting within this many hours
@@ -184,10 +197,15 @@ create or replace function public.radar_enabled()
 returns boolean language sql stable security definer set search_path = public, pg_temp as $s$
   select coalesce((select value from public.radar_config where key = 'POLYMARKET_DATA_ENABLED'), 'off') = 'on'
 $s$;
--- REGISTERED BEFORE SHOWN: supabase/radar_registry.sql is the only writer of this link
+-- REGISTERED BEFORE SHOWN: supabase/radar_registry.sql is the only writer of these links. The hypothesis whose
+-- rules are live must be registered: H-RADAR-02 for rules version 2 (H-RADAR-01's stays, and its result stands)
+create or replace function public.radar_hypothesis()
+returns text language sql immutable as $s$
+  select case when coalesce((public.radar_rules() ->> 'rules_version')::int, 1) >= 2 then 'H-RADAR-02' else 'H-RADAR-01' end
+$s$;
 create or replace function public.radar_registered()
 returns boolean language sql stable security definer set search_path = public, pg_temp as $s$
-  select exists (select 1 from public.radar_config where key = 'registry_ref:H-RADAR-01')
+  select exists (select 1 from public.radar_config where key = 'registry_ref:' || public.radar_hypothesis())
 $s$;
 alter table public.radar_config enable row level security;
 revoke all on public.radar_config from anon, authenticated;
@@ -287,6 +305,19 @@ create table if not exists public.poly_wallets (
   updated_at          timestamptz not null default now()
 );
 comment on table public.poly_wallets is 'Prediction Radar: the candidate pool (the sports leaderboard) and each wallet''s name, shown only when the wallet made it public. No bio or profile is stored.';
+-- H-RADAR-02: discovery (the 30-day board ranks candidates; it qualifies nobody) and each candidate's evaluation
+alter table public.poly_wallets add column if not exists board_rank          integer;
+alter table public.poly_wallets add column if not exists board_shares        numeric;     -- the board's volume: shares, not dollars (probe run 40975893030)
+alter table public.poly_wallets add column if not exists board_seen_at       timestamptz;
+alter table public.poly_wallets add column if not exists eval_status         text not null default 'pending'
+  check (eval_status in ('pending', 'evaluating', 'evaluated', 'high_frequency', 'insufficient_history'));
+alter table public.poly_wallets add column if not exists window_covered_usd  numeric;     -- dollars on covered-league game markets in the window
+alter table public.poly_wallets add column if not exists window_covered_bets integer;     -- covered pregame bets in the window
+alter table public.poly_wallets add column if not exists screen_flag         boolean not null default false;
+alter table public.poly_wallets add column if not exists hf                  jsonb;       -- the three samples, each known or unknown, and the verdict
+alter table public.poly_wallets add column if not exists high_frequency      boolean not null default false;
+alter table public.poly_wallets add column if not exists evaluated_at        timestamptz;
+create index if not exists poly_wallets_board_idx on public.poly_wallets (board_rank) where board_rank is not null;
 alter table public.poly_wallets enable row level security;
 revoke all on public.poly_wallets from anon, authenticated;
 
@@ -325,6 +356,9 @@ create table if not exists public.poly_markets (
   check ((match_status = 'mapped') = (event_id is not null)),
   check (event_id is null or (sides is not null and jsonb_array_length(sides) = 2))
 );
+-- H-RADAR-02: what a market charges a taker, as it says itself (Gamma feesEnabled, feeSchedule); null: never read
+alter table public.poly_markets add column if not exists fees_enabled boolean;
+alter table public.poly_markets add column if not exists fee_schedule jsonb;
 create index if not exists poly_markets_event_idx on public.poly_markets (event_id) where event_id is not null;
 create index if not exists poly_markets_start_idx on public.poly_markets (game_start_at);
 -- a mapping is written once and never moved; a resolution is final
@@ -423,7 +457,9 @@ create table if not exists public.poly_bets (
   grading_version text not null,
   run_id          uuid,
   graded_at       timestamptz not null default now(),
-  primary key (wallet, token_id),
+  follow5_mid     numeric check (follow5_mid is null or (follow5_mid > 0 and follow5_mid < 1)),    -- version 2: the midpoint the follow paid follow_cost over
+  follow15_mid    numeric check (follow15_mid is null or (follow15_mid > 0 and follow15_mid < 1)),
+  primary key (wallet, token_id, grading_version),
   check (entry_at < game_start_at),
   check (result = case settle when 1 then 'win' when 0 then 'loss' else 'push' end),
   check (abs(profit - (sell_proceeds + settle * shares_held - buy_cost)) < 1e-4),
@@ -433,7 +469,19 @@ create table if not exists public.poly_bets (
   check (beat_close5 is null or beat_close5 = (close_price > follow5_price)),
   check (entry_tx = any (txs))
 );
+alter table public.poly_bets add column if not exists follow5_mid numeric check (follow5_mid is null or (follow5_mid > 0 and follow5_mid < 1));
+alter table public.poly_bets add column if not exists follow15_mid numeric check (follow15_mid is null or (follow15_mid > 0 and follow15_mid < 1));
+-- one grade of a bet per grading version: version 2 rows sit beside version 1's, which are never edited
+do $pk$ begin
+  if (select array_agg(a.attname::text order by k.ord) from pg_constraint c cross join lateral unnest(c.conkey) with ordinality k(attnum, ord)
+        join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum
+       where c.conrelid = 'public.poly_bets'::regclass and c.contype = 'p') is distinct from array['wallet', 'token_id', 'grading_version'] then
+    execute 'alter table public.poly_bets drop constraint if exists poly_bets_pkey';
+    execute 'alter table public.poly_bets add constraint poly_bets_pkey primary key (wallet, token_id, grading_version)';
+  end if;
+end $pk$;
 create index if not exists poly_bets_wallet_idx on public.poly_bets (wallet, entry_at desc);
+create index if not exists poly_bets_version_idx on public.poly_bets (wallet, grading_version, entry_at desc);
 -- a bet is graded only on a resolved market, at its own outcome's settlement
 create or replace function public.poly_bets_guard()
 returns trigger language plpgsql as $g$
@@ -456,6 +504,15 @@ begin
   if new.close_at is not null and (new.close_at > new.game_start_at or new.close_at < new.game_start_at - make_interval(mins => public.radar_rule('close_max_gap_min')::int)) then
     raise exception 'poly_bets: a close must be the last price at or before the start, at most % minutes before it', public.radar_rule('close_max_gap_min');
   end if;
+  -- version 2: a follow pays the midpoint plus follow_cost, never less
+  if new.grading_version = 'radar-grade-2' then
+    if new.follow5_price is not null and (new.follow5_mid is null or abs(new.follow5_price - (new.follow5_mid + public.radar_rule('follow_cost'))) > 1e-6) then
+      raise exception 'poly_bets: a version-2 follow price is the midpoint plus % (follow_cost)', public.radar_rule('follow_cost');
+    end if;
+    if new.follow15_price is not null and (new.follow15_mid is null or abs(new.follow15_price - (new.follow15_mid + public.radar_rule('follow_cost'))) > 1e-6) then
+      raise exception 'poly_bets: a version-2 follow price is the midpoint plus % (follow_cost)', public.radar_rule('follow_cost');
+    end if;
+  end if;
   return new;
 end $g$;
 drop trigger if exists poly_bets_guard on public.poly_bets;
@@ -473,8 +530,10 @@ create table if not exists public.poly_grade_runs (
   wallets          integer not null,
   ranked           integer not null,
   top_directional  integer not null,
-  note             text
+  note             text,
+  discovery        jsonb    -- H-RADAR-02: how many wallets were screened, flagged, marked high-frequency, left ungraded, fully evaluated
 );
+alter table public.poly_grade_runs add column if not exists discovery jsonb;
 create table if not exists public.poly_wallet_grades (
   run_id            uuid not null references public.poly_grade_runs (run_id),
   wallet            text not null check (wallet ~ '^0x[0-9a-f]{40}$'),
@@ -504,6 +563,7 @@ create table if not exists public.poly_wallet_grades (
   history_truncated boolean not null default false,
   first_bet_at      timestamptz,
   last_bet_at       timestamptz,
+  high_frequency    boolean not null default false,   -- H-RADAR-02 (last, as an added column lands on a live table)
   primary key (run_id, wallet),
   check (wins + losses + pushes = graded_bets),
   check ((sample = 'ranked') = (radar_score is not null)),
@@ -512,6 +572,7 @@ create table if not exists public.poly_wallet_grades (
   check (not top_directional or (style = 'Directional' and sample = 'ranked' and not history_truncated)),
   check (roi is null or staked = 0 or abs(roi - profit / staked) < 1e-4)
 );
+alter table public.poly_wallet_grades add column if not exists high_frequency boolean not null default false;
 create index if not exists poly_wallet_grades_rank_idx on public.poly_wallet_grades (run_id, rank);
 -- the sample rule is the rules' own, not the writer's
 create or replace function public.poly_wallet_grades_guard()
@@ -520,6 +581,11 @@ begin
   if (new.graded_bets >= public.radar_rule('min_graded')) <> (new.sample = 'ranked') then
     raise exception 'poly_wallet_grades: % graded bets is % under radar_rules() (min_graded %)', new.graded_bets,
       case when new.graded_bets >= public.radar_rule('min_graded') then 'ranked' else 'a small sample' end, public.radar_rule('min_graded');
+  end if;
+  -- featured (version 2): never a high-frequency wallet, and only with a Radar Score above featured_min_score
+  if new.top_directional and new.high_frequency then raise exception 'poly_wallet_grades: a high-frequency wallet is never featured'; end if;
+  if new.top_directional and coalesce(public.radar_rule('rules_version'), 1) >= 2 and not (new.radar_score > public.radar_rule('featured_min_score')) then
+    raise exception 'poly_wallet_grades: featured needs a Radar Score above % (featured_min_score), not %', public.radar_rule('featured_min_score'), new.radar_score;
   end if;
   return new;
 end $g$;
@@ -546,16 +612,18 @@ begin
       from jsonb_array_elements(p_grades) g where (g ->> 'sample') = 'ranked') x
    where rk is distinct from want;
   if bad is not null then raise exception 'radar_put_grades: ranks must run 1..n by Radar Score: %', bad; end if;
-  insert into public.poly_grade_runs (run_id, started_at, grading_version, rules, wallets, ranked, top_directional, note)
-  values (rid, coalesce((p_run ->> 'started_at')::timestamptz, now()), coalesce(p_run ->> 'grading_version', 'unknown'), p_run -> 'rules', n, nr, nt, p_run ->> 'note');
-  insert into public.poly_wallet_grades
+  insert into public.poly_grade_runs (run_id, started_at, grading_version, rules, wallets, ranked, top_directional, note, discovery)
+  values (rid, coalesce((p_run ->> 'started_at')::timestamptz, now()), coalesce(p_run ->> 'grading_version', 'unknown'), p_run -> 'rules', n, nr, nt, p_run ->> 'note', p_run -> 'discovery');
+  insert into public.poly_wallet_grades (run_id, wallet, graded_bets, wins, losses, pushes, staked, profit, roi, clv_n, clv_pp, clv_pct, follow5_n, follow5_roi,
+         follow15_n, follow15_roi, beat_close5_rate, median_stake, style, style_detail, sample, radar_score, score_parts, rank, top_directional,
+         history_truncated, high_frequency, first_bet_at, last_bet_at)
   select rid, x.wallet, x.graded_bets, x.wins, x.losses, x.pushes, x.staked, x.profit, x.roi, x.clv_n, x.clv_pp, x.clv_pct, x.follow5_n, x.follow5_roi,
          x.follow15_n, x.follow15_roi, x.beat_close5_rate, x.median_stake, x.style, x.style_detail, x.sample, x.radar_score, x.score_parts, x.rank,
-         coalesce(x.top_directional, false), coalesce(x.history_truncated, false), x.first_bet_at, x.last_bet_at
+         coalesce(x.top_directional, false), coalesce(x.history_truncated, false), coalesce(x.high_frequency, false), x.first_bet_at, x.last_bet_at
     from jsonb_to_recordset(p_grades) as x(wallet text, graded_bets int, wins int, losses int, pushes int, staked numeric, profit numeric, roi numeric,
          clv_n int, clv_pp numeric, clv_pct numeric, follow5_n int, follow5_roi numeric, follow15_n int, follow15_roi numeric, beat_close5_rate numeric,
          median_stake numeric, style text, style_detail jsonb, sample text, radar_score numeric, score_parts jsonb, rank int, top_directional boolean,
-         history_truncated boolean, first_bet_at timestamptz, last_bet_at timestamptz);
+         history_truncated boolean, high_frequency boolean, first_bet_at timestamptz, last_bet_at timestamptz);
   return jsonb_build_object('run_id', rid, 'wallets', n, 'ranked', nr, 'top_directional', nt);
 end $f$;
 -- the market-maker rule's inputs, one row per covered market a wallet traded
@@ -576,6 +644,11 @@ returns setof jsonb language sql stable security definer set search_path = publi
    order by t.condition_id
 $f$;
 -- the latest grading run: what every reader is shown
+-- the grading version of the live rules: a grade and a trader page read only that version's bets
+create or replace function public.radar_grading_version()
+returns text language sql immutable as $s$
+  select case when coalesce((public.radar_rules() ->> 'rules_version')::int, 1) >= 2 then 'radar-grade-2' else 'radar-grade-1' end
+$s$;
 create or replace function public.radar_current_run()
 returns uuid language sql stable security definer set search_path = public, pg_temp as $s$
   select run_id from public.poly_grade_runs order by finished_at desc, run_id limit 1
@@ -697,7 +770,7 @@ begin
              public.radar_display(g.wallet, w.display_name, w.display_public) as display,
              g.style, g.sample, g.graded_bets, g.wins, g.losses, g.pushes, round(g.roi, 4) as roi, round(g.clv_pp, 2) as clv_pp,
              round(g.clv_pct, 4) as clv_pct, g.follow5_n, round(g.follow5_roi, 4) as follow5_roi, g.follow15_n, round(g.follow15_roi, 4) as follow15_roi,
-             round(g.beat_close5_rate, 4) as beat_close5_rate, g.radar_score, g.score_parts, g.top_directional, g.history_truncated
+             round(g.beat_close5_rate, 4) as beat_close5_rate, g.radar_score, g.score_parts, g.top_directional, g.history_truncated, g.high_frequency
         from public.poly_wallet_grades g left join public.poly_wallets w on w.wallet = g.wallet
        where g.run_id = rid
        order by case when g.sample = 'ranked' then 0 else 1 end, g.rank nulls last, g.graded_bets desc, g.wallet
@@ -728,7 +801,7 @@ begin
         'game_start_at', b.game_start_at, 'entry_at', b.entry_at, 'entry_price', b.entry_price, 'stake', round(b.stake, 2), 'result', b.result,
         'profit', round(b.profit, 2), 'close_price', b.close_price, 'clv_pp', b.clv_pp, 'follow5_price', b.follow5_price, 'follow5_roi', round(b.follow5_roi, 4),
         'follow15_roi', round(b.follow15_roi, 4), 'entry_tx', b.entry_tx, 'txs', to_jsonb(b.txs)) order by b.entry_at desc)
-      from (select * from public.poly_bets where wallet = w order by entry_at desc limit 500) b), '[]'::jsonb),
+      from (select * from public.poly_bets where wallet = w and grading_version = public.radar_grading_version() order by entry_at desc limit 500) b), '[]'::jsonb),
     'positions', case when not sub then null else coalesce((
       select jsonb_agg(jsonb_build_object('condition_id', h.condition_id, 'question', m.question, 'outcome', m.outcomes ->> h.outcome_index,
                'event_id', m.event_id, 'game_start_at', m.game_start_at, 'shares', h.shares, 'avg_price', h.avg_price, 'cost', round(h.cost, 2),
@@ -805,6 +878,51 @@ begin
    order by r.n_wallets desc, r.dollars desc nulls last, r.event_id;
 end $f$;
 
+-- OBSERVED ACTIVITY (H-RADAR-02), apart from the featured cards: what the other fully evaluated pool wallets
+-- graded this run hold on tonight's games, side by side, counted and summed. Observed, never a signal: no
+-- wallet is named and no side is called smart. A high-frequency wallet or a market maker is never in it: their
+-- positions are inventory, not a view, and would not be represented accurately. Internal: the door calls it.
+create or replace function public.radar_observed_cards()
+returns setof jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
+declare rid uuid := public.radar_current_run(); fresh interval := make_interval(mins => public.radar_rule('holders_fresh_min')::int);
+        horizon interval := make_interval(hours => public.radar_rule('upcoming_hours')::int);
+begin
+  if rid is null then return; end if;
+  return query
+  with tracked as (
+    select g.wallet from public.poly_wallet_grades g where g.run_id = rid and not g.top_directional and not g.high_frequency and g.style <> 'Market Maker'
+  ), mk as (
+    select m.* from public.poly_markets m
+     where m.event_id is not null and m.game_start_at > now() and m.game_start_at <= now() + horizon
+  ), snap as (
+    select distinct on (h.condition_id) h.condition_id, h.run_id, h.captured_at as at
+      from public.poly_holder_snapshots h join mk on mk.condition_id = h.condition_id
+     where h.captured_at > now() - fresh
+     order by h.condition_id, h.captured_at desc, h.run_id
+  ), held as (
+    select h.condition_id, h.outcome_index, coalesce(h.cost, h.shares * h.avg_price) as cost, s.at
+      from public.poly_holder_snapshots h join snap s on s.condition_id = h.condition_id and s.run_id = h.run_id
+      join tracked t on t.wallet = h.wallet
+  ), sides as (
+    select condition_id, outcome_index, count(*)::int as n_wallets, sum(cost) as dollars, max(at) as at from held group by condition_id, outcome_index
+  ), markets as (
+    select m.event_id, m.condition_id, m.market_type, m.question, m.game_start_at, sum(s.n_wallets)::int as n_wallets, max(s.at) as at,
+           jsonb_agg(jsonb_build_object('outcome', m.outcomes ->> s.outcome_index, 'selection', m.sides -> s.outcome_index ->> 'selection',
+             'point', (m.sides -> s.outcome_index ->> 'point')::numeric, 'n_wallets', s.n_wallets, 'dollars', round(s.dollars, 2))
+             order by s.n_wallets desc, s.dollars desc nulls last, s.outcome_index) as sides,
+           row_number() over (partition by m.event_id order by sum(s.n_wallets) desc, m.condition_id) as pos
+      from sides s join mk m on m.condition_id = s.condition_id
+     group by m.event_id, m.condition_id, m.market_type, m.question, m.game_start_at
+  )
+  select jsonb_build_object('kind', 'observed', 'event_id', x.event_id, 'condition_id', x.condition_id, 'market_type', x.market_type, 'question', x.question,
+      'home_team', ev.home_team, 'away_team', ev.away_team, 'commence_time', coalesce(ev.commence_time, x.game_start_at),
+      'n_wallets', x.n_wallets, 'sides', x.sides, 'holders_at', x.at)
+    from markets x
+    left join lateral (select s.home_team, s.away_team, s.commence_time from public.signals s where s.event_id = x.event_id order by s.commence_time desc nulls last limit 1) ev on true
+   where x.pos = 1
+   order by x.n_wallets desc, x.event_id;
+end $f$;
+
 -- the door: subscribers only, once on and registered
 create or replace function public.radar_tonight()
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
@@ -812,10 +930,14 @@ begin
   if not public.radar_enabled() then return jsonb_build_object('status', 'disabled', 'cards', '[]'::jsonb); end if;
   if not public.radar_registered() then return jsonb_build_object('status', 'not_registered', 'cards', '[]'::jsonb); end if;
   if not public.radar_is_subscriber() then return jsonb_build_object('status', 'subscribers_only', 'cards', '[]'::jsonb); end if;
-  return jsonb_build_object('status', 'ok', 'as_of', now(), 'radar_score_status', 'EXPERIMENTAL',
+  return jsonb_build_object('status', 'ok', 'as_of', now(), 'radar_score_status', 'EXPERIMENTAL', 'hypothesis', public.radar_hypothesis(),
     'top_wallets', public.radar_rule('top_wallets'), 'conviction_high_x', public.radar_rule('conviction_high_x'),
     'graded_at', (select finished_at from public.poly_grade_runs where run_id = public.radar_current_run()),
-    'cards', coalesce((select jsonb_agg(c) from public.radar_tonight_cards() c), '[]'::jsonb));
+    -- how many wallets are featured this run (at most top_wallets; fewer when fewer qualify), and how discovery went
+    'featured', (select count(*) from public.poly_wallet_grades where run_id = public.radar_current_run() and top_directional),
+    'discovery', (select discovery from public.poly_grade_runs where run_id = public.radar_current_run()),
+    'cards', coalesce((select jsonb_agg(c) from public.radar_tonight_cards() c), '[]'::jsonb),
+    'observed', coalesce((select jsonb_agg(o) from (select o from public.radar_observed_cards() o limit 40) x), '[]'::jsonb));
 end $f$;
 
 -- THE TEASER, for anyone (the public /radar/ page): the first card's game, how
@@ -837,13 +959,13 @@ do $g$ begin
   -- internal: no client may call these
   execute 'revoke all on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
        || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.radar_current_run(), public.radar_config_audit(), '
-       || 'public.radar_style_stats(text, timestamptz) from public, anon, authenticated';
+       || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis() from public, anon, authenticated';
   execute 'revoke all on function public.radar_status(), public.radar_leaderboard(integer), public.radar_trader(text), public.radar_tonight(), public.radar_teaser() from public';
   execute 'revoke all on function public.radar_enabled(), public.radar_registered() from public, anon, authenticated';
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
          || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.radar_current_run(), public.radar_enabled(), public.radar_registered(), '
-         || 'public.radar_style_stats(text, timestamptz) to service_role';
+         || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis() to service_role';
     execute 'grant select, insert, update on public.poly_wallets, public.poly_markets, public.poly_api_days to service_role';
   end if;
 end $g$;
@@ -857,7 +979,7 @@ grant execute on function public.radar_teaser() to anon, authenticated;
 grant execute on function public.radar_enabled() to anon, authenticated;
 grant execute on function public.radar_registered() to anon, authenticated;
 
-comment on table public.poly_wallet_grades is 'Prediction Radar: every pool wallet''s grade, one row per grading run (versioned). Readable by anyone once Radar is on and H-RADAR-01 registered. The Radar Score is EXPERIMENTAL. Append-only.';
+comment on table public.poly_wallet_grades is 'Prediction Radar: every pool wallet''s grade, one row per grading run (versioned). Readable by anyone once Radar is on and its live hypothesis (radar_hypothesis()) registered. The Radar Score is EXPERIMENTAL. Append-only.';
 
 notify pgrst, 'reload schema';
 commit;

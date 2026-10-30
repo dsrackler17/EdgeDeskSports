@@ -69,6 +69,21 @@ create table if not exists public.radar_cards (
   check (commence_time > published_at),
   check (follow_price_at <= published_at)
 );
+-- H-RADAR-02 (rules version 2): a card is published at the order book's best ask, the price a subscriber can really
+-- take, with the depth at it, the midpoint and the market's fee schedule at that moment (follow_price is the ask)
+alter table public.radar_cards add column if not exists rules_version integer not null default 1;
+alter table public.radar_cards add column if not exists ask_price     numeric check (ask_price is null or (ask_price > 0 and ask_price < 1));
+alter table public.radar_cards add column if not exists ask_size      numeric check (ask_size is null or ask_size >= 0);
+alter table public.radar_cards add column if not exists bid_price     numeric check (bid_price is null or (bid_price > 0 and bid_price < 1));
+alter table public.radar_cards add column if not exists mid_price     numeric check (mid_price is null or (mid_price > 0 and mid_price < 1));
+alter table public.radar_cards add column if not exists quoted_at     timestamptz;
+alter table public.radar_cards add column if not exists fee_schedule  jsonb;
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'radar_cards_v2_at_the_ask') then
+    alter table public.radar_cards add constraint radar_cards_v2_at_the_ask
+      check (rules_version < 2 or (ask_price is not null and follow_price = ask_price and quoted_at is not null and quoted_at <= published_at));
+  end if;
+end $c$;
 -- one record entry per game and side: the first time it was published
 create unique index if not exists radar_cards_once_idx on public.radar_cards (event_id, token_id);
 create index if not exists radar_cards_start_idx on public.radar_cards (commence_time);
@@ -116,20 +131,45 @@ comment on table public.radar_cards is 'Prediction Radar: every Smart Money Toni
 comment on table public.radar_card_results is 'Prediction Radar: each card graded once against the close and the result. Append-only.';
 
 -- ---------------------------------------------------------------- publishing: the cards subscribers saw
-create or replace function public.radar_publish_cards()
+-- Version 1 (H-RADAR-01): at the recorded price. Version 2 (H-RADAR-02): only with a quote from the order book for the
+-- card's token (p_quotes, from polymarket_sync), at its best ask, and only when the market's fee is known to be none
+-- (fees not enabled, or a schedule rate of 0): a card whose fee is unknown is not published, never guessed.
+drop function if exists public.radar_publish_cards();
+create or replace function public.radar_publish_cards(p_quotes jsonb default null)
 returns integer language plpgsql security definer set search_path = public, pg_temp as $f$
-declare n integer := 0;
+declare n integer := 0; v int := coalesce(public.radar_rule('rules_version'), 1)::int;
 begin
   if not public.radar_enabled() or not public.radar_registered() then return 0; end if;
-  insert into public.radar_cards (event_id, sport_key, condition_id, token_id, market_type, selection, outcome, point, home_team, away_team, commence_time,
-                                  n_wallets, dollars, avg_entry, follow_price, follow_price_at, fair, fair_current, agrees, wallets, grade_run_id)
-  select c ->> 'event_id', c ->> 'sport_key', c ->> 'condition_id', c ->> 'token_id', c ->> 'market_type', c ->> 'selection', c ->> 'outcome', (c ->> 'point')::numeric,
-         c ->> 'home_team', c ->> 'away_team', (c ->> 'commence_time')::timestamptz, (c ->> 'n_wallets')::int, (c ->> 'dollars')::numeric, (c ->> 'avg_entry')::numeric,
-         (c ->> 'current_price')::numeric, (c ->> 'price_at')::timestamptz, (c ->> 'fair')::numeric, (c ->> 'fair_current')::boolean, (c ->> 'agrees')::boolean,
-         coalesce(c -> 'wallets', '[]'::jsonb), public.radar_current_run()
-    from public.radar_tonight_cards() c
-   where (c ->> 'current_price')::numeric > 0 and (c ->> 'current_price')::numeric < 1 and (c ->> 'commence_time')::timestamptz > now()
-  on conflict (event_id, token_id) do nothing;
+  if v < 2 then
+    insert into public.radar_cards (event_id, sport_key, condition_id, token_id, market_type, selection, outcome, point, home_team, away_team, commence_time,
+                                    n_wallets, dollars, avg_entry, follow_price, follow_price_at, fair, fair_current, agrees, wallets, grade_run_id, rules_version)
+    select c ->> 'event_id', c ->> 'sport_key', c ->> 'condition_id', c ->> 'token_id', c ->> 'market_type', c ->> 'selection', c ->> 'outcome', (c ->> 'point')::numeric,
+           c ->> 'home_team', c ->> 'away_team', (c ->> 'commence_time')::timestamptz, (c ->> 'n_wallets')::int, (c ->> 'dollars')::numeric, (c ->> 'avg_entry')::numeric,
+           (c ->> 'current_price')::numeric, (c ->> 'price_at')::timestamptz, (c ->> 'fair')::numeric, (c ->> 'fair_current')::boolean, (c ->> 'agrees')::boolean,
+           coalesce(c -> 'wallets', '[]'::jsonb), public.radar_current_run(), 1
+      from public.radar_tonight_cards() c
+     where (c ->> 'current_price')::numeric > 0 and (c ->> 'current_price')::numeric < 1 and (c ->> 'commence_time')::timestamptz > now()
+    on conflict (event_id, token_id) do nothing;
+  else
+    insert into public.radar_cards (event_id, sport_key, condition_id, token_id, market_type, selection, outcome, point, home_team, away_team, commence_time,
+                                    n_wallets, dollars, avg_entry, follow_price, follow_price_at, fair, fair_current, agrees, wallets, grade_run_id,
+                                    rules_version, ask_price, ask_size, bid_price, mid_price, quoted_at, fee_schedule)
+    select c ->> 'event_id', c ->> 'sport_key', c ->> 'condition_id', c ->> 'token_id', c ->> 'market_type', c ->> 'selection', c ->> 'outcome', (c ->> 'point')::numeric,
+           c ->> 'home_team', c ->> 'away_team', (c ->> 'commence_time')::timestamptz, (c ->> 'n_wallets')::int, (c ->> 'dollars')::numeric, (c ->> 'avg_entry')::numeric,
+           (q ->> 'best_ask')::numeric, (q ->> 'quoted_at')::timestamptz, (c ->> 'fair')::numeric, (c ->> 'fair_current')::boolean, (c ->> 'agrees')::boolean,
+           coalesce(c -> 'wallets', '[]'::jsonb), public.radar_current_run(),
+           v, (q ->> 'best_ask')::numeric, (q ->> 'ask_size')::numeric, (q ->> 'best_bid')::numeric,
+           case when (q ->> 'best_bid') is not null then ((q ->> 'best_bid')::numeric + (q ->> 'best_ask')::numeric) / 2 end,
+           (q ->> 'quoted_at')::timestamptz, m.fee_schedule
+      from public.radar_tonight_cards() c
+      join lateral (select x from jsonb_array_elements(coalesce(p_quotes, '[]'::jsonb)) x where x ->> 'token_id' = c ->> 'token_id' limit 1) qq(q) on true
+      join public.poly_markets m on m.condition_id = c ->> 'condition_id'
+     where (q ->> 'best_ask')::numeric > 0 and (q ->> 'best_ask')::numeric < 1 and (q ->> 'quoted_at')::timestamptz <= now()
+       and (q ->> 'quoted_at')::timestamptz > now() - make_interval(mins => public.radar_rule('holders_fresh_min')::int)
+       and (c ->> 'commence_time')::timestamptz > now()
+       and (m.fees_enabled = false or (m.fees_enabled and (m.fee_schedule ->> 'rate')::numeric = 0))
+    on conflict (event_id, token_id) do nothing;
+  end if;
   get diagnostics n = row_count;
   return n;
 end $f$;
@@ -176,14 +216,15 @@ end $f$;
 -- ---------------------------------------------------------------- the record, for subscribers
 create or replace function public.radar_record(p_limit integer default 50)
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
-declare h jsonb; t jsonb; minn numeric := public.radar_rule('validation_min_followed');
+declare h jsonb; t jsonb; minn numeric := public.radar_rule('validation_min_followed'); v int := coalesce(public.radar_rule('rules_version'), 1)::int;
 begin
   if not public.radar_enabled() then return jsonb_build_object('status', 'disabled'); end if;
   if not public.radar_registered() then return jsonb_build_object('status', 'not_registered'); end if;
   if not public.radar_is_subscriber() then return jsonb_build_object('status', 'subscribers_only'); end if;
   h := (select value::jsonb from public.radar_config where key = 'h_radar_01_result');
+  -- the record counts the live rules' cards (H-RADAR-02's, at the ask); the earlier rules' cards are counted apart
   select jsonb_build_object(
-      'cards', (select count(*) from public.radar_cards),
+      'cards', (select count(*) from public.radar_cards where rules_version = v),
       'graded', count(*) filter (where x.result <> 'void'),
       'wins', count(*) filter (where x.result = 'win'), 'losses', count(*) filter (where x.result = 'loss'), 'pushes', count(*) filter (where x.result = 'push'),
       'void', count(*) filter (where x.result = 'void'),
@@ -192,26 +233,27 @@ begin
       'beat_close_rate', round(avg(case when x.beat_close then 1.0 else 0.0 end) filter (where x.close_status = 'graded'), 4),
       'with_close', count(*) filter (where x.close_status = 'graded'),
       'no_close', count(*) filter (where x.close_status = 'no_close'),
-      'pending', (select count(*) from public.radar_cards c where not exists (select 1 from public.radar_card_results r where r.card_id = c.card_id)))
+      'pending', (select count(*) from public.radar_cards c where c.rules_version = v and not exists (select 1 from public.radar_card_results r where r.card_id = c.card_id)))
     into t
-    from public.radar_card_results x;
+    from public.radar_card_results x join public.radar_cards cc on cc.card_id = x.card_id and cc.rules_version = v;
   return jsonb_build_object('status', 'ok', 'as_of', now(),
     -- EXPERIMENTAL until H-RADAR-01 has passed its registered criteria; a small sample until 200 graded cards
-    'label', case when coalesce((h ->> 'passed')::boolean, false) then 'H-RADAR-01 PASSED' else 'EXPERIMENTAL' end,
+    'label', 'EXPERIMENTAL', 'hypothesis', public.radar_hypothesis(), 'rules_version', v, 'priced_at', case when v >= 2 then 'best_ask' else 'recorded_price' end,
     'small_sample', coalesce((t ->> 'graded')::int, 0) < minn, 'min_sample', minn,
     'totals', t, 'h_radar_01', h,
+    'earlier_cards', (select count(*) from public.radar_cards where rules_version <> v),
     'recent', coalesce((select jsonb_agg(jsonb_build_object('card_id', c.card_id, 'published_at', c.published_at, 'commence_time', c.commence_time, 'home_team', c.home_team,
         'away_team', c.away_team, 'market_type', c.market_type, 'outcome', c.outcome, 'selection', c.selection, 'point', c.point, 'n_wallets', c.n_wallets,
-        'follow_price', c.follow_price, 'close_price', x.close_price, 'beat_close', x.beat_close, 'result', x.result, 'roi', round(x.roi, 4)) order by c.commence_time desc, c.card_id desc)
-      from (select * from public.radar_cards order by commence_time desc, card_id desc limit greatest(1, least(coalesce(p_limit, 50), 200))) c
+        'follow_price', c.follow_price, 'ask_size', c.ask_size, 'mid_price', c.mid_price, 'close_price', x.close_price, 'beat_close', x.beat_close, 'result', x.result, 'roi', round(x.roi, 4)) order by c.commence_time desc, c.card_id desc)
+      from (select * from public.radar_cards where rules_version = v order by commence_time desc, card_id desc limit greatest(1, least(coalesce(p_limit, 50), 200))) c
       left join public.radar_card_results x on x.card_id = c.card_id), '[]'::jsonb));
 end $f$;
 
 do $g$ begin
-  execute 'revoke all on function public.radar_publish_cards(), public.radar_grade_cards() from public, anon, authenticated';
+  execute 'revoke all on function public.radar_publish_cards(jsonb), public.radar_grade_cards() from public, anon, authenticated';
   execute 'revoke all on function public.radar_record(integer) from public';
   if exists (select 1 from pg_roles where rolname = 'service_role') then
-    execute 'grant execute on function public.radar_publish_cards(), public.radar_grade_cards(), public.radar_record(integer) to service_role';
+    execute 'grant execute on function public.radar_publish_cards(jsonb), public.radar_grade_cards(), public.radar_record(integer) to service_role';
   end if;
 end $g$;
 -- the door (subscribers only; the database decides)
