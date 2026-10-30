@@ -58,6 +58,7 @@ const POOL = [1, 2, 3, 4, 5, 6].map(w);
 const [W1, W2, W3, W4, W5, W6] = POOL;
 const OUTSIDER = w(99);
 const W7 = w(7);   /* joins the pool late, for the time-budget checks */
+const W8 = w(8);   /* joins the pool late, for the queue checks: its history comes 6 rows a page */
 /* 60 past NFL games, each a moneyline resolved for its first outcome when g is even */
 const PAST = [];
 for (let g = 0; g < 60; g++) {
@@ -75,7 +76,7 @@ function activityFor(user) {
   const tr = (m, oi, side, size, price, at, k) => rows.push({ proxy_wallet: user, type: 'TRADE', side, size: String(size), price: String(price), usdc_size: String(size * price),
     timestamp: Math.floor(at / 1000), transaction_hash: txh(user + m.c + oi + side + k), condition_id: m.c, asset: m.tokens[oi], outcome_index: oi,
     outcome: oi ? 'Raiders' : 'Chiefs', title: 'Chiefs vs. Raiders', slug: m.slug, event_slug: m.slug });
-  if ([W1, W2, W3, W7].includes(user)) PAST.forEach((m, g) => tr(m, 0, 'BUY', 100 + (user === W1 ? 10 * g : 0), 0.5, m.start - 2 * H, 'a'));
+  if ([W1, W2, W3, W7, W8].includes(user)) PAST.forEach((m, g) => tr(m, 0, 'BUY', 100 + (user === W1 ? 10 * g : 0), 0.5, m.start - 2 * H, 'a'));
   if (user === W5) PAST.forEach((m) => { for (let k = 0; k < 4; k++) { tr(m, 0, 'BUY', 100, 0.5, m.start - (3 - k * 0.1) * H, 'm' + k); tr(m, 1, 'BUY', 95, 0.5, m.start - (3 - k * 0.1) * H, 'n' + k); } });
   if (user === W6) PAST.slice(0, 10).forEach((m) => tr(m, 1, 'BUY', 50, 0.5, m.start - H, 'b'));
   if (user === W1) rows.push({ proxy_wallet: user, type: 'TRADE', side: 'BUY', size: '10', price: '0.4', timestamp: Math.floor((EPL.start - H) / 1000), transaction_hash: txh('epl'),
@@ -121,6 +122,10 @@ function polymarket(url) {
     /* what the wallet's row says while its run reads it (the attempt mark must be written before the work) */
     if (scenario.watchAttempt === user) scenario.seenAttempt = db.sql(`select coalesce(activity_cursor ->> 'attempts', '-') from public.poly_wallets where wallet = ${lit(user)}`);
     if (user === W4) return ok({ data: [], pagination: { has_more: true, next_cursor: 'c' + Math.random() } });
+    if (user === W8) {
+      const all = activityFor(user).filter((r) => r.timestamp >= +q('start')), off = +(q('cursor') || 0);
+      return ok({ data: all.slice(off, off + 6), pagination: { has_more: off + 6 < all.length, next_cursor: String(off + 6) } });
+    }
     let rows = activityFor(user).filter((r) => r.timestamp >= +q('start'));
     if (scenario.drift && user === W1) rows = rows.concat([{ type: 'TRADE', side: 'BUY', size: '1', price: '0.5', timestamp: Math.floor(NOW / 1000), condition_id: PAST[0].c, asset: PAST[0].tokens[0] }]);
     return ok({ data: rows, pagination: { has_more: false, next_cursor: null } });
@@ -384,6 +389,39 @@ let rest;
     crash(W5, '25 hours', 3);
     const k4 = await go('wallets');
     chk('crash: …and is read again a day later', (k4.details.wallets || []).some((x) => x.wallet === W5), k4.details);
+
+    /* ── the queue (production, 2026-10-29: after 2 h 45 m of wallet calls 6 of the pool's 200 were read and 1 was
+       top-graded; the pool's top wallets by volume held the queue while every bet of their histories was graded) ── */
+    /* the grade reads a wallet's newest max_bets_per_wallet bets: shown with it at 20, against W8's 63 */
+    const rules20 = Object.assign(JSON.parse(V('select public.radar_rules()')), { max_bets_per_wallet: 20 });
+    V(`create or replace function public.radar_rules() returns jsonb language sql immutable as $r$ select ${lit(JSON.stringify(rules20))}::jsonb $r$;`);
+    scenario.leaderboard = POOL.concat([W8]);
+    await go('pool');
+    V(`update public.poly_wallets set activity_synced_at = now() where wallet <> ${lit(W8)}`);
+    const q1 = await go('wallets'), q1w = (q1.details.wallets || []).find((x) => x.wallet === W8) || {};
+    chk('queue: a read stopped short of the present (10 pages a run, more to come) grades nothing yet, and keeps the wallet due',
+      q1w.pages === 10 && q1w.status === 'partial' && V(`select count(*) from public.poly_bets where wallet = ${lit(W8)}`) === '0', { q1w, bets: V(`select count(*) from public.poly_bets where wallet = ${lit(W8)}`) });
+    scenario.costMs = 4000;   /* two price reads a bet, 8 s: about 9 bets a run */
+    const q8 = [];
+    for (let i = 0; i < 12 && V(`select activity_synced_at is null from public.poly_wallets where wallet = ${lit(W8)}`) === 't'; i++) {
+      const r = await go('wallets');
+      q8.push(((r.details.wallets || []).find((x) => x.wallet === W8) || {}).graded);
+    }
+    scenario.costMs = 0;
+    const newest20 = PAST.slice().sort((a, b) => b.start - a.start).slice(0, 20).map((m) => m.tokens[0]).sort().join();
+    chk('queue: once read to the present, only the bets the grade reads are graded (its newest 20 of 63), and the wallet is done in a few runs',
+      V(`select activity_synced_at is not null from public.poly_wallets where wallet = ${lit(W8)}`) === 't' && q8.length <= 4
+      && V(`select string_agg(token_id, ',' order by token_id) from public.poly_bets where wallet = ${lit(W8)}`) === newest20, { runs: q8, bets: V(`select count(*) from public.poly_bets where wallet = ${lit(W8)}`) });
+    db.applyFileAtomic(path.join(ROOT, 'supabase', 'radar.sql'));   /* radar_rules() as shipped again */
+    /* a wallet that can still be top-graded is read before truncated ones, however long they have waited */
+    V(`update public.poly_wallets set history_truncated = true, activity_synced_at = now() - interval '3 days' where wallet in (${[W1, W2, W3].map(lit).join(',')})`);
+    V(`update public.poly_wallets set activity_synced_at = now() - interval '1 day' where wallet = ${lit(W8)}`);
+    const q2 = await go('wallets'), q2w = (q2.details.wallets || []).map((x) => x.wallet);
+    chk('queue: a wallet that can still be top-graded is read before truncated ones that have waited longer and rank higher',
+      q2w.length === 3 && q2w[0] === W8 && !q2w.includes(W3), q2w);
+    V(`update public.poly_wallets set history_truncated = false, activity_synced_at = now() where wallet in (${[W1, W2, W3, W8].map(lit).join(',')})`);
+    scenario.leaderboard = POOL;
+    await go('pool');
 
     /* ── budget ── */
     V('update public.poly_api_days set granted = 39997');

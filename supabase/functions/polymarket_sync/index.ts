@@ -33,9 +33,12 @@
 //             redemptions, splits, merges; at most wallet_max_pages pages,
 //             else the history is TRUNCATED and the wallet is never
 //             top-graded), the markets they traded (Gamma, 50 a call), the
-//             covered trades stored with their transaction hashes, and each
-//             newly resolved bet graded once: its close, CLV and the 5- and
-//             15-minute follow from the CLOB price history.
+//             covered trades stored with their transaction hashes, and, once
+//             the read has reached the present, each newly resolved bet among
+//             the max_bets_per_wallet the grade reads graded once: its close,
+//             CLV and the 5- and 15-minute follow from the CLOB price history.
+//             Wallets that can still be top-graded (history not truncated)
+//             are read first.
 //   grade     nightly, after wallets. Every pool wallet's grade from its
 //             stored bets and the market-maker rule's aggregates, ranked,
 //             written as ONE versioned run (radar_put_grades).
@@ -59,7 +62,7 @@
 //      public.radar_config's is the other, and both must be on).
 // ============================================================
 
-export const BUILD = "polymarket_sync@2026-10-29.6";
+export const BUILD = "polymarket_sync@2026-10-29.7";
 
 // ── BEGIN RADAR CORE ── copied from lib/edgedesk_radar.js by tools/radar/inline_core.js; do not edit here
 /* ===========================================================================
@@ -1144,8 +1147,10 @@ async function pool(ctx: any) {
 /* ---------------------------------------------------------------- wallets */
 async function wallets(ctx: any) {
   const rules = ctx.rules, now = ctx.nowMs;
+  /* a truncated history is never top-graded, so every wallet that still can be is read first (production, 2026-10-29:
+     the pool's top wallets by volume held the queue for hours, and 6 of 200 were read) */
   const listed = await db("poly_wallets?select=wallet,activity_cursor,history_truncated&in_pool=is.true&or=(activity_synced_at.is.null,activity_synced_at.lt."
-    + encodeURIComponent(iso(now - 20 * H)!) + ")&order=activity_synced_at.asc.nullsfirst,pool_rank.asc&limit=" + DUE_LOOKAHEAD);
+    + encodeURIComponent(iso(now - 20 * H)!) + ")&order=history_truncated.asc,activity_synced_at.asc.nullsfirst,pool_rank.asc&limit=" + DUE_LOOKAHEAD);
   const skipped: string[] = [];
   const due = (listed || []).filter((w: any) => {
     const c = w.activity_cursor || {}, at = c.attempt_at ? R.ms(c.attempt_at) : null;
@@ -1169,7 +1174,7 @@ async function wallets(ctx: any) {
     /* the attempt mark, before any work: if this run dies, the next one sets this wallet aside */
     if (!ctx.dry) await patch("poly_wallets?wallet=eq." + w.wallet, { activity_cursor: Object.assign({}, cur, { attempt_at: iso(now), attempts: Number(cur.attempts || 0) + 1 }), updated_at: iso(now) });
     const first = cur.ts_s == null || cur.first_pages != null, before = first ? Number(cur.first_pages || 0) : 0;
-    let start = cur.ts_s == null ? Math.floor((now - 400 * DAY) / 1000) : Math.max(1, cur.ts_s - 1), cursor: any = null, pages = 0, last = cur.ts_s || null, truncated = !!w.history_truncated, ok = true, actCut = false;
+    let start = cur.ts_s == null ? Math.floor((now - 400 * DAY) / 1000) : Math.max(1, cur.ts_s - 1), cursor: any = null, pages = 0, last = cur.ts_s || null, truncated = !!w.history_truncated, ok = true, actCut = false, capCut = false;
     const rows: any[] = [];
     for (;;) {
       if (pages > 0 && late()) { actCut = true; break; }
@@ -1179,7 +1184,7 @@ async function wallets(ctx: any) {
       const pg = R.page(r.data);
       for (const a of pg.rows) { const x = R.activityRow(a, w.wallet); if (x) rows.push(x); else ctx.drift++; }
       if (!pg.has_more) break;
-      if (before + pages >= rules.wallet_max_pages) { if (first) truncated = true; break; }
+      if (before + pages >= rules.wallet_max_pages) { if (first) truncated = true; capCut = true; break; }
       if (pages >= WALLET_PAGES_PER_RUN) { actCut = true; break; }
       cursor = pg.next_cursor;
     }
@@ -1204,8 +1209,10 @@ async function wallets(ctx: any) {
     if (!ctx.dry) await inChunks(coveredRows.map((t: any) => tradeRecord(t, markets[t.condition_id], ctx.run.run_id)), 500,
       (c) => insertOnce("poly_trades", c, "tx_hash,wallet,kind,token_key,side_key,size_key,price_key"));
     if (rows.length) last = Math.max(last || 0, Math.floor(Math.max(...rows.map((t: any) => t.ts)) / 1000));
-    /* 4. every newly resolved bet, graded once (the rest next run, if time runs out) */
-    const gr = await gradeNewBets(ctx, w.wallet, ctx.dry ? coveredRows : null, markets, late);
+    /* 4. once the read has reached the present, the newly resolved bets the grade reads, graded once (the rest next
+       run, if time runs out). A read stopped short of the present (by time, the run's pages or the page cap) grades
+       nothing yet: the newer bets still to come would push these out of the grade */
+    const gr = actCut || capCut ? { n: 0, cut: false } : await gradeNewBets(ctx, w.wallet, ctx.dry ? coveredRows : null, markets, late);
     d.graded = gr.n;
     /* 5. done, or kept due with its place: a wallet cut by time is read on, never skipped for 20 hours */
     const partial = actCut || gr.cut, kept: any = { ts_s: last };
@@ -1227,9 +1234,12 @@ async function gradeNewBets(ctx: any, wallet: string, dryTrades: any[] | null, s
   await inChunks(missing, 100, async (c) => { for (const m of await dbAll("poly_markets?select=*&condition_id=in." + inList(c))) markets[m.condition_id] = fromStored(m); });
   const built = R.buildBets(trades, markets, rules);
   const have = new Set((await dbAll("poly_bets?select=token_id&wallet=eq." + wallet)).map((b: any) => String(b.token_id)));
-  /* the newest first, at most a grade's worth a run: the grade reads the most recent max_bets_per_wallet, so a
-     wallet's new bets are always graded however many older ones are stored */
-  const todo = built.bets.filter((b: any) => b.settle != null && !have.has(b.token_id)).sort((a: any, b: any) => b.entry_at - a.entry_at).slice(0, rules.max_bets_per_wallet);
+  /* only the bets the grade reads, the most recent max_bets_per_wallet resolved ones, newest first (in the grade's
+     order): a wallet's new bets are always graded however many older ones are stored, and an older bet the grade
+     would never read is not graded at all (production, 2026-10-29: grading a top wallet's whole history, a price
+     read or two a bet, held it for dozens of runs) */
+  const todo = built.bets.filter((b: any) => b.settle != null).sort((a: any, b: any) => b.entry_at - a.entry_at || (a.token_id < b.token_id ? -1 : 1))
+    .slice(0, rules.max_bets_per_wallet).filter((b: any) => !have.has(b.token_id));
   let n = 0, cut = false;
   for (const b of todo) {
     if (late && late()) { cut = true; break; }

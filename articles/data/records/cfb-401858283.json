@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:15:00.000Z",
   "game_when_label": "2026-10-31 19:15 UTC",
   "published_at": null,
-  "updated_at": "2026-10-29T18:25:10.361Z",
-  "generated_at": "2026-10-29T18:25:10.361Z",
+  "updated_at": "2026-10-30T00:50:38.302Z",
+  "generated_at": "2026-10-30T00:50:38.302Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -138,9 +138,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Louisville and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Stanford and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -246,7 +270,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T02:30:00.000Z",
-        "retrieved_at": "2026-10-29T16:25:42.209Z"
+        "retrieved_at": "2026-10-29T19:32:16.418Z"
       },
       "home": {
         "team": "Louisville",
@@ -324,9 +348,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T23:30:00.000Z",
-        "retrieved_at": "2026-10-29T16:25:42.209Z"
+        "retrieved_at": "2026-10-29T19:32:16.418Z"
       },
-      "generated_at": "2026-10-29T16:26:38.488Z",
+      "generated_at": "2026-10-29T19:32:14.219Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -837,21 +861,21 @@
               "a": {
                 "v": "56.0",
                 "n": 56,
-                "rank": "#70 of 138",
+                "rank": "#70 of 137",
                 "rank_n": 70,
                 "note": null
               },
               "h": {
                 "v": "55.0",
                 "n": 55,
-                "rank": "#101 of 138",
-                "rank_n": 101,
+                "rank": "#100 of 137",
+                "rank_n": 100,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 1,
-                "rank_gap": 31
+                "rank_gap": 30
               }
             }
           ]
@@ -946,16 +970,6 @@
           "text": "Stanford 51.0 (#50 of 130) vs Louisville 48.7 (#92 of 130) — 42 places on the national board."
         },
         {
-          "k": "Kicking",
-          "rank_gap": 31,
-          "gap": 1,
-          "lead": "Stanford",
-          "trail": "Louisville",
-          "lead_cell": "56.0 · #70 of 138",
-          "trail_cell": "55.0 · #101 of 138",
-          "text": "Stanford 56.0 (#70 of 138) vs Louisville 55.0 (#101 of 138) — 31 places on the national board."
-        },
-        {
           "k": "Depth",
           "rank_gap": 31,
           "gap": 0.6,
@@ -964,6 +978,16 @@
           "lead_cell": "54.0 · #23 of 138",
           "trail_cell": "53.4 · #54 of 138",
           "text": "Stanford 54.0 (#23 of 138) vs Louisville 53.4 (#54 of 138) — 31 places on the national board."
+        },
+        {
+          "k": "Kicking",
+          "rank_gap": 30,
+          "gap": 1,
+          "lead": "Stanford",
+          "trail": "Louisville",
+          "lead_cell": "56.0 · #70 of 137",
+          "trail_cell": "55.0 · #100 of 137",
+          "text": "Stanford 56.0 (#70 of 137) vs Louisville 55.0 (#100 of 137) — 30 places on the national board."
         }
       ],
       "home": [
@@ -1587,11 +1611,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Stanford’s availability report is not due yet",
-        "score": 88,
+        "text": "84 · STRONG",
+        "sub": "main deduction: Stanford’s availability sources refused",
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1605,7 +1629,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.5,
+            "score": 9,
             "max": 20
           },
           {
@@ -1617,7 +1641,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1633,23 +1657,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Stanford’s availability report is not due yet; the impact of Stanford’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "Stanford’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Stanford’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Stanford)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Stanford",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Louisville)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Louisville",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Capture a market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1908,7 +1932,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1cnl5qab7tdb4",
+    "packet_hash": "rg2rqgv6agy2",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Louisville’s pass rush get to Davis Warren?",
@@ -1967,21 +1991,21 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-29T16:27:54.289Z",
+        "observed_at": "2026-10-29T22:48:03.785Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-29T16:26:10.274Z",
+        "observed_at": "2026-10-29T19:28:53.811Z",
         "verification": "RATING"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-28T00:00:00.000Z",
+        "observed_at": "2026-10-29T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -1990,6 +2014,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-29T18:25:10.361Z"
+    "at": "2026-10-30T00:50:38.302Z"
   }
 }
