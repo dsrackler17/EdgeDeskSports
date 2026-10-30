@@ -363,3 +363,15 @@ jobs:
           psql "$PGURL" -v ON_ERROR_STOP=1 -P pager=off -f tools/radar/sql/radar_pipeline_report.sql
           echo "== the schedules (pg_cron), and how each ran in the last 24 hours"
           psql "$PGURL" -v ON_ERROR_STOP=1 -P pager=off -c "select j.jobname, j.schedule, j.active, (select d.status || ' ' || to_char(d.start_time at time zone 'utc', 'MM-DD HH24:MI') || ' UTC' from cron.job_run_details d where d.jobid = j.jobid order by d.start_time desc limit 1) as last_run, (select count(*) from cron.job_run_details d where d.jobid = j.jobid and d.start_time > now() - interval '24 hours') as runs_24h, (select count(*) from cron.job_run_details d where d.jobid = j.jobid and d.start_time > now() - interval '24 hours' and d.status <> 'succeeded') as not_succeeded_24h from cron.job j where j.jobname like 'polymarket_sync%' order by j.jobname"
+          # pg_cron only queues the call (pg_net); what the function answered, while pg_net keeps it (6 hours)
+          echo "== what polymarket_sync answered the schedules (pg_net, while it keeps the responses)"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -P pager=off -c "select coalesce(status_code::text, 'none') as http, coalesce(left(error_msg, 80), '') as error, timed_out, count(*) as calls, to_char(max(created) at time zone 'utc', 'MM-DD HH24:MI') as latest_utc from net._http_response where created > now() - interval '24 hours' and (content like '%polymarket_sync@%' or content like '%POLYMARKET%' or status_code in (500, 502, 503, 504, 546) or error_msg is not null or timed_out) group by 1, 2, 3 order by calls desc limit 12" \
+            || echo "(net._http_response could not be read with this connection)"
+          # the grade's style query (radar_style_stats), timed for the pool wallet with the most trades: read-only
+          w=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select wallet from public.poly_trades where wallet in (select wallet from public.poly_wallets where in_pool) and traded_at > now() - interval '365 days' group by wallet order by count(*) desc limit 1")
+          if [ -n "$w" ]; then
+            echo "== radar_style_stats for the pool wallet with the most trades (${w:0:6}…): its plan, run read-only with a 60 s limit"
+            psql "$PGURL" -v ON_ERROR_STOP=1 -P pager=off -c "set statement_timeout = '60s'; explain (analyze, buffers, costs off, timing on) select * from public.radar_style_stats('$w', now() - interval '365 days')" \
+              -c "set statement_timeout = '60s'; explain (analyze, buffers, costs off) select t.condition_id, count(*) from public.poly_trades t join public.poly_markets m on m.condition_id = t.condition_id where t.wallet = '$w' and t.traded_at >= now() - interval '365 days' and m.league in (select jsonb_array_elements_text(public.radar_rules() -> 'leagues')) and m.market_type in (select jsonb_array_elements_text(public.radar_rules() -> 'market_types')) group by t.condition_id" \
+              || echo "(the style query did not finish within 60 s)"
+          fi

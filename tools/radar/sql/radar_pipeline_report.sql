@@ -14,6 +14,12 @@
 --   5 the current grade, by style: graded, ranked, positive score, featured
 --   6 the covered game markets in the window: matched, unmatched and why
 --   7 the stages in order, and the first one that reaches zero
+--   8 what went wrong in the last 24 hours: failed and refused runs by
+--     message, and the alerts by code
+--   9 the Polymarket request budget (the gateway's ledger, by UTC day), and
+--     which mode was granted what today
+--  10 the unmatched covered markets in the window, by league and reason, with
+--     an example of each
 -- =============================================================================
 
 -- 1 versions and state
@@ -90,3 +96,23 @@ with mk as (
 select n, stage, cnt,
        case when n <= 9 and cnt = 0 and not exists (select 1 from s z where z.n < s.n and z.cnt = 0) then '<- the featured path first reaches zero here' else '' end as note
   from s order by n;
+
+-- 8 what went wrong in the last 24 hours
+select mode, status, left(coalesce(message, ''), 180) as message, count(*) as runs, to_char(max(finished_at) at time zone 'utc', 'MM-DD HH24:MI') as latest_utc
+  from public.poly_sync_runs where finished_at > now() - interval '24 hours' and status in ('error', 'skipped')
+ group by 1, 2, 3 order by runs desc limit 15;
+select severity, code, count(*) as alerts, left(max(message), 180) as example, to_char(max(created_at) at time zone 'utc', 'MM-DD HH24:MI') as latest_utc
+  from public.poly_alerts where created_at > now() - interval '24 hours'
+ group by 1, 2 order by alerts desc limit 15;
+
+-- 9 the request budget
+select day, granted, used, (public.radar_rules() ->> 'daily_request_ceiling')::int as ceiling from public.poly_api_days order by day desc limit 3;
+select split_part(caller, ':', 2) as mode, decision, count(*) as grants, sum(granted) as granted
+  from public.poly_api_grants where granted_at >= date_trunc('day', now() at time zone 'utc') at time zone 'utc'
+ group by 1, 2 order by 1, 2;
+
+-- 10 the unmatched covered markets in the window, by league and reason
+select league, coalesce(match_reason, '(not tried)') as reason, count(*) as markets, count(distinct event_ref) as polymarket_games, left(min(event_title), 70) as example
+  from public.poly_markets
+ where event_id is null and game_start_at > now() and game_start_at <= now() + make_interval(hours => public.radar_rule('upcoming_hours')::int)
+ group by 1, 2 order by markets desc limit 15;
