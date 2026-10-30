@@ -532,6 +532,13 @@ async function live() {
     chk('…the reader starts linking under the RUNNING test, whatever test id they send (here the failed sandbox one)', r.status === 200
       && new URL(r.body.url).origin === 'https://www.juicereel.com' && !!openedB && openedB.smoke_test === smoke, { start: r.body, opened: openedB && openedB.smoke_test });
     db.service(`delete from portfolio_private.connect_sessions where user_id = ${L(B)};`);
+    const startedAt = one(db.service(`select started_at::text from portfolio_private.connector_smoke_tests where id = ${L(smoke)};`));
+    db.service(`update portfolio_private.connector_smoke_tests set started_at = now() - interval '45 days' where id = ${L(smoke)};`);
+    r = await call({ action: 'jr_status' }, 'tok-b');
+    chk('the live test has no expiry: started 45 days ago and still running, it still lets a reader connect, and the database still admits its grants',
+      r.body.available === true && one(db.service(`select public.portfolio_svc_jr_smoke_current('production');`)) === smoke
+        && one(db.service(`select public.portfolio_svc_ag_allowed('juicereel', 'production', ${L(smoke)})::text;`)) === 'true', r.body);
+    db.service(`update portfolio_private.connector_smoke_tests set started_at = ${L(startedAt)}::timestamptz where id = ${L(smoke)};`);
 
     /* the operator's history before connecting: a DraftKings file import with one bet the sync will match */
     db.as(OP, `insert into public.platform_accounts (platform, platform_label, platform_type, connection_type, status) values ('draftkings', 'DraftKings', 'SPORTSBOOK', 'CSV', 'IMPORT_ONLY');`);
