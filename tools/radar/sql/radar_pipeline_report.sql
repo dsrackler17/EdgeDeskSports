@@ -110,6 +110,11 @@ select day, granted, used, (public.radar_rules() ->> 'daily_request_ceiling')::i
 select split_part(caller, ':', 2) as mode, decision, count(*) as grants, sum(granted) as granted
   from public.poly_api_grants where granted_at >= date_trunc('day', now() at time zone 'utc') at time zone 'utc'
  group by 1, 2 order by 1, 2;
+-- grants never settled (their run died before poly_api_settle): each holds its whole grant for the rest of the UTC day
+select split_part(g.caller, ':', 2) as mode, count(*) as unsettled_grants, sum(g.granted) as requests_held
+  from public.poly_api_grants g left join public.poly_api_settlements s on s.grant_id = g.grant_id
+ where s.grant_id is null and g.decision = 'granted' and g.granted_at >= date_trunc('day', now() at time zone 'utc') at time zone 'utc'
+ group by 1 order by 1;
 
 -- 10 the unmatched covered markets in the window, by league and reason
 select league, coalesce(match_reason, '(not tried)') as reason, count(*) as markets, count(distinct event_ref) as polymarket_games, left(min(event_title), 70) as example
