@@ -243,6 +243,7 @@ jobs:
             const r = JSON.parse(require('fs').readFileSync('/tmp/check.json', 'utf8'));
             const sum = ['### Juice Reel billing', '', '| | |', '|---|---|',
               '| Switch (JUICE_REEL_CHECKOUT) | **' + r.mode + '** |',
+              '| Juice Reel application (JUICE_REEL_CLIENT_ID) | ' + (r.app ? (r.app.client_id_prefix || '—') + '… → ' + (r.app.verdict === 'correct' ? '**' + r.app.name + '** (correct)' : '**' + r.app.verdict.toUpperCase() + '** — ' + r.app.message) : 'not reported (deploy this build)') + ' |',
               '| Juice Reel accepts EdgeDesk\'s credentials | ' + (r.accepted ? '**yes**' : '**no** — ' + r.code + ' (HTTP ' + r.revoke_status + ')') + ' |',
               '| Owner access to the current-subscriber list (the hourly reconcile) | ' + r.owner_list + ' (HTTP ' + r.owner_list_status + ') |',
               '| Missing settings | ' + ((r.missing || []).join(', ') || 'none') + ' |',
@@ -256,4 +257,7 @@ jobs:
             require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, sum.join('\n') + '\n');
             console.log(sum.join('\n'));
             if (!r.accepted) console.log('::warning::Juice Reel did not accept the credentials: ' + r.code);
+            if (!r.app) console.log('::warning::This juicereel_billing build predates the application check; deploy this build.');
+            else if (r.app.verdict === 'wrong') { console.log('::error::' + r.app.message); process.exit(1); }
+            else if (!r.app.ok) console.log('::warning::' + r.app.message);
           "

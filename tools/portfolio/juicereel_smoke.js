@@ -156,6 +156,9 @@ async function probe(c) {
   const v = k ? await k.json().catch(() => ({})) : {};
   console.log('Juice Reel credentials: ' + (k && k.status === 200 ? (v.accepted ? 'ACCEPTED' : 'NOT ACCEPTED (' + v.code + ')') + ' — ' + v.message
     : 'not checked (' + (k ? k.status + ' ' + (v.reason || '') : 'unreachable') + '; deploy portfolio_connect with jr_check)'));
+  if (v.app) console.log('Juice Reel application: ' + (v.app.verdict === 'correct' ? 'OK' : v.app.verdict.toUpperCase()) + ' — ' + v.app.message);
+  if (v.scopes) console.log(v.scopes.line);
+  if (v.app && v.app.verdict === 'wrong') process.exitCode = 1;
 }
 
 async function main() {

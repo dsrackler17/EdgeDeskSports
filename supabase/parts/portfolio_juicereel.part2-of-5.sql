@@ -1,4 +1,4 @@
--- portfolio_juicereel -- part 2 of 4.
+-- portfolio_juicereel -- part 2 of 5.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
