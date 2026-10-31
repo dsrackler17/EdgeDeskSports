@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T23:00:00.000Z",
   "game_when_label": "2026-10-31 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T21:27:31.844Z",
-  "generated_at": "2026-10-31T21:27:31.844Z",
+  "updated_at": "2026-10-31T21:31:05.166Z",
+  "generated_at": "2026-10-31T21:31:05.166Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1466,7 +1466,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 1949h old",
+          "text": "odds is 1950h old",
           "widening": null
         },
         {
@@ -1557,7 +1557,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-08-11T16:00:03.625+00:00",
-      "capture_age": "1949 hours old",
+      "capture_age": "1950 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1943,15 +1943,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_83517bef5827e9bc",
+  "snapshot_id": "snap_7c17ac192682e485",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-31T23:00:00.000Z",
-    "minutes_before_kickoff": 92,
+    "minutes_before_kickoff": 89,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-31T21:27:31.844Z"
+    "refreshed": true,
+    "at": "2026-10-31T21:31:05.166Z"
   },
   "featured": {
     "editorial_priority": 36.6,
@@ -2226,11 +2226,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-31T21:27:31.844Z"
+    "at": "2026-10-31T21:31:05.166Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T21:27:31.844Z",
+    "at": "2026-10-31T21:31:05.166Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2342,6 +2342,100 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T21:27:31.844Z"
+    "at": "2026-10-31T21:31:05.166Z"
+  },
+  "publication_snapshot_id": "snap_7c17ac192682e485",
+  "freshness": {
+    "at": "2026-10-31T21:31:05.166Z",
+    "fields": {
+      "market.line": {
+        "value": "Florida State +1.5",
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 51.5,
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "captured consensus (stale) · 1 book · best at DraftKings",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
