@@ -1,35 +1,35 @@
 # CFB Model Lab — 2026 season to date
 
-Generated 2026-10-31T06:07:47.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
+Generated 2026-10-31T07:07:56.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
 
-## Comparison on the common official set (n = 60, provisional)
+## Comparison on the common official set (n = 61, provisional)
 
 | model | n | MAE | RMSE | bias | P95 | Brier | 80% cov. |
 |---|---|---|---|---|---|---|---|
-| Loop v2.0.0 | 60 | 11.89 | 14.77 | 0.52 | 25.39 | 0.2367 | 0.83 |
-| V1 | 60 | 12.49 | 15.19 | 0.48 | 27.95 | 0.2505 | — |
-| V2 · candidate 001 | 60 | 12.34 | 15.15 | 0.70 | 27.40 | 0.2485 | 0.78 |
-| V2.1 · hardened | 60 | 12.28 | 15.04 | 0.72 | 27.46 | 0.2471 | 0.83 |
-| opener | 60 | 11.75 | 14.20 | 0.72 | 26.02 | — | — |
-| close | 60 | 11.39 | 13.95 | 0.19 | 24.70 | — | — |
+| Loop v2.0.0 | 61 | 12.19 | 15.15 | 1.00 | 29.79 | 0.2411 | 0.82 |
+| V1 | 61 | 12.75 | 15.49 | 0.94 | 27.97 | 0.2541 | — |
+| V2 · candidate 001 | 61 | 12.54 | 15.35 | 1.09 | 27.20 | 0.2501 | 0.77 |
+| V2.1 · hardened | 61 | 12.49 | 15.26 | 1.12 | 27.25 | 0.2490 | 0.82 |
+| opener | 61 | 12.06 | 14.61 | 1.21 | 26.50 | — | — |
+| close | 61 | 11.67 | 14.31 | 0.66 | 28.50 | — | — |
 
 ## Each model on its own official snapshots
 
 | model | games | MAE | RMSE | Brier | win ECE | 80% cov. | research record | ATS | CLV mean | +CLV |
 |---|---|---|---|---|---|---|---|---|---|---|
-| edgedesk_cfb_loop_v2.0.0 | 60 | 11.89 | 14.77 | 0.2367 | 0.0946 | 0.83 | 12-15-1 | 44.4% | 0.25 | 46.4% |
-| edgedesk_cfb_p4_v1.0.0 | 243 | 12.22 | 15.32 | 0.2135 | 0.0770 | — | 68-76-5 | 47.2% | -0.05 | 42.9% |
-| edgedesk_cfb_v2.0.0 | 237 | 12.31 | 15.50 | 0.2151 | 0.0784 | 0.81 | 14-20-1 | 41.2% | 0.06 | 42.9% |
-| edgedesk_cfb_v2.1.0 | 237 | 12.28 | 15.46 | 0.2146 | 0.0672 | 0.81 | 18-17-0 | 51.4% | -0.01 | 48.6% |
+| edgedesk_cfb_loop_v2.0.0 | 61 | 12.19 | 15.15 | 0.2411 | 0.1048 | 0.82 | 12-16-1 | 42.9% | 0.26 | 48.3% |
+| edgedesk_cfb_p4_v1.0.0 | 244 | 12.28 | 15.40 | 0.2145 | 0.0795 | — | 68-76-5 | 47.2% | -0.05 | 42.9% |
+| edgedesk_cfb_v2.0.0 | 238 | 12.36 | 15.55 | 0.2156 | 0.0805 | 0.80 | 15-20-1 | 42.9% | 0.04 | 41.7% |
+| edgedesk_cfb_v2.1.0 | 238 | 12.33 | 15.52 | 0.2152 | 0.0644 | 0.81 | 18-17-0 | 51.4% | -0.01 | 48.6% |
 
 ## Promotion evaluations
 
-- edgedesk_cfb_v2.1.0 vs champion edgedesk_cfb_p4_v1.0.0: **NOT_ELIGIBLE** (n=237 of 150 needed; MAE difference 0.037 [-0.485, 0.542])
-- edgedesk_cfb_v2.0.0 vs champion edgedesk_cfb_p4_v1.0.0: **NOT_ELIGIBLE** (n=237 of 150 needed; MAE difference 0.072 [-0.438, 0.569])
-- edgedesk_cfb_loop_v2.0.0 vs champion edgedesk_cfb_p4_v1.0.0: **INSUFFICIENT_SAMPLE** (n=60 of 150 needed; MAE difference -0.601 [-1.757, 0.501])
+- edgedesk_cfb_v2.1.0 vs champion edgedesk_cfb_p4_v1.0.0: **NOT_ELIGIBLE** (n=238 of 150 needed; MAE difference 0.024 [-0.478, 0.525])
+- edgedesk_cfb_v2.0.0 vs champion edgedesk_cfb_p4_v1.0.0: **NOT_ELIGIBLE** (n=238 of 150 needed; MAE difference 0.056 [-0.434, 0.555])
+- edgedesk_cfb_loop_v2.0.0 vs champion edgedesk_cfb_p4_v1.0.0: **INSUFFICIENT_SAMPLE** (n=61 of 150 needed; MAE difference -0.557 [-1.656, 0.514])
 
 ## Alerts
 
-- **calibration_worse** (edgedesk_cfb_p4_v1.0.0) last-100 win ECE 0.1043 > 0.06
-- **calibration_worse** (edgedesk_cfb_v2.1.0) last-100 win ECE 0.1369 > 0.06
-- **calibration_worse** (edgedesk_cfb_v2.0.0) last-100 win ECE 0.1371 > 0.06
+- **calibration_worse** (edgedesk_cfb_p4_v1.0.0) last-100 win ECE 0.1146 > 0.06
+- **calibration_worse** (edgedesk_cfb_v2.1.0) last-100 win ECE 0.1263 > 0.06
+- **calibration_worse** (edgedesk_cfb_v2.0.0) last-100 win ECE 0.1385 > 0.06
