@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:30:00.000Z",
   "game_when_label": "2026-10-31 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T14:31:02.265Z",
-  "generated_at": "2026-10-31T14:31:02.265Z",
+  "updated_at": "2026-10-31T18:11:14.045Z",
+  "generated_at": "2026-10-31T18:11:14.045Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -258,7 +258,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T16:00:00.000Z",
-        "retrieved_at": "2026-10-31T12:48:32.200Z"
+        "retrieved_at": "2026-10-31T17:49:50.575Z"
       },
       "home": {
         "team": "Georgia",
@@ -324,7 +324,7 @@
         "published_at": null,
         "retrieved_at": null
       },
-      "generated_at": "2026-10-31T12:49:29.567Z",
+      "generated_at": "2026-10-31T17:49:48.489Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1403,7 +1403,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 1341h old",
+          "text": "odds is 1344h old",
           "widening": null
         },
         {
@@ -1496,7 +1496,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-09-05T18:00:03.431+00:00",
-      "capture_age": "1341 hours old",
+      "capture_age": "1344 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1857,15 +1857,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_dd99ceedec9872b8",
+  "snapshot_id": "snap_71913180ce2bcf44",
+  "publication_snapshot_id": "snap_71913180ce2bcf44",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-31T19:30:00.000Z",
-    "minutes_before_kickoff": 299,
+    "minutes_before_kickoff": 79,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-31T14:31:02.265Z"
+    "refreshed": true,
+    "at": "2026-10-31T18:11:14.045Z"
   },
   "featured": {
     "editorial_priority": 42.5,
@@ -2155,17 +2156,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-31T14:31:02.265Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Aaron Philo has completed 105 of 149 passes (70.5%) for 1,438 yards, 9.7 yards per attempt",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-31T18:11:14.045Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T14:31:02.265Z",
+    "at": "2026-10-31T18:11:14.045Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2173,18 +2181,24 @@
         "detail": "0 characters on file"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Aaron Philo has completed 105 of 149 passes (70.5%) for 1,438 yards, 9.7 yards per attempt"
+      }
+    ],
     "hold_reason": "my_take"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "ngt2hojti4xq",
+    "packet_hash": "1nnjql01atmsty",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Georgia’s pass rush get to Tramell Jones Jr.?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Georgia, and its own breakdown accounts for about 0.0 of the 3.7 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Georgia, and its own breakdown accounts for about 0.0 of the 2.7 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 3.7,
+      "points": 2.7,
       "toward": "Georgia",
       "other": "Florida"
     },
@@ -2249,14 +2263,14 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T12:51:27.333Z",
+        "observed_at": "2026-10-31T17:51:41.823Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
+        "observed_at": "2026-10-31T02:30:00.000Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2272,6 +2286,99 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T14:31:02.265Z"
+    "at": "2026-10-31T18:11:14.045Z"
+  },
+  "freshness": {
+    "at": "2026-10-31T18:11:14.045Z",
+    "fields": {
+      "market.line": {
+        "value": "Georgia −12.5",
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 53.5,
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "captured consensus (stale) · 1 book · best at DraftKings",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }

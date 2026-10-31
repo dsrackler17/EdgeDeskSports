@@ -6,6 +6,12 @@
 - **The fix.** When every name the evidence supports is ruled out, the answer is UNKNOWN with the ruled-out starter in `handed_from`, the conflict is reported `UNRESOLVED` (`conflict_resolved: false`), and `resolution_text` says every candidate is ruled out. No hierarchy, threshold or grading rule changed.
 - **Tests.** `football/enrichment/enrichment.test.js`: 138 → 141. Against the old resolver: 3 failed, with the production error. `node football/enrichment/build_enrichment.js` now completes on the current data.
 
+## 2026-10-31 — NBA injury readiness: a warning always says why
+
+- **What was wrong.** After the 2026-10-30 deploy, `public.nba_injury_readiness` read `warn` with `state_reason` null. The cause was one name on the league's report (Michael Ajayi, CHA, two-way) that matched no rostered player. The view's `state` turns `warn` on seven conditions, but its `state_reason` named only two of them (the ESPN fallback and drift). The other five fell through to null, so System health printed "degraded" with no explanation.
+- **Fix** (`supabase/nba_injury_layer.sql` and its byte-identical migration mirror). One reason branch for each remaining condition: failed or degraded checks in 24 h, teams missing on a game day (named), unmatched names, and a league report older than `official_report_max_age_minutes` on a game day (with its age). Only `state_reason` changes: `state` and every other column are the same, so no threshold moved.
+- **Tests** (`tools/nba/nba_injury_sql.test.js`, real PostgreSQL). Four new checks, one per newly named condition. On the old view: 59 passed, 5 failed (the four new checks, plus the mirror check, which failed only because the test swapped the file in place). On the fix: 64 passed, 0 failed.
+- **Deploy:** run Deploy NBA injury layer with `apply_sql`.
 ## 2026-10-30 — Juice Reel: the check says which application the client id is, and which scopes the last token got
 
 - **Juice Reel approved `bets.settled.read` on EdgeDesk Sports Integration** (`jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK`), and both redirect URIs are registered on it: `https://edgedesksports.com/oauth/juicereel-callback.html` (bet sync) and `https://edgedesksports.com/oauth/juicereel-subscribe.html` (billing). The other application, EdgeDeskSports (`jr_AFk36va1…`, Sign in With Juice Reel off), is to be disabled once the Integration app passes `check`. Today's `check` named its owner "EdgeDeskSports".

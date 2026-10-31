@@ -1,6 +1,6 @@
 {
  "attribution": "each row is graded under the model_version that produced it (its own, else its snapshot file's); never relabelled (audit F-02)",
- "bias": -0.9846723404255319,
+ "bias": -0.9328907563025208,
  "by_model_version": {
   "edgedesk_cfb_v2.0.0": {
    "bias": -0.448646511627907,
@@ -13,13 +13,13 @@
    }
   },
   "edgedesk_cfb_v2.1.0": {
-   "bias": -0.9846723404255319,
+   "bias": -0.9328907563025208,
    "fcs_not_priced_games": 6,
-   "games_scored": 235,
-   "mae": 12.189974468085106,
-   "major_miss_share": 0.1148936170212766,
+   "games_scored": 238,
+   "mae": 12.306932773109244,
+   "major_miss_share": 0.12184873949579832,
    "sources": {
-    "FROZEN": 235
+    "FROZEN": 238
    }
   }
  },
@@ -49,9 +49,9 @@
    "week": 8
   },
   {
-   "bias": 10.763,
-   "mae": 16.378,
-   "n": 6,
+   "bias": 8.216,
+   "mae": 18.075,
+   "n": 9,
    "week": 9
   }
  ],
@@ -62,28 +62,28 @@
   "mae": 7.899666666666666,
   "note": "FBS-vs-FCS rows are NOT PRICED; tracked so the known bias stays measured"
  },
- "games_scored": 235,
- "generated_at": "2026-10-31T10:50:56Z",
+ "games_scored": 238,
+ "generated_at": "2026-10-31T15:56:14Z",
  "graded_with": {
   "finality_rule": "cfb_v2_finality_v2",
   "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)"
  },
- "mae": 12.189974468085106,
- "major_miss_share": 0.1148936170212766,
+ "mae": 12.306932773109244,
+ "major_miss_share": 0.12184873949579832,
  "miss_classes": {
   "explosive_variance": 3,
   "garbage_time": 4,
-  "market_news_unavailable": 2,
+  "market_news_unavailable": 3,
   "ordinary_variance": 11,
   "qb_injury_miss": 3,
   "special_teams": 2,
-  "turnover_variance": 2
+  "turnover_variance": 3
  },
  "model_version": "edgedesk_cfb_v2.1.0",
  "policy": "monitoring only: no parameter changes between scheduled offseason retrains",
  "scope": "priced games (FBS-vs-FBS) of edgedesk_cfb_v2.1.0 only; rows of other versions are in by_model_version",
  "season": 2026,
  "sources": {
-  "FROZEN": 235
+  "FROZEN": 238
  }
 }
