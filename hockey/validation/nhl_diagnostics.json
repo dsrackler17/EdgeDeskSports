@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_diagnostics_v1",
- "generated_at": "2026-10-30T22:39:19.454Z",
+ "generated_at": "2026-10-31T13:02:01.660Z",
  "model": "edgedesk_nhl_v1:xg_core (production)",
  "source": "out-of-sample predictions rebuilt by hockey/lab/base.js (reproduces hockey/validation/nhl_walkforward.json)",
  "windows": {
@@ -25,14 +25,14 @@
    "calibration_slope": 1.064
   },
   "live": {
-   "n": 213,
-   "log_loss": 0.65898,
-   "brier": 0.23342,
-   "auc": 0.6307,
-   "mean_p": 0.5381,
-   "mean_y": 0.5728,
-   "calibration_in_the_large": -0.0346,
-   "calibration_slope": 1.242
+   "n": 216,
+   "log_loss": 0.65932,
+   "brier": 0.23359,
+   "auc": 0.6282,
+   "mean_p": 0.5388,
+   "mean_y": 0.5741,
+   "calibration_in_the_large": -0.0353,
+   "calibration_slope": 1.226
   }
  },
  "by_season": {
@@ -167,14 +167,14 @@
    "calibration_slope": 0.783
   },
   "2027": {
-   "n": 213,
-   "log_loss": 0.65898,
-   "brier": 0.23342,
-   "auc": 0.6307,
-   "mean_p": 0.5381,
-   "mean_y": 0.5728,
-   "calibration_in_the_large": -0.0346,
-   "calibration_slope": 1.242
+   "n": 216,
+   "log_loss": 0.65932,
+   "brier": 0.23359,
+   "auc": 0.6282,
+   "mean_p": 0.5388,
+   "mean_y": 0.5741,
+   "calibration_in_the_large": -0.0353,
+   "calibration_slope": 1.226
   }
  },
  "season_phase": {
@@ -761,9 +761,9 @@
     "rate": 0.6596
    },
    "2027": {
-    "team_games": 426,
-    "projected_started": 270,
-    "rate": 0.6338
+    "team_games": 432,
+    "projected_started": 273,
+    "rate": 0.6319
    }
   },
   "note": "projected = the most likely starter from recent usage and the league's back-to-back rule (hockey/model/ratings.js); actual = the box score's starter",
@@ -1162,175 +1162,175 @@
    }
   },
   "live": {
-   "n": 213,
-   "coverage_80": 0.9014,
-   "mean_bias_goals": -0.082,
+   "n": 216,
+   "coverage_80": 0.9028,
+   "mean_bias_goals": -0.098,
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated",
    "projected": {
-    "mean": 6.246,
+    "mean": 6.245,
     "sd": 0.143,
     "p5": 6.01,
     "p25": 6.13,
     "median": 6.24,
-    "p75": 6.36,
+    "p75": 6.35,
     "p95": 6.47,
     "under_5_5": 0,
-    "over_6_5": 0.0282,
+    "over_6_5": 0.0278,
     "sd_within_season": 0.143
    },
    "actual": {
-    "mean": 6.329,
-    "sd": 2.304,
+    "mean": 6.343,
+    "sd": 2.292,
     "p5": 3,
     "p25": 5,
     "median": 6,
     "p75": 8,
     "p95": 10,
-    "under_5_5": 0.4272,
-    "over_6_5": 0.4742
+    "under_5_5": 0.4213,
+    "over_6_5": 0.4815
    },
    "errors": {
-    "mae": 1.8194,
-    "rmse": 2.2829,
-    "rps": 0.04832,
-    "poisson_deviance_regulation": 0.95414,
+    "mae": 1.8109,
+    "rmse": 2.272,
+    "rps": 0.0481,
+    "poisson_deviance_regulation": 0.9456,
     "baseline": {
      "what": "last season's mean total for every game",
-     "n": 213,
-     "mae": 1.8441,
-     "rmse": 2.3055
+     "n": 216,
+     "mae": 1.8335,
+     "rmse": 2.2937
     }
    },
    "slope": {
-    "n": 213,
-    "slope": 3.064,
+    "n": 216,
+    "slope": 2.965,
     "ci95": [
-     0.932,
-     5.196
+     0.854,
+     5.077
     ],
     "reading": "OK",
     "what": "least squares of the total played on the total projected: 1 = the projections are spread right"
    },
    "variance": {
-    "actual": 5.31,
-    "projected_means": 0.0205,
-    "mean_game_variance": 5.53,
-    "dispersion": 0.957,
+    "actual": 5.253,
+    "projected_means": 0.0204,
+    "mean_game_variance": 5.529,
+    "dispersion": 0.947,
     "what": "if calibrated, the variance of the totals played = the variance of the projections + each game's own variance (dispersion 1); above 1 the served distribution is too narrow, below 1 too wide"
    },
    "buckets": [
     {
      "quintile": 1,
-     "n": 43,
-     "projected": 6.052,
-     "actual": 6.093,
-     "diff": 0.041,
-     "ci95": 0.685,
+     "n": 44,
+     "projected": 6.053,
+     "actual": 6.114,
+     "diff": 0.06,
+     "ci95": 0.67,
      "over_5_5": {
-      "projected": 0.5376,
-      "observed": 0.5116
+      "projected": 0.5378,
+      "observed": 0.5227
      },
      "over_6_5": {
-      "projected": 0.4272,
-      "observed": 0.3721
+      "projected": 0.4274,
+      "observed": 0.3864
      }
     },
     {
      "quintile": 2,
      "n": 43,
-     "projected": 6.155,
-     "actual": 6.349,
-     "diff": 0.194,
-     "ci95": 0.562,
+     "projected": 6.153,
+     "actual": 6.372,
+     "diff": 0.219,
+     "ci95": 0.566,
      "over_5_5": {
-      "projected": 0.5556,
+      "projected": 0.5552,
       "observed": 0.6047
      },
      "over_6_5": {
-      "projected": 0.4446,
+      "projected": 0.4442,
       "observed": 0.5349
      }
     },
     {
      "quintile": 3,
-     "n": 42,
-     "projected": 6.243,
-     "actual": 5.548,
-     "diff": -0.695,
-     "ci95": 0.641,
+     "n": 43,
+     "projected": 6.24,
+     "actual": 5.628,
+     "diff": -0.612,
+     "ci95": 0.632,
      "over_5_5": {
-      "projected": 0.5703,
-      "observed": 0.4048
+      "projected": 0.5698,
+      "observed": 0.4419
      },
      "over_6_5": {
-      "projected": 0.4596,
-      "observed": 0.3333
+      "projected": 0.4591,
+      "observed": 0.3721
      }
     },
     {
      "quintile": 4,
      "n": 43,
-     "projected": 6.333,
-     "actual": 6.14,
-     "diff": -0.194,
-     "ci95": 0.589,
+     "projected": 6.331,
+     "actual": 6.093,
+     "diff": -0.238,
+     "ci95": 0.59,
      "over_5_5": {
-      "projected": 0.5859,
-      "observed": 0.6279
+      "projected": 0.5854,
+      "observed": 0.6047
      },
      "over_6_5": {
-      "projected": 0.4744,
-      "observed": 0.4651
+      "projected": 0.4741,
+      "observed": 0.4419
      }
     },
     {
      "quintile": 5,
-     "n": 42,
-     "projected": 6.452,
-     "actual": 7.524,
-     "diff": 1.072,
-     "ci95": 0.82,
+     "n": 43,
+     "projected": 6.45,
+     "actual": 7.512,
+     "diff": 1.062,
+     "ci95": 0.801,
      "over_5_5": {
-      "projected": 0.6047,
-      "observed": 0.7143
+      "projected": 0.6045,
+      "observed": 0.7209
      },
      "over_6_5": {
-      "projected": 0.4947,
-      "observed": 0.6667
+      "projected": 0.4944,
+      "observed": 0.6744
      }
     }
    ],
    "home_away": {
     "home": {
-     "n": 213,
-     "forecast": 3.137,
-     "scored": 3.141,
-     "ratio": 1.001,
+     "n": 216,
+     "forecast": 3.138,
+     "scored": 3.157,
+     "ratio": 1.006,
      "se": 0.039
     },
     "away": {
-     "n": 213,
-     "forecast": 2.9,
+     "n": 216,
+     "forecast": 2.898,
      "scored": 2.958,
-     "ratio": 1.02,
-     "se": 0.041
+     "ratio": 1.021,
+     "se": 0.04
     },
     "what": "regulation goals ÷ regulation λ"
    },
    "goalie_status": {
     "as_projected": {
-     "n": 270,
-     "forecast": 2.999,
-     "scored": 3.037,
-     "ratio": 1.013,
+     "n": 273,
+     "forecast": 2.996,
+     "scored": 3.051,
+     "ratio": 1.019,
      "se": 0.035
     },
     "another_started": {
-     "n": 156,
-     "forecast": 3.052,
-     "scored": 3.071,
-     "ratio": 1.006,
-     "se": 0.046
+     "n": 159,
+     "forecast": 3.056,
+     "scored": 3.069,
+     "ratio": 1.004,
+     "se": 0.045
     },
     "what": "a club's regulation goals ÷ λ, by whether the goalie it faced was the one projected to start (the production price carries no goalie term)"
    }
@@ -1363,7 +1363,7 @@
      5.08,
      5.79
     ],
-    "projected_sd_first_n": 0.203,
+    "projected_sd_first_n": 0.204,
     "actual_mean": 5.46,
     "projected_mean": 5.42,
     "slope": 0.954,
@@ -1382,7 +1382,7 @@
      5.05,
      5.68
     ],
-    "projected_sd_first_n": 0.175,
+    "projected_sd_first_n": 0.176,
     "actual_mean": 5.42,
     "projected_mean": 5.36,
     "slope": 0.807,
@@ -1401,7 +1401,7 @@
      5.14,
      5.72
     ],
-    "projected_sd_first_n": 0.165,
+    "projected_sd_first_n": 0.168,
     "actual_mean": 5.53,
     "projected_mean": 5.41,
     "slope": 1.007,
@@ -1439,7 +1439,7 @@
      5.49,
      6.27
     ],
-    "projected_sd_first_n": 0.196,
+    "projected_sd_first_n": 0.195,
     "actual_mean": 6.03,
     "projected_mean": 5.87,
     "slope": 1.634,
@@ -1458,7 +1458,7 @@
      5.52,
      6.45
     ],
-    "projected_sd_first_n": 0.275,
+    "projected_sd_first_n": 0.274,
     "actual_mean": 6.04,
     "projected_mean": 5.98,
     "slope": 1.136,
@@ -1477,7 +1477,7 @@
      5.54,
      6.27
     ],
-    "projected_sd_first_n": 0.203,
+    "projected_sd_first_n": 0.204,
     "actual_mean": 5.87,
     "projected_mean": 5.92,
     "slope": 0.652,
@@ -1496,7 +1496,7 @@
      5.54,
      6.6
     ],
-    "projected_sd_first_n": 0.26,
+    "projected_sd_first_n": 0.259,
     "actual_mean": 6.29,
     "projected_mean": 6.05,
     "slope": 0.952,
@@ -1515,7 +1515,7 @@
      6.04,
      7.1
     ],
-    "projected_sd_first_n": 0.274,
+    "projected_sd_first_n": 0.272,
     "actual_mean": 6.36,
     "projected_mean": 6.51,
     "slope": 0.929,
@@ -1572,7 +1572,7 @@
      5.95,
      6.58
     ],
-    "projected_sd_first_n": 0.152,
+    "projected_sd_first_n": 0.151,
     "actual_mean": 6.25,
     "projected_mean": 6.26,
     "slope": 1.047,
@@ -1585,34 +1585,34 @@
    },
    {
     "season": 2027,
-    "n": 213,
+    "n": 216,
     "projected_sd": 0.143,
     "projected_p5_p95": [
      6.01,
      6.47
     ],
     "projected_sd_first_n": 0.143,
-    "actual_mean": 6.33,
-    "projected_mean": 6.25,
-    "slope": 3.064,
+    "actual_mean": 6.34,
+    "projected_mean": 6.24,
+    "slope": 2.965,
     "ci95": [
-     0.932,
-     5.196
+     0.854,
+     5.077
     ],
     "reading": "OK",
     "calibration_a": 0.5
    }
   ],
-  "first_n": 213,
+  "first_n": 216,
   "rule": "Regular season, out of sample. The projected total is the served distribution's mean (overtime goals and the shootout winner's goal included, as a market total settles); a total of 6.2 means the model expects 6.2 goals, not that 6 or 7 is likely. Real totals vary far more (sd about 2.3) than any forecast can: the useful question is whether the projections' spread matches what is predictable, which the slope (1 = right) and the quintile table answer."
  },
  "drift": {
-  "n": 213,
-  "live_mean_log_loss": 0.65898,
+  "n": 216,
+  "live_mean_log_loss": 0.65932,
   "reference_mean": 0.66286,
   "reference_sd_per_game": 0.232,
-  "z": -0.24,
-  "rolling_100": 0.66685,
+  "z": -0.22,
+  "rolling_100": 0.66369,
   "cusum": 0,
   "cusum_max": 0.664,
   "decision_interval": 1.16,
@@ -1651,7 +1651,7 @@
     "cusum": 0
    },
    {
-    "n": 213,
+    "n": 216,
     "cusum": 0
    }
   ],
@@ -1917,37 +1917,37 @@
     ]
    },
    "live": {
-    "team_games": 426,
-    "games": 213,
+    "team_games": 432,
+    "games": 216,
     "sample_state": "DEVELOPING",
     "slope": {
-     "n": 426,
-     "slope": 1.201,
+     "n": 432,
+     "slope": 1.185,
      "ci95": [
-      0.706,
-      1.695
+      0.695,
+      1.675
      ],
-     "mean_lambda": 3.019,
-     "mean_goals": 3.049
+     "mean_lambda": 3.018,
+     "mean_goals": 3.058
     },
     "reading": "OK",
     "total": {
-     "n": 213,
-     "slope": 2.82,
+     "n": 216,
+     "slope": 2.701,
      "ci95": [
-      0.585,
-      5.055
+      0.481,
+      4.92
      ],
-     "mean_lambda": 6.037,
-     "mean_goals": 6.099,
+     "mean_lambda": 6.035,
+     "mean_goals": 6.116,
      "reading": "OK"
     },
     "split": {
-     "n": 210,
-     "slope": 1.138,
+     "n": 213,
+     "slope": 1.122,
      "ci95": [
-      0.603,
-      1.672
+      0.59,
+      1.653
      ],
      "reading": "OK"
     },
@@ -1955,46 +1955,46 @@
      {
       "group": 1,
       "of": 5,
-      "n": 85,
-      "forecast": 2.567,
-      "scored": 2.576,
-      "ratio": 1.004,
+      "n": 86,
+      "forecast": 2.564,
+      "scored": 2.593,
+      "ratio": 1.011,
       "se": 0.068
      },
      {
       "group": 2,
       "of": 5,
-      "n": 85,
-      "forecast": 2.824,
-      "scored": 2.765,
-      "ratio": 0.979,
+      "n": 86,
+      "forecast": 2.823,
+      "scored": 2.767,
+      "ratio": 0.98,
       "se": 0.064
      },
      {
       "group": 3,
       "of": 5,
-      "n": 85,
+      "n": 87,
       "forecast": 3.005,
-      "scored": 3.012,
-      "ratio": 1.002,
-      "se": 0.063
+      "scored": 3.034,
+      "ratio": 1.01,
+      "se": 0.062
      },
      {
       "group": 4,
       "of": 5,
-      "n": 85,
-      "forecast": 3.187,
-      "scored": 3.165,
-      "ratio": 0.993,
-      "se": 0.061
+      "n": 86,
+      "forecast": 3.188,
+      "scored": 3.151,
+      "ratio": 0.988,
+      "se": 0.06
      },
      {
       "group": 5,
       "of": 5,
-      "n": 86,
-      "forecast": 3.504,
-      "scored": 3.721,
-      "ratio": 1.062,
+      "n": 87,
+      "forecast": 3.503,
+      "scored": 3.736,
+      "ratio": 1.066,
       "se": 0.059
      }
     ]
@@ -2047,14 +2047,14 @@
    },
    "live": {
     "first_20_games": {
-     "n": 426,
-     "slope": 1.201,
+     "n": 432,
+     "slope": 1.185,
      "ci95": [
-      0.706,
-      1.695
+      0.695,
+      1.675
      ],
-     "mean_lambda": 3.019,
-     "mean_goals": 3.049
+     "mean_lambda": 3.018,
+     "mean_goals": 3.058
     },
     "rest": {
      "n": 0,
@@ -2088,11 +2088,11 @@
       "se": 0.028
      },
      "live": {
-      "n": 35,
-      "forecast": 3.23,
-      "scored": 3.086,
-      "ratio": 0.955,
-      "se": 0.092
+      "n": 36,
+      "forecast": 3.223,
+      "scored": 3.056,
+      "ratio": 0.948,
+      "se": 0.09
      }
     },
     {
@@ -2113,11 +2113,11 @@
       "se": 0.027
      },
      "live": {
-      "n": 36,
-      "forecast": 2.832,
-      "scored": 3.083,
-      "ratio": 1.089,
-      "se": 0.103
+      "n": 38,
+      "forecast": 2.827,
+      "scored": 3.132,
+      "ratio": 1.108,
+      "se": 0.102
      }
     },
     {
@@ -2159,7 +2159,11 @@
       "se": 0.025
      },
      "live": {
-      "n": 29
+      "n": 30,
+      "forecast": 2.77,
+      "scored": 2.9,
+      "ratio": 1.047,
+      "se": 0.112
      }
     },
     {
@@ -2180,10 +2184,10 @@
       "se": 0.024
      },
      "live": {
-      "n": 36,
-      "forecast": 3.208,
-      "scored": 3.083,
-      "ratio": 0.961,
+      "n": 37,
+      "forecast": 3.214,
+      "scored": 3.135,
+      "ratio": 0.976,
       "se": 0.091
      }
     },
@@ -2226,11 +2230,11 @@
       "se": 0.026
      },
      "live": {
-      "n": 30,
-      "forecast": 3.034,
-      "scored": 3.233,
-      "ratio": 1.066,
-      "se": 0.108
+      "n": 31,
+      "forecast": 3.033,
+      "scored": 3.194,
+      "ratio": 1.053,
+      "se": 0.106
      }
     },
     {
@@ -2251,11 +2255,11 @@
       "se": 0.02
      },
      "live": {
-      "n": 49,
-      "forecast": 2.95,
-      "scored": 3.327,
-      "ratio": 1.127,
-      "se": 0.088
+      "n": 51,
+      "forecast": 2.942,
+      "scored": 3.353,
+      "ratio": 1.14,
+      "se": 0.087
      }
     },
     {
@@ -2276,7 +2280,7 @@
       "se": 0.035
      },
      "live": {
-      "n": 21
+      "n": 22
      }
     },
     {
@@ -2297,7 +2301,7 @@
       "se": 0.03
      },
      "live": {
-      "n": 22
+      "n": 23
      }
     },
     {
@@ -2330,7 +2334,7 @@
   "summary": [
    "selection (17088 team-games): slope 1.01 (95% 0.931–1.09), OK; the highest-λ tenth scored 1.008× its forecast, the lowest 1.011×.",
    "confirmation (14856 team-games): slope 0.889 (95% 0.823–0.956), TOO_WIDE; the highest-λ tenth scored 0.955× its forecast, the lowest 1.018×.",
-   "live (426 team-games): slope 1.201 (95% 0.706–1.695), OK; the highest-λ fifth scored 1.062× its forecast, the lowest 1.004×."
+   "live (432 team-games): slope 1.185 (95% 0.695–1.675), OK; the highest-λ fifth scored 1.066× its forecast, the lowest 1.011×."
   ]
  },
  "clubs": {
@@ -2880,15 +2884,15 @@
     "team": "CGY",
     "scoring": {
      "season": {
-      "n": 12,
-      "forecast": 33.4,
-      "scored": 28,
-      "ratio": 0.839,
+      "n": 13,
+      "forecast": 36.3,
+      "scored": 34,
+      "ratio": 0.935,
       "ci95": [
-       0.5,
-       1.178
+       0.61,
+       1.261
       ],
-      "z": -0.93,
+      "z": -0.39,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -2918,27 +2922,27 @@
      "last_82": {
       "n": 82,
       "forecast": 232.2,
-      "scored": 207,
-      "ratio": 0.892,
+      "scored": 211,
+      "ratio": 0.909,
       "ci95": [
-       0.763,
-       1.02
+       0.78,
+       1.037
       ],
-      "z": -1.65,
+      "z": -1.39,
       "status": "OK"
      }
     },
     "conceding": {
      "season": {
-      "n": 12,
-      "forecast": 38.8,
-      "scored": 45,
-      "ratio": 1.161,
+      "n": 13,
+      "forecast": 41.8,
+      "scored": 47,
+      "ratio": 1.125,
       "ci95": [
-       0.846,
-       1.475
+       0.822,
+       1.429
       ],
-      "z": 1,
+      "z": 0.81,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -2967,14 +2971,14 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 250.1,
-      "scored": 254,
-      "ratio": 1.015,
+      "forecast": 250.2,
+      "scored": 252,
+      "ratio": 1.007,
       "ci95": [
-       0.892,
-       1.139
+       0.883,
+       1.131
       ],
-      "z": 0.24,
+      "z": 0.11,
       "status": "OK"
      }
     },
@@ -3522,15 +3526,15 @@
     "team": "FLA",
     "scoring": {
      "season": {
-      "n": 13,
-      "forecast": 39.2,
-      "scored": 37,
-      "ratio": 0.943,
+      "n": 14,
+      "forecast": 42.7,
+      "scored": 42,
+      "ratio": 0.985,
       "ci95": [
-       0.63,
-       1.256
+       0.685,
+       1.285
       ],
-      "z": -0.35,
+      "z": -0.1,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -3559,28 +3563,28 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 257.2,
+      "forecast": 257.7,
       "scored": 247,
-      "ratio": 0.96,
+      "ratio": 0.958,
       "ci95": [
-       0.838,
-       1.083
+       0.836,
+       1.08
       ],
-      "z": -0.63,
+      "z": -0.67,
       "status": "OK"
      }
     },
     "conceding": {
      "season": {
-      "n": 13,
-      "forecast": 39.2,
-      "scored": 35,
-      "ratio": 0.894,
+      "n": 14,
+      "forecast": 41.6,
+      "scored": 37,
+      "ratio": 0.889,
       "ci95": [
-       0.581,
-       1.207
+       0.585,
+       1.193
       ],
-      "z": -0.66,
+      "z": -0.72,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -3609,14 +3613,14 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 235.7,
+      "forecast": 235.3,
       "scored": 267,
-      "ratio": 1.133,
+      "ratio": 1.135,
       "ci95": [
-       1.005,
-       1.261
+       1.007,
+       1.262
       ],
-      "z": 2.04,
+      "z": 2.06,
       "status": "WATCH"
      }
     },
@@ -3950,15 +3954,15 @@
     "team": "NJD",
     "scoring": {
      "season": {
-      "n": 13,
-      "forecast": 37.9,
-      "scored": 41,
-      "ratio": 1.082,
+      "n": 14,
+      "forecast": 40.5,
+      "scored": 46,
+      "ratio": 1.135,
       "ci95": [
-       0.763,
-       1.4
+       0.827,
+       1.443
       ],
-      "z": 0.5,
+      "z": 0.86,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -3987,28 +3991,28 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 237.9,
-      "scored": 213,
-      "ratio": 0.895,
+      "forecast": 237.2,
+      "scored": 215,
+      "ratio": 0.906,
       "ci95": [
-       0.768,
-       1.022
+       0.779,
+       1.034
       ],
-      "z": -1.62,
+      "z": -1.44,
       "status": "OK"
      }
     },
     "conceding": {
      "season": {
-      "n": 13,
-      "forecast": 39.4,
-      "scored": 38,
-      "ratio": 0.965,
+      "n": 14,
+      "forecast": 42.7,
+      "scored": 40,
+      "ratio": 0.938,
       "ci95": [
-       0.652,
-       1.277
+       0.638,
+       1.238
       ],
-      "z": -0.22,
+      "z": -0.41,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -4037,14 +4041,14 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 246.8,
-      "scored": 249,
-      "ratio": 1.009,
+      "forecast": 247.2,
+      "scored": 248,
+      "ratio": 1.003,
       "ci95": [
-       0.884,
-       1.134
+       0.878,
+       1.128
       ],
-      "z": 0.14,
+      "z": 0.05,
       "status": "OK"
      }
     },
@@ -4699,15 +4703,15 @@
     "team": "SEA",
     "scoring": {
      "season": {
-      "n": 13,
-      "forecast": 36.9,
-      "scored": 48,
-      "ratio": 1.299,
+      "n": 14,
+      "forecast": 39.9,
+      "scored": 50,
+      "ratio": 1.252,
       "ci95": [
-       0.977,
-       1.622
+       0.942,
+       1.562
       ],
-      "z": 1.82,
+      "z": 1.59,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -4736,28 +4740,28 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 231.1,
-      "scored": 234,
-      "ratio": 1.013,
+      "forecast": 231.3,
+      "scored": 233,
+      "ratio": 1.007,
       "ci95": [
-       0.884,
-       1.141
+       0.878,
+       1.136
       ],
-      "z": 0.19,
+      "z": 0.11,
       "status": "OK"
      }
     },
     "conceding": {
      "season": {
-      "n": 13,
-      "forecast": 41,
-      "scored": 45,
-      "ratio": 1.099,
+      "n": 14,
+      "forecast": 43.9,
+      "scored": 51,
+      "ratio": 1.161,
       "ci95": [
-       0.792,
-       1.405
+       0.865,
+       1.457
       ],
-      "z": 0.63,
+      "z": 1.07,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -4786,14 +4790,14 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 254.5,
-      "scored": 262,
-      "ratio": 1.029,
+      "forecast": 254.3,
+      "scored": 265,
+      "ratio": 1.042,
       "ci95": [
-       0.907,
-       1.152
+       0.919,
+       1.165
       ],
-      "z": 0.47,
+      "z": 0.67,
       "status": "OK"
      }
     },
@@ -5448,15 +5452,15 @@
     "team": "VGK",
     "scoring": {
      "season": {
-      "n": 14,
-      "forecast": 46.7,
-      "scored": 49,
-      "ratio": 1.05,
+      "n": 15,
+      "forecast": 49.9,
+      "scored": 51,
+      "ratio": 1.021,
       "ci95": [
-       0.763,
-       1.337
+       0.744,
+       1.299
       ],
-      "z": 0.34,
+      "z": 0.15,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -5485,28 +5489,28 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 262.3,
+      "forecast": 262.7,
       "scored": 260,
-      "ratio": 0.991,
+      "ratio": 0.99,
       "ci95": [
-       0.87,
-       1.112
+       0.869,
+       1.111
       ],
-      "z": -0.14,
+      "z": -0.17,
       "status": "OK"
      }
     },
     "conceding": {
      "season": {
-      "n": 14,
-      "forecast": 36.8,
-      "scored": 38,
-      "ratio": 1.031,
+      "n": 15,
+      "forecast": 39.5,
+      "scored": 43,
+      "ratio": 1.09,
       "ci95": [
-       0.708,
-       1.354
+       0.778,
+       1.402
       ],
-      "z": 0.19,
+      "z": 0.56,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -5535,14 +5539,14 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 227.7,
-      "scored": 233,
-      "ratio": 1.023,
+      "forecast": 227.4,
+      "scored": 235,
+      "ratio": 1.033,
       "ci95": [
-       0.893,
-       1.153
+       0.903,
+       1.163
       ],
-      "z": 0.35,
+      "z": 0.5,
       "status": "OK"
      }
     },
@@ -5555,15 +5559,15 @@
     "team": "WPG",
     "scoring": {
      "season": {
-      "n": 13,
-      "forecast": 37,
-      "scored": 32,
-      "ratio": 0.866,
+      "n": 14,
+      "forecast": 39.4,
+      "scored": 34,
+      "ratio": 0.862,
       "ci95": [
-       0.543,
-       1.188
+       0.55,
+       1.174
       ],
-      "z": -0.82,
+      "z": -0.87,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -5592,28 +5596,28 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 244.5,
-      "scored": 212,
-      "ratio": 0.867,
+      "forecast": 243.4,
+      "scored": 213,
+      "ratio": 0.875,
       "ci95": [
-       0.742,
-       0.992
+       0.749,
+       1.001
       ],
-      "z": -2.08,
-      "status": "WATCH"
+      "z": -1.95,
+      "status": "OK"
      }
     },
     "conceding": {
      "season": {
-      "n": 13,
-      "forecast": 40.5,
-      "scored": 39,
-      "ratio": 0.964,
+      "n": 14,
+      "forecast": 43.9,
+      "scored": 44,
+      "ratio": 1.003,
       "ci95": [
-       0.656,
-       1.272
+       0.707,
+       1.298
       ],
-      "z": -0.23,
+      "z": 0.02,
       "status": "TOO_EARLY"
      },
      "last_season": {
@@ -5642,14 +5646,14 @@
      },
      "last_82": {
       "n": 82,
-      "forecast": 240.4,
-      "scored": 254,
-      "ratio": 1.057,
+      "forecast": 241.3,
+      "scored": 257,
+      "ratio": 1.065,
       "ci95": [
-       0.93,
-       1.183
+       0.939,
+       1.191
       ],
-      "z": 0.88,
+      "z": 1.01,
       "status": "OK"
      }
     },
@@ -5784,12 +5788,12 @@
     "team": "FLA",
     "what": "conceding",
     "window": "last_82",
-    "ratio": 1.133,
+    "ratio": 1.135,
     "ci95": [
-     1.005,
-     1.261
+     1.007,
+     1.262
     ],
-    "z": 2.04,
+    "z": 2.06,
     "n": 82
    },
    {
@@ -5862,18 +5866,6 @@
      1.3
     ],
     "z": 3.02,
-    "n": 82
-   },
-   {
-    "team": "WPG",
-    "what": "scoring",
-    "window": "last_82",
-    "ratio": 0.867,
-    "ci95": [
-     0.742,
-     0.992
-    ],
-    "z": -2.08,
     "n": 82
    }
   ],

@@ -1,4 +1,4 @@
--- portfolio_juicereel -- part 3 of 4.
+-- portfolio_juicereel -- part 3 of 5.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -43,6 +43,21 @@ begin
         order by count(*) desc, p.platform_label limit 20) q),
     'review', (select count(*) from public.portfolio_sync_matches s where s.user_id = g.user_id and s.provider = 'juicereel' and s.status = 'PENDING'),
     'review_exact', (select count(*) from public.portfolio_sync_matches s where s.user_id = g.user_id and s.provider = 'juicereel' and s.status = 'PENDING' and s.exact));
+end $$;
+
+-- The scopes Juice Reel granted on the most recent token (connect or
+-- refresh), for the operator's credential check (jr_check). No reader, no
+-- token, no Juice Reel id: the scopes, when, and the grant's status.
+create or replace function public.portfolio_svc_jr_latest_scopes(p_env text)
+returns jsonb language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
+declare g record;
+begin
+  perform public.portfolio_svc_assert();
+  select scopes, rotated_at, status into g from portfolio_private.oauth_grants
+   where provider = 'juicereel' and environment = p_env and rotated_at is not null
+   order by rotated_at desc limit 1;
+  if not found then return null; end if;
+  return jsonb_build_object('scopes', to_jsonb(coalesce(g.scopes, '{}'::text[])), 'at', g.rotated_at, 'status', g.status);
 end $$;
 
 -- DISCONNECT: the ciphertext goes now (the edge function revokes the pair at
@@ -143,81 +158,4 @@ begin
            end
      order by apart, x.id limit 10) q;
   return ids;
-end $$;
-
--- THE JUICE REEL INGEST. Each wager either goes on to the shared ingest
--- (portfolio_svc_ingest_wagers, told to adopt nothing) — a bet already
--- stored, a bet the reader already decided on, or one nothing of theirs
--- resembles — or is HELD for the reader, its newest copy kept. Both happen in
--- this one statement, so a run that fails stores neither, and no checkpoint
--- moves past a bet that is held nowhere.
-create or replace function public.portfolio_svc_jr_ingest(p_account uuid, p_run uuid, p_payload jsonb)
-returns jsonb language plpgsql set search_path = public, pg_temp as $$
-declare
-  a record; p jsonb; ext text; held_id uuid; held_status text; cands uuid[]; tight uuid[]; cand record; twins int; v_exact boolean; got uuid;
-  pass jsonb := '[]'::jsonb; n_held int := 0;
-  list jsonb := coalesce(p_payload->'positions', '[]'::jsonb);
-begin
-  perform public.portfolio_svc_assert();
-  select id, user_id, platform into a from public.platform_accounts
-   where id = p_account and connection_type = 'AGGREGATOR' and metadata->>'provider' = 'juicereel';
-  if not found then raise exception 'portfolio: no such Juice Reel account' using errcode = 'P0002'; end if;
-  if jsonb_typeof(list) <> 'array' or jsonb_array_length(list) > 500 then
-    raise exception 'portfolio: between 0 and 500 wagers per call' using errcode = '22023';
-  end if;
-  for p in select x from jsonb_array_elements(list) x loop
-    ext := p->>'external_position_id'; held_id := null; held_status := null; got := null;
-    begin
-      -- not Juice Reel's shape or not this book (the shared ingest rejects it, with its reason), or already a position: updated in place
-      if coalesce(ext, '') !~ '^juicereel:[0-9]{1,18}$' or p->>'platform' is distinct from a.platform
-         or exists (select 1 from public.portfolio_positions where user_id = a.user_id and external_position_id = ext and external_position_id like 'juicereel:%') then
-        pass := pass || jsonb_build_array(p); continue;
-      end if;
-      select id, status into held_id, held_status from public.portfolio_sync_matches where user_id = a.user_id and provider = 'juicereel' and external_position_id = ext;
-      -- decided already (and its position since deleted by the reader): stored again, like any synced bet
-      if held_status is not null and held_status <> 'PENDING' then pass := pass || jsonb_build_array(p); continue; end if;
-      cands := public.portfolio_svc_jr_candidates(a.user_id, a.platform, p, false);
-      if cardinality(cands) = 0 then
-        if held_id is not null then
-          update public.portfolio_sync_matches set status = 'SEPARATE', resolved_by = 'SYNC', resolved_at = now(), updated_at = now() where id = held_id and status = 'PENDING';
-        end if;
-        pass := pass || jsonb_build_array(p); continue;
-      end if;
-      -- EXACT: one strict look-alike, and that record fits exactly one synced wager — arriving now, held, or stored
-      v_exact := false;
-      tight := public.portfolio_svc_jr_candidates(a.user_id, a.platform, p, true);
-      if cardinality(tight) = 1 then
-        select id, placed_at, stake, odds_american, odds_decimal into cand from public.portfolio_positions where id = tight[1];
-        select (select count(*) from jsonb_array_elements(list) y
-                 where y->>'platform' = a.platform and (y->>'stake')::numeric = cand.stake
-                   and ((cand.odds_american is not null and (nullif(y->>'odds_american', ''))::int = cand.odds_american)
-                     or (cand.odds_american is null and (nullif(y->>'odds_decimal', ''))::numeric = cand.odds_decimal))
-                   and (y->>'placed_at')::timestamptz between cand.placed_at - interval '15 minutes' and cand.placed_at + interval '15 minutes')
-             + (select count(*) from public.portfolio_sync_matches o
-                 where o.user_id = a.user_id and o.status = 'PENDING' and o.platform = a.platform and o.external_position_id <> ext
-                   and (o.wager->>'stake')::numeric = cand.stake
-                   and ((cand.odds_american is not null and (nullif(o.wager->>'odds_american', ''))::int = cand.odds_american)
-                     or (cand.odds_american is null and (nullif(o.wager->>'odds_decimal', ''))::numeric = cand.odds_decimal))
-                   and (o.wager->>'placed_at')::timestamptz between cand.placed_at - interval '15 minutes' and cand.placed_at + interval '15 minutes')
-             + (select count(*) from public.portfolio_positions s
-                 where s.user_id = a.user_id and s.platform = a.platform and s.source = 'SYNC' and s.stake = cand.stake
-                   and s.odds_american is not distinct from cand.odds_american
-                   and s.placed_at between cand.placed_at - interval '15 minutes' and cand.placed_at + interval '15 minutes')
-          into twins;
-        v_exact := twins = 1;
-      end if;
-      insert into public.portfolio_sync_matches (user_id, provider, platform_account_id, platform, external_position_id, wager, candidates, exact)
-      values (a.user_id, 'juicereel', a.id, a.platform, ext, p, cands, v_exact)
-      on conflict (user_id, provider, external_position_id) do update set platform_account_id = excluded.platform_account_id, platform = excluded.platform,
-          wager = excluded.wager, candidates = excluded.candidates, exact = excluded.exact, updated_at = now()
-        where portfolio_sync_matches.status = 'PENDING'
-      returning id into got;
-      -- decided a moment ago, by the reader (its row was locked): the shared ingest applies this copy to what they decided
-      if got is null then pass := pass || jsonb_build_array(p); else n_held := n_held + 1; end if;
-    exception when others then
-      pass := pass || jsonb_build_array(p);
-    end;
-  end loop;
-  return public.portfolio_svc_ingest_wagers(p_account, p_run, (p_payload - 'positions') || jsonb_build_object('positions', pass, 'adopt', false))
-    || jsonb_build_object('positions_review', n_held);
 end $$;

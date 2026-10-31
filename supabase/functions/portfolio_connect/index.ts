@@ -149,7 +149,7 @@
 //   GET                                              health: build and what is
 //        configured, never a value (juicereel.missing names what is not set)
 
-const BUILD = 'portfolio_connect-2026-10-30-jr5';
+const BUILD = 'portfolio_connect-2026-10-30-jr6';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -2793,6 +2793,41 @@ async function jrStatus(c, user, body) {
     provider: Object.assign(providerInfo('juicereel'), { scopes: K.JUICEREEL.scopes }),
     grant: K.jrAccountState(grant, { operator: !!g.operator }) });
 }
+/* WHICH Juice Reel application JUICE_REEL_CLIENT_ID belongs to, by the id's
+   first 10 characters (a client id travels in every consent URL; the secret
+   is never read here). The account has two: only the Integration app has
+   "Sign in With Juice Reel" on, which every reader's consent needs. */
+const JR_APPS = [
+  { prefix: 'jr_UcOwwS', name: 'EdgeDesk Sports Integration', verdict: 'correct' },
+  { prefix: 'jr_AFk36va1', name: 'EdgeDeskSports', verdict: 'wrong' },
+];
+function jrAppOf(clientId) {
+  const id = String(clientId || '');
+  if (!id) return { client_id_prefix: null, name: null, verdict: 'not_set', ok: false, message: 'JUICE_REEL_CLIENT_ID is not set.' };
+  const p = id.slice(0, 10), a = JR_APPS.find((x) => id.indexOf(x.prefix) === 0);
+  if (!a) return { client_id_prefix: p, name: null, verdict: 'unknown', ok: false,
+    message: 'JUICE_REEL_CLIENT_ID (' + p + '…) is neither known Juice Reel application; the bet sync should use EdgeDesk Sports Integration (jr_UcOwwS…).' };
+  if (a.verdict === 'wrong') return { client_id_prefix: p, name: a.name, verdict: 'wrong', ok: false,
+    message: 'WRONG APPLICATION: JUICE_REEL_CLIENT_ID (' + p + '…) is the EdgeDeskSports app, whose Sign in With Juice Reel is off, so no reader can consent. '
+      + 'Put the EdgeDesk Sports Integration app\'s id (jr_UcOwwS…) and its secret in Supabase → Edge Functions → Secrets.' };
+  return { client_id_prefix: p, name: a.name, verdict: 'correct', ok: true, message: 'JUICE_REEL_CLIENT_ID (' + p + '…) is the EdgeDesk Sports Integration app.' };
+}
+/* the scopes the bet sync requests vs. those Juice Reel granted on the most
+   recent token stored (connect or refresh), any reader's — scopes only */
+async function jrScopeCheck(c) {
+  const requested = K.JUICEREEL.scopes.slice();
+  let latest;
+  try { latest = await serviceRpc(c)('portfolio_svc_jr_latest_scopes', { p_env: c.juicereel.env }); } catch (_) { latest = undefined; }
+  if (latest === undefined) return { requested, granted: null, missing: null, token_at: null,
+    line: 'scopes: requests ' + requested.join(' ') + '; granted unknown (apply the current supabase/portfolio_juicereel.sql)' };
+  if (!latest) return { requested, granted: null, missing: null, token_at: null,
+    line: 'scopes: requests ' + requested.join(' ') + '; no token yet (nobody has connected), so nothing granted to compare' };
+  const granted = Array.isArray(latest.scopes) ? latest.scopes.map(String) : [];
+  const missing = requested.filter((s) => granted.indexOf(s) < 0);
+  return { requested, granted, missing, token_at: latest.at || null,
+    line: 'scopes: requests ' + requested.join(' ') + '; most recent token (' + (latest.at || '?') + ') granted ' + (granted.join(' ') || 'none')
+      + (missing.length ? '; MISSING ' + missing.join(' ') : '; none missing') };
+}
 /* CHECK: does Juice Reel accept EdgeDesk's client id and secret? (an
    operator or the service role; never a reader — each check is a request
    to Juice Reel, counted against EdgeDesk's rate limit). Answers the
@@ -2802,7 +2837,7 @@ async function jrCheck(c) {
   try { reg = (await runtimeRegistry(c)).juicereel || null; } catch (_) { reg = null; }
   try { smoke = await serviceRpc(c)('portfolio_svc_jr_smoke_current', { p_env: c.juicereel.env }); } catch (_) { smoke = null; }
   const v = await K.jrCredentialCheck(ctxFor(c, 25000), c.juicereel);
-  logLine('info', 'juicereel.check', { accepted: v.accepted, code: v.code, status: v.status, owner_access: v.owner_access });
+  logLine('info', 'juicereel.check', { accepted: v.accepted, code: v.code, status: v.status, owner_access: v.owner_access, app: jrAppOf(c.juicereel.clientId).verdict });
   const said = v.accepted
     ? 'Juice Reel accepted EdgeDesk\'s client id and secret' + (v.owner ? ' (the application\'s owner: ' + v.owner + ').'
       : '. Its owner lookup (GET /oauth2/me with them) ' + (v.owner_access === 'refused' ? 'was refused' : 'did not answer') + ', so the owner is not named; connecting does not need it.')
@@ -2810,7 +2845,9 @@ async function jrCheck(c) {
       + (v.owner_access === 'refused' ? ', and at its owner lookup' : '') + '): the application is not approved yet, or JUICE_REEL_CLIENT_ID / JUICE_REEL_CLIENT_SECRET in Supabase are not the current ones.'
     : v.code === 'NOT_CONFIGURED' ? 'JUICE_REEL_CLIENT_ID and JUICE_REEL_CLIENT_SECRET must both be set in Supabase before Juice Reel can be asked.'
     : 'Juice Reel could not be asked just now (' + v.code + '); try again shortly.';
-  return json({ ok: true, accepted: v.accepted, code: v.code, status: v.status, owner: v.owner, owner_access: v.owner_access, message: said,
+  const app = jrAppOf(c.juicereel.clientId), scopes = await jrScopeCheck(c);
+  return json({ ok: true, accepted: v.accepted, code: v.code, status: v.status, owner: v.owner, owner_access: v.owner_access,
+    message: (app.verdict === 'wrong' ? app.message + ' ' : '') + said, app, scopes,
     setup: { provider_on: c.sportsbook.key === 'juicereel', missing: jrMissing(c), redirect_uri: c.juicereel.redirectUri || null, scopes: K.JUICEREEL.scopes,
       registry_installed: !!reg, switched_on_for_readers: !!(reg && reg.automatic_enabled), live_test_running: UUID_RE.test(String(smoke || '')) } });
 }

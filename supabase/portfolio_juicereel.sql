@@ -525,6 +525,21 @@ begin
     'review_exact', (select count(*) from public.portfolio_sync_matches s where s.user_id = g.user_id and s.provider = 'juicereel' and s.status = 'PENDING' and s.exact));
 end $$;
 
+-- The scopes Juice Reel granted on the most recent token (connect or
+-- refresh), for the operator's credential check (jr_check). No reader, no
+-- token, no Juice Reel id: the scopes, when, and the grant's status.
+create or replace function public.portfolio_svc_jr_latest_scopes(p_env text)
+returns jsonb language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
+declare g record;
+begin
+  perform public.portfolio_svc_assert();
+  select scopes, rotated_at, status into g from portfolio_private.oauth_grants
+   where provider = 'juicereel' and environment = p_env and rotated_at is not null
+   order by rotated_at desc limit 1;
+  if not found then return null; end if;
+  return jsonb_build_object('scopes', to_jsonb(coalesce(g.scopes, '{}'::text[])), 'at', g.rotated_at, 'status', g.status);
+end $$;
+
 -- DISCONNECT: the ciphertext goes now (the edge function revokes the pair at
 -- Juice Reel with the copy it read just before), syncing stops, every Juice
 -- Reel book account reads DISCONNECTED. History stays, unless the reader
