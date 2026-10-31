@@ -16,17 +16,17 @@
   "NO_PREGAME_MARKET": 89,
   "KEY_ROLE_UNKNOWN": 79
  },
- "generated_at": "2026-10-31T13:03:16.868Z",
+ "generated_at": "2026-10-31T17:48:41.536Z",
  "what": "How EdgeDesk's A–F Research Grades have held up on completed games. A grade measures the quality and reliability of the pregame research, not the chance a side wins. Research, not picks.",
  "ledger": {
   "epoch": "2026-10-17T01:20:49.521Z",
-  "last_capture_at": "2026-10-31T13:03:16.868Z",
-  "snapshots": 11286,
+  "last_capture_at": "2026-10-31T17:48:41.536Z",
+  "snapshots": 11493,
   "outcomes": 334,
   "chains": {
    "ok": true,
    "files": 35,
-   "rows": 19738
+   "rows": 20043
   }
  },
  "evaluation_period": {
@@ -39,25 +39,25 @@
   "schema": "edgedesk_research_grade_v1:performance",
   "min_n": 20,
   "totals": {
-   "games": 329,
-   "graded": 322,
+   "games": 343,
+   "graded": 336,
    "ungraded": 7,
    "settled_graded": 322,
    "void": 0,
-   "unsettled": 0,
+   "unsettled": 14,
    "sample_state": "DEVELOPING",
-   "research_coverage": 0.9787
+   "research_coverage": 0.9796
   },
   "exclusions": {
    "void": 0,
-   "unsettled": 0,
+   "unsettled": 14,
    "by_why": {}
   },
   "distribution": {
    "A": 0,
-   "B": 76,
-   "C": 212,
-   "D": 28,
+   "B": 78,
+   "C": 221,
+   "D": 31,
    "F": 6,
    "INSUFFICIENT": 7
   },
@@ -306,7 +306,7 @@
     }
    },
    "B": {
-    "games": 76,
+    "games": 78,
     "settled": 76,
     "sample_state": "EARLY_SIGNAL",
     "avg_score": 87,
@@ -315,10 +315,10 @@
      "completeness": 99,
      "market": 87.4,
      "clarity": 73.7,
-     "uncertainty": 89.2
+     "uncertainty": 89.1
     },
     "market_coverage": 1,
-    "market_n": 76,
+    "market_n": 78,
     "brier_ci": {
      "n": 76,
      "mean": 0.2419,
@@ -341,11 +341,11 @@
      "schema": "edgedesk_performance_v1:metrics",
      "min_n": 20,
      "eligibility": {
-      "games": 76,
+      "games": 78,
       "graded": 76,
       "void": 0,
       "flagged_pregame": 0,
-      "awaiting_result": 0,
+      "awaiting_result": 2,
       "conflict": 0,
       "by_why": {}
      },
@@ -623,19 +623,19 @@
     }
    },
    "C": {
-    "games": 212,
+    "games": 221,
     "settled": 212,
     "sample_state": "DEVELOPING",
     "avg_score": 75.4,
     "avg_dimensions": {
-     "reliability": 73,
-     "completeness": 94.3,
-     "market": 82.5,
-     "clarity": 53.2,
-     "uncertainty": 64.1
+     "reliability": 72.7,
+     "completeness": 94.2,
+     "market": 82.9,
+     "clarity": 52.8,
+     "uncertainty": 64.4
     },
-    "market_coverage": 0.9245,
-    "market_n": 196,
+    "market_coverage": 0.9276,
+    "market_n": 205,
     "brier_ci": {
      "n": 212,
      "mean": 0.2271,
@@ -658,11 +658,11 @@
      "schema": "edgedesk_performance_v1:metrics",
      "min_n": 20,
      "eligibility": {
-      "games": 212,
+      "games": 221,
       "graded": 212,
       "void": 0,
       "flagged_pregame": 0,
-      "awaiting_result": 0,
+      "awaiting_result": 9,
       "conflict": 0,
       "by_why": {}
      },
@@ -1016,19 +1016,19 @@
     }
    },
    "D": {
-    "games": 28,
+    "games": 31,
     "settled": 28,
     "sample_state": "TOO_EARLY",
-    "avg_score": 67,
+    "avg_score": 67.1,
     "avg_dimensions": {
-     "reliability": 68.5,
-     "completeness": 91.2,
-     "market": 51.6,
-     "clarity": 49.7,
-     "uncertainty": 59.5
+     "reliability": 68.2,
+     "completeness": 91.4,
+     "market": 51.8,
+     "clarity": 49.2,
+     "uncertainty": 60.7
     },
     "market_coverage": 1,
-    "market_n": 28,
+    "market_n": 31,
     "brier_ci": {
      "n": 28,
      "mean": 0.2673,
@@ -1051,11 +1051,11 @@
      "schema": "edgedesk_performance_v1:metrics",
      "min_n": 20,
      "eligibility": {
-      "games": 28,
+      "games": 31,
       "graded": 28,
       "void": 0,
       "flagged_pregame": 0,
-      "awaiting_result": 0,
+      "awaiting_result": 3,
       "conflict": 0,
       "by_why": {}
      },
@@ -2108,13 +2108,13 @@
    },
    {
     "period": "2026-W44",
-    "games": 87,
+    "games": 101,
     "settled": 87,
     "counts": {
      "A": 0,
-     "B": 34,
-     "C": 47,
-     "D": 4,
+     "B": 36,
+     "C": 56,
+     "D": 7,
      "F": 2,
      "INSUFFICIENT": 0
     },
@@ -2140,25 +2140,25 @@
    "schema": "edgedesk_research_grade_v1:performance",
    "min_n": 20,
    "totals": {
-    "games": 117,
-    "graded": 114,
+    "games": 129,
+    "graded": 126,
     "ungraded": 3,
     "settled_graded": 114,
     "void": 0,
-    "unsettled": 0,
+    "unsettled": 12,
     "sample_state": "EARLY_SIGNAL",
-    "research_coverage": 0.9744
+    "research_coverage": 0.9767
    },
    "exclusions": {
     "void": 0,
-    "unsettled": 0,
+    "unsettled": 12,
     "by_why": {}
    },
    "distribution": {
     "A": 0,
     "B": 0,
-    "C": 102,
-    "D": 12,
+    "C": 111,
+    "D": 15,
     "F": 0,
     "INSUFFICIENT": 3
    },
@@ -2650,19 +2650,19 @@
      }
     },
     "C": {
-     "games": 102,
+     "games": 111,
      "settled": 102,
      "sample_state": "EARLY_SIGNAL",
      "avg_score": 74.6,
      "avg_dimensions": {
-      "reliability": 71,
+      "reliability": 70.6,
       "completeness": 93.6,
-      "market": 84.6,
-      "clarity": 41.5,
-      "uncertainty": 70.6
+      "market": 85.2,
+      "clarity": 41.6,
+      "uncertainty": 70.7
      },
-     "market_coverage": 0.8529,
-     "market_n": 87,
+     "market_coverage": 0.8649,
+     "market_n": 96,
      "brier_ci": {
       "n": 102,
       "mean": 0.2337,
@@ -2685,11 +2685,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 102,
+       "games": 111,
        "graded": 102,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 0,
+       "awaiting_result": 9,
        "conflict": 0,
        "by_why": {}
       },
@@ -3043,19 +3043,19 @@
      }
     },
     "D": {
-     "games": 12,
+     "games": 15,
      "settled": 12,
      "sample_state": "TOO_EARLY",
-     "avg_score": 67.7,
+     "avg_score": 67.6,
      "avg_dimensions": {
-      "reliability": 61,
-      "completeness": 93.4,
-      "market": 64.6,
-      "clarity": 40,
-      "uncertainty": 70.7
+      "reliability": 61.9,
+      "completeness": 93.3,
+      "market": 62.4,
+      "clarity": 40.9,
+      "uncertainty": 71
      },
      "market_coverage": 1,
-     "market_n": 12,
+     "market_n": 15,
      "brier_ci": {
       "n": 12,
       "mean": null,
@@ -3078,11 +3078,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 12,
+       "games": 15,
        "graded": 12,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 0,
+       "awaiting_result": 3,
        "conflict": 0,
        "by_why": {}
       },
@@ -3989,13 +3989,13 @@
     },
     {
      "period": "2026-W44",
-     "games": 9,
+     "games": 21,
      "settled": 9,
      "counts": {
       "A": 0,
       "B": 0,
-      "C": 8,
-      "D": 1,
+      "C": 17,
+      "D": 4,
       "F": 0,
       "INSUFFICIENT": 0
      },
@@ -7628,23 +7628,23 @@
    "schema": "edgedesk_research_grade_v1:performance",
    "min_n": 20,
    "totals": {
-    "games": 97,
-    "graded": 97,
+    "games": 99,
+    "graded": 99,
     "ungraded": 0,
     "settled_graded": 97,
     "void": 0,
-    "unsettled": 0,
+    "unsettled": 2,
     "sample_state": "EARLY_SIGNAL",
     "research_coverage": 1
    },
    "exclusions": {
     "void": 0,
-    "unsettled": 0,
+    "unsettled": 2,
     "by_why": {}
    },
    "distribution": {
     "A": 0,
-    "B": 76,
+    "B": 78,
     "C": 21,
     "D": 0,
     "F": 0,
@@ -7895,7 +7895,7 @@
      }
     },
     "B": {
-     "games": 76,
+     "games": 78,
      "settled": 76,
      "sample_state": "EARLY_SIGNAL",
      "avg_score": 87,
@@ -7904,10 +7904,10 @@
       "completeness": 99,
       "market": 87.4,
       "clarity": 73.7,
-      "uncertainty": 89.2
+      "uncertainty": 89.1
      },
      "market_coverage": 1,
-     "market_n": 76,
+     "market_n": 78,
      "brier_ci": {
       "n": 76,
       "mean": 0.2419,
@@ -7930,11 +7930,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 76,
+       "games": 78,
        "graded": 76,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 0,
+       "awaiting_result": 2,
        "conflict": 0,
        "by_why": {}
       },
@@ -9409,11 +9409,11 @@
     },
     {
      "period": "2026-W44",
-     "games": 34,
+     "games": 36,
      "settled": 34,
      "counts": {
       "A": 0,
-      "B": 34,
+      "B": 36,
       "C": 0,
       "D": 0,
       "F": 0,
@@ -11155,25 +11155,25 @@
    "schema": "edgedesk_research_grade_v1:performance",
    "min_n": 20,
    "totals": {
-    "games": 329,
-    "graded": 322,
+    "games": 343,
+    "graded": 336,
     "ungraded": 7,
     "settled_graded": 322,
     "void": 0,
-    "unsettled": 0,
+    "unsettled": 14,
     "sample_state": "DEVELOPING",
-    "research_coverage": 0.9787
+    "research_coverage": 0.9796
    },
    "exclusions": {
     "void": 0,
-    "unsettled": 0,
+    "unsettled": 14,
     "by_why": {}
    },
    "distribution": {
     "A": 0,
-    "B": 76,
-    "C": 212,
-    "D": 28,
+    "B": 78,
+    "C": 221,
+    "D": 31,
     "F": 6,
     "INSUFFICIENT": 7
    },
@@ -11422,7 +11422,7 @@
      }
     },
     "B": {
-     "games": 76,
+     "games": 78,
      "settled": 76,
      "sample_state": "EARLY_SIGNAL",
      "avg_score": 87,
@@ -11431,10 +11431,10 @@
       "completeness": 99,
       "market": 87.4,
       "clarity": 73.7,
-      "uncertainty": 89.2
+      "uncertainty": 89.1
      },
      "market_coverage": 1,
-     "market_n": 76,
+     "market_n": 78,
      "brier_ci": {
       "n": 76,
       "mean": 0.2419,
@@ -11457,11 +11457,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 76,
+       "games": 78,
        "graded": 76,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 0,
+       "awaiting_result": 2,
        "conflict": 0,
        "by_why": {}
       },
@@ -11739,19 +11739,19 @@
      }
     },
     "C": {
-     "games": 212,
+     "games": 221,
      "settled": 212,
      "sample_state": "DEVELOPING",
      "avg_score": 75.4,
      "avg_dimensions": {
-      "reliability": 73,
-      "completeness": 94.3,
-      "market": 82.5,
-      "clarity": 53.2,
-      "uncertainty": 64.1
+      "reliability": 72.7,
+      "completeness": 94.2,
+      "market": 82.9,
+      "clarity": 52.8,
+      "uncertainty": 64.4
      },
-     "market_coverage": 0.9245,
-     "market_n": 196,
+     "market_coverage": 0.9276,
+     "market_n": 205,
      "brier_ci": {
       "n": 212,
       "mean": 0.2271,
@@ -11774,11 +11774,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 212,
+       "games": 221,
        "graded": 212,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 0,
+       "awaiting_result": 9,
        "conflict": 0,
        "by_why": {}
       },
@@ -12132,19 +12132,19 @@
      }
     },
     "D": {
-     "games": 28,
+     "games": 31,
      "settled": 28,
      "sample_state": "TOO_EARLY",
-     "avg_score": 67,
+     "avg_score": 67.1,
      "avg_dimensions": {
-      "reliability": 68.5,
-      "completeness": 91.2,
-      "market": 51.6,
-      "clarity": 49.7,
-      "uncertainty": 59.5
+      "reliability": 68.2,
+      "completeness": 91.4,
+      "market": 51.8,
+      "clarity": 49.2,
+      "uncertainty": 60.7
      },
      "market_coverage": 1,
-     "market_n": 28,
+     "market_n": 31,
      "brier_ci": {
       "n": 28,
       "mean": 0.2673,
@@ -12167,11 +12167,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 28,
+       "games": 31,
        "graded": 28,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 0,
+       "awaiting_result": 3,
        "conflict": 0,
        "by_why": {}
       },
@@ -13224,13 +13224,13 @@
     },
     {
      "period": "2026-W44",
-     "games": 87,
+     "games": 101,
      "settled": 87,
      "counts": {
       "A": 0,
-      "B": 34,
-      "C": 47,
-      "D": 4,
+      "B": 36,
+      "C": 56,
+      "D": 7,
       "F": 2,
       "INSUFFICIENT": 0
      },
@@ -13255,13 +13255,13 @@
  "coverage": [
   {
    "sport": "cfb",
-   "eligible_games": 117,
-   "with_pregame_grade": 117,
-   "graded": 114,
+   "eligible_games": 129,
+   "with_pregame_grade": 129,
+   "graded": 126,
    "ungraded": 3,
    "settled": 117,
    "void": 0,
-   "awaiting": 0
+   "awaiting": 12
   },
   {
    "sport": "nba",
@@ -13285,13 +13285,13 @@
   },
   {
    "sport": "nhl",
-   "eligible_games": 97,
-   "with_pregame_grade": 97,
-   "graded": 97,
+   "eligible_games": 99,
+   "with_pregame_grade": 99,
+   "graded": 99,
    "ungraded": 0,
    "settled": 97,
    "void": 0,
-   "awaiting": 0
+   "awaiting": 2
   },
   {
    "sport": "wnba",
@@ -13392,7 +13392,7 @@
    "sport": "cfb",
    "season": 2026,
    "path": "/performance/data/grades/games/cfb-2026.json",
-   "rows": 117
+   "rows": 129
   },
   {
    "sport": "nba",
@@ -13410,7 +13410,7 @@
    "sport": "nhl",
    "season": 2027,
    "path": "/performance/data/grades/games/nhl-2027.json",
-   "rows": 97
+   "rows": 99
   },
   {
    "sport": "wnba",
