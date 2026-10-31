@@ -1,7 +1,83 @@
--- portfolio_juicereel -- part 4 of 4.
+-- portfolio_juicereel -- part 4 of 5.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
--- This last part prints the report: every row should read ok.
+
+-- THE JUICE REEL INGEST. Each wager either goes on to the shared ingest
+-- (portfolio_svc_ingest_wagers, told to adopt nothing) — a bet already
+-- stored, a bet the reader already decided on, or one nothing of theirs
+-- resembles — or is HELD for the reader, its newest copy kept. Both happen in
+-- this one statement, so a run that fails stores neither, and no checkpoint
+-- moves past a bet that is held nowhere.
+create or replace function public.portfolio_svc_jr_ingest(p_account uuid, p_run uuid, p_payload jsonb)
+returns jsonb language plpgsql set search_path = public, pg_temp as $$
+declare
+  a record; p jsonb; ext text; held_id uuid; held_status text; cands uuid[]; tight uuid[]; cand record; twins int; v_exact boolean; got uuid;
+  pass jsonb := '[]'::jsonb; n_held int := 0;
+  list jsonb := coalesce(p_payload->'positions', '[]'::jsonb);
+begin
+  perform public.portfolio_svc_assert();
+  select id, user_id, platform into a from public.platform_accounts
+   where id = p_account and connection_type = 'AGGREGATOR' and metadata->>'provider' = 'juicereel';
+  if not found then raise exception 'portfolio: no such Juice Reel account' using errcode = 'P0002'; end if;
+  if jsonb_typeof(list) <> 'array' or jsonb_array_length(list) > 500 then
+    raise exception 'portfolio: between 0 and 500 wagers per call' using errcode = '22023';
+  end if;
+  for p in select x from jsonb_array_elements(list) x loop
+    ext := p->>'external_position_id'; held_id := null; held_status := null; got := null;
+    begin
+      -- not Juice Reel's shape or not this book (the shared ingest rejects it, with its reason), or already a position: updated in place
+      if coalesce(ext, '') !~ '^juicereel:[0-9]{1,18}$' or p->>'platform' is distinct from a.platform
+         or exists (select 1 from public.portfolio_positions where user_id = a.user_id and external_position_id = ext and external_position_id like 'juicereel:%') then
+        pass := pass || jsonb_build_array(p); continue;
+      end if;
+      select id, status into held_id, held_status from public.portfolio_sync_matches where user_id = a.user_id and provider = 'juicereel' and external_position_id = ext;
+      -- decided already (and its position since deleted by the reader): stored again, like any synced bet
+      if held_status is not null and held_status <> 'PENDING' then pass := pass || jsonb_build_array(p); continue; end if;
+      cands := public.portfolio_svc_jr_candidates(a.user_id, a.platform, p, false);
+      if cardinality(cands) = 0 then
+        if held_id is not null then
+          update public.portfolio_sync_matches set status = 'SEPARATE', resolved_by = 'SYNC', resolved_at = now(), updated_at = now() where id = held_id and status = 'PENDING';
+        end if;
+        pass := pass || jsonb_build_array(p); continue;
+      end if;
+      -- EXACT: one strict look-alike, and that record fits exactly one synced wager — arriving now, held, or stored
+      v_exact := false;
+      tight := public.portfolio_svc_jr_candidates(a.user_id, a.platform, p, true);
+      if cardinality(tight) = 1 then
+        select id, placed_at, stake, odds_american, odds_decimal into cand from public.portfolio_positions where id = tight[1];
+        select (select count(*) from jsonb_array_elements(list) y
+                 where y->>'platform' = a.platform and (y->>'stake')::numeric = cand.stake
+                   and ((cand.odds_american is not null and (nullif(y->>'odds_american', ''))::int = cand.odds_american)
+                     or (cand.odds_american is null and (nullif(y->>'odds_decimal', ''))::numeric = cand.odds_decimal))
+                   and (y->>'placed_at')::timestamptz between cand.placed_at - interval '15 minutes' and cand.placed_at + interval '15 minutes')
+             + (select count(*) from public.portfolio_sync_matches o
+                 where o.user_id = a.user_id and o.status = 'PENDING' and o.platform = a.platform and o.external_position_id <> ext
+                   and (o.wager->>'stake')::numeric = cand.stake
+                   and ((cand.odds_american is not null and (nullif(o.wager->>'odds_american', ''))::int = cand.odds_american)
+                     or (cand.odds_american is null and (nullif(o.wager->>'odds_decimal', ''))::numeric = cand.odds_decimal))
+                   and (o.wager->>'placed_at')::timestamptz between cand.placed_at - interval '15 minutes' and cand.placed_at + interval '15 minutes')
+             + (select count(*) from public.portfolio_positions s
+                 where s.user_id = a.user_id and s.platform = a.platform and s.source = 'SYNC' and s.stake = cand.stake
+                   and s.odds_american is not distinct from cand.odds_american
+                   and s.placed_at between cand.placed_at - interval '15 minutes' and cand.placed_at + interval '15 minutes')
+          into twins;
+        v_exact := twins = 1;
+      end if;
+      insert into public.portfolio_sync_matches (user_id, provider, platform_account_id, platform, external_position_id, wager, candidates, exact)
+      values (a.user_id, 'juicereel', a.id, a.platform, ext, p, cands, v_exact)
+      on conflict (user_id, provider, external_position_id) do update set platform_account_id = excluded.platform_account_id, platform = excluded.platform,
+          wager = excluded.wager, candidates = excluded.candidates, exact = excluded.exact, updated_at = now()
+        where portfolio_sync_matches.status = 'PENDING'
+      returning id into got;
+      -- decided a moment ago, by the reader (its row was locked): the shared ingest applies this copy to what they decided
+      if got is null then pass := pass || jsonb_build_array(p); else n_held := n_held + 1; end if;
+    exception when others then
+      pass := pass || jsonb_build_array(p);
+    end;
+  end loop;
+  return public.portfolio_svc_ingest_wagers(p_account, p_run, (p_payload - 'positions') || jsonb_build_object('positions', pass, 'adopt', false))
+    || jsonb_build_object('positions_review', n_held);
+end $$;
 
 -- The reader's held bets, for their own review: what Juice Reel reported, and
 -- each record of theirs it resembles that is still theirs to merge — how far
@@ -151,60 +227,3 @@ begin
 end $$;
 
 notify pgrst, 'reload schema';
-
--- ─────────────────────────────────────────────────────────────────────────────
--- THE REPORT. Every row should read ok.
--- ─────────────────────────────────────────────────────────────────────────────
-select step, item, outcome from (
-  select 1 as step, 'the grants table exists in the private schema, row level security on, no policy' as item,
-    case when to_regclass('portfolio_private.oauth_grants') is not null
-      and (select relrowsecurity from pg_class where oid = 'portfolio_private.oauth_grants'::regclass)
-      and not exists (select 1 from pg_policies where schemaname = 'portfolio_private' and tablename = 'oauth_grants')
-      then 'ok' else 'CHECK THIS' end as outcome
-  union all select 2, 'tokens are stored only as ciphertext (no text column can hold one)',
-    -- every text or JSON column is one of these, none of which a token is ever written to
-    case when not exists (select 1 from information_schema.columns where table_schema = 'portfolio_private' and table_name = 'oauth_grants'
-        and data_type in ('text', 'character varying', 'jsonb', 'json', 'ARRAY')
-        and column_name not in ('provider', 'environment', 'provider_user_id', 'display_name', 'status', 'scopes', 'sync_cursor', 'last_error_code',
-                                'last_error', 'last_issues'))
-      and (select data_type from information_schema.columns where table_schema = 'portfolio_private' and table_name = 'oauth_grants' and column_name = 'ciphertext') = 'bytea'
-      then 'ok' else 'CHECK THIS' end
-  union all select 3, 'Juice Reel is registered as an aggregator, and is on only with its evidence',
-    case when exists (select 1 from public.portfolio_platform_registry g where g.platform_key = 'juicereel' and g.automatic_method = 'AUTHORIZED_API'
-        and g.source_type = 'SPORTSBOOK'
-        and (not g.automatic_enabled or exists (select 1 from portfolio_private.connector_smoke_tests t where t.id = g.enabled_by_smoke_test
-              and t.status = 'PASSED' and t.environment = 'PRODUCTION' and t.connector_version = g.connector_version and g.tos_review = 'CLEARED')))
-      then 'ok' else 'CHECK THIS — the row is missing, or on without a passing PRODUCTION smoke test and a cleared terms review' end
-  union all select 4, 'readers cannot call a Juice Reel service function, or reach the grants',
-    case when not exists (select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'
-           and p.proname like 'portfolio\_svc\_jr\_%'
-           and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute')))
-      and not has_table_privilege('authenticated', 'portfolio_private.oauth_grants', 'select')
-      and not has_table_privilege('anon', 'portfolio_private.oauth_grants', 'select')
-      and not has_schema_privilege('authenticated', 'portfolio_private', 'usage') then 'ok' else 'CHECK THIS — a service function or the grants are reachable by a reader' end
-  union all select 5, 'every Juice Reel service function asserts its caller',
-    case when not exists (select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname like 'portfolio\_svc\_jr\_%'
-           and position('portfolio_svc_assert()' in pg_get_functiondef(p.oid)) = 0) then 'ok' else 'CHECK THIS' end
-  union all select 6, 'a reader''s grant goes with their auth account',
-    case when exists (select 1 from pg_constraint where conrelid = 'portfolio_private.oauth_grants'::regclass and contype = 'f' and confdeltype = 'c')
-      then 'ok' else 'CHECK THIS' end
-  union all select 7, '"delete everything" removes the grant too (when portfolio_decision.sql is installed)',
-    case when to_regprocedure('public.portfolio_delete_everything(text)') is null then 'ok'
-         when position('oauth_grants' in pg_get_functiondef('public.portfolio_delete_everything(text)'::regprocedure)) > 0 then 'ok'
-         else 'CHECK THIS — re-apply the current supabase/portfolio_decision.sql' end
-  union all select 8, 'no sportsbook has a direct automatic method (only an approved aggregator)',
-    case when not exists (select 1 from public.portfolio_platform_registry where source_type = 'SPORTSBOOK'
-      and automatic_method is not null and automatic_method <> 'AUTHORIZED_API') then 'ok' else 'CHECK THIS' end
-  union all select 9, 'held bets: row level security on, a reader reads only their own and writes none',
-    case when (select relrowsecurity from pg_class where oid = 'public.portfolio_sync_matches'::regclass)
-      and (select count(*) from pg_policies where schemaname = 'public' and tablename = 'portfolio_sync_matches') = 1
-      and exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'portfolio_sync_matches' and cmd = 'SELECT')
-      and not has_table_privilege('authenticated', 'public.portfolio_sync_matches', 'insert')
-      and not has_table_privilege('authenticated', 'public.portfolio_sync_matches', 'update')
-      and not has_table_privilege('authenticated', 'public.portfolio_sync_matches', 'delete')
-      and not has_table_privilege('anon', 'public.portfolio_sync_matches', 'select') then 'ok' else 'CHECK THIS' end
-  union all select 10, 'one position per reader and Juice Reel bet id (unique, whichever book)',
-    case when to_regclass('public.portfolio_positions_juicereel_once') is not null then 'ok'
-      else 'CHECK THIS — the same Juice Reel bet is stored twice for a reader: keep one of each pair, then apply this file again' end
-) r order by 1;
-

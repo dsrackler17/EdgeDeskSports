@@ -14,17 +14,18 @@ This is separate from the Juice Reel **bet sync** in Portfolio ([docs/juicereel.
 
 ## 1. Set up at Juice Reel (Settings → OAuth applications)
 
-**Which application (what the account's settings showed on 2026-10-28).** Juice Reel's settings page says these integrations are for giving a seller's Juice Passholders "additional value outside of what Juice Reel provides", so that "their subscription also gives them access". That is exactly this build. The account has two applications:
+**Which application.** Juice Reel's settings page says these integrations are for giving a seller's Juice Passholders "additional value outside of what Juice Reel provides", so that "their subscription also gives them access". That is exactly this build. The account has two applications:
 
 | Application | Client id | Sign in With Juice Reel | Use for this |
 |---|---|---|---|
-| EdgeDeskSports | `jr_AFk36va1…` | **off**: owner-only. It cannot run the checkout, whose last step is the buyer's consent, and this cannot be changed after creation | no; disable it once the other passes `check` |
+| EdgeDeskSports | `jr_AFk36va1…` | **off**: owner-only. It cannot run the checkout, whose last step is the buyer's consent, and this cannot be changed after creation | no; **disable it once the Integration app passes `check`** |
 | **EdgeDesk Sports Integration** | `jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK` | **on** | **yes** |
 
-On **EdgeDesk Sports Integration**, as found:
-- **Its only registered redirect URI** is `https://iattxbkbufslbauoumga.supabase.co/functions/v1/juicereel-callback`. Nothing in this repository serves that address. Add the two URIs in step 1 below.
-- **Its approved scopes** are `subscribers.read` and `bets.open.read`. Billing needs only the first. `bets.settled.read` is **not** approved, and the Portfolio bet sync asks for it ([juicereel.md](juicereel.md)).
+On **EdgeDesk Sports Integration**, as of 2026-10-30:
+- **Both redirect URIs are registered:** `https://edgedesksports.com/oauth/juicereel-subscribe.html` (this checkout) and `https://edgedesksports.com/oauth/juicereel-callback.html` (the bet sync). On 2026-10-28 its only URI was `https://iattxbkbufslbauoumga.supabase.co/functions/v1/juicereel-callback`, which nothing in this repository serves.
+- **Its approved scopes** are `subscribers.read`, `bets.open.read` and, **approved 2026-10-30, `bets.settled.read`**. Billing needs only the first. The Portfolio bet sync needs the other two ([juicereel.md](juicereel.md) § 1).
 - **Supabase's `JUICE_REEL_CLIENT_ID` must be this application's id**, and `JUICE_REEL_CLIENT_SECRET` its secret. Juice Reel shows a secret only once: if it was not kept, use **Rotate secret** and put the new one straight into Supabase.
+- **`check` says which application the id is** (Actions → Deploy Juice Reel billing, and `jr_check` in Actions → Juice Reel setup). It reads the id's first 10 characters: `jr_UcOwwS` is the Integration app (correct), `jr_AFk36va1` is EdgeDeskSports (wrong, and the run fails with what to fix). Any other id is reported as unknown. The secret is never printed.
 
 The steps:
 
@@ -35,8 +36,8 @@ The steps:
    https://edgedesksports.com/oauth/juicereel-subscribe.html
    ```
 
-   It is the checkout's **success URL**, its **cancel URL**, and the **redirect URI** of an account link. One URI serves all three. Juice Reel compares it character for character: same scheme, host and path, no trailing slash. Add the bet sync's own URI too, `https://edgedesksports.com/oauth/juicereel-callback.html`.
-2. **Scope.** Have `subscribers.read` approved. The checkout asks for it, and it is what lets EdgeDesk ask Juice Reel whether the buyer is subscribed.
+   It is the checkout's **success URL**, its **cancel URL**, and the **redirect URI** of an account link. One URI serves all three. Juice Reel compares it character for character: same scheme, host and path, no trailing slash. The bet sync's own URI is registered too (done 2026-10-30): `https://edgedesksports.com/oauth/juicereel-callback.html`.
+2. **Scope.** Have `subscribers.read` approved (done). The checkout asks for it, and it is what lets EdgeDesk ask Juice Reel whether the buyer is subscribed.
 3. **What is sold.** Create the EdgeDesk subscription product(s) on EdgeDesk's Juice Reel seller account (the plan, price and duration). EdgeDesk sends no product id: the buyer chooses on Juice Reel's checkout. **Each product opens only what it is mapped to** (§ 2, `set_product`): the terminal, or Bet Checker. **A product not mapped opens nothing**, so a cheaper product, or anything else the seller sells on Juice Reel, never opens the terminal by default. Until 2026-10-29 every product opened the terminal.
 4. **Webhook.** Subscribe the **SUBSCRIPTION_EVENTS** bucket (purchased, renewed, cancelled, expired) to:
 

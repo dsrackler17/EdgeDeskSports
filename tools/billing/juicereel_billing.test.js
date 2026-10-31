@@ -496,6 +496,27 @@ const REDIRECT = 'https://edgedesksports.com/oauth/juicereel-subscribe.html';
     chk('check with a wrong secret: not accepted, JR_CLIENT_REFUSED', r.body.accepted === false && r.body.code === 'JR_CLIENT_REFUSED');
     r = await call({ action: 'check' }, U.token);
     chk('check is refused to a reader', r.status === 403);
+    // which Juice Reel application JUICE_REEL_CLIENT_ID is, by its first 10 characters (2026-10-30)
+    r = await call({ action: 'check' }, 'service-key');
+    chk('check names the application: the test id is neither known app — unknown, not ok, the Integration app named as the one to use',
+      r.body.app && r.body.app.verdict === 'unknown' && r.body.app.ok === false && r.body.app.client_id_prefix === J.o.clientId.slice(0, 10)
+        && /neither known Juice Reel application/.test(r.body.app.message) && /jr_UcOwwS/.test(r.body.app.message), JSON.stringify(r.body.app));
+    const INTEGRATION_ID = 'jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK', OWNER_ONLY_ID = 'jr_AFk36va1' + 'Zq9xLw2Rt7Kp0Nb4Vc8Hd';
+    const callsBefore = J.S.calls.length;
+    // no secret set, so Juice Reel is not asked: the application verdict needs no request
+    r = await call({ action: 'check' }, 'service-key', load({ JUICE_REEL_CLIENT_ID: INTEGRATION_ID, JUICE_REEL_CLIENT_SECRET: '' }));
+    chk('check with the EdgeDesk Sports Integration id (jr_UcOwwS…): correct, named, ok — only its first 10 characters returned',
+      r.status === 200 && r.body.app.verdict === 'correct' && r.body.app.ok === true && r.body.app.name === 'EdgeDesk Sports Integration'
+        && r.body.app.client_id_prefix === 'jr_UcOwwS-' && JSON.stringify(r.body).indexOf(INTEGRATION_ID) < 0, JSON.stringify(r.body.app));
+    r = await call({ action: 'check' }, 'service-key', load({ JUICE_REEL_CLIENT_ID: OWNER_ONLY_ID, JUICE_REEL_CLIENT_SECRET: '' }));
+    chk('check with the EdgeDeskSports id (jr_AFk36va1…, sign-in off): WRONG, not ok, said plainly with the id to use; the full id not echoed',
+      r.status === 200 && r.body.app.verdict === 'wrong' && r.body.app.ok === false && r.body.app.name === 'EdgeDeskSports' && r.body.app.client_id_prefix === 'jr_AFk36va'
+        && /^WRONG APPLICATION: JUICE_REEL_CLIENT_ID \(jr_AFk36va…\) is the EdgeDeskSports app/.test(r.body.app.message) && /jr_UcOwwS…/.test(r.body.app.message)
+        && JSON.stringify(r.body).indexOf(OWNER_ONLY_ID) < 0 && J.S.calls.length === callsBefore, JSON.stringify(r.body.app));
+    r = await call({ action: 'check' }, 'service-key', load({ JUICE_REEL_CLIENT_ID: '', JUICE_REEL_CLIENT_SECRET: '' }));
+    chk('check with no client id: not_set, no prefix', r.body.app.verdict === 'not_set' && r.body.app.client_id_prefix === null, JSON.stringify(r.body.app));
+    r = await call({ action: 'check' }, 'service-key', load({ JUICE_REEL_CLIENT_ID: '', JUICE_REEL_CLIENT_SECRET: 'jrs_never_printed_0001' }));
+    chk('the secret is never in the check\'s answer', JSON.stringify(r.body).indexOf('jrs_never_printed_0001') < 0 && JSON.stringify(r.body).indexOf(J.o.clientSecret) < 0);
   }
 
   /* ── 13. what each Juice Reel product opens ───────────────────────────── */

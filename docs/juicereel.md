@@ -35,18 +35,23 @@
 
 ## 1. Register this redirect URI
 
-On the Juice Reel application (Juice Reel → Settings → OAuth applications → EdgeDeskSports), the redirect URI must be **exactly**:
+**State on 2026-10-30.** The bet sync uses the Juice Reel application **EdgeDesk Sports Integration** (client id `jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK`, Sign in With Juice Reel **on**). Juice Reel has **approved `bets.settled.read`** on it, and **both redirect URIs are registered** on it:
 
 ```
 https://edgedesksports.com/oauth/juicereel-callback.html
+https://edgedesksports.com/oauth/juicereel-subscribe.html
 ```
 
-- Same scheme, host, path and no trailing slash. Juice Reel compares it character for character.
-- It is a static page in this repository (`oauth/juicereel-callback.html`), served with the site (GitHub Pages).
-- This bet-sync connection uses no checkout URI. Selling EdgeDesk through Juice Reel's checkout (2026-10-28) registers its own URI, `https://edgedesksports.com/oauth/juicereel-subscribe.html`: see [juicereel-billing.md](juicereel-billing.md) § 1.
-- **Scopes this connection requests:** `bets.open.read` and `bets.settled.read`, nothing else. The billing checkout requests `subscribers.read` on its own authorization ([juicereel-billing.md](juicereel-billing.md)).
+- The first is this bet sync's. The second is the billing checkout's ([juicereel-billing.md](juicereel-billing.md) § 1). One application serves both.
+- Each must match **exactly**: same scheme, host, path and no trailing slash. Juice Reel compares it character for character.
+- `oauth/juicereel-callback.html` is a static page in this repository, served with the site (GitHub Pages).
+- **Scopes this connection requests:** `bets.open.read` and `bets.settled.read`, nothing else. Both are now approved on the Integration app. The billing checkout requests `subscribers.read` on its own authorization ([juicereel-billing.md](juicereel-billing.md)).
+- **The other application, EdgeDeskSports (`jr_AFk36va1…`), is the wrong one.** Its Sign in With Juice Reel is off, so no reader can consent to it. The 2026-10-30 `check` named its owner as "EdgeDeskSports". **Disable it at Juice Reel once the Integration app passes `check`** (below).
 
-`node tools/portfolio/juicereel_smoke.js probe` prints the redirect URI the deployed function actually sends, and checks that the callback page is served there.
+**`check` now says which application `JUICE_REEL_CLIENT_ID` is** (Actions → Juice Reel setup → `check`, or `node tools/portfolio/juicereel_smoke.js probe`). `jr_check` answers two more things:
+
+- `app`: the client id's first 10 characters, matched against `jr_UcOwwS` (EdgeDesk Sports Integration, **correct**) and `jr_AFk36va1` (EdgeDeskSports, **wrong**). On the wrong one the run **fails**, and says to put the Integration app's id and secret in Supabase. An id that is neither is reported as `unknown` (a warning). The secret is never read for this, and never printed.
+- `scopes`: the scopes the bet sync requests, against the scopes Juice Reel granted on the **most recent token** stored (any reader's connect or refresh; `portfolio_svc_jr_latest_scopes`, scopes and time only). A requested scope missing from it is flagged (`MISSING bets.settled.read`, a warning). Before anyone has connected it says *no token yet*.
 
 ## 2. Subscription events: not used by the bet sync
 
@@ -313,7 +318,7 @@ Additive and idempotent. It changes no existing table and adds the registry row.
 | `portfolio_positions_juicereel_once` | a unique index on `portfolio_positions (user_id, external_position_id)` for Juice Reel ids. It is made only over data that already satisfies it; otherwise report row 10 says CHECK THIS |
 | `portfolio_svc_jr_ingest`, `_candidates`, `_matches`, `_merge`, `_match_resolve` | the held bets, service role only like every `portfolio_svc_jr_*`. `portfolio_svc_jr_grant_for_user` adds `bets`, `platforms`, `review` and `review_exact`. `portfolio_aggregator.sql`'s shared ingest gains `"adopt": false`. SharpSports never sends it, so its behaviour is unchanged |
 
-Run order: `portfolio.sql` → `portfolio_journal.sql` → `portfolio_connect.sql` → `portfolio_decision.sql` → `portfolio_aggregator.sql` → `portfolio_model_context.sql` → **`portfolio_juicereel.sql`**. That is the Deploy Portfolio schema workflow's order. Paste-sized: `supabase/parts/portfolio_juicereel.part*-of-4.sql` (`portfolio_aggregator.sql` changed too on 2026-10-30: re-apply it first, or paste its parts).
+Run order: `portfolio.sql` → `portfolio_journal.sql` → `portfolio_connect.sql` → `portfolio_decision.sql` → `portfolio_aggregator.sql` → `portfolio_model_context.sql` → **`portfolio_juicereel.sql`**. That is the Deploy Portfolio schema workflow's order. Paste-sized: `supabase/parts/portfolio_juicereel.part*-of-5.sql` (`portfolio_aggregator.sql` changed too on 2026-10-30: re-apply it first, or paste its parts).
 
 ## 7. Security model
 
