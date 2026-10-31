@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-31T14:08:21.070Z",
- "board_generated_at": "2026-10-31T14:08:11.321Z",
+ "generated_at": "2026-10-31T15:08:19.955Z",
+ "board_generated_at": "2026-10-31T15:08:10.246Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -153,9 +153,9 @@
    "kickoff": "2026-10-31T16:00:00.000Z",
    "named": false,
    "edgedesk": "Notre Dame −22.0",
-   "market": "Notre Dame −30.5",
+   "market": "Notre Dame −31.5",
    "books": 1,
-   "gap": 8.6,
+   "gap": 9.6,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "MARKET_FAULT",
@@ -201,17 +201,17 @@
     },
     {
      "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 1 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
+     "result": "PASS",
+     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 2.8 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9.4"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 10.4"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail."
   }
  ],
  "inconsistent": [],
