@@ -159,15 +159,38 @@ try {
   chk('using more than the grant is refused', fails(() => db.service("select public.poly_api_settle('{\"grant_id\":" + g2.grant_id + ",\"used\":11}'::jsonb);")));
   db.service("select public.poly_api_settle('{\"grant_id\":" + g2.grant_id + ",\"used\":10}'::jsonb);");
   V("update public.poly_api_days set granted = 39995");
-  const g3 = fn("public.poly_api_acquire('{\"caller\":\"t\",\"requested\":100}'::jsonb)", db.service);
+  // the tonight runs draw on the whole ceiling, so the ceiling itself is shown with them (any other caller is held to
+  // 30,000 by the holders' holdback, checked below)
+  const g3 = fn("public.poly_api_acquire('{\"caller\":\"polymarket_sync:tonight\",\"requested\":100}'::jsonb)", db.service);
   chk('the daily ceiling (40,000): only what is left is granted', g3.granted === 5);
-  const g4 = fn("public.poly_api_acquire('{\"caller\":\"t\",\"requested\":100}'::jsonb)", db.service);
+  const g4 = fn("public.poly_api_acquire('{\"caller\":\"polymarket_sync:tonight\",\"requested\":100}'::jsonb)", db.service);
   chk('…then nothing (denied_budget): a refusal, never a wait', g4.decision === 'denied_budget' && g4.granted === 0);
   V("update public.poly_api_days set granted = 0, used = 0");
   db.service("select public.poly_api_settle('{\"grant_id\":" + g3.grant_id + ",\"used\":5,\"breaker\":true}'::jsonb);");
   const g5 = fn("public.poly_api_acquire('{\"caller\":\"t\",\"requested\":100}'::jsonb)", db.service);
   chk('a run that opened the breaker shuts the gateway for 15 minutes', g5.decision === 'denied_breaker' && g5.granted === 0, g5);
   V("update public.poly_api_days set breaker_until = now() - interval '1 second', granted = 0, used = 0");
+
+  /* THE HOLDERS' HOLDBACK (owner's decision, 2026-10-31). That day a manual run_now and the overnight wallet runs used
+     34,525 of the 40,000, and every tonight (holders) run after 11:10 UTC was refused denied_budget: Smart Money
+     Tonight read "Sync failed" all evening. 10,000 of the day are held back for the tonight runs. */
+  // the tonight runs have used 5 today (g3 above), so 9,995 are held
+  V("update public.poly_api_days set granted = 31000");
+  const hW = fn("public.poly_api_acquire('{\"caller\":\"polymarket_sync:wallets\",\"requested\":900}'::jsonb)", db.service);
+  chk('holdback: with 31,000 of the day reserved, a wallet run gets nothing: the 9,995 left of the 10,000 are the holders\'',
+    hW.decision === 'denied_budget' && hW.granted === 0 && /held back for the holders/.test(hW.reason || ''), hW);
+  const hM = fn("public.poly_api_acquire('{\"caller\":\"run_now\",\"requested\":100}'::jsonb)", db.service);
+  chk('holdback: nor does any other caller (a manual run, the pool)', hM.decision === 'denied_budget' && hM.granted === 0, hM);
+  const hT = fn("public.poly_api_acquire('{\"caller\":\"polymarket_sync:tonight\",\"requested\":400}'::jsonb)", db.service);
+  chk('holdback: a tonight run is still granted its 400', hT.decision === 'granted' && hT.granted === 400, hT);
+  db.service("select public.poly_api_settle('{\"grant_id\":" + hT.grant_id + ",\"used\":60}'::jsonb);");
+  V("update public.poly_api_days set granted = 29500");
+  const hW2 = fn("public.poly_api_acquire('{\"caller\":\"polymarket_sync:wallets\",\"requested\":900}'::jsonb)", db.service);
+  chk('holdback: what the tonight runs have used comes out of it (10,000 - 5 - 60 held; 40,000 - 9,935 - 29,500 = 565 for a wallet run)',
+    hW2.decision === 'granted' && hW2.granted === 565 && hW2.held_for_tonight === 9935, hW2);
+  db.service("select public.poly_api_settle('{\"grant_id\":" + hW2.grant_id + ",\"used\":0}'::jsonb);");
+  V("update public.poly_api_days set granted = 0, used = 0");
+
   chk('no client may ask the gateway for requests', fails(() => db.anon("select public.poly_api_acquire('{}'::jsonb);")) && fails(() => asSub("select public.poly_api_acquire('{}'::jsonb);"))
     && fails(() => asA("select public.poly_api_settle('{}'::jsonb);")));
 
@@ -506,7 +529,7 @@ try {
     oE3.sides && oE3.sides.length === 1 && oE3.sides[0].outcome === 'Patriots' && Number(oE3.sides[0].dollars) === 600 && !obs.some((o) => o.event_id === 'E4'), oE3);
   chk('v2: …and names no wallet', !JSON.stringify(obs).includes('0x') || !obs.some((o) => 'wallets' in o || (o.sides || []).some((x) => 'wallet' in x || 'wallets' in x)));
   chk('v2: observed activity is subscribers only, like the cards', !('observed' in fn('public.radar_tonight()', db.anon)) && !('observed' in fn('public.radar_tonight()', asA)));
-  /* THE SYNC STATE: "sync failed" and "no current position" read differently. The holders sync runs every 10 minutes;
+  /* THE SYNC STATE: "sync failed" and "no current position" read differently. The holders sync runs every 15 minutes;
      30 minutes without a good run, or an error as its latest, is a failure; the nightly grade, 36 hours */
   const syncOf = () => fn('public.radar_tonight()', asSub).sync || {};
   const syncRun = (mode, status, ago, message) => db.service(`insert into public.poly_sync_runs (run_id, mode, trigger, status, started_at, finished_at, message)
@@ -638,9 +661,9 @@ try {
     create schema if not exists net; create table if not exists net.calls (url text, body jsonb, headers jsonb);
     create or replace function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds integer default 5000) returns bigint language sql as $$ insert into net.calls values (url, body, headers); select 1::bigint $$;`);
   out = db.applyFile(F('polymarket_sync_cron.sql'));
-  chk('cron: four jobs; the report flags the missing secret', /1 tonight runs every 10 minutes\|ok/.test(out) && /4 the grade runs daily at 10:17 UTC\|ok/.test(out) && /CHECK THIS: select vault\.create_secret/.test(out), out);
-  chk('cron: tonight every 10 minutes, the pool at 06:07, wallets every 5 minutes through the night, the grade at 10:17',
-    V("select string_agg(jobname || '=' || schedule, ',' order by jobname) from cron.job") === 'polymarket_sync_grade=17 10 * * *,polymarket_sync_pool=7 6 * * *,polymarket_sync_tonight=*/10 * * * *,polymarket_sync_wallets=10-55/5 6-9 * * *');
+  chk('cron: four jobs; the report flags the missing secret', /1 tonight runs every 15 minutes\|ok/.test(out) && /4 the grade runs daily at 10:17 UTC\|ok/.test(out) && /CHECK THIS: select vault\.create_secret/.test(out), out);
+  chk('cron: tonight every 15 minutes, the pool at 06:07, wallets every 5 minutes through the night, the grade at 10:17',
+    V("select string_agg(jobname || '=' || schedule, ',' order by jobname) from cron.job") === 'polymarket_sync_grade=17 10 * * *,polymarket_sync_pool=7 6 * * *,polymarket_sync_tonight=*/15 * * * *,polymarket_sync_wallets=10-55/5 6-9 * * *');
   let pk = JSON.parse(V("select public.radar_poke('tonight');"));
   chk('cron: without the secret the poke sends nothing and records a failed run and a FAILURE alert', pk.queued === false && V('select count(*) from net.calls') === '0'
     && V("select status from public.poly_sync_runs order by finished_at desc limit 1") === 'error' && V('select code from public.poly_alerts order by id desc limit 1') === 'no_cron_secret', pk);

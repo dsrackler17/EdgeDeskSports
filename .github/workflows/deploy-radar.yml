@@ -29,12 +29,12 @@
 # pg_cron's 5-minute spacing does overnight: two wallet calls at once would
 # pick the same wallets. Each call answers within its 75 s time budget and
 # may finish only part of a wallet; the next call carries on. The wallet calls stop while fewer than
-# run_now_reserve of today's Polymarket requests remain, so the 10-minute
-# tonight runs keep theirs; the 06:10 UTC schedule takes the wallets left.
+# run_now_reserve of today's Polymarket requests remain, so the 15-minute
+# tonight runs keep theirs (and the gateway holds 10,000 back for them whatever this is); the 06:10 UTC schedule takes the wallets left.
 # A grade runs after every 25 good wallet calls as well as at the end, and the
 # wallet calls stop after 5 hours, so the last grade runs inside GitHub's
 # 6-hour job limit. Then ONE tonight run, so the holders and the cards are
-# current at once instead of at the next 10-minute schedule.
+# current at once instead of at the next 15-minute schedule.
 # THE REPORT (report, on by default): last, whatever happened before it, where
 # Radar stands stage by stage (tools/radar/sql/radar_pipeline_report.sql,
 # read-only): the rules and the hypothesis, the sync state, the runs of the

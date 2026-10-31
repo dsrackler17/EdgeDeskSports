@@ -23,7 +23,7 @@
 --   poly_grade_runs     one row per grading run: the rules it used
 --   poly_wallet_grades  every wallet's grade, versioned by run (APPEND-ONLY)
 --   poly_holder_snapshots, poly_price_snapshots   who holds each side of the
---                       markets on upcoming games, and the price, every 10
+--                       markets on upcoming games, and the price, every 15
 --                       minutes (APPEND-ONLY)
 --   poly_sync_runs, poly_alerts   what each run did (APPEND-ONLY)
 --
@@ -263,6 +263,7 @@ returns jsonb language plpgsql security definer set search_path = public, pg_tem
 declare d public.poly_api_days; want int := greatest(0, coalesce((p ->> 'requested')::int, 0));
         cap int := public.radar_rule('run_request_cap')::int; ceiling int := public.radar_rule('daily_request_ceiling')::int;
         give int := 0; dec text; why text; gid bigint; x record; u int;
+        caller text := coalesce(nullif(p ->> 'caller', ''), 'unknown'); holdback constant int := 10000; tn int := 0; held int := 0;
 begin
   insert into public.poly_api_days (day) values ((now() at time zone 'utc')::date) on conflict (day) do nothing;
   select * into d from public.poly_api_days where day = (now() at time zone 'utc')::date for update;
@@ -284,16 +285,33 @@ begin
      where day = (x.granted_at at time zone 'utc')::date;
   end loop;
   select * into d from public.poly_api_days where day = d.day;
+  -- THE HOLDERS' HOLDBACK (owner's decision, 2026-10-31). 2026-10-31: a manual run_now (02:00-04:06 UTC) and the
+  -- overnight wallet runs used 34,525 of the day's 40,000, and every holders (tonight) run from 11:10 UTC on was
+  -- refused, so Smart Money Tonight read "Sync failed" for the rest of the day. 10,000 of the day are held back for
+  -- the tonight runs (59 of them used 3,354 that day, 57 a run): every other caller, the schedules and the manual
+  -- runs alike, may reserve only up to the ceiling less what of the holdback the tonight runs have not yet used
+  -- today. The tonight runs draw on the whole ceiling. The ceiling and the per-run cap are unchanged.
+  if caller <> 'polymarket_sync:tonight' then
+    select coalesce(sum(coalesce(st.used, g.granted)), 0) into tn
+      from public.poly_api_grants g left join public.poly_api_settlements st on st.grant_id = g.grant_id
+     where g.caller = 'polymarket_sync:tonight' and g.decision = 'granted'
+       and (g.granted_at at time zone 'utc')::date = d.day;
+    held := greatest(0, holdback - tn);
+  end if;
   if not public.radar_enabled() then dec := 'denied_disabled'; why := 'POLYMARKET_DATA_ENABLED is off';
   elsif d.breaker_until is not null and d.breaker_until > now() then dec := 'denied_breaker'; why := 'the breaker is open until ' || d.breaker_until;
   else
-    give := least(want, cap, greatest(0, ceiling - d.granted));
-    if give = 0 then dec := 'denied_budget'; why := 'the daily ceiling of ' || ceiling || ' requests is reserved'; else dec := 'granted'; end if;
+    give := least(want, cap, greatest(0, ceiling - held - d.granted));
+    if give = 0 then dec := 'denied_budget';
+      why := case when held > 0 and d.granted < ceiling
+                  then 'the daily ceiling of ' || ceiling || ' requests is reserved, less the ' || held || ' held back for the holders (tonight) runs'
+                  else 'the daily ceiling of ' || ceiling || ' requests is reserved' end;
+    else dec := 'granted'; end if;
   end if;
   update public.poly_api_days set granted = granted + give, updated_at = now() where day = d.day;
   insert into public.poly_api_grants (run_id, caller, requested, granted, decision, reason)
-  values (nullif(p ->> 'run_id', '')::uuid, coalesce(nullif(p ->> 'caller', ''), 'unknown'), want, give, dec, why) returning grant_id into gid;
-  return jsonb_build_object('decision', dec, 'granted', give, 'grant_id', gid, 'reason', why, 'ceiling', ceiling, 'run_cap', cap);
+  values (nullif(p ->> 'run_id', '')::uuid, caller, want, give, dec, why) returning grant_id into gid;
+  return jsonb_build_object('decision', dec, 'granted', give, 'grant_id', gid, 'reason', why, 'ceiling', ceiling, 'run_cap', cap, 'held_for_tonight', held);
 end $f$;
 -- the run's account: what it used (the unused part goes back to the day), the
 -- rate limits, and the breaker it opened
@@ -1007,7 +1025,7 @@ end $f$;
 -- THE SYNC STATE, for the page: whether what Smart Money Tonight shows is current, so "the sync is pending",
 -- "the sync failed" and "no featured bettor holds a position right now" never read alike. Presentation only:
 -- no rule in radar_rules() changes and nothing here selects a wallet. pending: no grading run under the live
--- rules yet. failed: the holders sync (every 10 minutes) last ended in error or has not succeeded for 30
+-- rules yet. failed: the holders sync (every 15 minutes) last ended in error or has not succeeded for 30
 -- minutes, or a grade failed after the current one, or the current one is more than 36 hours old. ok: both are
 -- current, so an empty slate means no position. Internal: the door calls it.
 create or replace function public.radar_sync_state()

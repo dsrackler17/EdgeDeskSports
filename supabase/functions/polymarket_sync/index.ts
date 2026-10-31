@@ -15,7 +15,7 @@
 // (poly_api_settle) whatever happens.
 //
 // MODES (POST body {"mode": ...}):
-//   tonight   every 10 minutes. The covered leagues' open game events (Gamma
+//   tonight   every 15 minutes. The covered leagues' open game events (Gamma
 //             /sports, /events): their markets upserted, each matched ONCE to
 //             one EdgeDesk game (signals.event_id) or left pending with its
 //             reason; then, for the matched markets of games starting within
