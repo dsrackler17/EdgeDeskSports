@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-31 — Odds NBA/NHL lines test: the budget-pressure check no longer depends on the date
+
+- **What broke.** `tools/odds/nba_nhl_lines_sql.test.js` check "2 · under pressure the two-hour band stretches…" failed on `main` and on every PR that started Odds gateway suites (23 passed, 1 failed, `"granted"`). The test reached the 60% shed level with a fixed 950-credit filler. The daily allowance it is measured against (`odds_api_budget_state`) spreads the cycle's remaining budget over its remaining days. On 2026-10-31, the last day of a cycle, that allowance is large, and 950 credits stayed under 60%. The test was nondeterministic by date.
+- **Fix** (test only). The filler takes the day's spend to 70% of the allowance the gateway computes at that moment, less what the test has already spent today. That is inside the 60–80% band for level 1 on any date. No gateway SQL, threshold or budget rule changed, and the assertion is the same.
+- **Tests:** on the old test, 23 passed, 1 failed (today). On the fix, 24 passed, 0 failed.
+
 ## 2026-10-30 — Deploy football situational tables (SQL): a button that applies supabase/football_situational.sql
 
 - **Why.** The Football situational pipeline's last step copies its artifacts into the `fsie_` tables, which do not exist in production (`Could not find the table 'public.fsie_source_files'`, run 41093420059). Until they do, every run of the pipeline fails.

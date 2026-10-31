@@ -104,8 +104,10 @@ try {
   const nflFp = fpOf('americanfootball_nfl', 'featured');
   aged(nflFp, 'americanfootball_nfl', 90);
   T.chk('2 · football is unchanged: an NFL board 90 minutes old, 2 h before kickoff, is bought (hourly)', ask('americanfootball_nfl', 'featured') === 'granted');
-  /* level 1 = past 60% of the day: the band stretches (x1.5), it is not refused first */
-  db.sql("insert into public.odds_api_requests (cycle_start, usage_day, caller, decision, dispatched, status, reserved_credits, actual_credits) values (public.odds_api_cycle_start(now()), (now() at time zone 'utc')::date, 'filler', 'granted', true, 'settled', 950, 950)");
+  /* level 1 = past 60% of the day: the band stretches (x1.5), it is not refused first. The filler takes the
+     day's spend to 70% of the allowance the gateway computes now; a fixed 950 credits fell under 60% on the
+     last day of a cycle, when the remaining budget is spread over one day (2026-10-31). */
+  db.sql("insert into public.odds_api_requests (cycle_start, usage_day, caller, decision, dispatched, status, reserved_credits, actual_credits) select public.odds_api_cycle_start(now()), (now() at time zone 'utc')::date, 'filler', 'granted', true, 'settled', f.n, f.n from (select greatest(1, ceil(0.70 * (b->>'daily_allowance')::numeric) - coalesce((b->>'spent_today')::numeric, 0))::int as n from public.odds_api_budget_state(now()) b) f");
   aged(nbaFp, 'basketball_nba', 150);
   const stretched = ask('basketball_nba', 'featured');
   db.sql("delete from public.odds_api_requests where caller = 'filler'");
