@@ -182,6 +182,22 @@ try {
   c = card('g1', "now() - interval '3 hours'");
   T.chk('card: after tip with no report captured before it, UNAVAILABLE', c.state === 'UNAVAILABLE');
 
+  /* ---- a warn always says why (2026-10-30: production read warn with state_reason null, for an unmatched name) ---- */
+  const why = () => J(db.anon('select row_to_json(r) from public.nba_injury_readiness r;'));
+  const repW = report('nba_official', ['g1'], [['g1', '30', 'CHA', '1', 'Coby White', 'OUT']]);
+  run('warn', { report: repW, unmatched: 1 });
+  rd = why();
+  T.chk('readiness reason: an unmatched name is a warn that names itself', rd.state === 'warn' && /matched no rostered player/.test(rd.state_reason || ''), rd);
+  run('warn', { report: repW, missing: 'BKN' });
+  rd = why();
+  T.chk('readiness reason: a team missing on a game day is named', rd.state === 'warn' && /missing from the report: BKN/.test(rd.state_reason || ''), rd);
+  db.service(`insert into public.nba_injury_sync_runs (status, started_at, finished_at, game_day, report_id, report_source, official_ok, report_published_at, trigger) values ('ok', now() - interval '1 minute', now(), true, ${repW}, 'nba_official', true, now() - interval '5 hours', 'test');`);
+  rd = why();
+  T.chk('readiness reason: an old league report on a game day says how old', rd.state === 'warn' && /newest report is 3\d\d min old on a game day \(over 120\)/.test(rd.state_reason || ''), rd);
+  db.service(`insert into public.nba_injury_alerts (run_id, severity, code, message) values ((select run_id from public.nba_injury_sync_runs order by finished_at desc limit 1), 'DEGRADED', 'test_degraded', 'a degraded check');`);
+  rd = why();
+  T.chk('readiness reason: a degraded check in 24 h is named', rd.state === 'warn' && /1 degraded check\(s\) in 24 hours/.test(rd.state_reason || ''), rd);
+
   /* ---- the cron poke: a missing secret is a recorded failure ---- */
   db.sql(`create schema if not exists cron;
     create table if not exists cron.job (jobid bigserial primary key, jobname text, schedule text, command text, active boolean default true);
