@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T02:30:00.000Z",
   "game_when_label": "2026-10-31 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T00:50:57.882Z",
-  "generated_at": "2026-10-31T00:50:57.882Z",
+  "updated_at": "2026-10-31T01:01:08.112Z",
+  "generated_at": "2026-10-31T01:01:08.112Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1883,13 +1883,13 @@
   },
   "snapshot_id": "snap_9ac3db917a18ec81",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-31T02:30:00.000Z",
-    "minutes_before_kickoff": 99,
+    "minutes_before_kickoff": 89,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-31T00:50:57.882Z"
+    "refreshed": true,
+    "at": "2026-10-31T01:01:08.112Z"
   },
   "featured": {
     "editorial_priority": 39,
@@ -2142,11 +2142,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-31T00:50:57.882Z"
+    "at": "2026-10-31T01:01:08.112Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T00:50:57.882Z",
+    "at": "2026-10-31T01:01:08.112Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2231,6 +2231,115 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T00:50:57.882Z"
+    "at": "2026-10-31T01:01:08.112Z"
+  },
+  "publication_snapshot_id": "snap_9ac3db917a18ec81",
+  "freshness": {
+    "at": "2026-10-31T01:01:08.112Z",
+    "fields": {
+      "market.line": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "market.total": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "market.book": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "market.line",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "market.total",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "market.book",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
