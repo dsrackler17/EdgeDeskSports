@@ -4,7 +4,7 @@
  "generated_by": "tools/validation/model_health.js",
  "as_of": "2026-10-31T20:08:17.988Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "6c8d4d11b6098d1e",
+ "inputs_key": "616e99c8ec5ea877",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
@@ -14,15 +14,15 @@
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
-   "rows": 336,
+   "rows": 337,
    "mode": "LIVE",
-   "sha1": "533824527e13"
+   "sha1": "ed53b4e660f0"
   },
   {
    "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
-   "rows": 7765,
+   "rows": 7799,
    "mode": "LIVE_RECONSTRUCTED / BACKTEST",
-   "sha1": "b12eef8be08b"
+   "sha1": "7fa22473f3c3"
   },
   {
    "file": "football/validation/pricing_nfl.json",
@@ -90,27 +90,27 @@
    "key": "LIVE_DECISIONS",
    "label": "Live decisions",
    "available": true,
-   "n": 329,
+   "n": 330,
    "sample": {
     "key": "MODERATE_EVIDENCE",
     "label": "Developing evidence",
-    "n": 329,
-    "text": "n=329 · Developing evidence",
+    "n": 330,
+    "text": "n=330 · Developing evidence",
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "5676 decision snapshots issued before kickoff; 329 settled"
+   "note": "5676 decision snapshots issued before kickoff; 330 settled"
   },
   {
    "key": "LIVE_CLV",
    "label": "Live CLV",
    "available": true,
-   "n": 331,
+   "n": 332,
    "sample": {
     "key": "MODERATE_EVIDENCE",
     "label": "Developing evidence",
-    "n": 331,
-    "text": "n=331 · Developing evidence",
+    "n": 332,
+    "text": "n=332 · Developing evidence",
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
@@ -139,12 +139,12 @@
    "PASS": 3455,
    "WATCH": 266
   },
-  "graded_rows": 336,
+  "graded_rows": 337,
   "unit_of_analysis": "the first snapshot of each decision class per game",
   "report": {
    "schema": "edgedesk_validation_report_v1",
    "engine": "edgedesk_validation_v1",
-   "n": 336,
+   "n": 337,
    "modes": {
     "LIVE": {
      "mode": "LIVE",
@@ -152,89 +152,89 @@
      "text": "Published before kickoff and captured at the time.",
      "all": {
       "mode": "LIVE",
-      "n": 336,
-      "settled": 336,
-      "decided": 329,
-      "wins": 166,
+      "n": 337,
+      "settled": 337,
+      "decided": 330,
+      "wins": 167,
       "losses": 163,
       "pushes": 7,
-      "observed_cover": 0.5046,
+      "observed_cover": 0.5061,
       "observed_cover_interval": {
-       "lo": 0.4508,
-       "hi": 0.5582
+       "lo": 0.4524,
+       "hi": 0.5596
       },
       "expected_cover": 0.5017,
-      "expected_n": 320,
+      "expected_n": 321,
       "calibration_error_pp": null,
       "mean_break_even": 0.5216,
-      "realized_edge_pp": -1.7,
+      "realized_edge_pp": -1.55,
       "clv": {
-       "n": 331,
-       "mean": 0.313,
+       "n": 332,
+       "mean": 0.312,
        "median": 0,
        "beat": 137,
-       "tie": 78,
+       "tie": 79,
        "lose": 116,
-       "beat_rate": 0.4139,
-       "tie_rate": 0.2356,
-       "lose_rate": 0.3505,
+       "beat_rate": 0.4127,
+       "tie_rate": 0.238,
+       "lose_rate": 0.3494,
        "beat_rate_interval": {
-        "lo": 0.3621,
-        "hi": 0.4677
+        "lo": 0.361,
+        "hi": 0.4663
        },
        "interval": {
         "lo": 0.109,
-        "hi": 0.516
+        "hi": 0.515
        },
        "sample": {
         "key": "MODERATE_EVIDENCE",
         "label": "Developing evidence",
-        "n": 331,
-        "text": "n=331 · Developing evidence",
+        "n": 332,
+        "text": "n=332 · Developing evidence",
         "recalibration": "PROPOSAL_ONLY",
         "note": "A product maturity label, not a scientific verdict."
        }
       },
       "clv_price_pp": {
-       "n": 328,
-       "mean": 0.608,
+       "n": 329,
+       "mean": 0.607,
        "median": 0,
        "beat": 137,
-       "tie": 77,
+       "tie": 78,
        "lose": 114,
-       "beat_rate": 0.4177,
-       "tie_rate": 0.2348,
-       "lose_rate": 0.3476,
+       "beat_rate": 0.4164,
+       "tie_rate": 0.2371,
+       "lose_rate": 0.3465,
        "beat_rate_interval": {
-        "lo": 0.3656,
-        "hi": 0.4717
+        "lo": 0.3644,
+        "hi": 0.4703
        },
        "interval": {
-        "lo": 0.095,
-        "hi": 1.122
+        "lo": 0.094,
+        "hi": 1.119
        },
        "sample": {
         "key": "MODERATE_EVIDENCE",
         "label": "Developing evidence",
-        "n": 328,
-        "text": "n=328 · Developing evidence",
+        "n": 329,
+        "text": "n=329 · Developing evidence",
         "recalibration": "PROPOSAL_ONLY",
         "note": "A product maturity label, not a scientific verdict."
        }
       },
       "clv_ev": {
-       "n": 328,
+       "n": 329,
        "mean": -0.029,
-       "median": -0.038,
+       "median": -0.039,
        "beat": 114,
        "tie": 2,
-       "lose": 212,
-       "beat_rate": 0.3476,
+       "lose": 213,
+       "beat_rate": 0.3465,
        "tie_rate": 0.0061,
-       "lose_rate": 0.6463,
+       "lose_rate": 0.6474,
        "beat_rate_interval": {
-        "lo": 0.2981,
-        "hi": 0.4006
+        "lo": 0.2971,
+        "hi": 0.3994
        },
        "interval": {
         "lo": -0.039,
@@ -243,8 +243,8 @@
        "sample": {
         "key": "MODERATE_EVIDENCE",
         "label": "Developing evidence",
-        "n": 328,
-        "text": "n=328 · Developing evidence",
+        "n": 329,
+        "text": "n=329 · Developing evidence",
         "recalibration": "PROPOSAL_ONLY",
         "note": "A product maturity label, not a scientific verdict."
        }
@@ -253,22 +253,22 @@
       "units_won": 0,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.031,
-      "flat_n": 336,
-      "independent_n": 251,
+      "flat_roi_hypothetical": -0.0282,
+      "flat_n": 337,
+      "independent_n": 252,
       "sample": {
        "key": "MODERATE_EVIDENCE",
        "label": "Developing evidence",
-       "n": 251,
-       "text": "n=251 · Developing evidence",
+       "n": 252,
+       "text": "n=252 · Developing evidence",
        "recalibration": "PROPOSAL_ONLY",
        "note": "A product maturity label, not a scientific verdict."
       },
-      "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence"
      },
      "calibration": {
       "mode": "LIVE",
-      "n": 320,
+      "n": 321,
       "bins": [
        {
         "lo": 0.45,
@@ -296,32 +296,32 @@
         "lo": 0.5,
         "hi": 0.52,
         "label": "50%–52%",
-        "n": 283,
+        "n": 284,
         "expected": 0.502,
-        "observed": 0.5124,
-        "error_pp": 1.04,
+        "observed": 0.5141,
+        "error_pp": 1.21,
         "interval": {
-         "lo": 0.4544,
-         "hi": 0.57
+         "lo": 0.4562,
+         "hi": 0.5716
         },
         "inside_interval": true,
         "sample": {
          "key": "MODERATE_EVIDENCE",
          "label": "Developing evidence",
-         "n": 220,
-         "text": "n=220 · Developing evidence",
+         "n": 221,
+         "text": "n=221 · Developing evidence",
          "recalibration": "PROPOSAL_ONLY",
          "note": "A product maturity label, not a scientific verdict."
         }
        }
       ],
-      "brier": 0.25001,
-      "log_loss": 0.69317,
-      "ece": 0.02323,
+      "brier": 0.25,
+      "log_loss": 0.69316,
+      "ece": 0.0247,
       "mce": 0.1214,
-      "base_rate": 0.4969,
-      "base_rate_brier": 0.24999,
-      "brier_skill_vs_base_rate": -0.0001,
+      "base_rate": 0.4984,
+      "base_rate_brier": 0.25,
+      "brier_skill_vs_base_rate": 0,
       "curve": [
        {
         "expected": 0.4998,
@@ -330,16 +330,16 @@
        },
        {
         "expected": 0.502,
-        "observed": 0.5124,
-        "n": 283
+        "observed": 0.5141,
+        "n": 284
        }
       ],
-      "independent_n": 243,
+      "independent_n": 244,
       "sample": {
        "key": "MODERATE_EVIDENCE",
        "label": "Developing evidence",
-       "n": 243,
-       "text": "n=243 · Developing evidence",
+       "n": 244,
+       "text": "n=244 · Developing evidence",
        "recalibration": "PROPOSAL_ONLY",
        "note": "A product maturity label, not a scientific verdict."
       },
@@ -651,89 +651,89 @@
        },
        "PASS": {
         "mode": "LIVE",
-        "n": 253,
-        "settled": 253,
-        "decided": 246,
-        "wins": 124,
+        "n": 254,
+        "settled": 254,
+        "decided": 247,
+        "wins": 125,
         "losses": 122,
         "pushes": 7,
-        "observed_cover": 0.5041,
+        "observed_cover": 0.5061,
         "observed_cover_interval": {
-         "lo": 0.442,
-         "hi": 0.566
+         "lo": 0.4441,
+         "hi": 0.5679
         },
-        "expected_cover": 0.5019,
-        "expected_n": 238,
+        "expected_cover": 0.5018,
+        "expected_n": 239,
         "calibration_error_pp": null,
         "mean_break_even": 0.5248,
-        "realized_edge_pp": -2.07,
+        "realized_edge_pp": -1.87,
         "clv": {
-         "n": 250,
-         "mean": 0.35,
+         "n": 251,
+         "mean": 0.349,
          "median": 0,
          "beat": 110,
-         "tie": 58,
+         "tie": 59,
          "lose": 82,
-         "beat_rate": 0.44,
-         "tie_rate": 0.232,
-         "lose_rate": 0.328,
+         "beat_rate": 0.4382,
+         "tie_rate": 0.2351,
+         "lose_rate": 0.3267,
          "beat_rate_interval": {
-          "lo": 0.3798,
-          "hi": 0.502
+          "lo": 0.3783,
+          "hi": 0.5001
          },
          "interval": {
           "lo": 0.099,
-          "hi": 0.601
+          "hi": 0.598
          },
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 250,
-          "text": "n=250 · Developing evidence",
+          "n": 251,
+          "text": "n=251 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          }
         },
         "clv_price_pp": {
-         "n": 247,
-         "mean": 0.986,
+         "n": 248,
+         "mean": 0.982,
          "median": 0,
          "beat": 110,
-         "tie": 57,
+         "tie": 58,
          "lose": 80,
-         "beat_rate": 0.4453,
-         "tie_rate": 0.2308,
-         "lose_rate": 0.3239,
+         "beat_rate": 0.4435,
+         "tie_rate": 0.2339,
+         "lose_rate": 0.3226,
          "beat_rate_interval": {
-          "lo": 0.3847,
-          "hi": 0.5077
+          "lo": 0.383,
+          "hi": 0.5058
          },
          "interval": {
-          "lo": 0.369,
-          "hi": 1.602
+          "lo": 0.368,
+          "hi": 1.596
          },
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 247,
-          "text": "n=247 · Developing evidence",
+          "n": 248,
+          "text": "n=248 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          }
         },
         "clv_ev": {
-         "n": 247,
+         "n": 248,
          "mean": -0.028,
          "median": -0.043,
          "beat": 89,
          "tie": 0,
-         "lose": 158,
-         "beat_rate": 0.3603,
+         "lose": 159,
+         "beat_rate": 0.3589,
          "tie_rate": 0,
-         "lose_rate": 0.6397,
+         "lose_rate": 0.6411,
          "beat_rate_interval": {
-          "lo": 0.303,
-          "hi": 0.4219
+          "lo": 0.3017,
+          "hi": 0.4203
          },
          "interval": {
           "lo": -0.04,
@@ -742,8 +742,8 @@
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 247,
-          "text": "n=247 · Developing evidence",
+          "n": 248,
+          "text": "n=248 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          }
@@ -752,18 +752,18 @@
         "units_won": 0,
         "roi": null,
         "roi_n": 0,
-        "flat_roi_hypothetical": -0.0381,
-        "flat_n": 253,
-        "independent_n": 246,
+        "flat_roi_hypothetical": -0.0344,
+        "flat_n": 254,
+        "independent_n": 247,
         "sample": {
          "key": "MODERATE_EVIDENCE",
          "label": "Developing evidence",
-         "n": 246,
-         "text": "n=246 · Developing evidence",
+         "n": 247,
+         "text": "n=247 · Developing evidence",
          "recalibration": "PROPOSAL_ONLY",
          "note": "A product maturity label, not a scientific verdict."
         },
-        "text": "Observed cover 50.4% (n=246) vs expected 50.2% · Developing evidence"
+        "text": "Observed cover 50.6% (n=247) vs expected 50.2% · Developing evidence"
        }
       },
       "by_tier": {
@@ -1153,11 +1153,11 @@
         "metric": "mean CLV (pts) and realized edge",
         "n": [
          0,
-         246
+         247
         ],
         "evaluated": false,
         "ok": null,
-        "text": "Not evaluated: LEAN n=0, PASS n=246 (each needs 50 independent results)."
+        "text": "Not evaluated: LEAN n=0, PASS n=247 (each needs 50 independent results)."
        },
        {
         "check": "0.50U > 0.25U",
@@ -1198,89 +1198,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 336,
-         "settled": 336,
-         "decided": 329,
-         "wins": 166,
+         "n": 337,
+         "settled": 337,
+         "decided": 330,
+         "wins": 167,
          "losses": 163,
          "pushes": 7,
-         "observed_cover": 0.5046,
+         "observed_cover": 0.5061,
          "observed_cover_interval": {
-          "lo": 0.4508,
-          "hi": 0.5582
+          "lo": 0.4524,
+          "hi": 0.5596
          },
          "expected_cover": 0.5017,
-         "expected_n": 320,
+         "expected_n": 321,
          "calibration_error_pp": null,
          "mean_break_even": 0.5216,
-         "realized_edge_pp": -1.7,
+         "realized_edge_pp": -1.55,
          "clv": {
-          "n": 331,
-          "mean": 0.313,
+          "n": 332,
+          "mean": 0.312,
           "median": 0,
           "beat": 137,
-          "tie": 78,
+          "tie": 79,
           "lose": 116,
-          "beat_rate": 0.4139,
-          "tie_rate": 0.2356,
-          "lose_rate": 0.3505,
+          "beat_rate": 0.4127,
+          "tie_rate": 0.238,
+          "lose_rate": 0.3494,
           "beat_rate_interval": {
-           "lo": 0.3621,
-           "hi": 0.4677
+           "lo": 0.361,
+           "hi": 0.4663
           },
           "interval": {
            "lo": 0.109,
-           "hi": 0.516
+           "hi": 0.515
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 331,
-           "text": "n=331 · Developing evidence",
+           "n": 332,
+           "text": "n=332 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 328,
-          "mean": 0.608,
+          "n": 329,
+          "mean": 0.607,
           "median": 0,
           "beat": 137,
-          "tie": 77,
+          "tie": 78,
           "lose": 114,
-          "beat_rate": 0.4177,
-          "tie_rate": 0.2348,
-          "lose_rate": 0.3476,
+          "beat_rate": 0.4164,
+          "tie_rate": 0.2371,
+          "lose_rate": 0.3465,
           "beat_rate_interval": {
-           "lo": 0.3656,
-           "hi": 0.4717
+           "lo": 0.3644,
+           "hi": 0.4703
           },
           "interval": {
-           "lo": 0.095,
-           "hi": 1.122
+           "lo": 0.094,
+           "hi": 1.119
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 328,
+          "n": 329,
           "mean": -0.029,
-          "median": -0.038,
+          "median": -0.039,
           "beat": 114,
           "tie": 2,
-          "lose": 212,
-          "beat_rate": 0.3476,
+          "lose": 213,
+          "beat_rate": 0.3465,
           "tie_rate": 0.0061,
-          "lose_rate": 0.6463,
+          "lose_rate": 0.6474,
           "beat_rate_interval": {
-           "lo": 0.2981,
-           "hi": 0.4006
+           "lo": 0.2971,
+           "hi": 0.3994
           },
           "interval": {
            "lo": -0.039,
@@ -1289,8 +1289,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -1299,18 +1299,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.031,
-         "flat_n": 336,
-         "independent_n": 251,
+         "flat_roi_hypothetical": -0.0282,
+         "flat_n": 337,
+         "independent_n": 252,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 251,
-          "text": "n=251 · Developing evidence",
+          "n": 252,
+          "text": "n=252 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence",
          "bucket": "CFB"
         }
        ],
@@ -1437,89 +1437,89 @@
         },
         {
          "mode": "LIVE",
-         "n": 253,
-         "settled": 253,
-         "decided": 246,
-         "wins": 124,
+         "n": 254,
+         "settled": 254,
+         "decided": 247,
+         "wins": 125,
          "losses": 122,
          "pushes": 7,
-         "observed_cover": 0.5041,
+         "observed_cover": 0.5061,
          "observed_cover_interval": {
-          "lo": 0.442,
-          "hi": 0.566
+          "lo": 0.4441,
+          "hi": 0.5679
          },
-         "expected_cover": 0.5019,
-         "expected_n": 238,
+         "expected_cover": 0.5018,
+         "expected_n": 239,
          "calibration_error_pp": null,
          "mean_break_even": 0.5248,
-         "realized_edge_pp": -2.07,
+         "realized_edge_pp": -1.87,
          "clv": {
-          "n": 250,
-          "mean": 0.35,
+          "n": 251,
+          "mean": 0.349,
           "median": 0,
           "beat": 110,
-          "tie": 58,
+          "tie": 59,
           "lose": 82,
-          "beat_rate": 0.44,
-          "tie_rate": 0.232,
-          "lose_rate": 0.328,
+          "beat_rate": 0.4382,
+          "tie_rate": 0.2351,
+          "lose_rate": 0.3267,
           "beat_rate_interval": {
-           "lo": 0.3798,
-           "hi": 0.502
+           "lo": 0.3783,
+           "hi": 0.5001
           },
           "interval": {
            "lo": 0.099,
-           "hi": 0.601
+           "hi": 0.598
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 250,
-           "text": "n=250 · Developing evidence",
+           "n": 251,
+           "text": "n=251 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 247,
-          "mean": 0.986,
+          "n": 248,
+          "mean": 0.982,
           "median": 0,
           "beat": 110,
-          "tie": 57,
+          "tie": 58,
           "lose": 80,
-          "beat_rate": 0.4453,
-          "tie_rate": 0.2308,
-          "lose_rate": 0.3239,
+          "beat_rate": 0.4435,
+          "tie_rate": 0.2339,
+          "lose_rate": 0.3226,
           "beat_rate_interval": {
-           "lo": 0.3847,
-           "hi": 0.5077
+           "lo": 0.383,
+           "hi": 0.5058
           },
           "interval": {
-           "lo": 0.369,
-           "hi": 1.602
+           "lo": 0.368,
+           "hi": 1.596
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 247,
-           "text": "n=247 · Developing evidence",
+           "n": 248,
+           "text": "n=248 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 247,
+          "n": 248,
           "mean": -0.028,
           "median": -0.043,
           "beat": 89,
           "tie": 0,
-          "lose": 158,
-          "beat_rate": 0.3603,
+          "lose": 159,
+          "beat_rate": 0.3589,
           "tie_rate": 0,
-          "lose_rate": 0.6397,
+          "lose_rate": 0.6411,
           "beat_rate_interval": {
-           "lo": 0.303,
-           "hi": 0.4219
+           "lo": 0.3017,
+           "hi": 0.4203
           },
           "interval": {
            "lo": -0.04,
@@ -1528,8 +1528,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 247,
-           "text": "n=247 · Developing evidence",
+           "n": 248,
+           "text": "n=248 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -1538,18 +1538,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0381,
-         "flat_n": 253,
-         "independent_n": 246,
+         "flat_roi_hypothetical": -0.0344,
+         "flat_n": 254,
+         "independent_n": 247,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 246,
-          "text": "n=246 · Developing evidence",
+          "n": 247,
+          "text": "n=247 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.4% (n=246) vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.6% (n=247) vs expected 50.2% · Developing evidence",
          "bucket": "PASS"
         }
        ],
@@ -1557,95 +1557,95 @@
       },
       "unit_tier": {
        "buckets": [],
-       "not_measured": 336
+       "not_measured": 337
       },
       "market": {
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 336,
-         "settled": 336,
-         "decided": 329,
-         "wins": 166,
+         "n": 337,
+         "settled": 337,
+         "decided": 330,
+         "wins": 167,
          "losses": 163,
          "pushes": 7,
-         "observed_cover": 0.5046,
+         "observed_cover": 0.5061,
          "observed_cover_interval": {
-          "lo": 0.4508,
-          "hi": 0.5582
+          "lo": 0.4524,
+          "hi": 0.5596
          },
          "expected_cover": 0.5017,
-         "expected_n": 320,
+         "expected_n": 321,
          "calibration_error_pp": null,
          "mean_break_even": 0.5216,
-         "realized_edge_pp": -1.7,
+         "realized_edge_pp": -1.55,
          "clv": {
-          "n": 331,
-          "mean": 0.313,
+          "n": 332,
+          "mean": 0.312,
           "median": 0,
           "beat": 137,
-          "tie": 78,
+          "tie": 79,
           "lose": 116,
-          "beat_rate": 0.4139,
-          "tie_rate": 0.2356,
-          "lose_rate": 0.3505,
+          "beat_rate": 0.4127,
+          "tie_rate": 0.238,
+          "lose_rate": 0.3494,
           "beat_rate_interval": {
-           "lo": 0.3621,
-           "hi": 0.4677
+           "lo": 0.361,
+           "hi": 0.4663
           },
           "interval": {
            "lo": 0.109,
-           "hi": 0.516
+           "hi": 0.515
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 331,
-           "text": "n=331 · Developing evidence",
+           "n": 332,
+           "text": "n=332 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 328,
-          "mean": 0.608,
+          "n": 329,
+          "mean": 0.607,
           "median": 0,
           "beat": 137,
-          "tie": 77,
+          "tie": 78,
           "lose": 114,
-          "beat_rate": 0.4177,
-          "tie_rate": 0.2348,
-          "lose_rate": 0.3476,
+          "beat_rate": 0.4164,
+          "tie_rate": 0.2371,
+          "lose_rate": 0.3465,
           "beat_rate_interval": {
-           "lo": 0.3656,
-           "hi": 0.4717
+           "lo": 0.3644,
+           "hi": 0.4703
           },
           "interval": {
-           "lo": 0.095,
-           "hi": 1.122
+           "lo": 0.094,
+           "hi": 1.119
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 328,
+          "n": 329,
           "mean": -0.029,
-          "median": -0.038,
+          "median": -0.039,
           "beat": 114,
           "tie": 2,
-          "lose": 212,
-          "beat_rate": 0.3476,
+          "lose": 213,
+          "beat_rate": 0.3465,
           "tie_rate": 0.0061,
-          "lose_rate": 0.6463,
+          "lose_rate": 0.6474,
           "beat_rate_interval": {
-           "lo": 0.2981,
-           "hi": 0.4006
+           "lo": 0.2971,
+           "hi": 0.3994
           },
           "interval": {
            "lo": -0.039,
@@ -1654,8 +1654,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -1664,18 +1664,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.031,
-         "flat_n": 336,
-         "independent_n": 251,
+         "flat_roi_hypothetical": -0.0282,
+         "flat_n": 337,
+         "independent_n": 252,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 251,
-          "text": "n=251 · Developing evidence",
+          "n": 252,
+          "text": "n=252 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence",
          "bucket": "spread"
         }
        ],
@@ -2030,89 +2030,89 @@
         },
         {
          "mode": "LIVE",
-         "n": 149,
-         "settled": 149,
-         "decided": 146,
-         "wins": 68,
+         "n": 150,
+         "settled": 150,
+         "decided": 147,
+         "wins": 69,
          "losses": 78,
          "pushes": 3,
-         "observed_cover": 0.4658,
+         "observed_cover": 0.4694,
          "observed_cover_interval": {
-          "lo": 0.3868,
-          "hi": 0.5465
+          "lo": 0.3905,
+          "hi": 0.5498
          },
          "expected_cover": 0.5011,
-         "expected_n": 146,
-         "calibration_error_pp": -3.53,
-         "mean_break_even": 0.5209,
-         "realized_edge_pp": -5.52,
+         "expected_n": 147,
+         "calibration_error_pp": -3.17,
+         "mean_break_even": 0.521,
+         "realized_edge_pp": -5.16,
          "clv": {
-          "n": 147,
-          "mean": 0.252,
+          "n": 148,
+          "mean": 0.25,
           "median": 0,
           "beat": 55,
-          "tie": 43,
+          "tie": 44,
           "lose": 49,
-          "beat_rate": 0.3741,
-          "tie_rate": 0.2925,
-          "lose_rate": 0.3333,
+          "beat_rate": 0.3716,
+          "tie_rate": 0.2973,
+          "lose_rate": 0.3311,
           "beat_rate_interval": {
-           "lo": 0.3001,
-           "hi": 0.4546
+           "lo": 0.2979,
+           "hi": 0.4518
           },
           "interval": {
-           "lo": -0.056,
-           "hi": 0.559
+           "lo": -0.055,
+           "hi": 0.555
           },
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 147,
-           "text": "n=147 · Early signal",
+           "n": 148,
+           "text": "n=148 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 147,
-          "mean": 0.435,
+          "n": 148,
+          "mean": 0.432,
           "median": 0,
           "beat": 55,
-          "tie": 43,
+          "tie": 44,
           "lose": 49,
-          "beat_rate": 0.3741,
-          "tie_rate": 0.2925,
-          "lose_rate": 0.3333,
+          "beat_rate": 0.3716,
+          "tie_rate": 0.2973,
+          "lose_rate": 0.3311,
           "beat_rate_interval": {
-           "lo": 0.3001,
-           "hi": 0.4546
+           "lo": 0.2979,
+           "hi": 0.4518
           },
           "interval": {
-           "lo": -0.325,
-           "hi": 1.194
+           "lo": -0.323,
+           "hi": 1.186
           },
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 147,
-           "text": "n=147 · Early signal",
+           "n": 148,
+           "text": "n=148 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 147,
+          "n": 148,
           "mean": -0.032,
           "median": -0.043,
           "beat": 48,
           "tie": 1,
-          "lose": 98,
-          "beat_rate": 0.3265,
+          "lose": 99,
+          "beat_rate": 0.3243,
           "tie_rate": 0.0068,
-          "lose_rate": 0.6667,
+          "lose_rate": 0.6689,
           "beat_rate_interval": {
-           "lo": 0.256,
-           "hi": 0.4059
+           "lo": 0.2542,
+           "hi": 0.4034
           },
           "interval": {
            "lo": -0.046,
@@ -2121,8 +2121,8 @@
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 147,
-           "text": "n=147 · Early signal",
+           "n": 148,
+           "text": "n=148 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -2131,18 +2131,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.1022,
-         "flat_n": 149,
-         "independent_n": 124,
+         "flat_roi_hypothetical": -0.0955,
+         "flat_n": 150,
+         "independent_n": 125,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 124,
-          "text": "n=124 · Early signal",
+          "n": 125,
+          "text": "n=125 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 46.6% (n=146) over 124 games vs expected 50.1% · Early signal",
+         "text": "Observed cover 46.9% (n=147) over 125 games vs expected 50.1% · Early signal",
          "bucket": "80–89"
         },
         {
@@ -2260,89 +2260,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 327,
-         "settled": 327,
-         "decided": 320,
-         "wins": 159,
+         "n": 328,
+         "settled": 328,
+         "decided": 321,
+         "wins": 160,
          "losses": 161,
          "pushes": 7,
-         "observed_cover": 0.4969,
+         "observed_cover": 0.4984,
          "observed_cover_interval": {
-          "lo": 0.4425,
-          "hi": 0.5514
+          "lo": 0.4441,
+          "hi": 0.5528
          },
          "expected_cover": 0.5017,
-         "expected_n": 320,
-         "calibration_error_pp": -0.48,
-         "mean_break_even": 0.5213,
-         "realized_edge_pp": -2.45,
+         "expected_n": 321,
+         "calibration_error_pp": -0.33,
+         "mean_break_even": 0.5214,
+         "realized_edge_pp": -2.29,
          "clv": {
-          "n": 322,
-          "mean": 0.315,
+          "n": 323,
+          "mean": 0.314,
           "median": 0,
           "beat": 133,
-          "tie": 77,
+          "tie": 78,
           "lose": 112,
-          "beat_rate": 0.413,
-          "tie_rate": 0.2391,
-          "lose_rate": 0.3478,
+          "beat_rate": 0.4118,
+          "tie_rate": 0.2415,
+          "lose_rate": 0.3467,
           "beat_rate_interval": {
-           "lo": 0.3606,
-           "hi": 0.4675
+           "lo": 0.3594,
+           "hi": 0.4662
           },
           "interval": {
            "lo": 0.107,
-           "hi": 0.524
+           "hi": 0.522
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 322,
-           "text": "n=322 · Developing evidence",
+           "n": 323,
+           "text": "n=323 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 319,
-          "mean": 0.613,
+          "n": 320,
+          "mean": 0.611,
           "median": 0,
           "beat": 133,
-          "tie": 76,
+          "tie": 77,
           "lose": 110,
-          "beat_rate": 0.4169,
-          "tie_rate": 0.2382,
-          "lose_rate": 0.3448,
+          "beat_rate": 0.4156,
+          "tie_rate": 0.2406,
+          "lose_rate": 0.3438,
           "beat_rate_interval": {
-           "lo": 0.3641,
-           "hi": 0.4717
+           "lo": 0.3629,
+           "hi": 0.4703
           },
           "interval": {
-           "lo": 0.088,
-           "hi": 1.139
+           "lo": 0.087,
+           "hi": 1.135
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 319,
-           "text": "n=319 · Developing evidence",
+           "n": 320,
+           "text": "n=320 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 319,
+          "n": 320,
           "mean": -0.029,
           "median": -0.037,
           "beat": 113,
           "tie": 2,
-          "lose": 204,
-          "beat_rate": 0.3542,
+          "lose": 205,
+          "beat_rate": 0.3531,
           "tie_rate": 0.0063,
-          "lose_rate": 0.6395,
+          "lose_rate": 0.6406,
           "beat_rate_interval": {
-           "lo": 0.3038,
-           "hi": 0.4082
+           "lo": 0.3028,
+           "hi": 0.407
           },
           "interval": {
            "lo": -0.039,
@@ -2351,8 +2351,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 319,
-           "text": "n=319 · Developing evidence",
+           "n": 320,
+           "text": "n=320 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -2361,18 +2361,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0448,
-         "flat_n": 327,
-         "independent_n": 243,
+         "flat_roi_hypothetical": -0.0419,
+         "flat_n": 328,
+         "independent_n": 244,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 243,
-          "text": "n=243 · Developing evidence",
+          "n": 244,
+          "text": "n=244 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 49.7% (n=320) over 243 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 49.8% (n=321) over 244 games vs expected 50.2% · Developing evidence",
          "bucket": "partially calibrated"
         }
        ],
@@ -2616,89 +2616,89 @@
         },
         {
          "mode": "LIVE",
-         "n": 268,
-         "settled": 268,
-         "decided": 263,
-         "wins": 133,
+         "n": 269,
+         "settled": 269,
+         "decided": 264,
+         "wins": 134,
          "losses": 130,
          "pushes": 5,
-         "observed_cover": 0.5057,
+         "observed_cover": 0.5076,
          "observed_cover_interval": {
-          "lo": 0.4456,
-          "hi": 0.5656
+          "lo": 0.4476,
+          "hi": 0.5673
          },
          "expected_cover": 0.5017,
-         "expected_n": 255,
+         "expected_n": 256,
          "calibration_error_pp": null,
          "mean_break_even": 0.5217,
-         "realized_edge_pp": -1.6,
+         "realized_edge_pp": -1.41,
          "clv": {
-          "n": 266,
-          "mean": 0.323,
+          "n": 267,
+          "mean": 0.322,
           "median": 0,
           "beat": 108,
-          "tie": 62,
+          "tie": 63,
           "lose": 96,
-          "beat_rate": 0.406,
-          "tie_rate": 0.2331,
-          "lose_rate": 0.3609,
+          "beat_rate": 0.4045,
+          "tie_rate": 0.236,
+          "lose_rate": 0.3596,
           "beat_rate_interval": {
-           "lo": 0.3487,
-           "hi": 0.466
+           "lo": 0.3474,
+           "hi": 0.4643
           },
           "interval": {
            "lo": 0.09,
-           "hi": 0.556
+           "hi": 0.554
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 266,
-           "text": "n=266 · Developing evidence",
+           "n": 267,
+           "text": "n=267 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 266,
-          "mean": 0.568,
+          "n": 267,
+          "mean": 0.566,
           "median": 0,
           "beat": 108,
-          "tie": 62,
+          "tie": 63,
           "lose": 96,
-          "beat_rate": 0.406,
-          "tie_rate": 0.2331,
-          "lose_rate": 0.3609,
+          "beat_rate": 0.4045,
+          "tie_rate": 0.236,
+          "lose_rate": 0.3596,
           "beat_rate_interval": {
-           "lo": 0.3487,
-           "hi": 0.466
+           "lo": 0.3474,
+           "hi": 0.4643
           },
           "interval": {
            "lo": -0.003,
-           "hi": 1.139
+           "hi": 1.135
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 266,
-           "text": "n=266 · Developing evidence",
+           "n": 267,
+           "text": "n=267 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 266,
-          "mean": -0.03,
+          "n": 267,
+          "mean": -0.031,
           "median": -0.044,
           "beat": 90,
           "tie": 1,
-          "lose": 175,
-          "beat_rate": 0.3383,
-          "tie_rate": 0.0038,
-          "lose_rate": 0.6579,
+          "lose": 176,
+          "beat_rate": 0.3371,
+          "tie_rate": 0.0037,
+          "lose_rate": 0.6592,
           "beat_rate_interval": {
-           "lo": 0.2841,
-           "hi": 0.3971
+           "lo": 0.283,
+           "hi": 0.3957
           },
           "interval": {
            "lo": -0.041,
@@ -2707,8 +2707,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 266,
-           "text": "n=266 · Developing evidence",
+           "n": 267,
+           "text": "n=267 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -2717,18 +2717,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.028,
-         "flat_n": 268,
-         "independent_n": 205,
+         "flat_roi_hypothetical": -0.0245,
+         "flat_n": 269,
+         "independent_n": 206,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 205,
-          "text": "n=205 · Developing evidence",
+          "n": 206,
+          "text": "n=206 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.6% (n=263) over 205 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.8% (n=264) over 206 games vs expected 50.2% · Developing evidence",
          "bucket": "strong"
         }
        ],
@@ -2738,89 +2738,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 316,
-         "settled": 316,
-         "decided": 309,
-         "wins": 152,
+         "n": 317,
+         "settled": 317,
+         "decided": 310,
+         "wins": 153,
          "losses": 157,
          "pushes": 7,
-         "observed_cover": 0.4919,
+         "observed_cover": 0.4935,
          "observed_cover_interval": {
-          "lo": 0.4366,
-          "hi": 0.5474
+          "lo": 0.4383,
+          "hi": 0.5489
          },
          "expected_cover": 0.5017,
-         "expected_n": 309,
-         "calibration_error_pp": -0.98,
+         "expected_n": 310,
+         "calibration_error_pp": -0.82,
          "mean_break_even": 0.5222,
-         "realized_edge_pp": -3.02,
+         "realized_edge_pp": -2.86,
          "clv": {
-          "n": 312,
-          "mean": 0.329,
+          "n": 313,
+          "mean": 0.327,
           "median": 0,
           "beat": 131,
-          "tie": 74,
+          "tie": 75,
           "lose": 107,
-          "beat_rate": 0.4199,
-          "tie_rate": 0.2372,
-          "lose_rate": 0.3429,
+          "beat_rate": 0.4185,
+          "tie_rate": 0.2396,
+          "lose_rate": 0.3419,
           "beat_rate_interval": {
-           "lo": 0.3664,
-           "hi": 0.4753
+           "lo": 0.3652,
+           "hi": 0.4738
           },
           "interval": {
            "lo": 0.115,
-           "hi": 0.542
+           "hi": 0.54
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 312,
-           "text": "n=312 · Developing evidence",
+           "n": 313,
+           "text": "n=313 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 309,
-          "mean": 0.66,
+          "n": 310,
+          "mean": 0.658,
           "median": 0,
           "beat": 131,
-          "tie": 73,
+          "tie": 74,
           "lose": 105,
-          "beat_rate": 0.4239,
-          "tie_rate": 0.2362,
-          "lose_rate": 0.3398,
+          "beat_rate": 0.4226,
+          "tie_rate": 0.2387,
+          "lose_rate": 0.3387,
           "beat_rate_interval": {
-           "lo": 0.3701,
-           "hi": 0.4797
+           "lo": 0.3689,
+           "hi": 0.4782
           },
           "interval": {
            "lo": 0.123,
-           "hi": 1.197
+           "hi": 1.193
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 309,
-           "text": "n=309 · Developing evidence",
+           "n": 310,
+           "text": "n=310 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 309,
+          "n": 310,
           "mean": -0.029,
           "median": -0.037,
           "beat": 110,
           "tie": 0,
-          "lose": 199,
-          "beat_rate": 0.356,
+          "lose": 200,
+          "beat_rate": 0.3548,
           "tie_rate": 0,
-          "lose_rate": 0.644,
+          "lose_rate": 0.6452,
           "beat_rate_interval": {
-           "lo": 0.3047,
-           "hi": 0.4108
+           "lo": 0.3036,
+           "hi": 0.4096
           },
           "interval": {
            "lo": -0.04,
@@ -2829,8 +2829,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 309,
-           "text": "n=309 · Developing evidence",
+           "n": 310,
+           "text": "n=310 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -2839,18 +2839,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.056,
-         "flat_n": 316,
-         "independent_n": 242,
+         "flat_roi_hypothetical": -0.0529,
+         "flat_n": 317,
+         "independent_n": 243,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 242,
-          "text": "n=242 · Developing evidence",
+          "n": 243,
+          "text": "n=243 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 49.2% (n=309) over 242 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 49.4% (n=310) over 243 games vs expected 50.2% · Developing evidence",
          "bucket": "<0 pp"
         },
         {
@@ -2977,89 +2977,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 325,
-         "settled": 325,
-         "decided": 318,
-         "wins": 159,
+         "n": 326,
+         "settled": 326,
+         "decided": 319,
+         "wins": 160,
          "losses": 159,
          "pushes": 7,
-         "observed_cover": 0.5,
+         "observed_cover": 0.5016,
          "observed_cover_interval": {
-          "lo": 0.4454,
-          "hi": 0.5546
+          "lo": 0.447,
+          "hi": 0.5561
          },
          "expected_cover": 0.5017,
-         "expected_n": 309,
+         "expected_n": 310,
          "calibration_error_pp": null,
          "mean_break_even": 0.5224,
-         "realized_edge_pp": -2.24,
+         "realized_edge_pp": -2.08,
          "clv": {
-          "n": 321,
-          "mean": 0.326,
+          "n": 322,
+          "mean": 0.325,
           "median": 0,
           "beat": 135,
-          "tie": 75,
+          "tie": 76,
           "lose": 111,
-          "beat_rate": 0.4206,
-          "tie_rate": 0.2336,
-          "lose_rate": 0.3458,
+          "beat_rate": 0.4193,
+          "tie_rate": 0.236,
+          "lose_rate": 0.3447,
           "beat_rate_interval": {
-           "lo": 0.3678,
-           "hi": 0.4752
+           "lo": 0.3666,
+           "hi": 0.4738
           },
           "interval": {
            "lo": 0.117,
-           "hi": 0.534
+           "hi": 0.532
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 321,
-           "text": "n=321 · Developing evidence",
+           "n": 322,
+           "text": "n=322 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 318,
-          "mean": 0.654,
+          "n": 319,
+          "mean": 0.651,
           "median": 0,
           "beat": 135,
-          "tie": 74,
+          "tie": 75,
           "lose": 109,
-          "beat_rate": 0.4245,
-          "tie_rate": 0.2327,
-          "lose_rate": 0.3428,
+          "beat_rate": 0.4232,
+          "tie_rate": 0.2351,
+          "lose_rate": 0.3417,
           "beat_rate_interval": {
-           "lo": 0.3714,
-           "hi": 0.4794
+           "lo": 0.3702,
+           "hi": 0.478
           },
           "interval": {
            "lo": 0.129,
-           "hi": 1.178
+           "hi": 1.174
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 318,
-           "text": "n=318 · Developing evidence",
+           "n": 319,
+           "text": "n=319 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 318,
+          "n": 319,
           "mean": -0.03,
-          "median": -0.041,
+          "median": -0.042,
           "beat": 111,
           "tie": 0,
-          "lose": 207,
-          "beat_rate": 0.3491,
+          "lose": 208,
+          "beat_rate": 0.348,
           "tie_rate": 0,
-          "lose_rate": 0.6509,
+          "lose_rate": 0.652,
           "beat_rate_interval": {
-           "lo": 0.2987,
-           "hi": 0.403
+           "lo": 0.2978,
+           "hi": 0.4018
           },
           "interval": {
            "lo": -0.04,
@@ -3068,8 +3068,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 318,
-           "text": "n=318 · Developing evidence",
+           "n": 319,
+           "text": "n=319 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -3078,18 +3078,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0414,
-         "flat_n": 325,
-         "independent_n": 250,
+         "flat_roi_hypothetical": -0.0385,
+         "flat_n": 326,
+         "independent_n": 251,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 250,
-          "text": "n=250 · Developing evidence",
+          "n": 251,
+          "text": "n=251 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.0% (n=318) over 250 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.2% (n=319) over 251 games vs expected 50.2% · Developing evidence",
          "bucket": "<0%"
         },
         {
@@ -3450,89 +3450,89 @@
         },
         {
          "mode": "LIVE",
-         "n": 101,
-         "settled": 101,
-         "decided": 101,
-         "wins": 50,
+         "n": 102,
+         "settled": 102,
+         "decided": 102,
+         "wins": 51,
          "losses": 51,
          "pushes": 0,
-         "observed_cover": 0.495,
+         "observed_cover": 0.5,
          "observed_cover_interval": {
-          "lo": 0.3995,
-          "hi": 0.5909
+          "lo": 0.4047,
+          "hi": 0.5953
          },
          "expected_cover": 0.5016,
-         "expected_n": 95,
+         "expected_n": 96,
          "calibration_error_pp": null,
-         "mean_break_even": 0.5214,
-         "realized_edge_pp": -2.64,
+         "mean_break_even": 0.5215,
+         "realized_edge_pp": -2.15,
          "clv": {
-          "n": 101,
-          "mean": 0.5,
+          "n": 102,
+          "mean": 0.495,
           "median": 0,
           "beat": 46,
-          "tie": 20,
+          "tie": 21,
           "lose": 35,
-          "beat_rate": 0.4554,
-          "tie_rate": 0.198,
-          "lose_rate": 0.3465,
+          "beat_rate": 0.451,
+          "tie_rate": 0.2059,
+          "lose_rate": 0.3431,
           "beat_rate_interval": {
-           "lo": 0.3617,
-           "hi": 0.5524
+           "lo": 0.3579,
+           "hi": 0.5476
           },
           "interval": {
-           "lo": 0.1,
-           "hi": 0.9
+           "lo": 0.099,
+           "hi": 0.891
           },
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 101,
-           "text": "n=101 · Early signal",
+           "n": 102,
+           "text": "n=102 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 101,
-          "mean": 0.777,
+          "n": 102,
+          "mean": 0.769,
           "median": 0,
           "beat": 46,
-          "tie": 20,
+          "tie": 21,
           "lose": 35,
-          "beat_rate": 0.4554,
-          "tie_rate": 0.198,
-          "lose_rate": 0.3465,
+          "beat_rate": 0.451,
+          "tie_rate": 0.2059,
+          "lose_rate": 0.3431,
           "beat_rate_interval": {
-           "lo": 0.3617,
-           "hi": 0.5524
+           "lo": 0.3579,
+           "hi": 0.5476
           },
           "interval": {
-           "lo": -0.222,
-           "hi": 1.775
+           "lo": -0.22,
+           "hi": 1.758
           },
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 101,
-           "text": "n=101 · Early signal",
+           "n": 102,
+           "text": "n=102 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 101,
+          "n": 102,
           "mean": -0.026,
-          "median": -0.028,
+          "median": -0.029,
           "beat": 37,
           "tie": 1,
-          "lose": 63,
-          "beat_rate": 0.3663,
-          "tie_rate": 0.0099,
-          "lose_rate": 0.6238,
+          "lose": 64,
+          "beat_rate": 0.3627,
+          "tie_rate": 0.0098,
+          "lose_rate": 0.6275,
           "beat_rate_interval": {
-           "lo": 0.2789,
-           "hi": 0.4636
+           "lo": 0.276,
+           "hi": 0.4595
           },
           "interval": {
            "lo": -0.045,
@@ -3541,8 +3541,8 @@
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 101,
-           "text": "n=101 · Early signal",
+           "n": 102,
+           "text": "n=102 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -3551,18 +3551,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.05,
-         "flat_n": 101,
-         "independent_n": 85,
+         "flat_roi_hypothetical": -0.0406,
+         "flat_n": 102,
+         "independent_n": 86,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 85,
-          "text": "n=85 · Early signal",
+          "n": 86,
+          "text": "n=86 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 49.5% (n=101) over 85 games vs expected 50.2% · Early signal",
+         "text": "Observed cover 50.0% (n=102) over 86 games vs expected 50.2% · Early signal",
          "bucket": "2–4 pts"
         },
         {
@@ -3806,99 +3806,99 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 173,
-         "settled": 173,
-         "decided": 169,
-         "wins": 79,
+         "n": 174,
+         "settled": 174,
+         "decided": 170,
+         "wins": 80,
          "losses": 90,
          "pushes": 4,
-         "observed_cover": 0.4675,
+         "observed_cover": 0.4706,
          "observed_cover_interval": {
-          "lo": 0.3938,
-          "hi": 0.5426
+          "lo": 0.397,
+          "hi": 0.5454
          },
          "expected_cover": 0.5016,
-         "expected_n": 165,
+         "expected_n": 166,
          "calibration_error_pp": null,
          "mean_break_even": 0.5219,
-         "realized_edge_pp": -5.44,
+         "realized_edge_pp": -5.13,
          "clv": {
-          "n": 170,
+          "n": 171,
           "mean": 0.006,
           "median": 0,
           "beat": 56,
-          "tie": 42,
+          "tie": 43,
           "lose": 72,
-          "beat_rate": 0.3294,
-          "tie_rate": 0.2471,
-          "lose_rate": 0.4235,
+          "beat_rate": 0.3275,
+          "tie_rate": 0.2515,
+          "lose_rate": 0.4211,
           "beat_rate_interval": {
-           "lo": 0.2632,
-           "hi": 0.4032
+           "lo": 0.2616,
+           "hi": 0.4009
           },
           "interval": {
-           "lo": -0.286,
-           "hi": 0.297
+           "lo": -0.284,
+           "hi": 0.296
           },
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 170,
-           "text": "n=170 · Early signal",
+           "n": 171,
+           "text": "n=171 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 170,
-          "mean": -0.133,
+          "n": 171,
+          "mean": -0.132,
           "median": 0,
           "beat": 56,
-          "tie": 42,
+          "tie": 43,
           "lose": 72,
-          "beat_rate": 0.3294,
-          "tie_rate": 0.2471,
-          "lose_rate": 0.4235,
+          "beat_rate": 0.3275,
+          "tie_rate": 0.2515,
+          "lose_rate": 0.4211,
           "beat_rate_interval": {
-           "lo": 0.2632,
-           "hi": 0.4032
+           "lo": 0.2616,
+           "hi": 0.4009
           },
           "interval": {
-           "lo": -0.873,
-           "hi": 0.608
+           "lo": -0.868,
+           "hi": 0.604
           },
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 170,
-           "text": "n=170 · Early signal",
+           "n": 171,
+           "text": "n=171 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 170,
+          "n": 171,
           "mean": -0.044,
           "median": -0.045,
           "beat": 45,
           "tie": 0,
-          "lose": 125,
-          "beat_rate": 0.2647,
+          "lose": 126,
+          "beat_rate": 0.2632,
           "tie_rate": 0,
-          "lose_rate": 0.7353,
+          "lose_rate": 0.7368,
           "beat_rate_interval": {
-           "lo": 0.2041,
-           "hi": 0.3357
+           "lo": 0.2029,
+           "hi": 0.3338
           },
           "interval": {
-           "lo": -0.059,
+           "lo": -0.058,
            "hi": -0.03
           },
           "sample": {
            "key": "EARLY_SIGNAL",
            "label": "Early signal",
-           "n": 170,
-           "text": "n=170 · Early signal",
+           "n": 171,
+           "text": "n=171 · Early signal",
            "recalibration": "NOT_ALLOWED",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -3907,18 +3907,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.1008,
-         "flat_n": 173,
-         "independent_n": 134,
+         "flat_roi_hypothetical": -0.095,
+         "flat_n": 174,
+         "independent_n": 135,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 134,
-          "text": "n=134 · Early signal",
+          "n": 135,
+          "text": "n=135 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 46.7% (n=169) over 134 games vs expected 50.2% · Early signal",
+         "text": "Observed cover 47.1% (n=170) over 135 games vs expected 50.2% · Early signal",
          "bucket": "FAVORITE"
         },
         {
@@ -4045,89 +4045,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 215,
-         "settled": 215,
-         "decided": 211,
-         "wins": 115,
+         "n": 216,
+         "settled": 216,
+         "decided": 212,
+         "wins": 116,
          "losses": 96,
          "pushes": 4,
-         "observed_cover": 0.545,
+         "observed_cover": 0.5472,
          "observed_cover_interval": {
-          "lo": 0.4776,
-          "hi": 0.6108
+          "lo": 0.4799,
+          "hi": 0.6127
          },
          "expected_cover": 0.502,
-         "expected_n": 205,
+         "expected_n": 206,
          "calibration_error_pp": null,
          "mean_break_even": 0.5214,
-         "realized_edge_pp": 2.36,
+         "realized_edge_pp": 2.57,
          "clv": {
-          "n": 213,
-          "mean": 0.293,
+          "n": 214,
+          "mean": 0.292,
           "median": 0,
           "beat": 88,
-          "tie": 47,
+          "tie": 48,
           "lose": 78,
-          "beat_rate": 0.4131,
-          "tie_rate": 0.2207,
-          "lose_rate": 0.3662,
+          "beat_rate": 0.4112,
+          "tie_rate": 0.2243,
+          "lose_rate": 0.3645,
           "beat_rate_interval": {
-           "lo": 0.3491,
-           "hi": 0.4802
+           "lo": 0.3474,
+           "hi": 0.4781
           },
           "interval": {
            "lo": 0.046,
-           "hi": 0.541
+           "hi": 0.538
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 213,
-           "text": "n=213 · Developing evidence",
+           "n": 214,
+           "text": "n=214 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 213,
-          "mean": 0.421,
+          "n": 214,
+          "mean": 0.419,
           "median": 0,
           "beat": 88,
-          "tie": 47,
+          "tie": 48,
           "lose": 78,
-          "beat_rate": 0.4131,
-          "tie_rate": 0.2207,
-          "lose_rate": 0.3662,
+          "beat_rate": 0.4112,
+          "tie_rate": 0.2243,
+          "lose_rate": 0.3645,
           "beat_rate_interval": {
-           "lo": 0.3491,
-           "hi": 0.4802
+           "lo": 0.3474,
+           "hi": 0.4781
           },
           "interval": {
-           "lo": -0.209,
-           "hi": 1.052
+           "lo": -0.208,
+           "hi": 1.047
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 213,
-           "text": "n=213 · Developing evidence",
+           "n": 214,
+           "text": "n=214 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 213,
+          "n": 214,
           "mean": -0.033,
           "median": -0.042,
           "beat": 74,
           "tie": 1,
-          "lose": 138,
-          "beat_rate": 0.3474,
+          "lose": 139,
+          "beat_rate": 0.3458,
           "tie_rate": 0.0047,
-          "lose_rate": 0.6479,
+          "lose_rate": 0.6495,
           "beat_rate_interval": {
-           "lo": 0.2867,
-           "hi": 0.4136
+           "lo": 0.2853,
+           "hi": 0.4117
           },
           "interval": {
            "lo": -0.045,
@@ -4136,8 +4136,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 213,
-           "text": "n=213 · Developing evidence",
+           "n": 214,
+           "text": "n=214 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -4146,18 +4146,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": 0.0459,
-         "flat_n": 215,
-         "independent_n": 165,
+         "flat_roi_hypothetical": 0.0499,
+         "flat_n": 216,
+         "independent_n": 166,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 165,
-          "text": "n=165 · Early signal",
+          "n": 166,
+          "text": "n=166 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 54.5% (n=211) over 165 games vs expected 50.2% · Early signal",
+         "text": "Observed cover 54.7% (n=212) over 166 games vs expected 50.2% · Early signal",
          "bucket": "HOME"
         },
         {
@@ -4282,11 +4282,11 @@
       },
       "division": {
        "buckets": [],
-       "not_measured": 336
+       "not_measured": 337
       },
       "key_exposure": {
        "buckets": [],
-       "not_measured": 336
+       "not_measured": 337
       },
       "market_quality": {
        "buckets": [
@@ -4526,89 +4526,89 @@
         },
         {
          "mode": "LIVE",
-         "n": 317,
-         "settled": 317,
-         "decided": 311,
-         "wins": 161,
+         "n": 318,
+         "settled": 318,
+         "decided": 312,
+         "wins": 162,
          "losses": 150,
          "pushes": 6,
-         "observed_cover": 0.5177,
+         "observed_cover": 0.5192,
          "observed_cover_interval": {
-          "lo": 0.4623,
-          "hi": 0.5727
+          "lo": 0.4639,
+          "hi": 0.5741
          },
          "expected_cover": 0.5017,
-         "expected_n": 303,
+         "expected_n": 304,
          "calibration_error_pp": null,
          "mean_break_even": 0.5214,
-         "realized_edge_pp": -0.37,
+         "realized_edge_pp": -0.22,
          "clv": {
-          "n": 312,
-          "mean": 0.308,
+          "n": 313,
+          "mean": 0.307,
           "median": 0,
           "beat": 129,
-          "tie": 73,
+          "tie": 74,
           "lose": 110,
-          "beat_rate": 0.4135,
-          "tie_rate": 0.234,
-          "lose_rate": 0.3526,
+          "beat_rate": 0.4121,
+          "tie_rate": 0.2364,
+          "lose_rate": 0.3514,
           "beat_rate_interval": {
-           "lo": 0.3602,
-           "hi": 0.4688
+           "lo": 0.359,
+           "hi": 0.4674
           },
           "interval": {
            "lo": 0.097,
-           "hi": 0.518
+           "hi": 0.516
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 312,
-           "text": "n=312 · Developing evidence",
+           "n": 313,
+           "text": "n=313 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 309,
-          "mean": 0.624,
+          "n": 310,
+          "mean": 0.622,
           "median": 0,
           "beat": 129,
-          "tie": 72,
+          "tie": 73,
           "lose": 108,
-          "beat_rate": 0.4175,
-          "tie_rate": 0.233,
-          "lose_rate": 0.3495,
+          "beat_rate": 0.4161,
+          "tie_rate": 0.2355,
+          "lose_rate": 0.3484,
           "beat_rate_interval": {
-           "lo": 0.3638,
-           "hi": 0.4731
+           "lo": 0.3626,
+           "hi": 0.4717
           },
           "interval": {
            "lo": 0.092,
-           "hi": 1.156
+           "hi": 1.153
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 309,
-           "text": "n=309 · Developing evidence",
+           "n": 310,
+           "text": "n=310 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 309,
+          "n": 310,
           "mean": -0.029,
-          "median": -0.037,
+          "median": -0.038,
           "beat": 109,
           "tie": 1,
-          "lose": 199,
-          "beat_rate": 0.3528,
+          "lose": 200,
+          "beat_rate": 0.3516,
           "tie_rate": 0.0032,
-          "lose_rate": 0.644,
+          "lose_rate": 0.6452,
           "beat_rate_interval": {
-           "lo": 0.3016,
-           "hi": 0.4075
+           "lo": 0.3006,
+           "hi": 0.4063
           },
           "interval": {
            "lo": -0.039,
@@ -4617,8 +4617,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 309,
-           "text": "n=309 · Developing evidence",
+           "n": 310,
+           "text": "n=310 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -4627,18 +4627,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0061,
-         "flat_n": 317,
-         "independent_n": 242,
+         "flat_roi_hypothetical": -0.0032,
+         "flat_n": 318,
+         "independent_n": 243,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 242,
-          "text": "n=242 · Developing evidence",
+          "n": 243,
+          "text": "n=243 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 51.8% (n=311) over 242 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 51.9% (n=312) over 243 games vs expected 50.2% · Developing evidence",
          "bucket": "ACCEPTABLE"
         },
         {
@@ -4765,89 +4765,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 313,
-         "settled": 313,
-         "decided": 307,
-         "wins": 155,
+         "n": 314,
+         "settled": 314,
+         "decided": 308,
+         "wins": 156,
          "losses": 152,
          "pushes": 6,
-         "observed_cover": 0.5049,
+         "observed_cover": 0.5065,
          "observed_cover_interval": {
-          "lo": 0.4492,
-          "hi": 0.5604
+          "lo": 0.4509,
+          "hi": 0.5619
          },
          "expected_cover": 0.5016,
-         "expected_n": 307,
-         "calibration_error_pp": 0.32,
+         "expected_n": 308,
+         "calibration_error_pp": 0.48,
          "mean_break_even": 0.5212,
-         "realized_edge_pp": -1.63,
+         "realized_edge_pp": -1.47,
          "clv": {
-          "n": 308,
-          "mean": 0.312,
+          "n": 309,
+          "mean": 0.311,
           "median": 0,
           "beat": 127,
-          "tie": 72,
+          "tie": 73,
           "lose": 109,
-          "beat_rate": 0.4123,
-          "tie_rate": 0.2338,
-          "lose_rate": 0.3539,
+          "beat_rate": 0.411,
+          "tie_rate": 0.2362,
+          "lose_rate": 0.3528,
           "beat_rate_interval": {
-           "lo": 0.3588,
-           "hi": 0.4681
+           "lo": 0.3576,
+           "hi": 0.4666
           },
           "interval": {
            "lo": 0.095,
-           "hi": 0.529
+           "hi": 0.527
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 308,
-           "text": "n=308 · Developing evidence",
+           "n": 309,
+           "text": "n=309 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 305,
-          "mean": 0.579,
+          "n": 306,
+          "mean": 0.577,
           "median": 0,
           "beat": 127,
-          "tie": 71,
+          "tie": 72,
           "lose": 107,
-          "beat_rate": 0.4164,
-          "tie_rate": 0.2328,
-          "lose_rate": 0.3508,
+          "beat_rate": 0.415,
+          "tie_rate": 0.2353,
+          "lose_rate": 0.3497,
           "beat_rate_interval": {
-           "lo": 0.3624,
-           "hi": 0.4724
+           "lo": 0.3612,
+           "hi": 0.471
           },
           "interval": {
            "lo": 0.033,
-           "hi": 1.125
+           "hi": 1.121
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 305,
-           "text": "n=305 · Developing evidence",
+           "n": 306,
+           "text": "n=306 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 305,
+          "n": 306,
           "mean": -0.029,
           "median": -0.037,
           "beat": 109,
           "tie": 2,
-          "lose": 194,
-          "beat_rate": 0.3574,
-          "tie_rate": 0.0066,
-          "lose_rate": 0.6361,
+          "lose": 195,
+          "beat_rate": 0.3562,
+          "tie_rate": 0.0065,
+          "lose_rate": 0.6373,
           "beat_rate_interval": {
-           "lo": 0.3057,
-           "hi": 0.4126
+           "lo": 0.3046,
+           "hi": 0.4113
           },
           "interval": {
            "lo": -0.04,
@@ -4856,8 +4856,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 305,
-           "text": "n=305 · Developing evidence",
+           "n": 306,
+           "text": "n=306 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -4866,18 +4866,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0296,
-         "flat_n": 313,
-         "independent_n": 233,
+         "flat_roi_hypothetical": -0.0266,
+         "flat_n": 314,
+         "independent_n": 234,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 233,
-          "text": "n=233 · Developing evidence",
+          "n": 234,
+          "text": "n=234 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.5% (n=307) over 233 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.6% (n=308) over 234 games vs expected 50.2% · Developing evidence",
          "bucket": "1 book"
         }
        ],
@@ -4887,89 +4887,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 326,
-         "settled": 326,
-         "decided": 319,
-         "wins": 160,
+         "n": 327,
+         "settled": 327,
+         "decided": 320,
+         "wins": 161,
          "losses": 159,
          "pushes": 7,
-         "observed_cover": 0.5016,
+         "observed_cover": 0.5031,
          "observed_cover_interval": {
-          "lo": 0.447,
-          "hi": 0.5561
+          "lo": 0.4486,
+          "hi": 0.5575
          },
          "expected_cover": 0.5017,
-         "expected_n": 314,
+         "expected_n": 315,
          "calibration_error_pp": null,
          "mean_break_even": 0.5215,
-         "realized_edge_pp": -1.99,
+         "realized_edge_pp": -1.84,
          "clv": {
-          "n": 321,
-          "mean": 0.315,
+          "n": 322,
+          "mean": 0.314,
           "median": 0,
           "beat": 133,
-          "tie": 77,
+          "tie": 78,
           "lose": 111,
-          "beat_rate": 0.4143,
-          "tie_rate": 0.2399,
-          "lose_rate": 0.3458,
+          "beat_rate": 0.413,
+          "tie_rate": 0.2422,
+          "lose_rate": 0.3447,
           "beat_rate_interval": {
-           "lo": 0.3618,
-           "hi": 0.4689
+           "lo": 0.3606,
+           "hi": 0.4675
           },
           "interval": {
-           "lo": 0.109,
-           "hi": 0.521
+           "lo": 0.108,
+           "hi": 0.519
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 321,
-           "text": "n=321 · Developing evidence",
+           "n": 322,
+           "text": "n=322 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 318,
-          "mean": 0.616,
+          "n": 319,
+          "mean": 0.614,
           "median": 0,
           "beat": 133,
-          "tie": 76,
+          "tie": 77,
           "lose": 109,
-          "beat_rate": 0.4182,
-          "tie_rate": 0.239,
-          "lose_rate": 0.3428,
+          "beat_rate": 0.4169,
+          "tie_rate": 0.2414,
+          "lose_rate": 0.3417,
           "beat_rate_interval": {
-           "lo": 0.3653,
-           "hi": 0.4731
+           "lo": 0.3641,
+           "hi": 0.4717
           },
           "interval": {
-           "lo": 0.095,
-           "hi": 1.138
+           "lo": 0.094,
+           "hi": 1.134
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 318,
-           "text": "n=318 · Developing evidence",
+           "n": 319,
+           "text": "n=319 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 318,
+          "n": 319,
           "mean": -0.029,
-          "median": -0.038,
+          "median": -0.039,
           "beat": 111,
           "tie": 2,
-          "lose": 205,
-          "beat_rate": 0.3491,
+          "lose": 206,
+          "beat_rate": 0.348,
           "tie_rate": 0.0063,
-          "lose_rate": 0.6447,
+          "lose_rate": 0.6458,
           "beat_rate_interval": {
-           "lo": 0.2987,
-           "hi": 0.403
+           "lo": 0.2978,
+           "hi": 0.4018
           },
           "interval": {
            "lo": -0.039,
@@ -4978,8 +4978,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 318,
-           "text": "n=318 · Developing evidence",
+           "n": 319,
+           "text": "n=319 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -4988,18 +4988,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0364,
-         "flat_n": 326,
-         "independent_n": 245,
+         "flat_roi_hypothetical": -0.0336,
+         "flat_n": 327,
+         "independent_n": 246,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 245,
-          "text": "n=245 · Developing evidence",
+          "n": 246,
+          "text": "n=246 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.2% (n=319) over 245 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.3% (n=320) over 246 games vs expected 50.2% · Developing evidence",
          "bucket": "<15 min"
         },
         {
@@ -5351,89 +5351,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 336,
-         "settled": 336,
-         "decided": 329,
-         "wins": 166,
+         "n": 337,
+         "settled": 337,
+         "decided": 330,
+         "wins": 167,
          "losses": 163,
          "pushes": 7,
-         "observed_cover": 0.5046,
+         "observed_cover": 0.5061,
          "observed_cover_interval": {
-          "lo": 0.4508,
-          "hi": 0.5582
+          "lo": 0.4524,
+          "hi": 0.5596
          },
          "expected_cover": 0.5017,
-         "expected_n": 320,
+         "expected_n": 321,
          "calibration_error_pp": null,
          "mean_break_even": 0.5216,
-         "realized_edge_pp": -1.7,
+         "realized_edge_pp": -1.55,
          "clv": {
-          "n": 331,
-          "mean": 0.313,
+          "n": 332,
+          "mean": 0.312,
           "median": 0,
           "beat": 137,
-          "tie": 78,
+          "tie": 79,
           "lose": 116,
-          "beat_rate": 0.4139,
-          "tie_rate": 0.2356,
-          "lose_rate": 0.3505,
+          "beat_rate": 0.4127,
+          "tie_rate": 0.238,
+          "lose_rate": 0.3494,
           "beat_rate_interval": {
-           "lo": 0.3621,
-           "hi": 0.4677
+           "lo": 0.361,
+           "hi": 0.4663
           },
           "interval": {
            "lo": 0.109,
-           "hi": 0.516
+           "hi": 0.515
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 331,
-           "text": "n=331 · Developing evidence",
+           "n": 332,
+           "text": "n=332 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 328,
-          "mean": 0.608,
+          "n": 329,
+          "mean": 0.607,
           "median": 0,
           "beat": 137,
-          "tie": 77,
+          "tie": 78,
           "lose": 114,
-          "beat_rate": 0.4177,
-          "tie_rate": 0.2348,
-          "lose_rate": 0.3476,
+          "beat_rate": 0.4164,
+          "tie_rate": 0.2371,
+          "lose_rate": 0.3465,
           "beat_rate_interval": {
-           "lo": 0.3656,
-           "hi": 0.4717
+           "lo": 0.3644,
+           "hi": 0.4703
           },
           "interval": {
-           "lo": 0.095,
-           "hi": 1.122
+           "lo": 0.094,
+           "hi": 1.119
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 328,
+          "n": 329,
           "mean": -0.029,
-          "median": -0.038,
+          "median": -0.039,
           "beat": 114,
           "tie": 2,
-          "lose": 212,
-          "beat_rate": 0.3476,
+          "lose": 213,
+          "beat_rate": 0.3465,
           "tie_rate": 0.0061,
-          "lose_rate": 0.6463,
+          "lose_rate": 0.6474,
           "beat_rate_interval": {
-           "lo": 0.2981,
-           "hi": 0.4006
+           "lo": 0.2971,
+           "hi": 0.3994
           },
           "interval": {
            "lo": -0.039,
@@ -5442,8 +5442,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -5452,18 +5452,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.031,
-         "flat_n": 336,
-         "independent_n": 251,
+         "flat_roi_hypothetical": -0.0282,
+         "flat_n": 337,
+         "independent_n": 252,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 251,
-          "text": "n=251 · Developing evidence",
+          "n": 252,
+          "text": "n=252 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence",
          "bucket": "edgedesk_cfb_p4_v1.0.0"
         }
        ],
@@ -5473,89 +5473,89 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 336,
-         "settled": 336,
-         "decided": 329,
-         "wins": 166,
+         "n": 337,
+         "settled": 337,
+         "decided": 330,
+         "wins": 167,
          "losses": 163,
          "pushes": 7,
-         "observed_cover": 0.5046,
+         "observed_cover": 0.5061,
          "observed_cover_interval": {
-          "lo": 0.4508,
-          "hi": 0.5582
+          "lo": 0.4524,
+          "hi": 0.5596
          },
          "expected_cover": 0.5017,
-         "expected_n": 320,
+         "expected_n": 321,
          "calibration_error_pp": null,
          "mean_break_even": 0.5216,
-         "realized_edge_pp": -1.7,
+         "realized_edge_pp": -1.55,
          "clv": {
-          "n": 331,
-          "mean": 0.313,
+          "n": 332,
+          "mean": 0.312,
           "median": 0,
           "beat": 137,
-          "tie": 78,
+          "tie": 79,
           "lose": 116,
-          "beat_rate": 0.4139,
-          "tie_rate": 0.2356,
-          "lose_rate": 0.3505,
+          "beat_rate": 0.4127,
+          "tie_rate": 0.238,
+          "lose_rate": 0.3494,
           "beat_rate_interval": {
-           "lo": 0.3621,
-           "hi": 0.4677
+           "lo": 0.361,
+           "hi": 0.4663
           },
           "interval": {
            "lo": 0.109,
-           "hi": 0.516
+           "hi": 0.515
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 331,
-           "text": "n=331 · Developing evidence",
+           "n": 332,
+           "text": "n=332 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 328,
-          "mean": 0.608,
+          "n": 329,
+          "mean": 0.607,
           "median": 0,
           "beat": 137,
-          "tie": 77,
+          "tie": 78,
           "lose": 114,
-          "beat_rate": 0.4177,
-          "tie_rate": 0.2348,
-          "lose_rate": 0.3476,
+          "beat_rate": 0.4164,
+          "tie_rate": 0.2371,
+          "lose_rate": 0.3465,
           "beat_rate_interval": {
-           "lo": 0.3656,
-           "hi": 0.4717
+           "lo": 0.3644,
+           "hi": 0.4703
           },
           "interval": {
-           "lo": 0.095,
-           "hi": 1.122
+           "lo": 0.094,
+           "hi": 1.119
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 328,
+          "n": 329,
           "mean": -0.029,
-          "median": -0.038,
+          "median": -0.039,
           "beat": 114,
           "tie": 2,
-          "lose": 212,
-          "beat_rate": 0.3476,
+          "lose": 213,
+          "beat_rate": 0.3465,
           "tie_rate": 0.0061,
-          "lose_rate": 0.6463,
+          "lose_rate": 0.6474,
           "beat_rate_interval": {
-           "lo": 0.2981,
-           "hi": 0.4006
+           "lo": 0.2971,
+           "hi": 0.3994
           },
           "interval": {
            "lo": -0.039,
@@ -5564,8 +5564,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 328,
-           "text": "n=328 · Developing evidence",
+           "n": 329,
+           "text": "n=329 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -5574,18 +5574,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.031,
-         "flat_n": 336,
-         "independent_n": 251,
+         "flat_roi_hypothetical": -0.0282,
+         "flat_n": 337,
+         "independent_n": 252,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 251,
-          "text": "n=251 · Developing evidence",
+          "n": 252,
+          "text": "n=252 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence",
          "bucket": "cfb_ev_calibration_v1"
         }
        ],
@@ -5829,89 +5829,89 @@
         },
         {
          "mode": "LIVE",
-         "n": 314,
-         "settled": 314,
-         "decided": 308,
-         "wins": 156,
+         "n": 315,
+         "settled": 315,
+         "decided": 309,
+         "wins": 157,
          "losses": 152,
          "pushes": 6,
-         "observed_cover": 0.5065,
+         "observed_cover": 0.5081,
          "observed_cover_interval": {
-          "lo": 0.4509,
-          "hi": 0.5619
+          "lo": 0.4526,
+          "hi": 0.5634
          },
          "expected_cover": 0.5016,
-         "expected_n": 308,
-         "calibration_error_pp": 0.49,
+         "expected_n": 309,
+         "calibration_error_pp": 0.65,
          "mean_break_even": 0.5212,
-         "realized_edge_pp": -1.47,
+         "realized_edge_pp": -1.31,
          "clv": {
-          "n": 309,
-          "mean": 0.316,
+          "n": 310,
+          "mean": 0.315,
           "median": 0,
           "beat": 128,
-          "tie": 72,
+          "tie": 73,
           "lose": 109,
-          "beat_rate": 0.4142,
-          "tie_rate": 0.233,
-          "lose_rate": 0.3528,
+          "beat_rate": 0.4129,
+          "tie_rate": 0.2355,
+          "lose_rate": 0.3516,
           "beat_rate_interval": {
-           "lo": 0.3607,
-           "hi": 0.4699
+           "lo": 0.3595,
+           "hi": 0.4685
           },
           "interval": {
            "lo": 0.099,
-           "hi": 0.532
+           "hi": 0.53
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 309,
-           "text": "n=309 · Developing evidence",
+           "n": 310,
+           "text": "n=310 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_price_pp": {
-          "n": 306,
-          "mean": 0.588,
+          "n": 307,
+          "mean": 0.586,
           "median": 0,
           "beat": 128,
-          "tie": 71,
+          "tie": 72,
           "lose": 107,
-          "beat_rate": 0.4183,
-          "tie_rate": 0.232,
-          "lose_rate": 0.3497,
+          "beat_rate": 0.4169,
+          "tie_rate": 0.2345,
+          "lose_rate": 0.3485,
           "beat_rate_interval": {
-           "lo": 0.3644,
-           "hi": 0.4742
+           "lo": 0.3631,
+           "hi": 0.4728
           },
           "interval": {
            "lo": 0.043,
-           "hi": 1.132
+           "hi": 1.129
           },
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 306,
-           "text": "n=306 · Developing evidence",
+           "n": 307,
+           "text": "n=307 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
          },
          "clv_ev": {
-          "n": 306,
+          "n": 307,
           "mean": -0.029,
           "median": -0.037,
           "beat": 110,
           "tie": 2,
-          "lose": 194,
-          "beat_rate": 0.3595,
+          "lose": 195,
+          "beat_rate": 0.3583,
           "tie_rate": 0.0065,
-          "lose_rate": 0.634,
+          "lose_rate": 0.6352,
           "beat_rate_interval": {
-           "lo": 0.3078,
-           "hi": 0.4147
+           "lo": 0.3067,
+           "hi": 0.4134
           },
           "interval": {
            "lo": -0.039,
@@ -5920,8 +5920,8 @@
           "sample": {
            "key": "MODERATE_EVIDENCE",
            "label": "Developing evidence",
-           "n": 306,
-           "text": "n=306 · Developing evidence",
+           "n": 307,
+           "text": "n=307 · Developing evidence",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -5930,18 +5930,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0265,
-         "flat_n": 314,
-         "independent_n": 234,
+         "flat_roi_hypothetical": -0.0235,
+         "flat_n": 315,
+         "independent_n": 235,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 234,
-          "text": "n=234 · Developing evidence",
+          "n": 235,
+          "text": "n=235 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.6% (n=308) over 234 games vs expected 50.2% · Developing evidence",
+         "text": "Observed cover 50.8% (n=309) over 235 games vs expected 50.2% · Developing evidence",
          "bucket": "football_decision_config_v2.1"
         }
        ],
@@ -5949,7 +5949,7 @@
       }
      },
      "leakage": {
-      "n": 336,
+      "n": 337,
       "violations": [],
       "ok": true,
       "rule": "Every live row is decided before kickoff, on quotes and inputs captured no later than the evaluation; a close is captured after it; a walk-forward row never trains on its own season."
@@ -6006,76 +6006,76 @@
    "LIVE": {
     "label": "Live",
     "live_decisions": {
-     "n": 336,
-     "settled": 336,
+     "n": 337,
+     "settled": 337,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 251,
-      "text": "n=251 · Developing evidence",
+      "n": 252,
+      "text": "n=252 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv": {
-     "n": 331,
-     "mean": 0.313,
+     "n": 332,
+     "mean": 0.312,
      "median": 0,
      "beat": 137,
-     "tie": 78,
+     "tie": 79,
      "lose": 116,
-     "beat_rate": 0.4139,
-     "tie_rate": 0.2356,
-     "lose_rate": 0.3505,
+     "beat_rate": 0.4127,
+     "tie_rate": 0.238,
+     "lose_rate": 0.3494,
      "beat_rate_interval": {
-      "lo": 0.3621,
-      "hi": 0.4677
+      "lo": 0.361,
+      "hi": 0.4663
      },
      "interval": {
       "lo": 0.109,
-      "hi": 0.516
+      "hi": 0.515
      },
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 331,
-      "text": "n=331 · Developing evidence",
+      "n": 332,
+      "text": "n=332 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_price_pp": {
-     "n": 328,
-     "mean": 0.608,
+     "n": 329,
+     "mean": 0.607,
      "median": 0,
      "beat": 137,
-     "tie": 77,
+     "tie": 78,
      "lose": 114,
-     "beat_rate": 0.4177,
-     "tie_rate": 0.2348,
-     "lose_rate": 0.3476,
+     "beat_rate": 0.4164,
+     "tie_rate": 0.2371,
+     "lose_rate": 0.3465,
      "beat_rate_interval": {
-      "lo": 0.3656,
-      "hi": 0.4717
+      "lo": 0.3644,
+      "hi": 0.4703
      },
      "interval": {
-      "lo": 0.095,
-      "hi": 1.122
+      "lo": 0.094,
+      "hi": 1.119
      },
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 328,
-      "text": "n=328 · Developing evidence",
+      "n": 329,
+      "text": "n=329 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "calibration": {
-     "n": 320,
-     "brier": 0.25001,
-     "log_loss": 0.69317,
-     "ece": 0.02323,
+     "n": 321,
+     "brier": 0.25,
+     "log_loss": 0.69316,
+     "ece": 0.0247,
      "bins": [
       {
        "lo": 0.45,
@@ -6103,20 +6103,20 @@
        "lo": 0.5,
        "hi": 0.52,
        "label": "50%–52%",
-       "n": 283,
+       "n": 284,
        "expected": 0.502,
-       "observed": 0.5124,
-       "error_pp": 1.04,
+       "observed": 0.5141,
+       "error_pp": 1.21,
        "interval": {
-        "lo": 0.4544,
-        "hi": 0.57
+        "lo": 0.4562,
+        "hi": 0.5716
        },
        "inside_interval": true,
        "sample": {
         "key": "MODERATE_EVIDENCE",
         "label": "Developing evidence",
-        "n": 220,
-        "text": "n=220 · Developing evidence",
+        "n": 221,
+        "text": "n=221 · Developing evidence",
         "recalibration": "PROPOSAL_ONLY",
         "note": "A product maturity label, not a scientific verdict."
        }
@@ -6125,8 +6125,8 @@
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 243,
-      "text": "n=243 · Developing evidence",
+      "n": 244,
+      "text": "n=244 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
@@ -6136,22 +6136,22 @@
      "n": 0,
      "units_risked": 0,
      "units_won": 0,
-     "flat_roi_hypothetical": -0.031,
-     "flat_n": 336
+     "flat_roi_hypothetical": -0.0282,
+     "flat_n": 337
     },
     "cover_rate": {
-     "observed": 0.5046,
+     "observed": 0.5061,
      "interval": {
-      "lo": 0.4508,
-      "hi": 0.5582
+      "lo": 0.4524,
+      "hi": 0.5596
      },
-     "n": 329
+     "n": 330
     },
     "expected_vs_observed": {
      "expected": 0.5017,
-     "observed": 0.5046,
+     "observed": 0.5061,
      "error_pp": null,
-     "n": 329
+     "n": 330
     },
     "by_decision": [
      {
@@ -6171,53 +6171,53 @@
      },
      {
       "bucket": "PASS",
-      "n": 253,
-      "decided": 246,
-      "observed_cover": 0.5041,
-      "expected_cover": 0.5019,
-      "clv_mean": 0.35,
-      "clv_n": 250,
-      "clv_beat_rate": 0.44,
+      "n": 254,
+      "decided": 247,
+      "observed_cover": 0.5061,
+      "expected_cover": 0.5018,
+      "clv_mean": 0.349,
+      "clv_n": 251,
+      "clv_beat_rate": 0.4382,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0381,
+      "flat_roi_hypothetical": -0.0344,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 50.4% (n=246) vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 50.6% (n=247) vs expected 50.2% · Developing evidence"
      }
     ],
     "by_unit": [],
     "by_sport": [
      {
       "bucket": "CFB",
-      "n": 336,
-      "decided": 329,
-      "observed_cover": 0.5046,
+      "n": 337,
+      "decided": 330,
+      "observed_cover": 0.5061,
       "expected_cover": 0.5017,
-      "clv_mean": 0.313,
-      "clv_n": 331,
-      "clv_beat_rate": 0.4139,
+      "clv_mean": 0.312,
+      "clv_n": 332,
+      "clv_beat_rate": 0.4127,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.031,
+      "flat_roi_hypothetical": -0.0282,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence"
      }
     ],
     "by_market": [
      {
       "bucket": "spread",
-      "n": 336,
-      "decided": 329,
-      "observed_cover": 0.5046,
+      "n": 337,
+      "decided": 330,
+      "observed_cover": 0.5061,
       "expected_cover": 0.5017,
-      "clv_mean": 0.313,
-      "clv_n": 331,
-      "clv_beat_rate": 0.4139,
+      "clv_mean": 0.312,
+      "clv_n": 332,
+      "clv_beat_rate": 0.4127,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.031,
+      "flat_roi_hypothetical": -0.0282,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence"
      }
     ],
     "by_confidence": [
@@ -6268,18 +6268,18 @@
      },
      {
       "bucket": "80–89",
-      "n": 149,
-      "decided": 146,
-      "observed_cover": 0.4658,
+      "n": 150,
+      "decided": 147,
+      "observed_cover": 0.4694,
       "expected_cover": 0.5011,
-      "clv_mean": 0.252,
-      "clv_n": 147,
-      "clv_beat_rate": 0.3741,
+      "clv_mean": 0.25,
+      "clv_n": 148,
+      "clv_beat_rate": 0.3716,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.1022,
+      "flat_roi_hypothetical": -0.0955,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 46.6% (n=146) over 124 games vs expected 50.1% · Early signal"
+      "text": "Observed cover 46.9% (n=147) over 125 games vs expected 50.1% · Early signal"
      },
      {
       "bucket": "90+",
@@ -6330,35 +6330,35 @@
      },
      {
       "bucket": "strong",
-      "n": 268,
-      "decided": 263,
-      "observed_cover": 0.5057,
+      "n": 269,
+      "decided": 264,
+      "observed_cover": 0.5076,
       "expected_cover": 0.5017,
-      "clv_mean": 0.323,
-      "clv_n": 266,
-      "clv_beat_rate": 0.406,
+      "clv_mean": 0.322,
+      "clv_n": 267,
+      "clv_beat_rate": 0.4045,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.028,
+      "flat_roi_hypothetical": -0.0245,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 50.6% (n=263) over 205 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 50.8% (n=264) over 206 games vs expected 50.2% · Developing evidence"
      }
     ],
     "by_ev": [
      {
       "bucket": "<0%",
-      "n": 325,
-      "decided": 318,
-      "observed_cover": 0.5,
+      "n": 326,
+      "decided": 319,
+      "observed_cover": 0.5016,
       "expected_cover": 0.5017,
-      "clv_mean": 0.326,
-      "clv_n": 321,
-      "clv_beat_rate": 0.4206,
+      "clv_mean": 0.325,
+      "clv_n": 322,
+      "clv_beat_rate": 0.4193,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0414,
+      "flat_roi_hypothetical": -0.0385,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 50.0% (n=318) over 250 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 50.2% (n=319) over 251 games vs expected 50.2% · Developing evidence"
      },
      {
       "bucket": "0–2%",
@@ -6379,18 +6379,18 @@
     "by_edge": [
      {
       "bucket": "<0 pp",
-      "n": 316,
-      "decided": 309,
-      "observed_cover": 0.4919,
+      "n": 317,
+      "decided": 310,
+      "observed_cover": 0.4935,
       "expected_cover": 0.5017,
-      "clv_mean": 0.329,
-      "clv_n": 312,
-      "clv_beat_rate": 0.4199,
+      "clv_mean": 0.327,
+      "clv_n": 313,
+      "clv_beat_rate": 0.4185,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.056,
+      "flat_roi_hypothetical": -0.0529,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 49.2% (n=309) over 242 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 49.4% (n=310) over 243 games vs expected 50.2% · Developing evidence"
      },
      {
       "bucket": "0–2 pp",
@@ -6441,18 +6441,18 @@
      },
      {
       "bucket": "2–4 pts",
-      "n": 101,
-      "decided": 101,
-      "observed_cover": 0.495,
+      "n": 102,
+      "decided": 102,
+      "observed_cover": 0.5,
       "expected_cover": 0.5016,
-      "clv_mean": 0.5,
-      "clv_n": 101,
-      "clv_beat_rate": 0.4554,
+      "clv_mean": 0.495,
+      "clv_n": 102,
+      "clv_beat_rate": 0.451,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.05,
+      "flat_roi_hypothetical": -0.0406,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 49.5% (n=101) over 85 games vs expected 50.2% · Early signal"
+      "text": "Observed cover 50.0% (n=102) over 86 games vs expected 50.2% · Early signal"
      },
      {
       "bucket": "4–7 pts",
@@ -6488,35 +6488,35 @@
     "by_calibration_source": [
      {
       "bucket": "partially calibrated",
-      "n": 327,
-      "decided": 320,
-      "observed_cover": 0.4969,
+      "n": 328,
+      "decided": 321,
+      "observed_cover": 0.4984,
       "expected_cover": 0.5017,
-      "clv_mean": 0.315,
-      "clv_n": 322,
-      "clv_beat_rate": 0.413,
+      "clv_mean": 0.314,
+      "clv_n": 323,
+      "clv_beat_rate": 0.4118,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0448,
+      "flat_roi_hypothetical": -0.0419,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 49.7% (n=320) over 243 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 49.8% (n=321) over 244 games vs expected 50.2% · Developing evidence"
      }
     ],
     "by_model_version": [
      {
       "bucket": "edgedesk_cfb_p4_v1.0.0",
-      "n": 336,
-      "decided": 329,
-      "observed_cover": 0.5046,
+      "n": 337,
+      "decided": 330,
+      "observed_cover": 0.5061,
       "expected_cover": 0.5017,
-      "clv_mean": 0.313,
-      "clv_n": 331,
-      "clv_beat_rate": 0.4139,
+      "clv_mean": 0.312,
+      "clv_n": 332,
+      "clv_beat_rate": 0.4127,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.031,
+      "flat_roi_hypothetical": -0.0282,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 50.5% (n=329) over 251 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 50.6% (n=330) over 252 games vs expected 50.2% · Developing evidence"
      }
     ],
     "by_market_quality": [
@@ -6552,18 +6552,18 @@
      },
      {
       "bucket": "ACCEPTABLE",
-      "n": 317,
-      "decided": 311,
-      "observed_cover": 0.5177,
+      "n": 318,
+      "decided": 312,
+      "observed_cover": 0.5192,
       "expected_cover": 0.5017,
-      "clv_mean": 0.308,
-      "clv_n": 312,
-      "clv_beat_rate": 0.4135,
+      "clv_mean": 0.307,
+      "clv_n": 313,
+      "clv_beat_rate": 0.4121,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0061,
+      "flat_roi_hypothetical": -0.0032,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 51.8% (n=311) over 242 games vs expected 50.2% · Developing evidence"
+      "text": "Observed cover 51.9% (n=312) over 243 games vs expected 50.2% · Developing evidence"
      },
      {
       "bucket": "THIN",
@@ -6599,11 +6599,11 @@
        "metric": "mean CLV (pts) and realized edge",
        "n": [
         0,
-        246
+        247
        ],
        "evaluated": false,
        "ok": null,
-       "text": "Not evaluated: LEAN n=0, PASS n=246 (each needs 50 independent results)."
+       "text": "Not evaluated: LEAN n=0, PASS n=247 (each needs 50 independent results)."
       },
       {
        "check": "0.50U > 0.25U",
@@ -6647,11 +6647,11 @@
  },
  "cfb_lab": {
   "level": "model (fair line) and its research classes, CFB only",
-  "rows": 7765,
+  "rows": 7799,
   "report": {
    "schema": "edgedesk_validation_report_v1",
    "engine": "edgedesk_validation_v1",
-   "n": 7765,
+   "n": 7799,
    "modes": {
     "BACKTEST": {
      "mode": "BACKTEST",
@@ -10810,45 +10810,45 @@
      "text": "Published before kickoff and captured at the time.",
      "all": {
       "mode": "LIVE",
-      "n": 7255,
-      "settled": 6469,
-      "decided": 6333,
-      "wins": 3010,
-      "losses": 3323,
+      "n": 7289,
+      "settled": 6499,
+      "decided": 6363,
+      "wins": 3026,
+      "losses": 3337,
       "pushes": 136,
-      "observed_cover": 0.4753,
+      "observed_cover": 0.4756,
       "observed_cover_interval": {
-       "lo": 0.463,
-       "hi": 0.4876
+       "lo": 0.4633,
+       "hi": 0.4878
       },
-      "expected_cover": 0.5166,
-      "expected_n": 4615,
+      "expected_cover": 0.5167,
+      "expected_n": 4638,
       "calibration_error_pp": null,
-      "mean_break_even": 0.5237,
-      "realized_edge_pp": -4.84,
+      "mean_break_even": 0.5236,
+      "realized_edge_pp": -4.81,
       "clv": {
-       "n": 6423,
-       "mean": 0.097,
+       "n": 6453,
+       "mean": 0.098,
        "median": 0,
-       "beat": 1713,
+       "beat": 1727,
        "tie": 3265,
-       "lose": 1445,
-       "beat_rate": 0.2667,
-       "tie_rate": 0.5083,
-       "lose_rate": 0.225,
+       "lose": 1461,
+       "beat_rate": 0.2676,
+       "tie_rate": 0.506,
+       "lose_rate": 0.2264,
        "beat_rate_interval": {
-        "lo": 0.256,
-        "hi": 0.2777
+        "lo": 0.257,
+        "hi": 0.2786
        },
        "interval": {
-        "lo": 0.07,
-        "hi": 0.125
+        "lo": 0.071,
+        "hi": 0.126
        },
        "sample": {
         "key": "STRONGER_EVIDENCE",
         "label": "Meaningful sample",
-        "n": 6423,
-        "text": "n=6423 · Meaningful sample",
+        "n": 6453,
+        "text": "n=6453 · Meaningful sample",
         "recalibration": "PROPOSAL_ONLY",
         "note": "A product maturity label, not a scientific verdict."
        }
@@ -10904,22 +10904,22 @@
       "units_won": 0,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0902,
-      "flat_n": 6469,
-      "independent_n": 254,
+      "flat_roi_hypothetical": -0.0897,
+      "flat_n": 6499,
+      "independent_n": 255,
       "sample": {
        "key": "MODERATE_EVIDENCE",
        "label": "Developing evidence",
-       "n": 254,
-       "text": "n=254 · Developing evidence",
+       "n": 255,
+       "text": "n=255 · Developing evidence",
        "recalibration": "PROPOSAL_ONLY",
        "note": "A product maturity label, not a scientific verdict."
       },
-      "text": "Observed cover 47.5% (n=6333) over 254 games vs expected 51.7% · Developing evidence"
+      "text": "Observed cover 47.6% (n=6363) over 255 games vs expected 51.7% · Developing evidence"
      },
      "calibration": {
       "mode": "LIVE",
-      "n": 4615,
+      "n": 4638,
       "bins": [
        {
         "lo": 0.45,
@@ -10947,20 +10947,20 @@
         "lo": 0.5,
         "hi": 0.52,
         "label": "50%–52%",
-        "n": 3389,
-        "expected": 0.508,
-        "observed": 0.4872,
-        "error_pp": -2.08,
+        "n": 3405,
+        "expected": 0.5079,
+        "observed": 0.4878,
+        "error_pp": -2.01,
         "interval": {
-         "lo": 0.4704,
-         "hi": 0.504
+         "lo": 0.471,
+         "hi": 0.5046
         },
         "inside_interval": false,
         "sample": {
          "key": "MODERATE_EVIDENCE",
          "label": "Developing evidence",
-         "n": 236,
-         "text": "n=236 · Developing evidence",
+         "n": 237,
+         "text": "n=237 · Developing evidence",
          "recalibration": "PROPOSAL_ONLY",
          "note": "A product maturity label, not a scientific verdict."
         }
@@ -11035,20 +11035,20 @@
         "lo": 0.58,
         "hi": 0.6,
         "label": "58%–60%",
-        "n": 55,
-        "expected": 0.5917,
-        "observed": 0.4727,
-        "error_pp": -11.89,
+        "n": 61,
+        "expected": 0.5909,
+        "observed": 0.4262,
+        "error_pp": -16.47,
         "interval": {
-         "lo": 0.3469,
-         "hi": 0.6021
+         "lo": 0.3102,
+         "hi": 0.551
         },
-        "inside_interval": true,
+        "inside_interval": false,
         "sample": {
          "key": "DESCRIPTIVE_ONLY",
          "label": "Too early to evaluate",
-         "n": 18,
-         "text": "n=18 · Too early to evaluate",
+         "n": 19,
+         "text": "n=19 · Too early to evaluate",
          "recalibration": "NOT_ALLOWED",
          "note": "A product maturity label, not a scientific verdict."
         }
@@ -11057,20 +11057,20 @@
         "lo": 0.6,
         "hi": 0.65,
         "label": "60%–65%",
-        "n": 57,
-        "expected": 0.6184,
-        "observed": 0.614,
-        "error_pp": -0.44,
+        "n": 58,
+        "expected": 0.6182,
+        "observed": 0.6034,
+        "error_pp": -1.48,
         "interval": {
-         "lo": 0.4843,
-         "hi": 0.7294
+         "lo": 0.4749,
+         "hi": 0.7191
         },
         "inside_interval": true,
         "sample": {
          "key": "DESCRIPTIVE_ONLY",
          "label": "Too early to evaluate",
-         "n": 14,
-         "text": "n=14 · Too early to evaluate",
+         "n": 15,
+         "text": "n=15 · Too early to evaluate",
          "recalibration": "NOT_ALLOWED",
          "note": "A product maturity label, not a scientific verdict."
         }
@@ -11120,13 +11120,13 @@
         }
        }
       ],
-      "brier": 0.25268,
-      "log_loss": 0.69861,
-      "ece": 0.0464,
+      "brier": 0.25281,
+      "log_loss": 0.69888,
+      "ece": 0.04662,
       "mce": 0.7268,
-      "base_rate": 0.4702,
-      "base_rate_brier": 0.24911,
-      "brier_skill_vs_base_rate": -0.0143,
+      "base_rate": 0.47,
+      "base_rate_brier": 0.2491,
+      "brier_skill_vs_base_rate": -0.0149,
       "curve": [
        {
         "expected": 0.4841,
@@ -11134,9 +11134,9 @@
         "n": 55
        },
        {
-        "expected": 0.508,
-        "observed": 0.4872,
-        "n": 3389
+        "expected": 0.5079,
+        "observed": 0.4878,
+        "n": 3405
        },
        {
         "expected": 0.5274,
@@ -11154,14 +11154,14 @@
         "n": 76
        },
        {
-        "expected": 0.5917,
-        "observed": 0.4727,
-        "n": 55
+        "expected": 0.5909,
+        "observed": 0.4262,
+        "n": 61
        },
        {
-        "expected": 0.6184,
-        "observed": 0.614,
-        "n": 57
+        "expected": 0.6182,
+        "observed": 0.6034,
+        "n": 58
        },
        {
         "expected": 0.6548,
@@ -11174,12 +11174,12 @@
         "n": 8
        }
       ],
-      "independent_n": 248,
+      "independent_n": 249,
       "sample": {
        "key": "MODERATE_EVIDENCE",
        "label": "Developing evidence",
-       "n": 248,
-       "text": "n=248 · Developing evidence",
+       "n": 249,
+       "text": "n=249 · Developing evidence",
        "recalibration": "PROPOSAL_ONLY",
        "note": "A product maturity label, not a scientific verdict."
       },
@@ -11283,45 +11283,45 @@
        },
        "LEAN": {
         "mode": "LIVE",
-        "n": 1844,
-        "settled": 1844,
-        "decided": 1804,
+        "n": 1851,
+        "settled": 1851,
+        "decided": 1811,
         "wins": 862,
-        "losses": 942,
+        "losses": 949,
         "pushes": 40,
-        "observed_cover": 0.4778,
+        "observed_cover": 0.476,
         "observed_cover_interval": {
-         "lo": 0.4548,
-         "hi": 0.5009
+         "lo": 0.4531,
+         "hi": 0.499
         },
-        "expected_cover": 0.5458,
-        "expected_n": 741,
+        "expected_cover": 0.5462,
+        "expected_n": 748,
         "calibration_error_pp": null,
         "mean_break_even": 0.5217,
-        "realized_edge_pp": -4.39,
+        "realized_edge_pp": -4.57,
         "clv": {
-         "n": 1837,
-         "mean": 0.076,
+         "n": 1844,
+         "mean": 0.081,
          "median": 0,
-         "beat": 456,
+         "beat": 463,
          "tie": 960,
          "lose": 421,
-         "beat_rate": 0.2482,
-         "tie_rate": 0.5226,
-         "lose_rate": 0.2292,
+         "beat_rate": 0.2511,
+         "tie_rate": 0.5206,
+         "lose_rate": 0.2283,
          "beat_rate_interval": {
-          "lo": 0.229,
-          "hi": 0.2685
+          "lo": 0.2318,
+          "hi": 0.2714
          },
          "interval": {
-          "lo": 0.027,
-          "hi": 0.126
+          "lo": 0.032,
+          "hi": 0.131
          },
          "sample": {
           "key": "STRONGER_EVIDENCE",
           "label": "Meaningful sample",
-          "n": 1837,
-          "text": "n=1837 · Meaningful sample",
+          "n": 1844,
+          "text": "n=1844 · Meaningful sample",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          }
@@ -11377,18 +11377,18 @@
         "units_won": 0,
         "roi": null,
         "roi_n": 0,
-        "flat_roi_hypothetical": -0.0815,
-        "flat_n": 1844,
-        "independent_n": 224,
+        "flat_roi_hypothetical": -0.085,
+        "flat_n": 1851,
+        "independent_n": 225,
         "sample": {
          "key": "MODERATE_EVIDENCE",
          "label": "Developing evidence",
-         "n": 224,
-         "text": "n=224 · Developing evidence",
+         "n": 225,
+         "text": "n=225 · Developing evidence",
          "recalibration": "PROPOSAL_ONLY",
          "note": "A product maturity label, not a scientific verdict."
         },
-        "text": "Observed cover 47.8% (n=1804) over 224 games vs expected 54.6% · Developing evidence"
+        "text": "Observed cover 47.6% (n=1811) over 225 games vs expected 54.6% · Developing evidence"
        },
        "WATCH": {
         "mode": null,
@@ -11484,35 +11484,35 @@
        },
        "PASS": {
         "mode": "LIVE",
-        "n": 5369,
-        "settled": 4583,
-        "decided": 4487,
-        "wins": 2132,
-        "losses": 2355,
+        "n": 5396,
+        "settled": 4606,
+        "decided": 4510,
+        "wins": 2148,
+        "losses": 2362,
         "pushes": 96,
-        "observed_cover": 0.4752,
+        "observed_cover": 0.4763,
         "observed_cover_interval": {
-         "lo": 0.4606,
-         "hi": 0.4898
+         "lo": 0.4617,
+         "hi": 0.4909
         },
         "expected_cover": 0.5107,
-        "expected_n": 3832,
+        "expected_n": 3848,
         "calibration_error_pp": null,
         "mean_break_even": 0.5244,
-        "realized_edge_pp": -4.93,
+        "realized_edge_pp": -4.81,
         "clv": {
-         "n": 4544,
+         "n": 4567,
          "mean": 0.106,
          "median": 0,
-         "beat": 1248,
+         "beat": 1255,
          "tie": 2282,
-         "lose": 1014,
-         "beat_rate": 0.2746,
-         "tie_rate": 0.5022,
-         "lose_rate": 0.2232,
+         "lose": 1030,
+         "beat_rate": 0.2748,
+         "tie_rate": 0.4997,
+         "lose_rate": 0.2255,
          "beat_rate_interval": {
-          "lo": 0.2619,
-          "hi": 0.2878
+          "lo": 0.262,
+          "hi": 0.2879
          },
          "interval": {
           "lo": 0.073,
@@ -11521,8 +11521,8 @@
          "sample": {
           "key": "STRONGER_EVIDENCE",
           "label": "Meaningful sample",
-          "n": 4544,
-          "text": "n=4544 · Meaningful sample",
+          "n": 4567,
+          "text": "n=4567 · Meaningful sample",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          }
@@ -11578,18 +11578,18 @@
         "units_won": 0,
         "roi": null,
         "roi_n": 0,
-        "flat_roi_hypothetical": -0.0919,
-        "flat_n": 4583,
-        "independent_n": 247,
+        "flat_roi_hypothetical": -0.0898,
+        "flat_n": 4606,
+        "independent_n": 248,
         "sample": {
          "key": "MODERATE_EVIDENCE",
          "label": "Developing evidence",
-         "n": 247,
-         "text": "n=247 · Developing evidence",
+         "n": 248,
+         "text": "n=248 · Developing evidence",
          "recalibration": "PROPOSAL_ONLY",
          "note": "A product maturity label, not a scientific verdict."
         },
-        "text": "Observed cover 47.5% (n=4487) over 247 games vs expected 51.1% · Developing evidence"
+        "text": "Observed cover 47.6% (n=4510) over 248 games vs expected 51.1% · Developing evidence"
        }
       },
       "by_tier": {
@@ -11968,22 +11968,22 @@
         "metric": "mean CLV (pts) and realized edge",
         "n": [
          0,
-         1804
+         1811
         ],
         "evaluated": false,
         "ok": null,
-        "text": "Not evaluated: BET n=0, LEAN n=1804 (224 games) (each needs 50 independent results)."
+        "text": "Not evaluated: BET n=0, LEAN n=1811 (225 games) (each needs 50 independent results)."
        },
        {
         "check": "LEAN > PASS",
         "metric": "mean CLV (pts) and realized edge",
         "n": [
-         1804,
-         4487
+         1811,
+         4510
         ],
         "evaluated": true,
         "ok": false,
-        "text": "LEAN mean CLV 0.076 vs PASS 0.106; realized edge -4.39 vs -4.93 pp"
+        "text": "LEAN mean CLV 0.081 vs PASS 0.106; realized edge -4.57 vs -4.81 pp"
        },
        {
         "check": "0.50U > 0.25U",
@@ -12020,19 +12020,19 @@
        {
         "code": "CLASS_NOT_SEPARATING",
         "severity": "RESEARCH_ALERT",
-        "text": "WARNING: LEAN is not looking stronger than PASS after 6291 settled decisions.",
+        "text": "WARNING: LEAN is not looking stronger than PASS after 6321 settled decisions.",
         "note": "This is a research alert, not an automatic change."
        },
        {
         "code": "CALIBRATION_MISS",
         "severity": "RESEARCH_ALERT",
-        "text": "WARNING: LEAN expected cover 54.6% lies outside the observed interval 45.5%–50.1% (n=1804).",
+        "text": "WARNING: LEAN expected cover 54.6% lies outside the observed interval 45.3%–49.9% (n=1811).",
         "note": "This is a research alert, not an automatic change."
        },
        {
         "code": "CALIBRATION_MISS",
         "severity": "RESEARCH_ALERT",
-        "text": "WARNING: PASS expected cover 51.1% lies outside the observed interval 46.1%–49.0% (n=4487).",
+        "text": "WARNING: PASS expected cover 51.1% lies outside the observed interval 46.2%–49.1% (n=4510).",
         "note": "This is a research alert, not an automatic change."
        }
       ],
@@ -12043,45 +12043,45 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 7255,
-         "settled": 6469,
-         "decided": 6333,
-         "wins": 3010,
-         "losses": 3323,
+         "n": 7289,
+         "settled": 6499,
+         "decided": 6363,
+         "wins": 3026,
+         "losses": 3337,
          "pushes": 136,
-         "observed_cover": 0.4753,
+         "observed_cover": 0.4756,
          "observed_cover_interval": {
-          "lo": 0.463,
-          "hi": 0.4876
+          "lo": 0.4633,
+          "hi": 0.4878
          },
-         "expected_cover": 0.5166,
-         "expected_n": 4615,
+         "expected_cover": 0.5167,
+         "expected_n": 4638,
          "calibration_error_pp": null,
-         "mean_break_even": 0.5237,
-         "realized_edge_pp": -4.84,
+         "mean_break_even": 0.5236,
+         "realized_edge_pp": -4.81,
          "clv": {
-          "n": 6423,
-          "mean": 0.097,
+          "n": 6453,
+          "mean": 0.098,
           "median": 0,
-          "beat": 1713,
+          "beat": 1727,
           "tie": 3265,
-          "lose": 1445,
-          "beat_rate": 0.2667,
-          "tie_rate": 0.5083,
-          "lose_rate": 0.225,
+          "lose": 1461,
+          "beat_rate": 0.2676,
+          "tie_rate": 0.506,
+          "lose_rate": 0.2264,
           "beat_rate_interval": {
-           "lo": 0.256,
-           "hi": 0.2777
+           "lo": 0.257,
+           "hi": 0.2786
           },
           "interval": {
-           "lo": 0.07,
-           "hi": 0.125
+           "lo": 0.071,
+           "hi": 0.126
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 6423,
-           "text": "n=6423 · Meaningful sample",
+           "n": 6453,
+           "text": "n=6453 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -12137,18 +12137,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0902,
-         "flat_n": 6469,
-         "independent_n": 254,
+         "flat_roi_hypothetical": -0.0897,
+         "flat_n": 6499,
+         "independent_n": 255,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 254,
-          "text": "n=254 · Developing evidence",
+          "n": 255,
+          "text": "n=255 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 47.5% (n=6333) over 254 games vs expected 51.7% · Developing evidence",
+         "text": "Observed cover 47.6% (n=6363) over 255 games vs expected 51.7% · Developing evidence",
          "bucket": "CFB"
         }
        ],
@@ -12158,45 +12158,45 @@
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 1844,
-         "settled": 1844,
-         "decided": 1804,
+         "n": 1851,
+         "settled": 1851,
+         "decided": 1811,
          "wins": 862,
-         "losses": 942,
+         "losses": 949,
          "pushes": 40,
-         "observed_cover": 0.4778,
+         "observed_cover": 0.476,
          "observed_cover_interval": {
-          "lo": 0.4548,
-          "hi": 0.5009
+          "lo": 0.4531,
+          "hi": 0.499
          },
-         "expected_cover": 0.5458,
-         "expected_n": 741,
+         "expected_cover": 0.5462,
+         "expected_n": 748,
          "calibration_error_pp": null,
          "mean_break_even": 0.5217,
-         "realized_edge_pp": -4.39,
+         "realized_edge_pp": -4.57,
          "clv": {
-          "n": 1837,
-          "mean": 0.076,
+          "n": 1844,
+          "mean": 0.081,
           "median": 0,
-          "beat": 456,
+          "beat": 463,
           "tie": 960,
           "lose": 421,
-          "beat_rate": 0.2482,
-          "tie_rate": 0.5226,
-          "lose_rate": 0.2292,
+          "beat_rate": 0.2511,
+          "tie_rate": 0.5206,
+          "lose_rate": 0.2283,
           "beat_rate_interval": {
-           "lo": 0.229,
-           "hi": 0.2685
+           "lo": 0.2318,
+           "hi": 0.2714
           },
           "interval": {
-           "lo": 0.027,
-           "hi": 0.126
+           "lo": 0.032,
+           "hi": 0.131
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1837,
-           "text": "n=1837 · Meaningful sample",
+           "n": 1844,
+           "text": "n=1844 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -12252,51 +12252,51 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0815,
-         "flat_n": 1844,
-         "independent_n": 224,
+         "flat_roi_hypothetical": -0.085,
+         "flat_n": 1851,
+         "independent_n": 225,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 224,
-          "text": "n=224 · Developing evidence",
+          "n": 225,
+          "text": "n=225 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 47.8% (n=1804) over 224 games vs expected 54.6% · Developing evidence",
+         "text": "Observed cover 47.6% (n=1811) over 225 games vs expected 54.6% · Developing evidence",
          "bucket": "LEAN"
         },
         {
          "mode": "LIVE",
-         "n": 5369,
-         "settled": 4583,
-         "decided": 4487,
-         "wins": 2132,
-         "losses": 2355,
+         "n": 5396,
+         "settled": 4606,
+         "decided": 4510,
+         "wins": 2148,
+         "losses": 2362,
          "pushes": 96,
-         "observed_cover": 0.4752,
+         "observed_cover": 0.4763,
          "observed_cover_interval": {
-          "lo": 0.4606,
-          "hi": 0.4898
+          "lo": 0.4617,
+          "hi": 0.4909
          },
          "expected_cover": 0.5107,
-         "expected_n": 3832,
+         "expected_n": 3848,
          "calibration_error_pp": null,
          "mean_break_even": 0.5244,
-         "realized_edge_pp": -4.93,
+         "realized_edge_pp": -4.81,
          "clv": {
-          "n": 4544,
+          "n": 4567,
           "mean": 0.106,
           "median": 0,
-          "beat": 1248,
+          "beat": 1255,
           "tie": 2282,
-          "lose": 1014,
-          "beat_rate": 0.2746,
-          "tie_rate": 0.5022,
-          "lose_rate": 0.2232,
+          "lose": 1030,
+          "beat_rate": 0.2748,
+          "tie_rate": 0.4997,
+          "lose_rate": 0.2255,
           "beat_rate_interval": {
-           "lo": 0.2619,
-           "hi": 0.2878
+           "lo": 0.262,
+           "hi": 0.2879
           },
           "interval": {
            "lo": 0.073,
@@ -12305,8 +12305,8 @@
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 4544,
-           "text": "n=4544 · Meaningful sample",
+           "n": 4567,
+           "text": "n=4567 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -12362,18 +12362,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0919,
-         "flat_n": 4583,
-         "independent_n": 247,
+         "flat_roi_hypothetical": -0.0898,
+         "flat_n": 4606,
+         "independent_n": 248,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 247,
-          "text": "n=247 · Developing evidence",
+          "n": 248,
+          "text": "n=248 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 47.5% (n=4487) over 247 games vs expected 51.1% · Developing evidence",
+         "text": "Observed cover 47.6% (n=4510) over 248 games vs expected 51.1% · Developing evidence",
          "bucket": "PASS"
         },
         {
@@ -12491,51 +12491,51 @@
       },
       "unit_tier": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "market": {
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 7255,
-         "settled": 6469,
-         "decided": 6333,
-         "wins": 3010,
-         "losses": 3323,
+         "n": 7289,
+         "settled": 6499,
+         "decided": 6363,
+         "wins": 3026,
+         "losses": 3337,
          "pushes": 136,
-         "observed_cover": 0.4753,
+         "observed_cover": 0.4756,
          "observed_cover_interval": {
-          "lo": 0.463,
-          "hi": 0.4876
+          "lo": 0.4633,
+          "hi": 0.4878
          },
-         "expected_cover": 0.5166,
-         "expected_n": 4615,
+         "expected_cover": 0.5167,
+         "expected_n": 4638,
          "calibration_error_pp": null,
-         "mean_break_even": 0.5237,
-         "realized_edge_pp": -4.84,
+         "mean_break_even": 0.5236,
+         "realized_edge_pp": -4.81,
          "clv": {
-          "n": 6423,
-          "mean": 0.097,
+          "n": 6453,
+          "mean": 0.098,
           "median": 0,
-          "beat": 1713,
+          "beat": 1727,
           "tie": 3265,
-          "lose": 1445,
-          "beat_rate": 0.2667,
-          "tie_rate": 0.5083,
-          "lose_rate": 0.225,
+          "lose": 1461,
+          "beat_rate": 0.2676,
+          "tie_rate": 0.506,
+          "lose_rate": 0.2264,
           "beat_rate_interval": {
-           "lo": 0.256,
-           "hi": 0.2777
+           "lo": 0.257,
+           "hi": 0.2786
           },
           "interval": {
-           "lo": 0.07,
-           "hi": 0.125
+           "lo": 0.071,
+           "hi": 0.126
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 6423,
-           "text": "n=6423 · Meaningful sample",
+           "n": 6453,
+           "text": "n=6453 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -12591,18 +12591,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0902,
-         "flat_n": 6469,
-         "independent_n": 254,
+         "flat_roi_hypothetical": -0.0897,
+         "flat_n": 6499,
+         "independent_n": 255,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 254,
-          "text": "n=254 · Developing evidence",
+          "n": 255,
+          "text": "n=255 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 47.5% (n=6333) over 254 games vs expected 51.7% · Developing evidence",
+         "text": "Observed cover 47.6% (n=6363) over 255 games vs expected 51.7% · Developing evidence",
          "bucket": "spread"
         }
        ],
@@ -12832,7 +12832,7 @@
         },
         {
          "mode": "LIVE",
-         "n": 2937,
+         "n": 2940,
          "settled": 2308,
          "decided": 2271,
          "wins": 1079,
@@ -12942,45 +12942,45 @@
         },
         {
          "mode": "LIVE",
-         "n": 1803,
-         "settled": 1777,
-         "decided": 1705,
-         "wins": 944,
-         "losses": 761,
+         "n": 1820,
+         "settled": 1794,
+         "decided": 1722,
+         "wins": 954,
+         "losses": 768,
          "pushes": 72,
-         "observed_cover": 0.5537,
+         "observed_cover": 0.554,
          "observed_cover_interval": {
-          "lo": 0.53,
-          "hi": 0.5771
+          "lo": 0.5304,
+          "hi": 0.5773
          },
-         "expected_cover": 0.5104,
-         "expected_n": 801,
+         "expected_cover": 0.5103,
+         "expected_n": 817,
          "calibration_error_pp": null,
          "mean_break_even": 0.5235,
-         "realized_edge_pp": 3.01,
+         "realized_edge_pp": 3.05,
          "clv": {
-          "n": 1772,
-          "mean": 0.032,
+          "n": 1789,
+          "mean": 0.037,
           "median": 0,
-          "beat": 463,
+          "beat": 470,
           "tie": 918,
-          "lose": 391,
-          "beat_rate": 0.2613,
-          "tie_rate": 0.5181,
-          "lose_rate": 0.2207,
+          "lose": 401,
+          "beat_rate": 0.2627,
+          "tie_rate": 0.5131,
+          "lose_rate": 0.2241,
           "beat_rate_interval": {
-           "lo": 0.2414,
-           "hi": 0.2822
+           "lo": 0.2428,
+           "hi": 0.2836
           },
           "interval": {
-           "lo": -0.017,
-           "hi": 0.081
+           "lo": -0.013,
+           "hi": 0.086
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1772,
-           "text": "n=1772 · Meaningful sample",
+           "n": 1789,
+           "text": "n=1789 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13036,61 +13036,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": 0.0563,
-         "flat_n": 1777,
-         "independent_n": 210,
+         "flat_roi_hypothetical": 0.057,
+         "flat_n": 1794,
+         "independent_n": 211,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 210,
-          "text": "n=210 · Developing evidence",
+          "n": 211,
+          "text": "n=211 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 55.4% (n=1705) over 210 games vs expected 51.0% · Developing evidence",
+         "text": "Observed cover 55.4% (n=1722) over 211 games vs expected 51.0% · Developing evidence",
          "bucket": "80–89"
         },
         {
          "mode": "LIVE",
-         "n": 1259,
-         "settled": 1244,
-         "decided": 1225,
-         "wins": 486,
+         "n": 1265,
+         "settled": 1250,
+         "decided": 1231,
+         "wins": 492,
          "losses": 739,
          "pushes": 19,
-         "observed_cover": 0.3967,
+         "observed_cover": 0.3997,
          "observed_cover_interval": {
-          "lo": 0.3697,
-          "hi": 0.4244
+          "lo": 0.3727,
+          "hi": 0.4273
          },
          "expected_cover": 0.5108,
          "expected_n": 756,
          "calibration_error_pp": null,
          "mean_break_even": 0.5237,
-         "realized_edge_pp": -12.7,
+         "realized_edge_pp": -12.4,
          "clv": {
-          "n": 1244,
-          "mean": -0.024,
+          "n": 1250,
+          "mean": -0.029,
           "median": 0,
           "beat": 243,
           "tie": 716,
-          "lose": 285,
-          "beat_rate": 0.1953,
-          "tie_rate": 0.5756,
-          "lose_rate": 0.2291,
+          "lose": 291,
+          "beat_rate": 0.1944,
+          "tie_rate": 0.5728,
+          "lose_rate": 0.2328,
           "beat_rate_interval": {
-           "lo": 0.1743,
-           "hi": 0.2183
+           "lo": 0.1734,
+           "hi": 0.2173
           },
           "interval": {
-           "lo": -0.075,
-           "hi": 0.028
+           "lo": -0.081,
+           "hi": 0.022
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1244,
-           "text": "n=1244 · Meaningful sample",
+           "n": 1250,
+           "text": "n=1250 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13146,82 +13146,82 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.238,
-         "flat_n": 1244,
-         "independent_n": 110,
+         "flat_roi_hypothetical": -0.2325,
+         "flat_n": 1250,
+         "independent_n": 111,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 110,
-          "text": "n=110 · Early signal",
+          "n": 111,
+          "text": "n=111 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 39.7% (n=1225) over 110 games vs expected 51.1% · Early signal",
+         "text": "Observed cover 40.0% (n=1231) over 111 games vs expected 51.1% · Early signal",
          "bucket": "90+"
         }
        ],
-       "not_measured": 539
+       "not_measured": 547
       },
       "calibration_source": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "reliability_band": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "price_edge_band": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "calibrated_ev_band": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "gap_band": {
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 1403,
-         "settled": 1403,
-         "decided": 1386,
-         "wins": 643,
-         "losses": 743,
+         "n": 1415,
+         "settled": 1415,
+         "decided": 1398,
+         "wins": 649,
+         "losses": 749,
          "pushes": 17,
-         "observed_cover": 0.4639,
+         "observed_cover": 0.4642,
          "observed_cover_interval": {
-          "lo": 0.4378,
-          "hi": 0.4902
+          "lo": 0.4382,
+          "hi": 0.4904
          },
          "expected_cover": 0.5038,
-         "expected_n": 1080,
+         "expected_n": 1090,
          "calibration_error_pp": null,
          "mean_break_even": 0.5226,
-         "realized_edge_pp": -5.87,
+         "realized_edge_pp": -5.84,
          "clv": {
-          "n": 1400,
-          "mean": 0.042,
+          "n": 1412,
+          "mean": 0.048,
           "median": 0,
-          "beat": 343,
+          "beat": 349,
           "tie": 764,
-          "lose": 293,
-          "beat_rate": 0.245,
-          "tie_rate": 0.5457,
-          "lose_rate": 0.2093,
+          "lose": 299,
+          "beat_rate": 0.2472,
+          "tie_rate": 0.5411,
+          "lose_rate": 0.2118,
           "beat_rate_interval": {
-           "lo": 0.2232,
-           "hi": 0.2682
+           "lo": 0.2254,
+           "hi": 0.2703
           },
           "interval": {
-           "lo": -0.009,
-           "hi": 0.093
+           "lo": -0.004,
+           "hi": 0.099
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1400,
-           "text": "n=1400 · Meaningful sample",
+           "n": 1412,
+           "text": "n=1412 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13277,61 +13277,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.1114,
-         "flat_n": 1403,
-         "independent_n": 161,
+         "flat_roi_hypothetical": -0.1108,
+         "flat_n": 1415,
+         "independent_n": 162,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 161,
-          "text": "n=161 · Early signal",
+          "n": 162,
+          "text": "n=162 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 46.4% (n=1386) over 161 games vs expected 50.4% · Early signal",
+         "text": "Observed cover 46.4% (n=1398) over 162 games vs expected 50.4% · Early signal",
          "bucket": "<1 pt"
         },
         {
          "mode": "LIVE",
-         "n": 1401,
-         "settled": 1401,
-         "decided": 1375,
-         "wins": 704,
-         "losses": 671,
+         "n": 1412,
+         "settled": 1412,
+         "decided": 1386,
+         "wins": 714,
+         "losses": 672,
          "pushes": 26,
-         "observed_cover": 0.512,
+         "observed_cover": 0.5152,
          "observed_cover_interval": {
-          "lo": 0.4856,
-          "hi": 0.5384
+          "lo": 0.4888,
+          "hi": 0.5414
          },
-         "expected_cover": 0.5091,
-         "expected_n": 1026,
+         "expected_cover": 0.509,
+         "expected_n": 1032,
          "calibration_error_pp": null,
          "mean_break_even": 0.5243,
-         "realized_edge_pp": -1.23,
+         "realized_edge_pp": -0.91,
          "clv": {
-          "n": 1391,
-          "mean": 0.072,
+          "n": 1402,
+          "mean": 0.066,
           "median": 0,
-          "beat": 393,
+          "beat": 394,
           "tie": 699,
-          "lose": 299,
-          "beat_rate": 0.2825,
-          "tie_rate": 0.5025,
-          "lose_rate": 0.215,
+          "lose": 309,
+          "beat_rate": 0.281,
+          "tie_rate": 0.4986,
+          "lose_rate": 0.2204,
           "beat_rate_interval": {
-           "lo": 0.2595,
-           "hi": 0.3068
+           "lo": 0.2581,
+           "hi": 0.3051
           },
           "interval": {
-           "lo": 0.018,
-           "hi": 0.126
+           "lo": 0.013,
+           "hi": 0.12
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1391,
-           "text": "n=1391 · Meaningful sample",
+           "n": 1402,
+           "text": "n=1402 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13387,61 +13387,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0221,
-         "flat_n": 1401,
-         "independent_n": 182,
+         "flat_roi_hypothetical": -0.0162,
+         "flat_n": 1412,
+         "independent_n": 183,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 182,
-          "text": "n=182 · Early signal",
+          "n": 183,
+          "text": "n=183 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 51.2% (n=1375) over 182 games vs expected 50.9% · Early signal",
+         "text": "Observed cover 51.5% (n=1386) over 183 games vs expected 50.9% · Early signal",
          "bucket": "1–2 pts"
         },
         {
          "mode": "LIVE",
-         "n": 2018,
-         "settled": 2018,
-         "decided": 1976,
+         "n": 2024,
+         "settled": 2024,
+         "decided": 1982,
          "wins": 931,
-         "losses": 1045,
+         "losses": 1051,
          "pushes": 42,
-         "observed_cover": 0.4712,
+         "observed_cover": 0.4697,
          "observed_cover_interval": {
-          "lo": 0.4492,
-          "hi": 0.4932
+          "lo": 0.4478,
+          "hi": 0.4917
          },
-         "expected_cover": 0.5188,
-         "expected_n": 1492,
+         "expected_cover": 0.5191,
+         "expected_n": 1498,
          "calibration_error_pp": null,
          "mean_break_even": 0.5234,
-         "realized_edge_pp": -5.22,
+         "realized_edge_pp": -5.37,
          "clv": {
-          "n": 1989,
-          "mean": 0.078,
+          "n": 1995,
+          "mean": 0.081,
           "median": 0,
-          "beat": 504,
+          "beat": 510,
           "tie": 1029,
           "lose": 456,
-          "beat_rate": 0.2534,
-          "tie_rate": 0.5173,
-          "lose_rate": 0.2293,
+          "beat_rate": 0.2556,
+          "tie_rate": 0.5158,
+          "lose_rate": 0.2286,
           "beat_rate_interval": {
-           "lo": 0.2348,
-           "hi": 0.273
+           "lo": 0.237,
+           "hi": 0.2752
           },
           "interval": {
-           "lo": 0.03,
-           "hi": 0.126
+           "lo": 0.033,
+           "hi": 0.13
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1989,
-           "text": "n=1989 · Meaningful sample",
+           "n": 1995,
+           "text": "n=1995 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13497,61 +13497,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0971,
-         "flat_n": 2018,
-         "independent_n": 191,
+         "flat_roi_hypothetical": -0.0997,
+         "flat_n": 2024,
+         "independent_n": 192,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 191,
-          "text": "n=191 · Early signal",
+          "n": 192,
+          "text": "n=192 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 47.1% (n=1976) over 191 games vs expected 51.9% · Early signal",
+         "text": "Observed cover 47.0% (n=1982) over 192 games vs expected 51.9% · Early signal",
          "bucket": "2–4 pts"
         },
         {
          "mode": "LIVE",
-         "n": 1307,
-         "settled": 1307,
-         "decided": 1260,
+         "n": 1308,
+         "settled": 1308,
+         "decided": 1261,
          "wins": 576,
-         "losses": 684,
+         "losses": 685,
          "pushes": 47,
-         "observed_cover": 0.4571,
+         "observed_cover": 0.4568,
          "observed_cover_interval": {
-          "lo": 0.4298,
-          "hi": 0.4847
+          "lo": 0.4295,
+          "hi": 0.4844
          },
-         "expected_cover": 0.532,
-         "expected_n": 863,
+         "expected_cover": 0.5321,
+         "expected_n": 864,
          "calibration_error_pp": null,
          "mean_break_even": 0.5241,
-         "realized_edge_pp": -6.7,
+         "realized_edge_pp": -6.73,
          "clv": {
-          "n": 1303,
-          "mean": 0.181,
+          "n": 1304,
+          "mean": 0.183,
           "median": 0,
-          "beat": 372,
+          "beat": 373,
           "tie": 609,
           "lose": 322,
-          "beat_rate": 0.2855,
-          "tie_rate": 0.4674,
-          "lose_rate": 0.2471,
+          "beat_rate": 0.286,
+          "tie_rate": 0.467,
+          "lose_rate": 0.2469,
           "beat_rate_interval": {
-           "lo": 0.2616,
-           "hi": 0.3106
+           "lo": 0.2622,
+           "hi": 0.3112
           },
           "interval": {
-           "lo": 0.108,
-           "hi": 0.254
+           "lo": 0.11,
+           "hi": 0.256
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1303,
-           "text": "n=1303 · Meaningful sample",
+           "n": 1304,
+           "text": "n=1304 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13607,18 +13607,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.1231,
-         "flat_n": 1307,
-         "independent_n": 147,
+         "flat_roi_hypothetical": -0.1237,
+         "flat_n": 1308,
+         "independent_n": 148,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 147,
-          "text": "n=147 · Early signal",
+          "n": 148,
+          "text": "n=148 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 45.7% (n=1260) over 147 games vs expected 53.2% · Early signal",
+         "text": "Observed cover 45.7% (n=1261) over 148 games vs expected 53.2% · Early signal",
          "bucket": "4–7 pts"
         },
         {
@@ -13732,51 +13732,51 @@
          "bucket": "7+ pts"
         }
        ],
-       "not_measured": 786
+       "not_measured": 790
       },
       "favorite": {
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 3250,
-         "settled": 3250,
-         "decided": 3154,
-         "wins": 1401,
+         "n": 3266,
+         "settled": 3266,
+         "decided": 3170,
+         "wins": 1417,
          "losses": 1753,
          "pushes": 96,
-         "observed_cover": 0.4442,
+         "observed_cover": 0.447,
          "observed_cover_interval": {
-          "lo": 0.4269,
-          "hi": 0.4616
+          "lo": 0.4298,
+          "hi": 0.4644
          },
          "expected_cover": 0.515,
-         "expected_n": 2262,
+         "expected_n": 2272,
          "calibration_error_pp": null,
          "mean_break_even": 0.524,
-         "realized_edge_pp": -7.98,
+         "realized_edge_pp": -7.7,
          "clv": {
-          "n": 3220,
-          "mean": -0.052,
+          "n": 3236,
+          "mean": -0.057,
           "median": 0,
           "beat": 753,
           "tie": 1683,
-          "lose": 784,
-          "beat_rate": 0.2339,
-          "tie_rate": 0.5227,
-          "lose_rate": 0.2435,
+          "lose": 800,
+          "beat_rate": 0.2327,
+          "tie_rate": 0.5201,
+          "lose_rate": 0.2472,
           "beat_rate_interval": {
-           "lo": 0.2196,
-           "hi": 0.2488
+           "lo": 0.2185,
+           "hi": 0.2476
           },
           "interval": {
-           "lo": -0.086,
-           "hi": -0.017
+           "lo": -0.091,
+           "hi": -0.023
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 3220,
-           "text": "n=3220 · Meaningful sample",
+           "n": 3236,
+           "text": "n=3236 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13832,61 +13832,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.1486,
-         "flat_n": 3250,
-         "independent_n": 210,
+         "flat_roi_hypothetical": -0.1434,
+         "flat_n": 3266,
+         "independent_n": 211,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 210,
-          "text": "n=210 · Developing evidence",
+          "n": 211,
+          "text": "n=211 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 44.4% (n=3154) over 210 games vs expected 51.5% · Developing evidence",
+         "text": "Observed cover 44.7% (n=3170) over 211 games vs expected 51.5% · Developing evidence",
          "bucket": "FAVORITE"
         },
         {
          "mode": "LIVE",
-         "n": 3219,
-         "settled": 3219,
-         "decided": 3179,
+         "n": 3233,
+         "settled": 3233,
+         "decided": 3193,
          "wins": 1609,
-         "losses": 1570,
+         "losses": 1584,
          "pushes": 40,
-         "observed_cover": 0.5061,
+         "observed_cover": 0.5039,
          "observed_cover_interval": {
-          "lo": 0.4888,
-          "hi": 0.5235
+          "lo": 0.4866,
+          "hi": 0.5212
          },
-         "expected_cover": 0.5181,
-         "expected_n": 2353,
+         "expected_cover": 0.5183,
+         "expected_n": 2366,
          "calibration_error_pp": null,
          "mean_break_even": 0.5233,
-         "realized_edge_pp": -1.71,
+         "realized_edge_pp": -1.93,
          "clv": {
-          "n": 3203,
-          "mean": 0.247,
+          "n": 3217,
+          "mean": 0.255,
           "median": 0,
-          "beat": 960,
+          "beat": 974,
           "tie": 1582,
           "lose": 661,
-          "beat_rate": 0.2997,
-          "tie_rate": 0.4939,
-          "lose_rate": 0.2064,
+          "beat_rate": 0.3028,
+          "tie_rate": 0.4918,
+          "lose_rate": 0.2055,
           "beat_rate_interval": {
-           "lo": 0.2841,
-           "hi": 0.3158
+           "lo": 0.2871,
+           "hi": 0.3189
           },
           "interval": {
-           "lo": 0.205,
-           "hi": 0.289
+           "lo": 0.213,
+           "hi": 0.297
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 3203,
-           "text": "n=3203 · Meaningful sample",
+           "n": 3217,
+           "text": "n=3217 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -13942,66 +13942,66 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0312,
-         "flat_n": 3219,
-         "independent_n": 211,
+         "flat_roi_hypothetical": -0.0354,
+         "flat_n": 3233,
+         "independent_n": 212,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 211,
-          "text": "n=211 · Developing evidence",
+          "n": 212,
+          "text": "n=212 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 50.6% (n=3179) over 211 games vs expected 51.8% · Developing evidence",
+         "text": "Observed cover 50.4% (n=3193) over 212 games vs expected 51.8% · Developing evidence",
          "bucket": "UNDERDOG"
         }
        ],
-       "not_measured": 786
+       "not_measured": 790
       },
       "home_away": {
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 3333,
-         "settled": 3333,
-         "decided": 3259,
-         "wins": 1736,
+         "n": 3349,
+         "settled": 3349,
+         "decided": 3275,
+         "wins": 1752,
          "losses": 1523,
          "pushes": 74,
-         "observed_cover": 0.5327,
+         "observed_cover": 0.535,
          "observed_cover_interval": {
-          "lo": 0.5155,
-          "hi": 0.5498
+          "lo": 0.5178,
+          "hi": 0.552
          },
          "expected_cover": 0.5167,
-         "expected_n": 2201,
+         "expected_n": 2211,
          "calibration_error_pp": null,
          "mean_break_even": 0.5242,
-         "realized_edge_pp": 0.84,
+         "realized_edge_pp": 1.07,
          "clv": {
-          "n": 3294,
-          "mean": 0.049,
+          "n": 3310,
+          "mean": 0.044,
           "median": 0,
           "beat": 831,
           "tie": 1665,
-          "lose": 798,
-          "beat_rate": 0.2523,
-          "tie_rate": 0.5055,
-          "lose_rate": 0.2423,
+          "lose": 814,
+          "beat_rate": 0.2511,
+          "tie_rate": 0.503,
+          "lose_rate": 0.2459,
           "beat_rate_interval": {
-           "lo": 0.2377,
-           "hi": 0.2674
+           "lo": 0.2366,
+           "hi": 0.2661
           },
           "interval": {
-           "lo": 0.01,
-           "hi": 0.088
+           "lo": 0.005,
+           "hi": 0.082
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 3294,
-           "text": "n=3294 · Meaningful sample",
+           "n": 3310,
+           "text": "n=3310 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -14057,61 +14057,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": 0.0165,
-         "flat_n": 3333,
-         "independent_n": 215,
+         "flat_roi_hypothetical": 0.0208,
+         "flat_n": 3349,
+         "independent_n": 216,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 215,
-          "text": "n=215 · Developing evidence",
+          "n": 216,
+          "text": "n=216 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 53.3% (n=3259) over 215 games vs expected 51.7% · Developing evidence",
+         "text": "Observed cover 53.5% (n=3275) over 216 games vs expected 51.7% · Developing evidence",
          "bucket": "HOME"
         },
         {
          "mode": "LIVE",
-         "n": 3136,
-         "settled": 3136,
-         "decided": 3074,
+         "n": 3150,
+         "settled": 3150,
+         "decided": 3088,
          "wins": 1274,
-         "losses": 1800,
+         "losses": 1814,
          "pushes": 62,
-         "observed_cover": 0.4144,
+         "observed_cover": 0.4126,
          "observed_cover_interval": {
-          "lo": 0.3971,
-          "hi": 0.432
+          "lo": 0.3953,
+          "hi": 0.43
          },
-         "expected_cover": 0.5165,
-         "expected_n": 2414,
+         "expected_cover": 0.5167,
+         "expected_n": 2427,
          "calibration_error_pp": null,
          "mean_break_even": 0.523,
-         "realized_edge_pp": -10.86,
+         "realized_edge_pp": -11.05,
          "clv": {
-          "n": 3129,
-          "mean": 0.148,
+          "n": 3143,
+          "mean": 0.156,
           "median": 0,
-          "beat": 882,
+          "beat": 896,
           "tie": 1600,
           "lose": 647,
-          "beat_rate": 0.2819,
-          "tie_rate": 0.5113,
-          "lose_rate": 0.2068,
+          "beat_rate": 0.2851,
+          "tie_rate": 0.5091,
+          "lose_rate": 0.2059,
           "beat_rate_interval": {
-           "lo": 0.2664,
-           "hi": 0.2979
+           "lo": 0.2696,
+           "hi": 0.3011
           },
           "interval": {
-           "lo": 0.109,
-           "hi": 0.187
+           "lo": 0.118,
+           "hi": 0.195
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 3129,
-           "text": "n=3129 · Meaningful sample",
+           "n": 3143,
+           "text": "n=3143 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -14167,86 +14167,86 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.2036,
-         "flat_n": 3136,
-         "independent_n": 202,
+         "flat_roi_hypothetical": -0.2071,
+         "flat_n": 3150,
+         "independent_n": 203,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 202,
-          "text": "n=202 · Developing evidence",
+          "n": 203,
+          "text": "n=203 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 41.4% (n=3074) over 202 games vs expected 51.7% · Developing evidence",
+         "text": "Observed cover 41.3% (n=3088) over 203 games vs expected 51.7% · Developing evidence",
          "bucket": "AWAY"
         }
        ],
-       "not_measured": 786
+       "not_measured": 790
       },
       "division": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "key_exposure": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "market_quality": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "book_depth": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "quote_freshness": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "model_version": {
        "buckets": [
         {
          "mode": "LIVE",
-         "n": 539,
-         "settled": 518,
-         "decided": 514,
+         "n": 547,
+         "settled": 525,
+         "decided": 521,
          "wins": 237,
-         "losses": 277,
+         "losses": 284,
          "pushes": 4,
-         "observed_cover": 0.4611,
+         "observed_cover": 0.4549,
          "observed_cover_interval": {
-          "lo": 0.4184,
-          "hi": 0.5043
+          "lo": 0.4126,
+          "hi": 0.4978
          },
-         "expected_cover": 0.5511,
-         "expected_n": 514,
-         "calibration_error_pp": -9,
+         "expected_cover": 0.5516,
+         "expected_n": 521,
+         "calibration_error_pp": -9.67,
          "mean_break_even": 0.524,
-         "realized_edge_pp": -6.29,
+         "realized_edge_pp": -6.91,
          "clv": {
-          "n": 518,
-          "mean": 0.148,
+          "n": 525,
+          "mean": 0.165,
           "median": 0,
-          "beat": 142,
+          "beat": 149,
           "tie": 282,
           "lose": 94,
-          "beat_rate": 0.2741,
-          "tie_rate": 0.5444,
-          "lose_rate": 0.1815,
+          "beat_rate": 0.2838,
+          "tie_rate": 0.5371,
+          "lose_rate": 0.179,
           "beat_rate_interval": {
-           "lo": 0.2375,
-           "hi": 0.3141
+           "lo": 0.2469,
+           "hi": 0.3238
           },
           "interval": {
-           "lo": 0.052,
-           "hi": 0.243
+           "lo": 0.069,
+           "hi": 0.26
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 518,
-           "text": "n=518 · Meaningful sample",
+           "n": 525,
+           "text": "n=525 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -14302,61 +14302,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.12,
-         "flat_n": 518,
-         "independent_n": 72,
+         "flat_roi_hypothetical": -0.1317,
+         "flat_n": 525,
+         "independent_n": 73,
          "sample": {
           "key": "EARLY_SIGNAL",
           "label": "Early signal",
-          "n": 72,
-          "text": "n=72 · Early signal",
+          "n": 73,
+          "text": "n=73 · Early signal",
           "recalibration": "NOT_ALLOWED",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 46.1% (n=514) over 72 games vs expected 55.1% · Early signal",
+         "text": "Observed cover 45.5% (n=521) over 73 games vs expected 55.2% · Early signal",
          "bucket": "edgedesk_cfb_loop_v2.0.0"
         },
         {
          "mode": "LIVE",
-         "n": 1987,
-         "settled": 1756,
-         "decided": 1718,
-         "wins": 840,
-         "losses": 878,
+         "n": 1995,
+         "settled": 1763,
+         "decided": 1725,
+         "wins": 846,
+         "losses": 879,
          "pushes": 38,
-         "observed_cover": 0.4889,
+         "observed_cover": 0.4904,
          "observed_cover_interval": {
-          "lo": 0.4654,
-          "hi": 0.5126
+          "lo": 0.4669,
+          "hi": 0.514
          },
          "expected_cover": null,
          "expected_n": 0,
          "calibration_error_pp": null,
          "mean_break_even": 0.5237,
-         "realized_edge_pp": -3.48,
+         "realized_edge_pp": -3.33,
          "clv": {
-          "n": 1746,
-          "mean": 0.008,
+          "n": 1753,
+          "mean": 0.006,
           "median": 0,
-          "beat": 411,
+          "beat": 412,
           "tie": 951,
-          "lose": 384,
-          "beat_rate": 0.2354,
-          "tie_rate": 0.5447,
-          "lose_rate": 0.2199,
+          "lose": 390,
+          "beat_rate": 0.235,
+          "tie_rate": 0.5425,
+          "lose_rate": 0.2225,
           "beat_rate_interval": {
-           "lo": 0.2161,
-           "hi": 0.2559
+           "lo": 0.2158,
+           "hi": 0.2554
           },
           "interval": {
-           "lo": -0.04,
-           "hi": 0.057
+           "lo": -0.043,
+           "hi": 0.055
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 1746,
-           "text": "n=1746 · Meaningful sample",
+           "n": 1753,
+           "text": "n=1753 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -14412,61 +14412,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0646,
-         "flat_n": 1756,
-         "independent_n": 253,
+         "flat_roi_hypothetical": -0.0618,
+         "flat_n": 1763,
+         "independent_n": 254,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 253,
-          "text": "n=253 · Developing evidence",
+          "n": 254,
+          "text": "n=254 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 48.9% (n=1718) over 253 games · Developing evidence",
+         "text": "Observed cover 49.0% (n=1725) over 254 games · Developing evidence",
          "bucket": "edgedesk_cfb_p4_v1.0.0"
         },
         {
          "mode": "LIVE",
-         "n": 2365,
-         "settled": 2098,
-         "decided": 2051,
-         "wins": 939,
-         "losses": 1112,
+         "n": 2374,
+         "settled": 2106,
+         "decided": 2059,
+         "wins": 944,
+         "losses": 1115,
          "pushes": 47,
-         "observed_cover": 0.4578,
+         "observed_cover": 0.4585,
          "observed_cover_interval": {
-          "lo": 0.4364,
-          "hi": 0.4794
+          "lo": 0.437,
+          "hi": 0.4801
          },
-         "expected_cover": 0.5121,
-         "expected_n": 2051,
-         "calibration_error_pp": -5.42,
+         "expected_cover": 0.512,
+         "expected_n": 2059,
+         "calibration_error_pp": -5.36,
          "mean_break_even": 0.5236,
-         "realized_edge_pp": -6.58,
+         "realized_edge_pp": -6.51,
          "clv": {
-          "n": 2080,
-          "mean": 0.126,
+          "n": 2088,
+          "mean": 0.127,
           "median": 0,
-          "beat": 576,
+          "beat": 579,
           "tie": 1016,
-          "lose": 488,
-          "beat_rate": 0.2769,
-          "tie_rate": 0.4885,
-          "lose_rate": 0.2346,
+          "lose": 493,
+          "beat_rate": 0.2773,
+          "tie_rate": 0.4866,
+          "lose_rate": 0.2361,
           "beat_rate_interval": {
-           "lo": 0.2581,
-           "hi": 0.2966
+           "lo": 0.2585,
+           "hi": 0.2969
           },
           "interval": {
-           "lo": 0.076,
-           "hi": 0.175
+           "lo": 0.077,
+           "hi": 0.176
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 2080,
-           "text": "n=2080 · Meaningful sample",
+           "n": 2088,
+           "text": "n=2088 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -14522,61 +14522,61 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.1225,
-         "flat_n": 2098,
-         "independent_n": 248,
+         "flat_roi_hypothetical": -0.1213,
+         "flat_n": 2106,
+         "independent_n": 249,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 248,
-          "text": "n=248 · Developing evidence",
+          "n": 249,
+          "text": "n=249 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 45.8% (n=2051) over 248 games vs expected 51.2% · Developing evidence",
+         "text": "Observed cover 45.8% (n=2059) over 249 games vs expected 51.2% · Developing evidence",
          "bucket": "edgedesk_cfb_v2.0.0"
         },
         {
          "mode": "LIVE",
-         "n": 2364,
-         "settled": 2097,
-         "decided": 2050,
-         "wins": 994,
-         "losses": 1056,
+         "n": 2373,
+         "settled": 2105,
+         "decided": 2058,
+         "wins": 999,
+         "losses": 1059,
          "pushes": 47,
-         "observed_cover": 0.4849,
+         "observed_cover": 0.4854,
          "observed_cover_interval": {
-          "lo": 0.4633,
-          "hi": 0.5065
+          "lo": 0.4639,
+          "hi": 0.507
          },
          "expected_cover": 0.5125,
-         "expected_n": 2050,
-         "calibration_error_pp": -2.76,
+         "expected_n": 2058,
+         "calibration_error_pp": -2.7,
          "mean_break_even": 0.5235,
-         "realized_edge_pp": -3.87,
+         "realized_edge_pp": -3.81,
          "clv": {
-          "n": 2079,
-          "mean": 0.13,
+          "n": 2087,
+          "mean": 0.131,
           "median": 0,
-          "beat": 584,
+          "beat": 587,
           "tie": 1016,
-          "lose": 479,
-          "beat_rate": 0.2809,
-          "tie_rate": 0.4887,
-          "lose_rate": 0.2304,
+          "lose": 484,
+          "beat_rate": 0.2813,
+          "tie_rate": 0.4868,
+          "lose_rate": 0.2319,
           "beat_rate_interval": {
-           "lo": 0.262,
-           "hi": 0.3006
+           "lo": 0.2624,
+           "hi": 0.3009
           },
           "interval": {
-           "lo": 0.081,
-           "hi": 0.18
+           "lo": 0.082,
+           "hi": 0.181
           },
           "sample": {
            "key": "STRONGER_EVIDENCE",
            "label": "Meaningful sample",
-           "n": 2079,
-           "text": "n=2079 · Meaningful sample",
+           "n": 2087,
+           "text": "n=2087 · Meaningful sample",
            "recalibration": "PROPOSAL_ONLY",
            "note": "A product maturity label, not a scientific verdict."
           }
@@ -14632,18 +14632,18 @@
          "units_won": 0,
          "roi": null,
          "roi_n": 0,
-         "flat_roi_hypothetical": -0.0719,
-         "flat_n": 2097,
-         "independent_n": 248,
+         "flat_roi_hypothetical": -0.0708,
+         "flat_n": 2105,
+         "independent_n": 249,
          "sample": {
           "key": "MODERATE_EVIDENCE",
           "label": "Developing evidence",
-          "n": 248,
-          "text": "n=248 · Developing evidence",
+          "n": 249,
+          "text": "n=249 · Developing evidence",
           "recalibration": "PROPOSAL_ONLY",
           "note": "A product maturity label, not a scientific verdict."
          },
-         "text": "Observed cover 48.5% (n=2050) over 248 games vs expected 51.2% · Developing evidence",
+         "text": "Observed cover 48.5% (n=2058) over 249 games vs expected 51.2% · Developing evidence",
          "bucket": "edgedesk_cfb_v2.1.0"
         }
        ],
@@ -14651,15 +14651,15 @@
       },
       "calibration_version": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       },
       "rules_version": {
        "buckets": [],
-       "not_measured": 7255
+       "not_measured": 7289
       }
      },
      "leakage": {
-      "n": 7255,
+      "n": 7289,
       "violations": [],
       "ok": true,
       "rule": "Every live row is decided before kickoff, on quotes and inputs captured no later than the evaluation; a close is captured after it; a walk-forward row never trains on its own season."
@@ -15315,40 +15315,40 @@
    "LIVE": {
     "label": "Live",
     "live_decisions": {
-     "n": 7255,
-     "settled": 6469,
+     "n": 7289,
+     "settled": 6499,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 254,
-      "text": "n=254 · Developing evidence",
+      "n": 255,
+      "text": "n=255 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv": {
-     "n": 6423,
-     "mean": 0.097,
+     "n": 6453,
+     "mean": 0.098,
      "median": 0,
-     "beat": 1713,
+     "beat": 1727,
      "tie": 3265,
-     "lose": 1445,
-     "beat_rate": 0.2667,
-     "tie_rate": 0.5083,
-     "lose_rate": 0.225,
+     "lose": 1461,
+     "beat_rate": 0.2676,
+     "tie_rate": 0.506,
+     "lose_rate": 0.2264,
      "beat_rate_interval": {
-      "lo": 0.256,
-      "hi": 0.2777
+      "lo": 0.257,
+      "hi": 0.2786
      },
      "interval": {
-      "lo": 0.07,
-      "hi": 0.125
+      "lo": 0.071,
+      "hi": 0.126
      },
      "sample": {
       "key": "STRONGER_EVIDENCE",
       "label": "Meaningful sample",
-      "n": 6423,
-      "text": "n=6423 · Meaningful sample",
+      "n": 6453,
+      "text": "n=6453 · Meaningful sample",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
@@ -15381,10 +15381,10 @@
      }
     },
     "calibration": {
-     "n": 4615,
-     "brier": 0.25268,
-     "log_loss": 0.69861,
-     "ece": 0.0464,
+     "n": 4638,
+     "brier": 0.25281,
+     "log_loss": 0.69888,
+     "ece": 0.04662,
      "bins": [
       {
        "lo": 0.45,
@@ -15412,20 +15412,20 @@
        "lo": 0.5,
        "hi": 0.52,
        "label": "50%–52%",
-       "n": 3389,
-       "expected": 0.508,
-       "observed": 0.4872,
-       "error_pp": -2.08,
+       "n": 3405,
+       "expected": 0.5079,
+       "observed": 0.4878,
+       "error_pp": -2.01,
        "interval": {
-        "lo": 0.4704,
-        "hi": 0.504
+        "lo": 0.471,
+        "hi": 0.5046
        },
        "inside_interval": false,
        "sample": {
         "key": "MODERATE_EVIDENCE",
         "label": "Developing evidence",
-        "n": 236,
-        "text": "n=236 · Developing evidence",
+        "n": 237,
+        "text": "n=237 · Developing evidence",
         "recalibration": "PROPOSAL_ONLY",
         "note": "A product maturity label, not a scientific verdict."
        }
@@ -15500,20 +15500,20 @@
        "lo": 0.58,
        "hi": 0.6,
        "label": "58%–60%",
-       "n": 55,
-       "expected": 0.5917,
-       "observed": 0.4727,
-       "error_pp": -11.89,
+       "n": 61,
+       "expected": 0.5909,
+       "observed": 0.4262,
+       "error_pp": -16.47,
        "interval": {
-        "lo": 0.3469,
-        "hi": 0.6021
+        "lo": 0.3102,
+        "hi": 0.551
        },
-       "inside_interval": true,
+       "inside_interval": false,
        "sample": {
         "key": "DESCRIPTIVE_ONLY",
         "label": "Too early to evaluate",
-        "n": 18,
-        "text": "n=18 · Too early to evaluate",
+        "n": 19,
+        "text": "n=19 · Too early to evaluate",
         "recalibration": "NOT_ALLOWED",
         "note": "A product maturity label, not a scientific verdict."
        }
@@ -15522,20 +15522,20 @@
        "lo": 0.6,
        "hi": 0.65,
        "label": "60%–65%",
-       "n": 57,
-       "expected": 0.6184,
-       "observed": 0.614,
-       "error_pp": -0.44,
+       "n": 58,
+       "expected": 0.6182,
+       "observed": 0.6034,
+       "error_pp": -1.48,
        "interval": {
-        "lo": 0.4843,
-        "hi": 0.7294
+        "lo": 0.4749,
+        "hi": 0.7191
        },
        "inside_interval": true,
        "sample": {
         "key": "DESCRIPTIVE_ONLY",
         "label": "Too early to evaluate",
-        "n": 14,
-        "text": "n=14 · Too early to evaluate",
+        "n": 15,
+        "text": "n=15 · Too early to evaluate",
         "recalibration": "NOT_ALLOWED",
         "note": "A product maturity label, not a scientific verdict."
        }
@@ -15588,8 +15588,8 @@
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 248,
-      "text": "n=248 · Developing evidence",
+      "n": 249,
+      "text": "n=249 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
@@ -15599,53 +15599,53 @@
      "n": 0,
      "units_risked": 0,
      "units_won": 0,
-     "flat_roi_hypothetical": -0.0902,
-     "flat_n": 6469
+     "flat_roi_hypothetical": -0.0897,
+     "flat_n": 6499
     },
     "cover_rate": {
-     "observed": 0.4753,
+     "observed": 0.4756,
      "interval": {
-      "lo": 0.463,
-      "hi": 0.4876
+      "lo": 0.4633,
+      "hi": 0.4878
      },
-     "n": 6333
+     "n": 6363
     },
     "expected_vs_observed": {
-     "expected": 0.5166,
-     "observed": 0.4753,
+     "expected": 0.5167,
+     "observed": 0.4756,
      "error_pp": null,
-     "n": 6333
+     "n": 6363
     },
     "by_decision": [
      {
       "bucket": "LEAN",
-      "n": 1844,
-      "decided": 1804,
-      "observed_cover": 0.4778,
-      "expected_cover": 0.5458,
-      "clv_mean": 0.076,
-      "clv_n": 1837,
-      "clv_beat_rate": 0.2482,
+      "n": 1851,
+      "decided": 1811,
+      "observed_cover": 0.476,
+      "expected_cover": 0.5462,
+      "clv_mean": 0.081,
+      "clv_n": 1844,
+      "clv_beat_rate": 0.2511,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0815,
+      "flat_roi_hypothetical": -0.085,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 47.8% (n=1804) over 224 games vs expected 54.6% · Developing evidence"
+      "text": "Observed cover 47.6% (n=1811) over 225 games vs expected 54.6% · Developing evidence"
      },
      {
       "bucket": "PASS",
-      "n": 5369,
-      "decided": 4487,
-      "observed_cover": 0.4752,
+      "n": 5396,
+      "decided": 4510,
+      "observed_cover": 0.4763,
       "expected_cover": 0.5107,
       "clv_mean": 0.106,
-      "clv_n": 4544,
-      "clv_beat_rate": 0.2746,
+      "clv_n": 4567,
+      "clv_beat_rate": 0.2748,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0919,
+      "flat_roi_hypothetical": -0.0898,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 47.5% (n=4487) over 247 games vs expected 51.1% · Developing evidence"
+      "text": "Observed cover 47.6% (n=4510) over 248 games vs expected 51.1% · Developing evidence"
      },
      {
       "bucket": "RESEARCH",
@@ -15667,35 +15667,35 @@
     "by_sport": [
      {
       "bucket": "CFB",
-      "n": 7255,
-      "decided": 6333,
-      "observed_cover": 0.4753,
-      "expected_cover": 0.5166,
-      "clv_mean": 0.097,
-      "clv_n": 6423,
-      "clv_beat_rate": 0.2667,
+      "n": 7289,
+      "decided": 6363,
+      "observed_cover": 0.4756,
+      "expected_cover": 0.5167,
+      "clv_mean": 0.098,
+      "clv_n": 6453,
+      "clv_beat_rate": 0.2676,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0902,
+      "flat_roi_hypothetical": -0.0897,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 47.5% (n=6333) over 254 games vs expected 51.7% · Developing evidence"
+      "text": "Observed cover 47.6% (n=6363) over 255 games vs expected 51.7% · Developing evidence"
      }
     ],
     "by_market": [
      {
       "bucket": "spread",
-      "n": 7255,
-      "decided": 6333,
-      "observed_cover": 0.4753,
-      "expected_cover": 0.5166,
-      "clv_mean": 0.097,
-      "clv_n": 6423,
-      "clv_beat_rate": 0.2667,
+      "n": 7289,
+      "decided": 6363,
+      "observed_cover": 0.4756,
+      "expected_cover": 0.5167,
+      "clv_mean": 0.098,
+      "clv_n": 6453,
+      "clv_beat_rate": 0.2676,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0902,
+      "flat_roi_hypothetical": -0.0897,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 47.5% (n=6333) over 254 games vs expected 51.7% · Developing evidence"
+      "text": "Observed cover 47.6% (n=6363) over 255 games vs expected 51.7% · Developing evidence"
      }
     ],
     "by_confidence": [
@@ -15731,7 +15731,7 @@
      },
      {
       "bucket": "70–79",
-      "n": 2937,
+      "n": 2940,
       "decided": 2271,
       "observed_cover": 0.4751,
       "expected_cover": 0.5135,
@@ -15746,33 +15746,33 @@
      },
      {
       "bucket": "80–89",
-      "n": 1803,
-      "decided": 1705,
-      "observed_cover": 0.5537,
-      "expected_cover": 0.5104,
-      "clv_mean": 0.032,
-      "clv_n": 1772,
-      "clv_beat_rate": 0.2613,
+      "n": 1820,
+      "decided": 1722,
+      "observed_cover": 0.554,
+      "expected_cover": 0.5103,
+      "clv_mean": 0.037,
+      "clv_n": 1789,
+      "clv_beat_rate": 0.2627,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": 0.0563,
+      "flat_roi_hypothetical": 0.057,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 55.4% (n=1705) over 210 games vs expected 51.0% · Developing evidence"
+      "text": "Observed cover 55.4% (n=1722) over 211 games vs expected 51.0% · Developing evidence"
      },
      {
       "bucket": "90+",
-      "n": 1259,
-      "decided": 1225,
-      "observed_cover": 0.3967,
+      "n": 1265,
+      "decided": 1231,
+      "observed_cover": 0.3997,
       "expected_cover": 0.5108,
-      "clv_mean": -0.024,
-      "clv_n": 1244,
-      "clv_beat_rate": 0.1953,
+      "clv_mean": -0.029,
+      "clv_n": 1250,
+      "clv_beat_rate": 0.1944,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.238,
+      "flat_roi_hypothetical": -0.2325,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 39.7% (n=1225) over 110 games vs expected 51.1% · Early signal"
+      "text": "Observed cover 40.0% (n=1231) over 111 games vs expected 51.1% · Early signal"
      }
     ],
     "by_reliability": [],
@@ -15781,63 +15781,63 @@
     "by_gap": [
      {
       "bucket": "<1 pt",
-      "n": 1403,
-      "decided": 1386,
-      "observed_cover": 0.4639,
+      "n": 1415,
+      "decided": 1398,
+      "observed_cover": 0.4642,
       "expected_cover": 0.5038,
-      "clv_mean": 0.042,
-      "clv_n": 1400,
-      "clv_beat_rate": 0.245,
+      "clv_mean": 0.048,
+      "clv_n": 1412,
+      "clv_beat_rate": 0.2472,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.1114,
+      "flat_roi_hypothetical": -0.1108,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 46.4% (n=1386) over 161 games vs expected 50.4% · Early signal"
+      "text": "Observed cover 46.4% (n=1398) over 162 games vs expected 50.4% · Early signal"
      },
      {
       "bucket": "1–2 pts",
-      "n": 1401,
-      "decided": 1375,
-      "observed_cover": 0.512,
-      "expected_cover": 0.5091,
-      "clv_mean": 0.072,
-      "clv_n": 1391,
-      "clv_beat_rate": 0.2825,
+      "n": 1412,
+      "decided": 1386,
+      "observed_cover": 0.5152,
+      "expected_cover": 0.509,
+      "clv_mean": 0.066,
+      "clv_n": 1402,
+      "clv_beat_rate": 0.281,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0221,
+      "flat_roi_hypothetical": -0.0162,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 51.2% (n=1375) over 182 games vs expected 50.9% · Early signal"
+      "text": "Observed cover 51.5% (n=1386) over 183 games vs expected 50.9% · Early signal"
      },
      {
       "bucket": "2–4 pts",
-      "n": 2018,
-      "decided": 1976,
-      "observed_cover": 0.4712,
-      "expected_cover": 0.5188,
-      "clv_mean": 0.078,
-      "clv_n": 1989,
-      "clv_beat_rate": 0.2534,
+      "n": 2024,
+      "decided": 1982,
+      "observed_cover": 0.4697,
+      "expected_cover": 0.5191,
+      "clv_mean": 0.081,
+      "clv_n": 1995,
+      "clv_beat_rate": 0.2556,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0971,
+      "flat_roi_hypothetical": -0.0997,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 47.1% (n=1976) over 191 games vs expected 51.9% · Early signal"
+      "text": "Observed cover 47.0% (n=1982) over 192 games vs expected 51.9% · Early signal"
      },
      {
       "bucket": "4–7 pts",
-      "n": 1307,
-      "decided": 1260,
-      "observed_cover": 0.4571,
-      "expected_cover": 0.532,
-      "clv_mean": 0.181,
-      "clv_n": 1303,
-      "clv_beat_rate": 0.2855,
+      "n": 1308,
+      "decided": 1261,
+      "observed_cover": 0.4568,
+      "expected_cover": 0.5321,
+      "clv_mean": 0.183,
+      "clv_n": 1304,
+      "clv_beat_rate": 0.286,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.1231,
+      "flat_roi_hypothetical": -0.1237,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 45.7% (n=1260) over 147 games vs expected 53.2% · Early signal"
+      "text": "Observed cover 45.7% (n=1261) over 148 games vs expected 53.2% · Early signal"
      },
      {
       "bucket": "7+ pts",
@@ -15859,63 +15859,63 @@
     "by_model_version": [
      {
       "bucket": "edgedesk_cfb_loop_v2.0.0",
-      "n": 539,
-      "decided": 514,
-      "observed_cover": 0.4611,
-      "expected_cover": 0.5511,
-      "clv_mean": 0.148,
-      "clv_n": 518,
-      "clv_beat_rate": 0.2741,
+      "n": 547,
+      "decided": 521,
+      "observed_cover": 0.4549,
+      "expected_cover": 0.5516,
+      "clv_mean": 0.165,
+      "clv_n": 525,
+      "clv_beat_rate": 0.2838,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.12,
+      "flat_roi_hypothetical": -0.1317,
       "sample": "EARLY_SIGNAL",
-      "text": "Observed cover 46.1% (n=514) over 72 games vs expected 55.1% · Early signal"
+      "text": "Observed cover 45.5% (n=521) over 73 games vs expected 55.2% · Early signal"
      },
      {
       "bucket": "edgedesk_cfb_p4_v1.0.0",
-      "n": 1987,
-      "decided": 1718,
-      "observed_cover": 0.4889,
+      "n": 1995,
+      "decided": 1725,
+      "observed_cover": 0.4904,
       "expected_cover": null,
-      "clv_mean": 0.008,
-      "clv_n": 1746,
-      "clv_beat_rate": 0.2354,
+      "clv_mean": 0.006,
+      "clv_n": 1753,
+      "clv_beat_rate": 0.235,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0646,
+      "flat_roi_hypothetical": -0.0618,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 48.9% (n=1718) over 253 games · Developing evidence"
+      "text": "Observed cover 49.0% (n=1725) over 254 games · Developing evidence"
      },
      {
       "bucket": "edgedesk_cfb_v2.0.0",
-      "n": 2365,
-      "decided": 2051,
-      "observed_cover": 0.4578,
-      "expected_cover": 0.5121,
-      "clv_mean": 0.126,
-      "clv_n": 2080,
-      "clv_beat_rate": 0.2769,
+      "n": 2374,
+      "decided": 2059,
+      "observed_cover": 0.4585,
+      "expected_cover": 0.512,
+      "clv_mean": 0.127,
+      "clv_n": 2088,
+      "clv_beat_rate": 0.2773,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.1225,
+      "flat_roi_hypothetical": -0.1213,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 45.8% (n=2051) over 248 games vs expected 51.2% · Developing evidence"
+      "text": "Observed cover 45.8% (n=2059) over 249 games vs expected 51.2% · Developing evidence"
      },
      {
       "bucket": "edgedesk_cfb_v2.1.0",
-      "n": 2364,
-      "decided": 2050,
-      "observed_cover": 0.4849,
+      "n": 2373,
+      "decided": 2058,
+      "observed_cover": 0.4854,
       "expected_cover": 0.5125,
-      "clv_mean": 0.13,
-      "clv_n": 2079,
-      "clv_beat_rate": 0.2809,
+      "clv_mean": 0.131,
+      "clv_n": 2087,
+      "clv_beat_rate": 0.2813,
       "roi": null,
       "roi_n": 0,
-      "flat_roi_hypothetical": -0.0719,
+      "flat_roi_hypothetical": -0.0708,
       "sample": "MODERATE_EVIDENCE",
-      "text": "Observed cover 48.5% (n=2050) over 248 games vs expected 51.2% · Developing evidence"
+      "text": "Observed cover 48.5% (n=2058) over 249 games vs expected 51.2% · Developing evidence"
      }
     ],
     "by_market_quality": [],
@@ -15926,22 +15926,22 @@
        "metric": "mean CLV (pts) and realized edge",
        "n": [
         0,
-        1804
+        1811
        ],
        "evaluated": false,
        "ok": null,
-       "text": "Not evaluated: BET n=0, LEAN n=1804 (224 games) (each needs 50 independent results)."
+       "text": "Not evaluated: BET n=0, LEAN n=1811 (225 games) (each needs 50 independent results)."
       },
       {
        "check": "LEAN > PASS",
        "metric": "mean CLV (pts) and realized edge",
        "n": [
-        1804,
-        4487
+        1811,
+        4510
        ],
        "evaluated": true,
        "ok": false,
-       "text": "LEAN mean CLV 0.076 vs PASS 0.106; realized edge -4.39 vs -4.93 pp"
+       "text": "LEAN mean CLV 0.081 vs PASS 0.106; realized edge -4.57 vs -4.81 pp"
       },
       {
        "check": "0.50U > 0.25U",
@@ -15978,19 +15978,19 @@
       {
        "code": "CLASS_NOT_SEPARATING",
        "severity": "RESEARCH_ALERT",
-       "text": "WARNING: LEAN is not looking stronger than PASS after 6291 settled decisions.",
+       "text": "WARNING: LEAN is not looking stronger than PASS after 6321 settled decisions.",
        "note": "This is a research alert, not an automatic change."
       },
       {
        "code": "CALIBRATION_MISS",
        "severity": "RESEARCH_ALERT",
-       "text": "WARNING: LEAN expected cover 54.6% lies outside the observed interval 45.5%–50.1% (n=1804).",
+       "text": "WARNING: LEAN expected cover 54.6% lies outside the observed interval 45.3%–49.9% (n=1811).",
        "note": "This is a research alert, not an automatic change."
       },
       {
        "code": "CALIBRATION_MISS",
        "severity": "RESEARCH_ALERT",
-       "text": "WARNING: PASS expected cover 51.1% lies outside the observed interval 46.1%–49.0% (n=4487).",
+       "text": "WARNING: PASS expected cover 51.1% lies outside the observed interval 46.2%–49.1% (n=4510).",
        "note": "This is a research alert, not an automatic change."
       }
      ]
@@ -17400,21 +17400,21 @@
    "source": "CFB Lab · LIVE",
    "code": "CLASS_NOT_SEPARATING",
    "severity": "RESEARCH_ALERT",
-   "text": "WARNING: LEAN is not looking stronger than PASS after 6291 settled decisions.",
+   "text": "WARNING: LEAN is not looking stronger than PASS after 6321 settled decisions.",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "source": "CFB Lab · LIVE",
    "code": "CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
-   "text": "WARNING: LEAN expected cover 54.6% lies outside the observed interval 45.5%–50.1% (n=1804).",
+   "text": "WARNING: LEAN expected cover 54.6% lies outside the observed interval 45.3%–49.9% (n=1811).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "source": "CFB Lab · LIVE",
    "code": "CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
-   "text": "WARNING: PASS expected cover 51.1% lies outside the observed interval 46.1%–49.0% (n=4487).",
+   "text": "WARNING: PASS expected cover 51.1% lies outside the observed interval 46.2%–49.1% (n=4510).",
    "note": "This is a research alert, not an automatic change."
   },
   {

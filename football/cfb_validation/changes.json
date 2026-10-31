@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-31T20:08:24.027Z",
+ "generated_at": "2026-10-31T20:17:20.563Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
@@ -35,7 +35,7 @@
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 92,
-    "to": 21
+    "to": 18
    }
   ],
   "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -435,74 +435,6 @@
   {
    "from_at": "2026-10-21T04:06:23.535Z",
    "to_at": "2026-10-26T15:03:38.857Z",
-   "old_fair": 1.65,
-   "new_fair": 0.18,
-   "change": -1.47,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -1.49
-    }
-   ],
-   "unexplained": 0.02,
-   "game_id": "401856736",
-   "game": "South Carolina @ Oklahoma",
-   "market_then": null,
-   "market_now": -5.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-26T15:03:38.857Z",
-   "old_fair": 22.44,
-   "new_fair": 21.16,
-   "change": -1.28,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: AJ Bianco (PREVIOUS_GAME) → Luke Duncan (COMPETITION)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.2
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401858508",
-   "game": "Nevada @ UCLA",
-   "market_then": null,
-   "market_now": -22.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-26T15:03:38.857Z",
    "old_fair": 6.73,
    "new_fair": 7.39,
    "change": 0.66,
@@ -740,29 +672,6 @@
    "game": "Oregon State @ Fresno State",
    "market_then": null,
    "market_now": 6.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-26T15:03:38.857Z",
-   "old_fair": 9.19,
-   "new_fair": 9.19,
-   "change": 0,
-   "material": false,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401858506",
-   "game": "Purdue @ Penn State",
-   "market_then": null,
-   "market_now": -7.5,
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
