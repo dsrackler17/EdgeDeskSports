@@ -373,6 +373,16 @@ select
     when now() - (select finished_at from any_run) > interval '90 minutes' then 'no run in over 90 minutes: the scheduler is not calling the sync'
     when coalesce((select fallback_used from good), false) then 'the league''s report could not be read: statuses are from the ESPN fallback'
     when (select drift from a24) > 0 then 'the report''s layout or names drifted (see nba_injury_alerts)'
+    /* every other warn condition above names itself: a warn with no reason sent readers to the alerts table */
+    when (select failures from a24) > 0 then (select failures from a24) || ' failed check(s) in 24 hours (see nba_injury_alerts)'
+    when (select degraded from a24) > 0 then (select degraded from a24) || ' degraded check(s) in 24 hours (see nba_injury_alerts)'
+    when coalesce(array_length((select teams_missing from good), 1), 0) > 0
+      then 'teams playing today are missing from the report: ' || array_to_string((select teams_missing from good), ', ')
+    when coalesce((select unmatched from good), 0) > 0
+      then (select unmatched from good) || ' name(s) on the report matched no rostered player: the games they affect are withheld'
+    when (select game_day from any_run) and (now() - (select at from official)) > make_interval(mins => (select off_max from cfg))
+      then 'the league''s newest report is ' || round(extract(epoch from now() - (select at from official)) / 60)::int
+        || ' min old on a game day (over ' || (select off_max from cfg) || ')'
     else null
   end as state_reason
 ;
