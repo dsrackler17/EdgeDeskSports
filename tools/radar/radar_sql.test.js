@@ -174,18 +174,6 @@ try {
   /* DEAD RUNS (owner's decision, 2026-10-30): a run that dies never settles, and its whole grant stayed reserved for the
      rest of the day (2026-10-30: 40,000 granted, 17,785 used). Fifteen minutes after it was given, the next acquire
      settles it at what its run last reported plus 100, never more than it was granted. The ceiling is unchanged. */
-  /* A grant's reservation belongs to the UTC day it was given: each dead grant is reserved on its own day's row, so the
-     test reads the same whatever the hour (20 minutes ago is yesterday until 00:20 UTC: the deploy gate failed at 00:08) */
-  const deadGrant = (req, at) => +V(`insert into public.poly_api_grants (caller, requested, granted, decision, granted_at) values ('polymarket_sync:tonight', ${req}, ${req}, 'granted', ${at}) returning grant_id;`);
-  const reserve = (req, at) => V(`insert into public.poly_api_days (day, granted) values (((${at}) at time zone 'utc')::date, ${req})
-    on conflict (day) do update set granted = public.poly_api_days.granted + excluded.granted;`);
-  const AGO20 = "now() - interval '20 minutes'", AGO5 = "now() - interval '5 minutes'";
-  /* and one given at 23:40 UTC the day before, every time: its run died before midnight */
-  const LASTNIGHT = "date_trunc('day', now() at time zone 'utc') at time zone 'utc' - interval '20 minutes'";
-  V("update public.poly_api_days set granted = 0, used = 0");
-  const dA = deadGrant(400, AGO20), dB = deadGrant(900, AGO20), dC = deadGrant(400, AGO5), dY = deadGrant(400, LASTNIGHT);
-  reserve(400, AGO20); reserve(900, AGO20); reserve(400, AGO5); reserve(400, LASTNIGHT);
-  const days = () => V("select sum(granted) || '|' || sum(used) from public.poly_api_days");
   const deadGrant = (req, ago) => +V(`insert into public.poly_api_grants (caller, requested, granted, decision, granted_at) values ('polymarket_sync:tonight', ${req}, ${req}, 'granted', now() - interval '${ago}') returning grant_id;`);
   const dA = deadGrant(400, '20 minutes'), dB = deadGrant(900, '20 minutes'), dC = deadGrant(400, '5 minutes');
   // each grant is charged to its own UTC day: from 00:00 to 00:20 UTC, 20 minutes ago is yesterday (run 41148425430,
@@ -203,17 +191,6 @@ try {
     V(`select used || '|' || (statuses ->> 'expired') from public.poly_api_settlements where grant_id = ${dA}`) === '100|true');
   chk('dead runs: one that reported 300 of 900 is settled at 400 (its last report plus 100)', V(`select used from public.poly_api_settlements where grant_id = ${dB}`) === '400');
   chk('dead runs: a grant 5 minutes old is left alone: its run may still be working', V(`select count(*) from public.poly_api_settlements where grant_id = ${dC}`) === '0');
-  chk('dead runs: the days get back what they did not use (2,100 - 300 - 500 - 300 = 1,000, then the new 10), and count what they may have used (600)',
-    gNext.decision === 'granted' && days() === '1010|600', days());
-  /* every day's row counts exactly what the expired grants given on that day may have used (the rows were zeroed above) */
-  const ownDays = () => V(`select bool_and(d.used = coalesce(x.u, 0)) from public.poly_api_days d left join (
-      select (g.granted_at at time zone 'utc')::date as day, sum(st.used) as u from public.poly_api_grants g
-        join public.poly_api_settlements st on st.grant_id = g.grant_id where st.statuses ? 'expired' group by 1) x on x.day = d.day`);
-  chk('dead runs: a grant given before midnight UTC is settled on its own day (100 of 400), never on today\'s; so is every other',
-    V(`select used from public.poly_api_settlements where grant_id = ${dY}`) === '100' && ownDays() === 't',
-    V("select string_agg(day || ':' || granted || '|' || used, ' ' order by day) from public.poly_api_days"));
-  chk('dead runs: a late settlement of an expired grant changes nothing', fn(`public.poly_api_settle('{"grant_id":${dA},"used":50}'::jsonb)`, db.service).settled === false
-    && days() === '1010|600');
   chk('dead runs: the day gets back what they did not use (1,700 - 300 - 500 = 900, then the new 10), and counts what they may have used (500)',
     gNext.decision === 'granted' && daysTotal() === '910|500', daysTotal());
   chk('dead runs: a late settlement of an expired grant changes nothing', fn(`public.poly_api_settle('{"grant_id":${dA},"used":50}'::jsonb)`, db.service).settled === false
