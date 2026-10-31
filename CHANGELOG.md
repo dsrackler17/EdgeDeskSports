@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-31 — Radar SQL test: the dead-run budget checks read the same at any hour (they failed from 00:00 to 00:20 UTC)
+
+- **What failed.** Deploy Prediction Radar's test gate, run 41148425430 at 00:08 UTC, which stopped the first H-RADAR-02 run. `radar_sql.test.js` gave 243 passed, 2 failed ("1710|0" where "910|500" was expected). It reproduced on `main` at 00:12 UTC.
+- **Why.** The test from #939 dated its dead grants "20 minutes ago" and reserved them on today's row. Until 00:20 UTC that is yesterday, and `poly_api_acquire()` rightly settles a grant on the UTC day it was given. The code was right and the test was wrong.
+- **The fix (test only).**
+  - Each dead grant is reserved on its own day's row, and the checks read totals across days.
+  - A grant given at 23:40 UTC the day before is checked on every run, so the midnight case is always exercised: it must be settled on its own day, and every day's row must count exactly what its own expired grants may have used.
+  - Nothing in `supabase/` changes.
+- **Result.** Before: 243/2 at 00:12 UTC. After: 246/0 at 00:16 UTC, inside the window, and outside it.
+
 ## 2026-10-30 — Deploy football situational tables (SQL): a button that applies supabase/football_situational.sql
 
 - **Why.** The Football situational pipeline's last step copies its artifacts into the `fsie_` tables, which do not exist in production (`Could not find the table 'public.fsie_source_files'`, run 41093420059). Until they do, every run of the pipeline fails.
