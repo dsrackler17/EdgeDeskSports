@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T23:30:00.000Z",
   "game_when_label": "2026-10-31 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T17:01:00.885Z",
-  "generated_at": "2026-10-31T17:01:00.885Z",
+  "updated_at": "2026-10-31T17:10:54.414Z",
+  "generated_at": "2026-10-31T17:10:54.414Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1827,10 +1827,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-31T23:30:00.000Z",
-    "minutes_before_kickoff": 389,
+    "minutes_before_kickoff": 379,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-31T17:01:00.885Z"
+    "at": "2026-10-31T17:10:54.414Z"
   },
   "featured": {
     "editorial_priority": 41.3,
@@ -2133,17 +2133,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-31T17:01:00.885Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Jonas Williams has completed 12 of 14 passes (85.7%) for 126 yards, 9.0 yards per attempt,",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-31T17:10:54.414Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T17:01:00.885Z",
+    "at": "2026-10-31T17:10:54.414Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2156,12 +2163,18 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Jonas Williams has completed 12 of 14 passes (85.7%) for 126 yards, 9.0 yards per attempt,"
+      }
+    ],
     "hold_reason": "my_take, evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1rxc7fb1u5ryk5",
+    "packet_hash": "1kfs4xjfc2uqd",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can Ohio State’s defense slow USC’s offense?",
@@ -2267,7 +2280,7 @@
         "label": "EdgeDesk input audit (model starter vs official availability report)",
         "url": null,
         "path": null,
-        "observed_at": "2026-10-31T16:08:03.726Z",
+        "observed_at": "2026-10-31T17:08:16.154Z",
         "verification": "CONFLICTING"
       }
     ],
@@ -2276,6 +2289,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T17:01:00.885Z"
+    "at": "2026-10-31T17:10:54.414Z"
   }
 }

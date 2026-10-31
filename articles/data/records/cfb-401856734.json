@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:30:00.000Z",
   "game_when_label": "2026-10-31 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T17:01:00.885Z",
-  "generated_at": "2026-10-31T17:01:00.885Z",
+  "updated_at": "2026-10-31T17:10:54.414Z",
+  "generated_at": "2026-10-31T17:10:54.414Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1862,10 +1862,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-31T19:30:00.000Z",
-    "minutes_before_kickoff": 149,
+    "minutes_before_kickoff": 139,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-31T17:01:00.885Z"
+    "at": "2026-10-31T17:10:54.414Z"
   },
   "featured": {
     "editorial_priority": 42.5,
@@ -2155,17 +2155,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-31T17:01:00.885Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Aaron Philo has completed 105 of 149 passes (70.5%) for 1,438 yards, 9.7 yards per attempt",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-31T17:10:54.414Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T17:01:00.885Z",
+    "at": "2026-10-31T17:10:54.414Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2173,18 +2180,24 @@
         "detail": "0 characters on file"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Aaron Philo has completed 105 of 149 passes (70.5%) for 1,438 yards, 9.7 yards per attempt"
+      }
+    ],
     "hold_reason": "my_take"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "u5luwkrb1iom",
+    "packet_hash": "1hh6bdp1im1rgf",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Georgia’s pass rush get to Tramell Jones Jr.?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Georgia, and its own breakdown accounts for about 0.0 of the 3.7 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Georgia, and its own breakdown accounts for about 0.0 of the 2.7 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 3.7,
+      "points": 2.7,
       "toward": "Georgia",
       "other": "Florida"
     },
@@ -2272,6 +2285,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T17:01:00.885Z"
+    "at": "2026-10-31T17:10:54.414Z"
   }
 }
