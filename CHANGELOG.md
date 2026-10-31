@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-31 — NBA injury readiness: a warning always says why
+
+- **What was wrong.** After the 2026-10-30 deploy, `public.nba_injury_readiness` read `warn` with `state_reason` null. The cause was one name on the league's report (Michael Ajayi, CHA, two-way) that matched no rostered player. The view's `state` turns `warn` on seven conditions, but its `state_reason` named only two of them (the ESPN fallback and drift). The other five fell through to null, so System health printed "degraded" with no explanation.
+- **Fix** (`supabase/nba_injury_layer.sql` and its byte-identical migration mirror). One reason branch for each remaining condition: failed or degraded checks in 24 h, teams missing on a game day (named), unmatched names, and a league report older than `official_report_max_age_minutes` on a game day (with its age). Only `state_reason` changes: `state` and every other column are the same, so no threshold moved.
+- **Tests** (`tools/nba/nba_injury_sql.test.js`, real PostgreSQL). Four new checks, one per newly named condition. On the old view: 59 passed, 5 failed (the four new checks, plus the mirror check, which failed only because the test swapped the file in place). On the fix: 64 passed, 0 failed.
+- **Deploy:** run Deploy NBA injury layer with `apply_sql`.
+
 ## 2026-10-30 — Deploy football situational tables (SQL): a button that applies supabase/football_situational.sql
 
 - **Why.** The Football situational pipeline's last step copies its artifacts into the `fsie_` tables, which do not exist in production (`Could not find the table 'public.fsie_source_files'`, run 41093420059). Until they do, every run of the pipeline fails.
