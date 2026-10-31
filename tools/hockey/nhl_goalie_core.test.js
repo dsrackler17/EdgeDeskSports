@@ -88,6 +88,19 @@ bx = G.nhlgParseNhlBoxscore(FX.boxscore({ id: 1, home: 'VAN', away: 'MIN', homeG
 chk('NHL boxscore: two goalies flagged on one side confirm nobody', bx.rows.length === 0);
 chk('NHL boxscore: anything else is a DRIFT', G.nhlgParseNhlBoxscore({ message: 'not found' }).drift != null);
 
+/* ESPN's scoreboard, on the real response of 2026-10-30 (trimmed to the fields read: fixtures/espn_nhl_scoreboard_2026-10-30.json) */
+const ESPN_REAL = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'espn_nhl_scoreboard_2026-10-30.json'), 'utf8'));
+chk('ESPN: one scoreboard URL per Eastern date', G.nhlgEspnScoreboardUrl('2026-10-30') === 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=20261030');
+let es = G.nhlgParseEspnScoreboard(ESPN_REAL, { url: G.nhlgEspnScoreboardUrl('2026-10-30'), fetched_at: '2026-10-30T16:45:00Z' });
+const ek = (t) => es.rows.find((r) => r.team === t) || {};
+chk('ESPN: the real scoreboard reads: 3 games, a probable goalie on each of 6 sides, no drift', es.ok && es.games === 3 && es.rows.length === 6 && es.rows.every((r) => r.goalie_name) && !es.drift && !es.unread.length, es);
+chk('ESPN: its "NJ" is the slate\'s NJD, and each row carries the game\'s teams and puck drop', ek('NJD').home === 'VGK' && ek('NJD').away === 'NJD' && ek('NJD').side === 'away' && ek('NJD').start_utc === '2026-10-30T22:00:00.000Z', ek('NJD'));
+chk('ESPN: "Confirmed" is Confirmed (Florida, Akira Schmid), ESPN\'s word kept', ek('FLA').goalie_name === 'Akira Schmid' && ek('FLA').status === 'confirmed' && ek('FLA').source_status === 'Confirmed', ek('FLA'));
+chk('ESPN: "Expected" is Likely, never Confirmed (Vegas, Carter Hart)', ek('VGK').goalie_name === 'Carter Hart' && ek('VGK').status === 'likely' && ek('VGK').source_status === 'Expected', ek('VGK'));
+es = G.nhlgParseEspnScoreboard(FX.minVanEspn(null, { name: 'Cam Pickard', status: 'Expected' }));
+chk('ESPN: a side with no probable goalie is a row with no name (unknown), never a guess', es.rows.length === 2 && es.rows.find((r) => r.side === 'home').goalie_name === null && es.rows.find((r) => r.side === 'home').status === 'unknown', es.rows);
+chk('ESPN: anything that is not a scoreboard is a DRIFT, never an empty slate', /no events array/.test(G.nhlgParseEspnScoreboard({ message: 'not found' }).drift || '') && !G.nhlgParseEspnScoreboard(null).ok);
+
 /* ---------------------------------------------------------------- the merge */
 const o = (source, id, name, status, extra) => Object.assign({ source, goalie_id: id, goalie_name: name, status, fetched_at: '2026-10-25T18:00:00Z' }, extra || {});
 const PROJ = { goalie_id: '8480947', goalie_name: 'K. Lankinen', p: 0.5154, as_of: '2026-10-25T12:41:00Z' };
@@ -107,6 +120,10 @@ chk('conflict: the lead source\'s goalie (the NHL over Daily Faceoff) ...', mg.g
 chk('conflict: ... and never Confirmed, even when both sources say confirmed', mg.status === 'likely', mg.status);
 mg = G.nhlgMergeSide([o('daily_faceoff', '8482447', 'Leevi Merilainen', 'projected'), o('nhl_api_boxscore', '8480947', 'K. Lankinen', 'confirmed')], PROJ);
 chk('conflict: the LOWER of the two statuses', mg.conflict && mg.status === 'projected', mg);
+mg = G.nhlgMergeSide([o('daily_faceoff', '8482447', 'Leevi Merilainen', 'likely'), o('espn', '8482447', 'Leevi Merilainen', 'confirmed')], PROJ);
+chk('merge: ESPN confirming the goalie Daily Faceoff calls Likely → Confirmed, from ESPN', mg.status === 'confirmed' && mg.source === 'espn' && !mg.conflict && mg.basis === 'sources_agree', mg);
+mg = G.nhlgMergeSide([o('daily_faceoff', '8482447', 'Leevi Merilainen', 'likely'), o('espn', '8480947', 'Kevin Lankinen', 'confirmed')], PROJ);
+chk('conflict: ESPN and Daily Faceoff naming different goalies → Daily Faceoff leads, Likely at most, flagged', mg.conflict && mg.source === 'daily_faceoff' && mg.goalie_id === '8482447' && mg.status === 'likely', mg);
 mg = G.nhlgMergeSide([o('daily_faceoff', null, 'Arturs Silovs', 'likely')], PROJ);
 chk('merge: an unmatched name is kept by name (no id is invented)', mg.goalie_id === null && mg.goalie_name === 'Arturs Silovs' && mg.status === 'likely');
 const disp = G.nhlgDisplay(G.nhlgMergeSide([o('daily_faceoff', '8482447', 'Leevi Merilainen', 'likely')], PROJ), INPUTS);

@@ -82,6 +82,14 @@ try {
   T.chk('starters: no delete, no truncate', fails(() => db.service('delete from public.nhl_goalie_starters;')) && fails(() => db.sql('truncate public.nhl_goalie_starters;')));
   T.chk('starters: Confirmed needs a name; a status needs a name', fails(() => obs({ status: 'confirmed', id: null, name: null })) && fails(() => obs({ status: 'likely', id: null, name: null })));
   T.chk('starters: unknown with no name is fine (a source listing the game with no starter yet)', !fails(() => obs({ game: 'g8', status: 'unknown', id: null, name: null, method: 'none' })));
+  /* ESPN (2026-10-30): a table made before it learns it when the file is applied again; then its own source, current beside Daily Faceoff's */
+  db.sql("alter table public.nhl_goalie_starters drop constraint nhl_goalie_starters_source_check; alter table public.nhl_goalie_starters add constraint nhl_goalie_starters_source_check check (source in ('daily_faceoff', 'nhl_api_boxscore', 'manual', 'edgedesk_projection', 'consensus'));");
+  const preEspn = fails(() => obs({ game: 'g6', source: 'espn', status: 'likely', id: '8482447', name: 'L. Meriläinen' }));
+  out = db.applyFile(F('nhl_goalie_layer.sql'));
+  T.chk('starters: a table created before ESPN refuses its rows until the layer is applied again, then stores them (production\'s upgrade)', preEspn && !/CHECK THIS/.test(out) && !fails(() => obs({ game: 'g6', source: 'espn', status: 'likely', id: '8482447', name: 'L. Meriläinen' })), out.slice(0, 300));
+  const es1 = obs({ source: 'espn', at: "now() - interval '30 minutes'", id: '8482447', name: 'L. Meriläinen', status: 'confirmed', raw: 'Confirmed' });
+  T.chk('starters: ESPN is a source of its own: its row stores and is current beside Daily Faceoff\'s', db.sql(`select is_current from public.nhl_goalie_starters where id = ${es1}`) === 't' && db.sql(`select is_current from public.nhl_goalie_starters where id = ${d2}`) === 't');
+  T.chk('starters: a source the layer does not know is still refused', /nhl_goalie_starters_source_check/.test(why(() => obs({ game: 'g7', source: 'rotowire', status: 'likely', id: '8482447', name: 'L. Meriläinen' }))));
   T.chk('starters: a conflict is only on the consensus, and never Confirmed', fails(() => obs({ conflict: true, status: 'likely' })) && fails(() => obs({ source: 'consensus', conflict: true, status: 'confirmed' })));
   const c1 = obs({ source: 'consensus', at: "now() - interval '5 hours'", status: 'projected', method: 'projection' });
   const c2 = obs({ source: 'consensus', at: "now() - interval '1 hour'", id: '8482447', name: 'L. Meriläinen', status: 'likely', method: 'id' });

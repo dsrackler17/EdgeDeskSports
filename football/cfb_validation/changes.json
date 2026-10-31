@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-30T20:08:32.259Z",
+ "generated_at": "2026-10-31T01:08:13.284Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-24T20:08:01.064Z",
+  "since": "2026-10-25T00:08:09.208Z",
   "changes": [
    {
     "what": "pricing code",
@@ -22,20 +22,20 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-24T17:30:32.845Z",
-    "to": "2026-10-30T19:30:52.018Z"
+    "from": "2026-10-24T23:24:33.509Z",
+    "to": "2026-10-30T23:56:17.224Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
-    "from": 81,
+    "from": 60,
     "to": 73
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 25,
-    "to": 56
+    "from": 5,
+    "to": 55
    }
   ],
   "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -294,42 +294,6 @@
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-21T01:09:40.260Z",
-   "to_at": "2026-10-26T15:03:38.857Z",
-   "old_fair": -18.73,
-   "new_fair": -13.46,
-   "change": 5.27,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Trace Johnson (COMPETITION) → Trace Johnson (PREVIOUS_GAME)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.79
-    }
-   ],
-   "unexplained": 0.02,
-   "game_id": "401862813",
-   "game": "Tulane @ Charlotte",
-   "market_then": null,
-   "market_now": 10,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-10-21T21:52:56.312Z",
@@ -774,38 +738,6 @@
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
-   "from_at": "2026-10-21T01:09:40.260Z",
-   "to_at": "2026-10-29T16:27:20.682Z",
-   "old_fair": -1.31,
-   "new_fair": 2.31,
-   "change": 3.62,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.26
-    }
-   ],
-   "unexplained": 0.01,
-   "game_id": "401856844",
-   "game": "Baylor @ UCF",
-   "market_then": null,
-   "market_now": 1.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE NO LONGER ATTRACTIVE"
-  },
-  {
    "from_at": "2026-10-21T04:06:23.535Z",
    "to_at": "2026-10-26T15:03:38.857Z",
    "old_fair": -14.07,
@@ -1098,7 +1030,7 @@
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-28T22:44:48.157Z",
+   "to_at": "2026-10-30T23:56:17.224Z",
    "old_fair": -6.12,
    "new_fair": -8.07,
    "change": -1.95,
@@ -1126,10 +1058,10 @@
    "game_id": "401858278",
    "game": "SMU @ Syracuse",
    "market_then": null,
-   "market_now": 10.5,
+   "market_now": 10,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {

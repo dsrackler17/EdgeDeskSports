@@ -1,0 +1,74 @@
+# Apply supabase/football_situational.sql — the Football Situational
+# Intelligence Engine's store (football/situational/README.md). MANUAL ON
+# PURPOSE, like every other deploy here.
+#
+# What it installs (idempotent, additive, one transaction, ends in a report):
+#   eleven public.fsie_* tables       RLS on: signed-in users read, the
+#                                      service role writes, anon reads nothing
+#   public.fsie_team_games_current    the latest source version of each game
+#   fsie_prune(keep_days >= 120)      retention for the operational tables;
+#                                      defined here, never run here
+# It drops, truncates and deletes nothing.
+#
+# WHY. The Football situational pipeline's last step copies its artifacts
+# into these tables, and fails on every run until they exist
+# ("Could not find the table 'public.fsie_source_files'", run 41093420059).
+#
+# SECRETS: SB_DB_URL (the database connection string). Without it the run
+# fails, because nothing was applied: paste supabase/football_situational.sql
+# into the Supabase SQL editor instead. Its last statement prints a report
+# whose every row must say ok.
+#
+# After it: run "Football situational pipeline" with stage build, or wait for
+# the daily build at 10:47 UTC.
+name: Deploy football situational tables (SQL)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-football-situational
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Add postgres to PATH for the SQL suite
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: The SQL passes against a throwaway PostgreSQL first (RLS, write-once, rollback)
+        run: |
+          rc=0; out=$(node football/situational/tests/sql.test.js 2>&1) || rc=$?
+          echo "$out" | tail -15
+          if [ "$rc" -ne 0 ]; then exit "$rc"; fi
+          if echo "$out" | grep -q 'NOT VERIFIED'; then echo "::error::the SQL suite did not run against PostgreSQL, so nothing is applied"; exit 1; fi
+      - name: Check the credential exists before claiming anything
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set, so nothing was applied. Paste supabase/football_situational.sql into the SQL editor instead."; exit 1; fi
+      - name: Apply supabase/football_situational.sql
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" --single-transaction -v ON_ERROR_STOP=1 -f supabase/football_situational.sql)
+          echo "$out" | tail -16
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::football_situational.sql: a report row says CHECK THIS"; exit 1; fi
+          if ! echo "$out" | grep -qw 'ok'; then echo "::error::football_situational.sql printed no report"; exit 1; fi
+      - name: The table the pipeline's Supabase copy failed on now exists
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          got=$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select count(*) from pg_tables where schemaname = 'public' and tablename like 'fsie\_%'")
+          echo "public.fsie_* tables: $got"
+          if [ "$got" != 11 ]; then echo "::error::expected 11 public.fsie_* tables, found $got"; exit 1; fi
+          [ "$(psql "$PGURL" -At -v ON_ERROR_STOP=1 -c "select to_regclass('public.fsie_source_files') is not null")" = t ] || { echo "::error::public.fsie_source_files is missing"; exit 1; }

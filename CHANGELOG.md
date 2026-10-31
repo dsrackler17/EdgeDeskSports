@@ -11,6 +11,103 @@
   - `tools/billing/juicereel_billing.test.js`: 113 → 118. Against the old function the suite stops at the first new check (`app` absent).
 - **Deploy:** Actions → Deploy Portfolio schema (`deploy_function` ticked) for the SQL and `portfolio_connect`, and Actions → Deploy Juice Reel billing for `juicereel_billing`. Then run Actions → Juice Reel setup → `check`.
 
+## 2026-10-30 — Deploy football situational tables (SQL): a button that applies supabase/football_situational.sql
+
+- **Why.** The Football situational pipeline's last step copies its artifacts into the `fsie_` tables, which do not exist in production (`Could not find the table 'public.fsie_source_files'`, run 41093420059). Until they do, every run of the pipeline fails.
+- **The workflow.** `deploy-football-situational.yml`, manual only (`workflow_dispatch`), `contents: read`. It runs `football/situational/tests/sql.test.js` against a throwaway PostgreSQL first, and fails if that suite fails or prints NOT VERIFIED. It applies the file with `SB_DB_URL` in one transaction (`--single-transaction`, `ON_ERROR_STOP`). It fails on any report row saying CHECK THIS, or unless all eleven `public.fsie_*` tables exist afterwards. Without `SB_DB_URL` the run fails: nothing was applied.
+- **What it installs.** Eleven `fsie_` tables (RLS on), the `fsie_team_games_current` view and the `fsie_prune()` retention function. It drops, truncates and deletes nothing. The registry file is not part of it.
+- **Checked here, not in production.** Each run step, taken from the workflow, was run against a throwaway PostgreSQL 16 with the Supabase shim. A first run applied it (SQL suite 35/35, 11 tables) and a second run was idempotent. A missing secret fails at the credential step, a suite printing NOT VERIFIED fails at the suite step, and a failing suite fails with its output shown. The production apply is NOT VERIFIED: no credential here.
+## 2026-10-30 — NHL goalie sync: a failed check is tried again instead of waiting for the next slot (the header's "1 failing")
+
+- **What the header showed.** The site's System pill read "1 failing" from 16:34 UTC. The one failing check was `nhl_goalie_readiness` (state `error`): "the last check failed: no starter source could be read (Daily Faceoff)". Deploy NHL goalie layer (run 41090811837) ended with a forced run at 16:34. Daily Faceoff answered HTTP 403 to both date pages, and the NHL API was not due (no game inside three hours). The cron run at 16:00 had read both pages, 18 rows. Daily Faceoff refused the function the same way on 2026-10-26 at 00:35 UTC. These are intermittent refusals from an outside source; EdgeDesk's parser and data were fine.
+- **What was ours.** After an error run the sync asked nothing until the next scheduled slot (18:00 UTC), so one refused read held readiness, and the site-wide header, in error for 86 minutes. The starters on file were kept and nothing was written in their place, so readers lost freshness, not data.
+- **Fix** (`supabase/functions/nhl_goalie_sync/index.ts`, build `nhl_goalie_sync@2026-10-30.4`). It complements #941, which retries a refused page inside one run and adds ESPN as a second source. A run still ends in error when every source is down, and #941 carries nothing over between runs. After an error run, the sync runs again 10 minutes later, then 20, then every 40 while it keeps failing, besides the schedule's own slots (`due_kinds` `retry_after_error`). The error run's `next_due_at` names the retry time. No change to what a run writes, how readiness judges a run, or the header's rule: a failed check still shows as failing until a check succeeds.
+- **Tests** (`tools/hockey/nhl_goalie_sync.test.js`), replaying production. A forced off-slot run refused with 403 is an error, and its `next_due_at` is 10 minutes on. Then:
+  - nothing runs at 6 minutes;
+  - at 11 minutes it runs and recovers;
+  - after the recovery, nothing extra runs;
+  - a source that stays down is retried 10, 20, then 40 minutes apart.
+
+  On the old code: 86 passed, 8 failed. On the fix: 94/0.
+## 2026-10-30 — Football situational pipeline: a failure after the build no longer throws away the derived seasons
+
+- **Why.** All four scheduled runs since the pipeline was added failed. Three were market refreshes (`build --offline`): `no derived season` for NFL and CFB at ingest. The fourth, a full build (run 41093420059), built and committed its data, then the Supabase copy failed (`fsie_source_files` does not exist in production; `supabase/football_situational.sql` has not been applied there). `actions/cache` saves only when every step passes, so its "Post Cached source downloads" was skipped and the derived seasons that build made were discarded. The market refreshes read only that cache.
+- **The change.** `football-situational.yml` restores the cache with `actions/cache/restore@v4` and saves it with `actions/cache/save@v4` right after the engine stages, before the commit and the Supabase copy. A failed build still saves nothing.
+- **Not fixed here.** The Supabase step fails on every run until the migration is applied to production. That is the owner's deployment.
+- **Test.** `football/situational/tests/integration.test.js`: on the old workflow 25 passed and 4 failed (the 4 new checks); now 29 of 29. Each new check also fails when the save is moved after the Supabase copy, runs on `always()`, or uses a key the next run does not restore.
+## 2026-10-30 — Franchise SQL: the founding-age spread is held on forty fixed rosters, not on one random roster per run
+
+**What failed.** A full `npm run verify` on 2026-10-30 went red at `games-sql.yml` "Refuse a silent skip". The franchise SQL suite had stopped after 724 checks:
+
+```
+FAIL: and no one age dominates it, which is what made the wave — 13 of 38
+```
+
+Two re-runs of the same tree passed. Nothing in the game was wrong.
+
+**Why.** The check read the founding roster of one fresh franchise. `franchise_create` gives every franchise a new random seed (`md5` of a random uuid and the clock), so the suite checked a different roster every run.
+
+The generator (`franchise_generate_roster`, `career_v1`) spreads ages uniformly over 21 to 32, as its comment says. Over 3,000 generated rosters, the size of each roster's biggest single age matched a uniform draw of 38 over 12 ages in every bucket:
+
+| biggest age group | 6 | 8 | 10 | 12 |
+|---|---|---|---|---|
+| expected | 1,180 | 292 | 24 | 1.1 |
+| measured | 1,207 | 283 | 19 | 1 |
+
+So a correct generator puts 13 or more of 38 at one age (over a third) about once in 12,000 rosters. It fails the neighbouring "spread across its whole age range" check about once in 52,000: no one aged 21 to 23, or fewer than eight ages. Searching seeds, the unchanged generator built such a roster, with only 7 distinct ages (seed `feaa68f2…`, the 10,758th tried). Both checks failed at random on a working game.
+
+**The repair.** Test only (`tools/games/sql/games_franchise.test.sql`). No game code, data or threshold changed.
+- The two claims are held on forty fixed seeds (`age-spread:1` … `age-spread:40`). `franchise_generate_roster`, the generator `franchise_create` calls and a pure function of its seed, turns them into the same forty rosters every run. Each must be spread across the range and have no age at a third or more, the same thresholds as before.
+- A new check requires the forty together to be flat: every age of the range holds its even share of the 1,520 players, give or take 30% (measured: 104 to 145 against 127).
+- The rosters are built and measured in a block that is rolled back, so no later check sees them. The fresh franchise is still created and still re-seeds the generator at random for everything after it.
+- The fresh franchise keeps its deterministic checks: 38 founding players, every age inside the published range.
+
+**Before and after** (`node tools/games/franchise_sql.test.js`, real PostgreSQL):
+
+| | old test | new test |
+|---|---|---|
+| unchanged generator, the fresh franchise drawing seed `feaa68f2…` | FAIL: spread, `21,22,24,25,26,27,32` | PASS |
+| mutation A: ages skewed young, `power(random(), 2)` | not run | FAIL: biggest single age 21 of 38 |
+| mutation B: ages bunched on 21, 24, 27, 30 | not run | FAIL: fewest ages 4 |
+| mutation C: a mild lean young, `power(random(), 1.35)` | not run | FAIL: biggest single age 16 of 38 |
+| mutation D: off by one, age 32 never drawn | PASS (993): every age still sits inside the range | FAIL: not flat, 11 of the 12 ages |
+
+The suite runs 999 checks, or 996 when the simulated first season earns no bowl. The bowl branch guards three checks; that was true before, when the counts were 996 and 993. The file has three more checks than before:
+- the two spread claims moved from the fresh roster to the forty fixed ones;
+- three are new: forty rosters of 38 were built, the forty are flat, and the fresh franchise has 38 founding players.
+## 2026-10-30 — Methodology change (integrity guard, owner's decision): the Polymarket request budget settles a dead run's grant at what it may have used
+
+**A change to the gateway's budget guard (AGENTS.md §3). It needs the owner's explicit review before it is deployed.**
+
+- **Why.** A run that dies (out of compute, a 502 from the database) never calls `poly_api_settle`, so its whole grant stayed reserved for the rest of the UTC day.
+  - On 2026-10-30 (stage report, run 41069288565), 56 tonight grants were never settled and held 22,215 requests. The day read granted 40,000 and used 17,785.
+  - Every run after 09:55 UTC was refused (`denied_budget`), so Smart Money Tonight had no current holders.
+- **What.**
+  - Each run reports its requests so far every 20 requests (`poly_api_progress()`, a new table of the same name). The report never goes backwards, never exceeds the grant, and never lands after the settlement.
+  - Under the day's lock, `poly_api_acquire()` first settles every grant still unsettled 15 minutes after it was given, at its last report plus 100, capped at the grant. Each is recorded as expired. A run lives at most about 7 minutes, so it is gone by then.
+  - The day gets back only what the dead run cannot have used.
+  - The daily ceiling (40,000) and the per-run cap (3,000) are unchanged, and `radar_rules()` is unchanged. `polymarket_sync` is build `.10`.
+- **Tests, failing first.**
+  - SQL 237 -> 245: two dead grants (no report: 100 of 400; reported 300: 400 of 900), a fresh one left alone, the day's totals (910 granted, 500 used), a late settlement changing nothing, and no client access. Before `poly_api_progress()` existed, the suite stopped on its first call.
+  - Sync 83 -> 84: runs report in steps of 20, never more than they used. On the old function: 83 passed, 1 failed (no report).
+
+## 2026-10-30 — NHL goalie sync: ESPN's probable goalies are a second starter source
+
+- **What failed.** Daily Faceoff refused the function (HTTP 403) from 16:34 UTC; the 16:00 run had read it. More than three hours out it is the only source, so every run was a `sources_down` error and tonight's starters could only be confirmed by hand (`hockey/data/confirmed_starters.json`).
+- **The source.** ESPN's public NHL scoreboard (`site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=<ET date>`) answers a plain request with each team's `probableStartingGoalie` and ESPN's status word. On 2026-10-30 it named all six starters (two Confirmed, four Expected); every name matched a rated goalie.
+- **The change** (build `nhl_goalie_sync@2026-10-30.3`). The sync reads ESPN on its own cadence (pg_cron, every five minutes; runs at the due slots), for each Eastern date, and stores each probable goalie as an `espn` observation. Nothing is entered by hand.
+  - ESPN's "Confirmed" is Confirmed, its "Expected" is Likely, as Daily Faceoff's words are read. A goalie only Expected never opens the edge gate or the lineup lock.
+  - When ESPN and Daily Faceoff name different goalies, it is a conflict: Daily Faceoff leads, at Likely at most.
+  - `sources_down` now needs Daily Faceoff and ESPN both unreadable. ESPN down alone is DEGRADED; a changed response shape is a DRIFT.
+- **SQL.** `supabase/nhl_goalie_layer.sql` (and its migration copy) adds `espn` to the starters' source check; applying the file again replaces the check on the live table. It must be applied before the function is deployed.
+- **Tests,** shown failing on the old code first:
+  - core: 113/0 (the suite crashes on the old core);
+  - sync: 104/0 (main's function at `761147e24`, which retries Daily Faceoff: 96/8; Daily Faceoff refusing is still `sources_down`, and there are no ESPN rows);
+  - SQL on a real PostgreSQL: 85/0 (old 14/2: the old check refuses the `espn` row);
+  - UI: 48/0 (old 46/2).
+
+  ESPN's parser is tested on its real 2026-10-30 response, trimmed to the fields it reads.
+- **Terms.** ESPN's response is public but unlicensed, like the ESPN NHL pack: the source registry names it beside Daily Faceoff for the owner's review before paid use.
 ## 2026-10-30 — Novig in production: DraftKings from the prices production keeps; ingestion only on a key Novig lists as read-only
 
 - **What production showed.** Deploy run 41112694540 applied nothing. The layer's guard refused: `needs public.sharp_price_snapshots (the DraftKings tape): apply supabase/sharp_lag.sql first`. Production has no Sharp-lag tape. It keeps DraftKings in `book_quote_ticks` (capture's per-book history, joined to `signals` by `sig_key`), and only for actionable signals. The project's secret names (run 41113406385, names only) show `NOVIG_MANAGEMENT_KEY_ID` and `NOVIG_MANAGEMENT_PRIVATE_KEY` NOT set, and an unexplained `NOVIG_READ_KEY_ID` / `NOVIG_READ_PRIVATE_KEY` pair set.

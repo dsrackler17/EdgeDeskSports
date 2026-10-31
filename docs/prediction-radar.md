@@ -478,6 +478,7 @@ results, never with a claim.
 | `poly_grade_runs`, `poly_wallet_grades` | Append-only, versioned per grading run. |
 | `poly_holder_snapshots`, `poly_price_snapshots` | Append-only, every 10 minutes. |
 | `poly_api_days`, `poly_api_grants`, `poly_api_settlements` | The gateway's ledger. Grants and settlements are append-only. |
+| `poly_api_progress` | Each run's requests so far, reported every 20 requests (`poly_api_progress()`). A grant still unsettled 15 minutes after it was given (its run died) is settled by the next `poly_api_acquire()` at the run's last report plus 100, never more than it was granted, recorded as expired. Before this (owner's decision, 2026-10-30), a dead run held its whole grant for the rest of the UTC day: on 2026-10-30, 56 tonight grants held 22,215 of the 40,000 requests, while 17,785 were used. The ceiling and the per-run cap are unchanged. |
 | `poly_sync_runs`, `poly_alerts`, `radar_config_log` | Append-only. |
 
 ### Who reads what

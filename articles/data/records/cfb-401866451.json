@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T02:30:00.000Z",
   "game_when_label": "2026-10-31 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-30T21:01:00.798Z",
-  "generated_at": "2026-10-30T21:01:00.798Z",
+  "updated_at": "2026-10-31T01:10:55.659Z",
+  "generated_at": "2026-10-31T01:10:55.659Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1882,14 +1882,15 @@
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "snapshot_id": "snap_9ac3db917a18ec81",
+  "publication_snapshot_id": "snap_9ac3db917a18ec81",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-31T02:30:00.000Z",
-    "minutes_before_kickoff": 329,
+    "minutes_before_kickoff": 79,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-30T21:01:00.798Z"
+    "refreshed": true,
+    "at": "2026-10-31T01:10:55.659Z"
   },
   "featured": {
     "editorial_priority": 39,
@@ -2142,11 +2143,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-30T21:01:00.798Z"
+    "at": "2026-10-31T01:10:55.659Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-30T21:01:00.798Z",
+    "at": "2026-10-31T01:10:55.659Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2159,7 +2160,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1g08yvbdvlpb9",
+    "packet_hash": "x4tr0u2h9my4",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Kent State’s pass rush get to Jackson Sharman?",
@@ -2215,7 +2216,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-30T18:40:48.056Z",
+        "observed_at": "2026-10-30T22:24:35.204Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2231,6 +2232,114 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-30T21:01:00.798Z"
+    "at": "2026-10-31T01:10:55.659Z"
+  },
+  "freshness": {
+    "at": "2026-10-31T01:10:55.659Z",
+    "fields": {
+      "market.line": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "market.total": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "market.book": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "market.line",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "market.total",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "market.book",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
