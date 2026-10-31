@@ -244,6 +244,19 @@ const res = (o) => RES.resolve(Object.assign({ team_key: 't', team_name: 'Team',
 
   const out = res({ record: recOf([usage('A', '1', 0.95), usage('B', '2', 0.05)]), availability: { byId: { 1: { availability_status: 'OUT', freshness: 'FRESH', basis: 'report' } }, summary: null } });
   chk('a ruled-out starter hands the job to the next name the evidence supports', out.player_name === 'B' && out.resolution === 'INJURY' && out.handed_from.player_name === 'A', out);
+  /* a settled conflict whose every name is ruled out: no QB is chosen, and the
+     conflict cannot claim a resolution (Kansas State, 2026-10-31: the opener
+     and the quality ranking's QB were both listed OUT, and the build crashed) */
+  let allOut = null, allOutErr = null;
+  try {
+    allOut = res({ record: recOf([usage('A', '1', 0.95), projn('B', '2')]),
+      availability: { byId: { 1: { availability_status: 'OUT', freshness: 'FRESH', basis: 'report' }, 2: { availability_status: 'OUT', freshness: 'FRESH', basis: 'report' } }, summary: null } });
+  } catch (e) { allOutErr = String(e && e.message || e); }
+  chk('every candidate ruled out: the resolver does not throw', !allOutErr, allOutErr);
+  chk('every candidate ruled out: UNKNOWN, no player, the ruled-out starter on file',
+    !!allOut && allOut.confirmation_level === 'UNKNOWN' && allOut.player_name === null && allOut.handed_from && allOut.handed_from.player_name === 'A', allOut);
+  chk('every candidate ruled out: the conflict is not reported as resolved',
+    !!allOut && allOut.conflict_resolved === false && allOut.resolution === 'UNRESOLVED' && /ruled out/i.test(allOut.resolution_text || ''), allOut && { r: allOut.resolution, cr: allOut.conflict_resolved, t: allOut.resolution_text });
   const q = res({ record: recOf([usage('A', '1', 0.95)]), availability: { byId: { 1: { availability_status: 'QUESTIONABLE', freshness: 'FRESH' } }, summary: null } });
   eq('a starter listed questionable is UNCERTAIN', q.confirmation_level, 'UNCERTAIN');
 

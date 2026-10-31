@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-31 — Football enrichment refresh: the QB resolver no longer crashes when every candidate is ruled out
+
+- **What failed.** Football enrichment refresh runs 143 and 144 (41174482032, 41202537139) on `main` stopped at `build_enrichment.js` with `TypeError: Cannot read properties of null (reading 'player_name')` at `football/enrichment/qb/resolver.js:290`. Kansas State (game 401856846): last game's opener Jacob Knuth (100% of dropbacks) and the quality ranking's Avery Johnson are both listed OUT. The resolver settled the conflict (observed start over model), ruled the starter out, found no available alternative and set no QB, then wrote the resolution text from the missing QB.
+- **The fix.** When every name the evidence supports is ruled out, the answer is UNKNOWN with the ruled-out starter in `handed_from`, the conflict is reported `UNRESOLVED` (`conflict_resolved: false`), and `resolution_text` says every candidate is ruled out. No hierarchy, threshold or grading rule changed.
+- **Tests.** `football/enrichment/enrichment.test.js`: 138 → 141. Against the old resolver: 3 failed, with the production error. `node football/enrichment/build_enrichment.js` now completes on the current data.
+
 ## 2026-10-30 — Juice Reel: the check says which application the client id is, and which scopes the last token got
 
 - **Juice Reel approved `bets.settled.read` on EdgeDesk Sports Integration** (`jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK`), and both redirect URIs are registered on it: `https://edgedesksports.com/oauth/juicereel-callback.html` (bet sync) and `https://edgedesksports.com/oauth/juicereel-subscribe.html` (billing). The other application, EdgeDeskSports (`jr_AFk36va1…`, Sign in With Juice Reel off), is to be disabled once the Integration app passes `check`. Today's `check` named its owner "EdgeDeskSports".
