@@ -219,7 +219,12 @@ function resolve(o) {
     handedFrom = { player_id: chosen.player_id, player_name: chosen.player_name, status: st.status };
     codes.push('STARTER_RULED_OUT');
     if (alt) { chosen = alt; resolution = 'INJURY'; resolved = true; conflict = true; st = statusOf(alt); }
-    else chosen = null;
+    else {
+      /* every name the evidence supports is ruled out: nobody is chosen, and a
+         conflict settled between ruled-out names is not a resolution */
+      chosen = null; st = statusOf(null);
+      if (conflict) { resolved = false; resolution = null; }
+    }
   }
   if (chosen && S.isDoubt(st.status) && st.status !== 'PROBABLE') codes.push('STARTER_' + st.status);
 
@@ -287,7 +292,8 @@ function resolve(o) {
   if (conflict) {
     const names = dissent.map((d) => d.player_name + ' [' + (C.QB_TIERS[d.kind] || {}).label + ']').join('; ');
     const bare = Array.from(new Set(dissent.map((d) => d.player_name))).join(' / ');
-    if (resolution === 'OBSERVED_OVER_MODEL') resText = chosen.player_name + ' opened the last game with ' + Math.round(chosen.share * 100)
+    if (!chosen) resText = 'UNRESOLVED: every name the evidence supports is ruled out (' + (handedFrom ? handedFrom.player_name + ' ' + handedFrom.status + '; ' : '') + names + ')';
+    else if (resolution === 'OBSERVED_OVER_MODEL') resText = chosen.player_name + ' opened the last game with ' + Math.round(chosen.share * 100)
       + '% of the dropbacks; EdgeDesk\u2019s quality ranking prefers ' + bare + '. An observed start outranks the model\u2019s own ranking, which is not a source.';
     else if (resolution === 'AUTHORITY') resText = chosen.player_name + ' is named by ' + (C.QB_TIERS[chosen.kind] || {}).label + ', which outranks ' + names;
     else if (resolution === 'INJURY') resText = handedFrom.player_name + ' is listed ' + handedFrom.status + '; ' + chosen.player_name + ' is the next name the evidence supports';
