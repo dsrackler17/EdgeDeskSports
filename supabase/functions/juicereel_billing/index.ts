@@ -67,7 +67,7 @@
 // tokens are used for two reads and dropped. No token, code, verifier or
 // secret is ever logged or returned.
 
-const BUILD = 'juicereel_billing-2026-10-29-2';
+const BUILD = 'juicereel_billing-2026-10-30-1';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -624,6 +624,26 @@ async function reconcile(c, db, forced) {
   return json(result);
 }
 
+// WHICH Juice Reel application JUICE_REEL_CLIENT_ID belongs to, by the id's
+// first 10 characters (never the secret). Only EdgeDesk Sports Integration has
+// "Sign in With Juice Reel" on, which the checkout's last step (the buyer's
+// consent) needs; EdgeDeskSports is owner-only. Same table as portfolio_connect.
+const JR_APPS = [
+  { prefix: 'jr_UcOwwS', name: 'EdgeDesk Sports Integration', verdict: 'correct' },
+  { prefix: 'jr_AFk36va1', name: 'EdgeDeskSports', verdict: 'wrong' },
+];
+function appOf(clientId) {
+  const id = String(clientId || '');
+  if (!id) return { client_id_prefix: null, name: null, verdict: 'not_set', ok: false, message: 'JUICE_REEL_CLIENT_ID is not set.' };
+  const p = id.slice(0, 10), a = JR_APPS.find((x) => id.indexOf(x.prefix) === 0);
+  if (!a) return { client_id_prefix: p, name: null, verdict: 'unknown', ok: false,
+    message: 'JUICE_REEL_CLIENT_ID (' + p + '…) is neither known Juice Reel application; billing should use EdgeDesk Sports Integration (jr_UcOwwS…).' };
+  if (a.verdict === 'wrong') return { client_id_prefix: p, name: a.name, verdict: 'wrong', ok: false,
+    message: 'WRONG APPLICATION: JUICE_REEL_CLIENT_ID (' + p + '…) is the EdgeDeskSports app, whose Sign in With Juice Reel is off, so no buyer can consent. '
+      + 'Put the EdgeDesk Sports Integration app\'s id (jr_UcOwwS…) and its secret in Supabase → Edge Functions → Secrets.' };
+  return { client_id_prefix: p, name: a.name, verdict: 'correct', ok: true, message: 'JUICE_REEL_CLIENT_ID (' + p + '…) is the EdgeDesk Sports Integration app.' };
+}
+
 // The credentials, checked the way the code exchange will use them: a revoke
 // of a random token EdgeDesk made (200 for any token with good client
 // credentials, 401 invalid_client otherwise), then one page of the owner's
@@ -631,7 +651,7 @@ async function reconcile(c, db, forced) {
 // each product opens (the database's map), and the product ids on that page of
 // Juice Reel's list, so the owner can find theirs to map.
 async function check(c, db) {
-  const out = { ok: true, mode: c.mode, missing: missing(c), redirect_uri: c.redirectUri, scopes: c.scopes,
+  const out = { ok: true, mode: c.mode, missing: missing(c), redirect_uri: c.redirectUri, scopes: c.scopes, app: appOf(c.clientId),
     products: (await db.rpc('billing_jr_products', {}).catch(() => null)) || null };
   if (!c.clientId || !c.clientSecret) return json(Object.assign(out, { accepted: false, code: 'not_configured' }));
   const rv = await jr(c, 'POST', '/oauth2/revoke', { form: { token: b64url(randomBytes(32)), token_type_hint: 'access_token' } });
