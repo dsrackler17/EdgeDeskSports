@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T23:30:00.000Z",
   "game_when_label": "2026-10-31 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T22:00:50.193Z",
-  "generated_at": "2026-10-31T22:00:50.193Z",
+  "updated_at": "2026-10-31T22:11:01.461Z",
+  "generated_at": "2026-10-31T22:11:01.461Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1855,14 +1855,15 @@
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "snapshot_id": "snap_e8b19ee4a4d6225e",
+  "publication_snapshot_id": "snap_e8b19ee4a4d6225e",
   "timing": {
     "publication_window": "late_window",
     "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-31T23:30:00.000Z",
-    "minutes_before_kickoff": 89,
+    "minutes_before_kickoff": 79,
     "published_at": null,
     "refreshed": true,
-    "at": "2026-10-31T22:00:50.193Z"
+    "at": "2026-10-31T22:11:01.461Z"
   },
   "featured": {
     "editorial_priority": 39,
@@ -2136,17 +2137,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-31T22:00:50.193Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Kamario Taylor has completed 104 of 159 passes (65.4%) for 1,460 yards, 9.2 yards per atte",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-31T22:11:01.461Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T22:00:50.193Z",
+    "at": "2026-10-31T22:11:01.461Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2159,12 +2167,18 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Kamario Taylor has completed 104 of 159 passes (65.4%) for 1,460 yards, 9.2 yards per atte"
+      }
+    ],
     "hold_reason": "my_take, evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1j9t34urf8c58",
+    "packet_hash": "1mcllqyzflozc",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": true,
     "question": "Can Mississippi State’s pass rush get to Arch Manning?",
@@ -2261,7 +2275,7 @@
         "label": "EdgeDesk input audit (model starter vs official availability report)",
         "url": null,
         "path": null,
-        "observed_at": "2026-10-31T21:08:17.156Z",
+        "observed_at": "2026-10-31T22:08:04.553Z",
         "verification": "CONFLICTING"
       }
     ],
@@ -2270,11 +2284,10 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T22:00:50.193Z"
+    "at": "2026-10-31T22:11:01.461Z"
   },
-  "publication_snapshot_id": "snap_e8b19ee4a4d6225e",
   "freshness": {
-    "at": "2026-10-31T22:00:50.193Z",
+    "at": "2026-10-31T22:11:01.461Z",
     "fields": {
       "market.line": {
         "value": null,
