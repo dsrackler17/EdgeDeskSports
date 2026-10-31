@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T23:30:00.000Z",
   "game_when_label": "2026-10-31 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T15:30:58.139Z",
-  "generated_at": "2026-10-31T15:30:58.139Z",
+  "updated_at": "2026-10-31T15:40:51.872Z",
+  "generated_at": "2026-10-31T15:40:51.872Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -246,7 +246,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T16:00:00.000Z",
-        "retrieved_at": "2026-10-31T12:48:32.200Z"
+        "retrieved_at": "2026-10-31T15:31:08.815Z"
       },
       "home": {
         "team": "USC",
@@ -324,9 +324,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T23:30:00.000Z",
-        "retrieved_at": "2026-10-31T12:48:32.200Z"
+        "retrieved_at": "2026-10-31T15:31:08.815Z"
       },
-      "generated_at": "2026-10-31T12:49:29.567Z",
+      "generated_at": "2026-10-31T15:32:03.663Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1822,15 +1822,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_4b0abce9de7aa0da",
+  "snapshot_id": "snap_bb55f5837f058b81",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-31T23:30:00.000Z",
-    "minutes_before_kickoff": 479,
+    "minutes_before_kickoff": 469,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-31T15:30:58.139Z"
+    "at": "2026-10-31T15:40:51.872Z"
   },
   "featured": {
     "editorial_priority": 41.3,
@@ -2133,17 +2133,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-31T15:30:58.139Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Jonas Williams has completed 12 of 14 passes (85.7%) for 126 yards, 9.0 yards per attempt,",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-31T15:40:51.872Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T15:30:58.139Z",
+    "at": "2026-10-31T15:40:51.872Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2156,12 +2163,18 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Jonas Williams has completed 12 of 14 passes (85.7%) for 126 yards, 9.0 yards per attempt,"
+      }
+    ],
     "hold_reason": "my_take, evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1s5933d14fx53f",
+    "packet_hash": "1x8bie711c3i4d",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can Ohio State’s defense slow USC’s offense?",
@@ -2246,7 +2259,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T12:51:27.333Z",
+        "observed_at": "2026-10-31T15:33:51.224Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2276,6 +2289,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T15:30:58.139Z"
+    "at": "2026-10-31T15:40:51.872Z"
   }
 }
