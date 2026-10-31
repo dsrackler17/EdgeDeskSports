@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:30:00.000Z",
   "game_when_label": "2026-10-31 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T12:31:01.570Z",
-  "generated_at": "2026-10-31T12:31:01.570Z",
+  "updated_at": "2026-10-31T12:39:53.974Z",
+  "generated_at": "2026-10-31T12:39:53.974Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1862,10 +1862,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-31T19:30:00.000Z",
-    "minutes_before_kickoff": 419,
+    "minutes_before_kickoff": 410,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-31T12:31:01.570Z"
+    "at": "2026-10-31T12:39:53.974Z"
   },
   "featured": {
     "editorial_priority": 42.5,
@@ -2155,17 +2155,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-31T12:31:01.570Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Aaron Philo has completed 105 of 149 passes (70.5%) for 1,438 yards, 9.7 yards per attempt",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-31T12:39:53.974Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T12:31:01.570Z",
+    "at": "2026-10-31T12:39:53.974Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2173,7 +2180,13 @@
         "detail": "0 characters on file"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Aaron Philo has completed 105 of 149 passes (70.5%) for 1,438 yards, 9.7 yards per attempt"
+      }
+    ],
     "hold_reason": "my_take"
   },
   "football_evidence": {
@@ -2249,7 +2262,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
+        "observed_at": "2026-10-31T12:38:28.683Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2272,6 +2285,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:31:01.570Z"
+    "at": "2026-10-31T12:39:53.974Z"
   }
 }
