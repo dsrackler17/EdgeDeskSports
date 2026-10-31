@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-31T01:51:28.409Z",
-  "open": 16,
-  "count": 16,
+  "generated_at": "2026-10-31T14:31:02.265Z",
+  "open": 17,
+  "count": 17,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -900,6 +900,35 @@
           "result": "Jacksonville Jaguars lost by 3 where EdgeDesk projected a 2.2-point edge.",
           "severity": "high",
           "at": "2026-10-21T12:31:02.563Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:market:price",
+      "sport": "CFB",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-31T06:21:05.182Z",
+      "updated_at": "2026-10-31T06:21:05.182Z",
+      "evidence": [
+        {
+          "lesson_id": "401866451:contradicted:market",
+          "game_id": "401866451",
+          "season": 2026,
+          "week": 9,
+          "team": "Kent State",
+          "expectation": "EdgeDesk prices this game at Sacramento State +7.0 with a fair total of 48.0, which makes Kent State the better team here by that margin on this field.",
+          "result": "Kent State Golden Flashes lost by 21 where EdgeDesk projected a 7.1-point edge.",
+          "severity": "high",
+          "at": "2026-10-31T06:21:05.182Z"
         }
       ],
       "occurrences": 1,

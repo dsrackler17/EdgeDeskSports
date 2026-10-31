@@ -186,6 +186,13 @@ try {
   const dA = deadGrant(400, AGO20), dB = deadGrant(900, AGO20), dC = deadGrant(400, AGO5), dY = deadGrant(400, LASTNIGHT);
   reserve(400, AGO20); reserve(900, AGO20); reserve(400, AGO5); reserve(400, LASTNIGHT);
   const days = () => V("select sum(granted) || '|' || sum(used) from public.poly_api_days");
+  const deadGrant = (req, ago) => +V(`insert into public.poly_api_grants (caller, requested, granted, decision, granted_at) values ('polymarket_sync:tonight', ${req}, ${req}, 'granted', now() - interval '${ago}') returning grant_id;`);
+  const dA = deadGrant(400, '20 minutes'), dB = deadGrant(900, '20 minutes'), dC = deadGrant(400, '5 minutes');
+  // each grant is charged to its own UTC day: from 00:00 to 00:20 UTC, 20 minutes ago is yesterday (run 41148425430,
+  // 00:08 UTC), so each day's row holds its own grants and the checks below add the days up
+  const daysTotal = () => V("select sum(granted) || '|' || sum(used) from public.poly_api_days");
+  V("update public.poly_api_days set granted = 0, used = 0");
+  V(`insert into public.poly_api_days (day, granted) select (granted_at at time zone 'utc')::date, sum(granted) from public.poly_api_grants where grant_id in (${dA}, ${dB}, ${dC}) group by 1 on conflict (day) do update set granted = excluded.granted, used = 0;`);
   fn(`public.poly_api_progress('{"grant_id":${dB},"used":300}'::jsonb)`, db.service);
   fn(`public.poly_api_progress('{"grant_id":${dB},"used":120}'::jsonb)`, db.service);
   chk('dead runs: progress never goes backwards (a late, older report does not lower it)', V(`select used from public.poly_api_progress where grant_id = ${dB}`) === '300');
@@ -207,10 +214,28 @@ try {
     V("select string_agg(day || ':' || granted || '|' || used, ' ' order by day) from public.poly_api_days"));
   chk('dead runs: a late settlement of an expired grant changes nothing', fn(`public.poly_api_settle('{"grant_id":${dA},"used":50}'::jsonb)`, db.service).settled === false
     && days() === '1010|600');
+  chk('dead runs: the day gets back what they did not use (1,700 - 300 - 500 = 900, then the new 10), and counts what they may have used (500)',
+    gNext.decision === 'granted' && daysTotal() === '910|500', daysTotal());
+  chk('dead runs: a late settlement of an expired grant changes nothing', fn(`public.poly_api_settle('{"grant_id":${dA},"used":50}'::jsonb)`, db.service).settled === false
+    && daysTotal() === '910|500');
   chk('dead runs: no client may report progress', fails(() => db.anon(`select public.poly_api_progress('{"grant_id":${dC},"used":1}'::jsonb);`))
     && fails(() => asSub(`select public.poly_api_progress('{"grant_id":${dC},"used":1}'::jsonb);`)) && fails(() => asSub('select count(*) from public.poly_api_progress;')));
   db.service(`select public.poly_api_settle('{"grant_id":${dC},"used":0}'::jsonb);`);
   db.service(`select public.poly_api_settle('{"grant_id":${gNext.grant_id},"used":0}'::jsonb);`);
+  V("delete from public.poly_api_days where day <> (now() at time zone 'utc')::date");
+  V("update public.poly_api_days set granted = 0, used = 0");
+  // whatever the clock: a dead grant given at 23:40 UTC yesterday gives back to yesterday, not to today
+  const today = "(now() at time zone 'utc')::date";
+  const dY = +V(`insert into public.poly_api_grants (caller, requested, granted, decision, granted_at) values ('polymarket_sync:tonight', 300, 300, 'granted', (date_trunc('day', now() at time zone 'utc') - interval '20 minutes') at time zone 'utc') returning grant_id;`);
+  V(`insert into public.poly_api_days (day, granted) values (${today} - 1, 300);`);
+  const gY = fn("public.poly_api_acquire('{\"caller\":\"t\",\"requested\":10}'::jsonb)", db.service);
+  chk('dead runs: a grant from yesterday is settled on yesterday (300 granted, 100 used), and today has only the new 10',
+    V(`select used from public.poly_api_settlements where grant_id = ${dY}`) === '100'
+    && V(`select granted || '|' || used from public.poly_api_days where day = ${today} - 1`) === '100|100'
+    && V(`select granted || '|' || used from public.poly_api_days where day = ${today}`) === '10|0',
+    V(`select string_agg(day || ':' || granted || '|' || used, ' ' order by day) from public.poly_api_days`));
+  db.service(`select public.poly_api_settle('{"grant_id":${gY.grant_id},"used":0}'::jsonb);`);
+  V("delete from public.poly_api_days where day <> (now() at time zone 'utc')::date");
   V("update public.poly_api_days set granted = 0, used = 0");
 
   /* ===================================================================== */
