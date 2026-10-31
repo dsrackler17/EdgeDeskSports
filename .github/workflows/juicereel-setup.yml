@@ -11,6 +11,10 @@
 #                    GET /oauth2/me with them for the owner's name. Accepted
 #                    means the id, the secret and Juice Reel's approval are
 #                    in order; no reader is involved and no bet is read.
+#                    Also WHICH application the client id is (its first 10
+#                    characters; FAILS on EdgeDeskSports, jr_AFk36va1…), and
+#                    the scopes the bet sync requests vs. those granted on
+#                    the most recent token (a missing one is a warning).
 #   setup            check, and fills in what is ABSENT in Supabase's
 #                    Edge Function secrets — never overwriting one that exists:
 #                      SPORTSBOOK_SYNC_PROVIDER=juicereel  (readers then see
@@ -165,10 +169,14 @@ jobs:
           node -e "
             const r = JSON.parse(require('fs').readFileSync('/tmp/check.json', 'utf8')), s = r.setup || {};
             console.log(r.message);
+            if (r.app) console.log('app: ' + r.app.message);
+            if (r.scopes) console.log(r.scopes.line);
             console.log('setup: ' + JSON.stringify(s));
             require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'accepted=' + (r.accepted ? 'yes' : 'no') + '\n');
             const sum = ['### Juice Reel', '', '| | |', '|---|---|',
               '| Juice Reel accepts EdgeDesk\'s credentials | ' + (r.accepted ? '**yes**' + (r.owner ? ' (owner: ' + r.owner + ')' : '') : '**no** — ' + r.code + (r.status ? ' (HTTP ' + r.status + ')' : '')) + ' |',
+              '| Juice Reel application (JUICE_REEL_CLIENT_ID) | ' + (r.app ? (r.app.client_id_prefix || '—') + '… → ' + (r.app.verdict === 'correct' ? '**' + r.app.name + '** (correct)' : '**' + r.app.verdict.toUpperCase() + '** — ' + r.app.message) : 'not reported (deploy this build)') + ' |',
+              '| Scopes (requested vs. granted on the most recent token) | ' + (r.scopes ? r.scopes.line.replace(/^scopes: /, '') : 'not reported (deploy this build)') + ' |',
               '| Owner lookup (GET /oauth2/me with the credentials) | ' + ({ yes: 'answered', refused: 'refused', unavailable: 'no answer' }[r.owner_access] || '—') + ' |',
               '| Sportsbook provider | ' + (s.provider_on ? 'juicereel' : 'off') + ' |',
               '| Missing secrets | ' + ((s.missing || []).join(', ') || 'none') + ' |',
@@ -177,6 +185,10 @@ jobs:
               '| On for every reader | ' + (s.switched_on_for_readers ? 'yes' : 'no') + ' |', ''];
             require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, sum.join('\n') + '\n');
             if (!r.accepted) console.log('::warning::' + r.message);
+            if (r.scopes && r.scopes.missing && r.scopes.missing.length) console.log('::warning::Juice Reel did not grant ' + r.scopes.missing.join(' ') + ' on the most recent token; have it approved on the application, then reconnect.');
+            if (!r.app) console.log('::warning::This portfolio_connect build predates the application check; deploy this build.');
+            else if (r.app.verdict === 'wrong') { console.log('::error::' + r.app.message); process.exit(1); }
+            else if (!r.app.ok) console.log('::warning::' + r.app.message);
           "
 
       - name: Start the live test (an operator can then connect their own Juice Reel)
