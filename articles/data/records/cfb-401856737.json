@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T23:30:00.000Z",
   "game_when_label": "2026-10-31 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T21:50:58.490Z",
-  "generated_at": "2026-10-31T21:50:58.490Z",
+  "updated_at": "2026-10-31T22:00:50.193Z",
+  "generated_at": "2026-10-31T22:00:50.193Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1856,13 +1856,13 @@
   },
   "snapshot_id": "snap_e8b19ee4a4d6225e",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-31T23:30:00.000Z",
-    "minutes_before_kickoff": 99,
+    "minutes_before_kickoff": 89,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-31T21:50:58.490Z"
+    "refreshed": true,
+    "at": "2026-10-31T22:00:50.193Z"
   },
   "featured": {
     "editorial_priority": 39,
@@ -2136,24 +2136,17 @@
     }
   ],
   "quality": {
-    "score": 88,
+    "score": 100,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [
-      {
-        "id": "duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Kamario Taylor has completed 104 of 159 passes (65.4%) for 1,460 yards, 9.2 yards per atte",
-        "cost": 12
-      }
-    ],
-    "at": "2026-10-31T21:50:58.490Z"
+    "craft_failed": [],
+    "at": "2026-10-31T22:00:50.193Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T21:50:58.490Z",
+    "at": "2026-10-31T22:00:50.193Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2166,13 +2159,7 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [
-      {
-        "id": "craft_duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Kamario Taylor has completed 104 of 159 passes (65.4%) for 1,460 yards, 9.2 yards per atte"
-      }
-    ],
+    "warnings": [],
     "hold_reason": "my_take, evidence_inputs_suspect"
   },
   "football_evidence": {
@@ -2283,6 +2270,115 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T21:50:58.490Z"
+    "at": "2026-10-31T22:00:50.193Z"
+  },
+  "publication_snapshot_id": "snap_e8b19ee4a4d6225e",
+  "freshness": {
+    "at": "2026-10-31T22:00:50.193Z",
+    "fields": {
+      "market.line": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "market.total": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "market.book": {
+        "value": null,
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no sportsbook quote was captured for this game"
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "market.line",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "market.total",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "market.book",
+        "why": "no sportsbook quote was captured for this game",
+        "provider": "research market"
+      },
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
