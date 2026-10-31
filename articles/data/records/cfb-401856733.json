@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T23:45:00.000Z",
   "game_when_label": "2026-10-31 23:45 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T11:51:01.945Z",
-  "generated_at": "2026-10-31T11:51:01.945Z",
+  "updated_at": "2026-10-31T12:01:07.143Z",
+  "generated_at": "2026-10-31T12:01:07.143Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1860,100 +1860,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "ndmdph1tz4d1j",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Missouri win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.0 points.",
-    "gap": {
-      "points": 1,
-      "toward": "Arkansas",
-      "other": "Missouri"
-    },
-    "supporting": [
-      "In his last two games (Texas A&M and Ole Miss), Simmons averaged 6.8 yards per attempt, against 9.3 in his five games before that.",
-      "When Missouri has the ball (the red zone): Missouri’s offense succeeds on 27.7% of its red-zone plays, and Arkansas’ defense allows success on 54.9% of opponent red-zone plays (FBS average 43.6%).",
-      "When Missouri has the ball (the line of scrimmage on running plays): Missouri’s offense is stopped at or behind the line on 20.2% of its runs, and Arkansas’ defense stops 12.7% of opponent runs at or behind the line (FBS average 17.5%)."
-    ],
-    "contradicting": [
-      "When Arkansas has the ball (pass protection against the pass rush): Arkansas’ offense has allowed a sack on 6.1% of its dropbacks, and Missouri’s defense sacks the quarterback on 7.8% of opponent dropbacks (FBS average 5.7%).",
-      "When Missouri has the ball (pass protection against the pass rush): Missouri’s offense has allowed a sack on 2.0% of its dropbacks, and Arkansas’ defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.7%).",
-      "When Missouri has the ball (big plays through the air): Missouri’s offense turns 14.0% of its pass plays into explosive gains, and Arkansas’ defense gives up explosive gains on 11.4% of opponent pass plays (FBS average 10.2%).",
-      "When Arkansas has the ball (big plays through the air): Arkansas’ offense turns 10.0% of its pass plays into explosive gains, and Missouri’s defense gives up explosive gains on 7.9% of opponent pass plays (FBS average 10.2%)."
-    ],
-    "quarterbacks": [
-      "KJ Jackson has completed 131 of 217 passes (60.4%) for 1,444 yards, 6.7 yards per attempt, 7 touchdowns and 4 interceptions in seven games for Arkansas, and has been sacked on 12 of 229 dropbacks.",
-      "AJ Hill has completed 16 of 28 passes (57.1%) for 181 yards, 6.5 yards per attempt, 1 touchdown and no interceptions in two games for Arkansas, and has been sacked on 4 of 32 dropbacks.",
-      "Austin Simmons has completed 132 of 209 passes (63.2%) for 1,756 yards, 8.4 yards per attempt, 14 touchdowns and 2 interceptions in seven games for Missouri, and has been sacked on 7 of 216 dropbacks.",
-      "KJ Jackson does not appear on Arkansas’ update 2 availability report.",
-      "Austin Simmons does not appear on Missouri’s update 2 availability report."
-    ],
-    "availability": [
-      "Arkansas’ availability report lists receiver Chris Marshall as questionable."
-    ],
-    "script": {
-      "model": [
-        "Arkansas’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 13.8% of its runs, and Missouri’s defense stops 20.6% of opponent runs at or behind the line.",
-        "Arkansas’ defense has to slow Missouri in the pass-rush matchup — Missouri’s offense has allowed a sack on 2.0% of its dropbacks.",
-        "Arkansas’ defense has to slow Missouri on big pass plays — Missouri’s offense turns 14.0% of its pass plays into explosive gains.",
-        "Arkansas’ defense has to come out ahead in the red zone: it allows success on 54.9% of opponent red-zone plays, against an offense that succeeds on 27.7% of its red-zone plays."
-      ],
-      "market": [
-        "Missouri’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.0% of its dropbacks, and Arkansas’ defense sacks the quarterback on 6.5% of opponent dropbacks.",
-        "Missouri’s offense has to keep winning on big pass plays: it turns 14.0% of its pass plays into explosive gains, and Arkansas’ defense gives up explosive gains on 11.4% of opponent pass plays.",
-        "Missouri’s defense has to come out ahead at the line of scrimmage: it stops 20.6% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 13.8% of its runs."
-      ]
-    },
-    "unknown": [
-      "Arkansas’ availability report lists receiver Chris Marshall as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Arkansas.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Arkansas) and sack rate (Arkansas); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Arkansas: new head coach; returning roster share at the 7th percentile; returning production at the 25th percentile; transfers out at the 97th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:10:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-31T11:51:01.945Z"
-  },
   "snapshot_id": "snap_247c5c61cbe738cc",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-31T23:45:00.000Z",
+    "minutes_before_kickoff": 704,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-31T12:01:07.143Z"
+  },
   "featured": {
     "editorial_priority": 49,
     "status": "featured",
@@ -2222,20 +2138,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-31T11:51:01.945Z"
-  },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-31T23:45:00.000Z",
-    "minutes_before_kickoff": 714,
-    "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-31T11:51:01.945Z"
+    "at": "2026-10-31T12:01:07.143Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T11:51:01.945Z",
+    "at": "2026-10-31T12:01:07.143Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2245,5 +2152,98 @@
     ],
     "warnings": [],
     "hold_reason": "my_take"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "ndmdph1tz4d1j",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can Missouri win at the line of scrimmage?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.0 points.",
+    "gap": {
+      "points": 1,
+      "toward": "Arkansas",
+      "other": "Missouri"
+    },
+    "supporting": [
+      "In his last two games (Texas A&M and Ole Miss), Simmons averaged 6.8 yards per attempt, against 9.3 in his five games before that.",
+      "When Missouri has the ball (the red zone): Missouri’s offense succeeds on 27.7% of its red-zone plays, and Arkansas’ defense allows success on 54.9% of opponent red-zone plays (FBS average 43.6%).",
+      "When Missouri has the ball (the line of scrimmage on running plays): Missouri’s offense is stopped at or behind the line on 20.2% of its runs, and Arkansas’ defense stops 12.7% of opponent runs at or behind the line (FBS average 17.5%)."
+    ],
+    "contradicting": [
+      "When Arkansas has the ball (pass protection against the pass rush): Arkansas’ offense has allowed a sack on 6.1% of its dropbacks, and Missouri’s defense sacks the quarterback on 7.8% of opponent dropbacks (FBS average 5.7%).",
+      "When Missouri has the ball (pass protection against the pass rush): Missouri’s offense has allowed a sack on 2.0% of its dropbacks, and Arkansas’ defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.7%).",
+      "When Missouri has the ball (big plays through the air): Missouri’s offense turns 14.0% of its pass plays into explosive gains, and Arkansas’ defense gives up explosive gains on 11.4% of opponent pass plays (FBS average 10.2%).",
+      "When Arkansas has the ball (big plays through the air): Arkansas’ offense turns 10.0% of its pass plays into explosive gains, and Missouri’s defense gives up explosive gains on 7.9% of opponent pass plays (FBS average 10.2%)."
+    ],
+    "quarterbacks": [
+      "KJ Jackson has completed 131 of 217 passes (60.4%) for 1,444 yards, 6.7 yards per attempt, 7 touchdowns and 4 interceptions in seven games for Arkansas, and has been sacked on 12 of 229 dropbacks.",
+      "AJ Hill has completed 16 of 28 passes (57.1%) for 181 yards, 6.5 yards per attempt, 1 touchdown and no interceptions in two games for Arkansas, and has been sacked on 4 of 32 dropbacks.",
+      "Austin Simmons has completed 132 of 209 passes (63.2%) for 1,756 yards, 8.4 yards per attempt, 14 touchdowns and 2 interceptions in seven games for Missouri, and has been sacked on 7 of 216 dropbacks.",
+      "KJ Jackson does not appear on Arkansas’ update 2 availability report.",
+      "Austin Simmons does not appear on Missouri’s update 2 availability report."
+    ],
+    "availability": [
+      "Arkansas’ availability report lists receiver Chris Marshall as questionable."
+    ],
+    "script": {
+      "model": [
+        "Arkansas’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 13.8% of its runs, and Missouri’s defense stops 20.6% of opponent runs at or behind the line.",
+        "Arkansas’ defense has to slow Missouri in the pass-rush matchup — Missouri’s offense has allowed a sack on 2.0% of its dropbacks.",
+        "Arkansas’ defense has to slow Missouri on big pass plays — Missouri’s offense turns 14.0% of its pass plays into explosive gains.",
+        "Arkansas’ defense has to come out ahead in the red zone: it allows success on 54.9% of opponent red-zone plays, against an offense that succeeds on 27.7% of its red-zone plays."
+      ],
+      "market": [
+        "Missouri’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.0% of its dropbacks, and Arkansas’ defense sacks the quarterback on 6.5% of opponent dropbacks.",
+        "Missouri’s offense has to keep winning on big pass plays: it turns 14.0% of its pass plays into explosive gains, and Arkansas’ defense gives up explosive gains on 11.4% of opponent pass plays.",
+        "Missouri’s defense has to come out ahead at the line of scrimmage: it stops 20.6% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 13.8% of its runs."
+      ]
+    },
+    "unknown": [
+      "Arkansas’ availability report lists receiver Chris Marshall as questionable.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Arkansas.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Arkansas) and sack rate (Arkansas); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Arkansas: new head coach; returning roster share at the 7th percentile; returning production at the 25th percentile; transfers out at the 97th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-29T23:30:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-31T05:48:17.909Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Southeastern Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-31T00:10:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-31T12:01:07.143Z"
   }
 }
