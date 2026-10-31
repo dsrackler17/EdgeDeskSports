@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1941,97 +1941,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "cwfvyxbsglvf",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can South Florida’s pass rush get to Ryder Burton?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward South Florida, and its own breakdown accounts for about 0.5 of the 5.9 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 5.9,
-      "toward": "South Florida",
-      "other": "UAB"
-    },
-    "supporting": [
-      "When UAB has the ball (pass protection against the pass rush): UAB’s offense has allowed a sack on 9.9% of its dropbacks, and South Florida’s defense sacks the quarterback on 6.6% of opponent dropbacks (FBS average 5.7%).",
-      "When UAB has the ball (the red zone): UAB’s offense succeeds on 33.4% of its red-zone plays, and South Florida’s defense allows success on 34.2% of opponent red-zone plays (FBS average 43.6%).",
-      "When UAB has the ball (big plays through the air): UAB’s offense turns 7.5% of its pass plays into explosive gains, and South Florida’s defense gives up explosive gains on 8.0% of opponent pass plays (FBS average 10.2%).",
-      "When UAB has the ball (the line of scrimmage on running plays): UAB’s offense is stopped at or behind the line on 17.6% of its runs, and South Florida’s defense stops 22.9% of opponent runs at or behind the line (FBS average 17.5%)."
-    ],
-    "contradicting": [
-      "When South Florida has the ball (big plays on the ground): South Florida’s offense turns 4.3% of its runs into explosive gains, and UAB’s defense gives up explosive gains on 4.9% of opponent runs (FBS average 6.5%).",
-      "EdgeDesk’s position-group ratings put UAB’s pass defense No. 17 nationally and South Florida’s No. 103.",
-      "EdgeDesk’s position-group ratings put UAB’s running backs No. 77 nationally and South Florida’s No. 136.",
-      "EdgeDesk’s position-group ratings put UAB’s defense No. 56 nationally and South Florida’s No. 93."
-    ],
-    "quarterbacks": [
-      "Michael Van Buren Jr. has completed 114 of 178 passes (64.0%) for 1,272 yards, 7.1 yards per attempt, 6 touchdowns and no interceptions in seven games for South Florida, and has been sacked on 13 of 191 dropbacks.",
-      "Ryder Burton has completed 91 of 167 passes (54.5%) for 1,194 yards, 7.1 yards per attempt, 6 touchdowns and 5 interceptions in seven games for UAB, and has been sacked on 19 of 186 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "South Florida’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.6% of opponent dropbacks, against an offense that has allowed a sack on 9.9% of its dropbacks.",
-        "South Florida’s offense has to hold its own on long runs against a defense that gives up explosive gains on 4.9% of opponent runs.",
-        "South Florida’s defense has to come out ahead in the red zone: it allows success on 34.2% of opponent red-zone plays, against an offense that succeeds on 33.4% of its red-zone plays.",
-        "South Florida’s quarterback situation has to settle: Owen McCown has taken 33% of South Florida’s recent dropbacks and Ajani Sheppard 33%."
-      ],
-      "market": [
-        "UAB’s defense has to come out ahead on long runs: it gives up explosive gains on 4.9% of opponent runs, against an offense that turns 4.3% of its runs into explosive gains.",
-        "UAB’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 9.9% of its dropbacks, and South Florida’s defense sacks the quarterback on 6.6% of opponent dropbacks.",
-        "Burton keeps producing at his season rate (54.5% completions, 7.1 yards per attempt, 6 TD, 5 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for South Florida and UAB.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (South Florida), sack rate allowed (UAB) and sack rate (UAB); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.9 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "South Florida: new head coach; returning roster share at the 42nd percentile; returning production at the 22nd percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-30T17:13:43.526Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

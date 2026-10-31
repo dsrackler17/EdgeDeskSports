@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1893,87 +1893,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "b7gb3j7wpia5",
-    "status": "UNEXPLAINED",
-    "input_suspect": true,
-    "question": "Can Navy’s pass rush get to CJ Carr?",
-    "assessment": "EdgeDesk’s number is 8.6 points closer to Navy than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 1.7 of the 8.6 points. The measured football evidence leans toward Notre Dame, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s published number sits 8.1 points from the middle of its own other models. Treat the gap as an open research question, not as an edge.",
-    "gap": {
-      "points": 8.6,
-      "toward": "Navy",
-      "other": "Notre Dame"
-    },
-    "supporting": [
-      "When Notre Dame has the ball (big plays on the ground): Notre Dame’s offense turns 5.4% of its runs into explosive gains, and Navy’s defense gives up explosive gains on 4.1% of opponent runs (FBS average 6.5%).",
-      "When Navy has the ball (the passing game against the pass defense): Navy’s offense averages 10.7 yards per pass attempt, and Notre Dame’s defense allows 6.3 yards per pass attempt (FBS average 7.4).",
-      "When Navy has the ball (big plays through the air): Navy’s offense turns 17.7% of its pass plays into explosive gains, and Notre Dame’s defense gives up explosive gains on 5.7% of opponent pass plays (FBS average 10.2%).",
-      "Jackson Gutierrez has completed 32 of 63 passes (50.8%) for 692 yards, 11.0 yards per attempt, 7 touchdowns and 1 interception in six games for Navy, and has been sacked on 8 of 71 dropbacks."
-    ],
-    "contradicting": [
-      "When Navy has the ball (pass protection against the pass rush): Navy’s offense has allowed a sack on 9.6% of its dropbacks, and Notre Dame’s defense sacks the quarterback on 7.8% of opponent dropbacks (FBS average 5.7%).",
-      "When Notre Dame has the ball (pass protection against the pass rush): Notre Dame’s offense has allowed a sack on 0.9% of its dropbacks, and Navy’s defense sacks the quarterback on 8.5% of opponent dropbacks (FBS average 5.7%).",
-      "When Notre Dame has the ball (the passing game against the pass defense): Notre Dame’s offense averages 7.7 yards per pass attempt, and Navy’s defense allows 10.0 yards per pass attempt (FBS average 7.4).",
-      "When Notre Dame has the ball (big plays through the air): Notre Dame’s offense turns 10.7% of its pass plays into explosive gains, and Navy’s defense gives up explosive gains on 16.9% of opponent pass plays (FBS average 10.2%)."
-    ],
-    "quarterbacks": [
-      "Jackson Gutierrez has completed 32 of 63 passes (50.8%) for 692 yards, 11.0 yards per attempt, 7 touchdowns and 1 interception in six games for Navy, and has been sacked on 8 of 71 dropbacks.",
-      "Braxton Woodson has completed 9 of 22 passes (40.9%) for 144 yards, 6.5 yards per attempt, no touchdowns and 1 interception in five games for Navy, and has been sacked on 1 of 23 dropbacks.",
-      "CJ Carr has completed 129 of 194 passes (66.5%) for 1,639 yards, 8.4 yards per attempt, 16 touchdowns and 1 interception in seven games for Notre Dame, and has been sacked on 2 of 196 dropbacks.",
-      "Noah Grubbs has completed 14 of 22 passes (63.6%) for 164 yards, 7.5 yards per attempt, 1 touchdown and no interceptions in three games for Notre Dame, and has been sacked on 0 of 22 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Navy’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.5% of opponent dropbacks, against an offense that has allowed a sack on 0.9% of its dropbacks.",
-        "Navy’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.8% of opponent dropbacks.",
-        "Navy’s defense has to slow Notre Dame on big pass plays — Notre Dame’s offense turns 10.7% of its pass plays into explosive gains.",
-        "Navy’s defense has to come out ahead on long runs: it gives up explosive gains on 4.1% of opponent runs, against an offense that turns 5.4% of its runs into explosive gains."
-      ],
-      "market": [
-        "Notre Dame’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.8% of opponent dropbacks, against an offense that has allowed a sack on 9.6% of its dropbacks.",
-        "Notre Dame’s offense has to keep winning on big pass plays: it turns 10.7% of its pass plays into explosive gains, and Navy’s defense gives up explosive gains on 16.9% of opponent pass plays.",
-        "Notre Dame’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 0.9% of its dropbacks, and Navy’s defense sacks the quarterback on 8.5% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Navy and Notre Dame.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel, weather, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Navy), sack rate (Navy), sack rate allowed (Notre Dame) and sack rate (Notre Dame); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 8.1 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

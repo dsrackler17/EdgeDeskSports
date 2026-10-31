@@ -23,8 +23,8 @@
   "game_time": "2026-11-01T18:00:00.000Z",
   "game_when_label": "2026-11-01 18:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T12:13:51.302Z",
-  "generated_at": "2026-10-31T12:13:51.302Z",
+  "updated_at": "2026-10-31T19:14:58.561Z",
+  "generated_at": "2026-10-31T19:14:58.561Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 6.8-point gap is context only and the game is excluded from research ranking.",
@@ -1151,7 +1151,7 @@
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "total_difference": "2.2 points",
       "book": "Caesars",
-      "capture_age": "1148 hours old",
+      "capture_age": "1155 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 6.8-point gap is context only and the game is excluded from research ranking.",
@@ -1302,7 +1302,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1e9sc3zwtmr71",
+    "packet_hash": "1laeefos5eq2e",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can the Jaguars stop the Colts’ run game?",
@@ -1327,7 +1327,10 @@
       "Jacksonville Jaguars’ passers have completed 120 of 184 (65.2%) for 1,480 yards, 8.0 yards per attempt, with 14 touchdowns, 4 interceptions and 10 sacks taken in six games.",
       "Indianapolis Colts’ passers have completed 143 of 240 (59.6%) for 1,398 yards, 5.8 yards per attempt, with 4 touchdowns, 7 interceptions and 19 sacks taken in seven games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists one Jacksonville Jaguars player as out or doubtful, including S Antonio Johnson (out).",
+      "The official injury report lists two Indianapolis Colts players as out or doubtful, including WR Anthony Gould (out) and CB Justin Walley (out)."
+    ],
     "script": {
       "model": [
         "The Jacksonville Jaguars have to win on the ground (Indianapolis Colts’ No. 2 run game against Jacksonville Jaguars’ No. 6 run defense).",
@@ -1341,7 +1344,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field and strength of schedule.",
       "The line on file was captured Sept. 13 and may have moved."
     ],
     "flags": [],
@@ -1350,15 +1353,22 @@
         "label": "EdgeDesk NFL team ratings (2026)",
         "url": null,
         "path": "football/nfl/slate.json",
-        "observed_at": "2026-10-30T18:39:31.114Z",
+        "observed_at": "2026-10-31T17:50:18.654Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-31T12:13:34.147Z",
+        "observed_at": "2026-10-31T19:14:52.344Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-31T12:38:15.177Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1366,6 +1376,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

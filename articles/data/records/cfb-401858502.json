@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1850,94 +1850,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "17uxihy31u6bo",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Iowa’s pass rush get to Colton Joseph?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.7 points.",
-    "gap": {
-      "points": 0.7,
-      "toward": "Wisconsin",
-      "other": "Iowa"
-    },
-    "supporting": [
-      "When Iowa has the ball (big plays through the air): Iowa’s offense turns 7.8% of its pass plays into explosive gains, and Wisconsin’s defense gives up explosive gains on 5.8% of opponent pass plays (FBS average 10.2%).",
-      "When Iowa has the ball (big plays on the ground): Iowa’s offense turns 4.0% of its runs into explosive gains, and Wisconsin’s defense gives up explosive gains on 2.2% of opponent runs (FBS average 6.5%).",
-      "When Iowa has the ball (the passing game against the pass defense): Iowa’s offense averages 6.6 yards per pass attempt, and Wisconsin’s defense allows 5.6 yards per pass attempt (FBS average 7.4).",
-      "When Iowa has the ball (the run game against the run defense): Iowa’s offense averages 5.2 yards per carry, and Wisconsin’s defense allows 3.3 yards per carry (FBS average 5.0)."
-    ],
-    "contradicting": [
-      "When Iowa has the ball (pass protection against the pass rush): Iowa’s offense has allowed a sack on 2.7% of its dropbacks, and Wisconsin’s defense sacks the quarterback on 4.6% of opponent dropbacks (FBS average 5.7%).",
-      "When Wisconsin has the ball (pass protection against the pass rush): Wisconsin’s offense has allowed a sack on 4.5% of its dropbacks, and Iowa’s defense sacks the quarterback on 13.3% of opponent dropbacks (FBS average 5.7%).",
-      "When Wisconsin has the ball (big plays on the ground): Wisconsin’s offense turns 4.3% of its runs into explosive gains, and Iowa’s defense gives up explosive gains on 2.7% of opponent runs (FBS average 6.5%).",
-      "When Wisconsin has the ball (the run game against the run defense): Wisconsin’s offense averages 4.6 yards per carry, and Iowa’s defense allows 3.6 yards per carry (FBS average 5.0)."
-    ],
-    "quarterbacks": [
-      "Hank Brown has completed 89 of 145 passes (61.4%) for 986 yards, 6.8 yards per attempt, 6 touchdowns and 3 interceptions in six games for Iowa, and has been sacked on 5 of 150 dropbacks.",
-      "Jeremy Hecklinski has completed 39 of 65 passes (60.0%) for 447 yards, 6.9 yards per attempt, 4 touchdowns and 2 interceptions in five games for Iowa, and has been sacked on 1 of 66 dropbacks.",
-      "Colton Joseph has completed 97 of 171 passes (56.7%) for 1,250 yards, 7.3 yards per attempt, 10 touchdowns and 4 interceptions in seven games for Wisconsin, and has been sacked on 8 of 179 dropbacks.",
-      "Jeremy Hecklinski does not appear on Iowa’s update 2 availability report.",
-      "Colton Joseph does not appear on Wisconsin’s update 2 availability report."
-    ],
-    "availability": [
-      "Iowa’s availability report lists ten players as out, including offensive linemen Lucas Allgeyer and Trent Wilson.",
-      "Wisconsin’s availability report lists running back Nate Palmer as doubtful."
-    ],
-    "script": {
-      "model": [
-        "Wisconsin’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 4.5% of its dropbacks, and Iowa’s defense sacks the quarterback on 13.3% of opponent dropbacks.",
-        "Wisconsin’s defense has to slow Iowa in the pass-rush matchup — Iowa’s offense has allowed a sack on 2.7% of its dropbacks.",
-        "Wisconsin’s defense has to come out ahead on long runs: it gives up explosive gains on 2.2% of opponent runs, against an offense that turns 4.0% of its runs into explosive gains.",
-        "Wisconsin’s defense has to come out ahead on big pass plays: it gives up explosive gains on 5.8% of opponent pass plays, against an offense that turns 7.8% of its pass plays into explosive gains."
-      ],
-      "market": [
-        "Iowa’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 13.3% of opponent dropbacks, against an offense that has allowed a sack on 4.5% of its dropbacks.",
-        "Iowa’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.7% of its dropbacks, and Wisconsin’s defense sacks the quarterback on 4.6% of opponent dropbacks.",
-        "Brown keeps producing at his season rate (61.4% completions, 6.8 yards per attempt, 6 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "Wisconsin’s availability report lists running back Nate Palmer as doubtful.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Iowa and Wisconsin.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Iowa), sack rate (Iowa), sack rate allowed (Wisconsin) and sack rate (Wisconsin); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

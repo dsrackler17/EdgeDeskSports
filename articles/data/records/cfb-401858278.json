@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1836,93 +1836,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "cx0eg916lu17",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can SMU take away Syracuse’s big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.4 points.",
-    "gap": {
-      "points": 1.4,
-      "toward": "Syracuse",
-      "other": "SMU"
-    },
-    "supporting": [
-      "When SMU has the ball (the line of scrimmage on running plays): SMU’s offense is stopped at or behind the line on 17.9% of its runs, and Syracuse’s defense stops 22.7% of opponent runs at or behind the line (FBS average 17.5%).",
-      "In his last two games (Virginia and California), Jennings averaged 7.9 yards per attempt, against 10.3 in his five games before that."
-    ],
-    "contradicting": [
-      "When Syracuse has the ball (pass protection against the pass rush): Syracuse’s offense has allowed a sack on 5.9% of its dropbacks, and SMU’s defense sacks the quarterback on 10.9% of opponent dropbacks (FBS average 5.7%).",
-      "When Syracuse has the ball (third down): Syracuse’s offense converts 40.7% of its third downs, and SMU’s defense allows opponents to convert 30.3% of their third downs (FBS average 39.5%).",
-      "When Syracuse has the ball (big plays on the ground): Syracuse’s offense turns 4.3% of its runs into explosive gains, and SMU’s defense gives up explosive gains on 5.8% of opponent runs (FBS average 6.5%).",
-      "When SMU has the ball (pass protection against the pass rush): SMU’s offense has allowed a sack on 3.3% of its dropbacks, and Syracuse’s defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.7%)."
-    ],
-    "quarterbacks": [
-      "Steve Angeli has completed 78 of 138 passes (56.5%) for 976 yards, 7.1 yards per attempt, 6 touchdowns and 4 interceptions in four games for Syracuse, and has been sacked on 9 of 147 dropbacks.",
-      "Malachi Nelson has completed 42 of 70 passes (60.0%) for 532 yards, 7.6 yards per attempt, 3 touchdowns and 2 interceptions in three games for Syracuse, and has been sacked on 5 of 75 dropbacks.",
-      "Kevin Jennings has completed 156 of 216 passes (72.2%) for 2,082 yards, 9.6 yards per attempt, 19 touchdowns and 5 interceptions in seven games for SMU, and has been sacked on 8 of 224 dropbacks.",
-      "Ty Hawkins has completed 13 of 15 passes (86.7%) for 125 yards, 8.3 yards per attempt, 2 touchdowns and no interceptions in two games for SMU, and has been sacked on 0 of 15 dropbacks.",
-      "Syracuse’s update 2 ACC availability report (published Oct. 30) lists quarterback Steve Angeli as probable.",
-      "Syracuse’s update 2 ACC availability report (published Oct. 30) lists quarterback Amari Odom as out.",
-      "Syracuse’s update 2 ACC availability report (published Oct. 30) lists quarterback Malachi Nelson as out.",
-      "Kevin Jennings does not appear on SMU’s update 2 availability report."
-    ],
-    "availability": [
-      "Syracuse’s availability report lists seven players as out, including offensive linemen Jackson Iak, D'Joni Scatliffe and Matthew Hawn."
-    ],
-    "script": {
-      "model": [
-        "Syracuse’s offense has to keep winning on big pass plays: it turns 12.7% of its pass plays into explosive gains, and SMU’s defense gives up explosive gains on 8.0% of opponent pass plays.",
-        "Syracuse’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 10.9% of opponent dropbacks.",
-        "Syracuse’s defense has to slow SMU on big pass plays — SMU’s offense turns 13.3% of its pass plays into explosive gains.",
-        "Syracuse’s defense has to come out ahead at the line of scrimmage: it stops 22.7% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 17.9% of its runs."
-      ],
-      "market": [
-        "SMU’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.9% of opponent dropbacks, against an offense that has allowed a sack on 5.9% of its dropbacks.",
-        "SMU’s offense has to keep winning on big pass plays: it turns 13.3% of its pass plays into explosive gains, and Syracuse’s defense gives up explosive gains on 11.1% of opponent pass plays.",
-        "SMU’s defense has to come out ahead on big pass plays: it gives up explosive gains on 8.0% of opponent pass plays, against an offense that turns 12.7% of its pass plays into explosive gains."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Syracuse and SMU.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Syracuse), sack rate (Syracuse) and sack rate allowed (SMU); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

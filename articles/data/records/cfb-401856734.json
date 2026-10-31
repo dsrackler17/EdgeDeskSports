@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:30:00.000Z",
   "game_when_label": "2026-10-31 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T19:11:12.114Z",
-  "generated_at": "2026-10-31T19:11:12.114Z",
+  "updated_at": "2026-10-31T19:14:58.561Z",
+  "generated_at": "2026-10-31T19:14:58.561Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/florida-vs-georgia-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "ready_too_late",
+  "status": "manual_review",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1860,13 +1860,13 @@
   "snapshot_id": "snap_2374c1690a93bb25",
   "publication_snapshot_id": "snap_2374c1690a93bb25",
   "timing": {
-    "publication_window": "final_window",
-    "classified_window": "final_window",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-31T19:30:00.000Z",
-    "minutes_before_kickoff": 19,
+    "minutes_before_kickoff": 29,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-31T19:11:12.114Z"
+    "refreshed": true,
+    "at": "2026-10-31T19:01:00.746Z"
   },
   "featured": {
     "editorial_priority": 42.5,
@@ -2156,27 +2156,26 @@
     }
   ],
   "quality": {
-    "score": 88,
+    "score": 100,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [
-      {
-        "id": "duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Aaron Philo has completed 105 of 149 passes (70.5%) for 1,438 yards, 9.7 yards per attempt",
-        "cost": 12
-      }
-    ],
-    "at": "2026-10-31T19:11:12.114Z"
+    "craft_failed": [],
+    "at": "2026-10-31T19:01:00.746Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-31T19:11:12.114Z",
-    "blocking": [],
+    "at": "2026-10-31T19:01:00.746Z",
+    "blocking": [
+      {
+        "id": "my_take",
+        "why": "an auto-generated article publishes only after the owner writes \"My take\" of at least 240 characters",
+        "detail": "0 characters on file"
+      }
+    ],
     "warnings": [],
-    "hold_reason": "inside final pregame publication floor"
+    "hold_reason": "my_take"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
@@ -2274,6 +2273,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T19:11:12.114Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

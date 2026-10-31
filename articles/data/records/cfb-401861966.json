@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T19:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1919,86 +1919,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1fiohbskpwvve",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can UConn’s pass rush get to Evan Medders?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.7 points.",
-    "gap": {
-      "points": 1.7,
-      "toward": "Air Force",
-      "other": "UConn"
-    },
-    "supporting": [
-      "When Air Force has the ball (big plays through the air): Air Force’s offense turns 15.8% of its pass plays into explosive gains, and UConn’s defense gives up explosive gains on 11.0% of opponent pass plays (FBS average 10.2%).",
-      "When Air Force has the ball (the line of scrimmage on running plays): Air Force’s offense is stopped at or behind the line on 9.2% of its runs, and UConn’s defense stops 16.0% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When UConn has the ball (pass protection against the pass rush): UConn’s offense has allowed a sack on 10.2% of its dropbacks, and Air Force’s defense sacks the quarterback on 7.0% of opponent dropbacks (FBS average 5.7%).",
-      "When Air Force has the ball (third down): Air Force’s offense converts 48.5% of its third downs, and UConn’s defense allows opponents to convert 36.2% of their third downs (FBS average 39.5%)."
-    ],
-    "contradicting": [
-      "When Air Force has the ball (pass protection against the pass rush): Air Force’s offense has allowed a sack on 6.9% of its dropbacks, and UConn’s defense sacks the quarterback on 11.0% of opponent dropbacks (FBS average 5.7%).",
-      "When Air Force has the ball (big plays on the ground): Air Force’s offense turns 6.0% of its runs into explosive gains, and UConn’s defense gives up explosive gains on 3.9% of opponent runs (FBS average 6.5%).",
-      "When UConn has the ball (big plays through the air): UConn’s offense turns 16.6% of its pass plays into explosive gains, and Air Force’s defense gives up explosive gains on 10.9% of opponent pass plays (FBS average 10.2%).",
-      "When UConn has the ball (the passing game against the pass defense): UConn’s offense averages 8.8 yards per pass attempt, and Air Force’s defense allows 7.6 yards per pass attempt (FBS average 7.4)."
-    ],
-    "quarterbacks": [
-      "Liam Szarka has completed 19 of 40 passes (47.5%) for 296 yards, 7.4 yards per attempt, 1 touchdown and 4 interceptions in four games for Air Force, and has been sacked on 2 of 42 dropbacks.",
-      "Evan Medders has completed 8 of 14 passes (57.1%) for 92 yards, 6.6 yards per attempt, 2 touchdowns and no interceptions in six games for Air Force, and has been sacked on 1 of 15 dropbacks.",
-      "Kalieb Osborne has completed 111 of 183 passes (60.7%) for 1,606 yards, 8.8 yards per attempt, 12 touchdowns and 2 interceptions in seven games for UConn, and has been sacked on 22 of 205 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Air Force’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 6.9% of its dropbacks, and UConn’s defense sacks the quarterback on 11.0% of opponent dropbacks.",
-        "Air Force’s defense has to slow UConn on big pass plays — UConn’s offense turns 16.6% of its pass plays into explosive gains.",
-        "Air Force’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.0% of opponent dropbacks, against an offense that has allowed a sack on 10.2% of its dropbacks.",
-        "Air Force’s offense has to keep winning on big pass plays: it turns 15.8% of its pass plays into explosive gains, and UConn’s defense gives up explosive gains on 11.0% of opponent pass plays."
-      ],
-      "market": [
-        "UConn’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 11.0% of opponent dropbacks, against an offense that has allowed a sack on 6.9% of its dropbacks.",
-        "UConn’s offense has to keep winning on big pass plays: it turns 16.6% of its pass plays into explosive gains, and Air Force’s defense gives up explosive gains on 10.9% of opponent pass plays.",
-        "Osborne keeps producing at his season rate (60.7% completions, 8.8 yards per attempt, 12 TD, 2 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Air Force and UConn.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Air Force), sack rate (Air Force) and sack rate allowed (UConn); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "UConn: new head coach; returning roster share at the 4th percentile; returning production at the 2nd percentile; transfers out at the 96th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

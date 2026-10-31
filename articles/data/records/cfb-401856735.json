@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T16:45:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1868,106 +1868,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "192wdky1aq644g",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Auburn’s pass rush get to Trinidad Chambliss?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Ole Miss, and its own breakdown accounts for about 0.0 of the 2.0 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 2,
-      "toward": "Ole Miss",
-      "other": "Auburn"
-    },
-    "supporting": [
-      "When Ole Miss has the ball (big plays on the ground): Ole Miss’ offense turns 10.6% of its runs into explosive gains, and Auburn’s defense gives up explosive gains on 5.2% of opponent runs (FBS average 6.5%).",
-      "When Auburn has the ball (pass protection against the pass rush): Auburn’s offense has allowed a sack on 12.0% of its dropbacks, and Ole Miss’ defense sacks the quarterback on 6.3% of opponent dropbacks (FBS average 5.7%).",
-      "When Ole Miss has the ball (pass protection against the pass rush): Ole Miss’ offense has allowed a sack on 2.1% of its dropbacks, and Auburn’s defense sacks the quarterback on 8.1% of opponent dropbacks (FBS average 5.7%).",
-      "EdgeDesk’s position-group ratings put Ole Miss’ offensive line No. 42 nationally and Auburn’s No. 124."
-    ],
-    "contradicting": [
-      "When Auburn has the ball (big plays on the ground): Auburn’s offense turns 11.1% of its runs into explosive gains, and Ole Miss’ defense gives up explosive gains on 6.5% of opponent runs (FBS average 6.5%).",
-      "In his last two games (Missouri and Texas), Chambliss averaged 5.5 yards per attempt, against 8.2 in his five games before that.",
-      "EdgeDesk’s position-group ratings put Auburn’s running backs No. 5 nationally and Ole Miss’ No. 66.",
-      "EdgeDesk’s position-group ratings put Auburn’s linebackers No. 19 nationally and Ole Miss’ No. 66."
-    ],
-    "quarterbacks": [
-      "Trinidad Chambliss has completed 168 of 265 passes (63.4%) for 1,926 yards, 7.3 yards per attempt, 16 touchdowns and 7 interceptions in seven games for Ole Miss, and has been sacked on 6 of 271 dropbacks.",
-      "Byrum Brown has completed 134 of 208 passes (64.4%) for 1,387 yards, 6.7 yards per attempt, 9 touchdowns and 7 interceptions in seven games for Auburn, and has been sacked on 29 of 237 dropbacks.",
-      "Trinidad Chambliss does not appear on Ole Miss’ update 2 availability report.",
-      "Byrum Brown does not appear on Auburn’s update 2 availability report."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Ole Miss’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.1% of its dropbacks, and Auburn’s defense sacks the quarterback on 8.1% of opponent dropbacks.",
-        "Ole Miss’ defense has to slow Auburn on long runs — Auburn’s offense turns 11.1% of its runs into explosive gains.",
-        "Ole Miss’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.3% of opponent dropbacks, against an offense that has allowed a sack on 12.0% of its dropbacks.",
-        "Ole Miss’ offense has to keep winning on long runs: it turns 10.6% of its runs into explosive gains, and Auburn’s defense gives up explosive gains on 5.2% of opponent runs."
-      ],
-      "market": [
-        "Auburn’s offense has to keep winning on long runs: it turns 11.1% of its runs into explosive gains, and Ole Miss’ defense gives up explosive gains on 6.5% of opponent runs.",
-        "Auburn’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.1% of opponent dropbacks, against an offense that has allowed a sack on 2.1% of its dropbacks.",
-        "Brown keeps producing at his season rate (64.4% completions, 6.7 yards per attempt, 9 TD, 7 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for Ole Miss and Auburn.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (Ole Miss), sack rate allowed (Auburn) and sack rate (Auburn); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Ole Miss: new head coach; returning roster share at the 28th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Auburn: new head coach; returning roster share at the 28th percentile; returning production at the 28th percentile; transfers out at the 88th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-30T17:13:43.526Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:10:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

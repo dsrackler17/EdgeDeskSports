@@ -23,8 +23,8 @@
   "game_time": "2026-11-01T21:05:00.000Z",
   "game_when_label": "2026-11-01 21:05 UTC",
   "published_at": null,
-  "updated_at": "2026-10-31T12:13:51.302Z",
-  "generated_at": "2026-10-31T12:13:51.302Z",
+  "updated_at": "2026-10-31T19:14:58.561Z",
+  "generated_at": "2026-10-31T19:14:58.561Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.9-point gap is context only and the game is excluded from research ranking.",
@@ -1174,7 +1174,7 @@
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "total_difference": "2.3 points",
       "book": "DraftKings",
-      "capture_age": "1212 hours old",
+      "capture_age": "1219 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.9-point gap is context only and the game is excluded from research ranking.",
@@ -1325,7 +1325,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "v27ytg7t8on",
+    "packet_hash": "11ydne01tf5bpm",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can the Chargers’ pass defense slow the Rams’ passing game?",
@@ -1351,7 +1351,9 @@
       "Los Angeles Rams’ passers have completed 189 of 281 (67.3%) for 2,002 yards, 7.1 yards per attempt, with 14 touchdowns, 7 interceptions and 11 sacks taken in seven games.",
       "Los Angeles Chargers’ passers have completed 107 of 181 (59.1%) for 1,141 yards, 6.3 yards per attempt, with 5 touchdowns, 8 interceptions and 21 sacks taken in six games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists four Los Angeles Chargers players as out or doubtful, including WR Brenen Thompson (out), CB Deane Leonard (out), S Derwin James (out) and G Kayode Awosika (out)."
+    ],
     "script": {
       "model": [
         "The Los Angeles Rams have to win through the air (Los Angeles Rams’ No. 9 passing game against Los Angeles Chargers’ No. 4 pass defense).",
@@ -1364,7 +1366,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
       "The line on file was captured Sept. 10 and may have moved."
     ],
     "flags": [],
@@ -1373,15 +1375,22 @@
         "label": "EdgeDesk NFL team ratings (2026)",
         "url": null,
         "path": "football/nfl/slate.json",
-        "observed_at": "2026-10-30T18:39:31.114Z",
+        "observed_at": "2026-10-31T17:50:18.654Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-31T12:13:34.147Z",
+        "observed_at": "2026-10-31T19:14:52.344Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-31T12:38:15.177Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1389,6 +1398,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1869,120 +1869,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1y1pwqgrf56e2",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Maryland’s pass rush get to Illinois’ quarterback?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Illinois, and its own breakdown accounts for about 0.0 of the 4.5 points, but not the full gap. Input warning: EdgeDesk’s model is built on Michael Clayton II starting for Illinois, but the availability report lists Katin Houser — who took 48% of Illinois’ recent dropbacks — as questionable. The model’s quarterback input may be out of date. It is a research question, not a bet.",
-    "gap": {
-      "points": 4.5,
-      "toward": "Illinois",
-      "other": "Maryland"
-    },
-    "supporting": [
-      "When Maryland has the ball (big plays on the ground): Maryland’s offense turns 4.9% of its runs into explosive gains, and Illinois’ defense gives up explosive gains on 4.2% of opponent runs (FBS average 6.5%).",
-      "When Illinois has the ball (the line of scrimmage on running plays): Illinois’ offense is stopped at or behind the line on 11.6% of its runs, and Maryland’s defense stops 14.3% of opponent runs at or behind the line (FBS average 17.5%).",
-      "EdgeDesk’s position-group ratings put Illinois’ running backs No. 14 nationally and Maryland’s No. 135.",
-      "EdgeDesk’s position-group ratings put Illinois’ offense No. 16 nationally and Maryland’s No. 93."
-    ],
-    "contradicting": [
-      "When Maryland has the ball (pass protection against the pass rush): Maryland’s offense has allowed a sack on 2.5% of its dropbacks, and Illinois’ defense sacks the quarterback on 1.8% of opponent dropbacks (FBS average 5.7%).",
-      "When Illinois has the ball (pass protection against the pass rush): Illinois’ offense has allowed a sack on 4.0% of its dropbacks, and Maryland’s defense sacks the quarterback on 9.2% of opponent dropbacks (FBS average 5.7%).",
-      "In his last two games (Purdue and Michigan State), Houser averaged 6.3 yards per attempt, against 8.5 in his four games before that.",
-      "EdgeDesk’s position-group ratings put Maryland’s pass defense No. 50 nationally and Illinois’ No. 97."
-    ],
-    "quarterbacks": [
-      "Malik Washington has completed 154 of 258 passes (59.7%) for 1,615 yards, 6.3 yards per attempt, 10 touchdowns and 5 interceptions in seven games for Maryland, and has been sacked on 7 of 265 dropbacks.",
-      "Katin Houser has completed 122 of 187 passes (65.2%) for 1,440 yards, 7.7 yards per attempt, 12 touchdowns and 4 interceptions in six games for Illinois, and has been sacked on 6 of 193 dropbacks.",
-      "Michael Clayton II has completed 18 of 27 passes (66.7%) for 177 yards, 6.6 yards per attempt, 4 touchdowns and no interceptions in two games for Illinois, and has been sacked on 2 of 29 dropbacks.",
-      "Malik Washington does not appear on Maryland’s update 2 availability report.",
-      "Illinois’ update 2 Big Ten availability report (published Oct. 30) lists quarterback Katin Houser as questionable.",
-      "Michael Clayton II does not appear on Illinois’ update 2 availability report.",
-      "EdgeDesk’s model is built on Michael Clayton II starting for Illinois, but the availability report lists Katin Houser — who took 48% of Illinois’ recent dropbacks — as questionable. The model’s quarterback input may be out of date."
-    ],
-    "availability": [
-      "Illinois’ availability report lists nine players as out, including offensive linemen Kai Pritchard and TJ McMillen."
-    ],
-    "script": {
-      "model": [
-        "Illinois’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 4.0% of its dropbacks, and Maryland’s defense sacks the quarterback on 9.2% of opponent dropbacks.",
-        "Illinois’ defense has to slow Maryland in the pass-rush matchup — Maryland’s offense has allowed a sack on 2.5% of its dropbacks.",
-        "Illinois’ defense has to come out ahead on long runs: it gives up explosive gains on 4.2% of opponent runs, against an offense that turns 4.9% of its runs into explosive gains.",
-        "Illinois’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.6% of its runs, and Maryland’s defense stops 14.3% of opponent runs at or behind the line."
-      ],
-      "market": [
-        "Maryland’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.5% of its dropbacks, and Illinois’ defense sacks the quarterback on 1.8% of opponent dropbacks.",
-        "Maryland’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.2% of opponent dropbacks, against an offense that has allowed a sack on 4.0% of its dropbacks.",
-        "Washington keeps producing at his season rate (59.7% completions, 6.3 yards per attempt, 10 TD, 5 INT)."
-      ]
-    },
-    "unknown": [
-      "Illinois’ update 2 Big Ten availability report (published Oct. 30) lists quarterback Katin Houser as questionable.",
-      "The model expects Michael Clayton II, but Katin Houser is listed as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Maryland and Illinois.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "QB_INPUT_CONFLICT",
-        "severity": "high",
-        "text": "EdgeDesk’s model is built on Michael Clayton II starting for Illinois, but the availability report lists Katin Houser — who took 48% of Illinois’ recent dropbacks — as questionable. The model’s quarterback input may be out of date."
-      },
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Maryland), sack rate (Maryland) and sack rate allowed (Illinois); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "QB_ABSENCE_APPLIED",
-        "severity": "high",
-        "text": "EdgeDesk’s main model subtracts a full quarterback absence (2.9 points) from Illinois, while its own play-by-play shows Illinois’ job shared rather than vacant and no official report confirms an absence. The replacement’s measured play is not priced."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-30T17:13:43.526Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      },
-      {
-        "label": "EdgeDesk input audit (model starter vs official availability report)",
-        "url": null,
-        "path": null,
-        "observed_at": "2026-10-31T12:08:14.137Z",
-        "verification": "CONFLICTING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }

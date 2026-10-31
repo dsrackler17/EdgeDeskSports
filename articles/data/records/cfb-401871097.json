@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T19:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1912,89 +1912,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1l25oeczajicm",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Louisiana Tech’s pass rush get to Jared Hollins?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.6 points.",
-    "gap": {
-      "points": 0.6,
-      "toward": "South Alabama",
-      "other": "Louisiana Tech"
-    },
-    "supporting": [
-      "EdgeDesk’s position-group ratings put South Alabama’s offensive line No. 21 nationally and Louisiana Tech’s No. 123.",
-      "EdgeDesk’s position-group ratings put South Alabama’s running backs No. 94 nationally and Louisiana Tech’s No. 134.",
-      "When Louisiana Tech has the ball (the line of scrimmage on running plays): Louisiana Tech’s offense is stopped at or behind the line on 18.5% of its runs, and South Alabama’s defense stops 18.7% of opponent runs at or behind the line (FBS average 17.5%).",
-      "Jared Hollins has completed 68 of 125 passes (54.4%) for 1,057 yards, 8.5 yards per attempt, 8 touchdowns and 3 interceptions in five games for South Alabama, and has been sacked on 5 of 130 dropbacks."
-    ],
-    "contradicting": [
-      "When South Alabama has the ball (the line of scrimmage on running plays): South Alabama’s offense is stopped at or behind the line on 13.8% of its runs, and Louisiana Tech’s defense stops 26.4% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When Louisiana Tech has the ball (third down): Louisiana Tech’s offense converts 45.4% of its third downs, and South Alabama’s defense allows opponents to convert 48.9% of their third downs (FBS average 39.5%).",
-      "When South Alabama has the ball (pass protection against the pass rush): South Alabama’s offense has allowed a sack on 2.8% of its dropbacks, and Louisiana Tech’s defense sacks the quarterback on 10.2% of opponent dropbacks (FBS average 5.7%).",
-      "When Louisiana Tech has the ball (the red zone): Louisiana Tech’s offense succeeds on 39.9% of its red-zone plays, and South Alabama’s defense allows success on 58.6% of opponent red-zone plays (FBS average 43.6%)."
-    ],
-    "quarterbacks": [
-      "Jared Hollins has completed 68 of 125 passes (54.4%) for 1,057 yards, 8.5 yards per attempt, 8 touchdowns and 3 interceptions in five games for South Alabama, and has been sacked on 5 of 130 dropbacks.",
-      "Bishop Davenport has completed 40 of 59 passes (67.8%) for 450 yards, 7.6 yards per attempt, 3 touchdowns and no interceptions in two games for South Alabama, and has been sacked on 2 of 61 dropbacks.",
-      "Blake Baker has completed 92 of 129 passes (71.3%) for 1,094 yards, 8.5 yards per attempt, 10 touchdowns and 1 interception in six games for Louisiana Tech, and has been sacked on 14 of 143 dropbacks.",
-      "Trey Kukuk has completed 52 of 78 passes (66.7%) for 505 yards, 6.5 yards per attempt, 3 touchdowns and 2 interceptions in six games for Louisiana Tech, and has been sacked on 2 of 80 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "South Alabama’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.8% of its dropbacks, and Louisiana Tech’s defense sacks the quarterback on 10.2% of opponent dropbacks.",
-        "South Alabama’s offense has to hold its own at the line of scrimmage against a defense that stops 26.4% of opponent runs at or behind the line.",
-        "South Alabama’s defense has to slow Louisiana Tech on third down — Louisiana Tech’s offense converts 45.4% of its third downs.",
-        "South Alabama’s defense has to come out ahead at the line of scrimmage: it stops 18.7% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 18.5% of its runs."
-      ],
-      "market": [
-        "Louisiana Tech’s defense has to come out ahead at the line of scrimmage: it stops 26.4% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 13.8% of its runs.",
-        "Louisiana Tech’s offense has to keep winning on third down: it converts 45.4% of its third downs, and South Alabama’s defense allows opponents to convert 48.9% of their third downs.",
-        "Louisiana Tech’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.2% of opponent dropbacks, against an offense that has allowed a sack on 2.8% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Louisiana Tech.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Louisiana Tech) and sack rate (Louisiana Tech); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-30T17:13:43.526Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T05:48:17.909Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-29T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T12:13:51.302Z"
+    "at": "2026-10-31T19:14:58.561Z"
   }
 }
