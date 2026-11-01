@@ -88,7 +88,7 @@ and whose result stands.
   - *Sync pending*: no grading run under these rules has finished yet. The
     page says how many candidates have been evaluated so far, and claims
     neither an empty slate nor that nobody qualifies.
-  - *Sync failed*: the holders update (every 10 minutes) last ended in error,
+  - *Sync failed*: the holders update (every 15 minutes) last ended in error,
     or has not succeeded for 30 minutes; or a grade failed after the current
     one, or the current one is more than 36 hours old. The page says which,
     since when, and that what it shows may be out of date.
@@ -267,6 +267,13 @@ written. It works like `bet_checker_rules()`:
 | `leagues`, `market_types` | NFL, college football, NBA, NHL, MLB; moneyline, spreads, totals | What is graded and shown. |
 | `upcoming_hours`, `holders_fresh_min`, `moved_min`, `fair_max_age_min`, `kickoff_tolerance_min` | 36, 30, 0.01, 90, 360 | Smart Money Tonight. |
 | `daily_request_ceiling`, `run_request_cap`, `breaker_minutes` | 40,000, 3,000, 15 | The gateway. |
+
+The gateway also holds **10,000** of each UTC day back for the `tonight` (holders)
+runs, a constant in `poly_api_acquire` (not a rule; owner's decision, 2026-10-31).
+Every other caller, the wallet, pool and grade schedules and the manual `run_now`
+runs, may reserve only up to the ceiling less what of those 10,000 the tonight runs
+have not yet used that day. On 2026-10-31 a manual run and the overnight wallet runs
+used 34,525 of the 40,000 and every holders run after 11:10 UTC was refused.
 
 ## How a bettor is graded
 
@@ -452,7 +459,7 @@ results, never with a claim.
   It is labelled **Experimental** until H-RADAR-01 has passed its registered
   criteria, and a **small sample** until 200 cards are graded. Both labels
   are words.
-- **The job.** The 10-minute `tonight` run publishes and grades after it has
+- **The job.** The 15-minute `tonight` run publishes and grades after it has
   stored the holders, the prices and the resolutions. While
   `radar_record.sql` is not applied, the run warns `record_not_installed` and
   goes on.
@@ -464,7 +471,7 @@ results, never with a claim.
 
 | Job | When | What |
 |---|---|---|
-| `tonight` | every 10 minutes | Reads the covered leagues' open game events starting within the next 60 hours (5 a page, at most 16 pages a series) and upserts their markets, matching each once. For the matched markets of games within 36 hours **at the board's own lines**, it stores who holds each side (pool wallets only) and each outcome's price. An alternate line is matched but not read for holders: it has no EdgeDesk fair to compare with. It also stores the resolution of matched markets whose game started in the last two days. |
+| `tonight` | every 15 minutes | Reads the covered leagues' open game events starting within the next 60 hours (5 a page, at most 16 pages a series) and upserts their markets, matching each once. For the matched markets of games within 36 hours **at the board's own lines**, it stores who holds each side (pool wallets only) and each outcome's price. An alternate line is matched but not read for holders: it has no EdgeDesk fair to compare with. It also stores the resolution of matched markets whose game started in the last two days. |
 | `pool` | 06:07 | Puts the sports leaderboard's top 200 by volume in the pool. Every other wallet leaves it. |
 | `wallets` | every 5 minutes, 06:10 to 09:55 | Takes three pool wallets a run: first every wallet whose history is not truncated (only those can be top-graded), then the least recently read. It reads their activity since the cursor, the markets they traded, and their covered trades with hashes. Once a wallet's activity is read up to the present, each newly resolved bet among its newest 150 (`max_bets_per_wallet`, what the grade reads) is graded once: its close, CLV and the 5- and 15-minute follow. An older bet is not graded. |
 | `grade` | 10:17 | Regrades every pool wallet as one versioned run. |
@@ -476,7 +483,7 @@ results, never with a claim.
 | `poly_trades` | Append-only, with transaction hashes. |
 | `poly_bets` | Append-only, written once when the market resolved. |
 | `poly_grade_runs`, `poly_wallet_grades` | Append-only, versioned per grading run. |
-| `poly_holder_snapshots`, `poly_price_snapshots` | Append-only, every 10 minutes. |
+| `poly_holder_snapshots`, `poly_price_snapshots` | Append-only, every 15 minutes. |
 | `poly_api_days`, `poly_api_grants`, `poly_api_settlements` | The gateway's ledger. Grants and settlements are append-only. |
 | `poly_api_progress` | Each run's requests so far, reported every 20 requests (`poly_api_progress()`). A grant still unsettled 15 minutes after it was given (its run died) is settled by the next `poly_api_acquire()` at the run's last report plus 100, never more than it was granted, recorded as expired. Before this (owner's decision, 2026-10-30), a dead run held its whole grant for the rest of the UTC day: on 2026-10-30, 56 tonight grants held 22,215 of the 40,000 requests, while 17,785 were used. The ceiling and the per-run cap are unchanged. |
 | `poly_sync_runs`, `poly_alerts`, `radar_config_log` | Append-only. |
@@ -620,7 +627,7 @@ Radar suites run first, and a report row that says CHECK THIS fails the run.
 until none is due, then the grade, one call at a time, each answer awaited
 before the next. It stops the wallet calls while fewer than
 `run_now_reserve` (8,000) of the day's 40,000 Polymarket requests remain, so
-the 10-minute tonight runs keep theirs; the 06:10 UTC schedule takes the rest.
+the 15-minute tonight runs keep theirs; the 06:10 UTC schedule takes the rest.
 Every wallets run answers within Supabase's 150 s request limit: after 75 s
 it starts no new wallet, activity page or graded bet, and a wallet it did not
 finish stays due with its place kept (the 30-page cap counts across runs).

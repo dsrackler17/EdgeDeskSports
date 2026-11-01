@@ -8,7 +8,7 @@
 --   select vault.create_secret('<the secret>', 'polymarket_sync_cron_secret');
 --
 -- WHEN (UTC; the night is 02:00 to 06:30 in New York, after the late games):
---   polymarket_sync_tonight   every 10 minutes: the covered leagues' open game
+--   polymarket_sync_tonight   every 15 minutes: the covered leagues' open game
 --                             markets, matched to EdgeDesk games; who holds
 --                             each side of the upcoming ones, and the price
 --   polymarket_sync_pool      daily at 06:07: the sports leaderboard pool
@@ -18,7 +18,8 @@
 --   polymarket_sync_grade     daily at 10:17: every pool wallet regraded, one
 --                             versioned run
 -- Each run asks poly_api_acquire() for its grant first, so the gateway's
--- daily ceiling holds however the schedule is changed. While
+-- daily ceiling holds however the schedule is changed, and 10,000 of it are
+-- held back for the tonight runs (radar.sql, poly_api_acquire). While
 -- POLYMARKET_DATA_ENABLED is off, every poke is answered "skipped" and
 -- nothing is asked of Polymarket.
 --
@@ -74,15 +75,15 @@ do $g$ begin
 end $g$;
 
 select cron.unschedule(jobid) from cron.job where jobname in ('polymarket_sync_tonight', 'polymarket_sync_pool', 'polymarket_sync_wallets', 'polymarket_sync_grade');
-select cron.schedule('polymarket_sync_tonight', '*/10 * * * *', $job$ select public.radar_poke('tonight'); $job$);
+select cron.schedule('polymarket_sync_tonight', '*/15 * * * *', $job$ select public.radar_poke('tonight'); $job$);
 select cron.schedule('polymarket_sync_pool', '7 6 * * *', $job$ select public.radar_poke('pool'); $job$);
 select cron.schedule('polymarket_sync_wallets', '10-55/5 6-9 * * *', $job$ select public.radar_poke('wallets'); $job$);
 select cron.schedule('polymarket_sync_grade', '17 10 * * *', $job$ select public.radar_poke('grade'); $job$);
 
 -- THE REPORT. Every row should say ok.
 select piece, state from (
-  select '1 tonight runs every 10 minutes' as piece,
-         case when exists (select 1 from cron.job where jobname = 'polymarket_sync_tonight' and schedule = '*/10 * * * *' and active) then 'ok' else 'CHECK THIS' end as state
+  select '1 tonight runs every 15 minutes' as piece,
+         case when exists (select 1 from cron.job where jobname = 'polymarket_sync_tonight' and schedule = '*/15 * * * *' and active) then 'ok' else 'CHECK THIS' end as state
   union all select '2 the pool is refreshed daily at 06:07 UTC',
          case when exists (select 1 from cron.job where jobname = 'polymarket_sync_pool' and schedule = '7 6 * * *' and active) then 'ok' else 'CHECK THIS' end
   union all select '3 wallets run every 5 minutes, 06:10 to 09:55 UTC',
