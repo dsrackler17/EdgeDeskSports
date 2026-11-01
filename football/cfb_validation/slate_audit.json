@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-11-01T13:08:23.447Z",
- "board_generated_at": "2026-11-01T13:08:16.275Z",
+ "generated_at": "2026-11-01T14:08:32.682Z",
+ "board_generated_at": "2026-11-01T14:08:23.138Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -22,15 +22,15 @@
    "named": false,
    "edgedesk": "Utah −12.5",
    "market": "Utah −4.5",
-   "books": 2,
+   "books": 1,
    "gap": 7.9,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "VERIFIED_MAJOR",
-   "research_label": "VERIFIED MAJOR DISAGREEMENT",
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
    "decision_status": "PASS",
-   "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
-   "root_cause": "VALID_MODEL_DISAGREEMENT",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
    "requirements": [
     {
      "requirement": "correct game",
@@ -44,8 +44,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "PASS",
-     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
     },
     {
      "requirement": "current team states",
@@ -79,7 +79,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "VERIFIED holds: every required check passed."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail."
   }
  ],
  "inconsistent": [],
