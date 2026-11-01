@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-31T23:42:26.296Z",
+ "generated_at": "2026-11-01T00:08:31.267Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
@@ -29,13 +29,13 @@
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 64,
-    "to": 52
+    "to": 53
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 92,
-    "to": 19
+    "to": 17
    }
   ],
   "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -1070,42 +1070,6 @@
    "price_state": "PRICE HISTORY UNKNOWN"
   },
   {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-31T20:48:13.327Z",
-   "old_fair": 0.05,
-   "new_fair": 0.35,
-   "change": 0.3,
-   "material": false,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Cale Hellums (COMPETITION) → Cale Hellums (PREVIOUS_GAME)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.17
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401862814",
-   "game": "Army @ Memphis",
-   "market_then": null,
-   "market_now": -6,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
    "from_at": "2026-10-28T06:00:25.251Z",
    "to_at": "2026-10-31T21:44:13.942Z",
    "old_fair": 8.2,
@@ -1388,83 +1352,6 @@
    "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE HISTORY UNKNOWN"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-31T20:48:13.327Z",
-   "old_fair": -9.14,
-   "new_fair": -8.99,
-   "change": 0.15,
-   "material": false,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: KJ Jackson (PREVIOUS_GAME) → KJ Jackson (COMPETITION)"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Austin Simmons (PREVIOUS_GAME) → Austin Simmons (COMPETITION)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.15
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401856733",
-   "game": "Missouri @ Arkansas",
-   "market_then": null,
-   "market_now": 10,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-31T20:48:13.327Z",
-   "old_fair": 8.88,
-   "new_fair": 8.78,
-   "change": -0.1,
-   "material": false,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: Anthony Colandrea (PREVIOUS_GAME) → Anthony Colandrea (COMPETITION)"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Elijah Brown (PREVIOUS_GAME) → Demond Williams Jr. (COMPETITION)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -0.69
-    },
-    {
-     "cause": "QB_ABSENCE_OR_AVAILABILITY",
-     "term": "injury",
-     "points": 0.59
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401858504",
-   "game": "Washington @ Nebraska",
-   "market_then": null,
-   "market_now": -7.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-10-21T04:06:23.535Z",
@@ -1897,7 +1784,7 @@
   },
   {
    "from_at": "2026-10-28T06:00:25.251Z",
-   "to_at": "2026-10-31T20:48:13.327Z",
+   "to_at": "2026-10-31T21:44:13.942Z",
    "old_fair": 8.24,
    "new_fair": 8.24,
    "change": 0,
@@ -1912,10 +1799,10 @@
    "game_id": "401856849",
    "game": "BYU @ Utah",
    "market_then": -3,
-   "market_now": -3,
-   "market_change": 0,
+   "market_now": -4.5,
+   "market_change": -1.5,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {

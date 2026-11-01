@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_rating_divergence_v1",
- "generated_at": "2026-10-31T23:42:26.296Z",
+ "generated_at": "2026-11-01T00:08:31.267Z",
  "names": {
   "current": {
    "key": "CURRENT_FBS_POWER_RATING",
@@ -35,25 +35,25 @@
   "state": -5.037,
   "scale_offset": -5.037
  },
- "median_abs": 3.45,
- "p90_abs": 8.151,
- "max_abs": 14.571,
+ "median_abs": 3.902,
+ "p90_abs": 8.106,
+ "max_abs": 13.996,
  "bands": {
   "basis": "this build’s own distribution: |divergence| p50 → ELEVATED, p90 → LARGE",
-  "elevated": 3.45,
-  "large": 8.15
+  "elevated": 3.9,
+  "large": 8.11
  },
  "flagged": [
   "UTEP",
+  "UL Monroe",
   "Boise State",
   "Arizona",
-  "UL Monroe",
   "Northern Illinois",
   "Sam Houston",
   "Army",
   "Duke",
-  "Colorado",
   "Vanderbilt",
+  "Old Dominion",
   "Alabama",
   "Miami",
   "Akron",
@@ -65,21 +65,44 @@
    "team": "UTEP",
    "conference": "Mountain West",
    "current": -5.47,
-   "state": -25.08,
-   "carried": -22.12,
-   "this_season": -29.51,
+   "state": -24.5,
+   "carried": -21.98,
+   "this_season": -28.28,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -19.61,
-   "rating_state_divergence": 14.57,
-   "abs_divergence": 14.57,
+   "games_played": 8,
+   "difference": -19.03,
+   "rating_state_divergence": 14,
+   "abs_divergence": 14,
    "band": "LARGE",
    "flagged": true,
    "why": [
-    "The pricing state is 60% the long-run trained state (−22.1) and 40% this season’s own track (−29.5): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
+    "The pricing state is 60% the long-run trained state (−22.0) and 40% this season’s own track (−28.3): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 68% (−5.2 from 8 games), with −4.4 of measured carryover from last season.",
     "The current rating includes a roster/talent term of −4.1 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +14.6."
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +14.0."
+   ],
+   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
+  },
+  {
+   "key": "ulmonroe",
+   "team": "UL Monroe",
+   "conference": "Sun Belt",
+   "current": -6.35,
+   "state": -24.18,
+   "carried": -21.55,
+   "this_season": -28.11,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -17.83,
+   "rating_state_divergence": 12.79,
+   "abs_divergence": 12.79,
+   "band": "LARGE",
+   "flagged": true,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−21.6) and 40% this season’s own track (−28.1): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−7.4 from 7 games), with −3.7 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −3.0 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +12.8."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
@@ -125,29 +148,6 @@
     "The pricing state is 60% the long-run trained state (+12.3) and 40% this season’s own track (+3.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+3.0 from 8 games), with −0.0 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −11.6."
-   ],
-   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
-  },
-  {
-   "key": "ulmonroe",
-   "team": "UL Monroe",
-   "conference": "Sun Belt",
-   "current": -6.35,
-   "state": -22.39,
-   "carried": -20.22,
-   "this_season": -25.64,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -16.04,
-   "rating_state_divergence": 11,
-   "abs_divergence": 11,
-   "band": "LARGE",
-   "flagged": true,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−20.2) and 40% this season’s own track (−25.6): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−7.4 from 7 games), with −3.7 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −3.0 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +11.0."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
@@ -242,28 +242,6 @@
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
   {
-   "key": "colorado",
-   "team": "Colorado",
-   "conference": "Big 12",
-   "current": 1.27,
-   "state": -12.84,
-   "carried": -9.27,
-   "this_season": -18.2,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -14.11,
-   "rating_state_divergence": 9.08,
-   "abs_divergence": 9.08,
-   "band": "LARGE",
-   "flagged": true,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−9.3) and 40% this season’s own track (−18.2): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+2.7 from 8 games), with −1.7 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +9.1."
-   ],
-   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
-  },
-  {
    "key": "vanderbilt",
    "team": "Vanderbilt",
    "conference": "SEC",
@@ -282,6 +260,29 @@
     "The pricing state is 60% the long-run trained state (−3.9) and 40% this season’s own track (−20.0): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+1.3 from 8 games), with +9.5 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +9.1."
+   ],
+   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
+  },
+  {
+   "key": "olddominion",
+   "team": "Old Dominion",
+   "conference": "Sun Belt",
+   "current": -4.64,
+   "state": -18.38,
+   "carried": -13.39,
+   "this_season": -25.86,
+   "prior_weight": 0.6,
+   "games_played": 9,
+   "difference": -13.74,
+   "rating_state_divergence": 8.7,
+   "abs_divergence": 8.7,
+   "band": "LARGE",
+   "flagged": true,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−13.4) and 40% this season’s own track (−25.9): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−7.3 from 9 games), with +3.2 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −3.7 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +8.7."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
@@ -338,21 +339,44 @@
    "team": "UTEP",
    "conference": "Mountain West",
    "current": -5.47,
-   "state": -25.08,
-   "carried": -22.12,
-   "this_season": -29.51,
+   "state": -24.5,
+   "carried": -21.98,
+   "this_season": -28.28,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -19.61,
-   "rating_state_divergence": 14.57,
-   "abs_divergence": 14.57,
+   "games_played": 8,
+   "difference": -19.03,
+   "rating_state_divergence": 14,
+   "abs_divergence": 14,
    "band": "LARGE",
    "flagged": true,
    "why": [
-    "The pricing state is 60% the long-run trained state (−22.1) and 40% this season’s own track (−29.5): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
+    "The pricing state is 60% the long-run trained state (−22.0) and 40% this season’s own track (−28.3): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 68% (−5.2 from 8 games), with −4.4 of measured carryover from last season.",
     "The current rating includes a roster/talent term of −4.1 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +14.6."
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +14.0."
+   ],
+   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
+  },
+  {
+   "key": "ulmonroe",
+   "team": "UL Monroe",
+   "conference": "Sun Belt",
+   "current": -6.35,
+   "state": -24.18,
+   "carried": -21.55,
+   "this_season": -28.11,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -17.83,
+   "rating_state_divergence": 12.79,
+   "abs_divergence": 12.79,
+   "band": "LARGE",
+   "flagged": true,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−21.6) and 40% this season’s own track (−28.1): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−7.4 from 7 games), with −3.7 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −3.0 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +12.8."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
@@ -398,29 +422,6 @@
     "The pricing state is 60% the long-run trained state (+12.3) and 40% this season’s own track (+3.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+3.0 from 8 games), with −0.0 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −11.6."
-   ],
-   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
-  },
-  {
-   "key": "ulmonroe",
-   "team": "UL Monroe",
-   "conference": "Sun Belt",
-   "current": -6.35,
-   "state": -22.39,
-   "carried": -20.22,
-   "this_season": -25.64,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -16.04,
-   "rating_state_divergence": 11,
-   "abs_divergence": 11,
-   "band": "LARGE",
-   "flagged": true,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−20.2) and 40% this season’s own track (−25.6): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−7.4 from 7 games), with −3.7 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −3.0 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +11.0."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
@@ -515,28 +516,6 @@
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
   {
-   "key": "colorado",
-   "team": "Colorado",
-   "conference": "Big 12",
-   "current": 1.27,
-   "state": -12.84,
-   "carried": -9.27,
-   "this_season": -18.2,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -14.11,
-   "rating_state_divergence": 9.08,
-   "abs_divergence": 9.08,
-   "band": "LARGE",
-   "flagged": true,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−9.3) and 40% this season’s own track (−18.2): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+2.7 from 8 games), with −1.7 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +9.1."
-   ],
-   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
-  },
-  {
    "key": "vanderbilt",
    "team": "Vanderbilt",
    "conference": "SEC",
@@ -555,6 +534,29 @@
     "The pricing state is 60% the long-run trained state (−3.9) and 40% this season’s own track (−20.0): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+1.3 from 8 games), with +9.5 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +9.1."
+   ],
+   "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
+  },
+  {
+   "key": "olddominion",
+   "team": "Old Dominion",
+   "conference": "Sun Belt",
+   "current": -4.64,
+   "state": -18.38,
+   "carried": -13.39,
+   "this_season": -25.86,
+   "prior_weight": 0.6,
+   "games_played": 9,
+   "difference": -13.74,
+   "rating_state_divergence": 8.7,
+   "abs_divergence": 8.7,
+   "band": "LARGE",
+   "flagged": true,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−13.4) and 40% this season’s own track (−25.9): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−7.3 from 9 games), with +3.2 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −3.7 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +8.7."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
@@ -651,29 +653,6 @@
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
   },
   {
-   "key": "indiana",
-   "team": "Indiana",
-   "conference": "Big Ten",
-   "current": 9.56,
-   "state": 12.61,
-   "carried": 18.22,
-   "this_season": 4.2,
-   "prior_weight": 0.6,
-   "games_played": 8,
-   "difference": 3.05,
-   "rating_state_divergence": -8.09,
-   "abs_divergence": 8.09,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+18.2) and 40% this season’s own track (+4.2): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 71% (+9.1 from 9 games), with +8.7 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +7.0 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −8.1."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
    "key": "iowa",
    "team": "Iowa",
    "conference": "Big Ten",
@@ -743,6 +722,28 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
+   "key": "colorado",
+   "team": "Colorado",
+   "conference": "Big 12",
+   "current": 1.27,
+   "state": -11.4,
+   "carried": -7.85,
+   "this_season": -16.72,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -12.67,
+   "rating_state_divergence": 7.63,
+   "abs_divergence": 7.63,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−7.9) and 40% this season’s own track (−16.7): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+2.7 from 8 games), with −1.7 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +7.6."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
    "key": "olemiss",
    "team": "Ole Miss",
    "conference": "SEC",
@@ -766,6 +767,29 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
+   "key": "liberty",
+   "team": "Liberty",
+   "conference": "Conference USA",
+   "current": 4.39,
+   "state": 6.74,
+   "carried": 7.02,
+   "this_season": 6.31,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": 2.35,
+   "rating_state_divergence": -7.38,
+   "abs_divergence": 7.38,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+7.0) and 40% this season’s own track (+6.3): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+7.1 from 8 games), with −2.0 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.4 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −7.4."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
    "key": "newmexicostate",
    "team": "New Mexico State",
    "conference": "Conference USA",
@@ -784,29 +808,6 @@
     "The pricing state is 60% the long-run trained state (−14.2) and 40% this season’s own track (−21.6): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (−4.8 from 8 games), with −4.9 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +7.3."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
-   "key": "northwestern",
-   "team": "Northwestern",
-   "conference": "Big Ten",
-   "current": 4.27,
-   "state": 6.29,
-   "carried": 9.73,
-   "this_season": 1.14,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": 2.02,
-   "rating_state_divergence": -7.06,
-   "abs_divergence": 7.06,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+9.7) and 40% this season’s own track (+1.1): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+6.5 from 8 games), with −1.5 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +2.9 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −7.1."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -834,25 +835,25 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "olddominion",
-   "team": "Old Dominion",
-   "conference": "Sun Belt",
-   "current": -4.64,
-   "state": -16.13,
-   "carried": -11.24,
-   "this_season": -23.46,
+   "key": "wakeforest",
+   "team": "Wake Forest",
+   "conference": "ACC",
+   "current": 11.29,
+   "state": 12.92,
+   "carried": 15.13,
+   "this_season": 9.6,
    "prior_weight": 0.6,
    "games_played": 8,
-   "difference": -11.49,
-   "rating_state_divergence": 6.45,
-   "abs_divergence": 6.45,
+   "difference": 1.63,
+   "rating_state_divergence": -6.67,
+   "abs_divergence": 6.67,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (−11.2) and 40% this season’s own track (−23.5): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−7.3 from 9 games), with +3.2 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −3.7 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +6.5."
+    "The pricing state is 60% the long-run trained state (+15.1) and 40% this season’s own track (+9.6): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 70% (+13.7 from 8 games), with +4.4 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +3.6 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −6.7."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -880,29 +881,6 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "southernmiss",
-   "team": "Southern Miss",
-   "conference": "Sun Belt",
-   "current": -4.4,
-   "state": -15.8,
-   "carried": -12.95,
-   "this_season": -20.08,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -11.4,
-   "rating_state_divergence": 6.37,
-   "abs_divergence": 6.37,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−12.9) and 40% this season’s own track (−20.1): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−4.2 from 7 games), with −3.0 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −4.1 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +6.4."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
    "key": "southflorida",
    "team": "South Florida",
    "conference": "American",
@@ -921,6 +899,52 @@
     "The pricing state is 60% the long-run trained state (+2.6) and 40% this season’s own track (−6.3): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (−4.1 from 8 games), with +3.3 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −6.2."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "stanford",
+   "team": "Stanford",
+   "conference": "ACC",
+   "current": -2.8,
+   "state": -13.99,
+   "carried": -9.69,
+   "this_season": -20.43,
+   "prior_weight": 0.6,
+   "games_played": 9,
+   "difference": -11.19,
+   "rating_state_divergence": 6.15,
+   "abs_divergence": 6.15,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−9.7) and 40% this season’s own track (−20.4): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−4.7 from 9 games), with +2.1 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −1.5 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +6.2."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "virginia",
+   "team": "Virginia",
+   "conference": "ACC",
+   "current": 3.61,
+   "state": -7.55,
+   "carried": -2.89,
+   "this_season": -14.54,
+   "prior_weight": 0.6,
+   "games_played": 9,
+   "difference": -11.16,
+   "rating_state_divergence": 6.13,
+   "abs_divergence": 6.13,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−2.9) and 40% this season’s own track (−14.5): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 71% (+3.3 from 9 games), with +3.7 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.4 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +6.1."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -948,6 +972,29 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
+   "key": "indiana",
+   "team": "Indiana",
+   "conference": "Big Ten",
+   "current": 9.56,
+   "state": 10.53,
+   "carried": 16.22,
+   "this_season": 2,
+   "prior_weight": 0.6,
+   "games_played": 9,
+   "difference": 0.97,
+   "rating_state_divergence": -6.01,
+   "abs_divergence": 6.01,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+16.2) and 40% this season’s own track (+2.0): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 71% (+9.1 from 9 games), with +8.7 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +7.0 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −6.0."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
    "key": "oklahoma",
    "team": "Oklahoma",
    "conference": "SEC",
@@ -971,29 +1018,6 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "utahstate",
-   "team": "Utah State",
-   "conference": "Pac-12",
-   "current": 1.6,
-   "state": -9.31,
-   "carried": -5.24,
-   "this_season": -15.43,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -10.91,
-   "rating_state_divergence": 5.88,
-   "abs_divergence": 5.88,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−5.2) and 40% this season’s own track (−15.4): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+1.2 from 8 games), with +2.3 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.1 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +5.9."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
    "key": "pittsburgh",
    "team": "Pittsburgh",
    "conference": "ACC",
@@ -1012,6 +1036,29 @@
     "The pricing state is 60% the long-run trained state (−0.5) and 40% this season’s own track (−10.6): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+6.5 from 8 games), with +5.4 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +5.8."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "coastalcarolina",
+   "team": "Coastal Carolina",
+   "conference": "Sun Belt",
+   "current": -10.78,
+   "state": -10.05,
+   "carried": -8,
+   "this_season": -13.12,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": 0.73,
+   "rating_state_divergence": -5.77,
+   "abs_divergence": 5.77,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−8.0) and 40% this season’s own track (−13.1): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−12.4 from 8 games), with −5.6 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −3.9 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −5.8."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -1222,6 +1269,29 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
+   "key": "northwestern",
+   "team": "Northwestern",
+   "conference": "Big Ten",
+   "current": 4.27,
+   "state": 4.5,
+   "carried": 8.57,
+   "this_season": -1.61,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": 0.23,
+   "rating_state_divergence": -5.26,
+   "abs_divergence": 5.26,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+8.6) and 40% this season’s own track (−1.6): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+6.5 from 8 games), with −1.5 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +2.9 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −5.3."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
    "key": "westernmichigan",
    "team": "Western Michigan",
    "conference": "MAC",
@@ -1239,29 +1309,6 @@
    "why": [
     "The pricing state is 60% the long-run trained state (−1.0) and 40% this season’s own track (−9.9): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 74% (−6.6 from 9 games), with +0.4 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −5.2."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
-   "key": "northdakotastate",
-   "team": "North Dakota State",
-   "conference": "Mountain West",
-   "current": -1.21,
-   "state": -1.04,
-   "carried": 0.1,
-   "this_season": -2.75,
-   "prior_weight": 0.6,
-   "games_played": 8,
-   "difference": 0.17,
-   "rating_state_divergence": -5.2,
-   "abs_divergence": 5.2,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+0.1) and 40% this season’s own track (−2.8): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−0.0 from 9 games).",
-    "The current rating includes a roster/talent term of −4.3 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −5.2."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
@@ -1358,28 +1405,6 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "temple",
-   "team": "Temple",
-   "conference": "American",
-   "current": -4.4,
-   "state": -14.5,
-   "carried": -10.39,
-   "this_season": -20.67,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -10.1,
-   "rating_state_divergence": 5.07,
-   "abs_divergence": 5.07,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−10.4) and 40% this season’s own track (−20.7): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−4.5 from 8 games), with −4.1 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +5.1."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
    "key": "westernkentucky",
    "team": "Western Kentucky",
    "conference": "Conference USA",
@@ -1399,6 +1424,29 @@
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (−4.4 from 8 games), with +0.1 of measured carryover from last season.",
     "The current rating includes a roster/talent term of −1.9 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +5.0."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "pennstate",
+   "team": "Penn State",
+   "conference": "Big Ten",
+   "current": 1.18,
+   "state": 0.99,
+   "carried": 5.9,
+   "this_season": -6.38,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -0.19,
+   "rating_state_divergence": -4.84,
+   "abs_divergence": 4.84,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+5.9) and 40% this season’s own track (−6.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 70% (−0.6 from 7 games), with +4.6 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.5 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.8."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -1449,6 +1497,120 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
+   "key": "utahstate",
+   "team": "Utah State",
+   "conference": "Pac-12",
+   "current": 1.6,
+   "state": -8.23,
+   "carried": -4.52,
+   "this_season": -13.8,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -9.83,
+   "rating_state_divergence": 4.79,
+   "abs_divergence": 4.79,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−4.5) and 40% this season’s own track (−13.8): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+1.2 from 8 games), with +2.3 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.1 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +4.8."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "minnesota",
+   "team": "Minnesota",
+   "conference": "Big Ten",
+   "current": -1.83,
+   "state": -2.07,
+   "carried": 1.74,
+   "this_season": -7.8,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -0.24,
+   "rating_state_divergence": -4.79,
+   "abs_divergence": 4.79,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+1.7) and 40% this season’s own track (−7.8): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−1.4 from 8 games), with −3.2 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.7 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.8."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "temple",
+   "team": "Temple",
+   "conference": "American",
+   "current": -4.4,
+   "state": -14.21,
+   "carried": -10.19,
+   "this_season": -20.23,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -9.81,
+   "rating_state_divergence": 4.77,
+   "abs_divergence": 4.77,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−10.2) and 40% this season’s own track (−20.2): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−4.5 from 8 games), with −4.1 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +4.8."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "georgia",
+   "team": "Georgia",
+   "conference": "SEC",
+   "current": 12.98,
+   "state": 12.65,
+   "carried": 17.24,
+   "this_season": 5.76,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -0.33,
+   "rating_state_divergence": -4.71,
+   "abs_divergence": 4.71,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+17.2) and 40% this season’s own track (+5.8): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+15.9 from 8 games), with +5.9 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +4.6 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.7."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "northdakotastate",
+   "team": "North Dakota State",
+   "conference": "Mountain West",
+   "current": -1.21,
+   "state": -1.62,
+   "carried": -0.04,
+   "this_season": -3.98,
+   "prior_weight": 0.6,
+   "games_played": 9,
+   "difference": -0.41,
+   "rating_state_divergence": -4.63,
+   "abs_divergence": 4.63,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−0.0) and 40% this season’s own track (−4.0): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−0.0 from 9 games).",
+    "The current rating includes a roster/talent term of −4.3 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.6."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
    "key": "middletennessee",
    "team": "Middle Tennessee",
    "conference": "Conference USA",
@@ -1472,25 +1634,48 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "stanford",
-   "team": "Stanford",
-   "conference": "ACC",
-   "current": -2.8,
-   "state": -12.4,
-   "carried": -8.33,
-   "this_season": -18.49,
+   "key": "southernmiss",
+   "team": "Southern Miss",
+   "conference": "Sun Belt",
+   "current": -4.4,
+   "state": -14.01,
+   "carried": -11.61,
+   "this_season": -17.61,
    "prior_weight": 0.6,
    "games_played": 8,
-   "difference": -9.6,
-   "rating_state_divergence": 4.56,
+   "difference": -9.61,
+   "rating_state_divergence": 4.57,
+   "abs_divergence": 4.57,
+   "band": "ELEVATED",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−11.6) and 40% this season’s own track (−17.6): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−4.2 from 7 games), with −3.0 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −4.1 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +4.6."
+   ],
+   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+  },
+  {
+   "key": "airforce",
+   "team": "Air Force",
+   "conference": "Mountain West",
+   "current": -4.79,
+   "state": -5.27,
+   "carried": -3.2,
+   "this_season": -8.36,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -0.48,
+   "rating_state_divergence": -4.56,
    "abs_divergence": 4.56,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (−8.3) and 40% this season’s own track (−18.5): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−4.7 from 9 games), with +2.1 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −1.5 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +4.6."
+    "The pricing state is 60% the long-run trained state (−3.2) and 40% this season’s own track (−8.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−3.5 from 8 games), with −7.5 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −1.0 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.6."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -1587,25 +1772,25 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "liberty",
-   "team": "Liberty",
-   "conference": "Conference USA",
-   "current": 4.39,
-   "state": 3.65,
-   "carried": 4.13,
-   "this_season": 2.93,
+   "key": "kansasstate",
+   "team": "Kansas State",
+   "conference": "Big 12",
+   "current": 3.75,
+   "state": -5.71,
+   "carried": -0.74,
+   "this_season": -13.16,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -0.74,
-   "rating_state_divergence": -4.3,
-   "abs_divergence": 4.3,
+   "games_played": 8,
+   "difference": -9.46,
+   "rating_state_divergence": 4.42,
+   "abs_divergence": 4.42,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (+4.1) and 40% this season’s own track (+2.9): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+7.1 from 8 games), with −2.0 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.4 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.3."
+    "The pricing state is 60% the long-run trained state (−0.7) and 40% this season’s own track (−13.2): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.8 from 8 games), with +0.8 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +3.3 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +4.4."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -1656,47 +1841,25 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "newmexico",
-   "team": "New Mexico",
-   "conference": "Mountain West",
-   "current": 2.98,
-   "state": 2.11,
-   "carried": 4.43,
-   "this_season": -1.38,
+   "key": "utah",
+   "team": "Utah",
+   "conference": "Big 12",
+   "current": 12.37,
+   "state": 11.42,
+   "carried": 15.17,
+   "this_season": 5.78,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -0.87,
-   "rating_state_divergence": -4.16,
-   "abs_divergence": 4.16,
+   "games_played": 8,
+   "difference": -0.95,
+   "rating_state_divergence": -4.08,
+   "abs_divergence": 4.08,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (+4.4) and 40% this season’s own track (−1.4): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.4 from 7 games), with −0.5 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.5 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.2."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
-   "key": "marshall",
-   "team": "Marshall",
-   "conference": "Sun Belt",
-   "current": -4.83,
-   "state": -13.89,
-   "carried": -10.79,
-   "this_season": -18.55,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -9.06,
-   "rating_state_divergence": 4.03,
-   "abs_divergence": 4.03,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−10.8) and 40% this season’s own track (−18.5): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−6.8 from 8 games), with −0.8 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +4.0."
+    "The pricing state is 60% the long-run trained state (+15.2) and 40% this season’s own track (+5.8): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+15.2 from 8 games), with +5.5 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +4.0 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −4.1."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -1746,29 +1909,6 @@
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
   {
-   "key": "pennstate",
-   "team": "Penn State",
-   "conference": "Big Ten",
-   "current": 1.18,
-   "state": -0.02,
-   "carried": 5.51,
-   "this_season": -8.3,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -1.2,
-   "rating_state_divergence": -3.84,
-   "abs_divergence": 3.84,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+5.5) and 40% this season’s own track (−8.3): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 70% (−0.6 from 7 games), with +4.6 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.5 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.8."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
    "key": "ballstate",
    "team": "Ball State",
    "conference": "MAC",
@@ -1781,7 +1921,7 @@
    "difference": -8.88,
    "rating_state_divergence": 3.84,
    "abs_divergence": 3.84,
-   "band": "ELEVATED",
+   "band": "NORMAL",
    "flagged": false,
    "why": [
     "The pricing state is 60% the long-run trained state (−15.8) and 40% this season’s own track (−22.0): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
@@ -1789,7 +1929,29 @@
     "The current rating includes a roster/talent term of −3.0 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +3.8."
    ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "louisianatech",
+   "team": "Louisiana Tech",
+   "conference": "Sun Belt",
+   "current": -1.14,
+   "state": -2.38,
+   "carried": -0.16,
+   "this_season": -5.71,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -1.24,
+   "rating_state_divergence": -3.79,
+   "abs_divergence": 3.79,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−0.2) and 40% this season’s own track (−5.7): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−0.5 from 8 games), with −2.7 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.8."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
    "key": "troy",
@@ -1804,7 +1966,7 @@
    "difference": -8.82,
    "rating_state_divergence": 3.79,
    "abs_divergence": 3.79,
-   "band": "ELEVATED",
+   "band": "NORMAL",
    "flagged": false,
    "why": [
     "The pricing state is 60% the long-run trained state (−8.7) and 40% this season’s own track (−16.5): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
@@ -1812,30 +1974,7 @@
     "The current rating includes a roster/talent term of −1.7 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +3.8."
    ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
-   "key": "wakeforest",
-   "team": "Wake Forest",
-   "conference": "ACC",
-   "current": 11.29,
-   "state": 10,
-   "carried": 12.38,
-   "this_season": 6.43,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -1.29,
-   "rating_state_divergence": -3.75,
-   "abs_divergence": 3.75,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+12.4) and 40% this season’s own track (+6.4): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 70% (+13.7 from 8 games), with +4.4 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +3.6 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.8."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
    "key": "kentucky",
@@ -1850,14 +1989,14 @@
    "difference": -1.33,
    "rating_state_divergence": -3.71,
    "abs_divergence": 3.71,
-   "band": "ELEVATED",
+   "band": "NORMAL",
    "flagged": false,
    "why": [
     "The pricing state is 60% the long-run trained state (+6.0) and 40% this season’s own track (−3.1): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+4.9 from 8 games), with +0.4 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.7."
    ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
    "key": "charlotte",
@@ -1872,7 +2011,7 @@
    "difference": -8.53,
    "rating_state_divergence": 3.49,
    "abs_divergence": 3.49,
-   "band": "ELEVATED",
+   "band": "NORMAL",
    "flagged": false,
    "why": [
     "The pricing state is 60% the long-run trained state (−19.0) and 40% this season’s own track (−26.1): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
@@ -1880,30 +2019,7 @@
     "The current rating includes a roster/talent term of −4.1 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +3.5."
    ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
-  },
-  {
-   "key": "georgia",
-   "team": "Georgia",
-   "conference": "SEC",
-   "current": 12.98,
-   "state": 11.42,
-   "carried": 16.33,
-   "this_season": 4.07,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -1.56,
-   "rating_state_divergence": -3.48,
-   "abs_divergence": 3.48,
-   "band": "ELEVATED",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+16.3) and 40% this season’s own track (+4.1): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+15.9 from 8 games), with +5.9 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +4.6 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.5."
-   ],
-   "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
    "key": "bostoncollege",
@@ -1924,29 +2040,6 @@
     "The pricing state is 60% the long-run trained state (−5.5) and 40% this season’s own track (−14.2): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+0.3 from 8 games), with −1.0 of measured carryover from last season.",
     "The current rating includes a roster/talent term of −3.8 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +3.4."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "arizonastate",
-   "team": "Arizona State",
-   "conference": "Big 12",
-   "current": 1.37,
-   "state": -7.07,
-   "carried": -2.64,
-   "this_season": -13.72,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -8.44,
-   "rating_state_divergence": 3.4,
-   "abs_divergence": 3.4,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−2.6) and 40% this season’s own track (−13.7): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+1.5 from 8 games), with +0.5 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.3 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +3.4."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
@@ -1998,6 +2091,29 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
+   "key": "ucla",
+   "team": "UCLA",
+   "conference": "Big Ten",
+   "current": 9.9,
+   "state": 8.17,
+   "carried": 9.65,
+   "this_season": 5.94,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -1.73,
+   "rating_state_divergence": -3.3,
+   "abs_divergence": 3.3,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+9.7) and 40% this season’s own track (+5.9): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 70% (+13.4 from 7 games), with +0.9 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +2.6 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.3."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
    "key": "hawaii",
    "team": "Hawai'i",
    "conference": "Mountain West",
@@ -2017,29 +2133,6 @@
     "The current rating weights this season’s opponent-adjusted play-level results at 73% (−9.6 from 8 games), with −4.1 of measured carryover from last season.",
     "The current rating includes a roster/talent term of −1.9 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.3."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "virginia",
-   "team": "Virginia",
-   "conference": "ACC",
-   "current": 3.61,
-   "state": -4.63,
-   "carried": -0.14,
-   "this_season": -11.37,
-   "prior_weight": 0.6,
-   "games_played": 8,
-   "difference": -8.24,
-   "rating_state_divergence": 3.21,
-   "abs_divergence": 3.21,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−0.1) and 40% this season’s own track (−11.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 71% (+3.3 from 9 games), with +3.7 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.4 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +3.2."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2067,29 +2160,6 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "kansasstate",
-   "team": "Kansas State",
-   "conference": "Big 12",
-   "current": 3.75,
-   "state": -4.26,
-   "carried": 0.68,
-   "this_season": -11.68,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -8.01,
-   "rating_state_divergence": 2.98,
-   "abs_divergence": 2.98,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+0.7) and 40% this season’s own track (−11.7): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.8 from 8 games), with +0.8 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +3.3 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +3.0."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
    "key": "easternmichigan",
    "team": "Eastern Michigan",
    "conference": "MAC",
@@ -2109,74 +2179,6 @@
     "The current rating weights this season’s opponent-adjusted play-level results at 74% (−11.6 from 9 games), with −8.3 of measured carryover from last season.",
     "The current rating includes a roster/talent term of −2.7 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.8."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "airforce",
-   "team": "Air Force",
-   "conference": "Mountain West",
-   "current": -4.79,
-   "state": -7.09,
-   "carried": -4.51,
-   "this_season": -10.97,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -2.3,
-   "rating_state_divergence": -2.73,
-   "abs_divergence": 2.73,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−4.5) and 40% this season’s own track (−11.0): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−3.5 from 8 games), with −7.5 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −1.0 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.7."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "minnesota",
-   "team": "Minnesota",
-   "conference": "Big Ten",
-   "current": -1.83,
-   "state": -4.15,
-   "carried": -0.25,
-   "this_season": -10,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -2.32,
-   "rating_state_divergence": -2.71,
-   "abs_divergence": 2.71,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−0.3) and 40% this season’s own track (−10.0): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−1.4 from 8 games), with −3.2 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.7 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.7."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "floridainternational",
-   "team": "Florida International",
-   "conference": "Conference USA",
-   "current": -7.7,
-   "state": -10.03,
-   "carried": -7.45,
-   "this_season": -13.89,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -2.33,
-   "rating_state_divergence": -2.71,
-   "abs_divergence": 2.71,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−7.4) and 40% this season’s own track (−13.9): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−8.6 from 8 games), with −5.6 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.7."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2249,25 +2251,47 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "oregon",
-   "team": "Oregon",
-   "conference": "Big Ten",
-   "current": 9.16,
-   "state": 1.52,
-   "carried": 6.66,
-   "this_season": -6.18,
+   "key": "newmexico",
+   "team": "New Mexico",
+   "conference": "Mountain West",
+   "current": 2.98,
+   "state": 0.46,
+   "carried": 3.06,
+   "this_season": -3.44,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -7.64,
-   "rating_state_divergence": 2.6,
-   "abs_divergence": 2.6,
+   "games_played": 8,
+   "difference": -2.52,
+   "rating_state_divergence": -2.52,
+   "abs_divergence": 2.52,
    "band": "NORMAL",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (+6.7) and 40% this season’s own track (−6.2): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+7.3 from 8 games), with +12.3 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +4.2 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.6."
+    "The pricing state is 60% the long-run trained state (+3.1) and 40% this season’s own track (−3.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.4 from 7 games), with −0.5 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.5 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.5."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "kansas",
+   "team": "Kansas",
+   "conference": "Big 12",
+   "current": 3.65,
+   "state": -3.9,
+   "carried": -0.24,
+   "this_season": -9.39,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -7.55,
+   "rating_state_divergence": 2.51,
+   "abs_divergence": 2.51,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−0.2) and 40% this season’s own track (−9.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.2 from 8 games), with +2.5 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.5."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2295,92 +2319,46 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
+   "key": "coloradostate",
+   "team": "Colorado State",
+   "conference": "Pac-12",
+   "current": -11.11,
+   "state": -18.55,
+   "carried": -15.02,
+   "this_season": -23.85,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -7.44,
+   "rating_state_divergence": 2.41,
+   "abs_divergence": 2.41,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−15.0) and 40% this season’s own track (−23.8): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−12.6 from 8 games), with −7.8 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.4."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
    "key": "tcu",
    "team": "TCU",
    "conference": "Big 12",
    "current": 6.32,
-   "state": -1.17,
-   "carried": 2.28,
-   "this_season": -6.34,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -7.49,
-   "rating_state_divergence": 2.45,
-   "abs_divergence": 2.45,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+2.3) and 40% this season’s own track (−6.3): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+7.3 from 8 games), with +3.8 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.5."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "sanjosestate",
-   "team": "San José State",
-   "conference": "Mountain West",
-   "current": -7.82,
-   "state": -15.3,
-   "carried": -13.13,
-   "this_season": -18.55,
+   "state": -1.08,
+   "carried": 2.39,
+   "this_season": -6.3,
    "prior_weight": 0.6,
    "games_played": 8,
-   "difference": -7.48,
-   "rating_state_divergence": 2.44,
-   "abs_divergence": 2.44,
+   "difference": -7.4,
+   "rating_state_divergence": 2.37,
+   "abs_divergence": 2.37,
    "band": "NORMAL",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (−13.1) and 40% this season’s own track (−18.5): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−10.6 from 8 games), with −0.2 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −2.2 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "The pricing state is 60% the long-run trained state (+2.4) and 40% this season’s own track (−6.3): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+7.3 from 8 games), with +3.8 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.4."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "kansas",
-   "team": "Kansas",
-   "conference": "Big 12",
-   "current": 3.65,
-   "state": -3.82,
-   "carried": -0.13,
-   "this_season": -9.35,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -7.47,
-   "rating_state_divergence": 2.43,
-   "abs_divergence": 2.43,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−0.1) and 40% this season’s own track (−9.4): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.2 from 8 games), with +2.5 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.4."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "coastalcarolina",
-   "team": "Coastal Carolina",
-   "conference": "Sun Belt",
-   "current": -10.78,
-   "state": -13.5,
-   "carried": -10.75,
-   "this_season": -17.63,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -2.72,
-   "rating_state_divergence": -2.31,
-   "abs_divergence": 2.31,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−10.8) and 40% this season’s own track (−17.6): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−12.4 from 8 games), with −5.6 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −3.9 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.3."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2498,6 +2476,28 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
+   "key": "georgiastate",
+   "team": "Georgia State",
+   "conference": "Sun Belt",
+   "current": -3.57,
+   "state": -10.77,
+   "carried": -7.66,
+   "this_season": -15.44,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -7.2,
+   "rating_state_divergence": 2.16,
+   "abs_divergence": 2.16,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−7.7) and 40% this season’s own track (−15.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−2.8 from 8 games), with −5.4 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.2."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
    "key": "kennesawstate",
    "team": "Kennesaw State",
    "conference": "Conference USA",
@@ -2544,48 +2544,25 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "southalabama",
-   "team": "South Alabama",
-   "conference": "Sun Belt",
-   "current": -8.27,
-   "state": -11.2,
-   "carried": -8.18,
-   "this_season": -15.71,
+   "key": "arizonastate",
+   "team": "Arizona State",
+   "conference": "Big 12",
+   "current": 1.37,
+   "state": -5.78,
+   "carried": -1.68,
+   "this_season": -11.92,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -2.93,
-   "rating_state_divergence": -2.11,
+   "games_played": 8,
+   "difference": -7.15,
+   "rating_state_divergence": 2.11,
    "abs_divergence": 2.11,
    "band": "NORMAL",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (−8.2) and 40% this season’s own track (−15.7): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−10.1 from 8 games), with −3.8 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −2.8 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.1."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "byu",
-   "team": "BYU",
-   "conference": "Big 12",
-   "current": 7.46,
-   "state": 4.52,
-   "carried": 8.43,
-   "this_season": -1.34,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -2.94,
-   "rating_state_divergence": -2.1,
-   "abs_divergence": 2.1,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+8.4) and 40% this season’s own track (−1.3): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+9.2 from 8 games), with +3.2 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +3.4 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.1."
+    "The pricing state is 60% the long-run trained state (−1.7) and 40% this season’s own track (−11.9): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+1.5 from 8 games), with +0.5 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.3 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.1."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2609,6 +2586,29 @@
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+10.0 from 8 games), with +6.9 of measured carryover from last season.",
     "The current rating includes a roster/talent term of +6.1 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.1."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "nevada",
+   "team": "Nevada",
+   "conference": "Mountain West",
+   "current": -3.69,
+   "state": -10.8,
+   "carried": -9.23,
+   "this_season": -13.15,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -7.11,
+   "rating_state_divergence": 2.07,
+   "abs_divergence": 2.07,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−9.2) and 40% this season’s own track (−13.2): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−3.4 from 7 games), with −4.0 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −1.8 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +2.1."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2657,47 +2657,25 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "louisianatech",
-   "team": "Louisiana Tech",
-   "conference": "Sun Belt",
-   "current": -1.14,
-   "state": -4.22,
-   "carried": -1.76,
-   "this_season": -7.91,
+   "key": "uconn",
+   "team": "UConn",
+   "conference": "Independents",
+   "current": 2.2,
+   "state": -4.78,
+   "carried": -2.7,
+   "this_season": -7.9,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -3.08,
-   "rating_state_divergence": -1.96,
-   "abs_divergence": 1.96,
+   "games_played": 8,
+   "difference": -6.98,
+   "rating_state_divergence": 1.94,
+   "abs_divergence": 1.94,
    "band": "NORMAL",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (−1.8) and 40% this season’s own track (−7.9): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−0.5 from 8 games), with −2.7 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −2.0."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "ucla",
-   "team": "UCLA",
-   "conference": "Big Ten",
-   "current": 9.9,
-   "state": 6.75,
-   "carried": 8.62,
-   "this_season": 3.94,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -3.15,
-   "rating_state_divergence": -1.88,
-   "abs_divergence": 1.88,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+8.6) and 40% this season’s own track (+3.9): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 70% (+13.4 from 7 games), with +0.9 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +2.6 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.9."
+    "The pricing state is 60% the long-run trained state (−2.7) and 40% this season’s own track (−7.9): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.2 from 7 games), with −1.6 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −1.1 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +1.9."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2771,25 +2749,68 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "florida",
-   "team": "Florida",
-   "conference": "SEC",
-   "current": 2.72,
-   "state": -0.56,
-   "carried": 3.88,
-   "this_season": -7.23,
+   "key": "marshall",
+   "team": "Marshall",
+   "conference": "Sun Belt",
+   "current": -4.83,
+   "state": -11.65,
+   "carried": -8.64,
+   "this_season": -16.15,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -3.28,
-   "rating_state_divergence": -1.75,
-   "abs_divergence": 1.75,
+   "games_played": 8,
+   "difference": -6.82,
+   "rating_state_divergence": 1.78,
+   "abs_divergence": 1.78,
    "band": "NORMAL",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (+3.9) and 40% this season’s own track (−7.2): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+3.6 from 8 games), with +0.2 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +1.6 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.8."
+    "The pricing state is 60% the long-run trained state (−8.6) and 40% this season’s own track (−16.2): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−6.8 from 8 games), with −0.8 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +1.8."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "cincinnati",
+   "team": "Cincinnati",
+   "conference": "Big 12",
+   "current": 1.94,
+   "state": -4.82,
+   "carried": -0.94,
+   "this_season": -10.63,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -6.76,
+   "rating_state_divergence": 1.72,
+   "abs_divergence": 1.72,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−0.9) and 40% this season’s own track (−10.6): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+1.9 from 8 games), with +1.7 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +1.7."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "purdue",
+   "team": "Purdue",
+   "conference": "Big Ten",
+   "current": -0.32,
+   "state": -7.06,
+   "carried": -3.3,
+   "this_season": -12.69,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -6.74,
+   "rating_state_divergence": 1.7,
+   "abs_divergence": 1.7,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−3.3) and 40% this season’s own track (−12.7): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (0.0 from 7 games), with −1.1 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +1.7."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2859,6 +2880,29 @@
     "The current rating weights this season’s opponent-adjusted play-level results at 70% (−8.7 from 8 games), with −9.7 of measured carryover from last season.",
     "The current rating includes a roster/talent term of −3.0 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +1.7."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "louisville",
+   "team": "Louisville",
+   "conference": "ACC",
+   "current": 8.49,
+   "state": 5.03,
+   "carried": 8.5,
+   "this_season": -0.17,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -3.46,
+   "rating_state_divergence": -1.58,
+   "abs_divergence": 1.58,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+8.5) and 40% this season’s own track (−0.2): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+9.3 from 8 games), with +4.5 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +4.6 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.6."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2953,28 +2997,6 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "coloradostate",
-   "team": "Colorado State",
-   "conference": "Pac-12",
-   "current": -11.11,
-   "state": -17.47,
-   "carried": -14.31,
-   "this_season": -22.22,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -6.36,
-   "rating_state_divergence": 1.32,
-   "abs_divergence": 1.32,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−14.3) and 40% this season’s own track (−22.2): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−12.6 from 8 games), with −7.8 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +1.3."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
    "key": "oklahomastate",
    "team": "Oklahoma State",
    "conference": "Big 12",
@@ -2994,73 +3016,6 @@
     "The current rating weights this season’s opponent-adjusted play-level results at 68% (+9.9 from 7 games), with −0.9 of measured carryover from last season.",
     "The current rating includes a roster/talent term of +3.3 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.3."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "georgiastate",
-   "team": "Georgia State",
-   "conference": "Sun Belt",
-   "current": -3.57,
-   "state": -7.32,
-   "carried": -4.91,
-   "this_season": -10.93,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -3.75,
-   "rating_state_divergence": -1.29,
-   "abs_divergence": 1.29,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−4.9) and 40% this season’s own track (−10.9): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−2.8 from 8 games), with −5.4 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.3."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "utah",
-   "team": "Utah",
-   "conference": "Big 12",
-   "current": 12.37,
-   "state": 8.54,
-   "carried": 13.1,
-   "this_season": 1.7,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -3.83,
-   "rating_state_divergence": -1.2,
-   "abs_divergence": 1.2,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+13.1) and 40% this season’s own track (+1.7): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+15.2 from 8 games), with +5.5 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +4.0 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.2."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "cincinnati",
-   "team": "Cincinnati",
-   "conference": "Big 12",
-   "current": 1.94,
-   "state": -1.94,
-   "carried": 1.14,
-   "this_season": -6.55,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -3.88,
-   "rating_state_divergence": -1.16,
-   "abs_divergence": 1.16,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+1.1) and 40% this season’s own track (−6.5): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+1.9 from 8 games), with +1.7 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.2."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -3131,24 +3086,71 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "purdue",
-   "team": "Purdue",
+   "key": "oregon",
+   "team": "Oregon",
    "conference": "Big Ten",
-   "current": -0.32,
-   "state": -6.05,
-   "carried": -2.91,
-   "this_season": -10.77,
+   "current": 9.16,
+   "state": 3.32,
+   "carried": 7.81,
+   "this_season": -3.43,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -5.73,
-   "rating_state_divergence": 0.7,
-   "abs_divergence": 0.7,
+   "games_played": 8,
+   "difference": -5.84,
+   "rating_state_divergence": 0.81,
+   "abs_divergence": 0.81,
    "band": "NORMAL",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (−2.9) and 40% this season’s own track (−10.8): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (0.0 from 7 games), with −1.1 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.7."
+    "The pricing state is 60% the long-run trained state (+7.8) and 40% this season’s own track (−3.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+7.3 from 8 games), with +12.3 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +4.2 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.8."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "byu",
+   "team": "BYU",
+   "conference": "Big 12",
+   "current": 7.46,
+   "state": 3.22,
+   "carried": 7.47,
+   "this_season": -3.14,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -4.24,
+   "rating_state_divergence": -0.8,
+   "abs_divergence": 0.8,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+7.5) and 40% this season’s own track (−3.1): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+9.2 from 8 games), with +3.2 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +3.4 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −0.8."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "sanjosestate",
+   "team": "San José State",
+   "conference": "Mountain West",
+   "current": -7.82,
+   "state": -13.65,
+   "carried": -11.77,
+   "this_season": -16.49,
+   "prior_weight": 0.6,
+   "games_played": 9,
+   "difference": -5.83,
+   "rating_state_divergence": 0.8,
+   "abs_divergence": 0.8,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−11.8) and 40% this season’s own track (−16.5): the learned prior-weight curve keeps 60% on the long-run state at 9 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 71% (−10.6 from 8 games), with −0.2 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −2.2 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.8."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -3171,29 +3173,6 @@
     "The pricing state is 60% the long-run trained state (+3.1) and 40% this season’s own track (−7.1): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 71% (+4.4 from 8 games), with +1.0 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −0.7."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "nevada",
-   "team": "Nevada",
-   "conference": "Mountain West",
-   "current": -3.69,
-   "state": -9.38,
-   "carried": -8.2,
-   "this_season": -11.14,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -5.69,
-   "rating_state_divergence": 0.65,
-   "abs_divergence": 0.65,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−8.2) and 40% this season’s own track (−11.1): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−3.4 from 7 games), with −4.0 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −1.8 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.7."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -3221,6 +3200,29 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
+   "key": "florida",
+   "team": "Florida",
+   "conference": "SEC",
+   "current": 2.72,
+   "state": -1.79,
+   "carried": 2.96,
+   "this_season": -8.92,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -4.51,
+   "rating_state_divergence": -0.52,
+   "abs_divergence": 0.52,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (+3.0) and 40% this season’s own track (−8.9): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+3.6 from 8 games), with +0.2 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of +1.6 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −0.5."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
    "key": "auburn",
    "team": "Auburn",
    "conference": "SEC",
@@ -3238,6 +3240,28 @@
    "why": [
     "The pricing state is 60% the long-run trained state (+2.5) and 40% this season’s own track (−9.4): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 70% (+3.0 from 8 games), with +3.5 of measured carryover from last season.",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.4."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
+   "key": "floridainternational",
+   "team": "Florida International",
+   "conference": "Conference USA",
+   "current": -7.7,
+   "state": -13.11,
+   "carried": -10.34,
+   "this_season": -17.27,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -5.41,
+   "rating_state_divergence": 0.37,
+   "abs_divergence": 0.37,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−10.3) and 40% this season’s own track (−17.3): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−8.6 from 8 games), with −5.6 of measured carryover from last season.",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.4."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
@@ -3289,6 +3313,29 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
+   "key": "southalabama",
+   "team": "South Alabama",
+   "conference": "Sun Belt",
+   "current": -8.27,
+   "state": -13.03,
+   "carried": -9.78,
+   "this_season": -17.91,
+   "prior_weight": 0.6,
+   "games_played": 8,
+   "difference": -4.76,
+   "rating_state_divergence": -0.28,
+   "abs_divergence": 0.28,
+   "band": "NORMAL",
+   "flagged": false,
+   "why": [
+    "The pricing state is 60% the long-run trained state (−9.8) and 40% this season’s own track (−17.9): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
+    "The current rating weights this season’s opponent-adjusted play-level results at 68% (−10.1 from 8 games), with −3.8 of measured carryover from last season.",
+    "The current rating includes a roster/talent term of −2.8 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −0.3."
+   ],
+   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
+  },
+  {
    "key": "usc",
    "team": "USC",
    "conference": "Big Ten",
@@ -3335,47 +3382,24 @@
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
   {
-   "key": "uconn",
-   "team": "UConn",
-   "conference": "Independents",
-   "current": 2.2,
-   "state": -2.95,
-   "carried": -1.39,
-   "this_season": -5.29,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -5.15,
-   "rating_state_divergence": 0.11,
-   "abs_divergence": 0.11,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (−1.4) and 40% this season’s own track (−5.3): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.2 from 7 games), with −1.6 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −1.1 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.1."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
    "key": "eastcarolina",
    "team": "East Carolina",
    "conference": "American",
    "current": -2.73,
-   "state": -7.65,
-   "carried": -3.8,
-   "this_season": -13.44,
+   "state": -7.95,
+   "carried": -3.99,
+   "this_season": -13.89,
    "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -4.92,
-   "rating_state_divergence": -0.11,
-   "abs_divergence": 0.11,
+   "games_played": 8,
+   "difference": -5.22,
+   "rating_state_divergence": 0.18,
+   "abs_divergence": 0.18,
    "band": "NORMAL",
    "flagged": false,
    "why": [
-    "The pricing state is 60% the long-run trained state (−3.8) and 40% this season’s own track (−13.4): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
+    "The pricing state is 60% the long-run trained state (−4.0) and 40% this season’s own track (−13.9): the learned prior-weight curve keeps 60% on the long-run state at 8 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 68% (−4.2 from 8 games), with +0.7 of measured carryover from last season.",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −0.1."
+    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.2."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -3446,38 +3470,15 @@
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.0."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
-  },
-  {
-   "key": "louisville",
-   "team": "Louisville",
-   "conference": "ACC",
-   "current": 8.49,
-   "state": 3.44,
-   "carried": 7.14,
-   "this_season": -2.11,
-   "prior_weight": 0.6,
-   "games_played": 7,
-   "difference": -5.05,
-   "rating_state_divergence": 0.01,
-   "abs_divergence": 0.01,
-   "band": "NORMAL",
-   "flagged": false,
-   "why": [
-    "The pricing state is 60% the long-run trained state (+7.1) and 40% this season’s own track (−2.1): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
-    "The current rating weights this season’s opponent-adjusted play-level results at 68% (+9.3 from 8 games), with +4.5 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +4.6 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +0.0."
-   ],
-   "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   }
  ],
- "state_source": "football/cfb_p4 engine replay (football/fbs/build_coverage.js buildState): trained seeds through 2025, 586 completed games absorbed",
+ "state_source": "football/cfb_p4 engine replay (football/fbs/build_coverage.js buildState): trained seeds through 2025, 607 completed games absorbed",
  "current_source": "football/rating/current.json (2026-10-31T20:46:59.209Z, week 9)",
  "season": 2026,
  "unseeded": [
   {
    "team": "North Dakota State",
-   "note": "no trained seed: its pricing state comes only from 8 absorbed game(s) this season"
+   "note": "no trained seed: its pricing state comes only from 9 absorbed game(s) this season"
   },
   {
    "team": "Sacramento State",
