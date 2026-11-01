@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T20:15:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1813,99 +1813,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "np73odwjqgan",
-    "status": "UNEXPLAINED",
-    "input_suspect": false,
-    "question": "Can Oklahoma get South Carolina off the field on third down?",
-    "assessment": "EdgeDesk’s number is 3.3 points closer to South Carolina than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 3.3 points. The measured football evidence leans toward Oklahoma, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
-    "gap": {
-      "points": 3.3,
-      "toward": "South Carolina",
-      "other": "Oklahoma"
-    },
-    "supporting": [
-      "When Oklahoma has the ball (pass protection against the pass rush): Oklahoma’s offense has allowed a sack on 7.6% of its dropbacks, and South Carolina’s defense sacks the quarterback on 7.3% of opponent dropbacks (FBS average 5.7%).",
-      "When South Carolina has the ball (the line of scrimmage on running plays): South Carolina’s offense is stopped at or behind the line on 13.9% of its runs, and Oklahoma’s defense stops 16.3% of opponent runs at or behind the line (FBS average 17.5%).",
-      "EdgeDesk’s position-group ratings put South Carolina’s offensive line No. 30 nationally and Oklahoma’s No. 98.",
-      "EdgeDesk’s position-group ratings put South Carolina’s running backs No. 58 nationally and Oklahoma’s No. 98."
-    ],
-    "contradicting": [
-      "When South Carolina has the ball (pass protection against the pass rush): South Carolina’s offense has allowed a sack on 4.8% of its dropbacks, and Oklahoma’s defense sacks the quarterback on 10.4% of opponent dropbacks (FBS average 5.7%).",
-      "When South Carolina has the ball (big plays through the air): South Carolina’s offense turns 9.0% of its pass plays into explosive gains, and Oklahoma’s defense gives up explosive gains on 6.5% of opponent pass plays (FBS average 10.2%).",
-      "EdgeDesk’s position-group ratings put Oklahoma’s secondary No. 10 nationally and South Carolina’s No. 82.",
-      "EdgeDesk’s position-group ratings put Oklahoma’s linebackers No. 8 nationally and South Carolina’s No. 70."
-    ],
-    "quarterbacks": [
-      "John Mateer has completed 136 of 205 passes (66.3%) for 1,611 yards, 7.9 yards per attempt, 11 touchdowns and 7 interceptions in seven games for Oklahoma, and has been sacked on 16 of 221 dropbacks.",
-      "LaNorris Sellers has completed 133 of 220 passes (60.5%) for 1,548 yards, 7.0 yards per attempt, 13 touchdowns and 5 interceptions in seven games for South Carolina, and has been sacked on 15 of 235 dropbacks.",
-      "John Mateer does not appear on Oklahoma’s update 2 availability report.",
-      "LaNorris Sellers does not appear on South Carolina’s update 2 availability report."
-    ],
-    "availability": [
-      "Oklahoma’s availability report lists ten players as out, including offensive linemen Eddy Pierre-Louis, Ryan Fodje and Fred Hinton.",
-      "South Carolina’s availability report lists seven players as out, including offensive linemen Josiah Thompson, Dayne Arnett and Seth Smith."
-    ],
-    "script": {
-      "model": [
-        "South Carolina’s offense has to keep winning on third down: it converts 48.0% of its third downs, and Oklahoma’s defense allows opponents to convert 25.0% of their third downs.",
-        "South Carolina’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 10.4% of opponent dropbacks.",
-        "South Carolina’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 6.5% of opponent pass plays.",
-        "South Carolina’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.3% of opponent dropbacks, against an offense that has allowed a sack on 7.6% of its dropbacks."
-      ],
-      "market": [
-        "Oklahoma’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.4% of opponent dropbacks, against an offense that has allowed a sack on 4.8% of its dropbacks.",
-        "Oklahoma’s defense has to come out ahead on big pass plays: it gives up explosive gains on 6.5% of opponent pass plays, against an offense that turns 9.0% of its pass plays into explosive gains.",
-        "Oklahoma’s defense has to come out ahead on third down: it allows opponents to convert 25.0% of their third downs, against an offense that converts 48.0% of its third downs."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Oklahoma and South Carolina.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Oklahoma), sack rate (Oklahoma) and sack rate (South Carolina); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T17:51:41.823Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-31T15:31:33.840Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:10:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T19:14:58.561Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }

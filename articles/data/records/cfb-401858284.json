@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T19:45:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1834,102 +1834,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1fefdwvllw91p",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Virginia get Wake Forest off the field on third down?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Wake Forest, and its own breakdown accounts for about 0.9 of the 5.5 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 5.5,
-      "toward": "Wake Forest",
-      "other": "Virginia"
-    },
-    "supporting": [
-      "When Wake Forest has the ball (big plays through the air): Wake Forest’s offense turns 14.4% of its pass plays into explosive gains, and Virginia’s defense gives up explosive gains on 10.5% of opponent pass plays (FBS average 10.2%).",
-      "When Virginia has the ball (pass protection against the pass rush): Virginia’s offense has allowed a sack on 11.3% of its dropbacks, and Wake Forest’s defense sacks the quarterback on 5.4% of opponent dropbacks (FBS average 5.7%).",
-      "When Virginia has the ball (big plays through the air): Virginia’s offense turns 9.4% of its pass plays into explosive gains, and Wake Forest’s defense gives up explosive gains on 5.1% of opponent pass plays (FBS average 10.2%).",
-      "When Virginia has the ball (big plays on the ground): Virginia’s offense turns 5.2% of its runs into explosive gains, and Wake Forest’s defense gives up explosive gains on 2.7% of opponent runs (FBS average 6.5%)."
-    ],
-    "contradicting": [
-      "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, 3 touchdowns and no interceptions in two games for Virginia, and has been sacked on 2 of 20 dropbacks.",
-      "EdgeDesk’s position-group ratings put Virginia’s running backs No. 56 nationally and Wake Forest’s No. 122."
-    ],
-    "quarterbacks": [
-      "Gio Lopez has completed 140 of 208 passes (67.3%) for 1,947 yards, 9.4 yards per attempt, 18 touchdowns and 1 interception in seven games for Wake Forest, and has been sacked on 10 of 218 dropbacks.",
-      "Beau Pribula has completed 119 of 187 passes (63.6%) for 1,419 yards, 7.6 yards per attempt, 13 touchdowns and 2 interceptions in eight games for Virginia, and has been sacked on 24 of 211 dropbacks.",
-      "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, 3 touchdowns and no interceptions in two games for Virginia, and has been sacked on 2 of 20 dropbacks.",
-      "Gio Lopez does not appear on Wake Forest’s update 2 availability report.",
-      "Beau Pribula does not appear on Virginia’s update 2 availability report."
-    ],
-    "availability": [
-      "Virginia’s availability report lists running back Noah Vaughn as questionable.",
-      "Virginia’s availability report lists receiver Kameron Courtney as doubtful.",
-      "Virginia’s availability report lists receiver Dylan Cope as questionable.",
-      "Virginia’s availability report lists 18 players as out, including offensive linemen Noah Hartsoe and Grant Ellinger."
-    ],
-    "script": {
-      "model": [
-        "Wake Forest’s offense has to keep winning on third down: it converts 54.6% of its third downs, and Virginia’s defense allows opponents to convert 29.4% of their third downs.",
-        "Wake Forest’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.4% of opponent dropbacks, against an offense that has allowed a sack on 11.3% of its dropbacks.",
-        "Wake Forest’s defense has to come out ahead on long runs: it gives up explosive gains on 2.7% of opponent runs, against an offense that turns 5.2% of its runs into explosive gains.",
-        "Home field has to be worth something close to the full 2.8 points EdgeDesk gives it."
-      ],
-      "market": [
-        "Virginia’s defense has to come out ahead on third down: it allows opponents to convert 29.4% of their third downs, against an offense that converts 54.6% of its third downs.",
-        "Pribula keeps producing at his season rate (63.6% completions, 7.6 yards per attempt, 13 TD, 2 INT)."
-      ]
-    },
-    "unknown": [
-      "Virginia’s availability report lists running back Noah Vaughn as questionable.",
-      "Virginia’s availability report lists receiver Kameron Courtney as doubtful.",
-      "Virginia’s availability report lists receiver Dylan Cope as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Wake Forest and Virginia.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Wake Forest), sack rate (Wake Forest), sack rate allowed (Virginia) and sack rate (Virginia); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T17:51:41.823Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-31T15:31:33.840Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T19:14:58.561Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }

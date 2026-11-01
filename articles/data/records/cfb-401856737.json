@@ -37,8 +37,8 @@
   "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -2152,114 +2152,10 @@
     "warnings": [],
     "hold_reason": "inside final pregame publication floor"
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "10exs5e1k6i2e8",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": true,
-    "question": "Can Mississippi State’s pass rush get to Arch Manning?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
-    "gap": {
-      "points": 0.3,
-      "toward": "Mississippi State",
-      "other": "Texas"
-    },
-    "supporting": [
-      "When Texas has the ball (pass protection against the pass rush): Texas’ offense has allowed a sack on 8.4% of its dropbacks, and Mississippi State’s defense sacks the quarterback on 6.7% of opponent dropbacks (FBS average 5.7%).",
-      "When Texas has the ball (big plays on the ground): Texas’ offense turns 5.9% of its runs into explosive gains, and Mississippi State’s defense gives up explosive gains on 3.6% of opponent runs (FBS average 6.5%).",
-      "When Texas has the ball (the red zone): Texas’ offense succeeds on 42.1% of its red-zone plays, and Mississippi State’s defense allows success on 33.9% of opponent red-zone plays (FBS average 43.5%).",
-      "Kamario Taylor has completed 104 of 159 passes (65.4%) for 1,460 yards, 9.2 yards per attempt, 17 touchdowns and 4 interceptions in six games for Mississippi State, and has been sacked on 16 of 175 dropbacks."
-    ],
-    "contradicting": [
-      "When Mississippi State has the ball (pass protection against the pass rush): Mississippi State’s offense has allowed a sack on 9.5% of its dropbacks, and Texas’ defense sacks the quarterback on 6.9% of opponent dropbacks (FBS average 5.7%).",
-      "When Mississippi State has the ball (big plays through the air): Mississippi State’s offense turns 10.8% of its pass plays into explosive gains, and Texas’ defense gives up explosive gains on 5.3% of opponent pass plays (FBS average 10.2%).",
-      "When Mississippi State has the ball (big plays on the ground): Mississippi State’s offense turns 6.7% of its runs into explosive gains, and Texas’ defense gives up explosive gains on 3.4% of opponent runs (FBS average 6.5%).",
-      "When Texas has the ball (the line of scrimmage on running plays): Texas’ offense is stopped at or behind the line on 17.8% of its runs, and Mississippi State’s defense stops 11.7% of opponent runs at or behind the line (FBS average 17.5%)."
-    ],
-    "quarterbacks": [
-      "Arch Manning has completed 125 of 200 passes (62.5%) for 1,510 yards, 7.6 yards per attempt, 12 touchdowns and 7 interceptions in seven games for Texas, and has been sacked on 19 of 219 dropbacks.",
-      "Kamario Taylor has completed 104 of 159 passes (65.4%) for 1,460 yards, 9.2 yards per attempt, 17 touchdowns and 4 interceptions in six games for Mississippi State, and has been sacked on 16 of 175 dropbacks.",
-      "Parker Puckett has completed 41 of 64 passes (64.1%) for 368 yards, 5.8 yards per attempt, 1 touchdown and 2 interceptions in four games for Mississippi State, and has been sacked on 4 of 68 dropbacks.",
-      "Arch Manning does not appear on Texas’ update 2 availability report.",
-      "Mississippi State’s update 2 SEC availability report (published Oct. 30) lists quarterback Kamario Taylor as out.",
-      "EdgeDesk’s model is built on Kamario Taylor starting for Mississippi State, but the availability report lists him as out."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Mississippi State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.7% of opponent dropbacks, against an offense that has allowed a sack on 8.4% of its dropbacks.",
-        "Mississippi State’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 6.9% of opponent dropbacks.",
-        "Mississippi State’s offense has to hold its own on long runs against a defense that gives up explosive gains on 3.4% of opponent runs.",
-        "Mississippi State’s defense has to come out ahead on long runs: it gives up explosive gains on 3.6% of opponent runs, against an offense that turns 5.9% of its runs into explosive gains."
-      ],
-      "market": [
-        "Texas’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.9% of opponent dropbacks, against an offense that has allowed a sack on 9.5% of its dropbacks.",
-        "Texas’ defense has to come out ahead on long runs: it gives up explosive gains on 3.4% of opponent runs, against an offense that turns 6.7% of its runs into explosive gains.",
-        "Texas’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 8.4% of its dropbacks, and Mississippi State’s defense sacks the quarterback on 6.7% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "The model expects Kamario Taylor, but Kamario Taylor is listed as out.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Texas and Mississippi State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "QB_INPUT_CONFLICT",
-        "severity": "high",
-        "text": "EdgeDesk’s model is built on Kamario Taylor starting for Mississippi State, but the availability report lists him as out."
-      },
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Texas), sack rate (Texas) and sack rate (Mississippi State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "QB_REPLACEMENT_GENERIC",
-        "severity": "medium",
-        "text": "The availability report lists Kamario Taylor out, and EdgeDesk’s main model subtracts a generic quarterback absence (3.9 points) from Mississippi State — it does not price the replacement’s own play (Parker Puckett: 64.1% completions, 5.8 yards per attempt, 1 TD, 2 INT)."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.9 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T21:39:14.238Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T00:10:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      },
-      {
-        "label": "EdgeDesk input audit (model starter vs official availability report)",
-        "url": null,
-        "path": null,
-        "observed_at": "2026-10-31T23:08:13.016Z",
-        "verification": "CONFLICTING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T23:21:57.718Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T23:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -2236,102 +2236,10 @@
     "warnings": [],
     "hold_reason": "inside final pregame publication floor"
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1stjlz51kor7z7",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Clemson take away Florida State’s big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Florida State, and its own breakdown accounts for about 1.1 of the 2.3 points, but not the full gap. Input warning: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. It is a research question, not a bet.",
-    "gap": {
-      "points": 2.3,
-      "toward": "Florida State",
-      "other": "Clemson"
-    },
-    "supporting": [
-      "When Florida State has the ball (the line of scrimmage on running plays): Florida State’s offense is stopped at or behind the line on 10.5% of its runs, and Clemson’s defense stops 16.2% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When Clemson has the ball (pass protection against the pass rush): Clemson’s offense has allowed a sack on 8.8% of its dropbacks, and Florida State’s defense sacks the quarterback on 8.8% of opponent dropbacks (FBS average 5.7%).",
-      "When Florida State has the ball (big plays through the air): Florida State’s offense turns 16.6% of its pass plays into explosive gains, and Clemson’s defense gives up explosive gains on 5.9% of opponent pass plays (FBS average 10.2%).",
-      "When Clemson has the ball (the red zone): Clemson’s offense succeeds on 30.4% of its red-zone plays, and Florida State’s defense allows success on 52.7% of opponent red-zone plays (FBS average 43.5%)."
-    ],
-    "contradicting": [
-      "When Florida State has the ball (pass protection against the pass rush): Florida State’s offense has allowed a sack on 8.8% of its dropbacks, and Clemson’s defense sacks the quarterback on 10.3% of opponent dropbacks (FBS average 5.7%).",
-      "In his last two games (Louisville and Miami), Daniels averaged 7.7 yards per attempt, against 9.6 in his five games before that.",
-      "EdgeDesk’s position-group ratings put Clemson’s secondary No. 11 nationally and Florida State’s No. 103.",
-      "EdgeDesk’s position-group ratings put Clemson’s pass defense No. 10 nationally and Florida State’s No. 75."
-    ],
-    "quarterbacks": [
-      "Ashton Daniels has completed 106 of 182 passes (58.2%) for 1,616 yards, 8.9 yards per attempt, 12 touchdowns and 8 interceptions in seven games for Florida State, and has been sacked on 17 of 199 dropbacks.",
-      "Tait Reynolds has completed 119 of 182 passes (65.4%) for 1,124 yards, 6.2 yards per attempt, 1 touchdown and 3 interceptions in seven games for Clemson, and has been sacked on 20 of 202 dropbacks.",
-      "Christopher Vizzina has completed 14 of 23 passes (60.9%) for 102 yards, 4.4 yards per attempt, 1 touchdown and 2 interceptions in two games for Clemson, and has been sacked on 1 of 24 dropbacks.",
-      "Ashton Daniels does not appear on Florida State’s game day availability report.",
-      "Tait Reynolds does not appear on Clemson’s game day availability report."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Florida State’s offense has to keep winning on big pass plays: it turns 16.6% of its pass plays into explosive gains, and Clemson’s defense gives up explosive gains on 5.9% of opponent pass plays.",
-        "Florida State’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 10.3% of opponent dropbacks.",
-        "Florida State’s defense has to slow Clemson on long runs — Clemson’s offense turns 7.3% of its runs into explosive gains.",
-        "Florida State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.8% of opponent dropbacks, against an offense that has allowed a sack on 8.8% of its dropbacks."
-      ],
-      "market": [
-        "Clemson’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.3% of opponent dropbacks, against an offense that has allowed a sack on 8.8% of its dropbacks.",
-        "Clemson’s offense has to keep winning on long runs: it turns 7.3% of its runs into explosive gains, and Florida State’s defense gives up explosive gains on 8.8% of opponent runs.",
-        "Clemson’s defense has to come out ahead on big pass plays: it gives up explosive gains on 5.9% of opponent pass plays, against an offense that turns 16.6% of its pass plays into explosive gains."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Florida State and Clemson.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Florida State), sack rate (Florida State), sack rate allowed (Clemson) and sack rate (Clemson); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "DATA_FAULT",
-        "severity": "high",
-        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T21:39:14.238Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-31T20:46:59.209Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Game Day)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T21:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T22:51:04.445Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }

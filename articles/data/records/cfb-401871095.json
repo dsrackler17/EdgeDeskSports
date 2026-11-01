@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T19:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1883,87 +1883,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "w64t34wf74pu",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can UL Monroe contain Southern Miss’ explosive runs?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.0 points.",
-    "gap": {
-      "points": 0,
-      "toward": "Southern Miss",
-      "other": "UL Monroe"
-    },
-    "supporting": [
-      "When UL Monroe has the ball (big plays through the air): UL Monroe’s offense turns 6.0% of its pass plays into explosive gains, and Southern Miss’ defense gives up explosive gains on 9.5% of opponent pass plays (FBS average 10.2%).",
-      "When UL Monroe has the ball (big plays on the ground): UL Monroe’s offense turns 3.3% of its runs into explosive gains, and Southern Miss’ defense gives up explosive gains on 7.1% of opponent runs (FBS average 6.5%).",
-      "When Southern Miss has the ball (the line of scrimmage on running plays): Southern Miss’ offense is stopped at or behind the line on 11.1% of its runs, and UL Monroe’s defense stops 11.3% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When UL Monroe has the ball (the run game against the run defense): UL Monroe’s offense averages 3.7 yards per carry, and Southern Miss’ defense allows 5.5 yards per carry (FBS average 5.0)."
-    ],
-    "contradicting": [
-      "When Southern Miss has the ball (pass protection against the pass rush): Southern Miss’ offense has allowed a sack on 5.1% of its dropbacks, and UL Monroe’s defense sacks the quarterback on 12.6% of opponent dropbacks (FBS average 5.7%).",
-      "When Southern Miss has the ball (third down): Southern Miss’ offense converts 29.2% of its third downs, and UL Monroe’s defense allows opponents to convert 41.7% of their third downs (FBS average 39.5%).",
-      "In his last two games (Arkansas State and Louisiana), Lyddy averaged 5.1 yards per attempt, against 8.2 in his five games before that.",
-      "Ethan Hampton has completed 45 of 75 passes (60.0%) for 419 yards, 5.6 yards per attempt, 2 touchdowns and 4 interceptions in three games for Southern Miss, and has been sacked on 1 of 76 dropbacks."
-    ],
-    "quarterbacks": [
-      "Aidan Armenta has completed 94 of 146 passes (64.4%) for 1,112 yards, 7.6 yards per attempt, 8 touchdowns and 3 interceptions in six games for UL Monroe, and has been sacked on 6 of 152 dropbacks.",
-      "Austin Carlisle has completed 42 of 68 passes (61.8%) for 360 yards, 5.3 yards per attempt, 3 touchdowns and 3 interceptions in five games for UL Monroe, and has been sacked on 7 of 75 dropbacks.",
-      "Landry Lyddy has completed 102 of 173 passes (59.0%) for 1,196 yards, 6.9 yards per attempt, 7 touchdowns and 4 interceptions in seven games for Southern Miss, and has been sacked on 12 of 185 dropbacks.",
-      "Ethan Hampton has completed 45 of 75 passes (60.0%) for 419 yards, 5.6 yards per attempt, 2 touchdowns and 4 interceptions in three games for Southern Miss, and has been sacked on 1 of 76 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Southern Miss’ offense has to keep winning on long runs: it turns 8.1% of its runs into explosive gains, and UL Monroe’s defense gives up explosive gains on 4.5% of opponent runs.",
-        "Southern Miss’ offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 12.6% of opponent dropbacks.",
-        "Southern Miss’ offense has to hold its own on third down against a defense that allows opponents to convert 41.7% of their third downs.",
-        "Southern Miss’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.1% of its runs, and UL Monroe’s defense stops 11.3% of opponent runs at or behind the line."
-      ],
-      "market": [
-        "UL Monroe’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 12.6% of opponent dropbacks, against an offense that has allowed a sack on 5.1% of its dropbacks.",
-        "UL Monroe’s defense has to come out ahead on third down: it allows opponents to convert 41.7% of their third downs, against an offense that converts 29.2% of its third downs.",
-        "UL Monroe’s defense has to come out ahead on long runs: it gives up explosive gains on 4.5% of opponent runs, against an offense that turns 8.1% of its runs into explosive gains."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed for UL Monroe.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (UL Monroe); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Southern Miss: new head coach; returning roster share at the 4th percentile; returning production at the 10th percentile; transfers out at the 76th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T17:51:41.823Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T19:14:58.561Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }

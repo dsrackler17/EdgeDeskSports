@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T19:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1856,105 +1856,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "2bej8el9kgu4",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can TCU take away Kansas’ big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.8 points.",
-    "gap": {
-      "points": 1.8,
-      "toward": "TCU",
-      "other": "Kansas"
-    },
-    "supporting": [
-      "When TCU has the ball (third down): TCU’s offense converts 48.3% of its third downs, and Kansas’ defense allows opponents to convert 38.6% of their third downs (FBS average 39.5%).",
-      "When Kansas has the ball (pass protection against the pass rush): Kansas’ offense has allowed a sack on 4.5% of its dropbacks, and TCU’s defense sacks the quarterback on 7.5% of opponent dropbacks (FBS average 5.7%).",
-      "When Kansas has the ball (the passing game against the pass defense): Kansas’ offense averages 7.4 yards per pass attempt, and TCU’s defense allows 5.7 yards per pass attempt (FBS average 7.4).",
-      "When Kansas has the ball (early downs): Kansas’ offense succeeds on 41.9% of its first- and second-down plays, and TCU’s defense allows success on 33.3% of first- and second-down plays (FBS average 42.6%)."
-    ],
-    "contradicting": [
-      "When TCU has the ball (big plays on the ground): TCU’s offense turns 3.3% of its runs into explosive gains, and Kansas’ defense gives up explosive gains on 6.8% of opponent runs (FBS average 6.5%).",
-      "When TCU has the ball (pass protection against the pass rush): TCU’s offense has allowed a sack on 7.7% of its dropbacks, and Kansas’ defense sacks the quarterback on 5.6% of opponent dropbacks (FBS average 5.7%).",
-      "When Kansas has the ball (the line of scrimmage on running plays): Kansas’ offense is stopped at or behind the line on 12.8% of its runs, and TCU’s defense stops 16.7% of opponent runs at or behind the line (FBS average 17.5%).",
-      "EdgeDesk’s position-group ratings put Kansas’ offensive line No. 15 nationally and TCU’s No. 77."
-    ],
-    "quarterbacks": [
-      "Jaden Craig has completed 161 of 239 passes (67.4%) for 2,059 yards, 8.6 yards per attempt, 11 touchdowns and 6 interceptions in seven games for TCU, and has been sacked on 20 of 259 dropbacks.",
-      "Isaiah Marshall has completed 105 of 196 passes (53.6%) for 1,550 yards, 7.9 yards per attempt, 12 touchdowns and 7 interceptions in seven games for Kansas, and has been sacked on 11 of 207 dropbacks.",
-      "Jaden Craig does not appear on TCU’s update 2 availability report.",
-      "Kansas’ update 2 Big 12 availability report (published Oct. 30) lists quarterback Isaiah Marshall as questionable."
-    ],
-    "availability": [
-      "TCU’s availability report lists running back Landon Walker as questionable."
-    ],
-    "script": {
-      "model": [
-        "TCU’s defense has to come out ahead on big pass plays: it gives up explosive gains on 6.4% of opponent pass plays, against an offense that turns 14.8% of its pass plays into explosive gains.",
-        "TCU’s offense has to hold its own on long runs against a defense that gives up explosive gains on 6.8% of opponent runs.",
-        "TCU’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 5.6% of opponent dropbacks.",
-        "TCU’s defense has to come out ahead on long runs: it gives up explosive gains on 3.7% of opponent runs, against an offense that turns 7.1% of its runs into explosive gains."
-      ],
-      "market": [
-        "Kansas’ defense has to come out ahead on long runs: it gives up explosive gains on 6.8% of opponent runs, against an offense that turns 3.3% of its runs into explosive gains.",
-        "Kansas’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.6% of opponent dropbacks, against an offense that has allowed a sack on 7.7% of its dropbacks.",
-        "Kansas’ offense has to keep winning on big pass plays: it turns 14.8% of its pass plays into explosive gains, and TCU’s defense gives up explosive gains on 6.4% of opponent pass plays."
-      ]
-    },
-    "unknown": [
-      "TCU’s availability report lists running back Landon Walker as questionable.",
-      "Kansas’ update 2 Big 12 availability report (published Oct. 30) lists quarterback Isaiah Marshall as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for TCU.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (TCU) and sack rate (TCU); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 4.1 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T17:51:41.823Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-31T15:31:33.840Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big 12 Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T02:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T19:14:58.561Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }

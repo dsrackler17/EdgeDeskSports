@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T19:15:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1850,102 +1850,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "rn4ebz17fser1",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Louisville’s pass rush get to Davis Warren?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.8 points.",
-    "gap": {
-      "points": 1.8,
-      "toward": "Stanford",
-      "other": "Louisville"
-    },
-    "supporting": [
-      "When Stanford has the ball (the line of scrimmage on running plays): Stanford’s offense is stopped at or behind the line on 17.3% of its runs, and Louisville’s defense stops 11.4% of opponent runs at or behind the line (FBS average 17.5%).",
-      "EdgeDesk’s position-group ratings put Stanford’s offensive line No. 42 nationally and Louisville’s No. 128."
-    ],
-    "contradicting": [
-      "When Louisville has the ball (pass protection against the pass rush): Louisville’s offense has allowed a sack on 6.9% of its dropbacks, and Stanford’s defense sacks the quarterback on 1.9% of opponent dropbacks (FBS average 5.7%).",
-      "When Louisville has the ball (the run game against the run defense): Louisville’s offense averages 7.5 yards per carry, and Stanford’s defense allows 5.9 yards per carry (FBS average 5.0).",
-      "When Louisville has the ball (the red zone): Louisville’s offense succeeds on 53.5% of its red-zone plays, and Stanford’s defense allows success on 58.9% of opponent red-zone plays (FBS average 43.6%).",
-      "When Louisville has the ball (big plays through the air): Louisville’s offense turns 15.4% of its pass plays into explosive gains, and Stanford’s defense gives up explosive gains on 9.4% of opponent pass plays (FBS average 10.2%)."
-    ],
-    "quarterbacks": [
-      "Lincoln Kienholz has completed 122 of 182 passes (67.0%) for 1,848 yards, 10.2 yards per attempt, 11 touchdowns and 3 interceptions in seven games for Louisville, and has been sacked on 14 of 196 dropbacks.",
-      "Davis Warren has completed 163 of 272 passes (59.9%) for 1,933 yards, 7.1 yards per attempt, 11 touchdowns and 2 interceptions in eight games for Stanford, and has been sacked on 12 of 284 dropbacks.",
-      "Lincoln Kienholz does not appear on Louisville’s game day availability report.",
-      "Davis Warren does not appear on Stanford’s game day availability report."
-    ],
-    "availability": [
-      "Louisville’s availability report lists ten players as out, including offensive linemen James Glover-Tyson and Anwar O'Neal.",
-      "Stanford’s availability report lists 13 players as out, including offensive linemen Aidan Kilstrom and Nathan Mejia."
-    ],
-    "script": {
-      "model": [
-        "Stanford’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 4.4% of its dropbacks, and Louisville’s defense sacks the quarterback on 9.2% of opponent dropbacks.",
-        "Stanford’s defense has to slow Louisville on long runs — Louisville’s offense turns 13.3% of its runs into explosive gains.",
-        "Stanford’s defense has to slow Louisville on the ground — Louisville’s offense averages 7.5 yards per carry.",
-        "Stanford’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 17.3% of its runs, and Louisville’s defense stops 11.4% of opponent runs at or behind the line."
-      ],
-      "market": [
-        "Louisville’s offense has to keep winning on long runs: it turns 13.3% of its runs into explosive gains, and Stanford’s defense gives up explosive gains on 8.2% of opponent runs.",
-        "Louisville’s offense has to keep winning on the ground: it averages 7.5 yards per carry, and Stanford’s defense allows 5.9 yards per carry.",
-        "Louisville’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.2% of opponent dropbacks, against an offense that has allowed a sack on 4.4% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Louisville and Stanford.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Louisville), sack rate (Louisville), sack rate allowed (Stanford) and sack rate (Stanford); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Stanford: new head coach; returning production at the 46th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 8 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T17:51:41.823Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-31T15:31:33.840Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Game Day)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T17:15:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T19:14:58.561Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }

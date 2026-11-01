@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-31T19:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1914,93 +1914,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "8ruhpy44fjf8",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can North Dakota State’s pass rush get to UTEP’s quarterback?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward North Dakota State, and its own breakdown accounts for about 1.3 of the 4.5 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 4.5,
-      "toward": "North Dakota State",
-      "other": "UTEP"
-    },
-    "supporting": [
-      "When North Dakota State has the ball (pass protection against the pass rush): North Dakota State’s offense has allowed a sack on 5.1% of its dropbacks, and UTEP’s defense sacks the quarterback on 3.4% of opponent dropbacks (FBS average 5.7%).",
-      "When UTEP has the ball (pass protection against the pass rush): UTEP’s offense has allowed a sack on 18.3% of its dropbacks, and North Dakota State’s defense sacks the quarterback on 7.8% of opponent dropbacks (FBS average 5.7%).",
-      "When UTEP has the ball (third down): UTEP’s offense converts 28.4% of its third downs, and North Dakota State’s defense allows opponents to convert 34.3% of their third downs (FBS average 39.5%).",
-      "When UTEP has the ball (the line of scrimmage on running plays): UTEP’s offense is stopped at or behind the line on 17.9% of its runs, and North Dakota State’s defense stops 20.7% of opponent runs at or behind the line (FBS average 17.5%)."
-    ],
-    "contradicting": [
-      "In his last two games (Nevada and New Mexico), Hayes averaged 6.1 yards per attempt, against 8.1 in his six games before that.",
-      "In his last two games (Nevada and San José State), Moore averaged 6.1 yards per attempt, against 4.3 in his four games before that.",
-      "EdgeDesk’s position-group ratings put UTEP’s running backs No. 55 nationally and North Dakota State’s No. 138.",
-      "When North Dakota State has the ball (the red zone): North Dakota State’s offense succeeds on 39.5% of its red-zone plays, and UTEP’s defense allows success on 38.1% of opponent red-zone plays (FBS average 43.6%)."
-    ],
-    "quarterbacks": [
-      "Nathan Hayes has completed 123 of 196 passes (62.8%) for 1,470 yards, 7.5 yards per attempt, 12 touchdowns and 7 interceptions in eight games for North Dakota State, and has been sacked on 10 of 206 dropbacks.",
-      "EJ Colson Jr. has completed 54 of 82 passes (65.9%) for 615 yards, 7.5 yards per attempt, 6 touchdowns and 3 interceptions in six games for UTEP, and has been sacked on 19 of 101 dropbacks.",
-      "Raymond Moore III has completed 44 of 72 passes (61.1%) for 405 yards, 5.6 yards per attempt, 2 touchdowns and 2 interceptions in six games for UTEP, and has been sacked on 15 of 87 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "North Dakota State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.8% of opponent dropbacks, against an offense that has allowed a sack on 18.3% of its dropbacks.",
-        "North Dakota State’s offense has to hold its own in the red zone against a defense that allows success on 38.1% of opponent red-zone plays.",
-        "North Dakota State’s offense has to hold its own on long runs against a defense that gives up explosive gains on 6.4% of opponent runs.",
-        "North Dakota State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 5.1% of its dropbacks, and UTEP’s defense sacks the quarterback on 3.4% of opponent dropbacks."
-      ],
-      "market": [
-        "UTEP’s defense has to come out ahead in the red zone: it allows success on 38.1% of opponent red-zone plays, against an offense that succeeds on 39.5% of its red-zone plays.",
-        "UTEP’s defense has to come out ahead on long runs: it gives up explosive gains on 6.4% of opponent runs, against an offense that turns 5.7% of its runs into explosive gains.",
-        "UTEP’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 18.3% of its dropbacks, and North Dakota State’s defense sacks the quarterback on 7.8% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for North Dakota State and UTEP.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (North Dakota State), sack rate allowed (UTEP) and sack rate (UTEP); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.5 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T17:51:41.823Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-31T15:31:33.840Z",
-        "verification": "RATING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-31T19:14:58.561Z"
+    "at": "2026-11-01T00:02:55.724Z"
   }
 }
