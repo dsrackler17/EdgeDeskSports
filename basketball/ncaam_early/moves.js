@@ -81,7 +81,11 @@ function derive(o) {
   const S = o.season;
   const rosters = (o.rosters || []).filter((r) => r.season === S);
   const prev = o.prevPlayers || [];
-  const d1Prev = new Map((o.prevTeams || []).map((t) => [t.team_id, t]));
+  /* D-I in S-1 = a team CBBD lists WITH a conference that season. The team
+     list can also carry non-D-I opponents (no conference): they are never D-I
+     here. The rule is checked against the ESPN D-I membership on the first
+     real run (ingest crosswalk). */
+  const d1Prev = new Map((o.prevTeams || []).filter((t) => t.conference_id != null).map((t) => [t.team_id, t]));
   const cur = new Map((o.curTeams || []).map((t) => [t.team_id, t]));
   const levels = new Map(((o.schoolLevels && o.schoolLevels.entries) || []).map((e) => [normSchool(e.name), e]));
   const counts = { roster_players: rosters.length, portal_used: o.portalOffset != null, recruits_used: o.recruitOffset != null, by_kind: {}, departed: 0, unmatched_portal_names: 0, ambiguous_portal_names: 0 };

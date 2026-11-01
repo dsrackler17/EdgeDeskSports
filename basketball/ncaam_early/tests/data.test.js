@@ -211,6 +211,8 @@ const noSleep = () => Promise.resolve();
     const dep = new Map(d.departed.map((x) => [x.player_id, x]));
     chk('moves: a departure to another D-I roster names it; otherwise LEFT_OR_UNKNOWN', dep.get(110).destination === 'D1_ROSTER' && dep.get(110).to_team_id === 2 && dep.get(111).destination === 'LEFT_OR_UNKNOWN' && dep.get(101).from_team_id === 2);
     chk('moves: a returning player is not departed', !dep.has(100) && !dep.has(200));
+    const d3 = MV.derive({ season: S, rosters, prevPlayers: prev, curTeams: [], prevTeams: [{ team_id: 1, conference_id: 7 }, { team_id: 2, conference_id: null }], portal: [], recruits: [], schoolLevels: { entries: [] }, portalOffset: null, recruitOffset: null });
+    chk('moves: a previous team listed WITHOUT a conference is not D-I (NON_D1_UNCLASSIFIED), never assumed', d3.moves.find((m) => m.player_id === 101).from_level === 'NON_D1_UNCLASSIFIED');
     const d2 = MV.derive({ season: S, rosters, prevPlayers: prev, curTeams: [], prevTeams: [], portal, recruits, schoolLevels: { entries: [] }, portalOffset: null, recruitOffset: null });
     chk('moves: with no verified year offset the portal and recruits are not used at all', d2.counts.portal_used === false && !d2.moves.some((m) => m.kind === 'TRANSFER_PORTAL' || m.kind === 'FRESHMAN'));
   }
