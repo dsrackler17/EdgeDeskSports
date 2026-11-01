@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — Smart Money Tonight: the recorded best ask beside each card (methodology surface, H-RADAR-02)
+
+- **What.** `radar_tonight()` (`supabase/radar.sql` and its byte-identical migration mirror) adds `ask_price`, `ask_size`, `ask_at` and `fee_per_share` to each card. They come from the new read-only `radar_card_ask()`: the best ask, the size at it, its `quoted_at` and the taker fee at it, from the card's `radar_cards` row (the values `radar_publish_cards()` recorded at publication). They are null when no row is on file, never a midpoint. `radar_tonight_cards()`, `radar_rules()`, `radar_publish_cards()`, grading and `research/radar/**` are unchanged.
+- **Cards.** An ask inside its 15-minute limit is compared as an executable ask: depth, the gap before fees, and an EV only with a recorded fee. Past the limit, the displayed price is compared (indicative, no EV), and the publication ask is listed as not compared.
+- **Tests.** `tools/radar/radar_sql.test.js`: 259 passed, 0 failed. Against `main`'s `radar.sql`, the 6 new checks fail. The published records dumped from the suite (`RADAR_RECORD_DUMP`) are byte-identical before and after. `tools/research_compare/research_compare.test.js`: 119 passed, 0 failed. Its frozen-file check now allows only this block in `radar.sql`.
+
 ## 2026-11-01 — NCAAM-EARLY registered (v0.1.0, EXPERIMENTAL, T3) before any result
 
 - **What.** `basketball/ncaam_early/research/registration.json` and the registered starting configuration `basketball/ncaam_early/config/model_v0.json` (pinned in the registration by sha256), with `supabase/ncaam_early_registry.sql` generated from them by `research/build_registry_sql.js`. It is adapted from the NBA roster-adjusted generator: it reads the live registry columns, refuses rather than guesses, and writes no result row.
