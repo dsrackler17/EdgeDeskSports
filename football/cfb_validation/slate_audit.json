@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-11-01T20:08:31.146Z",
- "board_generated_at": "2026-11-01T20:08:18.374Z",
+ "generated_at": "2026-11-01T21:08:35.622Z",
+ "board_generated_at": "2026-11-01T21:08:22.299Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -146,6 +146,72 @@
    ],
    "consistent": true,
    "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail."
+  },
+  {
+   "game_id": "401862818",
+   "game": "South Florida @ East Carolina",
+   "kickoff": "2026-11-07T00:30:00.000Z",
+   "named": false,
+   "edgedesk": "South Florida −8.0",
+   "market": "East Carolina −1.5",
+   "books": 1,
+   "gap": 9.3,
+   "gap_class": "MAJOR",
+   "favorite_flip": true,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-11-07T00:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Dowdy-Ficklen Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 8 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 1 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "FAIL",
+     "detail": "FAIL: South Florida: starter unresolved (competition) — must be resolved or scenario-weighted at this size"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: East Carolina: availability sources checked, nothing filed · PASS: South Florida: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "WARN: the matchup term alone (-3.6 pts) lifts the gap over 7: without it the gap is 5.7 — historically informative, flagged for scrutiny"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "FAIL",
+     "detail": "FAIL: 1 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 1.6 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required)"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9.1"
+    }
+   ],
+   "consistent": true,
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; resolved QB fail; submodel support fail."
   }
  ],
  "inconsistent": [],
