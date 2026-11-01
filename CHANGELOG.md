@@ -6,6 +6,48 @@
 - **Fix.** `jr_callback` (`portfolio_connect`, build `2026-11-01-jr7`) maps Juice Reel's error with `K.jrAuthorizeError`: `access_denied` and `status=cancelled` stay `JR_CONSENT_DENIED`; `invalid_scope` is `JR_AUTHORIZE_SCOPE` (names `bets.settled.read`, says it is on EdgeDesk's side); `unauthorized_client`/`invalid_client` is `JR_CLIENT_REFUSED`; anything else is `JR_AUTHORIZE_FAILED`. Juice Reel's code is logged (`juicereel.authorize_error`).
 - **Still needed.** Juice Reel must enable `bets.settled.read` on the EdgeDesk Sports Integration application. The requested scopes are unchanged.
 - **Test.** `tools/portfolio/juicereel.test.js`: the new check failed on the previous build (every error read as `JR_CONSENT_DENIED`) and passes now.
+## 2026-11-01 — NCAAM-EARLY T3 model: prior, registered decay, in-season fit, projections, market comparison and Conviction
+
+- **What.** New `basketball/ncaam_early/model.js`, `market.js` and `project.js`, a `project` part in the sync (daily, last), and a new table, `ncaam_es_projections`.
+  - **Constants.** Every constant is registered (`config/model_v0.json`) or the engine's frozen state. `ratings.js` now also exposes the engine's home term, residual variance and λ.
+  - **Preseason prior.**
+    - 0.5 × the carried rating + 0.5 × the roster build.
+    - A coaching change shrinks the carried part further (coach_shrink 0.15).
+    - Tempo blends in the coach's tempo history.
+    - Prior variance = the engine's opening variance × the registered variance multiplier.
+  - **In-season.** The registered decay table, scaled by the variance multiplier (w / (w + vm (1 − w))), so rebuilt teams update sooner. A joint opponent-adjusted ridge fit with per-team prior strength.
+  - **Projection.** Margin, total, win probability, sd, and cover/over probabilities with whole-number pushes. Every projection uses only the finals known 30 minutes before tip, and the tests check this.
+  - **Market comparison.** Edge vs the best fresh price at its own line, the reference (Pinnacle else consensus) with its capture time, thin and stale flags, the registered Conviction tiers and angle tags. No stake or unit is returned. For a price-only bet between 1.5% and 3% the registered tier text overlaps, so LOW, the conservative reading, is taken and stated.
+  - **Prospective record.** The `project` part stores the next 48 hours of D-I v D-I projections in the append-only `ncaam_es_projections`. The database refuses a row at or after tip, or with inputs that postdate it. In-season finals and the schedule come from the NCAAM forecast's committed ESPN dataset (no CBBD call).
+- **SQL.** `supabase/ncaam_early.sql` and its mirror: the 21st table, its before-tip trigger, append-only guards, and a `translation_shift` column on the features table.
+- **Tests.**
+  - New `tests/model.test.js`: 49 passed. It covers the prior, the weights, fit recovery, the high-variance update, projection math, point in time, the market, the tiers and the angles.
+  - `features.test.js`: 50 passed (the `project` part end to end). `sql.test.js`: 45 passed (prospective guard). `data.test.js`: 77 passed. `registration.test.js`: 27 passed.
+- **Not verified.** A run on real CBBD data (no key in this environment). The market join to captured NCAAB prices is the next pull request.
+
+## 2026-11-01 — NCAAM-EARLY T2 features: player values, transfer translation, returning and departed production, the preseason team row
+
+- **What.** New `basketball/ncaam_early/features.js` and `ratings.js`, a `features` part in the sync (daily and weekly, after `moves`), and a new derived table, `ncaam_es_team_features`.
+  - **Registered values only.** Every number comes from the registered `config/model_v0.json` (its sha256 is checked against the registration). Nothing is learned. A missing input is null with a flag, never zero.
+  - **Prior-season ratings.** The existing engine (`team_model.js`, NCAAM-FORECAST's frozen parameters) is walked over the committed hoopR/ESPN dataset, crosswalked to CBBD ids by `sourceId`. Conference strength is 100 + the mean net rating.
+  - **Player value.** The registered box formula, per 100 on-floor possessions vs the D-I average, shrunk by minutes / (minutes + 250).
+  - **Newcomers.**
+    - D-I transfers: conference-strength translation, with the usage adjustment.
+    - Non-D-I transfers: replacement level with the level's registered uncertainty. CBBD has no statistics below D-I, flagged `NO_SOURCE_STATS`.
+    - Freshmen: by stars.
+    - Unknowns: replacement level, uncertainty 3.0.
+  - **The team row.** Expected minutes normalised to 200 a game. Also holds returning minutes and value share, departed production, minutes shares by origin, coach facts and coach tempo history, size, and the registered variance multiplier.
+  - **Not owned.** Travel distance and time zones are null with the reason: there are no venue coordinates.
+- **Fix found by the new SQL check.** `ncaam_es_put` wrote null over a column's default when a row omitted that key (`jsonb_populate_recordset`). It now takes the column default. Against the old function the new features check failed ("null value in column as_of_key"); with the fix the SQL suite passes 41 of 41.
+- **SQL.** `supabase/ncaam_early.sql` and its byte-identical migration mirror (idempotent: running Deploy NCAAM early-season SQL again adds the new table and replaces the two functions; nothing is dropped):
+  - the new 20th table;
+  - `ncaam_es_replace_derived` now also replaces stale feature rows for a `features` run;
+  - the default fix.
+- **Tests.**
+  - New `basketball/ncaam_early/tests/features.test.js`: 47 passed, 0 failed. It covers synthetic players, the engine on the committed 2025–2026 data, and the part end to end.
+  - `sql.test.js`: 41 passed. `data.test.js`: 77 passed. `registration.test.js`: 27 passed.
+  - NCAAM early-season suites runs the new suite and now also triggers on the engine files it reads.
+- **Not verified.** Any run on real CBBD data (no key in this environment).
 
 ## 2026-11-01 — NCAAM-EARLY registered (v0.1.0, EXPERIMENTAL, T3) before any result
 
