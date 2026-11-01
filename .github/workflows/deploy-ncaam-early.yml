@@ -1,0 +1,50 @@
+# Deploy NCAAM-EARLY SQL — applies supabase/ncaam_early.sql (the T0 store of
+# the early-season model) to production. Manual only. The suite must pass on
+# a throwaway PostgreSQL first; the file runs in one transaction and any
+# report row saying CHECK THIS fails the run. Without SB_DB_URL the run fails:
+# nothing was applied. Additive and idempotent: nothing is dropped.
+name: Deploy NCAAM early-season SQL
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ncaam-early
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: The SQL must pass against a throwaway PostgreSQL before it touches production
+        env:
+          NCAAM_EARLY_SQL_REQUIRED: '1'
+        run: |
+          node basketball/ncaam_early/tests/sql.test.js
+          cmp supabase/ncaam_early.sql supabase/migrations/20261101130000_ncaam_early.sql
+      - name: Check the credential exists before claiming anything
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set — paste supabase/ncaam_early.sql into the SQL editor instead"; exit 1; fi
+      - name: Apply supabase/ncaam_early.sql
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/ncaam_early.sql 2>&1); then
+            echo "$out" | tail -20; echo "::error::supabase/ncaam_early.sql did not apply (rolled back)"; exit 1
+          fi
+          echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/ncaam_early.sql: a report row says CHECK THIS"; exit 1; fi

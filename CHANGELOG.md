@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-01 — NCAAM-EARLY data layer: the T0 store of the early-season college basketball model
+
+- **What.** `basketball/ncaam_early/` (model `edgedesk_ncaam_early_v1`, EXPERIMENTAL), the observation layer of the early-season men's college basketball research model, which builds on the existing ratings engine (`basketball/ncaam_research/team_model.js`).
+  - A CollegeBasketballData.com client whose every path and parameter is checked against the published OpenAPI document (1.30.1, sha256 recorded). It caps calls per run and stops before a call once the shared CBBD/CFBD quota falls below a 300-call reserve.
+  - Normalisers that reject rather than repair, and check the END-year season convention against CBBD's own labels.
+  - Derived player moves: returning, D-I transfer, portal transfer by source level, freshman, departures.
+  - Hand-entered coach, availability and school-level files with validators. CBBD has no coaches endpoint.
+  - A sync (`ingest.js`) with one run row per part and season, and alerts.
+- **Storage.** New `supabase/ncaam_early.sql` (and its byte-identical migration mirror): 19 `ncaam_es_*` tables. Rosters are point in time (a team's roster is stored again only when it changes); portal, recruit and line rows are stored on change, append-only. Only `service_role` can read: CBBD's terms forbid publishing its data in bulk, and this repository is public, so no CBBD row is committed. `ncaam_es_readiness()` returns KPIs only, and System health shows it as *NCAAM early-season sync*.
+- **Workflows.** `ncaam-early-tests.yml` (pull requests; in `sports-models`). `ncaam-early-sync.yml`: daily, plus weekly parts on Mondays; **off** until `NCAAM_EARLY_SYNC = on`; needs `CBBD_API_KEY`; commits nothing. `deploy-ncaam-early.yml` (manual).
+- **Tests.** `basketball/ncaam_early/tests/data.test.js`: 76 passed, 0 failed. `basketball/ncaam_early/tests/sql.test.js` (real PostgreSQL): 39 passed, 0 failed. The SQL suite caught an upsert that left unchanged derived rows on the old run, so the stale-row cleanup would have deleted current rows. It was fixed before commit.
+- **Not verified here:** any call to CBBD (no key in this environment), so endpoint field population, the portal year offset and the ESPN id crosswalk are measured on the first real run.
+
 ## 2026-10-31 — Football enrichment refresh: the QB resolver no longer crashes when every candidate is ruled out
 
 - **What failed.** Football enrichment refresh runs 143 and 144 (41174482032, 41202537139) on `main` stopped at `build_enrichment.js` with `TypeError: Cannot read properties of null (reading 'player_name')` at `football/enrichment/qb/resolver.js:290`. Kansas State (game 401856846): last game's opener Jacob Knuth (100% of dropbacks) and the quality ranking's Avery Johnson are both listed OUT. The resolver settled the conflict (observed start over model), ruled the starter out, found no available alternative and set no QB, then wrote the resolution text from the missing QB.
