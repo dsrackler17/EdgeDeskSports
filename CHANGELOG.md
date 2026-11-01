@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
+
+- **Bug.** The matchup view refused a neutral-site game whose home and away ESPN's scoreboard and `basketball/slate.json` list the other way round ("…list this game's sides the other way round, so no graphic is drawn"), e.g. Northern Illinois v Grambling on 2 November. Across the 237 Division I scoreboard events for 2–4 November, 2 were affected, both at neutral sites. Under the home-games-only intercept (`bb_cal_v2_home_intercept`) the model prices a neutral game the same either way round, so `EDSportGraphic.labGame` now reads it with the schedule's sides (`flipGame`: moneyline, spread lines at −L, margin, rest and sample inputs move to their own team). A home game listed the other way round is still refused. No model output changed.
+- **Stats.** For men's games the graphic reads `basketball/ncaam_research/published/index.json`, already served for the research page, by ESPN id. What to watch for shows each team's 2025-26 record and adjusted net-rating rank, and each offense's rank against the other team's defense. The no-price strip shows the records and net ratings. Each school is drawn in its own colour. A team the index does not rate (a non-Division I opponent) reads "unrated". Without the index the graphic draws as before.
+- **Workflow.** `sport-graphic-tests.yml` also runs on a push of the research index to `main`.
+- **Tests.** `tools/sport_graphic/sport_graphic.test.js` gets new checks for the flip, the refusals that remain, ratings in what to watch and in the strip, one side unrated, no index, the cache key, and `forEvent` end to end with a stubbed fetch. Against the old builder 18 of them fail. With the change all 25,481 checks pass. `sport_graphic_ui.e2e.js`: 57 passed, 0 failed.
 ## 2026-11-01 — NCAAM-EARLY T3 model: prior, registered decay, in-season fit, projections, market comparison and Conviction
 
 - **What.** New `basketball/ncaam_early/model.js`, `market.js` and `project.js`, a `project` part in the sync (daily, last), and a new table, `ncaam_es_projections`.
