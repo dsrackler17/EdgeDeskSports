@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-11-01T21:08:22.299Z",
+ "as_of": "2026-11-01T22:08:18.660Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "6d5d76b237a8d816",
+ "inputs_key": "1b2fe4666e00a630",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 5890,
+   "rows": 5917,
    "mode": "LIVE",
-   "sha1": "e82316ac6501"
+   "sha1": "5cd1911ab0d1"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -52,7 +52,7 @@
   {
    "file": "football/validation/key_numbers.json",
    "mode": "DESCRIPTIVE (final margins)",
-   "sha1": "9e8dc9e809c8"
+   "sha1": "7aa140d02610"
   }
  ],
  "maturity": [
@@ -99,7 +99,7 @@
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "5890 decision snapshots issued before kickoff; 378 settled"
+   "note": "5917 decision snapshots issued before kickoff; 378 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 5890,
+  "issued_snapshots": 5917,
   "issued_by_decision": {
    "NO_DECISION": 1986,
-   "PASS": 3630,
-   "WATCH": 274
+   "PASS": 3650,
+   "WATCH": 281
   },
   "graded_rows": 385,
   "unit_of_analysis": "the first snapshot of each decision class per game",
@@ -16547,10 +16547,10 @@
      },
      {
       "closing_expected_margin": 1.5,
-      "n": 117,
+      "n": 118,
       "learned_mean": 1.88,
-      "actual_mean": 0.11,
-      "gap": 1.76
+      "actual_mean": 0.07,
+      "gap": 1.81
      },
      {
       "closing_expected_margin": 2,
@@ -16561,24 +16561,24 @@
      },
      {
       "closing_expected_margin": 2.5,
-      "n": 299,
+      "n": 300,
       "learned_mean": 2.72,
-      "actual_mean": 0.74,
-      "gap": 1.99
+      "actual_mean": 0.79,
+      "gap": 1.93
      },
      {
       "closing_expected_margin": 3,
-      "n": 666,
+      "n": 668,
       "learned_mean": 3.12,
-      "actual_mean": 2.5,
-      "gap": 0.62
+      "actual_mean": 2.54,
+      "gap": 0.58
      },
      {
       "closing_expected_margin": 3.5,
-      "n": 422,
+      "n": 423,
       "learned_mean": 3.5,
-      "actual_mean": 4.3,
-      "gap": -0.8
+      "actual_mean": 4.34,
+      "gap": -0.84
      },
      {
       "closing_expected_margin": 4,
@@ -16624,10 +16624,10 @@
      },
      {
       "closing_expected_margin": 7,
-      "n": 338,
+      "n": 339,
       "learned_mean": 6.25,
-      "actual_mean": 8.83,
-      "gap": -2.58
+      "actual_mean": 8.8,
+      "gap": -2.55
      },
      {
       "closing_expected_margin": 7.5,
@@ -16666,10 +16666,10 @@
      },
      {
       "closing_expected_margin": 10,
-      "n": 168,
+      "n": 169,
       "learned_mean": 8.83,
-      "actual_mean": 10.8,
-      "gap": -1.96
+      "actual_mean": 10.94,
+      "gap": -2.11
      },
      {
       "closing_expected_margin": 10.5,
@@ -16694,10 +16694,10 @@
      },
      {
       "closing_expected_margin": 13.5,
-      "n": 54,
+      "n": 55,
       "learned_mean": 11.66,
-      "actual_mean": 12.7,
-      "gap": -1.05
+      "actual_mean": 12.6,
+      "gap": -0.94
      },
      {
       "closing_expected_margin": 14,
@@ -17290,47 +17290,47 @@
     6,
     10
    ],
-   "average_mass": 0.04039,
+   "average_mass": 0.04038,
    "ranked": [
     {
      "margin": 3,
-     "mass": 0.15154
+     "mass": 0.15152
     },
     {
      "margin": 7,
-     "mass": 0.09047
+     "mass": 0.0905
     },
     {
      "margin": 6,
-     "mass": 0.06067
+     "mass": 0.06061
     },
     {
      "margin": 10,
-     "mass": 0.05485
+     "mass": 0.05479
     },
     {
      "margin": 4,
-     "mass": 0.04875
+     "mass": 0.04884
     },
     {
      "margin": 14,
-     "mass": 0.04875
+     "mass": 0.0487
     },
     {
      "margin": 1,
-     "mass": 0.04117
+     "mass": 0.04113
     },
     {
      "margin": 2,
-     "mass": 0.04063
+     "mass": 0.04058
     },
     {
      "margin": 8,
-     "mass": 0.03751
+     "mass": 0.03747
     },
     {
-     "margin": 17,
-     "mass": 0.03602
+     "margin": 5,
+     "mass": 0.03598
     }
    ],
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
@@ -17391,7 +17391,7 @@
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
   },
   "n": {
-   "NFL": 7384,
+   "NFL": 7392,
    "CFB": 11502
   }
  },
