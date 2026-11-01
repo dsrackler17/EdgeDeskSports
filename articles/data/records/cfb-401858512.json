@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T05:00:00.000Z",
   "game_when_label": "2026-11-07 05:00 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T05:51:54.101Z",
-  "generated_at": "2026-11-01T05:51:54.101Z",
+  "updated_at": "2026-11-01T13:12:02.344Z",
+  "generated_at": "2026-11-01T13:12:02.344Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1862,14 +1862,9 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-11-01T05:51:54.101Z"
-  },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "q9f5sb1apt4tl",
+    "packet_hash": "1sbr1z313bsyl",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Minnesota get UCLA off the field on third down?",
@@ -1919,6 +1914,11 @@
         "text": "EdgeDesk’s own sources disagree on sack rate allowed (Minnesota), sack rate allowed (UCLA) and sack rate (UCLA); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
       },
       {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "medium",
+        "text": "EdgeDesk’s published number sits 3.1 points from the middle of its own other models."
+      },
+      {
         "key": "REGIME_CHANGE",
         "severity": "medium",
         "text": "UCLA: new head coach; returning roster share at the 16th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 8 games played."
@@ -1929,7 +1929,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T00:15:11.604Z",
+        "observed_at": "2026-11-01T06:12:05.543Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1948,5 +1948,10 @@
       }
     ],
     "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-11-01T13:12:02.344Z"
   }
 }
