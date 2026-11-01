@@ -38,7 +38,8 @@ that.
 | **T0 data layer** (this directory, `supabase/ncaam_early.sql`) | built and tested; **not deployed**; the sync is **off** (`NCAAM_EARLY_SYNC`) |
 | Registration (windows, promotion criteria, starting configuration) | `research/registration.json` v0.1.0 + `config/model_v0.json` (pinned by sha256), generated `supabase/ncaam_early_registry.sql`; **not yet applied** (Deploy NCAAM early-season SQL, `apply_registry`) |
 | **T2 features** (`features.js`, `ratings.js`, part `features`, table `ncaam_es_team_features`) | built and tested (synthetic players; the engine on the committed data); **not run on CBBD data** (no key yet) |
-| **T3 model** (`model.js`), **market comparison and Conviction** (`market.js`), **projections** (`project.js`, part `project`, table `ncaam_es_projections`) | built and tested on synthetic seasons; the market join to EdgeDesk's captured NCAAB prices is the next pull request |
+| **T3 model** (`model.js`), **market comparison and Conviction** (`market.js`), **projections** (`project.js`, part `project`, table `ncaam_es_projections`) | built and tested on synthetic seasons |
+| **Market join** (`marketjoin.js`, parts `quotes` and `market`, tables `ncaam_es_market_quotes` and `ncaam_es_market_comparisons`) | built and tested on synthetic boards; **no NCAAB board exists yet** (the owner turns NCAAB on in the odds gateway and in capture's `CAPTURE_SPORTS`) |
 | Card and image, grading, accountability | later pull requests |
 
 ## The registration (v0.1.0, before any result)
@@ -190,6 +191,50 @@ The conservative reading, LOW, is taken, and it is stated in the code.
 **Angle tags** use the registered thresholds: `continuity_gap`,
 `transfer_translation`, `coach_change`, `departed_production`,
 `pace_coach_history`, `size_mismatch`, `price_only`.
+
+## The market join (`marketjoin.js`, parts `quotes` and `market`)
+
+**Where the prices come from.** Only from the NCAAB boards the odds gateway
+has **already bought** for capture. `ncaam_es_ncaab_board` reads them from
+`public.odds_api_snapshots`, a database read: **no purchase, no credit, no
+call to the gateway or The Odds API**. Boards older than 6 hours are not
+read. Nothing in this directory can spend.
+
+**History.** The gateway keeps only its latest board, so the `quotes` part
+(hourly at :23, and in the daily run) keeps the history in
+`ncaam_es_market_quotes`:
+
+- one row per event, book and market, appended only when its line or price
+  changes;
+- `captured_at` is when the gateway received the board, not the book's own
+  stamp;
+- prices are decimal, stored exactly as bought;
+- a price seen at or after the commence time is refused by the database;
+- the table is append-only.
+
+**Matching a game to an odds event.** Both team names must equal the ESPN
+names (`basketball/ncaam_forecast/data/teams.json`) after normalising case,
+accents, apostrophes, periods and "&". The commence time must be within 3
+hours of the tip, with exactly one candidate either way. Books that list the
+home and away teams the other way round are matched, then turned to the
+game's orientation (the home spread negated, the prices exchanged). Anything
+else is **UNMATCHED or AMBIGUOUS, never guessed**. The run reports the odds
+names it could not resolve, so an alias can be added for a team listed under
+another name.
+
+**The comparison.** The `market` part compares this run's projections, each
+market at its own best fresh price (`market.js`), and stores one row per game
+and market in `ncaam_es_market_comparisons`. A row holds:
+
+- the side, book, line and decimal price;
+- the model probability and the Edge;
+- the reference (Pinnacle, else the consensus) with its capture time;
+- the number of fresh books;
+- the angle tags and the Conviction.
+
+A game with no matched board is still stored, as PASS with its reason, so
+coverage is on the record. **The database refuses a comparison at or after
+tip.** No row carries a stake.
 
 ## The T2 features (`features.js`, `ratings.js`)
 
@@ -362,7 +407,12 @@ holds counts, hashes and the quota, and no data row (a test checks this).
    days if the free tier is small. Then run parts `moves` for each season.
 4. **Turn the schedule on.** Set the repository variable
    `NCAAM_EARLY_SYNC = on`. Without it the scheduled run is skipped, and is
-   never reported as a sync.
+   never reported as a sync. This also starts the hourly `quotes` run.
+4b. **NCAAB prices.** Follow the operator steps in
+   `docs/odds-api-incident-2026-10/METHODOLOGY-2026-11-01-ncaab-lines.md`:
+   turn `basketball_ncaab` on (`odds_api_set_sport`) and add it to capture's
+   `CAPTURE_SPORTS`. Until then the `quotes` part stores nothing, and every
+   comparison is PASS with `NO_PRICE`.
 5. **Coaches.** Enter the 2026-27 head coaches in `manual/coaches.json`,
    starting with the changes. Each record needs its CBBD team id (from step 2)
    and at least one source URL. `node basketball/ncaam_early/tests/data.test.js`
@@ -391,3 +441,8 @@ holds counts, hashes and the quota, and no data row (a test checks this).
   (a later pull request).
 - CBBD lines carry no times. EdgeDesk's own captures (the odds gateway) are
   the market record for the live season.
+- The price history is as fine as the gateway's purchases (about hourly on a
+  game day) and the hourly copy. A price that changed and changed back
+  between two copies is not seen.
+- Kalshi NCAAB markets are not captured (`kalshi_sync` takes NFL and CFB
+  only). The Kalshi thin-volume rule therefore never applies yet.

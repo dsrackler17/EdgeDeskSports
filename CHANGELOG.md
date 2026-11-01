@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-01 — NCAAM-EARLY market join: NCAAB prices from the gateway's boards, game matching, comparisons and Conviction before tip
+
+- **What.** New `basketball/ncaam_early/marketjoin.js`, two sync parts (`quotes` hourly and daily; `market` daily, after `project`) and two tables, `ncaam_es_market_quotes` and `ncaam_es_market_comparisons`.
+  - **No purchase.** Prices come only from the NCAAB boards the odds gateway has already bought for capture. The new service-role function `ncaam_es_ncaab_board` reads `public.odds_api_snapshots`. Nothing writes to the gateway, buys through it, or calls The Odds API. The gateway and capture are unchanged.
+  - **History.** The gateway keeps only its latest board. `ncaam_es_market_quotes` keeps a row per event, book and market whenever the line or price changes, in decimal as bought, stamped with when the gateway received it. The database refuses a price seen at or after commence. The table is append-only.
+  - **Matching.** Both team names (normalised) plus the tip within 3 hours, with exactly one candidate either way. A reversed home / away is turned to the game's orientation. Anything else is UNMATCHED or AMBIGUOUS, never guessed, and the unresolved odds names are reported.
+  - **Comparison.** Each projected game's spread, total and moneyline at its best fresh price, Edge, reference, fresh-book count, angle tags and Conviction (`market.js`, unchanged rules). Rows go to the append-only `ncaam_es_market_comparisons`, which refuses a row at or after tip. An unmatched game is stored as PASS with its reason. No stake is stored.
+  - **`market.js`.** It now takes decimal prices as given (`dec_a`, `dec_b`), so no captured price is rounded to American. The rules and thresholds are unchanged. A test checks that the same prices in either form give the same Edge, book, line and reference.
+- **SQL.** `supabase/ncaam_early.sql` and its mirror: 23 tables and 10 append-only guards, a generic before-tip trigger, and the board reader (service role only; it answers `available: false` when the gateway is not installed).
+- **Workflow.** `ncaam-early-sync.yml` adds an hourly run at :23 of part `quotes` (no CBBD call, no raw cache). `ncaam-early-tests.yml` runs the new suite.
+- **Tests.**
+  - New `tests/market.test.js`: 37 passed. It covers board parsing (decimal and American; live, mismatched and malformed prices rejected), matching (exact, swapped, outside the window, ambiguous, shared names, aliases), orientation, the decimal path, and the parts end to end on synthetic boards (stale board gives PASS; market without project is refused).
+  - `sql.test.js`: 63 passed (quotes stored on change, refused at or after commence, comparisons before tip, append-only, the board reader's filters and grants).
+  - `model.test.js` 49, `features.test.js` 50, `data.test.js` 77 and `registration.test.js` 27 passed.
+- **Not verified.** A run against a real NCAAB board: none exists until the owner turns NCAAB on in the gateway and capture.
+
 ## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
 
 - **Bug.** The matchup view refused a neutral-site game whose home and away ESPN's scoreboard and `basketball/slate.json` list the other way round ("…list this game's sides the other way round, so no graphic is drawn"), e.g. Northern Illinois v Grambling on 2 November. Across the 237 Division I scoreboard events for 2–4 November, 2 were affected, both at neutral sites. Under the home-games-only intercept (`bb_cal_v2_home_intercept`) the model prices a neutral game the same either way round, so `EDSportGraphic.labGame` now reads it with the schedule's sides (`flipGame`: moneyline, spread lines at −L, margin, rest and sample inputs move to their own team). A home game listed the other way round is still refused. No model output changed.

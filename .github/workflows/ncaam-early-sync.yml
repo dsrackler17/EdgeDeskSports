@@ -1,9 +1,13 @@
 # NCAAM-EARLY — the T0 sync from CollegeBasketballData.com (CBBD) and the
 # hand-entered files into the ncaam_es_* tables (supabase/ncaam_early.sql).
 #
-#   daily 12:47 UTC   rosters, games, coaches, availability, moves
+#   daily 12:47 UTC   rosters, games, coaches, availability, moves,
+#                       features, project, quotes, market
 #   Mondays           + teams, box lines, player seasons, lines, portal,
 #                       recruits (the weekly parts)
+#   hourly :23        quotes: the NCAAB prices of the boards the odds gateway
+#                       has ALREADY bought, kept as a history (a database
+#                       read: no purchase, no credit, no CBBD call)
 #   by hand           any parts and seasons (a backfill), with a call cap
 #
 # OFF until the owner turns it on: the repository variable NCAAM_EARLY_SYNC
@@ -22,10 +26,11 @@ name: NCAAM early-season sync
 on:
   schedule:
     - cron: '47 12 * * *'
+    - cron: '23 * * * *'
   workflow_dispatch:
     inputs:
       parts:
-        description: 'Parts: daily | weekly | all | a comma list (teams,conferences,venues,games,box_team,player_seasons,rosters,portal,recruits,lines,coaches,availability,moves)'
+        description: 'Parts: hourly | daily | weekly | all | a comma list (teams,conferences,venues,games,box_team,player_seasons,rosters,portal,recruits,lines,coaches,availability,moves,features,project,quotes,market)'
         type: string
         default: 'daily'
       seasons:
@@ -61,12 +66,6 @@ jobs:
           node-version: '22.22.0'
       - name: The data layer suite must pass first
         run: node basketball/ncaam_early/tests/data.test.js
-      - name: Restore the raw response cache (never committed)
-        uses: actions/cache/restore@v4
-        with:
-          path: .cache/ncaam_early/raw
-          key: ncaam-early-raw-${{ github.run_id }}
-          restore-keys: ncaam-early-raw-
       - name: Which parts
         id: plan
         env:
@@ -75,12 +74,21 @@ jobs:
           IN_MODE: ${{ inputs.mode }}
           IN_MAX: ${{ inputs.max_calls }}
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "23 * * * *" ]; then
+            echo "parts=hourly" >> "$GITHUB_OUTPUT"; echo "seasons=current" >> "$GITHUB_OUTPUT"; echo "mode=scheduled" >> "$GITHUB_OUTPUT"; echo "max=0" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
             if [ "$(date -u +%u)" = "1" ]; then echo "parts=weekly" >> "$GITHUB_OUTPUT"; else echo "parts=daily" >> "$GITHUB_OUTPUT"; fi
             echo "seasons=current" >> "$GITHUB_OUTPUT"; echo "mode=scheduled" >> "$GITHUB_OUTPUT"; echo "max=40" >> "$GITHUB_OUTPUT"
           else
             echo "parts=$IN_PARTS" >> "$GITHUB_OUTPUT"; echo "seasons=$IN_SEASONS" >> "$GITHUB_OUTPUT"; echo "mode=$IN_MODE" >> "$GITHUB_OUTPUT"; echo "max=$IN_MAX" >> "$GITHUB_OUTPUT"
           fi
+      - name: Restore the raw response cache (never committed)
+        if: ${{ steps.plan.outputs.parts != 'hourly' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/ncaam_early/raw
+          key: ncaam-early-raw-${{ github.run_id }}
+          restore-keys: ncaam-early-raw-
       - name: Sync
         env:
           CBBD_API_KEY: ${{ secrets.CBBD_API_KEY }}
@@ -94,7 +102,7 @@ jobs:
           if [ -z "$SB_URL" ] || [ -z "$SB_SERVICE_ROLE" ]; then echo "::error::SB_URL / SB_SERVICE_ROLE are not set: nothing could be stored"; exit 1; fi
           node basketball/ncaam_early/ingest.js --parts "$PARTS" --season "$SEASONS" --mode "$MODE" --max-calls "$MAXC" --manifest .cache/ncaam_early/manifest.json
       - name: Save the raw response cache
-        if: ${{ always() }}
+        if: ${{ always() && steps.plan.outputs.parts != 'hourly' }}
         uses: actions/cache/save@v4
         with:
           path: .cache/ncaam_early/raw

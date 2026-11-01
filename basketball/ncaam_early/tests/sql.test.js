@@ -46,7 +46,8 @@ const put = (run, table, rows) => svc("select public.ncaam_es_put('" + run + "',
 const finish = (run, status, quota) => svc("select public.ncaam_es_finish_run('" + run + "', '" + status + "', 1, 0, 1, 1, " + (quota == null ? 'null' : quota) + ", '{}'::jsonb)");
 const rows = (o) => (o.match(/\|(ok|CHECK THIS)$/gm) || []);
 const TABLES = ['ncaam_es_runs', 'ncaam_es_alerts', 'ncaam_es_config', 'ncaam_es_teams', 'ncaam_es_conferences', 'ncaam_es_conference_members', 'ncaam_es_venues', 'ncaam_es_games', 'ncaam_es_box_team',
-  'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_projections', 'ncaam_es_coaches', 'ncaam_es_availability'];
+  'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_projections', 'ncaam_es_coaches', 'ncaam_es_availability',
+  'ncaam_es_market_quotes', 'ncaam_es_market_comparisons'];
 
 try {
   /* ── 1 ── */
@@ -58,7 +59,7 @@ try {
 
   /* ── 2 ── */
   const deniedRead = TABLES.filter((t) => db.mustFail(() => db.anon('select count(*) from public.' + t + ';')) && db.mustFail(() => db.as('00000000-0000-0000-0000-000000000001', 'select count(*) from public.' + t + ';')));
-  T.chk('2 · anon and authenticated cannot read any of the 21 tables', deniedRead.length === 21, TABLES.filter((t) => !deniedRead.includes(t)));
+  T.chk('2 · anon and authenticated cannot read any of the 23 tables', deniedRead.length === 23, TABLES.filter((t) => !deniedRead.includes(t)));
   T.chk('2 · a client cannot insert a game', !!db.mustFail(() => db.as('00000000-0000-0000-0000-000000000001', "insert into public.ncaam_es_games (game_id, season, start_utc, status, home_team_id, away_team_id) values (1, 2027, now(), 'SCHEDULED', 1, 2);")));
   const writers = ["public.ncaam_es_begin_run('games', 2027, 'scheduled', 'x')", "public.ncaam_es_put(gen_random_uuid(), 'ncaam_es_games', '[]'::jsonb)", "public.ncaam_es_put_rosters(gen_random_uuid(), '[]'::jsonb)",
     "public.ncaam_es_alert(null, 'FAILURE', 'X', 'y')", "public.ncaam_es_replace_derived(gen_random_uuid(), 2027)"];
@@ -135,6 +136,55 @@ try {
   T.chk('7 · a projection whose inputs postdate it is refused (no leakage)', !!db.mustFail(() => db.service("select public.ncaam_es_put('" + pr1 + "', 'ncaam_es_projections', " + lit([pj('p3', future, { inputs_known_through: new Date(Date.now() + 2 * 86400e3).toISOString() })]) + ');')));
   T.chk('7 · projections are append-only, even for service_role', /append-only/.test(db.mustFail(() => db.service("update public.ncaam_es_projections set fair_total = 150;")) || '') && /append-only/.test(db.mustFail(() => db.service('delete from public.ncaam_es_projections;')) || ''));
   finish(pr1, 'ok');
+
+  /* market quotes: a history of the gateway's boards, a row only when a price changes */
+  const mq = (at, extra) => Object.assign({ event_id: 'ev1', book: 'draftkings', market: 'spread', commence_time: future, home_team: 'Home U', away_team: 'Away St',
+    line: -3.5, price_a: 1.91, price_b: 1.91, captured_at: at, snapshot_fingerprint: 'fp' }, extra || {});
+  const t1 = new Date(Date.now() - 3 * 3600e3).toISOString(), t2 = new Date(Date.now() - 2 * 3600e3).toISOString(), t3 = new Date(Date.now() - 3600e3).toISOString();
+  const qr = begin('quotes', 2027);
+  T.chk('9 · quotes: a first price is stored', put(qr, 'ncaam_es_market_quotes', [mq(t1)]).inserted === 1);
+  T.chk('9 · quotes: the same price on a later board is not stored again', put(qr, 'ncaam_es_market_quotes', [mq(t2)]).inserted === 0);
+  T.chk('9 · quotes: a moved line is a new row, the old one kept (point in time)', put(qr, 'ncaam_es_market_quotes', [mq(t3, { line: -4.5 })]).inserted === 1
+    && db.sql("select string_agg(line::text, ',' order by captured_at) from public.ncaam_es_market_quotes") === '-3.5,-4.5');
+  T.chk('9 · quotes: a price seen at or after the commence time is refused', !!db.mustFail(() => put(qr, 'ncaam_es_market_quotes', [mq(t3, { event_id: 'ev2', commence_time: t2 })])));
+  T.chk('9 · quotes: a moneyline carries no line; a spread must', !!db.mustFail(() => put(qr, 'ncaam_es_market_quotes', [mq(t3, { event_id: 'ev3', market: 'moneyline' })]))
+    && !!db.mustFail(() => put(qr, 'ncaam_es_market_quotes', [mq(t3, { event_id: 'ev4', line: null })])));
+  T.chk('9 · quotes: a decimal price of 1 or less is refused', !!db.mustFail(() => put(qr, 'ncaam_es_market_quotes', [mq(t3, { event_id: 'ev5', price_a: 1 })])));
+  T.chk('9 · quotes are append-only, even for service_role', /append-only/.test(db.mustFail(() => db.service('update public.ncaam_es_market_quotes set line = 0;')) || '') && /append-only/.test(db.mustFail(() => db.service('delete from public.ncaam_es_market_quotes;')) || ''));
+  finish(qr, 'ok');
+
+  /* market comparisons: prospective, append-only */
+  const mc = (id, start, extra) => Object.assign({ comparison_id: id, projection_id: 'p1', espn_game_id: 'gp1', season: 2027, market: 'spread', start_utc: start, compared_at: new Date().toISOString(),
+    odds_event_id: 'ev1', match_basis: 'NAMES_AND_TIP', side: 'home', book: 'draftkings', line: -3.5, price_decimal: 1.91, p_model: 0.55, edge: 0.0505, books_fresh: 3,
+    conviction: 'MEDIUM', model_version: '0.1.0', config_sha256: 'x' }, extra || {});
+  const mr = begin('market', 2027);
+  T.chk('9 · a comparison before tip is stored, published_at set by the database', put(mr, 'ncaam_es_market_comparisons', [mc('c1', future)]).inserted === 1
+    && db.sql("select (published_at <= now())::text from public.ncaam_es_market_comparisons where comparison_id = 'c1'") === 'true');
+  T.chk('9 · a comparison at or after tip is refused', /only stored before tip/.test(db.mustFail(() => db.service("select public.ncaam_es_put('" + mr + "', 'ncaam_es_market_comparisons', " + lit([mc('c2', past, { compared_at: new Date(Date.now() - 7200e3).toISOString() })]) + ');')) || ''));
+  T.chk('9 · a PASS with no price is stored with no side and no edge; a side without an edge is refused', put(mr, 'ncaam_es_market_comparisons', [mc('c3', future, { side: null, book: null, line: null, price_decimal: null, p_model: null, edge: null, conviction: 'PASS', flags: ['NO_PRICE'] })]).inserted === 1
+    && !!db.mustFail(() => put(mr, 'ncaam_es_market_comparisons', [mc('c4', future, { edge: null })])));
+  T.chk('9 · Conviction is HIGH, MEDIUM, LOW or PASS and nothing else (no stake)', !!db.mustFail(() => put(mr, 'ncaam_es_market_comparisons', [mc('c5', future, { conviction: '1u' })])));
+  T.chk('9 · comparisons are append-only, even for service_role', /append-only/.test(db.mustFail(() => db.service("update public.ncaam_es_market_comparisons set edge = 0.2;")) || '') && /append-only/.test(db.mustFail(() => db.service('delete from public.ncaam_es_market_comparisons;')) || ''));
+  finish(mr, 'ok');
+
+  /* the board reader: the gateway's snapshot store, read only */
+  const win = "'" + new Date().toISOString() + "'::timestamptz, '" + new Date(Date.now() + 2 * 86400e3).toISOString() + "'::timestamptz";
+  T.chk('9 · board: with no odds gateway installed it answers available = false', J(db.service('select public.ncaam_es_ncaab_board(' + win + ');')).available === false);
+  db.sql("create table public.odds_api_snapshots (fingerprint text primary key, category text, sport_key text, endpoint text, odds_format text, last_success_at timestamptz, body jsonb);");
+  const ev = (id, hrs) => ({ id, commence_time: new Date(Date.now() + hrs * 3600e3).toISOString(), home_team: 'Home U', away_team: 'Away St', bookmakers: [] });
+  db.sql("insert into public.odds_api_snapshots values ('f1', 'featured', 'basketball_ncaab', '/odds', 'decimal', now() - interval '20 minutes', " + lit([ev('a', 5), ev('b', 72)]) + "),"
+    + " ('f2', 'featured', 'basketball_nba', '/odds', 'decimal', now(), " + lit([ev('n', 5)]) + "),"
+    + " ('f3', 'featured', 'basketball_ncaab', '/events', 'decimal', now() - interval '7 hours', " + lit([ev('old', 5)]) + ");");
+  const bd = J(db.service('select public.ncaam_es_ncaab_board(' + win + ');'));
+  T.chk('9 · board: only NCAAB, only boards under 6 h old, only events inside the window', bd.available === true && bd.boards.length === 1 && bd.boards[0].fingerprint === 'f1'
+    && bd.boards[0].events.length === 1 && bd.boards[0].events[0].id === 'a' && bd.boards[0].odds_format === 'decimal', bd);
+  T.chk('9 · board: a window over 4 days is refused', /at most 4 days/.test(db.mustFail(() => db.service("select public.ncaam_es_ncaab_board(now(), now() + interval '5 days');")) || ''));
+  T.chk('9 · board: no client may call it', /permission denied/.test(db.mustFail(() => db.anon('select public.ncaam_es_ncaab_board(' + win + ');')) || '')
+    && /permission denied/.test(db.mustFail(() => db.as('00000000-0000-0000-0000-000000000001', 'select public.ncaam_es_ncaab_board(' + win + ');')) || ''));
+  T.chk('9 · board: reading it changes nothing in the gateway store', db.sql("select count(*) from public.odds_api_snapshots") === '3');
+  T.chk('9 · the file still applies, every report row ok, with the gateway table present', (() => { const o = db.applyFile(FILE); return rows(o).length === 6 && rows(o).every((r) => /ok$/.test(r)); })());
+  db.sql('drop table public.odds_api_snapshots;');
+
   T.chk('7 · a kind outside the list is refused by the table', !!db.mustFail(() => { const r = begin('moves', 2026); put(r, 'ncaam_es_player_moves', [Object.assign(mv(3), { season: 2026, kind: 'GUESS' })]); }));
 
   /* ── 8 ── readiness */
