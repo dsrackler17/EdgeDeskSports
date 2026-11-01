@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-11-01T02:08:21.323Z",
+ "generated_at": "2026-11-01T03:08:28.059Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-26T01:08:11.697Z",
+  "since": "2026-10-26T03:08:06.399Z",
   "changes": [
    {
     "what": "pricing code",
@@ -22,20 +22,20 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-26T00:29:30.292Z",
+    "from": "2026-10-26T02:53:05.205Z",
     "to": "2026-11-01T01:17:18.410Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 64,
-    "to": 69
+    "to": 71
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 92,
-    "to": 19
+    "to": 17
    }
   ],
   "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -357,42 +357,6 @@
    "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE HISTORY UNKNOWN"
-  },
-  {
-   "from_at": "2026-10-22T05:08:29.173Z",
-   "to_at": "2026-10-31T20:48:13.327Z",
-   "old_fair": 23.47,
-   "new_fair": 28.33,
-   "change": 4.86,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: Jackson Arnold (PREVIOUS_GAME) → Jackson Arnold (COMPETITION)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -0.24
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401864530",
-   "game": "Northern Illinois @ UNLV",
-   "market_then": null,
-   "market_now": -22.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-10-25T05:02:23.817Z",
@@ -1930,42 +1894,6 @@
    "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE HISTORY UNKNOWN"
-  },
-  {
-   "from_at": "2026-10-21T04:06:23.535Z",
-   "to_at": "2026-10-31T20:48:13.327Z",
-   "old_fair": -5.03,
-   "new_fair": -4.93,
-   "change": 0.1,
-   "material": false,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: Jayden Mandal (PREVIOUS_GAME) → Jayden Mandal (COMPETITION)"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Braden Atkinson (PREVIOUS_GAME) → Braden Atkinson (COMPETITION)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.1
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401860924",
-   "game": "Oregon State @ Fresno State",
-   "market_then": null,
-   "market_now": 6,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-10-25T01:19:00.956Z",
