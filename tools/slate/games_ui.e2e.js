@@ -43,7 +43,10 @@ const NOW = F.NOW;
   try { pw = require('playwright'); } catch (_) { try { pw = require('/opt/node22/lib/node_modules/playwright'); } catch (e2) { pw = null; } }
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   /* the slate was built ten minutes ago, so a live read from now is the newer one */
-  const built = await F.buildFixture({ now: NOW - 10 * 60000 });
+  /* the NHL model built two hours before the pinned clock, so the shared comparison (lib/edgedesk_research_compare.js)
+     can call it current; the other sports' blocks keep no build time and read "Model time not recorded" */
+  const RSRC = F.research(); RSRC.nhl.generated_at = new Date(NOW - 2 * 3600e3).toISOString();
+  const built = await F.buildFixture({ now: NOW - 10 * 60000, research: RSRC });
   const SLATE = built.snap;
 
   /* what the stubs answer, changed per scenario */
@@ -243,6 +246,9 @@ const NOW = F.NOW;
       /Market/i.test(dlg) && /Research/i.test(dlg) && /EdgeDesk model/i.test(dlg) && /Fair puck line/.test(dlg) && /Games available/.test(dlg) && /Actionable signal/.test(dlg), dlg.slice(0, 500));
     chk('the NHL matchup sets EdgeDesk against the captured price: the favourite, the gap, the price that pays, never verified',
       /EdgeDesk vs the market\. EdgeDesk makes FLA the likelier winner, 52\.8% \(fair −112\)/.test(dlg) && /Largest difference: EdgeDesk rates CBJ to win 5\.2 pp higher than the book/.test(dlg) && /CBJ at \+130 pays above EdgeDesk’s fair \+112/.test(dlg) && /not a verified edge/.test(dlg) && !/verified value/i.test(dlg), dlg.slice(0, 1400));
+    chk('the matchup view compares through the same path as the Research Queue: one market, both current, the same gap as the NHL sentence',
+      /Comparison\. Model vs no-vig price \+5\.2 pp \(Moneyline, Blue Jackets 47\.2% vs 42\.0%\)\./.test(dlg) && /edgedesk_research_compare\/1/.test(dlg)
+      && (await page.$eval('#gmDetail .gm-rc', (x) => x.getAttribute('data-rc-status')).catch(() => '')) === 'COMPARED', dlg.slice(0, 1600));
     chk('the model is labelled as an estimate, with its validation and why value claims are off', /not a recommendation/.test(dlg) && /outcome validated/i.test(dlg) && /value claims are off/i.test(dlg));
     chk('focus moves into the dialog', await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-gm-close')));
     await page.keyboard.press('Escape');

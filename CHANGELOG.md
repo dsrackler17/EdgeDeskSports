@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — The matchup view compares through the Research Queue's path
+
+- **What.** The matchup view's EdgeDesk model section now has a **Comparison** line. It comes from the same `EDResearchCompare.fromSlate` call the Research Queue makes (`lib/edgedesk_games_ui.js` `compareHTML`). It shows one market on both sides with both values current, or names the reason there is no comparison (model refresh needed, price refresh needed, comparable model unavailable, and so on), with the calc version. Before this, the matchup view showed the model's fair lines and the book's lines side by side with no comparability or freshness status, so for every sport but NHL it could disagree with the queue. For NHL it now prints the same gap as the queue and as its own `EDNHLCompare` sentence. The line follows the `EDResearchCompare` flag (`?rc=0` hides it) and is never drawn on the public host.
+- **Fix.** `EDGamesUI.snapshot()` now returns the slate's `sources`. Before, the Overview's per-artifact model build-time fallback (`snap.sources.fallback`) was always empty in the browser; only the tests passed it. No effect today: the slate now stamps `generated_at` on 513 of 515 model blocks, and the remaining 2 are UFC, which has no freshness policy.
+- **Tests.** `tools/slate/games_ui.e2e.js`: 118 → 119 checks. The new check is that the NHL matchup's Comparison line reads "Model vs no-vig price +5.2 pp (Moneyline, Blue Jackets 47.2% vs 42.0%)", matching the matchup's NHL sentence. The fixture's NHL model is stamped with a build time two hours before the pinned clock.
+
 ## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
 
 - **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.

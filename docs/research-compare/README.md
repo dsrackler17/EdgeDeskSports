@@ -6,6 +6,9 @@ by how much they differ. The Research Queue (`lib/edgedesk_overview.js`) and the
 Tonight cards (`lib/edgedesk_radar_ui.js`) both compare through it. For NHL it delegates to
 `EDNHLCompare`, which the matchup page already uses, so all three surfaces show the same gap.
 
+The matchup view (`lib/edgedesk_games_ui.js` `compareHTML`) prints the same result in its EdgeDesk model section,
+from the same `RC.fromSlate` call, beside the NHL sentence `EDNHLCompare` already writes there.
+
 It computes no probability, selects no wallet, and changes nothing in Radar's selection,
 publication or grading (H-RADAR-01 and H-RADAR-02 are untouched: `supabase/radar*.sql`,
 `research/radar/**` and `lib/edgedesk_radar.js` are unchanged).
@@ -20,7 +23,7 @@ publication or grading (H-RADAR-01 and H-RADAR-02 are untouched: `supabase/radar
 | model output | `tools/slate/research.js` attaches each sport's model block (now with `generated_at`) | the same slate model block, through the match |
 | comparison | `RC.fromSlate` | `RC.fromRadarCard` |
 | API and cache | committed file, read by `EDGamesUI` | `radar_tonight()`, `X.memo('ov:radar', 2 min)` |
-| UI | `O.rowV2HTML`, `O.priorityHTML` | `U.cardV2HTML` |
+| UI | `O.rowV2HTML`, `O.priorityHTML`; the matchup view's `compareHTML` | `U.cardV2HTML` |
 | published snapshot and grading | none (the queue publishes nothing) | `radar_cards` and `radar_card_results` (`supabase/radar_record.sql`), unchanged; `RC.snapshot` freezes a client-side copy |
 
 ## Root causes of the reported symptoms
