@@ -165,7 +165,7 @@ chk('once passed: the label says so instead of Experimental', /Passed its regist
 chk('nothing graded yet: said, no number', /No card has been graded yet/.test(U.recordHTML(REC({ totals: { graded: 0, pending: 3 } }))));
 chk('the record is the terminal\'s: nothing for a refused reader, off or not deployed', U.recordHTML({ status: 'subscribers_only' }) === '' && U.recordHTML({ status: 'disabled' }) === '' && U.recordHTML({ notDeployed: true }) === '');
 chk('it says past results do not predict future results, and never claims', /Past results do not predict future results/.test(rh) && /not a claim/.test(rh));
-chk('the Overview reads radar_record under the reader\'s token and draws it under the cards', /X\.rpc\('radar_record', \{ p_limit: 10 \}\)/.test(read('lib/edgedesk_overview.js')) && /U\.tonightHTML\(S\.svc\.radar\) \+ \(U\.recordHTML \? U\.recordHTML\(S\.svc\.radarRecord\) : ''\)/.test(read('lib/edgedesk_overview.js')));
+chk('the Overview reads radar_record under the reader\'s token and draws it under the cards', /X\.rpc\('radar_record', \{ p_limit: 10 \}\)/.test(read('lib/edgedesk_overview.js')) && /U\.tonightHTML\(S\.svc\.radar, opts\) \+ \(U\.recordHTML \? U\.recordHTML\(S\.svc\.radarRecord\) : ''\)/.test(read('lib/edgedesk_overview.js')));
 chk('the public page never asks for the record', !/radar_record/.test(read('radar/index.html')));
 
 /* ── Known limitations ───────────────────────────────────────────────── */
@@ -188,7 +188,7 @@ const APP = read('app.html'), OV = read('lib/edgedesk_overview.js');
 chk('app.html loads the Radar module once, before the Overview', APP.split('edgedesk_radar_ui.js?').length === 2 && APP.indexOf('edgedesk_radar_ui.js?') < APP.indexOf('edgedesk_overview.js?'));
 chk('the Overview puts Smart Money Tonight first', /<div class="ovw" aria-labelledby="ovH"><div id="ovRadar"><\/div><div id="ovHead"><\/div>/.test(OV));
 chk('the Overview reads radar_tonight and radar_trader through the shell (the reader\'s own token)', /X\.rpc\('radar_tonight', \{\}\)/.test(OV) && /SH\(\)\.rpc\('radar_trader', \{ p_wallet: w \}\)/.test(OV));
-chk('the Overview draws nothing of its own for Radar: the module does', /U\.tonightHTML\(S\.svc\.radar\)/.test(OV) && !/rd-card/.test(OV));
+chk('the Overview draws nothing of its own for Radar: the module does', /U\.tonightHTML\(S\.svc\.radar, opts\)/.test(OV) && !/rd-card/.test(OV));
 const pageRpcs = [...PAGE.matchAll(/rpc\('([a-z_]+)'/g)].map((m) => m[1]);
 chk('the public page calls anonymous doors only, never radar_tonight', pageRpcs.length >= 4 && pageRpcs.every((n) => ['radar_status', 'radar_leaderboard', 'radar_trader', 'radar_teaser'].indexOf(n) >= 0), pageRpcs);
 chk('…and every one is in the door map as anonymous (lib/edgedesk_plans.js)', pageRpcs.every((n) => require(path.join(ROOT, 'lib', 'edgedesk_plans.js')).isAnonDoor('rpc', n)));

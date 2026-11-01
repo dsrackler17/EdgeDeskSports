@@ -22,6 +22,12 @@ on:
       - 'lib/edgedesk_context.js'
       - 'lib/edgedesk_shell.*'
       - 'lib/edgedesk_overview.js'
+      - 'lib/edgedesk_research_compare.js'
+      - 'lib/edgedesk_radar_ui.js'
+      - 'lib/edgedesk_nhl_compare.js'
+      - 'tools/research_compare/**'
+      - 'tools/slate/research.js'
+      - 'tools/slate/fixtures/**'
       - 'lib/edgedesk_search.js'
       - 'lib/edgedesk_perf_hub.js'
       - 'lib/edgedesk_game_view.js'
@@ -71,6 +77,8 @@ jobs:
           node-version: '22'
       - name: Context, shell, Overview, search, Performance hub and the app.html wiring
         run: node tools/research_os/research_os.test.js
+      - name: The shared comparison path (Research Queue and Smart Money cards), fixture to card
+        run: node tools/research_compare/research_compare.test.js
       - name: The navigation model, the Portfolio seat and the public pages' links
         run: |
           node tools/app/navigation.test.js
