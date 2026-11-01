@@ -37,7 +37,8 @@ that.
 |---|---|
 | **T0 data layer** (this directory, `supabase/ncaam_early.sql`) | built and tested; **not deployed**; the sync is **off** (`NCAAM_EARLY_SYNC`) |
 | Registration (windows, promotion criteria, starting configuration) | `research/registration.json` v0.1.0 + `config/model_v0.json` (pinned by sha256), generated `supabase/ncaam_early_registry.sql`; **not yet applied** (Deploy NCAAM early-season SQL, `apply_registry`) |
-| T2 features, T3 model, market comparison | later pull requests |
+| **T2 features** (`features.js`, `ratings.js`, part `features`, table `ncaam_es_team_features`) | built and tested (synthetic players; the engine on the committed data); **not run on CBBD data** (no key yet) |
+| T3 model, market comparison | later pull requests |
 | Card and image, grading, accountability | later pull requests |
 
 ## The registration (v0.1.0, before any result)
@@ -109,6 +110,69 @@ Low 0.5) exist for EdgeDesk's own grading and are never displayed.
   CBBD's own figure kept beside it, never mixed in. The derived player moves
   are also T2. Every other transform is in a later pull request.
 - **T3, the model.** In a later pull request.
+
+## The T2 features (`features.js`, `ratings.js`)
+
+Every number comes from the registered `config/model_v0.json`; the row names
+the configuration's sha256. Nothing is learned here. A missing input is
+null, with a flag saying what is missing (`COACH_UNKNOWN`,
+`NO_PRIOR_SEASON_RATING`, `NO_CONFERENCE_STRENGTH`, `NO_SOURCE_STATS`,
+`UNKNOWN`, `ROSTER_CANNOT_FILL_200_MINUTES`). A zero is never filled in.
+
+**Prior-season ratings** (`ratings.js`) come from the **existing engine**:
+`basketball/ncaam_research/team_model.js` with NCAAM-FORECAST's frozen
+parameters, walked over the committed hoopR/ESPN dataset. It produces each
+team's season-end `off`, `allow` and `net` (points per 100 vs the league
+mean) and `tempo` (possessions vs mean pace). The walk takes about 8
+seconds. Teams map to CBBD ids through CBBD's `sourceId`, which is the ESPN
+id. **Conference strength** is 100 + the mean net of a conference's teams,
+a positive scale so that a ratio of two strengths is defined.
+
+**Player value** uses the registered box formula, per 100 possessions on the
+floor, relative to the D-I average:
+
+- possessions = FGA − OREB + TOV + 0.475·FTA, summed over the team's
+  players;
+- the rate is shrunk toward replacement level (−2.0 off, −0.5 def) by
+  minutes / (minutes + 250);
+- under 100 minutes, the player is valued at replacement level.
+
+**Newcomers:**
+
+| Kind | Value |
+|---|---|
+| D-I transfer | last season's value × (1 + 0.5 (source / destination strength − 1)). Offense × 0.9 for a high-usage (25% or more) player moving up; × 1.05 for low usage (15% or less) |
+| Non-D-I transfer | CBBD has **no statistics below D-I**, so there is no value for the registered level factor to multiply. Replacement level, with the level's registered uncertainty (D2 2.0, D3 2.5, NAIA 2.0, JUCO 2.0, international 2.5, unclassified 2.5), flagged `NO_SOURCE_STATS` |
+| Freshman | by stars (5: +1.0, 4: −0.5, 3: −1.5, unrated: −2.0), uncertainty 2.5 |
+| No usable stats | replacement level, uncertainty 3.0, flagged `UNKNOWN` |
+
+**Expected minutes** start from last season's minutes per game / 40, or a
+prior by stars (0.55 / 0.40 / 0.20 / 0.10). They are normalised to 200
+minutes a game, capped at 0.85 of a game.
+
+**The team row** (one per D-I team per season, `as_of_key` `PRESEASON`)
+holds:
+
+- roster offense, defense and net (the sum of value × on-floor fraction);
+- last season's engine rating and tempo;
+- returning minutes share and returning value share;
+- departed minutes, points and value lost (the top departures are listed);
+- expected-minutes shares by origin (returning, D-I transfer, non-D-I,
+  freshman, unknown);
+- coach change, tenure, prior level and coach tempo history (the engine
+  tempo of his earlier head-coaching seasons);
+- minutes-weighted height, block rate and offensive-rebound rate;
+- player uncertainty;
+- the registered variance multiplier;
+- the per-player detail.
+
+**Helpers:**
+
+- `continuityGap(a, b)`;
+- `applyAvailability(row, outIds)`, which removes a ruled-out player and
+  re-spreads his minutes;
+- `venue(game)`: home, away or neutral. **Travel distance and time zones
+  are null**, because no owned source has venue coordinates.
 
 ## The data layer
 

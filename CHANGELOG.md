@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-01 — NCAAM-EARLY T2 features: player values, transfer translation, returning and departed production, the preseason team row
+
+- **What.** New `basketball/ncaam_early/features.js` and `ratings.js`, a `features` part in the sync (daily and weekly, after `moves`), and a new derived table, `ncaam_es_team_features`.
+  - **Registered values only.** Every number comes from the registered `config/model_v0.json` (its sha256 is checked against the registration). Nothing is learned. A missing input is null with a flag, never zero.
+  - **Prior-season ratings.** The existing engine (`team_model.js`, NCAAM-FORECAST's frozen parameters) is walked over the committed hoopR/ESPN dataset, crosswalked to CBBD ids by `sourceId`. Conference strength is 100 + the mean net rating.
+  - **Player value.** The registered box formula, per 100 on-floor possessions vs the D-I average, shrunk by minutes / (minutes + 250).
+  - **Newcomers.**
+    - D-I transfers: conference-strength translation, with the usage adjustment.
+    - Non-D-I transfers: replacement level with the level's registered uncertainty. CBBD has no statistics below D-I, flagged `NO_SOURCE_STATS`.
+    - Freshmen: by stars.
+    - Unknowns: replacement level, uncertainty 3.0.
+  - **The team row.** Expected minutes normalised to 200 a game. Also holds returning minutes and value share, departed production, minutes shares by origin, coach facts and coach tempo history, size, and the registered variance multiplier.
+  - **Not owned.** Travel distance and time zones are null with the reason: there are no venue coordinates.
+- **Fix found by the new SQL check.** `ncaam_es_put` wrote null over a column's default when a row omitted that key (`jsonb_populate_recordset`). It now takes the column default. Against the old function the new features check failed ("null value in column as_of_key"); with the fix the SQL suite passes 41 of 41.
+- **SQL.** `supabase/ncaam_early.sql` and its byte-identical migration mirror (idempotent: running Deploy NCAAM early-season SQL again adds the new table and replaces the two functions; nothing is dropped):
+  - the new 20th table;
+  - `ncaam_es_replace_derived` now also replaces stale feature rows for a `features` run;
+  - the default fix.
+- **Tests.**
+  - New `basketball/ncaam_early/tests/features.test.js`: 47 passed, 0 failed. It covers synthetic players, the engine on the committed 2025–2026 data, and the part end to end.
+  - `sql.test.js`: 41 passed. `data.test.js`: 77 passed. `registration.test.js`: 27 passed.
+  - NCAAM early-season suites runs the new suite and now also triggers on the engine files it reads.
+- **Not verified.** Any run on real CBBD data (no key in this environment).
+
 ## 2026-11-01 — NCAAM-EARLY registered (v0.1.0, EXPERIMENTAL, T3) before any result
 
 - **What.** `basketball/ncaam_early/research/registration.json` and the registered starting configuration `basketball/ncaam_early/config/model_v0.json` (pinned in the registration by sha256), with `supabase/ncaam_early_registry.sql` generated from them by `research/build_registry_sql.js`. It is adapted from the NBA roster-adjusted generator: it reads the live registry columns, refuses rather than guesses, and writes no result row.

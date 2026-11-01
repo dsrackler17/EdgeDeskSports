@@ -46,7 +46,7 @@ const put = (run, table, rows) => svc("select public.ncaam_es_put('" + run + "',
 const finish = (run, status, quota) => svc("select public.ncaam_es_finish_run('" + run + "', '" + status + "', 1, 0, 1, 1, " + (quota == null ? 'null' : quota) + ", '{}'::jsonb)");
 const rows = (o) => (o.match(/\|(ok|CHECK THIS)$/gm) || []);
 const TABLES = ['ncaam_es_runs', 'ncaam_es_alerts', 'ncaam_es_config', 'ncaam_es_teams', 'ncaam_es_conferences', 'ncaam_es_conference_members', 'ncaam_es_venues', 'ncaam_es_games', 'ncaam_es_box_team',
-  'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_coaches', 'ncaam_es_availability'];
+  'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_coaches', 'ncaam_es_availability'];
 
 try {
   /* ── 1 ── */
@@ -58,7 +58,7 @@ try {
 
   /* ── 2 ── */
   const deniedRead = TABLES.filter((t) => db.mustFail(() => db.anon('select count(*) from public.' + t + ';')) && db.mustFail(() => db.as('00000000-0000-0000-0000-000000000001', 'select count(*) from public.' + t + ';')));
-  T.chk('2 · anon and authenticated cannot read any of the 19 tables', deniedRead.length === 19, TABLES.filter((t) => !deniedRead.includes(t)));
+  T.chk('2 · anon and authenticated cannot read any of the 20 tables', deniedRead.length === 20, TABLES.filter((t) => !deniedRead.includes(t)));
   T.chk('2 · a client cannot insert a game', !!db.mustFail(() => db.as('00000000-0000-0000-0000-000000000001', "insert into public.ncaam_es_games (game_id, season, start_utc, status, home_team_id, away_team_id) values (1, 2027, now(), 'SCHEDULED', 1, 2);")));
   const writers = ["public.ncaam_es_begin_run('games', 2027, 'scheduled', 'x')", "public.ncaam_es_put(gen_random_uuid(), 'ncaam_es_games', '[]'::jsonb)", "public.ncaam_es_put_rosters(gen_random_uuid(), '[]'::jsonb)",
     "public.ncaam_es_alert(null, 'FAILURE', 'X', 'y')", "public.ncaam_es_replace_derived(gen_random_uuid(), 2027)"];
@@ -115,7 +115,14 @@ try {
   const rep = svc("select public.ncaam_es_replace_derived('" + m2 + "', 2027)");
   finish(m2, 'ok');
   T.chk('7 · a moves run removes its season\'s stale derived rows (player 2 left the roster)', rep.stale_moves_removed === 1 && db.sql('select string_agg(player_id::text, \',\') from public.ncaam_es_player_moves') === '1');
-  T.chk('7 · only a moves run of that season may replace', /not a running moves run/.test(db.mustFail(() => { const r = begin('games', 2027); db.service("select public.ncaam_es_replace_derived('" + r + "', 2027);"); }) || ''));
+  T.chk('7 · only a moves run of that season may replace', /not a running moves or features run/.test(db.mustFail(() => { const r = begin('games', 2027); db.service("select public.ncaam_es_replace_derived('" + r + "', 2027);"); }) || ''));
+  const fr = (t, run) => ({ season: 2027, team_id: t, config_version: '0.1.0', config_sha256: 'x', roster_net: 1.5, flags: ['COACH_UNKNOWN'], detail: { players: [] } });
+  const ft1 = begin('features', 2027); put(ft1, 'ncaam_es_team_features', [fr(1), fr(2)]); finish(ft1, 'ok');
+  const ft2 = begin('features', 2027); put(ft2, 'ncaam_es_team_features', [fr(1)]);
+  const frep = svc("select public.ncaam_es_replace_derived('" + ft2 + "', 2027)"); finish(ft2, 'ok');
+  T.chk('7 · a features run replaces its season\'s stale features (team 2 no longer derived); moves untouched', frep.stale_features_removed === 1
+    && db.sql("select string_agg(team_id::text, ',') from public.ncaam_es_team_features") === '1' && db.sql('select count(*) from public.ncaam_es_player_moves') === '1');
+  T.chk('7 · features keep their flags and detail as JSON', db.sql("select flags ->> 0 from public.ncaam_es_team_features") === 'COACH_UNKNOWN');
   T.chk('7 · a kind outside the list is refused by the table', !!db.mustFail(() => { const r = begin('moves', 2026); put(r, 'ncaam_es_player_moves', [Object.assign(mv(3), { season: 2026, kind: 'GUESS' })]); }));
 
   /* ── 8 ── readiness */
