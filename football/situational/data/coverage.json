@@ -1,9 +1,9 @@
 {
- "built_at": "2026-10-31T19:23:31.238Z",
+ "built_at": "2026-11-01T00:13:56.283Z",
  "schema": "edgedesk_fsie_coverage_v1",
  "sports": {
   "cfb": {
-   "built_at": "2026-10-31T19:23:31.238Z",
+   "built_at": "2026-11-01T00:13:56.283Z",
    "charting": {
     "formation_text": {
      "available": true,
@@ -27,7 +27,7 @@
    },
    "fcs_teams_listed": 100,
    "freshness": {
-    "hours_since_pull": 3.5,
+    "hours_since_pull": 8.3,
     "pulled_at": "2026-10-31T15:54:22.687Z",
     "source": "sportsdataverse espn_cfb_pbp",
     "source_last_modified": "Sat, 31 Oct 2026 08:28:19 GMT",
@@ -36,15 +36,114 @@
    "games": {
     "accepted": 566,
     "available": 575,
-    "expected": 575,
-    "missing": 0,
+    "expected": 589,
+    "missing": 14,
     "partial": 7,
     "rejected": 2,
     "scheduled": 888
    },
    "ingested_teams": 138,
    "latest_complete_week": 8,
-   "missing_games": [],
+   "missing_games": [
+    {
+     "away": "275",
+     "game_id": "401858502",
+     "home": "2294",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "12",
+     "game_id": "401856842",
+     "home": "2641",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "356",
+     "game_id": "401858503",
+     "home": "120",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "25",
+     "game_id": "401858277",
+     "home": "152",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "103",
+     "game_id": "401858279",
+     "home": "150",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "2567",
+     "game_id": "401858278",
+     "home": "183",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "87",
+     "game_id": "401859185",
+     "home": "2426",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "5",
+     "game_id": "401862816",
+     "home": "58",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "189",
+     "game_id": "401866452",
+     "home": "2711",
+     "kickoff_at": "2026-10-31T16:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "130",
+     "game_id": "401858507",
+     "home": "164",
+     "kickoff_at": "2026-10-31T16:30:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "2",
+     "game_id": "401856735",
+     "home": "145",
+     "kickoff_at": "2026-10-31T16:45:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "276",
+     "game_id": "401871096",
+     "home": "295",
+     "kickoff_at": "2026-10-31T17:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "2306",
+     "game_id": "401856846",
+     "home": "38",
+     "kickoff_at": "2026-10-31T18:00:00.000Z",
+     "week": 9
+    },
+    {
+     "away": "324",
+     "game_id": "401869944",
+     "home": "2247",
+     "kickoff_at": "2026-10-31T18:00:00.000Z",
+     "week": 9
+    }
+   ],
    "play_failures": {
     "conflicting_classification": 3,
     "distance_exceeds_goal": 1,
@@ -200,13 +299,14 @@
      "formation_observed_share": 0.964,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T23:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -214,7 +314,14 @@
      ],
      "name": "Arizona",
      "plays_accepted": 466,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401856842",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "12",
      "tier": "A"
     },
@@ -325,13 +432,14 @@
      "formation_observed_share": 0.996,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T16:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -339,7 +447,14 @@
      ],
      "name": "Auburn",
      "plays_accepted": 484,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401856735",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2",
      "tier": "A"
     },
@@ -425,13 +540,14 @@
      "formation_observed_share": 0.995,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T19:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -439,7 +555,14 @@
      ],
      "name": "Boston College",
      "plays_accepted": 440,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858279",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "103",
      "tier": "A"
     },
@@ -450,13 +573,14 @@
      "formation_observed_share": 0.789,
      "games_accepted": 8,
      "games_available": 8,
-     "games_expected": 8,
+     "games_expected": 9,
      "games_player_ok": 8,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 8,
      "last_game_at": "2026-10-24T19:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -464,7 +588,14 @@
      ],
      "name": "Bowling Green",
      "plays_accepted": 464,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401866452",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "189",
      "tier": "A"
     },
@@ -525,13 +656,14 @@
      "formation_observed_share": 0.964,
      "games_accepted": 8,
      "games_available": 8,
-     "games_expected": 8,
+     "games_expected": 9,
      "games_player_ok": 8,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 8,
      "last_game_at": "2026-10-24T16:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -539,7 +671,14 @@
      ],
      "name": "California",
      "plays_accepted": 560,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858277",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "25",
      "tier": "A"
     },
@@ -650,13 +789,14 @@
      "formation_observed_share": 0.911,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 6,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-17T00:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -664,7 +804,14 @@
      ],
      "name": "Coastal Carolina",
      "plays_accepted": 450,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401869944",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "324",
      "tier": "A"
     },
@@ -675,13 +822,14 @@
      "formation_observed_share": 0.992,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T23:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -689,7 +837,14 @@
      ],
      "name": "Colorado",
      "plays_accepted": 485,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401856846",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "38",
      "tier": "A"
     },
@@ -758,13 +913,14 @@
      "formation_observed_share": 0.991,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-23T23:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -772,7 +928,14 @@
      ],
      "name": "Duke",
      "plays_accepted": 466,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858279",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "150",
      "tier": "A"
     },
@@ -1022,13 +1185,14 @@
      "formation_observed_share": 0.955,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T23:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1036,7 +1200,14 @@
      ],
      "name": "Georgia State",
      "plays_accepted": 470,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401869944",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2247",
      "tier": "A"
     },
@@ -1122,13 +1293,14 @@
      "formation_observed_share": 0.923,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T19:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1136,7 +1308,14 @@
      ],
      "name": "Illinois",
      "plays_accepted": 431,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858503",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "356",
      "tier": "A"
     },
@@ -1172,13 +1351,14 @@
      "formation_observed_share": 0.699,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T19:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1186,7 +1366,14 @@
      ],
      "name": "Iowa",
      "plays_accepted": 435,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858502",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2294",
      "tier": "A"
     },
@@ -1297,13 +1484,14 @@
      "formation_observed_share": 0.992,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T19:45:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1311,7 +1499,14 @@
      ],
      "name": "Kansas State",
      "plays_accepted": 492,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401856846",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2306",
      "tier": "A"
     },
@@ -1529,13 +1724,14 @@
      "formation_observed_share": 0.998,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-20T23:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1543,7 +1739,14 @@
      ],
      "name": "Marshall",
      "plays_accepted": 477,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401871096",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "276",
      "tier": "A"
     },
@@ -1554,13 +1757,14 @@
      "formation_observed_share": 0.956,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 6,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-17T16:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1568,7 +1772,14 @@
      ],
      "name": "Maryland",
      "plays_accepted": 474,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858503",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "120",
      "tier": "A"
     },
@@ -1679,13 +1890,14 @@
      "formation_observed_share": 0.962,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T16:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1693,7 +1905,14 @@
      ],
      "name": "Michigan",
      "plays_accepted": 417,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858507",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "130",
      "tier": "A"
     },
@@ -1861,13 +2080,14 @@
      "formation_observed_share": 0.661,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T19:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1875,7 +2095,14 @@
      ],
      "name": "Navy",
      "plays_accepted": 460,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401859185",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2426",
      "tier": "A"
     },
@@ -1886,13 +2113,14 @@
      "formation_observed_share": 0.996,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T02:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -1900,7 +2128,14 @@
      ],
      "name": "NC State",
      "plays_accepted": 483,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858277",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "152",
      "tier": "A"
     },
@@ -2136,13 +2371,14 @@
      "formation_observed_share": 0.989,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-17T23:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2150,7 +2386,14 @@
      ],
      "name": "Notre Dame",
      "plays_accepted": 472,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401859185",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "87",
      "tier": "A"
     },
@@ -2261,13 +2504,14 @@
      "formation_observed_share": 0.994,
      "games_accepted": 8,
      "games_available": 8,
-     "games_expected": 8,
+     "games_expected": 9,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 8,
      "last_game_at": "2026-10-24T21:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2275,7 +2519,14 @@
      ],
      "name": "Old Dominion",
      "plays_accepted": 485,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401871096",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "295",
      "tier": "A"
     },
@@ -2286,13 +2537,14 @@
      "formation_observed_share": 0.992,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T23:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2300,7 +2552,14 @@
      ],
      "name": "Ole Miss",
      "plays_accepted": 488,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401856735",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "145",
      "tier": "A"
     },
@@ -2469,13 +2728,14 @@
      "formation_observed_share": 0.991,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T16:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2483,7 +2743,14 @@
      ],
      "name": "Rutgers",
      "plays_accepted": 463,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858507",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "164",
      "tier": "A"
     },
@@ -2594,13 +2861,14 @@
      "formation_observed_share": 0.833,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T16:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2608,7 +2876,14 @@
      ],
      "name": "SMU",
      "plays_accepted": 474,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858278",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2567",
      "tier": "A"
     },
@@ -2669,13 +2944,14 @@
      "formation_observed_share": 0.917,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-17T23:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2683,7 +2959,14 @@
      ],
      "name": "South Florida",
      "plays_accepted": 408,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401862816",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "58",
      "tier": "A"
     },
@@ -2744,13 +3027,14 @@
      "formation_observed_share": 0.977,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T23:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2758,7 +3042,14 @@
      ],
      "name": "Syracuse",
      "plays_accepted": 566,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858278",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "183",
      "tier": "A"
     },
@@ -2919,13 +3210,14 @@
      "formation_observed_share": 0.992,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 6,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T16:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -2933,7 +3225,14 @@
      ],
      "name": "Texas Tech",
      "plays_accepted": 475,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401856842",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2641",
      "tier": "A"
     },
@@ -3051,13 +3350,14 @@
      "formation_observed_share": 0.916,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 6,
      "last_game_at": "2026-10-15T23:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -3065,7 +3365,14 @@
      ],
      "name": "UAB",
      "plays_accepted": 464,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401862816",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "5",
      "tier": "A"
     },
@@ -3540,13 +3847,14 @@
      "formation_observed_share": 0.941,
      "games_accepted": 8,
      "games_available": 8,
-     "games_expected": 8,
+     "games_expected": 9,
      "games_player_ok": 8,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 8,
      "last_game_at": "2026-10-24T16:00:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -3554,7 +3862,14 @@
      ],
      "name": "Western Michigan",
      "plays_accepted": 472,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401866452",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "2711",
      "tier": "A"
     },
@@ -3565,13 +3880,14 @@
      "formation_observed_share": 0.919,
      "games_accepted": 7,
      "games_available": 7,
-     "games_expected": 7,
+     "games_expected": 8,
      "games_player_ok": 7,
      "games_rejected": 0,
      "games_scheduled": 12,
      "games_situation_ok": 7,
      "last_game_at": "2026-10-24T23:30:00.000Z",
      "missing_fields": [
+      "1 expected game(s) not in the play-by-play source",
       "personnel and coverage: no public college feed",
       "shotgun / no-huddle rates are over the plays the feed marked; it never marks under-center or huddle, so both can read high",
       "scrambles not distinguishable from designed runs (ESPN)",
@@ -3579,7 +3895,14 @@
      ],
      "name": "Wisconsin",
      "plays_accepted": 409,
-     "rejected": [],
+     "rejected": [
+      {
+       "game_id": "401858502",
+       "reasons": [
+        "not_in_source"
+       ]
+      }
+     ],
      "team": "275",
      "tier": "A"
     },
@@ -6184,7 +6507,7 @@
     {
      "accepted": 9,
      "available": 9,
-     "expected": 9,
+     "expected": 23,
      "scheduled": 56,
      "week": 9
     },
@@ -6226,7 +6549,7 @@
    ]
   },
   "nfl": {
-   "built_at": "2026-10-31T19:23:31.238Z",
+   "built_at": "2026-11-01T00:13:56.283Z",
    "charting": {
     "box_check": {
      "available": true
@@ -6255,7 +6578,7 @@
    },
    "fcs_teams_listed": 0,
    "freshness": {
-    "hours_since_pull": 3.5,
+    "hours_since_pull": 8.3,
     "pulled_at": "2026-10-31T15:54:17.878Z",
     "source": "nflverse play_by_play",
     "source_last_modified": "Sat, 31 Oct 2026 15:19:19 GMT",
