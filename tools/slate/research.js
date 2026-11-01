@@ -40,6 +40,9 @@ function readJson(rel) {
 const num = (v) => (v === null || v === undefined || v === '' || !isFinite(Number(v)) ? null : Number(v));
 const ms = (t) => G.toMs(t);
 
+/* a model block's source file → its loadSources() key */
+const SOURCE_OF = { 'football/nfl/slate.json': 'nfl', 'football/cfb_terminal/board.json': 'cfb', 'hockey/slate.json': 'nhl', 'nba/slate.json': 'nba', 'basketball/slate.json': 'basketball' };
+
 /* Load every artifact once. `files` overrides a path (tests). */
 function loadSources(files) {
   files = files || {};
@@ -334,6 +337,13 @@ function join(events, src, o) {
     } else if (e.sport === 'nba' || e.sport === 'ncaam' || e.sport === 'ncaaw' || e.sport === 'wnba') {
       const hit = e.provider === 'espn' ? bb[e.sport + ':' + e.provider_id] : null;
       if (hit) { r.model = modelFromLab(hit.g, hit.L, 'basketball/slate.json'); r.metrics = true; }
+    }
+    /* when the model ran: its artifact's own build time (lib/edgedesk_research_compare.js
+       judges freshness from it; a block without one is "model time not recorded", never fresh) */
+    if (r.model && !r.model.generated_at) {
+      const art = SOURCE_OF[r.model.source] ? src[SOURCE_OF[r.model.source]] : null;
+      const at = art && (art.generated_at || art.built_at) ? String(art.generated_at || art.built_at) : null;
+      if (at && G.toMs(at) != null) r.model.generated_at = at;
     }
     const eng = engineSignal(src, e);
     if (eng) r.signal = eng;

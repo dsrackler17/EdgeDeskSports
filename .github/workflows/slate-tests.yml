@@ -28,6 +28,7 @@ on:
       - 'tools/slate/**'
       - 'tools/record/football_record_sources.js'
       - 'supabase/games_slate.sql'
+      - 'supabase/games_slate_dispatch.sql'
       - 'app.html'
       - 'today/**'
       - 'lib/edgedesk_update.js'
@@ -85,6 +86,10 @@ jobs:
         env:
           SLATE_SQL_REQUIRED: '1'
         run: node tools/slate/slate_sql.test.js
+      - name: supabase/games_slate_dispatch.sql (the half-hourly wake-up) against a real PostgreSQL
+        env:
+          SLATE_SQL_REQUIRED: '1'
+        run: node tools/slate/dispatch_sql.test.js
 
   browser:
     runs-on: ubuntu-latest

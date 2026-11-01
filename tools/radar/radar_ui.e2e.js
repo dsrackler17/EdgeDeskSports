@@ -143,6 +143,11 @@ function door(name) {
       M.enabled = true; M.sub = true;
       const O = await open(vp, '/app.html#overview', { signedIn: true });
       await O.page.waitForSelector('#ovRadar .rd-card', { timeout: 30000 }).catch(() => {});
+      /* the cards lead; the method, observed activity and each card's detail fold away (docs/research-compare/README.md) */
+      const collapsed = await text(O.page, '#ovRadar');
+      chk('overview ' + label + ': folded, the cards come before the method and the observed activity', collapsed.indexOf('featured bettors, $84K') >= 0 && collapsed.indexOf('featured bettors, $84K') < collapsed.indexOf('How Smart Money Tonight works')
+        && collapsed.indexOf('featured bettors, $84K') < collapsed.indexOf('Observed activity'), collapsed.slice(0, 600));
+      await O.page.$$eval('#ovRadar details', (ds) => ds.forEach((d) => { d.open = true; }));
       const s = await text(O.page, '#ovRadar');
       chk('overview ' + label + ': Smart Money Tonight is drawn, labelled Experimental in words', /Smart Money Tonight/.test(s) && /Experimental/.test(s), s.slice(0, 300));
       chk('overview ' + label + ': it is the first thing on the Overview', await O.page.evaluate(() => { const w = document.querySelector('#overviewHost .ovw'); return !!w && w.firstElementChild && w.firstElementChild.id === 'ovRadar'; }));
@@ -150,7 +155,9 @@ function door(name) {
       chk('overview ' + label + ': each card leads with its sentence (H-RADAR-02: the featured bettors)', heads[0] === '7 featured bettors, $84K, on Chiefs -3' && heads[1] === '2 featured bettors, $9.4K, on Dolphins', heads);
       chk('overview ' + label + ': how many qualify, observed activity apart and labelled, how discovery stands', /3 bettors qualify to be featured today/.test(s) && /Observed activity/.test(s) && /Observed, not a signal/.test(s)
         && /Radar has screened 240 wallets/.test(s), s.slice(0, 600));
-      chk('overview ' + label + ': the numbers under it, and the fair line in words', /Their average entry\s*41¢/.test(s) && /Smart money agrees with the sharp fair price/.test(s) && /more than 90 minutes old/.test(s), s);
+      chk('overview ' + label + ': the numbers under it: the historical entry apart, the price by kind, the status in words', /avg entry 41\.4¢ \(historical\)/.test(s) && /Displayed price, not an ask/.test(s)
+        && /Comparable model unavailable/.test(s) && !/Smart money agrees/.test(s), s);
+      chk('overview ' + label + ': the Pinnacle number is a reference, never "EdgeDesk fair"', /Pinnacle de-vigged reference/.test(s) && !/EdgeDesk fair/.test(s), s);
       chk('overview ' + label + ': the conviction label is a word', /High conviction/.test(s) && /4× usual size/.test(s));
       await O.page.waitForSelector('#ovRadar .rd-rec', { timeout: 10000 }).catch(() => {});
       const rec = await text(O.page, '#ovRadar .rd-rec');

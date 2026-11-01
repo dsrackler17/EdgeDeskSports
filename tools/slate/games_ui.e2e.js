@@ -461,8 +461,9 @@ const NOW = F.NOW;
       const ovIds = await O.page.$$eval('#ovQ > ol.ovq > .ovq-r[data-ov-row]', (els) => els.map((e) => e.getAttribute('data-ov-row')));
       const stripIds = await O.page.$$eval('#gamesStrip .gm-card[data-id]', (els) => els.map((e) => e.getAttribute('data-id')));
       chk('the Overview\'s Today lists the strip\'s games (the same slate, the reader\'s same day)', ovIds.length > 0 && ovIds.every((id) => stripIds.indexOf(id) >= 0), { ovIds, stripIds });
-      /* the Overview's documented order: live first, then, within live, the game with more of its research in place */
-      chk('live games first; within them, the one with research and a model first', ovIds[0] === 'nhl:espn:401802001' && ovIds[1] === 'ncaam:espn:401910003', ovIds.slice(0, 3));
+      /* the Overview's documented order (Starting soon, docs/research-compare/README.md): live first, then by start
+         time; research completeness no longer moves a game ahead of an earlier one. KU–UK started 21:30Z, DET–NJ 22:00Z */
+      chk('live games first; within them, the earlier start first', ovIds[0] === 'ncaam:espn:401910003' && ovIds[1] === 'nhl:espn:401802001', ovIds.slice(0, 3));
       chk('the 12:10 AM game is not today\'s on the Overview either', ovIds.indexOf('nhl:espn:401802005') < 0);
       const ufc = await O.page.evaluate(() => (document.getElementById('ovLim') || {}).innerText || '');
       chk('a sport whose schedule could not be read is a stated limitation, never an empty day', /Unable to load UFC/.test(ufc), ufc.slice(0, 300));
