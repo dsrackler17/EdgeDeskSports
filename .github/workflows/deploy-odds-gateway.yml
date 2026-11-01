@@ -39,6 +39,10 @@ on:
         description: 'Apply supabase/odds_api_nba_nhl_lines.sql (NBA and NHL main markets every 2 h; idempotent; turns neither league on)'
         type: boolean
         default: true
+      apply_ncaab_sport:
+        description: 'Apply supabase/ncaab_odds_sport.sql (registers basketball_ncaab DISABLED, hourly default cadence; idempotent; turns nothing on)'
+        type: boolean
+        default: true
       deploy_gateway:
         description: 'Deploy supabase/functions/odds_gateway (JWT verification OFF: it checks the service role / gateway secret itself)'
         type: boolean
@@ -75,6 +79,7 @@ jobs:
           node tools/odds/no_bypass.test.js
           node tools/odds/gateway_sql.test.js
           node tools/odds/nba_nhl_lines_sql.test.js
+          node tools/odds/ncaab_odds_sport_sql.test.js
           node tools/odds/gateway_fn.test.js
           node tools/capture/capture.test.js
           node tools/props/props_cron.test.js
@@ -131,6 +136,16 @@ jobs:
           out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/odds_api_nba_nhl_lines.sql)
           echo "$out" | tail -26
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::odds_api_nba_nhl_lines.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply supabase/ncaab_odds_sport.sql
+        if: ${{ inputs.apply_ncaab_sport && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/ncaab_odds_sport.sql)
+          echo "$out" | tail -16
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::ncaab_odds_sport.sql: a report row says CHECK THIS"; exit 1; fi
 
       - name: Install the Supabase CLI
         if: ${{ (inputs.deploy_gateway || inputs.deploy_callers) && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}

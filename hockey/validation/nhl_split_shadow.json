@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_split_shadow_v1",
- "generated_at": "2026-11-01T06:48:34.869Z",
+ "generated_at": "2026-11-01T16:19:54.861Z",
  "protocol": {
   "id": "nhl_split_ml_v1",
   "registered": "2026-10-29",
@@ -576,33 +576,33 @@
  "live": {
   "season": 2027,
   "protocol": "nhl_split_ml_v1",
-  "generated_at": "2026-11-01T06:48:34.878Z",
+  "generated_at": "2026-11-01T16:19:54.870Z",
   "shadow_ledger": "hockey/ledger/split_shadow_2027.jsonl",
   "shadow_ledger_records": 42,
-  "games_graded": 14,
+  "games_graded": 24,
   "verdict": {
    "status": "PROMOTED",
    "rule_status": "IN_PROGRESS",
-   "n": 14,
+   "n": 24,
    "needed": 1000,
    "decision_set": "interim: the rows frozen before the promotion (not a decision; the rule was not met)",
    "moneyline": {
     "production": {
-     "log_loss": 0.66285,
+     "log_loss": 0.63151,
      "calibration_slope": null,
-     "calibration_in_the_large": -0.0137
+     "calibration_in_the_large": 0.0018
     },
     "shadow": {
-     "log_loss": 0.65935,
+     "log_loss": 0.62119,
      "calibration_slope": null,
-     "calibration_in_the_large": -0.0001
+     "calibration_in_the_large": 0.0115
     },
     "shadow_minus_production": {
-     "n": 14,
-     "blocks": 2,
-     "mean_diff": -0.003502,
+     "n": 24,
+     "blocks": 3,
+     "mean_diff": -0.010323,
      "ci95": [
-      -0.00504,
+      -0.019873,
       0.002138
      ],
      "a_better": false,
@@ -610,9 +610,9 @@
     }
    },
    "puck_line_home_minus_1_5": {
-    "n": 14,
-    "production_log_loss": 0.64279,
-    "shadow_log_loss": 0.64134
+    "n": 24,
+    "production_log_loss": 0.55864,
+    "shadow_log_loss": 0.55193
    },
    "checks": {
     "moneyline_interval_below_zero": false,
@@ -626,44 +626,44 @@
     "basis": "the owner directed the switch after the investigation, before the rule's decision point: the published moneyline was 1.2 times narrower than DraftKings' closes (35 of 47 favourites less favoured). On 2021-26 the candidate is +0.00027 log loss (−0.00013 to +0.00063) against the goal-split rule; on 2026-27 to date −0.00265 (198 games). The decision rule was not met and is not claimed."
    },
    "draftkings_close": {
-    "n": 14,
+    "n": 24,
     "production": {
-     "n": 14,
+     "n": 24,
      "slope": null,
      "ci95": null,
      "reading": "TOO_EARLY",
-     "mean_favourite_gap_pp": -2.43,
-     "favourites_less_favoured": 12,
-     "model_logit_sd": 0.234,
-     "market_logit_sd": 0.365
+     "mean_favourite_gap_pp": -2.55,
+     "favourites_less_favoured": 21,
+     "model_logit_sd": 0.333,
+     "market_logit_sd": 0.438
     },
     "shadow": {
-     "n": 14,
+     "n": 24,
      "slope": null,
      "ci95": null,
      "reading": "TOO_EARLY",
-     "mean_favourite_gap_pp": -1,
-     "favourites_less_favoured": 12,
-     "model_logit_sd": 0.293,
-     "market_logit_sd": 0.365
+     "mean_favourite_gap_pp": -1.06,
+     "favourites_less_favoured": 19,
+     "model_logit_sd": 0.417,
+     "market_logit_sd": 0.438
     },
-    "close_log_loss": 0.63647,
+    "close_log_loss": 0.61252,
     "note": "no-vig DraftKings close from ESPN (research/clv/openers/nhl); reported beside the rule, never deciding it"
    }
   },
   "market_spread": {
    "basis": "production's last pregame ledger price (hockey/ledger/2027.jsonl) for every graded game with a DraftKings close; the slope is the market's logit on the model's (1 = equally spread; above 1 = the model is narrower, every favourite less favoured)",
-   "n": 65,
-   "slope": 1.15,
+   "n": 75,
+   "slope": 1.08,
    "ci95": [
-    1.009,
-    1.29
+    0.966,
+    1.194
    ],
-   "reading": "NARROWER_THAN_MARKET",
-   "mean_favourite_gap_pp": -1.84,
-   "favourites_less_favoured": 49,
-   "model_logit_sd": 0.298,
-   "market_logit_sd": 0.383
+   "reading": "CONSISTENT",
+   "mean_favourite_gap_pp": -1.75,
+   "favourites_less_favoured": 55,
+   "model_logit_sd": 0.339,
+   "market_logit_sd": 0.403
   }
  }
 }

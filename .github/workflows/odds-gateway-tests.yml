@@ -55,6 +55,10 @@ jobs:
         env:
           ODDS_SQL_REQUIRED: '1'
         run: node tools/odds/nba_nhl_lines_sql.test.js
+      - name: Men's college basketball (NCAAB) registered disabled (supabase/ncaab_odds_sport.sql on a real PostgreSQL)
+        env:
+          ODDS_SQL_REQUIRED: '1'
+        run: node tools/odds/ncaab_odds_sport_sql.test.js
       - name: The deployed gateway end to end (real PostgreSQL, mock provider; 429, 401, timeout, bounded retries, redaction)
         env:
           ODDS_SQL_REQUIRED: '1'

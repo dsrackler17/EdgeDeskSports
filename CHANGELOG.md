@@ -13,6 +13,12 @@
 - **Tests.** `basketball/ncaam_early/tests/data.test.js`: 77 passed, 0 failed. `basketball/ncaam_early/tests/sql.test.js` (real PostgreSQL): 39 passed, 0 failed. The SQL suite caught an upsert that left unchanged derived rows on the old run, so the stale-row cleanup would have deleted current rows. It was fixed before commit.
 - **Not verified here:** any call to CBBD (no key in this environment), so endpoint field population, the portal year offset and the ESPN id crosswalk are measured on the first real run.
 
+## 2026-11-01 — Odds gateway: men's college basketball (NCAAB) registered, disabled
+
+- **Why.** No NCAAB price is captured (`basketball_ncaab` has no gateway row, so every request is `denied_sport`), so neither men's college basketball model can be graded against the market. The season opens 2026-11-02. The owner approved about 2,000 credits a month for NCAAB main markets.
+- **What.** New `supabase/ncaab_odds_sport.sql` (and its byte-identical migration mirror): `basketball_ncaab`, group `ncaab`, **disabled**, priority 4. No cadence row: the `'*'` bands apply (hourly inside 24 h). One board of about 3 credits per purchase, at most about 2,160 credits a month. Nothing turns on until the owner runs `odds_api_set_sport('basketball_ncaab', true)` and adds the key to `CAPTURE_SPORTS`. Budget, breaker, categories, caps, cadence, capture and close are unchanged. Methodology note and operator steps: `docs/odds-api-incident-2026-10/METHODOLOGY-2026-11-01-ncaab-lines.md`.
+- **Tests.** New `tools/odds/ncaab_odds_sport_sql.test.js` (real PostgreSQL): 22 passed, 0 failed. `tools/odds/no_bypass.test.js` gains one check (the NCAAB row is created disabled). The suite runs in Odds gateway tests and before Deploy odds gateway ships anything (new input `apply_ncaab_sport`).
+
 ## 2026-10-31 — Football enrichment refresh: the QB resolver no longer crashes when every candidate is ruled out
 
 - **What failed.** Football enrichment refresh runs 143 and 144 (41174482032, 41202537139) on `main` stopped at `build_enrichment.js` with `TypeError: Cannot read properties of null (reading 'player_name')` at `football/enrichment/qb/resolver.js:290`. Kansas State (game 401856846): last game's opener Jacob Knuth (100% of dropbacks) and the quality ranking's Avery Johnson are both listed OUT. The resolver settled the conflict (observed start over model), ruled the starter out, found no available alternative and set no QB, then wrote the resolution text from the missing QB.
