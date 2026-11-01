@@ -2,7 +2,7 @@
  "schema": "edgedesk_nfl_slate_v1",
  "version": 1,
  "season": 2026,
- "generated_at": "2026-11-01T22:05:57.942Z",
+ "generated_at": "2026-11-01T22:55:28.480Z",
  "source": "nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html",
  "forecasts": {
   "requested": 21,
@@ -343,8 +343,8 @@
  ],
  "lookahead_days": 12,
  "window": {
-  "from": "2026-11-01T16:05:56.851Z",
-  "to": "2026-11-13T22:05:56.851Z"
+  "from": "2026-11-01T16:55:27.685Z",
+  "to": "2026-11-13T22:55:27.685Z"
  },
  "feeds": [
   {
@@ -353,7 +353,7 @@
   },
   {
    "url": "/football/nfl/slate.json",
-   "bytes": 1279445
+   "bytes": 984965
   },
   {
    "url": "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
@@ -1550,104 +1550,6 @@
    },
    "market_status": "NOT JOINED IN THIS BUILD",
    "market_note": "Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.",
-   "situational": {
-    "schema": "edgedesk_fsie_shadow_v1",
-    "mode": "SHADOW",
-    "target": "nfl_slate",
-    "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
-    "affects_projection": false,
-    "applied_points": 0,
-    "locks": {
-     "validated": false,
-     "points_applied": false,
-     "mode_active": false
-    },
-    "situational": {
-     "home": {
-      "drives": [
-       9,
-       11,
-       13
-      ],
-      "mean_drives": 10.9,
-      "mean_plays": 65.36,
-      "pass_att": [
-       26,
-       35,
-       45
-      ],
-      "pass_rate": 0.5593,
-      "plays": [
-       55,
-       65,
-       76
-      ],
-      "rush_att": [
-       19,
-       28,
-       38
-      ],
-      "team": "LA"
-     },
-     "away": {
-      "drives": [
-       9,
-       11,
-       13
-      ],
-      "mean_drives": 10.89,
-      "mean_plays": 61.73,
-      "pass_att": [
-       23,
-       31,
-       40
-      ],
-      "pass_rate": 0.5291,
-      "plays": [
-       52,
-       61,
-       72
-      ],
-      "rush_att": [
-       19,
-       28,
-       37
-      ],
-      "team": "LAC"
-     },
-     "game_plays": 127.09,
-     "game_drives": 21.79,
-     "script": {
-      "away": {
-       "competitive": 0.5349,
-       "garbage": 0.045,
-       "leading": 0.0666,
-       "trailing": 0.2409,
-       "two_minute": 0.1126
-      },
-      "home": {
-       "competitive": 0.5766,
-       "garbage": 0.032,
-       "leading": 0.1838,
-       "trailing": 0.102,
-       "two_minute": 0.1056
-      }
-     }
-    },
-    "existing": {
-     "fair_total": 45.67
-    },
-    "candidate": {
-     "total_points_delta": -0.22,
-     "coefficient": 0.09159,
-     "existing_pace_input": 5.46,
-     "situational_pace_input": 3.08,
-     "basis": "the existing total's pace input replaced by the situational expected game plays (deviation from league), at the existing model's own pace coefficient"
-    },
-    "candidate_note": null,
-    "label": "SHADOW — situational play volume beside the model; 0 points applied"
-   },
    "venue_geography": {
     "name": "SoFi Stadium",
     "lat": 33.9535,
@@ -1665,7 +1567,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-11-01T22:05:57.014Z"
+    "as_of": "2026-11-01T22:55:27.810Z"
    }
   },
   {
@@ -2840,104 +2742,6 @@
    },
    "market_status": "NOT JOINED IN THIS BUILD",
    "market_note": "Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.",
-   "situational": {
-    "schema": "edgedesk_fsie_shadow_v1",
-    "mode": "SHADOW",
-    "target": "nfl_slate",
-    "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
-    "affects_projection": false,
-    "applied_points": 0,
-    "locks": {
-     "validated": false,
-     "points_applied": false,
-     "mode_active": false
-    },
-    "situational": {
-     "home": {
-      "drives": [
-       9,
-       11,
-       13
-      ],
-      "mean_drives": 10.92,
-      "mean_plays": 62.4,
-      "pass_att": [
-       25,
-       33,
-       43
-      ],
-      "pass_rate": 0.5464,
-      "plays": [
-       52,
-       62,
-       73
-      ],
-      "rush_att": [
-       19,
-       27,
-       37
-      ],
-      "team": "DEN"
-     },
-     "away": {
-      "drives": [
-       9,
-       11,
-       13
-      ],
-      "mean_drives": 10.92,
-      "mean_plays": 62.43,
-      "pass_att": [
-       24,
-       32,
-       42
-      ],
-      "pass_rate": 0.5431,
-      "plays": [
-       52,
-       62,
-       73
-      ],
-      "rush_att": [
-       19,
-       27,
-       37
-      ],
-      "team": "KC"
-     },
-     "game_plays": 124.83,
-     "game_drives": 21.84,
-     "script": {
-      "away": {
-       "competitive": 0.5662,
-       "garbage": 0.0332,
-       "leading": 0.1077,
-       "trailing": 0.1814,
-       "two_minute": 0.1115
-      },
-      "home": {
-       "competitive": 0.5742,
-       "garbage": 0.0306,
-       "leading": 0.1312,
-       "trailing": 0.1538,
-       "two_minute": 0.1103
-      }
-     }
-    },
-    "existing": {
-     "fair_total": 39.35
-    },
-    "candidate": {
-     "total_points_delta": 0.45,
-     "coefficient": 0.09159,
-     "existing_pace_input": -4.11,
-     "situational_pace_input": 0.82,
-     "basis": "the existing total's pace input replaced by the situational expected game plays (deviation from league), at the existing model's own pace coefficient"
-    },
-    "candidate_note": null,
-    "label": "SHADOW — situational play volume beside the model; 0 points applied"
-   },
    "venue_geography": {
     "name": "Empower Field at Mile High",
     "lat": 39.7439,
@@ -2953,7 +2757,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.636Z",
+    "as_of": "2026-11-01T22:55:28.364Z",
     "kickoff_local": "2026-11-01T14:00",
     "kickoff_label": "2 PM",
     "timezone": "America/Denver",
@@ -2996,7 +2800,7 @@
       "temp_f": 63.6,
       "feels_f": 59,
       "precip_in": 0,
-      "precip_pct": 2,
+      "precip_pct": 1,
       "humidity_pct": 52,
       "wind_mph": 8.4,
       "gust_mph": 10.5,
@@ -3015,7 +2819,7 @@
       "temp_f": 60.9,
       "feels_f": 56.5,
       "precip_in": 0,
-      "precip_pct": 7,
+      "precip_pct": 1,
       "humidity_pct": 57,
       "wind_mph": 7.9,
       "gust_mph": 10.3,
@@ -3034,7 +2838,7 @@
       "temp_f": 56.1,
       "feels_f": 52.6,
       "precip_in": 0,
-      "precip_pct": 13,
+      "precip_pct": 10,
       "humidity_pct": 64,
       "wind_mph": 4.7,
       "gust_mph": 8.7,
@@ -4231,104 +4035,6 @@
    },
    "market_status": "NOT JOINED IN THIS BUILD",
    "market_note": "Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.",
-   "situational": {
-    "schema": "edgedesk_fsie_shadow_v1",
-    "mode": "SHADOW",
-    "target": "nfl_slate",
-    "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
-    "affects_projection": false,
-    "applied_points": 0,
-    "locks": {
-     "validated": false,
-     "points_applied": false,
-     "mode_active": false
-    },
-    "situational": {
-     "home": {
-      "drives": [
-       8,
-       10,
-       12
-      ],
-      "mean_drives": 10.36,
-      "mean_plays": 58.71,
-      "pass_att": [
-       20,
-       28,
-       37
-      ],
-      "pass_rate": 0.5033,
-      "plays": [
-       49,
-       59,
-       69
-      ],
-      "rush_att": [
-       19,
-       28,
-       37
-      ],
-      "team": "MIA"
-     },
-     "away": {
-      "drives": [
-       8,
-       10,
-       12
-      ],
-      "mean_drives": 10.38,
-      "mean_plays": 62.28,
-      "pass_att": [
-       22,
-       30,
-       39
-      ],
-      "pass_rate": 0.5036,
-      "plays": [
-       52,
-       62,
-       72
-      ],
-      "rush_att": [
-       21,
-       30,
-       40
-      ],
-      "team": "NE"
-     },
-     "game_plays": 120.99,
-     "game_drives": 20.74,
-     "script": {
-      "away": {
-       "competitive": 0.573,
-       "garbage": 0.0342,
-       "leading": 0.1884,
-       "trailing": 0.0995,
-       "two_minute": 0.1049
-      },
-      "home": {
-       "competitive": 0.5294,
-       "garbage": 0.0483,
-       "leading": 0.0651,
-       "trailing": 0.2451,
-       "two_minute": 0.112
-      }
-     }
-    },
-    "existing": {
-     "fair_total": 43.87
-    },
-    "candidate": {
-     "total_points_delta": 0.12,
-     "coefficient": 0.09159,
-     "existing_pace_input": -4.35,
-     "situational_pace_input": -3.02,
-     "basis": "the existing total's pace input replaced by the situational expected game plays (deviation from league), at the existing model's own pace coefficient"
-    },
-    "candidate_note": null,
-    "label": "SHADOW — situational play volume beside the model; 0 points applied"
-   },
    "venue_geography": {
     "name": "Hard Rock Stadium",
     "lat": 25.958,
@@ -4344,7 +4050,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.384Z",
+    "as_of": "2026-11-01T22:55:28.354Z",
     "kickoff_local": "2026-11-01T16:00",
     "kickoff_label": "4 PM",
     "timezone": "America/New_York",
@@ -4406,7 +4112,7 @@
       "temp_f": 75.5,
       "feels_f": 84.3,
       "precip_in": 0,
-      "precip_pct": 61,
+      "precip_pct": 47,
       "humidity_pct": 91,
       "wind_mph": 1.6,
       "gust_mph": 21.7,
@@ -4425,7 +4131,7 @@
       "temp_f": 75.4,
       "feels_f": 80.3,
       "precip_in": 0.043,
-      "precip_pct": 54,
+      "precip_pct": 52,
       "humidity_pct": 91,
       "wind_mph": 10.7,
       "gust_mph": 26.8,
@@ -5648,7 +5354,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -5756,7 +5462,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.715Z",
+    "as_of": "2026-11-01T22:55:28.058Z",
     "kickoff_local": "2026-11-01T20:00",
     "kickoff_label": "8 PM",
     "timezone": "America/New_York",
@@ -7029,7 +6735,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -7137,7 +6843,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.391Z",
+    "as_of": "2026-11-01T22:55:28.055Z",
     "kickoff_local": "2026-11-02T17:00",
     "kickoff_label": "5 PM",
     "timezone": "America/Los_Angeles",
@@ -7180,7 +6886,7 @@
       "temp_f": 49.3,
       "feels_f": 45.4,
       "precip_in": 0,
-      "precip_pct": 1,
+      "precip_pct": 2,
       "humidity_pct": 71,
       "wind_mph": 3.7,
       "gust_mph": 4.7,
@@ -7199,7 +6905,7 @@
       "temp_f": 48.8,
       "feels_f": 45.1,
       "precip_in": 0,
-      "precip_pct": 1,
+      "precip_pct": 2,
       "humidity_pct": 75,
       "wind_mph": 3.5,
       "gust_mph": 5.1,
@@ -7218,7 +6924,7 @@
       "temp_f": 48.8,
       "feels_f": 44,
       "precip_in": 0,
-      "precip_pct": 2,
+      "precip_pct": 3,
       "humidity_pct": 74,
       "wind_mph": 6,
       "gust_mph": 6.9,
@@ -7488,12 +7194,12 @@
       "week": 9
      },
      "last_game_starter": {
-      "name": "T.Huntley",
-      "id": "00-0035993",
-      "week": 7,
-      "game_id": "2026_07_CIN_BAL"
+      "name": "J.Fagnano",
+      "id": "00-0040981",
+      "week": 8,
+      "game_id": "2026_08_BAL_BUF"
      },
-     "why": "nflverse games.csv names Tyler Huntley and nflverse depth charts lists Lamar Jackson; the last game's first dropback does not corroborate the depth chart — unresolved, the projection may not be priced"
+     "why": "nflverse games.csv names Tyler Huntley and nflverse depth charts lists Lamar Jackson; the depth-chart record is not usable for this week — unresolved, the projection may not be priced"
     }
    },
    "away_starter": {
@@ -7518,12 +7224,12 @@
       "week": 9
      },
      "last_game_starter": {
-      "name": "T.Huntley",
-      "id": "00-0035993",
-      "week": 7,
-      "game_id": "2026_07_CIN_BAL"
+      "name": "J.Fagnano",
+      "id": "00-0040981",
+      "week": 8,
+      "game_id": "2026_08_BAL_BUF"
      },
-     "why": "nflverse games.csv names Tyler Huntley and nflverse depth charts lists Lamar Jackson; the last game's first dropback does not corroborate the depth chart — unresolved, the projection may not be priced"
+     "why": "nflverse games.csv names Tyler Huntley and nflverse depth charts lists Lamar Jackson; the depth-chart record is not usable for this week — unresolved, the projection may not be priced"
     },
     "away": {
      "status": "AGREES",
@@ -7605,14 +7311,14 @@
    },
    "starter_inputs": {
     "home": {
-     "fingerprint": "7efd2bd731e56953",
+     "fingerprint": "ffad02126f64f77f",
      "inputs": {
       "feed_qb_id": "00-0035993",
       "depth_chart": {
        "player_id": "00-0034796",
        "status": "DEPTH_CHART",
        "field_state": "USABLE",
-       "contested": false
+       "contested": true
       },
       "injury_report": {
        "week": 8,
@@ -8452,7 +8158,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -8560,7 +8266,7 @@
     "precip_in": 0.012,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.455Z",
+    "as_of": "2026-11-01T22:55:28.074Z",
     "kickoff_local": "2026-11-05T20:00",
     "kickoff_label": "8 PM",
     "timezone": "America/New_York",
@@ -9838,7 +9544,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -9946,7 +9652,7 @@
     "precip_in": 0.079,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.566Z",
+    "as_of": "2026-11-01T22:55:28.167Z",
     "kickoff_local": "2026-11-08T15:00",
     "kickoff_label": "3 PM",
     "timezone": "Europe/Madrid",
@@ -11230,7 +10936,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -11338,7 +11044,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.538Z",
+    "as_of": "2026-11-01T22:55:28.155Z",
     "kickoff_local": "2026-11-08T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
@@ -12616,7 +12322,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -12726,7 +12432,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-11-01T22:05:57.014Z"
+    "as_of": "2026-11-01T22:55:27.810Z"
    }
   },
   {
@@ -13917,7 +13623,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -14025,7 +13731,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.620Z",
+    "as_of": "2026-11-01T22:55:28.237Z",
     "kickoff_local": "2026-11-08T12:00",
     "kickoff_label": "12 PM",
     "timezone": "America/Chicago",
@@ -15313,7 +15019,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -15421,7 +15127,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.698Z",
+    "as_of": "2026-11-01T22:55:28.236Z",
     "kickoff_local": "2026-11-08T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
@@ -16714,7 +16420,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -16824,7 +16530,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-11-01T22:05:57.014Z"
+    "as_of": "2026-11-01T22:55:27.810Z"
    }
   },
   {
@@ -17693,7 +17399,7 @@
     },
     "total": {
      "off_epa_sum": -0.11088759186984792,
-     "def_epa_sum": 0.004124590020892905,
+     "def_epa_sum": 0.004124590020892903,
      "pass_matchup": -0.2753638019728975,
      "rush_matchup": 0.10557979594769992,
      "expl_sum": -0.03580924083799955,
@@ -18017,7 +17723,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -18125,7 +17831,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.697Z",
+    "as_of": "2026-11-01T22:55:28.317Z",
     "kickoff_local": "2026-11-08T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
@@ -19414,7 +19120,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -19522,7 +19228,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.858Z",
+    "as_of": "2026-11-01T22:55:28.315Z",
     "kickoff_local": "2026-11-08T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
@@ -20800,7 +20506,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -20910,7 +20616,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-11-01T22:05:57.014Z"
+    "as_of": "2026-11-01T22:55:27.810Z"
    }
   },
   {
@@ -22099,7 +21805,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -22207,7 +21913,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.776Z",
+    "as_of": "2026-11-01T22:55:28.478Z",
     "kickoff_local": "2026-11-08T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/Los_Angeles",
@@ -23491,7 +23197,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -23599,7 +23305,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.777Z",
+    "as_of": "2026-11-01T22:55:28.476Z",
     "kickoff_local": "2026-11-08T16:00",
     "kickoff_label": "4 PM",
     "timezone": "America/New_York",
@@ -24889,7 +24595,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -24997,7 +24703,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.855Z",
+    "as_of": "2026-11-01T22:55:28.397Z",
     "kickoff_local": "2026-11-08T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/Los_Angeles",
@@ -26281,7 +25987,7 @@
     "mode": "SHADOW",
     "target": "nfl_slate",
     "model_version": "situational_v1",
-    "as_of": "2026-11-01T20:51:11.249Z",
+    "as_of": "2026-11-01T22:12:53.507Z",
     "affects_projection": false,
     "applied_points": 0,
     "locks": {
@@ -26389,7 +26095,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.856Z",
+    "as_of": "2026-11-01T22:55:28.398Z",
     "kickoff_local": "2026-11-08T19:00",
     "kickoff_label": "7 PM",
     "timezone": "America/Chicago",
@@ -27679,7 +27385,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-11-01T22:05:57.014Z"
+    "as_of": "2026-11-01T22:55:27.810Z"
    }
   },
   {
@@ -28458,7 +28164,7 @@
      "net_pts_fix": 1.1614415851272852,
      "net_epa": 0.045241450373928994,
      "off_epa": -0.019713321571272296,
-     "def_epa": 0.06495477194520129,
+     "def_epa": 0.0649547719452013,
      "net_pass": 0.021402759600179788,
      "pass_off": -0.06524039386995618,
      "pass_def": 0.08664315347013596,
@@ -28492,7 +28198,7 @@
     },
     "total": {
      "off_epa_sum": -0.017788726074574924,
-     "def_epa_sum": 0.08661416035853943,
+     "def_epa_sum": 0.08661416035853942,
      "pass_matchup": -0.09996502257053656,
      "rush_matchup": 0.24153186505101162,
      "expl_sum": -0.0012429481734798813,
@@ -28811,7 +28517,7 @@
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-11-01T22:05:57.939Z",
+    "as_of": "2026-11-01T22:55:28.476Z",
     "kickoff_local": "2026-11-12T20:00",
     "kickoff_label": "8 PM",
     "timezone": "America/New_York",
@@ -37741,7 +37447,7 @@
  "pricing": {
   "schema": "edgedesk_ranked_slate_v1",
   "sport": "americanfootball_nfl",
-  "built_at": "2026-11-01T22:05:57.947Z",
+  "built_at": "2026-11-01T22:55:28.484Z",
   "games": 21,
   "rows": [
    {
