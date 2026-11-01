@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-11-01 — Research Queue and Smart Money Tonight compare through one path
+
+- **One path** (`lib/edgedesk_research_compare.js`, `docs/research-compare/README.md`). The Research Queue and the Smart Money Tonight cards now compare a model with a price through the same module. For NHL it uses `EDNHLCompare`, as the matchup page does, so all three show the same gap. A comparison needs the same sport, game, side, market, period, line and settlement. NCAAM and NCAAW stay distinct. Every result carries its status and reason, and `calc: edgedesk_research_compare/1`.
+- **Root causes found**
+  - **Stale queue prices.** `games-slate.yml` (scheduled every 30 min) ran every 3.5–7.5 h on GitHub between Oct 28 and Nov 1. That is a refresh gap, not a display bug. New opt-in `supabase/games_slate_dispatch.sql` (pg_cron → `workflow_dispatch` every 30 min, debounced and logged). It is **not active until installed**.
+  - **"EdgeDesk fair" on the cards.** It was `signals.sharp_fair`, Pinnacle's de-vigged reference, whose feed is out. It is now labelled as a reference and not compared when stale. "Model fair" is now EdgeDesk's own probability for the exact contract.
+  - **Moneyline beside a puck line.** The queue picked the model's and the market's numbers through separate fallbacks, so it could set a model moneyline beside a market puck line. Both numbers now come from one shared market.
+  - **ET on cards.** The cards printed times in a hard-coded ET. They now use the reader's zone.
+  - **Rounding.** Each price was rounded on its own ("50¢ → 54¢, up 3¢"). Printed differences are now the differences of the printed prices.
+  - **Queue order.** Completeness came before start time. The default view is now **Starting soon**, with **Research priority** ranked only within one sport and market.
+  - **High Point–Liberty, 10:59 PM CST.** This is correct: ESPN gives 11:59 PM EST for an overnight marathon game.
+- **Cards.** Each card shows:
+  - wallet cost basis held at the last holders read, with the historical average entry;
+  - model fair, with the model and its age;
+  - the price, with its kind (displayed price, or an executable ask);
+  - one interpretation.
+
+  EV is shown only at an ask with a recorded fee. Wallet/model agreement adds nothing. The method and observed activity fold below the cards. The Radar record shows its denominators ("over 2 graded cards, not validated").
+- **Slate.** `tools/slate/research.js` stamps each model block with its artifact's `generated_at`.
+- **Unchanged.** Radar selection, publication, grading and the H-RADAR-01/02 registrations.
+- **Rollback.** Set `EDResearchCompare.FLAG.on = false` (or `?rc=0` for one page view). The previous renderers are kept.
+- **Tests**
+  - `tools/research_compare/research_compare.test.js` (new): 111 checks, from provider fixture to queue row and card.
+  - `tools/slate/dispatch_sql.test.js` (new, real PostgreSQL): 11 checks.
+  - `tools/radar/radar_ui.test.js`: 2 wiring regexes updated for the new `opts` argument.
 ## 2026-11-01 — Odds gateway: men's college basketball (NCAAB) registered, disabled
 
 - **Why.** No NCAAB price is captured (`basketball_ncaab` has no gateway row, so every request is `denied_sport`), so neither men's college basketball model can be graded against the market. The season opens 2026-11-02. The owner approved about 2,000 credits a month for NCAAB main markets.
