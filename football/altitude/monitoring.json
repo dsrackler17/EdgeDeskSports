@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_altitude_monitoring_v1",
- "generated_at": "2026-10-31T21:44:14.537Z",
+ "generated_at": "2026-11-01T01:17:18.990Z",
  "policy": "warnings inform a person; nothing here retrains, re-tunes, enables or disables anything",
  "ok": true,
  "params": {
@@ -11,29 +11,19 @@
   "flag": "cfb_altitude_adjustment_enabled"
  },
  "slate": {
-  "generated_at": "2026-10-31T21:44:13.942Z",
-  "games": 99,
-  "with_section": 99,
-  "usable": 95,
+  "generated_at": "2026-11-01T01:17:18.410Z",
+  "games": 81,
+  "with_section": 81,
+  "usable": 79,
   "exposure": {
-   "MINIMAL": 68,
-   "HIGH": 6,
-   "UNKNOWN": 4,
-   "DESCENT": 14,
-   "MODERATE": 7
+   "MINIMAL": 59,
+   "DESCENT": 10,
+   "MODERATE": 7,
+   "UNKNOWN": 2,
+   "HIGH": 3
   },
   "applied_games": 0,
   "unavailable": [
-   {
-    "game_id": "401856734",
-    "game": "Florida @ Georgia",
-    "why": "venue 5348 has no sourced elevation"
-   },
-   {
-    "game_id": "401858505",
-    "game": "Northwestern @ Oregon",
-    "why": "Northwestern’s normal home venue (id 11823) has no sourced elevation"
-   },
    {
     "game_id": "401866456",
     "game": "Central Michigan @ Eastern Michigan",
@@ -60,20 +50,20 @@
   "season": 2026,
   "fit_window": "2006-2025, 13511 non-neutral FBS home games",
   "what": "the frozen shadow candidate applied to V1’s own published pregame margin (record/football/cfb_2026.json), graded on finals; 2026 was never seen by the fit",
-  "graded_games": 414,
-  "usable": 404,
+  "graded_games": 435,
+  "usable": 423,
   "affected": {
-   "n": 21,
-   "mae_v1": 10.98,
-   "mae_shadow": 11.002,
-   "improvement": -0.022,
-   "v1_bias": -0.379
+   "n": 24,
+   "mae_v1": 10.618,
+   "mae_shadow": 10.606,
+   "improvement": 0.012,
+   "v1_bias": -0.087
   },
   "high_exposure": {
-   "n": 21,
-   "v1_residual": -0.379,
-   "close_residual": 1.714,
-   "visitor_covers": "7 of 21"
+   "n": 24,
+   "v1_residual": -0.087,
+   "close_residual": 1.391,
+   "visitor_covers": "8 of 23"
   },
   "reading": "fewer than 30 affected games: too few to read anything into, by design"
  },
@@ -81,18 +71,8 @@
   {
    "kind": "ELEVATION_UNAVAILABLE",
    "level": "WARN",
-   "message": "4 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
+   "message": "2 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
    "evidence": [
-    {
-     "game_id": "401856734",
-     "game": "Florida @ Georgia",
-     "why": "venue 5348 has no sourced elevation"
-    },
-    {
-     "game_id": "401858505",
-     "game": "Northwestern @ Oregon",
-     "why": "Northwestern’s normal home venue (id 11823) has no sourced elevation"
-    },
     {
      "game_id": "401866456",
      "game": "Central Michigan @ Eastern Michigan",
