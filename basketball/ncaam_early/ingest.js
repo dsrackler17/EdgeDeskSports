@@ -14,7 +14,13 @@
      coaches availability  the hand-entered files (manual.js), no call
      moves                 derived from the cached rosters, player seasons,
                            teams, portal and recruits (moves.js), no call
-   Schedules: `daily` = rosters games coaches availability moves;
+     features              the preseason T2 features of every D-I team
+                           (features.js), from the cache and the engine's
+                           prior-season ratings (ratings.js), no call
+     project               prospective projections of the games in the next
+                           48 h (model.js, project.js): ESPN finals and
+                           schedule from the NCAAM forecast dataset, no call
+   Schedules: `daily` = rosters games coaches availability moves features project;
               `weekly` = daily + teams box_team player_seasons lines portal recruits.
 
    Every raw response is written gzipped to /.cache/ncaam_early/raw (never
@@ -37,11 +43,15 @@ const N = require('./normalise');
 const CB = require('./cbbd');
 const MV = require('./moves');
 const MAN = require('./manual');
+const FE = require('./features');
+const RT = require('./ratings');
+const MD = require('./model');
+const PJ = require('./project');
 
-const DAILY = ['rosters', 'games', 'coaches', 'availability', 'moves'];
-const WEEKLY = ['teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves'];
+const DAILY = ['rosters', 'games', 'coaches', 'availability', 'moves', 'features', 'project'];
+const WEEKLY = ['teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves', 'features', 'project'];
 const ALL = ['conferences', 'venues'].concat(WEEKLY);
-const ORDER = ['conferences', 'venues', 'teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves'];
+const ORDER = ['conferences', 'venues', 'teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves', 'features', 'project'];
 const BATCH = 500;
 
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -134,6 +144,83 @@ function derivePart(S, ctx) {
   return { moves: d.moves, departed: d.departed, checks: { portal_offset: po, recruit_offset: ro, counts: d.counts } };
 }
 
+/* ── the preseason features of season S (features.js), from the cache ─────────
+   Prior-season ratings and conference strength come from the existing engine
+   walked over the committed hoopR/ESPN dataset (ratings.js), crosswalked to
+   CBBD ids by each team's sourceId; coach tempo from the engine's tempo of the
+   coach's earlier head-coaching seasons. */
+function featuresPart(S, ctx) {
+  const cfg = FE.loadConfig();
+  const d = derivePart(S, ctx);
+  const prevC = cacheRead(S - 1, 'player_seasons'), curT = cacheRead(S, 'teams'), prevT = cacheRead(S - 1, 'teams'), rosC = cacheRead(S, 'rosters');
+  const prevPlayers = N.playerSeasons(prevC.body, null).rows;
+  const curTeams = N.teams(curT.body, S).rows, prevTeams = N.teams(prevT.body, S - 1).rows;
+  const rosters = rosC ? N.rosters(rosC.body, S, rosC.at, firstTip(ctx, S)).rows : [];
+  if (!ctx.states) ctx.states = (ctx.ratingStates || RT.seasonStates)(Array.from({ length: S - 1 - 2010 + 1 }, (_, i) => 2010 + i));
+  const prevState = ctx.states[S - 1];
+  const prevRating = RT.crosswalk(prevTeams, prevState);
+  const confStrength = RT.conferenceStrength(prevTeams, prevRating);
+  const lc = FE.leagueContext(prevPlayers, cfg);
+  const teamsBySeason = new Map();
+  const tempoOf = (teamId, y) => {
+    if (!teamsBySeason.has(y)) { const c = cacheRead(y, 'teams'); teamsBySeason.set(y, c ? RT.crosswalk(N.teams(c.body, y).rows, ctx.states[y]) : new Map()); }
+    const r = teamsBySeason.get(y).get(teamId); return r && r.tempo != null ? r.tempo : null;
+  };
+  const coaches = MAN.loadAll(ctx.now).coaches;
+  const curConf = new Map(curTeams.map((t) => [t.team_id, t.conference_id]));
+  const moves = d.moves.map((m) => Object.assign({}, m, { to_conference_id: m.to_conference_id != null ? m.to_conference_id : curConf.get(m.to_team_id) }));
+  const rows = [];
+  for (const t of curTeams) {
+    if (t.conference_id == null) continue;   // D-I only
+    const coach = coaches.ok ? MAN.coachFacts(coaches.entries, S, t.team_id) : null;
+    const r = FE.teamFeatures(t.team_id, S, { moves, departed: d.departed, prevPlayers, rosters, coach,
+      coachTempo: coach ? FE.coachTempo(coach.career, S, tempoOf) : null,
+      ctx: Object.assign({}, lc, { confStrength, prevRating }) }, cfg);
+    if (r) rows.push(r);
+  }
+  return { rows, checks: { teams: curTeams.filter((t) => t.conference_id != null).length, with_features: rows.length,
+    prior_ratings_crosswalked: prevRating.size, conferences_with_strength: confStrength.size, d1_avg_off: lc.avg_off, d1_avg_def: lc.avg_def, config_sha256: cfg._sha256 } };
+}
+
+/* ── prospective projections of season S (model.js, project.js) ─────────────
+   Priors from the features of S and the engine's season S-1 state; this
+   season's finals and schedule from the NCAAM forecast's committed hoopR/ESPN
+   dataset (updated daily, free: no CBBD call), crosswalked to CBBD ids. Only
+   games tipping in the next `horizon` hours, and only D-I v D-I, are projected;
+   each is computed from the finals known 30 minutes before its tip. */
+function projectPart(S, ctx, o) {
+  o = o || {};
+  const cfg = FE.loadConfig();
+  const fe = featuresPart(S, ctx);
+  const st = ctx.states[S - 1];
+  if (!st) throw Object.assign(new Error('no engine state for season ' + (S - 1)), { refused: true });
+  const prevTeams = N.teams(cacheRead(S - 1, 'teams').body, S - 1).rows, curTeams = N.teams(cacheRead(S, 'teams').body, S).rows;
+  const prevRating = RT.crosswalk(prevTeams, st);
+  const engine = RT.engineParams();
+  const priors = new Map(); const features = new Map();
+  for (const f of fe.rows) { const p = MD.preseasonPrior(f, prevRating.get(f.team_id) || null, st, cfg, engine); if (p) { priors.set(f.team_id, p); features.set(f.team_id, f); } }
+  const espnToCbbd = new Map(curTeams.filter((t) => t.source_id).map((t) => [String(t.source_id), t.team_id]));
+  const D = ctx.dataset || require(path.join(C.ROOT, 'basketball', 'ncaam_forecast', 'dataset.js'));
+  const nowMs = Date.parse(ctx.now), horizon = (o.horizonHours || 48) * 3600e3;
+  const eg = D.engineGames(D.load([S]), { scheduledFrom: nowMs });
+  const finals = eg.filter((g) => !g.scheduled && g.regime === 'D1_D1' && espnToCbbd.has(String(g.home)) && espnToCbbd.has(String(g.away)))
+    .map((g) => ({ game_id: g.game_id, home: espnToCbbd.get(String(g.home)), away: espnToCbbd.get(String(g.away)), neutral: g.neutral, yH: g.yH, yA: g.yA, poss: g.poss, tempo: g.tempo, start_ms: g.start_ms, known_ms: g.start_ms + C.AVAILABLE_AFTER_MS }));
+  const targets = eg.filter((g) => g.scheduled && g.start_ms > nowMs && g.start_ms <= nowMs + horizon)
+    .map((g) => ({ game_id: String(g.game_id), season: S, home_team_id: espnToCbbd.get(String(g.home)), away_team_id: espnToCbbd.get(String(g.away)), neutral: g.neutral, start_utc: new Date(g.start_ms).toISOString() }));
+  const league = { mu: st.mu, eta: st.eta, tau: st.tau };
+  const rows = PJ.projectGames(targets, { priors, finals, league, features }, cfg);
+  const version = JSON.parse(fs.readFileSync(path.join(C.PATHS.BASE, 'research', 'registration.json'), 'utf8')).version;
+  const stored = rows.filter((r) => r.status === 'PROJECTED').map((r) => ({
+    projection_id: (o.runId || 'dry') + ':' + r.game_id, espn_game_id: String(r.game_id), season: S, home_team_id: r.home_team_id, away_team_id: r.away_team_id, neutral: r.neutral, start_utc: r.start_utc,
+    projected_for: r.projected_for, model_id: C.MODEL_ID, model_version: version, config_sha256: cfg._sha256, code_sha: o.codeSha || null,
+    inputs_known_through: r.inputs_known_through, finals_used: r.finals_used, home_games: r.home_games, away_games: r.away_games, home_prior_weight: r.home_prior_weight, away_prior_weight: r.away_prior_weight,
+    home_off: r.home_off, home_allow: r.home_allow, home_tempo: r.home_tempo, away_off: r.away_off, away_allow: r.away_allow, away_tempo: r.away_tempo, home_var: r.home_var, away_var: r.away_var,
+    fair_spread_home: r.fair_spread_home, fair_total: r.fair_total, win_prob_home: r.win_prob_home, margin: r.margin, total: r.total, possessions: r.possessions, sd_margin: r.sd_margin, sd_total: r.sd_total,
+    angles: r.angles, continuity: r.continuity, flags: r.flags }));
+  return { rows: stored, checks: { targets: targets.length, projected: stored.length, not_projected: rows.filter((r) => r.status !== 'PROJECTED').map((r) => ({ game_id: r.game_id, reason: r.reason })).slice(0, 20),
+    finals_known: finals.length, teams_with_prior: priors.size, horizon_hours: o.horizonHours || 48, model_version: version, config_sha256: cfg._sha256 } };
+}
+
 /* ── storage ───────────────────────────────────────────────────────────────── */
 const TABLE = { conferences: 'ncaam_es_conferences', venues: 'ncaam_es_venues', teams: 'ncaam_es_teams', games: 'ncaam_es_games', box_team: 'ncaam_es_box_team',
   player_seasons: 'ncaam_es_player_seasons', portal: 'ncaam_es_portal', recruits: 'ncaam_es_recruits', lines: 'ncaam_es_lines', coaches: 'ncaam_es_coaches', availability: 'ncaam_es_availability' };
@@ -156,7 +243,7 @@ function rosterBatches(rows) {
 }
 
 async function run(o) {
-  const ctx = { now: o.now || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), games: new Map(), offline: !!o.offline };
+  const ctx = { now: o.now || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), games: new Map(), offline: !!o.offline, ratingStates: o.ratingStates || null, dataset: o.dataset || null };
   const api = o.api || CB.client({ key: o.key, fetch: o.fetch, maxCalls: o.maxCalls });
   const db = o.db || null;
   const sha0 = o.codeSha === undefined ? codeSha() : o.codeSha;
@@ -178,6 +265,17 @@ async function run(o) {
           if (!v.ok) throw new Error('manual/' + part + '.json does not validate: ' + v.errors.slice(0, 5).join('; '));
           rows = v.entries.filter((e) => e.season === S);
           if (db && rows.length) stored = await store(db, runId, TABLE[part], rows);
+        } else if (part === 'features') {
+          const f = featuresPart(S, ctx);
+          rows = f.rows; meta = { checks: f.checks };
+          if (db) {
+            stored = await store(db, runId, 'ncaam_es_team_features', rows);
+            meta.replaced = await db.rpc('ncaam_es_replace_derived', { p_run: runId, p_season: S });
+          }
+        } else if (part === 'project') {
+          const f = projectPart(S, ctx, { runId: runId || 'dry', codeSha: sha0 });
+          rows = f.rows; meta = { checks: f.checks };
+          if (db && rows.length) stored = await store(db, runId, 'ncaam_es_projections', rows);
         } else if (part === 'moves') {
           const d = derivePart(S, ctx);
           rows = d.moves; meta = { checks: d.checks, departed: d.departed.length };
@@ -248,7 +346,7 @@ function parseArgs(a) {
   return { parts, seasons, mode, maxCalls: mc == null ? undefined : Math.min(250, Math.max(0, parseInt(mc, 10))), dryRun: a.includes('--dry-run'), offline: a.includes('--offline'), manifestFile: val('--manifest') };
 }
 
-module.exports = { run, parseArgs, fetchPart, derivePart, rosterBatches, crosswalk, DAILY, WEEKLY, ALL, ORDER };
+module.exports = { run, parseArgs, fetchPart, derivePart, featuresPart, projectPart, rosterBatches, crosswalk, DAILY, WEEKLY, ALL, ORDER };
 
 if (require.main === module) {
   (async () => {

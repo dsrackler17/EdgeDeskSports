@@ -21,6 +21,12 @@
 --   ncaam_es_lines              row only when an entry changes (append-only)
 --   ncaam_es_player_moves       DERIVED: returning / transfer / freshman, with
 --   ncaam_es_departed           source level and previous minutes share
+--   ncaam_es_team_features      DERIVED T2 features per team per season
+--                               (features.js, config/model_v0.json by sha256)
+--   ncaam_es_projections        PROSPECTIVE projections, append-only; a row
+--                               is refused at or after its game's tip, so the
+--                               record of what was published before tip
+--                               cannot be written after the fact
 --   ncaam_es_coaches            hand-entered coach records (manual/coaches.json)
 --   ncaam_es_availability       hand-entered availability (append-only)
 --
@@ -199,6 +205,54 @@ create table if not exists public.ncaam_es_departed (
   primary key (season, player_id, from_team_id)
 );
 
+create table if not exists public.ncaam_es_team_features (
+  season int not null, team_id int not null, as_of_key text not null default 'PRESEASON',
+  config_version text not null, config_sha256 text not null,
+  roster_off numeric, roster_def numeric, roster_net numeric,
+  prev_off numeric, prev_allow numeric, prev_net numeric, prev_tempo numeric,
+  returning_minutes_share numeric, returning_value_share numeric,
+  minutes_share_returning numeric, minutes_share_transfer_d1 numeric, minutes_share_non_d1 numeric, minutes_share_freshman numeric, minutes_share_unknown numeric,
+  departed_minutes_share numeric, departed_points numeric, departed_value_lost numeric,
+  coach_change boolean, coach_tenure_years int, coach_prior_level text, coach_tempo_resid numeric,
+  height_in_avg numeric, blk_rate numeric, orb_pct numeric, player_uncertainty numeric, variance_multiplier numeric,
+  flags jsonb not null default '[]'::jsonb, detail jsonb not null default '{}'::jsonb,
+  run_id uuid, updated_at timestamptz not null default now(),
+  primary key (season, team_id, as_of_key)
+);
+alter table public.ncaam_es_team_features add column if not exists translation_shift numeric;
+
+create table if not exists public.ncaam_es_projections (
+  projection_id text primary key, espn_game_id text not null, season int not null,
+  home_team_id int not null, away_team_id int not null, neutral boolean not null, start_utc timestamptz not null,
+  projected_for timestamptz not null, published_at timestamptz not null default now(),
+  model_id text not null, model_version text not null, config_sha256 text not null, code_sha text,
+  inputs_known_through timestamptz, finals_used int not null,
+  home_games int, away_games int, home_prior_weight numeric, away_prior_weight numeric,
+  home_off numeric, home_allow numeric, home_tempo numeric, away_off numeric, away_allow numeric, away_tempo numeric, home_var numeric, away_var numeric,
+  fair_spread_home numeric not null, fair_total numeric not null, win_prob_home numeric not null check (win_prob_home > 0 and win_prob_home < 1),
+  margin numeric not null, total numeric not null, possessions numeric, sd_margin numeric not null, sd_total numeric not null,
+  angles jsonb not null default '[]'::jsonb, continuity jsonb, flags jsonb not null default '[]'::jsonb,
+  run_id uuid, stored_at timestamptz not null default now(),
+  check (inputs_known_through is null or inputs_known_through <= projected_for)
+);
+create index if not exists ncaam_es_projections_game_idx on public.ncaam_es_projections (espn_game_id, published_at desc);
+
+/* prospective integrity: a projection is stored only before its game's tip */
+create or replace function public.ncaam_es_projection_before_tip() returns trigger language plpgsql as $$
+begin
+  if now() >= new.start_utc then
+    raise exception 'ncaam_es_projections: game % tipped at %; a projection is only stored before tip', new.espn_game_id, new.start_utc;
+  end if;
+  new.published_at := now();
+  return new;
+end $$;
+do $t$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'ncaam_es_projections_before_tip' and tgrelid = 'public.ncaam_es_projections'::regclass) then
+    create trigger ncaam_es_projections_before_tip before insert on public.ncaam_es_projections for each row execute function public.ncaam_es_projection_before_tip();
+  end if;
+end $t$;
+
 -- ── 6. hand-entered observations ─────────────────────────────────────────────
 create table if not exists public.ncaam_es_coaches (
   season int not null, team_id int not null, team_name text not null, coach text not null, first_season_at_school int not null,
@@ -222,7 +276,7 @@ end $$;
 do $t$
 declare t text;
 begin
-  foreach t in array array['ncaam_es_alerts', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_availability'] loop
+  foreach t in array array['ncaam_es_alerts', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_availability', 'ncaam_es_projections'] loop
     if not exists (select 1 from pg_trigger where tgname = t || '_append_only' and tgrelid = ('public.' || t)::regclass) then
       execute format('create trigger %I before update or delete on public.%I for each row execute function public.ncaam_es_refuse_change()', t || '_append_only', t);
     end if;
@@ -251,7 +305,7 @@ declare t text;
 begin
   foreach t in array array['ncaam_es_runs', 'ncaam_es_alerts', 'ncaam_es_config', 'ncaam_es_teams', 'ncaam_es_conferences', 'ncaam_es_conference_members', 'ncaam_es_venues',
                            'ncaam_es_games', 'ncaam_es_box_team', 'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal',
-                           'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_coaches', 'ncaam_es_availability'] loop
+                           'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_projections', 'ncaam_es_coaches', 'ncaam_es_availability'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from public, anon, authenticated', t);
     execute format('grant select, insert, update, delete on public.%I to service_role', t);
@@ -278,9 +332,9 @@ create or replace function public.ncaam_es_put_kind(p_table text) returns text l
     when 'ncaam_es_teams' then 'upsert' when 'ncaam_es_conferences' then 'upsert' when 'ncaam_es_conference_members' then 'upsert'
     when 'ncaam_es_venues' then 'upsert' when 'ncaam_es_games' then 'upsert' when 'ncaam_es_box_team' then 'upsert'
     when 'ncaam_es_player_seasons' then 'upsert' when 'ncaam_es_coaches' then 'upsert'
-    when 'ncaam_es_player_moves' then 'upsert' when 'ncaam_es_departed' then 'upsert'
+    when 'ncaam_es_player_moves' then 'upsert' when 'ncaam_es_departed' then 'upsert' when 'ncaam_es_team_features' then 'upsert'
     when 'ncaam_es_portal' then 'snapshot' when 'ncaam_es_recruits' then 'snapshot' when 'ncaam_es_lines' then 'snapshot'
-    when 'ncaam_es_availability' then 'append'
+    when 'ncaam_es_availability' then 'append' when 'ncaam_es_projections' then 'append'
     else null end
 $$;
 create or replace function public.ncaam_es_snapshot_key(p_table text) returns text[] language sql immutable as $$
@@ -298,9 +352,13 @@ begin
   if not exists (select 1 from public.ncaam_es_runs where run_id = p_run and status = 'running') then raise exception 'ncaam_es_put: run % is not running', p_run; end if;
   if jsonb_typeof(p_rows) <> 'array' then raise exception 'ncaam_es_put: rows must be a JSON array'; end if;
   select string_agg(quote_ident(a.attname), ', ' order by a.attnum),
-         string_agg(case a.attname when 'run_id' then quote_literal(p_run) || '::uuid' when 'updated_at' then 'now()' when 'stored_at' then 'now()' else 'r.' || quote_ident(a.attname) end, ', ' order by a.attnum)
+         /* a key the row does not carry takes the column's own default (jsonb_populate_recordset
+            would otherwise write null over it) */
+         string_agg(case a.attname when 'run_id' then quote_literal(p_run) || '::uuid' when 'updated_at' then 'now()' when 'stored_at' then 'now()'
+                      else case when d.adbin is not null then 'coalesce(r.' || quote_ident(a.attname) || ', ' || pg_get_expr(d.adbin, d.adrelid) || ')' else 'r.' || quote_ident(a.attname) end end, ', ' order by a.attnum)
     into cols, sel
-    from pg_attribute a where a.attrelid = ('public.' || p_table)::regclass and a.attnum > 0 and not a.attisdropped and a.attgenerated = '';
+    from pg_attribute a left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+   where a.attrelid = ('public.' || p_table)::regclass and a.attnum > 0 and not a.attisdropped and a.attgenerated = '';
   select string_agg(quote_ident(a.attname), ', ' order by array_position(i.indkey::int2[], a.attnum))
     into pk
     from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any (i.indkey)
@@ -311,7 +369,7 @@ begin
        ncaam_es_replace_derived can tell a stale row from a current one */
     select string_agg(quote_ident(a.attname) || ' = excluded.' || quote_ident(a.attname), ', ' order by a.attnum),
            string_agg('t.' || quote_ident(a.attname) || ' is distinct from excluded.' || quote_ident(a.attname), ' or ' order by a.attnum)
-           filter (where a.attname <> 'updated_at' and (a.attname <> 'run_id' or p_table in ('ncaam_es_player_moves', 'ncaam_es_departed')))
+           filter (where a.attname <> 'updated_at' and (a.attname <> 'run_id' or p_table in ('ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features')))
       into setl, diff
       from pg_attribute a
      where a.attrelid = ('public.' || p_table)::regclass and a.attnum > 0 and not a.attisdropped and a.attgenerated = ''
@@ -373,13 +431,21 @@ begin
 end $$;
 
 /* derived rows of one season: the rows this run did not write are stale
-   (a player who left the roster since the last derivation) and are removed */
+   (a player who left the roster since the last derivation, a team no longer
+   derived) and are removed. A moves run replaces moves and departures; a
+   features run replaces that season's features. */
 create or replace function public.ncaam_es_replace_derived(p_run uuid, p_season int)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare m int; d int;
+declare m int; d int; f int; pt text;
 begin
-  if not exists (select 1 from public.ncaam_es_runs where run_id = p_run and status = 'running' and part = 'moves' and season = p_season) then
-    raise exception 'ncaam_es_replace_derived: run % is not a running moves run for season %', p_run, p_season;
+  select part into pt from public.ncaam_es_runs where run_id = p_run and status = 'running' and part in ('moves', 'features') and season = p_season;
+  if pt is null then
+    raise exception 'ncaam_es_replace_derived: run % is not a running moves or features run for season %', p_run, p_season;
+  end if;
+  if pt = 'features' then
+    delete from public.ncaam_es_team_features where season = p_season and run_id is distinct from p_run;
+    get diagnostics f = row_count;
+    return jsonb_build_object('stale_features_removed', f);
   end if;
   delete from public.ncaam_es_player_moves where season = p_season and run_id is distinct from p_run;
   get diagnostics m = row_count;
@@ -471,7 +537,7 @@ begin
   foreach f in array array['public.ncaam_es_begin_run(text,int,text,text)', 'public.ncaam_es_put(uuid,text,jsonb)', 'public.ncaam_es_put_rosters(uuid,jsonb)',
                            'public.ncaam_es_replace_derived(uuid,int)', 'public.ncaam_es_alert(uuid,text,text,text)',
                            'public.ncaam_es_finish_run(uuid,text,int,int,int,int,int,jsonb)', 'public.ncaam_es_cfg(text)',
-                           'public.ncaam_es_put_kind(text)', 'public.ncaam_es_snapshot_key(text)', 'public.ncaam_es_refuse_change()', 'public.ncaam_es_run_guard()'] loop
+                           'public.ncaam_es_put_kind(text)', 'public.ncaam_es_snapshot_key(text)', 'public.ncaam_es_refuse_change()', 'public.ncaam_es_run_guard()', 'public.ncaam_es_projection_before_tip()'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);
   end loop;
@@ -481,17 +547,17 @@ end $x$;
 
 -- ── report ───────────────────────────────────────────────────────────────────
 select check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status from (
-  select '1 the nineteen ncaam_es tables exist' as check_name,
-         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%')::text as got, '19' as want
+  select '1 the twenty-one ncaam_es tables exist' as check_name,
+         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%')::text as got, '21' as want
   union all
   select '2 row level security is on for every one of them',
-         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%' and rowsecurity)::text, '19'
+         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%' and rowsecurity)::text, '21'
   union all
   select '3 no client role can read or write any of them',
          (select count(*) from information_schema.role_table_grants where table_schema = 'public' and table_name like 'ncaam\_es\_%' and grantee in ('anon', 'authenticated'))::text, '0'
   union all
   select '4 the append-only guards are in place',
-         (select count(*) from pg_trigger where tgname like 'ncaam\_es\_%\_append\_only')::text, '7'
+         (select count(*) from pg_trigger where tgname like 'ncaam\_es\_%\_append\_only')::text, '8'
   union all
   select '5 no client role can call a writer',
          (select count(*) from information_schema.role_routine_grants where routine_schema = 'public' and routine_name like 'ncaam\_es\_%' and routine_name <> 'ncaam_es_readiness' and grantee in ('anon', 'authenticated'))::text, '0'
