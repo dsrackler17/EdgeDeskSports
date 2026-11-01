@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-11-01T16:01:43.369Z",
+ "evaluated_at": "2026-11-01T16:19:55.090Z",
  "verdict": "PASS",
  "best": null,
  "why": [
@@ -5456,148 +5456,6 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
-   "id": "98081546",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_08_BAL_BUF",
-   "event": {
-    "home": "Buffalo Bills",
-    "away": "Baltimore Ravens",
-    "start_utc": "2026-11-01T18:00:00.000Z",
-    "label": "Baltimore Ravens @ Buffalo Bills"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Buffalo Bills",
-    "line": -3,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Baltimore Ravens @ Buffalo Bills — Buffalo Bills -3",
-   "quote": null,
-   "fair_american": -166,
-   "break_even": null,
-   "prob": {
-    "model": 0.5734,
-    "push": 0.0808,
-    "market_novig": 0.4596,
-    "shrink_k": 0.1286,
-    "posterior": 0.4742,
-    "sd": 0.014,
-    "conservative": 0.4563,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 106,
-   "disagreement": -0.0033,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -6.1 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, RESEARCH vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_nfl_v2.1.0"
-  },
-  {
-   "id": "61e4ab5f",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_08_BAL_BUF",
-   "event": {
-    "home": "Buffalo Bills",
-    "away": "Baltimore Ravens",
-    "start_utc": "2026-11-01T18:00:00.000Z",
-    "label": "Baltimore Ravens @ Buffalo Bills"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Buffalo Bills",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Baltimore Ravens @ Buffalo Bills — Buffalo Bills moneyline",
-   "quote": null,
-   "fair_american": -225,
-   "break_even": null,
-   "prob": {
-    "model": 0.6921,
-    "push": 0,
-    "market_novig": 0.5934,
-    "shrink_k": 0.1286,
-    "posterior": 0.6061,
-    "sd": 0.014,
-    "conservative": 0.5881,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -136,
-   "disagreement": -0.0053,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -136 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -6.1 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, RESEARCH vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_nfl_v2.1.0"
-  },
-  {
    "id": "87349725",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -5656,6 +5514,148 @@
    "settlement": null,
    "evidence": [
     "fair spread 0.9 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, RESEARCH vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_nfl_v2.1.0"
+  },
+  {
+   "id": "5be5423c",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_08_PHI_WAS",
+   "event": {
+    "home": "Washington Commanders",
+    "away": "Philadelphia Eagles",
+    "start_utc": "2026-11-02T01:20:00.000Z",
+    "label": "Philadelphia Eagles @ Washington Commanders"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Philadelphia Eagles",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Philadelphia Eagles @ Washington Commanders — Philadelphia Eagles moneyline",
+   "quote": null,
+   "fair_american": 156,
+   "break_even": null,
+   "prob": {
+    "model": 0.3913,
+    "push": 0,
+    "market_novig": 0.295,
+    "shrink_k": 0.1286,
+    "posterior": 0.3074,
+    "sd": 0.014,
+    "conservative": 0.2894,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 252,
+   "disagreement": -0.0056,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +252 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -3.5 vs consensus -6.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, RESEARCH vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_nfl_v2.1.0"
+  },
+  {
+   "id": "bc52fb08",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_08_NE_MIA",
+   "event": {
+    "home": "Miami Dolphins",
+    "away": "New England Patriots",
+    "start_utc": "2026-11-01T21:25:00.000Z",
+    "label": "New England Patriots @ Miami Dolphins"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 41.5,
+    "settles": "includes overtime"
+   },
+   "label": "New England Patriots @ Miami Dolphins — over 41.5",
+   "quote": null,
+   "fair_american": -146,
+   "break_even": null,
+   "prob": {
+    "model": 0.5935,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.512,
+    "sd": 0.014,
+    "conservative": 0.4941,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 106,
+   "disagreement": -0.0059,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 8 vs consensus 7 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -5740,6 +5740,77 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
+   "id": "99db589e",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_08_PHI_WAS",
+   "event": {
+    "home": "Washington Commanders",
+    "away": "Philadelphia Eagles",
+    "start_utc": "2026-11-02T01:20:00.000Z",
+    "label": "Philadelphia Eagles @ Washington Commanders"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Philadelphia Eagles",
+    "line": 6.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Philadelphia Eagles @ Washington Commanders — Philadelphia Eagles +6.5",
+   "quote": null,
+   "fair_american": -144,
+   "break_even": null,
+   "prob": {
+    "model": 0.591,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5117,
+    "sd": 0.014,
+    "conservative": 0.4938,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 107,
+   "disagreement": -0.0062,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -3.5 vs consensus -6.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, RESEARCH vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_nfl_v2.1.0"
+  },
+  {
    "id": "d1a7efc6",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -5811,35 +5882,35 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
-   "id": "5be5423c",
+   "id": "61e4ab5f",
    "status": "RESEARCH",
    "sport_id": "nfl",
    "sport_label": "NFL",
-   "event_key": "NFL|2026_08_PHI_WAS",
+   "event_key": "NFL|2026_08_BAL_BUF",
    "event": {
-    "home": "Washington Commanders",
-    "away": "Philadelphia Eagles",
-    "start_utc": "2026-11-02T01:20:00.000Z",
-    "label": "Philadelphia Eagles @ Washington Commanders"
+    "home": "Buffalo Bills",
+    "away": "Baltimore Ravens",
+    "start_utc": "2026-11-01T18:00:00.000Z",
+    "label": "Baltimore Ravens @ Buffalo Bills"
    },
    "market": {
     "kind": "moneyline",
-    "side": "Philadelphia Eagles",
+    "side": "Buffalo Bills",
     "line": null,
     "settles": "includes overtime"
    },
-   "label": "Philadelphia Eagles @ Washington Commanders — Philadelphia Eagles moneyline",
+   "label": "Baltimore Ravens @ Buffalo Bills — Buffalo Bills moneyline",
    "quote": null,
-   "fair_american": 156,
+   "fair_american": -225,
    "break_even": null,
    "prob": {
-    "model": 0.3913,
+    "model": 0.6921,
     "push": 0,
-    "market_novig": 0.3092,
+    "market_novig": 0.6038,
     "shrink_k": 0.1286,
-    "posterior": 0.3198,
+    "posterior": 0.6152,
     "sd": 0.014,
-    "conservative": 0.3018,
+    "conservative": 0.5972,
     "components": {
      "model_sd": 0.03,
      "calibration_sd": 0.015,
@@ -5849,8 +5920,8 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 238,
-   "disagreement": -0.0074,
+   "min_acceptable_american": -141,
+   "disagreement": -0.0066,
    "gates": [
     {
      "gate": "PRICE",
@@ -5862,13 +5933,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +238 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -141 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "fair spread -3.5 vs consensus -6 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "fair spread -6.1 vs consensus -3.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -5939,7 +6010,7 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "fair spread -3.5 vs consensus -6 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "fair spread -3.5 vs consensus -6.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -6166,6 +6237,77 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
+   "id": "666954c9",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_08_BAL_BUF",
+   "event": {
+    "home": "Buffalo Bills",
+    "away": "Baltimore Ravens",
+    "start_utc": "2026-11-01T18:00:00.000Z",
+    "label": "Baltimore Ravens @ Buffalo Bills"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Buffalo Bills",
+    "line": -3.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Baltimore Ravens @ Buffalo Bills — Buffalo Bills -3.5",
+   "quote": null,
+   "fair_american": -134,
+   "break_even": null,
+   "prob": {
+    "model": 0.5734,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5094,
+    "sd": 0.014,
+    "conservative": 0.4915,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 108,
+   "disagreement": -0.0085,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -6.1 vs consensus -3.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, RESEARCH vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_nfl_v2.1.0"
+  },
+  {
    "id": "8a982068",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -6237,77 +6379,6 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
-   "id": "a07e424d",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_08_PHI_WAS",
-   "event": {
-    "home": "Washington Commanders",
-    "away": "Philadelphia Eagles",
-    "start_utc": "2026-11-02T01:20:00.000Z",
-    "label": "Philadelphia Eagles @ Washington Commanders"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Philadelphia Eagles",
-    "line": 6,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Philadelphia Eagles @ Washington Commanders — Philadelphia Eagles +6",
-   "quote": null,
-   "fair_american": -135,
-   "break_even": null,
-   "prob": {
-    "model": 0.552,
-    "push": 0.039,
-    "market_novig": 0.4805,
-    "shrink_k": 0.1286,
-    "posterior": 0.4897,
-    "sd": 0.014,
-    "conservative": 0.4717,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 108,
-   "disagreement": -0.0088,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -3.5 vs consensus -6 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, RESEARCH vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_nfl_v2.1.0"
-  },
-  {
    "id": "92d690ef",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -6366,77 +6437,6 @@
    "settlement": null,
    "evidence": [
     "fair spread -5.5 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, RESEARCH vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_nfl_v2.1.0"
-  },
-  {
-   "id": "2836eac4",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_09_DEN_CAR",
-   "event": {
-    "home": "Carolina Panthers",
-    "away": "Denver Broncos",
-    "start_utc": "2026-11-08T18:00:00.000Z",
-    "label": "Denver Broncos @ Carolina Panthers"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Denver Broncos",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Denver Broncos @ Carolina Panthers — Denver Broncos moneyline",
-   "quote": null,
-   "fair_american": -160,
-   "break_even": null,
-   "prob": {
-    "model": 0.6149,
-    "push": 0,
-    "market_novig": 0.5514,
-    "shrink_k": 0.1286,
-    "posterior": 0.5596,
-    "sd": 0.014,
-    "conservative": 0.5416,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -113,
-   "disagreement": -0.0098,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -113 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread 2.9 vs consensus 2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, RESEARCH vs close"
    ],
    "invalidators": [
@@ -6734,77 +6734,6 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
-   "id": "0d7f849b",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_08_KC_DEN",
-   "event": {
-    "home": "Denver Broncos",
-    "away": "Kansas City Chiefs",
-    "start_utc": "2026-11-01T21:25:00.000Z",
-    "label": "Kansas City Chiefs @ Denver Broncos"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Denver Broncos",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Kansas City Chiefs @ Denver Broncos — Denver Broncos moneyline",
-   "quote": null,
-   "fair_american": -118,
-   "break_even": null,
-   "prob": {
-    "model": 0.541,
-    "push": 0,
-    "market_novig": 0.4826,
-    "shrink_k": 0.1286,
-    "posterior": 0.4901,
-    "sd": 0.014,
-    "conservative": 0.4722,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 116,
-   "disagreement": -0.0104,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +116 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.6 vs consensus 1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, RESEARCH vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_nfl_v2.1.0"
-  },
-  {
    "id": "b1b8c173",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -6947,6 +6876,77 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
+   "id": "c45aeb8c",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_08_LV_NYJ",
+   "event": {
+    "home": "New York Jets",
+    "away": "Las Vegas Raiders",
+    "start_utc": "2026-11-01T18:00:00.000Z",
+    "label": "Las Vegas Raiders @ New York Jets"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 46.5,
+    "settles": "includes overtime"
+   },
+   "label": "Las Vegas Raiders @ New York Jets — under 46.5",
+   "quote": null,
+   "fair_american": -123,
+   "break_even": null,
+   "prob": {
+    "model": 0.5525,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5068,
+    "sd": 0.014,
+    "conservative": 0.4888,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 109,
+   "disagreement": -0.0112,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -2.3 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, RESEARCH vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_nfl_v2.1.0"
+  },
+  {
    "id": "96ffd220",
    "status": "RESEARCH",
    "sport_id": "nhl",
@@ -7004,8 +7004,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.689 (CAR) vs 2.3144 (WPG) regulation goals",
-    "CAR 5v5 xG for 1.1643× league, WPG 5v5 xG for 0.9514×",
+    "λ 3.6894 (CAR) vs 2.3148 (WPG) regulation goals",
+    "CAR 5v5 xG for 1.1647× league, WPG 5v5 xG for 0.9516×",
     "goalies: projected uncertain (P. Kochetkov 76% / S. Skinner 69%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7078,8 +7078,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.689 (CAR) vs 2.3144 (WPG) regulation goals",
-    "CAR 5v5 xG for 1.1643× league, WPG 5v5 xG for 0.9514×",
+    "λ 3.6894 (CAR) vs 2.3148 (WPG) regulation goals",
+    "CAR 5v5 xG for 1.1647× league, WPG 5v5 xG for 0.9516×",
     "goalies: projected uncertain (P. Kochetkov 76% / S. Skinner 69%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7152,8 +7152,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.689 (CAR) vs 2.3144 (WPG) regulation goals",
-    "CAR 5v5 xG for 1.1643× league, WPG 5v5 xG for 0.9514×",
+    "λ 3.6894 (CAR) vs 2.3148 (WPG) regulation goals",
+    "CAR 5v5 xG for 1.1647× league, WPG 5v5 xG for 0.9516×",
     "goalies: projected uncertain (P. Kochetkov 76% / S. Skinner 69%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7191,13 +7191,13 @@
    "fair_american": -103,
    "break_even": null,
    "prob": {
-    "model": 0.4485,
+    "model": 0.4486,
     "push": 0.1157,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4485,
+    "posterior": 0.4486,
     "sd": 0.0277,
-    "conservative": 0.413,
+    "conservative": 0.4131,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -7226,8 +7226,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.689 (CAR) vs 2.3144 (WPG) regulation goals",
-    "CAR 5v5 xG for 1.1643× league, WPG 5v5 xG for 0.9514×",
+    "λ 3.6894 (CAR) vs 2.3148 (WPG) regulation goals",
+    "CAR 5v5 xG for 1.1647× league, WPG 5v5 xG for 0.9516×",
     "goalies: projected uncertain (P. Kochetkov 76% / S. Skinner 69%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7265,13 +7265,13 @@
    "fair_american": 103,
    "break_even": null,
    "prob": {
-    "model": 0.4359,
+    "model": 0.4357,
     "push": 0.1157,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4359,
+    "posterior": 0.4357,
     "sd": 0.0277,
-    "conservative": 0.4004,
+    "conservative": 0.4002,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -7300,8 +7300,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.689 (CAR) vs 2.3144 (WPG) regulation goals",
-    "CAR 5v5 xG for 1.1643× league, WPG 5v5 xG for 0.9514×",
+    "λ 3.6894 (CAR) vs 2.3148 (WPG) regulation goals",
+    "CAR 5v5 xG for 1.1647× league, WPG 5v5 xG for 0.9516×",
     "goalies: projected uncertain (P. Kochetkov 76% / S. Skinner 69%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7374,8 +7374,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.689 (CAR) vs 2.3144 (WPG) regulation goals",
-    "CAR 5v5 xG for 1.1643× league, WPG 5v5 xG for 0.9514×",
+    "λ 3.6894 (CAR) vs 2.3148 (WPG) regulation goals",
+    "CAR 5v5 xG for 1.1647× league, WPG 5v5 xG for 0.9516×",
     "goalies: projected uncertain (P. Kochetkov 76% / S. Skinner 69%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7413,13 +7413,13 @@
    "fair_american": -235,
    "break_even": null,
    "prob": {
-    "model": 0.7017,
+    "model": 0.7016,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.7017,
+    "posterior": 0.7016,
     "sd": 0.027,
-    "conservative": 0.6671,
+    "conservative": 0.667,
     "components": {
      "model_sd": 0.0189,
      "calibration_sd": 0.015,
@@ -7448,8 +7448,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.0173 (WSH) vs 3.0504 (MIN) regulation goals",
-    "WSH 5v5 xG for 1.0499× league, MIN 5v5 xG for 1.0088×",
+    "λ 3.0178 (WSH) vs 3.0508 (MIN) regulation goals",
+    "WSH 5v5 xG for 1.0501× league, MIN 5v5 xG for 1.0091×",
     "goalies: projected uncertain (L. Thompson 60% / J. Wallstedt 81%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7522,8 +7522,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.0173 (WSH) vs 3.0504 (MIN) regulation goals",
-    "WSH 5v5 xG for 1.0499× league, MIN 5v5 xG for 1.0088×",
+    "λ 3.0178 (WSH) vs 3.0508 (MIN) regulation goals",
+    "WSH 5v5 xG for 1.0501× league, MIN 5v5 xG for 1.0091×",
     "goalies: projected uncertain (L. Thompson 60% / J. Wallstedt 81%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7596,8 +7596,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.0173 (WSH) vs 3.0504 (MIN) regulation goals",
-    "WSH 5v5 xG for 1.0499× league, MIN 5v5 xG for 1.0088×",
+    "λ 3.0178 (WSH) vs 3.0508 (MIN) regulation goals",
+    "WSH 5v5 xG for 1.0501× league, MIN 5v5 xG for 1.0091×",
     "goalies: projected uncertain (L. Thompson 60% / J. Wallstedt 81%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7635,13 +7635,13 @@
    "fair_american": -110,
    "break_even": null,
    "prob": {
-    "model": 0.4669,
+    "model": 0.467,
     "push": 0.1095,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4669,
+    "posterior": 0.467,
     "sd": 0.0277,
-    "conservative": 0.4314,
+    "conservative": 0.4315,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -7670,8 +7670,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.0173 (WSH) vs 3.0504 (MIN) regulation goals",
-    "WSH 5v5 xG for 1.0499× league, MIN 5v5 xG for 1.0088×",
+    "λ 3.0178 (WSH) vs 3.0508 (MIN) regulation goals",
+    "WSH 5v5 xG for 1.0501× league, MIN 5v5 xG for 1.0091×",
     "goalies: projected uncertain (L. Thompson 60% / J. Wallstedt 81%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7709,13 +7709,13 @@
    "fair_american": 110,
    "break_even": null,
    "prob": {
-    "model": 0.4236,
+    "model": 0.4235,
     "push": 0.1095,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4236,
+    "posterior": 0.4235,
     "sd": 0.0277,
-    "conservative": 0.3881,
+    "conservative": 0.388,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -7744,8 +7744,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.0173 (WSH) vs 3.0504 (MIN) regulation goals",
-    "WSH 5v5 xG for 1.0499× league, MIN 5v5 xG for 1.0088×",
+    "λ 3.0178 (WSH) vs 3.0508 (MIN) regulation goals",
+    "WSH 5v5 xG for 1.0501× league, MIN 5v5 xG for 1.0091×",
     "goalies: projected uncertain (L. Thompson 60% / J. Wallstedt 81%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7783,13 +7783,13 @@
    "fair_american": 235,
    "break_even": null,
    "prob": {
-    "model": 0.2983,
+    "model": 0.2984,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.2983,
+    "posterior": 0.2984,
     "sd": 0.027,
-    "conservative": 0.2637,
+    "conservative": 0.2638,
     "components": {
      "model_sd": 0.0189,
      "calibration_sd": 0.015,
@@ -7818,8 +7818,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.0173 (WSH) vs 3.0504 (MIN) regulation goals",
-    "WSH 5v5 xG for 1.0499× league, MIN 5v5 xG for 1.0088×",
+    "λ 3.0178 (WSH) vs 3.0508 (MIN) regulation goals",
+    "WSH 5v5 xG for 1.0501× league, MIN 5v5 xG for 1.0091×",
     "goalies: projected uncertain (L. Thompson 60% / J. Wallstedt 81%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7892,8 +7892,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 2.7697 (PHI) vs 3.1316 (UTA) regulation goals",
-    "PHI 5v5 xG for 0.9338× league, UTA 5v5 xG for 1.074×",
+    "λ 2.7702 (PHI) vs 3.1321 (UTA) regulation goals",
+    "PHI 5v5 xG for 0.934× league, UTA 5v5 xG for 1.0743×",
     "goalies: projected uncertain (J. Woll 54% / K. Vejmelka 67%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -7931,13 +7931,13 @@
    "fair_american": -126,
    "break_even": null,
    "prob": {
-    "model": 0.5574,
+    "model": 0.5573,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5574,
+    "posterior": 0.5573,
     "sd": 0.021,
-    "conservative": 0.5305,
+    "conservative": 0.5304,
     "components": {
      "model_sd": 0.0085,
      "calibration_sd": 0.015,
@@ -7966,8 +7966,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 2.7697 (PHI) vs 3.1316 (UTA) regulation goals",
-    "PHI 5v5 xG for 0.9338× league, UTA 5v5 xG for 1.074×",
+    "λ 2.7702 (PHI) vs 3.1321 (UTA) regulation goals",
+    "PHI 5v5 xG for 0.934× league, UTA 5v5 xG for 1.0743×",
     "goalies: projected uncertain (J. Woll 54% / K. Vejmelka 67%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -8005,13 +8005,13 @@
    "fair_american": 126,
    "break_even": null,
    "prob": {
-    "model": 0.4426,
+    "model": 0.4427,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4426,
+    "posterior": 0.4427,
     "sd": 0.0185,
-    "conservative": 0.4189,
+    "conservative": 0.419,
     "components": {
      "model_sd": 0.0085,
      "calibration_sd": 0.0112,
@@ -8040,8 +8040,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 2.7697 (PHI) vs 3.1316 (UTA) regulation goals",
-    "PHI 5v5 xG for 0.9338× league, UTA 5v5 xG for 1.074×",
+    "λ 2.7702 (PHI) vs 3.1321 (UTA) regulation goals",
+    "PHI 5v5 xG for 0.934× league, UTA 5v5 xG for 1.0743×",
     "goalies: projected uncertain (J. Woll 54% / K. Vejmelka 67%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -8079,13 +8079,13 @@
    "fair_american": -103,
    "break_even": null,
    "prob": {
-    "model": 0.4515,
+    "model": 0.4513,
     "push": 0.1102,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4515,
+    "posterior": 0.4513,
     "sd": 0.0277,
-    "conservative": 0.416,
+    "conservative": 0.4158,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -8114,8 +8114,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 2.7697 (PHI) vs 3.1316 (UTA) regulation goals",
-    "PHI 5v5 xG for 0.9338× league, UTA 5v5 xG for 1.074×",
+    "λ 2.7702 (PHI) vs 3.1321 (UTA) regulation goals",
+    "PHI 5v5 xG for 0.934× league, UTA 5v5 xG for 1.0743×",
     "goalies: projected uncertain (J. Woll 54% / K. Vejmelka 67%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -8153,13 +8153,13 @@
    "fair_american": 103,
    "break_even": null,
    "prob": {
-    "model": 0.4383,
+    "model": 0.4385,
     "push": 0.1102,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4383,
+    "posterior": 0.4385,
     "sd": 0.0277,
-    "conservative": 0.4028,
+    "conservative": 0.403,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -8188,8 +8188,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 2.7697 (PHI) vs 3.1316 (UTA) regulation goals",
-    "PHI 5v5 xG for 0.9338× league, UTA 5v5 xG for 1.074×",
+    "λ 2.7702 (PHI) vs 3.1321 (UTA) regulation goals",
+    "PHI 5v5 xG for 0.934× league, UTA 5v5 xG for 1.0743×",
     "goalies: projected uncertain (J. Woll 54% / K. Vejmelka 67%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -8262,8 +8262,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 2.7697 (PHI) vs 3.1316 (UTA) regulation goals",
-    "PHI 5v5 xG for 0.9338× league, UTA 5v5 xG for 1.074×",
+    "λ 2.7702 (PHI) vs 3.1321 (UTA) regulation goals",
+    "PHI 5v5 xG for 0.934× league, UTA 5v5 xG for 1.0743×",
     "goalies: projected uncertain (J. Woll 54% / K. Vejmelka 67%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -8298,18 +8298,18 @@
    },
    "label": "EDM @ NYR — EDM +1.5",
    "quote": null,
-   "fair_american": -189,
+   "fair_american": -194,
    "break_even": null,
    "prob": {
-    "model": 0.6539,
+    "model": 0.6601,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6539,
-    "sd": 0.02,
-    "conservative": 0.6283,
+    "posterior": 0.6601,
+    "sd": 0.0197,
+    "conservative": 0.6348,
     "components": {
-     "model_sd": 0.0054,
+     "model_sd": 0.0044,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -8317,7 +8317,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -160,
+   "min_acceptable_american": -165,
    "disagreement": null,
    "gates": [
     {
@@ -8330,15 +8330,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -160 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -165 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2587 (NYR) vs 2.8995 (EDM) regulation goals",
-    "NYR 5v5 xG for 0.9664× league, EDM 5v5 xG for 1.0301×",
-    "goalies: projected uncertain (D. Garand 79% / T. Jarry 61%)",
+    "λ 3.2305 (NYR) vs 2.912 (EDM) regulation goals",
+    "NYR 5v5 xG for 0.9667× league, EDM 5v5 xG for 1.0271×",
+    "goalies: projected uncertain (D. Garand 79% / D. Levi 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -8373,18 +8373,18 @@
    },
    "label": "EDM @ NYR — NYR moneyline",
    "quote": null,
-   "fair_american": -126,
+   "fair_american": -123,
    "break_even": null,
    "prob": {
-    "model": 0.5579,
+    "model": 0.5515,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5579,
-    "sd": 0.016,
-    "conservative": 0.5373,
+    "posterior": 0.5515,
+    "sd": 0.0158,
+    "conservative": 0.5313,
     "components": {
-     "model_sd": 0.0049,
+     "model_sd": 0.004,
      "calibration_sd": 0.0095,
      "lineup_sd": 0.012
     }
@@ -8392,7 +8392,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -111,
+   "min_acceptable_american": -109,
    "disagreement": null,
    "gates": [
     {
@@ -8405,15 +8405,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -111 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -109 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2587 (NYR) vs 2.8995 (EDM) regulation goals",
-    "NYR 5v5 xG for 0.9664× league, EDM 5v5 xG for 1.0301×",
-    "goalies: projected uncertain (D. Garand 79% / T. Jarry 61%)",
+    "λ 3.2305 (NYR) vs 2.912 (EDM) regulation goals",
+    "NYR 5v5 xG for 0.9667× league, EDM 5v5 xG for 1.0271×",
+    "goalies: projected uncertain (D. Garand 79% / D. Levi 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -8448,16 +8448,16 @@
    },
    "label": "EDM @ NYR — under 6.5",
    "quote": null,
-   "fair_american": -108,
+   "fair_american": -109,
    "break_even": null,
    "prob": {
-    "model": 0.5185,
+    "model": 0.521,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5185,
+    "posterior": 0.521,
     "sd": 0.0277,
-    "conservative": 0.483,
+    "conservative": 0.4855,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -8467,7 +8467,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 111,
+   "min_acceptable_american": 110,
    "disagreement": null,
    "gates": [
     {
@@ -8480,15 +8480,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +111 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2587 (NYR) vs 2.8995 (EDM) regulation goals",
-    "NYR 5v5 xG for 0.9664× league, EDM 5v5 xG for 1.0301×",
-    "goalies: projected uncertain (D. Garand 79% / T. Jarry 61%)",
+    "λ 3.2305 (NYR) vs 2.912 (EDM) regulation goals",
+    "NYR 5v5 xG for 0.9667× league, EDM 5v5 xG for 1.0271×",
+    "goalies: projected uncertain (D. Garand 79% / D. Levi 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -8523,16 +8523,16 @@
    },
    "label": "EDM @ NYR — over 6.5",
    "quote": null,
-   "fair_american": 108,
+   "fair_american": 109,
    "break_even": null,
    "prob": {
-    "model": 0.4815,
+    "model": 0.479,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4815,
+    "posterior": 0.479,
     "sd": 0.0277,
-    "conservative": 0.446,
+    "conservative": 0.4435,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -8542,7 +8542,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 129,
+   "min_acceptable_american": 130,
    "disagreement": null,
    "gates": [
     {
@@ -8555,15 +8555,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +129 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +130 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2587 (NYR) vs 2.8995 (EDM) regulation goals",
-    "NYR 5v5 xG for 0.9664× league, EDM 5v5 xG for 1.0301×",
-    "goalies: projected uncertain (D. Garand 79% / T. Jarry 61%)",
+    "λ 3.2305 (NYR) vs 2.912 (EDM) regulation goals",
+    "NYR 5v5 xG for 0.9667× league, EDM 5v5 xG for 1.0271×",
+    "goalies: projected uncertain (D. Garand 79% / D. Levi 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -8598,18 +8598,18 @@
    },
    "label": "EDM @ NYR — EDM moneyline",
    "quote": null,
-   "fair_american": 126,
+   "fair_american": 123,
    "break_even": null,
    "prob": {
-    "model": 0.4421,
+    "model": 0.4485,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4421,
-    "sd": 0.0198,
-    "conservative": 0.4167,
+    "posterior": 0.4485,
+    "sd": 0.0196,
+    "conservative": 0.4234,
     "components": {
-     "model_sd": 0.0049,
+     "model_sd": 0.004,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -8617,7 +8617,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 145,
+   "min_acceptable_american": 141,
    "disagreement": null,
    "gates": [
     {
@@ -8630,15 +8630,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +145 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +141 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2587 (NYR) vs 2.8995 (EDM) regulation goals",
-    "NYR 5v5 xG for 0.9664× league, EDM 5v5 xG for 1.0301×",
-    "goalies: projected uncertain (D. Garand 79% / T. Jarry 61%)",
+    "λ 3.2305 (NYR) vs 2.912 (EDM) regulation goals",
+    "NYR 5v5 xG for 0.9667× league, EDM 5v5 xG for 1.0271×",
+    "goalies: projected uncertain (D. Garand 79% / D. Levi 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -8673,18 +8673,18 @@
    },
    "label": "EDM @ NYR — NYR -1.5",
    "quote": null,
-   "fair_american": 189,
+   "fair_american": 194,
    "break_even": null,
    "prob": {
-    "model": 0.3461,
+    "model": 0.3399,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3461,
-    "sd": 0.02,
-    "conservative": 0.3205,
+    "posterior": 0.3399,
+    "sd": 0.0197,
+    "conservative": 0.3146,
     "components": {
-     "model_sd": 0.0054,
+     "model_sd": 0.0044,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -8692,7 +8692,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 218,
+   "min_acceptable_american": 224,
    "disagreement": null,
    "gates": [
     {
@@ -8705,15 +8705,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +218 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +224 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2587 (NYR) vs 2.8995 (EDM) regulation goals",
-    "NYR 5v5 xG for 0.9664× league, EDM 5v5 xG for 1.0301×",
-    "goalies: projected uncertain (D. Garand 79% / T. Jarry 61%)",
+    "λ 3.2305 (NYR) vs 2.912 (EDM) regulation goals",
+    "NYR 5v5 xG for 0.9667× league, EDM 5v5 xG for 1.0271×",
+    "goalies: projected uncertain (D. Garand 79% / D. Levi 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -9129,15 +9129,15 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-11-01T16:01:43.334Z",
-  "nhl_slate_generated_at": "2026-11-01T06:48:29.253Z",
+  "registry_generated_at": "2026-11-01T16:19:54.980Z",
+  "nhl_slate_generated_at": "2026-11-01T16:19:49.591Z",
   "basketball_slate_generated_at": "2026-11-01T16:01:42.532Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-11-01T06:48:29.210Z",
+   "generated_at": "2026-11-01T16:19:49.550Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
-  "football_sheets_generated_at": "2026-11-01T06:25:47.337Z",
+  "football_sheets_generated_at": "2026-11-01T16:08:37.280Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
