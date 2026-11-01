@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-11-01T16:08:30.865Z",
- "board_generated_at": "2026-11-01T16:08:19.905Z",
+ "generated_at": "2026-11-01T17:08:27.631Z",
+ "board_generated_at": "2026-11-01T17:08:15.334Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -21,16 +21,16 @@
    "kickoff": "2026-11-07T17:00:00.000Z",
    "named": false,
    "edgedesk": "Utah −12.5",
-   "market": "Utah −4.5",
-   "books": 1,
-   "gap": 7.9,
+   "market": "Utah −5.0",
+   "books": 2,
+   "gap": 7.4,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "HFA_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -44,8 +44,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 1"
     },
     {
      "requirement": "current team states",
@@ -70,26 +70,26 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.5 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 2.9 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.4"
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.9 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail."
+   "verdict": "INVESTIGATE is correct: football-only calibration preserves the major gap fail."
   },
   {
-   "game_id": "401858514",
-   "game": "Oregon @ Ohio State",
-   "kickoff": "2026-11-07T20:30:00.000Z",
+   "game_id": "401870795",
+   "game": "Liberty @ New Mexico State",
+   "kickoff": "2026-11-08T01:00:00.000Z",
    "named": false,
-   "edgedesk": "Ohio State −16.5",
-   "market": "Ohio State −9.5",
+   "edgedesk": "Liberty −24.0",
+   "market": "Liberty −13.5",
    "books": 1,
-   "gap": 7.1,
+   "gap": 10.4,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "MARKET_FAULT",
@@ -101,12 +101,12 @@
     {
      "requirement": "correct game",
      "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-11-07T20:30:00.000Z"
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-11-08T01:00:00.000Z"
     },
     {
      "requirement": "correct home/away",
      "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Ohio Stadium), declared by the schedule feed"
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Aggie Memorial Stadium), declared by the schedule feed"
     },
     {
      "requirement": "fresh multi-book consensus",
@@ -116,17 +116,83 @@
     {
      "requirement": "current team states",
      "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 0.7 rating pts"
+     "detail": "PASS: fewest current-season games behind a rating: 8 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 6.7 rating pts (limit 10)"
     },
     {
      "requirement": "resolved QB",
      "result": "PASS",
-     "detail": "WARN: Ohio State: starter unresolved (competition) · PASS: Oregon: Dylan Raiola (previous game)"
+     "detail": "PASS: New Mexico State: Adam Damante (previous game) · PASS: Liberty: Deshawn Purdie (previous game)"
     },
     {
      "requirement": "no abnormal availability",
+     "result": "FAIL",
+     "detail": "FAIL: New Mexico State: availability feed fetch failed — abnormal missing data · FAIL: Liberty: availability feed fetch failed — abnormal missing data"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "PASS: Ohio State: availability sources checked, nothing filed · PASS: Oregon: availability sources checked, nothing filed"
+     "detail": "WARN: the matchup term alone (-2.8 pts) lifts the gap over 10: without it the gap is 7.6 — historically informative, flagged for scrutiny"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 6.4 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · PASS: the submodels disagree with each other by SD 1.7 (limit 6)"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9.6"
+    }
+   ],
+   "consistent": true,
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail."
+  },
+  {
+   "game_id": "401871075",
+   "game": "Sam Houston @ Jacksonville State",
+   "kickoff": "2026-11-08T00:00:00.000Z",
+   "named": false,
+   "edgedesk": "Jacksonville State −24.5",
+   "market": "Jacksonville State −14.5",
+   "books": 1,
+   "gap": 10,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-11-08T00:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (AmFirst Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 8 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 4.1 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Jacksonville State: Caden Creel (previous game) · WARN: Sam Houston: starter unresolved (competition)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "FAIL",
+     "detail": "FAIL: Jacksonville State: availability feed fetch failed — abnormal missing data · FAIL: Sam Houston: availability feed fetch failed — abnormal missing data"
     },
     {
      "requirement": "component adjustments within historical bounds",
@@ -136,16 +202,16 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 11.2 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 5.2 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.4 — the extreme is not supported by how margins of this size have actually finished"
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail."
   },
   {
    "game_id": "401858292",
@@ -154,15 +220,15 @@
    "named": false,
    "edgedesk": "UConn −0.5",
    "market": "North Carolina −8.5",
-   "books": 1,
+   "books": 2,
    "gap": 9.1,
    "gap_class": "MAJOR",
    "favorite_flip": true,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "NO_DECISION",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "PLAYER_AVAILABILITY_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -176,8 +242,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
     },
     {
      "requirement": "current team states",
@@ -202,7 +268,7 @@
     {
      "requirement": "submodel support",
      "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 1.8 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.6 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
@@ -211,7 +277,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
+   "verdict": "INVESTIGATE is correct: no abnormal availability fail; submodel support fail."
   }
  ],
  "inconsistent": [],
