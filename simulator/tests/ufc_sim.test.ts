@@ -226,7 +226,10 @@ K.chk('committed data: every listed card has one main event, five rounds (' + ev
 /* the loop publishes only bouts that have not started (its 14-day window; between cards, as in the December break,
    none), so the check runs on whichever booked bouts it lists, and finds some whenever the loop published any */
 const listed = d.bouts.filter((b) => b.p_a_published != null);
-K.chk('committed data: every booked bout the loop lists is at the price it published (' + listed.length + ' bouts)', (listed.length > 0 || d.elo.reproduction.published === 0) && listed.every((b) => round4(b.p_a) === b.p_a_published),
+K.chk('committed data: every booked bout the loop lists is at the price it published (' + listed.length + ' bouts)', (listed.length > 0 || d.elo.reproduction.published === 0) && d.elo.published_agree.equal === listed.length
+  /* p_a is the walked probability to 6 places and the loop published it to 4: the two lie within half a 4th-place unit
+     (plus the 6-place rounding). Re-rounding p_a to 4 places would round twice and can cross a half (bout 401922642). */
+  && listed.every((b) => Math.abs(b.p_a - (b.p_a_published as number)) <= 5e-5 + 5e-7 + 1e-12),
   listed.filter((b) => round4(b.p_a) !== b.p_a_published).map((b) => b.bout_id));
 K.chk('committed data: the booked bouts carry the comparison version\'s price (1.1.0) beside the served one when it is not 1.1.0', d.elo.version === '1.1.0' || d.bouts.every((b) => b.compare && b.compare.version === '1.1.0' && b.compare.p_a > 0 && b.compare.p_a < 1));
 K.chk('committed data: every booked bout has a guard verdict; a disagreement is never a signal without certification', d.bouts.every((b) => ['AGREES', 'DISAGREES', 'NO_MARKET'].includes(b.guard.status) && (!b.guard.signal_allowed || d.guard.certified))
