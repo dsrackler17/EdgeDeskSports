@@ -9,6 +9,10 @@
 #          read or write, snapshots on change, point-in-time rosters,
 #          append-only guards, readiness (NCAAM_EARLY_SQL_REQUIRED=1: a
 #          missing cluster FAILS, never skips)
+#   reg    the research registration: EXPERIMENTAL / T3 with no result,
+#          ordered windows, promotion criteria, the configuration pinned by
+#          sha256, the generated registry SQL current and applied to a
+#          stand-in registry
 #
 # No network beyond the runner image, no credentials, nothing written.
 name: NCAAM early-season suites
@@ -20,6 +24,7 @@ on:
       - 'basketball/ncaam_early/**'
       - 'supabase/ncaam_early.sql'
       - 'supabase/migrations/20261101130000_ncaam_early.sql'
+      - 'supabase/ncaam_early_registry.sql'
       - 'tools/personal/_pg.js'
       - 'tools/games/sql/supabase_shim.sql'
       - '.github/workflows/ncaam-early-*.yml'
@@ -29,6 +34,7 @@ on:
       - 'basketball/ncaam_early/**'
       - 'supabase/ncaam_early.sql'
       - 'supabase/migrations/20261101130000_ncaam_early.sql'
+      - 'supabase/ncaam_early_registry.sql'
       - 'tools/personal/_pg.js'
       - 'tools/games/sql/supabase_shim.sql'
       - '.github/workflows/ncaam-early-*.yml'
@@ -63,3 +69,7 @@ jobs:
         env:
           NCAAM_EARLY_SQL_REQUIRED: '1'
         run: node basketball/ncaam_early/tests/sql.test.js
+      - name: The registration (windows, promotion criteria, pinned configuration; the registry SQL on a real PostgreSQL)
+        env:
+          NCAAM_EARLY_SQL_REQUIRED: '1'
+        run: node basketball/ncaam_early/tests/registration.test.js
