@@ -38,7 +38,7 @@ that.
 | **T0 data layer** (this directory, `supabase/ncaam_early.sql`) | built and tested; **not deployed**; the sync is **off** (`NCAAM_EARLY_SYNC`) |
 | Registration (windows, promotion criteria, starting configuration) | `research/registration.json` v0.1.0 + `config/model_v0.json` (pinned by sha256), generated `supabase/ncaam_early_registry.sql`; **not yet applied** (Deploy NCAAM early-season SQL, `apply_registry`) |
 | **T2 features** (`features.js`, `ratings.js`, part `features`, table `ncaam_es_team_features`) | built and tested (synthetic players; the engine on the committed data); **not run on CBBD data** (no key yet) |
-| T3 model, market comparison | later pull requests |
+| **T3 model** (`model.js`), **market comparison and Conviction** (`market.js`), **projections** (`project.js`, part `project`, table `ncaam_es_projections`) | built and tested on synthetic seasons; the market join to EdgeDesk's captured NCAAB prices is the next pull request |
 | Card and image, grading, accountability | later pull requests |
 
 ## The registration (v0.1.0, before any result)
@@ -110,6 +110,86 @@ Low 0.5) exist for EdgeDesk's own grading and are never displayed.
   CBBD's own figure kept beside it, never mixed in. The derived player moves
   are also T2. Every other transform is in a later pull request.
 - **T3, the model.** In a later pull request.
+
+## The T3 model (`model.js`, `project.js`)
+
+Every constant comes from the registered configuration or the engine's frozen
+state. Nothing is fitted.
+
+**Preseason prior.**
+
+- prior = (1 − w) × 0.9 × last season's engine rating + w × the roster
+  build, with w = 0.5.
+- After a coaching change, w = 0.5 + 0.5 × 0.15.
+- Tempo: 0.9 × last season's. When the coach record has a tempo history,
+  that history is blended in by (1 − returning minutes share).
+- Prior variance per side: the engine's opening variance s2 / λ × the
+  registered variance multiplier.
+
+**In-season update.**
+
+- The registered prior weights: 100% at 0 games, 65% at 3, 45% at 6, 25% at
+  9, 12% at 12, 5% from 15. They are scaled by the variance multiplier
+  vm: w' = w / (w + vm (1 − w)), the normal-normal consequence of a 1/vm
+  prior precision. **A rebuilt, high-variance team leans on its own games
+  sooner.**
+- The ratings are a joint opponent-adjusted ridge fit of this season's
+  D-I v D-I finals. Each team is pulled toward its prior with exactly the
+  strength that gives it w'.
+- Posterior variance = w' × prior variance.
+
+**Projection.**
+
+- Points per 100 = mu + off + opponent allow ± the engine's home term
+  (neutral sites get none).
+- Possessions = league pace + both teams' tempo.
+- Margin sd = sqrt(11² + rating variance); total sd = sqrt(16² + rating
+  variance).
+- Win, cover and over probabilities come from the normal. For a whole-number
+  line the push mass is reported and removed.
+
+**Point in time.** Every projection is computed from the finals known 30
+minutes before its tip. A final counts as known 4 hours after its tip. A
+test checks that the same projection comes out whether or not later finals
+exist.
+
+**Prospective record.** The `project` part runs daily. It projects the D-I
+v D-I games tipping in the next 48 hours, using the NCAAM forecast's
+committed ESPN dataset (no CBBD call). Rows go to `ncaam_es_projections`,
+which is append-only. **The database refuses a row at or after its game's
+tip**, and a row whose inputs postdate it. That is the pre-tip record the
+promotion window is scored on.
+
+## The market comparison (`market.js`)
+
+**Pricing.**
+
+- The two-way multiplicative de-vig.
+- For each side, the best fresh captured price (90 minutes or newer), priced
+  at its own line.
+- Edge = model probability × decimal − 1.
+- The reference is Pinnacle when captured, otherwise the median fair price
+  of the books at the modal line. Its book and capture time are always
+  shown.
+
+**Flags.** Thin: fewer than 3 fresh books, or a Kalshi market under 500
+contracts. Stale: no fresh price.
+
+**Conviction tiers** (the registered thresholds; never a stake):
+
+| Tier | Rule |
+|---|---|
+| HIGH | edge ≥ 3%, both teams' variance under the day's 60th percentile, and a non-price angle |
+| MEDIUM | 1.5–3% with an angle, or ≥ 3% otherwise |
+| LOW | 0.5–1.5%, or a price-only bet between 1.5% and 3% |
+| PASS | under 0.5%, thin or stale |
+
+**The registered text overlaps** for a price-only bet between 1.5% and 3%.
+The conservative reading, LOW, is taken, and it is stated in the code.
+
+**Angle tags** use the registered thresholds: `continuity_gap`,
+`transfer_translation`, `coach_change`, `departed_production`,
+`pace_coach_history`, `size_mismatch`, `price_only`.
 
 ## The T2 features (`features.js`, `ratings.js`)
 

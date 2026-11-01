@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-01 — NCAAM-EARLY T3 model: prior, registered decay, in-season fit, projections, market comparison and Conviction
+
+- **What.** New `basketball/ncaam_early/model.js`, `market.js` and `project.js`, a `project` part in the sync (daily, last), and a new table, `ncaam_es_projections`.
+  - **Constants.** Every constant is registered (`config/model_v0.json`) or the engine's frozen state. `ratings.js` now also exposes the engine's home term, residual variance and λ.
+  - **Preseason prior.**
+    - 0.5 × the carried rating + 0.5 × the roster build.
+    - A coaching change shrinks the carried part further (coach_shrink 0.15).
+    - Tempo blends in the coach's tempo history.
+    - Prior variance = the engine's opening variance × the registered variance multiplier.
+  - **In-season.** The registered decay table, scaled by the variance multiplier (w / (w + vm (1 − w))), so rebuilt teams update sooner. A joint opponent-adjusted ridge fit with per-team prior strength.
+  - **Projection.** Margin, total, win probability, sd, and cover/over probabilities with whole-number pushes. Every projection uses only the finals known 30 minutes before tip, and the tests check this.
+  - **Market comparison.** Edge vs the best fresh price at its own line, the reference (Pinnacle else consensus) with its capture time, thin and stale flags, the registered Conviction tiers and angle tags. No stake or unit is returned. For a price-only bet between 1.5% and 3% the registered tier text overlaps, so LOW, the conservative reading, is taken and stated.
+  - **Prospective record.** The `project` part stores the next 48 hours of D-I v D-I projections in the append-only `ncaam_es_projections`. The database refuses a row at or after tip, or with inputs that postdate it. In-season finals and the schedule come from the NCAAM forecast's committed ESPN dataset (no CBBD call).
+- **SQL.** `supabase/ncaam_early.sql` and its mirror: the 21st table, its before-tip trigger, append-only guards, and a `translation_shift` column on the features table.
+- **Tests.**
+  - New `tests/model.test.js`: 49 passed. It covers the prior, the weights, fit recovery, the high-variance update, projection math, point in time, the market, the tiers and the angles.
+  - `features.test.js`: 50 passed (the `project` part end to end). `sql.test.js`: 45 passed (prospective guard). `data.test.js`: 77 passed. `registration.test.js`: 27 passed.
+- **Not verified.** A run on real CBBD data (no key in this environment). The market join to captured NCAAB prices is the next pull request.
+
 ## 2026-11-01 — NCAAM-EARLY T2 features: player values, transfer translation, returning and departed production, the preseason team row
 
 - **What.** New `basketball/ncaam_early/features.js` and `ratings.js`, a `features` part in the sync (daily and weekly, after `moves`), and a new derived table, `ncaam_es_team_features`.
