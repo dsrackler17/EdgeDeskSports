@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-11-01T10:08:20.521Z",
- "board_generated_at": "2026-11-01T10:08:11.696Z",
+ "generated_at": "2026-11-01T11:08:35.924Z",
+ "board_generated_at": "2026-11-01T11:08:26.464Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -22,15 +22,15 @@
    "named": false,
    "edgedesk": "Utah −12.5",
    "market": "Utah −4.5",
-   "books": 1,
+   "books": 2,
    "gap": 7.9,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "VERIFIED_MAJOR",
+   "research_label": "VERIFIED MAJOR DISAGREEMENT",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
+   "root_cause": "VALID_MODEL_DISAGREEMENT",
    "requirements": [
     {
      "requirement": "correct game",
@@ -44,8 +44,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
     },
     {
      "requirement": "current team states",
@@ -69,8 +69,8 @@
     },
     {
      "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (1 on the market’s side; 2 required) · FAIL: the independent ensemble is 2 pts on the market’s side"
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.5 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
@@ -79,7 +79,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "VERIFIED holds: every required check passed."
   }
  ],
  "inconsistent": [],
