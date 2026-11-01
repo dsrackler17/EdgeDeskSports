@@ -110,7 +110,11 @@ chk('an older capture is the last known market', S.basketball(B0, L0, { league: 
 chk('a price captured after the start is never drawn', !S.basketball(B0, L0, { league: 'wnba', now: start0 + 3600e3, market: mkt(0, start0 + 600000) }).content.market);
 chk('the cache key moves with the price shown, the grade and the teams', (() => { const k = (o) => S.basketball(B0, L0, Object.assign({ league: 'wnba', now: NOW0 }, o)).key; return k({}) !== k({ market: mkt(20) }) && k({}) !== k({ grade: { letter: 'B', score: 80 } }) && k({}) !== k({ teams }); })());
 chk('a game with no price is refused, not drawn', S.basketball(Object.assign(clone(B0), { prices: null }), L0, { league: 'ncaam' }).ok === false);
-chk('the WNBA has its colours', (() => { const c = S.basketball(B0, L0, { league: 'wnba', now: NOW0 }).content; return !/^#(1d4ed8|b91c1c|047857)/.test(c.home.color) || !!S.WNBA[B0.home]; })());
+/* a WNBA game: the slate's own when the season has one, else the fallback game with two WNBA clubs in it
+   (out of season basketball/slate.json lists no WNBA game and B0 is an NBA or college game, whose clubs have
+   no WNBA colours; the check is about the WNBA table, not about which league the lab happens to list today) */
+const W0 = (BB.leagues.wnba.games || []).length ? B0 : Object.assign(clone(B0), { home: 'Las Vegas Aces', away: 'New York Liberty' });
+chk('the WNBA has its colours', (() => { const c = S.basketball(W0, L0, { league: 'wnba', now: NOW0 }).content; return !!S.WNBA[W0.home] && c.home.color === S.WNBA[W0.home][2] && !/^#(1d4ed8|b91c1c|047857)/.test(c.home.color); })(), W0.home);
 chk('a school EdgeDesk holds no colours for gets the same badge every time', S.team({ name: 'Grambling Tigers' }).color === S.team({ name: 'Grambling Tigers' }).color && S.abbrOf('Grambling Tigers') === 'GT' && S.abbrOf('Vanderbilt') === 'VAND');
 chk('a basketball graphic is labelled expected points with overtime', /OT INCLUDED/.test(named.labels.center_sub));
 

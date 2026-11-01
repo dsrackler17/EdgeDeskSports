@@ -25,6 +25,11 @@
   - `tools/research_compare/research_compare.test.js` (new): 111 checks, from provider fixture to queue row and card.
   - `tools/slate/dispatch_sql.test.js` (new, real PostgreSQL): 11 checks.
   - `tools/radar/radar_ui.test.js`: 2 wiring regexes updated for the new `opts` argument.
+## 2026-11-01 — Odds gateway: men's college basketball (NCAAB) registered, disabled
+
+- **Why.** No NCAAB price is captured (`basketball_ncaab` has no gateway row, so every request is `denied_sport`), so neither men's college basketball model can be graded against the market. The season opens 2026-11-02. The owner approved about 2,000 credits a month for NCAAB main markets.
+- **What.** New `supabase/ncaab_odds_sport.sql` (and its byte-identical migration mirror): `basketball_ncaab`, group `ncaab`, **disabled**, priority 4. No cadence row: the `'*'` bands apply (hourly inside 24 h). One board of about 3 credits per purchase, at most about 2,160 credits a month. Nothing turns on until the owner runs `odds_api_set_sport('basketball_ncaab', true)` and adds the key to `CAPTURE_SPORTS`. Budget, breaker, categories, caps, cadence, capture and close are unchanged. Methodology note and operator steps: `docs/odds-api-incident-2026-10/METHODOLOGY-2026-11-01-ncaab-lines.md`.
+- **Tests.** New `tools/odds/ncaab_odds_sport_sql.test.js` (real PostgreSQL): 22 passed, 0 failed. `tools/odds/no_bypass.test.js` gains one check (the NCAAB row is created disabled). The suite runs in Odds gateway tests and before Deploy odds gateway ships anything (new input `apply_ncaab_sport`).
 
 ## 2026-10-31 — Football enrichment refresh: the QB resolver no longer crashes when every candidate is ruled out
 

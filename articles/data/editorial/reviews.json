@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-11-01T15:41:05.296Z",
+  "generated_at": "2026-11-01T20:21:16.343Z",
   "open": 18,
   "count": 18,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -485,7 +485,7 @@
       "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-27T03:30:36.660Z",
-      "updated_at": "2026-10-18T03:20:38.978Z",
+      "updated_at": "2026-11-01T18:26:17.140Z",
       "evidence": [
         {
           "lesson_id": "401858469:contradicted:market",
@@ -519,16 +519,27 @@
           "result": "Notre Dame Fighting Irish lost by 4. Notre Dame Fighting Irish lost by 4 where EdgeDesk projected a 3.2-point edge.",
           "severity": "high",
           "at": "2026-10-18T03:20:38.978Z"
+        },
+        {
+          "lesson_id": "401858280:contradicted:market",
+          "game_id": "401858280",
+          "season": 2026,
+          "week": 9,
+          "team": "Florida State",
+          "expectation": "2 published claims said the same thing: EdgeDesk makes it Florida State −8.0 where the market has Florida State +1.5 at captured consensus (stale) · 1 book · best at DraftKings — a 9.3 points disagreement. EdgeDesk prices this game at Florida State −8.0 with a fair total of 49.5, which makes Florida State the better team here by that margin on this field.",
+          "result": "Florida State Seminoles lost by 12. Florida State Seminoles lost by 12 where EdgeDesk projected a 7.8-point edge.",
+          "severity": "high",
+          "at": "2026-11-01T18:26:17.140Z"
         }
       ],
-      "occurrences": 3,
+      "occurrences": 4,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 4 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
