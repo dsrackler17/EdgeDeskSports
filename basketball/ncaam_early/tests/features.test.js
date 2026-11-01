@@ -178,7 +178,25 @@ chk('venue: home/away/neutral owned; travel not owned (null with the reason)', (
     chk('ingest: the stored row carries the prior rating crosswalked from the engine and the transfer\'s conference translation', row.prev_net === 2 && row.minutes_share_transfer_d1 > 0
       && row.detail.players.find((p) => p.kind === 'TRANSFER_D1').basis === 'd1_to_d1', row);
     chk('ingest: the checks report the crosswalk and the conference strengths', r.meta.checks.prior_ratings_crosswalked === 2 && r.meta.checks.conferences_with_strength === 2 && r.meta.checks.config_sha256 === REG.spec.config_sha256);
-    chk('ingest: features are in the daily and weekly schedules, after moves', ING.DAILY.indexOf('features') > ING.DAILY.indexOf('moves') && ING.WEEKLY.includes('features'));
+    /* the project part: priors from those features, a final and a scheduled game from a fake dataset */
+    const states2 = { 2026: Object.assign({}, states[2026], { eta: 2, s2: 11000, lambda: 300 }) };
+    const nowMs = Date.parse('2026-11-05T12:00:00Z');
+    const fakeD = { load: () => [], engineGames: () => [
+      { game_id: 501, home: 'e1', away: 'e2', neutral: false, regime: 'D1_D1', yH: 112, yA: 98, poss: 70, tempo: 70, start_ms: nowMs - 2 * 86400e3 },
+      { game_id: 502, home: 'e2', away: 'e1', neutral: false, regime: 'D1_D1', scheduled: true, start_ms: nowMs + 10 * 3600e3 },
+      { game_id: 503, home: 'e2', away: 'e1', neutral: false, regime: 'D1_D1', scheduled: true, start_ms: nowMs + 100 * 3600e3 } ] };
+    put(2027, 'teams', [{ id: 1, sourceId: 'e1', conferenceId: 7 }, { id: 2, sourceId: 'e2', conferenceId: 8 }]);
+    put(2027, 'rosters', [{ teamId: 1, season: 2027, players: [{ id: 10, name: 'Synthetic A', startSeason: 2025, height: 77 }] }, { teamId: 2, season: 2027, players: [{ id: 20, name: 'Synthetic B', startSeason: 2024, height: 79 }] }]);
+    const calls2 = [];
+    const db2 = { async rpc(name, args) { calls2.push({ name, args }); if (name === 'ncaam_es_begin_run') return 'run-2'; if (name === 'ncaam_es_put') return { inserted: args.p_rows.length }; return {}; } };
+    const m2 = await ING.run({ api: { state: { calls: 0, remaining: null, log: [] } }, db: db2, parts: ['project'], seasons: [2027], mode: 'test', now: new Date(nowMs).toISOString(), codeSha: 'abc', offline: true, ratingStates: () => states2, dataset: fakeD });
+    const r2 = m2.results[0];
+    const pr = (calls2.find((c) => c.args && c.args.p_table === 'ncaam_es_projections') || { args: { p_rows: [] } }).args.p_rows;
+    chk('project part: only the game in the next 48 hours is projected and stored, append-only', r2.status === 'ok' && pr.length === 1 && pr[0].espn_game_id === '502' && r2.meta.checks.targets === 1, r2);
+    chk('project part: it used the one final known before its time, and names model, version, config and code', pr[0] && pr[0].finals_used === 1 && pr[0].model_id === 'edgedesk_ncaam_early_v1' && pr[0].model_version === REG.version
+      && pr[0].config_sha256 === REG.spec.config_sha256 && pr[0].code_sha === 'abc' && pr[0].projection_id === 'run-2:502');
+    chk('project part: a fair spread, total and win probability with its sd, and the angle tags', pr[0] && Number.isFinite(pr[0].fair_spread_home) && pr[0].fair_total > 100 && pr[0].win_prob_home > 0 && pr[0].win_prob_home < 1 && pr[0].sd_margin > 11 && Array.isArray(pr[0].angles));
+    chk('ingest: features then project are in the daily and weekly schedules, after moves', ING.DAILY.indexOf('features') > ING.DAILY.indexOf('moves') && ING.DAILY.indexOf('project') > ING.DAILY.indexOf('features') && ING.WEEKLY.includes('project'));
   } catch (e) {
     chk('ingest end to end ran', false, String(e && e.stack || e).slice(0, 600));
   } finally {

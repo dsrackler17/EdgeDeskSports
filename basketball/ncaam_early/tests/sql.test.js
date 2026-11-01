@@ -46,7 +46,7 @@ const put = (run, table, rows) => svc("select public.ncaam_es_put('" + run + "',
 const finish = (run, status, quota) => svc("select public.ncaam_es_finish_run('" + run + "', '" + status + "', 1, 0, 1, 1, " + (quota == null ? 'null' : quota) + ", '{}'::jsonb)");
 const rows = (o) => (o.match(/\|(ok|CHECK THIS)$/gm) || []);
 const TABLES = ['ncaam_es_runs', 'ncaam_es_alerts', 'ncaam_es_config', 'ncaam_es_teams', 'ncaam_es_conferences', 'ncaam_es_conference_members', 'ncaam_es_venues', 'ncaam_es_games', 'ncaam_es_box_team',
-  'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_coaches', 'ncaam_es_availability'];
+  'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_projections', 'ncaam_es_coaches', 'ncaam_es_availability'];
 
 try {
   /* ── 1 ── */
@@ -58,7 +58,7 @@ try {
 
   /* ── 2 ── */
   const deniedRead = TABLES.filter((t) => db.mustFail(() => db.anon('select count(*) from public.' + t + ';')) && db.mustFail(() => db.as('00000000-0000-0000-0000-000000000001', 'select count(*) from public.' + t + ';')));
-  T.chk('2 · anon and authenticated cannot read any of the 20 tables', deniedRead.length === 20, TABLES.filter((t) => !deniedRead.includes(t)));
+  T.chk('2 · anon and authenticated cannot read any of the 21 tables', deniedRead.length === 21, TABLES.filter((t) => !deniedRead.includes(t)));
   T.chk('2 · a client cannot insert a game', !!db.mustFail(() => db.as('00000000-0000-0000-0000-000000000001', "insert into public.ncaam_es_games (game_id, season, start_utc, status, home_team_id, away_team_id) values (1, 2027, now(), 'SCHEDULED', 1, 2);")));
   const writers = ["public.ncaam_es_begin_run('games', 2027, 'scheduled', 'x')", "public.ncaam_es_put(gen_random_uuid(), 'ncaam_es_games', '[]'::jsonb)", "public.ncaam_es_put_rosters(gen_random_uuid(), '[]'::jsonb)",
     "public.ncaam_es_alert(null, 'FAILURE', 'X', 'y')", "public.ncaam_es_replace_derived(gen_random_uuid(), 2027)"];
@@ -123,6 +123,18 @@ try {
   T.chk('7 · a features run replaces its season\'s stale features (team 2 no longer derived); moves untouched', frep.stale_features_removed === 1
     && db.sql("select string_agg(team_id::text, ',') from public.ncaam_es_team_features") === '1' && db.sql('select count(*) from public.ncaam_es_player_moves') === '1');
   T.chk('7 · features keep their flags and detail as JSON', db.sql("select flags ->> 0 from public.ncaam_es_team_features") === 'COACH_UNKNOWN');
+  /* projections: prospective, append-only, refused at or after tip */
+  const pj = (id, start, extra) => Object.assign({ projection_id: id, espn_game_id: 'g' + id, season: 2027, home_team_id: 1, away_team_id: 2, neutral: false, start_utc: start,
+    projected_for: start, model_id: 'edgedesk_ncaam_early_v1', model_version: '0.1.0', config_sha256: 'x', finals_used: 3, inputs_known_through: '2026-11-01T00:00:00Z',
+    fair_spread_home: -3.5, fair_total: 141, win_prob_home: 0.62, margin: 3.5, total: 141, sd_margin: 11.2, sd_total: 16.1, angles: ['coach_change'] }, extra || {});
+  const pr1 = begin('project', 2027);
+  const future = new Date(Date.now() + 86400e3).toISOString(), past = new Date(Date.now() - 3600e3).toISOString();
+  T.chk('7 · a projection before tip is stored, published_at set by the database', put(pr1, 'ncaam_es_projections', [pj('p1', future)]).inserted === 1
+    && db.sql("select (published_at <= now() and published_at > now() - interval '1 minute')::text from public.ncaam_es_projections where projection_id = 'p1'") === 'true');
+  T.chk('7 · a projection at or after tip is refused (the prospective record cannot be written after the fact)', /only stored before tip/.test(db.mustFail(() => db.service("select public.ncaam_es_put('" + pr1 + "', 'ncaam_es_projections', " + lit([pj('p2', past)]) + ');')) || ''));
+  T.chk('7 · a projection whose inputs postdate it is refused (no leakage)', !!db.mustFail(() => db.service("select public.ncaam_es_put('" + pr1 + "', 'ncaam_es_projections', " + lit([pj('p3', future, { inputs_known_through: new Date(Date.now() + 2 * 86400e3).toISOString() })]) + ');')));
+  T.chk('7 · projections are append-only, even for service_role', /append-only/.test(db.mustFail(() => db.service("update public.ncaam_es_projections set fair_total = 150;")) || '') && /append-only/.test(db.mustFail(() => db.service('delete from public.ncaam_es_projections;')) || ''));
+  finish(pr1, 'ok');
   T.chk('7 · a kind outside the list is refused by the table', !!db.mustFail(() => { const r = begin('moves', 2026); put(r, 'ncaam_es_player_moves', [Object.assign(mv(3), { season: 2026, kind: 'GUESS' })]); }));
 
   /* ── 8 ── readiness */

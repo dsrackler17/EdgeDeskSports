@@ -12,6 +12,9 @@
 #   feat   the T2 features: the registered player value, translation by
 #          source level, expected minutes, the team row and its flags, the
 #          existing engine's prior-season ratings on the committed data
+#   model  the T3 model: the registered prior and decay, the in-season fit,
+#          projections and probabilities, point-in-time (no leakage), the
+#          market comparison, Conviction tiers and angle tags
 #   reg    the research registration: EXPERIMENTAL / T3 with no result,
 #          ordered windows, promotion criteria, the configuration pinned by
 #          sha256, the generated registry SQL current and applied to a
@@ -82,6 +85,8 @@ jobs:
         run: node basketball/ncaam_early/tests/sql.test.js
       - name: The T2 features (registered formulas, translation, minutes, team rows; the engine's real ratings, crosswalk, conference strength; the features part end to end)
         run: node basketball/ncaam_early/tests/features.test.js
+      - name: The T3 model and market comparison (prior, registered decay, in-season fit, projection, point in time, Edge, Conviction tiers, angle tags)
+        run: node basketball/ncaam_early/tests/model.test.js
       - name: The registration (windows, promotion criteria, pinned configuration; the registry SQL on a real PostgreSQL)
         env:
           NCAAM_EARLY_SQL_REQUIRED: '1'

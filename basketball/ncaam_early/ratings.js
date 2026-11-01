@@ -22,7 +22,7 @@
    100 + net, a positive points-per-100 scale, so a ratio of two strengths
    is defined (a raw net rating can be negative).
 
-     seasonStates(seasons)            -> { [season]: { mu, tau, teams: Map(espnId -> rating) } }
+     seasonStates(seasons)            -> { [season]: { mu, tau, eta (home term), s2 (residual variance), lambda, teams: Map(espnId -> rating) } }
      crosswalk(cbbdTeams, state)      -> Map(cbbdTeamId -> rating & espn_id)
      conferenceStrength(cbbdTeams, byCbbd) -> Map(conference_id -> { strength, teams })
    =========================================================================== */
@@ -51,7 +51,8 @@ function seasonStates(seasons, o) {
       const t = st.tempo.get(id);
       teams.set(String(id), { off: r.off, allow: r.allow, net: r.off - r.allow, tempo: t ? (t.off + t.allow) / 2 : null });
     }
-    out[s] = { season: s, mu: st.mu, tau: st.tau, teams };
+    const E = W.states[s].E;
+    out[s] = { season: s, mu: st.mu, tau: st.tau, eta: st.eta, s2: E && Number.isFinite(E.s2) ? E.s2 : null, lambda: (o.params || engineParams()).lambda, teams };
   }
   return out;
 }

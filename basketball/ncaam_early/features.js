@@ -163,7 +163,9 @@ function teamFeatures(teamId, season, inputs, cfg) {
     (t.flags || []).forEach((f) => flags.add(f));
     return { player_id: m.player_id, name: m.name, kind: m.kind, cls, from_level: m.from_level, off: t.off, def: t.def, value: t.value, sd_mult: t.sd_mult, basis: t.basis,
       base, height_in: heights.get(m.player_id) == null ? null : heights.get(m.player_id), blk_rate: v && v.rate_ok ? v.blk_rate : null, orb_pct: v && v.rate_ok ? v.orb_pct : null,
-      prev_minutes_share: m.prev_minutes_share, prev_points: m.prev_points };
+      prev_minutes_share: m.prev_minutes_share, prev_points: m.prev_points,
+      /* how far the translation moved a D-I transfer from his own value (the angle tag reads it) */
+      translation_shift: m.kind === 'TRANSFER_D1' && v && v.rate_ok ? t.value - v.value : null };
   });
   const m = expectedMinutes(players.map((p) => ({ base: p.base })));
   players.forEach((p, i) => { p.exp_min_frac = round(m[i], 4); });
@@ -207,6 +209,7 @@ function teamFeatures(teamId, season, inputs, cfg) {
   const prevR = inputs.ctx.prevRating ? inputs.ctx.prevRating.get(teamId) : null;
   if (!prevR) flags.add('NO_PRIOR_SEASON_RATING');
 
+  const transShift = players.reduce((a, p) => a + (p.translation_shift == null ? 0 : p.translation_shift * p.exp_min_frac), 0);
   return {
     season, team_id: teamId, as_of_key: 'PRESEASON', config_version: cfg.config_version, config_sha256: cfg._sha256,
     roster_off: round(rosterOff, 3), roster_def: round(rosterDef, 3), roster_net: round(rosterOff + rosterDef, 3),
@@ -220,6 +223,7 @@ function teamFeatures(teamId, season, inputs, cfg) {
     coach_tempo_resid: inputs.coachTempo == null ? null : round(inputs.coachTempo, 3),
     height_in_avg: round(wavg('height_in'), 2), blk_rate: round(wavg('blk_rate'), 3), orb_pct: round(wavg('orb_pct'), 3),
     player_uncertainty: round(wavg('sd_mult'), 3), variance_multiplier: round(varMult, 4),
+    translation_shift: round(transShift, 3),
     flags: [...flags].sort(),
     detail: { players: players.map((p) => ({ player_id: p.player_id, name: p.name, kind: p.kind, from_level: p.from_level || null, basis: p.basis, off: round(p.off, 2), def: round(p.def, 2), exp_min_frac: p.exp_min_frac, sd_mult: p.sd_mult })),
       departed: goneVal.slice(0, 8).map((d) => ({ player_id: d.player_id, name: d.name, destination: d.destination, to_team_id: d.to_team_id, prev_minutes_share: d.prev_minutes_share, prev_points: d.prev_points, value: d.value })) },

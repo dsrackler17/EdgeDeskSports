@@ -23,6 +23,10 @@
 --   ncaam_es_departed           source level and previous minutes share
 --   ncaam_es_team_features      DERIVED T2 features per team per season
 --                               (features.js, config/model_v0.json by sha256)
+--   ncaam_es_projections        PROSPECTIVE projections, append-only; a row
+--                               is refused at or after its game's tip, so the
+--                               record of what was published before tip
+--                               cannot be written after the fact
 --   ncaam_es_coaches            hand-entered coach records (manual/coaches.json)
 --   ncaam_es_availability       hand-entered availability (append-only)
 --
@@ -215,6 +219,39 @@ create table if not exists public.ncaam_es_team_features (
   run_id uuid, updated_at timestamptz not null default now(),
   primary key (season, team_id, as_of_key)
 );
+alter table public.ncaam_es_team_features add column if not exists translation_shift numeric;
+
+create table if not exists public.ncaam_es_projections (
+  projection_id text primary key, espn_game_id text not null, season int not null,
+  home_team_id int not null, away_team_id int not null, neutral boolean not null, start_utc timestamptz not null,
+  projected_for timestamptz not null, published_at timestamptz not null default now(),
+  model_id text not null, model_version text not null, config_sha256 text not null, code_sha text,
+  inputs_known_through timestamptz, finals_used int not null,
+  home_games int, away_games int, home_prior_weight numeric, away_prior_weight numeric,
+  home_off numeric, home_allow numeric, home_tempo numeric, away_off numeric, away_allow numeric, away_tempo numeric, home_var numeric, away_var numeric,
+  fair_spread_home numeric not null, fair_total numeric not null, win_prob_home numeric not null check (win_prob_home > 0 and win_prob_home < 1),
+  margin numeric not null, total numeric not null, possessions numeric, sd_margin numeric not null, sd_total numeric not null,
+  angles jsonb not null default '[]'::jsonb, continuity jsonb, flags jsonb not null default '[]'::jsonb,
+  run_id uuid, stored_at timestamptz not null default now(),
+  check (inputs_known_through is null or inputs_known_through <= projected_for)
+);
+create index if not exists ncaam_es_projections_game_idx on public.ncaam_es_projections (espn_game_id, published_at desc);
+
+/* prospective integrity: a projection is stored only before its game's tip */
+create or replace function public.ncaam_es_projection_before_tip() returns trigger language plpgsql as $$
+begin
+  if now() >= new.start_utc then
+    raise exception 'ncaam_es_projections: game % tipped at %; a projection is only stored before tip', new.espn_game_id, new.start_utc;
+  end if;
+  new.published_at := now();
+  return new;
+end $$;
+do $t$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'ncaam_es_projections_before_tip' and tgrelid = 'public.ncaam_es_projections'::regclass) then
+    create trigger ncaam_es_projections_before_tip before insert on public.ncaam_es_projections for each row execute function public.ncaam_es_projection_before_tip();
+  end if;
+end $t$;
 
 -- ── 6. hand-entered observations ─────────────────────────────────────────────
 create table if not exists public.ncaam_es_coaches (
@@ -239,7 +276,7 @@ end $$;
 do $t$
 declare t text;
 begin
-  foreach t in array array['ncaam_es_alerts', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_availability'] loop
+  foreach t in array array['ncaam_es_alerts', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal', 'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_availability', 'ncaam_es_projections'] loop
     if not exists (select 1 from pg_trigger where tgname = t || '_append_only' and tgrelid = ('public.' || t)::regclass) then
       execute format('create trigger %I before update or delete on public.%I for each row execute function public.ncaam_es_refuse_change()', t || '_append_only', t);
     end if;
@@ -268,7 +305,7 @@ declare t text;
 begin
   foreach t in array array['ncaam_es_runs', 'ncaam_es_alerts', 'ncaam_es_config', 'ncaam_es_teams', 'ncaam_es_conferences', 'ncaam_es_conference_members', 'ncaam_es_venues',
                            'ncaam_es_games', 'ncaam_es_box_team', 'ncaam_es_player_seasons', 'ncaam_es_roster_captures', 'ncaam_es_rosters', 'ncaam_es_portal',
-                           'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_coaches', 'ncaam_es_availability'] loop
+                           'ncaam_es_recruits', 'ncaam_es_lines', 'ncaam_es_player_moves', 'ncaam_es_departed', 'ncaam_es_team_features', 'ncaam_es_projections', 'ncaam_es_coaches', 'ncaam_es_availability'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from public, anon, authenticated', t);
     execute format('grant select, insert, update, delete on public.%I to service_role', t);
@@ -297,7 +334,7 @@ create or replace function public.ncaam_es_put_kind(p_table text) returns text l
     when 'ncaam_es_player_seasons' then 'upsert' when 'ncaam_es_coaches' then 'upsert'
     when 'ncaam_es_player_moves' then 'upsert' when 'ncaam_es_departed' then 'upsert' when 'ncaam_es_team_features' then 'upsert'
     when 'ncaam_es_portal' then 'snapshot' when 'ncaam_es_recruits' then 'snapshot' when 'ncaam_es_lines' then 'snapshot'
-    when 'ncaam_es_availability' then 'append'
+    when 'ncaam_es_availability' then 'append' when 'ncaam_es_projections' then 'append'
     else null end
 $$;
 create or replace function public.ncaam_es_snapshot_key(p_table text) returns text[] language sql immutable as $$
@@ -500,7 +537,7 @@ begin
   foreach f in array array['public.ncaam_es_begin_run(text,int,text,text)', 'public.ncaam_es_put(uuid,text,jsonb)', 'public.ncaam_es_put_rosters(uuid,jsonb)',
                            'public.ncaam_es_replace_derived(uuid,int)', 'public.ncaam_es_alert(uuid,text,text,text)',
                            'public.ncaam_es_finish_run(uuid,text,int,int,int,int,int,jsonb)', 'public.ncaam_es_cfg(text)',
-                           'public.ncaam_es_put_kind(text)', 'public.ncaam_es_snapshot_key(text)', 'public.ncaam_es_refuse_change()', 'public.ncaam_es_run_guard()'] loop
+                           'public.ncaam_es_put_kind(text)', 'public.ncaam_es_snapshot_key(text)', 'public.ncaam_es_refuse_change()', 'public.ncaam_es_run_guard()', 'public.ncaam_es_projection_before_tip()'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);
   end loop;
@@ -510,17 +547,17 @@ end $x$;
 
 -- ── report ───────────────────────────────────────────────────────────────────
 select check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status from (
-  select '1 the twenty ncaam_es tables exist' as check_name,
-         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%')::text as got, '20' as want
+  select '1 the twenty-one ncaam_es tables exist' as check_name,
+         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%')::text as got, '21' as want
   union all
   select '2 row level security is on for every one of them',
-         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%' and rowsecurity)::text, '20'
+         (select count(*) from pg_tables where schemaname = 'public' and tablename like 'ncaam\_es\_%' and rowsecurity)::text, '21'
   union all
   select '3 no client role can read or write any of them',
          (select count(*) from information_schema.role_table_grants where table_schema = 'public' and table_name like 'ncaam\_es\_%' and grantee in ('anon', 'authenticated'))::text, '0'
   union all
   select '4 the append-only guards are in place',
-         (select count(*) from pg_trigger where tgname like 'ncaam\_es\_%\_append\_only')::text, '7'
+         (select count(*) from pg_trigger where tgname like 'ncaam\_es\_%\_append\_only')::text, '8'
   union all
   select '5 no client role can call a writer',
          (select count(*) from information_schema.role_routine_grants where routine_schema = 'public' and routine_name like 'ncaam\_es\_%' and routine_name <> 'ncaam_es_readiness' and grantee in ('anon', 'authenticated'))::text, '0'
