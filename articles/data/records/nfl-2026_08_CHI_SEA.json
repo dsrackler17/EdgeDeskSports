@@ -23,8 +23,8 @@
   "game_time": "2026-11-03T01:15:00.000Z",
   "game_when_label": "2026-11-03 01:15 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T13:12:02.344Z",
-  "generated_at": "2026-11-01T13:12:02.344Z",
+  "updated_at": "2026-11-01T19:33:32.851Z",
+  "generated_at": "2026-11-01T19:33:32.851Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.4-point gap is context only and the game is excluded from research ranking.",
@@ -1177,7 +1177,7 @@
       "total_rounding_note": null,
       "total_difference": "2.0 points",
       "book": "DraftKings",
-      "capture_age": "1261 hours old",
+      "capture_age": "1268 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.4-point gap is context only and the game is excluded from research ranking.",
@@ -1328,7 +1328,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1hbfkik12c05tq",
+    "packet_hash": "cfreoz1lolw3l",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can the Seahawks’ pass defense slow the Bears’ passing game?",
@@ -1354,7 +1354,10 @@
       "Seattle Seahawks’ passers have completed 146 of 226 (64.6%) for 1,726 yards, 7.6 yards per attempt, with 12 touchdowns, 8 interceptions and 16 sacks taken in seven games.",
       "Chicago Bears’ passers have completed 165 of 241 (68.5%) for 1,784 yards, 7.4 yards per attempt, with 7 touchdowns, 5 interceptions and 18 sacks taken in seven games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists four Seattle Seahawks players as out or doubtful, including T Charles Cross (out), WR Rashid Shaheed (out), RB Velus Jones Jr. (out) and LB Uchenna Nwosu (doubtful).",
+      "The official injury report lists one Chicago Bears player as out or doubtful, including RB Kyle Monangai (out)."
+    ],
     "script": {
       "model": [
         "The Seattle Seahawks have to win through the air (Chicago Bears’ No. 11 passing game against Seattle Seahawks’ No. 2 pass defense).",
@@ -1367,7 +1370,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
       "The line on file was captured Sept. 9 and may have moved."
     ],
     "flags": [],
@@ -1376,15 +1379,22 @@
         "label": "EdgeDesk NFL team ratings (2026)",
         "url": null,
         "path": "football/nfl/slate.json",
-        "observed_at": "2026-11-01T00:14:03.072Z",
+        "observed_at": "2026-11-01T14:21:58.054Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-11-01T13:11:55.085Z",
+        "observed_at": "2026-11-01T19:33:22.049Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-11-01T13:30:56.695Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1392,6 +1402,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T13:12:02.344Z"
+    "at": "2026-11-01T19:33:32.851Z"
   }
 }
