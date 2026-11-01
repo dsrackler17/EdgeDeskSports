@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-11-01T06:33:33.918Z",
+ "generated_at": "2026-11-01T14:22:26.492Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,29 +119,29 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 72,
+  "total": 69,
   "by_group": {
-   "other": 40,
+   "other": 37,
    "p4": 32,
    "independent": 2
   },
   "by_matchup": {
-   "conference": 68,
+   "conference": 65,
    "non_conference": 3,
    "fbs_fcs": 1
   },
   "by_conference": {
-   "pac12": 5,
-   "mwc": 6,
    "mac": 11,
    "american": 7,
    "sunbelt": 7,
    "acc": 8,
    "bigten": 8,
+   "mwc": 5,
    "big12": 8,
    "sec": 8,
    "independents": 2,
-   "cusa": 5
+   "cusa": 5,
+   "pac12": 3
   },
   "fbs_fcs_in_source": 1
  },
@@ -222,22 +222,22 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 72
+  "PREDICTED": 69
  },
  "weather": {
-  "requested": 68,
-  "answered": 68,
-  "dome": 3,
+  "requested": 66,
+  "answered": 66,
+  "dome": 2,
   "no_venue": 0,
   "failed": 0,
   "carried": 0,
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "68 of 68 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "66 of 66 outdoor game(s) got a forecast; 2 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 72
+  "NO_MARKET": 69
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -306,12 +306,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 40,
-    "total": 72,
+    "non_power_games": 37,
+    "total": 69,
     "example": [
-     "Texas State @ Boise State",
-     "Northern Illinois @ UNLV",
-     "Oregon State @ Fresno State"
+     "Ohio @ Akron",
+     "Buffalo @ Miami (OH)",
+     "Ball State @ Massachusetts"
     ]
    }
   },
@@ -326,7 +326,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 68,
+    "conference_games": 65,
     "wrong": 0
    }
   },
@@ -360,8 +360,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 72,
-    "audit_total": 72
+    "slate": 69,
+    "audit_total": 69
    }
   },
   {
