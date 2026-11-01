@@ -299,6 +299,13 @@ if (good.json) {
        workflow's last step then fails the run. Nothing is captured or
        published without it. */
     'CFBD_API_KEY',
+    /* The NCAAM-EARLY sync (ncaam-early-sync.yml, basketball/ncaam_early/
+       ingest.js), CollegeBasketballData.com (its quota is shared with CFBD's).
+       Same rule as CFBD_API_KEY: an empty key makes every CBBD part FAILED with
+       the reason "no CBBD_API_KEY" (basketball/ncaam_early/cbbd.js), recorded
+       as a FAILURE alert in ncaam_es_alerts, and the run exits non-zero.
+       Nothing is stored without it, and the key is redacted from every log. */
+    'CBBD_API_KEY',
     /* The odds gateway's own shared secret (supabase/functions/odds_gateway,
        x-odds-gateway-secret), sent beside SB_SERVICE_ROLE by the three steps
        that call the gateway (player-props.yml capture, props-factory.yml
