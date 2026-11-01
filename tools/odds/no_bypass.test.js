@@ -211,6 +211,7 @@ chk('7 · the prop capture asks for the core markets only by default', JSON.stri
   chk('10 · the college baseball price job asks the gateway through the shared client', /tools\/lib\/odds_gateway\.js/.test(CQ) && /category: 'featured'/.test(CQ) && /SPORT_KEY = 'baseball_ncaa'/.test(CQ) && /sport_key: SPORT_KEY/.test(CQ));
   chk('10 · and only behind CBASE_PRICES=on', /CBASE_PRICES/.test(CQ) && CQ.indexOf("!== 'on'") > 0 && CQ.indexOf("!== 'on'") < CQ.indexOf('client.request('));
   chk('10 · the college baseball sport row is created disabled', /values \('baseball_ncaa', 'cbase', false,/.test(read('supabase/cbase_odds_sport.sql')));
+  chk('10 · the men\'s college basketball (NCAAB) sport row is created disabled', /values \('basketball_ncaab', 'ncaab', false,/.test(read('supabase/ncaab_odds_sport.sql')));
   {
     /* the switch is a committed file (college_baseball/market/switch.json), the variable CBASE_PRICES = off stops it;
        every step that could reach the gateway runs only behind the switch, and the gateway credentials only reach it there */
