@@ -1,6 +1,6 @@
 # CFB Model Lab — 2026 season to date
 
-Generated 2026-11-01T04:07:55.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
+Generated 2026-11-01T05:07:56.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
 
 ## Comparison on the common official set (n = 105)
 
@@ -35,3 +35,4 @@ Generated 2026-11-01T04:07:55.000Z from the immutable ledger (LIVE origin only).
 - **calibration_worse** (edgedesk_cfb_v2.0.0) last-100 win ECE 0.0747 > 0.06
 - **calibration_worse** (edgedesk_cfb_loop_v2.0.0) last-100 win ECE 0.0607 > 0.06
 - **results_backlog** 1 predicted game(s) are more than 24 h past kickoff with no settled result
+- **market_source_stale** 60% of snapshots within 72 h fail odds_freshness
