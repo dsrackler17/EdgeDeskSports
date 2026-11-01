@@ -109,8 +109,13 @@ function build(now) {
   };
   /* The real card's North Texas and Texas State games are left off, as the NFL
      card's are below, so "North Texas" alone still names exactly one game when
-     the nightly slate happens to carry one of the fixture's programs. */
-  const FX_CFB = /^(texasstate|northtexas)$/i;
+     the nightly slate happens to carry one of the fixture's programs. Buffalo and
+     Houston are left off for the same reason: the fixture's NFL games are Lions at
+     Bills and Colts at Texans, and a week when the real Buffalo or Houston college
+     program plays (Buffalo at Miami (OH), 2026-11-04) made "Lions at Buffalo"
+     resolve to the college game, so the NFL golden questions read whatever the
+     calendar held rather than the NFL card they test. */
+  const FX_CFB = /^(texasstate|northtexas|buffalo|houston)$/i;
   const cfbRest = ahead(SLATE.games.filter((g) => !FX_CFB.test(String(g.home_team_id)) && !FX_CFB.test(String(g.away_team_id))), 6);
   const slate = Object.assign({}, SLATE, { games: [NT].concat(cfbRest) });
   /* One NFL game inside the window whatever the calendar says, on the front of

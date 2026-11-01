@@ -565,7 +565,10 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
     delta: lastTest.delta, ci95: lastTest.ci95, reason: lastTest.reason } : null;
   const late = union.filter((b) => b.status === 'STATUS_SCHEDULED' && b.ts < asOfMs).map((b) => b.bout_id);
   const pubAgree = { listed: 0, equal: 0, newer_finals: finalsFeedOnly };
-  for (const b of booked) if (b.p_a_published != null) { pubAgree.listed++; if (round4(b.p_a) === b.p_a_published) pubAgree.equal++; }
+  /* the loop publishes round4 of the walked probability; b.p_a is already r6 of it, and rounding that again can
+     cross a half (0.3205499 → 0.320550 → 0.3206 against a published 0.3205, bout 401922642), so the agreement is
+     read from the walked probability itself, rounded once, as checkReproduction does */
+  for (const b of booked) if (b.p_a_published != null) { pubAgree.listed++; const w = priced.get(b.bout_id); if (w && round4(w.p) === b.p_a_published) pubAgree.equal++; }
   const fighters = [...F.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
   const data: UfcInputData = {
     sport: 'ufc', season: C.season, competition: C.competition, as_of: asOf,

@@ -438,7 +438,12 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'a broad question is not locked to baseball by the intent map', r.j.intent.intent === 'best_bets' && r.j.sport !== 'baseball_mlb', [r.j.intent.intent, r.j.sport]);
     chk(F, 'a board is built', !!r.j.board && r.j.board.schema === 'edgedesk_board_v1');
     chk(F, 'it reads every supported sport in season, not one', r.j.board.scope.sports.length >= 4 && r.j.board.scope.sports.indexOf('americanfootball_nfl') >= 0 && r.j.board.scope.sports.indexOf('americanfootball_ncaaf') >= 0, r.j.board.scope.sports);
-    chk(F, 'the reader’s time zone resolves "today" (midnight Chicago is 05:00Z)', r.j.board.scope.timezone.zone === 'America/Chicago' && /T05:00:00/.test(r.j.board.scope.window.to), r.j.board.scope.window);
+    /* midnight Chicago is 05:00Z under CDT and 06:00Z under CST (from the first Sunday of November): the window ends at
+       the reader's next local midnight, whichever offset the date carries, never at a fixed UTC hour */
+    const chiWall = (iso) => new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hourCycle: 'h23', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(iso));
+    const winTo = r.j.board.scope.window.to, winFrom = r.j.board.scope.window.from;
+    chk(F, 'the reader’s time zone resolves "today": it ends at the next midnight in Chicago (05:00Z in CDT, 06:00Z in CST)', r.j.board.scope.timezone.zone === 'America/Chicago'
+      && chiWall(winTo) === '00:00:00' && /T0[56]:00:00/.test(winTo) && Date.parse(winTo) > Date.parse(winFrom) && Date.parse(winTo) - Date.parse(winFrom) <= 25 * 3600e3, r.j.board.scope.window);
     /* ── ANOTHER COUNT THIS TEST DOES NOT CONTROL ─────────────────────────
        This asserted counts.outside_window >= 10 and rotted for exactly the
        reason the started count below rotted. The card is the REAL committed
@@ -752,8 +757,12 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, 'the schedule trace says what was dropped and why', (() => { const g = r.j.data_path && r.j.data_path.board; return !!g; })() && /dropped_finished/.test(JSON.stringify(r.j.research_context ? r.j.data_path : {})) || true);
     chk(F, 'the MLB total qualifies on its live captured price at Caesars', r.j.board.opportunities.length === 1 && r.j.board.opportunities[0].sport === 'baseball_mlb' && r.j.board.opportunities[0].market === 'totals' && r.j.board.opportunities[0].quote.book === 'Caesars' && r.j.board.opportunities[0].quote.freshness === 'CURRENT', r.j.board.opportunities.map((c) => c.selection + ':' + c.sport + ':' + c.quote.freshness));
     chk(F, 'the matchup is spelled by the club registry', /Boston Red Sox @ New York Yankees/.test(r.j.board.opportunities[0].matchup), r.j.board.opportunities[0].matchup);
-    const wnba = r.j.board.coverage.find((c) => c.sport === 'basketball_wnba');
-    chk(F, 'a sport with no schedule table is not a silent 400: the captured markets are its universe and it says so', wnba && wnba.status === 'NO_GAMES' && /captured markets/.test(String(wnba.source)), wnba);
+    /* every in-season sport with no schedule table (the WNBA was the example until its season ended in October; UFC is in
+       season all year, so the set is never empty) */
+    const NO_TABLE = ['basketball_wnba', 'basketball_nba', 'basketball_ncaab', 'icehockey_nhl', 'mma_mixed_martial_arts'];
+    const noTable = r.j.board.coverage.filter((c) => NO_TABLE.indexOf(c.sport) >= 0 && c.status !== 'OUT_OF_SEASON');
+    chk(F, 'a sport with no schedule table is not a silent 400: the captured markets are its universe and it says so', noTable.length >= 1
+      && noTable.every((c) => c.status === 'NO_GAMES' && /captured markets/.test(String(c.source))), r.j.board.coverage.map((c) => [c.sport, c.status, c.source]));
     chk(F, 'the research_sessions read no longer asks for a column that does not exist', !urls.some((u) => /research_sessions\?select=[^&]*confidence/.test(u)), urls.filter((u) => /research_sessions/.test(u)));
     /* the MLB matchup path the live packet came through */
     r = await askB('Who are the worst starters tonight?', MLB);
