@@ -1,0 +1,88 @@
+{
+ "schema": "edgedesk_research_registration_v1",
+ "model_key": "NCAAM-EARLY",
+ "name": "EdgeDesk men's college basketball early-season model (roster continuity, transfer translation, coaching, rating variance)",
+ "version": "0.1.0",
+ "status": "EXPERIMENTAL",
+ "provenance": "T3",
+ "provenance_label": "EdgeDesk research model (T3)",
+ "sport": "NCAAM",
+ "registered_at": "2026-11-01",
+ "model_id": "edgedesk_ncaam_early_v1",
+ "hypothesis": "In the first six weeks of a men's college basketball season, a team-strength prior built from who is actually on the roster — returning production, transfers translated by the level they came from, freshmen by recruiting tier, departed production and coaching changes — with a rating variance that grows with the unknowns, prices games better than the carried-over rating alone. 'Better' means the model's side of a game beats the closing line on average, and its probabilities are no worse calibrated than the closing market's, on games EdgeDesk priced before tip. It is built on the existing ratings engine (basketball/ncaam_research/team_model.js); only the season-start prior, its variance and the decay of that prior change.",
+ "objective": "Calibrated early-season fair spreads, totals and win probabilities for NCAA Division I men's games, a market comparison with an Edge and a Conviction tier, and angle tags graded separately, as research; never a recommendation. No unit or stake is shown on any card.",
+ "primary_metric": "Mean closing-line value of flagged bets on the prospective window: for each flagged bet, CLV = (decimal price EdgeDesk captured at the comparison) x (de-vigged closing probability of the same side, the registered reference book) - 1, the close being EdgeDesk's own capture (the odds gateway's last board before tip).",
+ "unit": "One flagged bet (one side of one market of one game) with a captured price at the comparison time and a captured close. Bets on one game day share conditions: every interval is a game-day cluster bootstrap (2,000 resamples).",
+ "baseline": "(1) The closing market (de-vigged reference close). (2) The incumbent NCAAM-FORECAST champion (ncaam_adjeff@1.0.0) on the same games: its carried-over prior with no roster information. (3) For angle attribution, price_only bets.",
+ "training_window": "The early-season windows (first regular-season game through 15 December) of the 2019-20, 2021-22, 2022-23, 2023-24 and 2024-25 seasons (END years 2020, 2022, 2023, 2024, 2025). 2020-21 (END year 2021) is EXCLUDED before anything is run: games without crowds, mass cancellations and the extra eligibility year make it unlike any other season. Each training season uses the season before it for player values. Only the values marked `selectable` in config/model_v0.json may be chosen, from the candidates listed there, by the selection rule below.",
+ "validation_window": "RETROSPECTIVE HOLDOUT: the early-season window of 2025-26 (END year 2026), 2025-11-03 to 2025-12-15. Scored ONCE, after the configuration is frozen as config/model_v1.json and its sha256 registered in version 0.2.0. Descriptive: it cannot promote the model, because it is retrospective (no EdgeDesk price capture for NCAAB existed; rosters are RETRO reconstructions; CBBD lines carry no times) and because the 2025-26 season was already used by EdgeDesk's other basketball research (see forking_paths.data_already_seen).",
+ "holdout_window": "PROSPECTIVE, the only window that counts for promotion: the early-season window of 2026-27 (END year 2027), from the first regular-season game (2026-11-02/03) through 2026-12-15, every projection published before tip and logged immutably, priced against EdgeDesk's own captured prices and closes. If fewer than the minimum sample are flagged by 15 December, the same version is evaluated on the next season's early-season window as well, never on games outside early-season windows.",
+ "machine": {
+  "window_dates": {
+   "training": ["2019-11-01", "2024-12-16"],
+   "validation": ["2025-11-01", "2025-12-16"],
+   "holdout": ["2026-11-01", "2026-12-16"]
+  },
+  "window_note": "[from, to): US Eastern dates. Training covers only the early-season windows of END years 2020, 2022, 2023, 2024, 2025 (2021 excluded); validation is the retrospective holdout (END year 2026, scored once, descriptive); holdout is the prospective promotion window (END year 2027).",
+  "minimum_sample": 300,
+  "version": "0.1.0",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3"
+ },
+ "minimum_sample": {
+  "prospective_flagged_bets_with_captured_close": 300,
+  "prospective_games_for_calibration": 800,
+  "per_tier_and_per_angle_reporting": 30,
+  "note": "Below 300 flagged bets with an EdgeDesk-captured price and close, C1 is NOT EVALUABLE and the model cannot pass; results are descriptive and no result row is written. A tier or angle with fewer than 30 bets is reported with its n and no interval claim."
+ },
+ "promotion_criteria": {
+  "decision_rule": "passed = true only if every criterion below holds on the prospective window. A criterion that cannot be evaluated is not met. Evaluated once at the end of the window (and, if extended, once at the end of the extension); interim weekly reports are diagnostic and decide nothing. Passing makes the model ELIGIBLE; a person promotes it through a validation report. Until then it stays EXPERIMENTAL. Continuous weekly learning (below) never promotes.",
+  "criteria": [
+   { "id": "C1_CLV", "rule": "Mean CLV of all flagged bets (Low, Medium and High tiers; Pass excluded) > 0, and the 95% game-day cluster bootstrap lower bound > 0, on >= 300 bets." },
+   { "id": "C2_CALIBRATION_VS_MARKET", "rule": "On every prospective game with a captured close: log loss of the model's cover probability at the closing spread minus log loss of the de-vigged closing cover probability, 95% upper bound <= +0.005; and the model's win-probability log loss vs the de-vigged closing moneyline, the same bound. 'No worse than the market', with a registered tolerance." },
+   { "id": "C3_NOT_WORSE_THAN_INCUMBENT", "rule": "Margin MAE vs final results, paired against NCAAM-FORECAST's published early-season forecasts on the same games: difference (NCAAM-EARLY - incumbent) 95% upper bound < +0.10 points." },
+   { "id": "C4_HONEST_UNCERTAINTY", "rule": "80% margin interval coverage within [0.76, 0.84] on the prospective games, and the model's predicted sd ranks residual size: Spearman(predicted sd, |residual|) > 0 with a 95% lower bound > 0." },
+   { "id": "C5_TIERS_ORDERED", "rule": "Mean CLV of HIGH >= mean CLV of LOW (point estimates), each tier with >= 30 bets; if a tier has fewer, this criterion is not evaluable and not met." }
+  ],
+  "family_correction": "Every criterion is required (an intersection test): no correction is applied, and no criterion is reported as a pass on its own."
+ },
+ "retrospective_holdout_report": {
+  "what": "Scored once on 2025-26's early-season window with the frozen config/model_v1.json: margin MAE vs results and vs the CBBD provider's last line; the share of the model's sides on which the provider line moved toward the model between opening and its last value (the only 'CLV' that exists without timestamps), by conviction tier, by angle tag and by continuity regime (both teams' returning-minutes share above / below the training median); Brier score and a calibration curve of win and cover probabilities; whether predicted variance ranks residual size.",
+  "cannot": "promote, change thresholds or factors, or be repeated with another configuration. A second look at the retrospective holdout is a forking path and is disclosed as such."
+ },
+ "selection_rule": {
+  "data": "the training windows only",
+  "procedure": "Leave-one-season-out over the five training seasons. Coordinate descent over the `selectable` values in config/model_v0.json in the order listed there, two sweeps; a candidate replaces the current value only if it lowers the leave-one-season-out mean margin CRPS of early-season D-I v D-I games by >= 0.01. Base margin and total sd are fitted by maximum likelihood on the training windows. Conviction thresholds are NOT selected: they stay as registered.",
+  "freeze": "The chosen values are written to config/model_v1.json, its sha256 registered as version 0.2.0 (this registration's windows and criteria unchanged), BEFORE the retrospective holdout is scored."
+ },
+ "weekly_learning": {
+  "cadence": "Mondays (after Sunday's games): grade the previous week's flagged bets; write the weekly learning report from the database (CLV by angle tag and by conviction tier; Brier and reliability; residuals of translated transfers by source level; how fast high- and low-variance teams' ratings converged; thin-market and data-quality issues) to research_model_results as a diagnostic row (passed = null).",
+  "may_change": "Only through a NEW registered version (parent version, exact changes, the metrics and sample sizes that justify each, confirmation that no holdout was used), after a person approves the weekly report and the new version passes npm run verify: the prior-decay schedule, translation factors by source level (only after >= 40 translated transfers of that level are graded), conviction thresholds (only with a documented calibration effect and >= 150 graded bets), and down-weighting or removing an angle (only after >= 60 bets of that angle).",
+  "never": "Change a live version's thresholds, factors or decay mid-week; refit player values or ratings on live results without a new version; use a close, a result or any information from after a projection's publication time; promote on short-term live results; chase the previous week's winners.",
+  "live_version_shown": "The public accountability layer shows the live version and the date it became active."
+ },
+ "forking_paths": {
+  "candidates_tried": [],
+  "registered_starting_configuration": "config/model_v0.json (version 0.1.0): every formula, factor, threshold and the decay schedule, with the candidates selection may choose from. None of it has been evaluated against any outcome.",
+  "alternatives_considered_not_tried": [
+   "Ingesting third-party preseason ratings (Torvik, KenPom, EvanMiya): no licence covering ingestion was found; not used.",
+   "CBBD's own player ratings (offensive/defensive rating, PORPAG) as the player value: rejected in favour of a box-score formula EdgeDesk computes and documents.",
+   "A learned (regression) player value: rejected for v0 as less transparent; may be a later version.",
+   "Fitting conviction thresholds on training: rejected; thresholds are registered starting points and change only through the weekly-learning rule.",
+   "Including the 2020-21 season in training: rejected before anything ran (see training_window)."
+  ],
+  "data_already_seen": "No outcome has been compared with this model. Known before registration, and disclosed: (1) the existing engine's crude continuity/transfer prior (continuity_slope, transfer_beta) improved 2025 and was not confirmed on 2026 (docs/ncaam/VALIDATION.md: +0.002 [-0.015, +0.019] margin CRPS on 2026), which is why the champion runs with it off; (2) the incumbent's November weakness (margin MAE 10.2 vs 8.8-8.9 from January; 80% coverage 0.77 in November, 0.76 for teams with 0-4 games); (3) the 2025-26 season was the research engine's holdout and part of NCAAM-FORECAST's confirmation window, so its early-season games are not unseen by EdgeDesk's basketball research as a whole, though not by this model. That is why the retrospective holdout is descriptive and only the prospective window can promote.",
+  "comparisons_made": 0,
+  "stopping_rule": "Fixed horizon: the prospective window is read once at its end (2026-12-15, plus the grading of its last games), or at the end of the next early-season window if the minimum sample is not met."
+ },
+ "spec": {
+  "config": "basketball/ncaam_early/config/model_v0.json",
+  "config_sha256": "867d14ee5a2bd736c4c898110f821d1918e9daf9bccf6915be6b8705da7a915b",
+  "data_layer": "basketball/ncaam_early (T0 observations: CBBD 1.30.1, hand-entered coaches/availability/school levels), supabase/ncaam_early.sql",
+  "base_engine": "basketball/ncaam_research/team_model.js with basketball/ncaam_forecast/config/selection_v1.json (chosen on 2012-2019 only)",
+  "evidence_tiers": "T0 observations; T1 none (no licensed external rating); T2 possessions, efficiency, player values, translations, continuity, de-vig, fair odds, CLV; T3 this model",
+  "point_in_time": "Projections use only information available before the projection time: games final at least 4 h before it, rosters captured before it (prospective: LIVE captures; retrospective seasons: RETRO reconstructions from player-season records, the transfer portal and recruiting, disclosed on every row), availability published and entered before it.",
+  "display": "Conviction (Low / Medium / High) and Edge only; no unit or stake on any card; no certainty language (the card renderer's banned-word list applies, and a test refuses it in this model's files); every number on a card carries its provenance; Known limitations always shown."
+ },
+ "result": null
+}

@@ -7,6 +7,11 @@ name: Deploy NCAAM early-season SQL
 
 on:
   workflow_dispatch:
+    inputs:
+      apply_registry:
+        description: 'Also register NCAAM-EARLY 0.1.0 (EXPERIMENTAL, T3) in the research registry (supabase/ncaam_early_registry.sql)'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -33,6 +38,8 @@ jobs:
           NCAAM_EARLY_SQL_REQUIRED: '1'
         run: |
           node basketball/ncaam_early/tests/sql.test.js
+          node basketball/ncaam_early/tests/registration.test.js
+          node basketball/ncaam_early/research/build_registry_sql.js --check
           cmp supabase/ncaam_early.sql supabase/migrations/20261101130000_ncaam_early.sql
       - name: Check the credential exists before claiming anything
         env:
@@ -48,3 +55,13 @@ jobs:
           fi
           echo "$out" | tail -8
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/ncaam_early.sql: a report row says CHECK THIS"; exit 1; fi
+      - name: Apply supabase/ncaam_early_registry.sql
+        if: ${{ inputs.apply_registry }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -v ON_ERROR_STOP=1 -f supabase/ncaam_early_registry.sql 2>&1); then
+            echo "$out" | tail -20; echo "::error::supabase/ncaam_early_registry.sql did not apply"; exit 1
+          fi
+          echo "$out" | tail -6
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/ncaam_early_registry.sql: a report row says CHECK THIS"; exit 1; fi
