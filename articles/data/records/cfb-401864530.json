@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-11-01T02:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1866,90 +1866,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "o0782qmh6chs",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Northern Illinois get UNLV off the field on third down?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward UNLV, and its own breakdown accounts for about 0.7 of the 5.8 points, but not the full gap. Input warning: EdgeDesk’s published number sits 8.0 points from the middle of its own other models. It is a research question, not a bet.",
-    "gap": {
-      "points": 5.8,
-      "toward": "UNLV",
-      "other": "Northern Illinois"
-    },
-    "supporting": [
-      "When UNLV has the ball (third down): UNLV’s offense converts 50.6% of its third downs, and Northern Illinois’ defense allows opponents to convert 56.6% of their third downs (FBS average 39.6%).",
-      "When UNLV has the ball (big plays on the ground): UNLV’s offense turns 7.2% of its runs into explosive gains, and Northern Illinois’ defense gives up explosive gains on 8.9% of opponent runs (FBS average 6.5%).",
-      "When UNLV has the ball (the line of scrimmage on running plays): UNLV’s offense is stopped at or behind the line on 14.2% of its runs, and Northern Illinois’ defense stops 10.0% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When Northern Illinois has the ball (pass protection against the pass rush): Northern Illinois’ offense has allowed a sack on 9.2% of its dropbacks, and UNLV’s defense sacks the quarterback on 5.8% of opponent dropbacks (FBS average 5.7%)."
-    ],
-    "contradicting": [
-      "When Northern Illinois has the ball (big plays on the ground): Northern Illinois’ offense turns 5.9% of its runs into explosive gains, and UNLV’s defense gives up explosive gains on 8.7% of opponent runs (FBS average 6.5%).",
-      "When Northern Illinois has the ball (the run game against the run defense): Northern Illinois’ offense averages 5.3 yards per carry, and UNLV’s defense allows 5.8 yards per carry (FBS average 5.0).",
-      "In his last two games (North Dakota State and Air Force), Arnold averaged 6.6 yards per attempt, against 7.8 in his five games before that."
-    ],
-    "quarterbacks": [
-      "Jackson Arnold has completed 107 of 184 passes (58.2%) for 1,381 yards, 7.5 yards per attempt, 9 touchdowns and 2 interceptions in seven games for UNLV, and has been sacked on 16 of 200 dropbacks.",
-      "Taron Dickens has completed 138 of 210 passes (65.7%) for 1,364 yards, 6.5 yards per attempt, 7 touchdowns and 5 interceptions in seven games for Northern Illinois, and has been sacked on 20 of 230 dropbacks.",
-      "Jalen Macon has completed 5 of 12 passes (41.7%) for 20 yards, 1.7 yards per attempt, no touchdowns and no interceptions in two games for Northern Illinois, and has been sacked on 3 of 15 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "UNLV’s offense has to keep winning on third down: it converts 50.6% of its third downs, and Northern Illinois’ defense allows opponents to convert 56.6% of their third downs.",
-        "UNLV’s defense has to slow Northern Illinois on long runs — Northern Illinois’ offense turns 5.9% of its runs into explosive gains.",
-        "UNLV’s defense has to slow Northern Illinois on the ground — Northern Illinois’ offense averages 5.3 yards per carry.",
-        "UNLV’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.8% of opponent dropbacks, against an offense that has allowed a sack on 9.2% of its dropbacks."
-      ],
-      "market": [
-        "Northern Illinois’ offense has to keep winning on long runs: it turns 5.9% of its runs into explosive gains, and UNLV’s defense gives up explosive gains on 8.7% of opponent runs.",
-        "Northern Illinois’ offense has to keep winning on the ground: it averages 5.3 yards per carry, and UNLV’s defense allows 5.8 yards per carry.",
-        "Northern Illinois’ defense has to come out ahead on third down: it allows opponents to convert 56.6% of their third downs, against an offense that converts 50.6% of its third downs."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for UNLV and Northern Illinois.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (UNLV), sack rate (UNLV), sack rate allowed (Northern Illinois) and sack rate (Northern Illinois); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 8.0 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Northern Illinois: new head coach; returning roster share at the 43rd percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T21:39:14.238Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T00:02:55.724Z"
+    "at": "2026-11-01T05:51:54.101Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-11-01T02:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1874,96 +1874,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 9, built 2026-10-31. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1k40440cy5she",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Texas State win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.2 points.",
-    "gap": {
-      "points": 0.2,
-      "toward": "Boise State",
-      "other": "Texas State"
-    },
-    "supporting": [
-      "When Boise State has the ball (pass protection against the pass rush): Boise State’s offense has allowed a sack on 2.6% of its dropbacks, and Texas State’s defense sacks the quarterback on 3.2% of opponent dropbacks (FBS average 5.7%).",
-      "When Texas State has the ball (pass protection against the pass rush): Texas State’s offense has allowed a sack on 3.9% of its dropbacks, and Boise State’s defense sacks the quarterback on 10.3% of opponent dropbacks (FBS average 5.7%).",
-      "When Texas State has the ball (the line of scrimmage on running plays): Texas State’s offense is stopped at or behind the line on 13.7% of its runs, and Boise State’s defense stops 26.1% of opponent runs at or behind the line (FBS average 17.5%).",
-      "In his last two games (Colorado State and Utah State), Jackson averaged 6.7 yards per attempt, against 8.9 in his five games before that."
-    ],
-    "contradicting": [
-      "When Boise State has the ball (big plays through the air): Boise State’s offense turns 9.2% of its pass plays into explosive gains, and Texas State’s defense gives up explosive gains on 8.0% of opponent pass plays (FBS average 10.2%).",
-      "When Boise State has the ball (big plays on the ground): Boise State’s offense turns 8.4% of its runs into explosive gains, and Texas State’s defense gives up explosive gains on 3.0% of opponent runs (FBS average 6.5%).",
-      "When Texas State has the ball (the run game against the run defense): Texas State’s offense averages 6.1 yards per carry, and Boise State’s defense allows 5.0 yards per carry (FBS average 5.0).",
-      "When Texas State has the ball (third down): Texas State’s offense converts 52.8% of its third downs, and Boise State’s defense allows opponents to convert 36.1% of their third downs (FBS average 39.6%)."
-    ],
-    "quarterbacks": [
-      "Maddux Madsen has completed 124 of 190 passes (65.3%) for 1,445 yards, 7.6 yards per attempt, 14 touchdowns and no interceptions in seven games for Boise State, and has been sacked on 5 of 195 dropbacks.",
-      "Brad Jackson has completed 133 of 195 passes (68.2%) for 1,606 yards, 8.2 yards per attempt, 14 touchdowns and 4 interceptions in seven games for Texas State, and has been sacked on 8 of 203 dropbacks."
-    ],
-    "availability": [
-      "Boise State’s availability report lists receiver Ben Ford as questionable.",
-      "Boise State’s availability report lists running back Sire Gaines as questionable.",
-      "Boise State’s availability report lists tight end Austin Terry as questionable.",
-      "Texas State’s availability report lists running back Davian Jackson as questionable."
-    ],
-    "script": {
-      "model": [
-        "Boise State’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 8.6% of its runs, and Texas State’s defense stops 24.6% of opponent runs at or behind the line.",
-        "Boise State’s defense has to slow Texas State on third down — Texas State’s offense converts 52.8% of its third downs.",
-        "Boise State’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 8.0% of opponent pass plays.",
-        "Boise State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.6% of its dropbacks, and Texas State’s defense sacks the quarterback on 3.2% of opponent dropbacks."
-      ],
-      "market": [
-        "Texas State’s offense has to keep winning on third down: it converts 52.8% of its third downs, and Boise State’s defense allows opponents to convert 36.1% of their third downs.",
-        "Texas State’s defense has to come out ahead on big pass plays: it gives up explosive gains on 8.0% of opponent pass plays, against an offense that turns 9.2% of its pass plays into explosive gains.",
-        "Texas State’s defense has to come out ahead at the line of scrimmage: it stops 24.6% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 8.6% of its runs."
-      ]
-    },
-    "unknown": [
-      "Boise State’s availability report lists receiver Ben Ford as questionable.",
-      "Boise State’s availability report lists running back Sire Gaines as questionable.",
-      "Boise State’s availability report lists tight end Austin Terry as questionable.",
-      "Texas State’s availability report lists running back Davian Jackson as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Boise State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Boise State) and sack rate (Boise State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-31T21:39:14.238Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-31T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Pac-12 Conference availability report (Third Report)",
-        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-31T02:08:48.563Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T00:02:55.724Z"
+    "at": "2026-11-01T05:51:54.101Z"
   }
 }
