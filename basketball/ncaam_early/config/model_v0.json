@@ -1,0 +1,114 @@
+{
+ "schema": "edgedesk_ncaam_early_model_config_v0",
+ "model_id": "edgedesk_ncaam_early_v1",
+ "model_key": "NCAAM-EARLY",
+ "config_version": "0.1.0",
+ "status": "REGISTERED STARTING VALUES — not fitted, not evaluated against any outcome",
+ "registered_at": "2026-11-01",
+ "note": "Every number the model uses, registered BEFORE any result exists (research/registration.json). Values marked `selectable` may be chosen ONLY on the training windows, from the candidates listed, by the selection rule in the registration; the chosen set is then frozen (config/model_v1.json, with its sha256 in a new registration version) BEFORE the retrospective holdout is scored once. Nothing here may be tuned on the 2025-26 holdout or on the live 2026-27 season. A change after the freeze is a new model version (registration §weekly_learning).",
+
+ "base_engine": {
+  "engine": "basketball/ncaam_research/team_model.js (the ratings engine of NCAAM-FORECAST)",
+  "params": "basketball/ncaam_forecast/config/selection_v1.json `chosen` (hash 7807a94ff33649c6), chosen on 2012-2019 only; used unchanged except the season-start prior, which NCAAM-EARLY replaces",
+  "possessions": "FGA - OREB + TOV + 0.475 FTA (basketball/ncaam_forecast/dataset.js POSS_FTA)",
+  "home_advantage": "the engine's own fitted home term (inside the rating model, so ratings are near neutral); neutral site = 0. NCAAM-EARLY adds no second home term."
+ },
+
+ "player_value": {
+  "formula": "Per player, last season, per 100 team possessions he was on the floor for (on-floor possessions = minutes / team minutes x 5 x team possessions): OFF = (points + 0.5 x assists + 0.6 x offensive rebounds - 0.9 x turnovers - 0.4 x missed field goals - 0.2 x missed free throws) per 100 on-floor possessions minus the D-I average of that rate; DEF = (0.6 x defensive rebounds + 1.0 x steals + 0.7 x blocks - 0.2 x fouls) per 100 on-floor possessions minus the D-I average. VALUE = OFF + DEF, scaled by the share of the team's minutes he is expected to play. Box-score only, documented, no black box.",
+  "weights_selectable": false,
+  "min_minutes_for_rate": 100,
+  "shrink_minutes": { "value": 250, "selectable": [150, 250, 400], "rule": "a rate is shrunk toward the replacement level with weight minutes / (minutes + shrink_minutes)" },
+  "replacement_level": { "off": -2.0, "def": -0.5, "unit": "points per 100 on-floor possessions vs D-I average", "selectable": false }
+ },
+
+ "transfer_translation": {
+  "d1_to_d1": { "rule": "factor = 1 + w x (source conference strength / destination conference strength - 1), strengths from EdgeDesk's own prior-season ratings", "w": { "value": 0.5, "selectable": [0.25, 0.5, 0.75] } },
+  "fixed_level_factors": {
+   "note": "multiply last season's value; heavy discounts with wide uncertainty; registered, not fitted to any holdout",
+   "D2": { "off": 0.55, "def": 0.40, "sd_inflation": 2.0 },
+   "D3": { "off": 0.40, "def": 0.30, "sd_inflation": 2.5 },
+   "NAIA": { "off": 0.50, "def": 0.35, "sd_inflation": 2.0 },
+   "JUCO": { "off": 0.60, "def": 0.45, "sd_inflation": 2.0 },
+   "INTERNATIONAL": { "off": 0.65, "def": 0.50, "sd_inflation": 2.5 },
+   "NON_D1_UNCLASSIFIED": { "off": 0.45, "def": 0.35, "sd_inflation": 2.5 },
+   "scale_selectable": [0.8, 1.0, 1.2]
+  },
+  "defense_credit": "defensive value translates at the `def` factor (offense translates more cleanly)",
+  "usage_adjustment": { "rule": "a player with usage >= 25% moving to a stronger conference keeps factor x 0.9 on offense; a player with usage <= 15% keeps factor x 1.05; otherwise unchanged", "selectable": false },
+  "no_usable_stats": "replacement level, sd_inflation 3.0, flagged `unknown`"
+ },
+
+ "freshmen": {
+  "rule": "by recruiting stars when the recruit record exists, else the D-I freshman average; high variance",
+  "value_by_stars": { "5": 1.0, "4": -0.5, "3": -1.5, "unrated": -2.0, "unit": "VALUE points per 100 on-floor possessions vs D-I average" },
+  "sd_inflation": 2.5,
+  "selectable": false
+ },
+
+ "expected_minutes": {
+  "rule": "start from last season's minutes share (returners and D-I transfers, translated), freshmen and unknowns at a prior share by stars (5: 0.55, 4: 0.40, 3: 0.20, unrated 0.10); normalise to 200 player-minutes per game, capped at 0.85 per player; coach rotation tendency is not used in v0 (no owned source)",
+  "selectable": false
+ },
+
+ "preseason_prior": {
+  "rule": "team OFF/DEF prior = carried prior-season rating (engine `carry`) blended with the roster-built rating (sum of expected-minutes-weighted translated values), weight on the roster build = roster_weight",
+  "roster_weight": { "value": 0.5, "selectable": [0.25, 0.5, 0.75, 1.0] },
+  "coach_change": { "rule": "a coaching change shrinks the carried part toward the roster build by a further coach_shrink", "coach_shrink": { "value": 0.15, "selectable": [0, 0.15, 0.3] } },
+  "tempo": "prior tempo = continuity-weighted blend of last season's adjusted tempo and the head coach's career tempo residual when a coach record with history exists; else last season's"
+ },
+
+ "variance": {
+  "rule": "team rating variance = base prior variance x (1 + a1 x unknown_minutes_share + a2 x non_d1_minutes_share + a3 x freshman_minutes_share + a4 x new_coach + a5 x (1 - returning_minutes_share))",
+  "a": { "a1": 1.5, "a2": 1.0, "a3": 0.8, "a4": 0.3, "a5": 1.0 },
+  "scale_selectable": [0.5, 1.0, 1.5]
+ },
+
+ "in_season_update": {
+  "rule": "Bayesian normal-normal update of the engine's rating after each game; the prior's weight decays with games played; a high-variance team's prior is weaker from the start, so it updates faster",
+  "prior_weight_by_games": { "0": 1.0, "3": 0.65, "6": 0.45, "9": 0.25, "12": 0.12, "15": 0.05 },
+  "schedule_selectable": [ "as registered", "faster: every weight x 0.8", "slower: every weight x 1.2 (capped at 1)" ],
+  "recency": "the engine's own (no recency decay chosen in selection_v1); not changed in v0"
+ },
+
+ "game_projection": {
+  "margin": "rating difference + the engine's home term (neutral 0)",
+  "total": "projected possessions x (offence vs opposing defence) / 100, both teams",
+  "base_margin_sd": { "value": 11.0, "rule": "inflated by both teams' rating variance: sd = sqrt(base^2 + var_home + var_away)", "selectable_from_training": "fitted by maximum likelihood on the training windows only" },
+  "base_total_sd": { "value": 16.0, "selectable_from_training": "fitted by maximum likelihood on the training windows only" },
+  "outputs": ["fair spread", "fair total", "win probability", "cover probability at a market line", "over probability at a market line"]
+ },
+
+ "market": {
+  "devig": "the EdgeDesk two-way multiplicative de-vig (lib/edgedesk_calc.js noVigTwoWay); Shin where the capture layer already uses it, named on the row",
+  "reference": "Pinnacle when captured, else the sharpest captured consensus; the reference used and its capture time are stored with every comparison",
+  "edge": "model probability x best captured decimal price - 1",
+  "thin_market": "fewer than 3 books on the market, or a Kalshi market below 500 contracts of volume, or a price older than 90 minutes at the comparison: flagged thin, never shown as an edge",
+  "stale_price_minutes": 90
+ },
+
+ "conviction": {
+  "note": "Registered before any validation. Shown as Conviction (Low / Medium / High) only; no unit or stake is shown on any card.",
+  "thresholds": { "edge_high": 0.03, "edge_low": 0.015, "edge_floor": 0.005 },
+  "variance_cap": { "value": "the 60th percentile of team rating variance among D-I teams on the day", "rule": "both teams at or below the cap" },
+  "tiers": {
+   "HIGH": "edge >= edge_high AND both teams' variance <= cap AND at least one non-price angle tag",
+   "MEDIUM": "edge_low <= edge < edge_high, OR edge >= edge_high with a team's variance above the cap or no non-price angle",
+   "LOW": "edge_floor <= edge < edge_low, OR the only angle is price_only",
+   "PASS": "edge < edge_floor, OR a thin market, OR a stale price"
+  },
+  "internal_grading_units": { "HIGH": 1.0, "MEDIUM": 0.5, "LOW": 0.5, "note": "for EdgeDesk's own grading and attribution only; never displayed" }
+ },
+
+ "angle_tags": {
+  "continuity_gap": "returning-minutes share differs by >= 0.30 between the teams",
+  "transfer_translation": ">= 25% of a team's expected minutes come from translated transfers and the translation moves its rating by >= 1.5 points",
+  "coach_change": "either team has a first-season head coach (a coach record exists)",
+  "departed_production": "a team lost >= 50% of last season's player value",
+  "pace_coach_history": "the coach-history tempo prior moves projected possessions by >= 2",
+  "size_mismatch": "minutes-weighted height differs by >= 1.5 inches",
+  "price_only": "none of the above"
+ },
+
+ "early_season_window": "from each season's first regular-season game through 15 December (US Eastern date), inclusive"
+}

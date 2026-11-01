@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-11-01 — NCAAM-EARLY registered (v0.1.0, EXPERIMENTAL, T3) before any result
+
+- **What.** `basketball/ncaam_early/research/registration.json` and the registered starting configuration `basketball/ncaam_early/config/model_v0.json` (pinned in the registration by sha256), with `supabase/ncaam_early_registry.sql` generated from them by `research/build_registry_sql.js`. It is adapted from the NBA roster-adjusted generator: it reads the live registry columns, refuses rather than guesses, and writes no result row.
+- **Windows.**
+  - Training: the early-season windows (first game to 15 December) of 2020 and 2022–2025. 2021 is excluded before anything ran.
+  - Retrospective holdout: 2025-26, scored once after the configuration is frozen. It is descriptive and cannot promote.
+  - Prospective 2026-27 early season: the only promotion window.
+- **Promotion criteria.**
+  - C1: CLV of flagged bets > 0 with the 95% lower bound > 0 on ≥ 300 bets.
+  - C2: calibration no worse than the de-vigged close (+0.005 log-loss tolerance).
+  - C3: margin MAE not worse than NCAAM-FORECAST.
+  - C4: honest 80% coverage, and predicted sd ranks residuals.
+  - C5: HIGH-tier CLV ≥ LOW-tier CLV.
+- **Also registered.** Conviction thresholds (3% / 1.5% / 0.5%; Conviction only, no stake shown), the selection rule (training only, frozen before the holdout), the weekly-learning rule and the forking-paths disclosure, including the engine's earlier unconfirmed continuity/transfer prior.
+- **Deploy.** Deploy NCAAM early-season SQL gains `apply_registry` (default on).
+- **Tests.** New `basketball/ncaam_early/tests/registration.test.js` (static, plus the registry SQL on a real PostgreSQL with a stand-in registry): 27 passed, 0 failed. It runs in NCAAM early-season suites.
+
+## 2026-11-01 — NCAAM-EARLY data layer: the T0 store of the early-season college basketball model
+
+- **What.** `basketball/ncaam_early/` (model `edgedesk_ncaam_early_v1`, EXPERIMENTAL), the observation layer of the early-season men's college basketball research model, which builds on the existing ratings engine (`basketball/ncaam_research/team_model.js`).
+  - A CollegeBasketballData.com client whose every path and parameter is checked against the published OpenAPI document (1.30.1, sha256 recorded). It caps calls per run and stops before a call once the shared CBBD/CFBD quota falls below a 300-call reserve.
+  - Normalisers that reject rather than repair, and check the END-year season convention against CBBD's own labels.
+  - Derived player moves: returning, D-I transfer, portal transfer by source level, freshman, departures.
+  - Hand-entered coach, availability and school-level files with validators. CBBD has no coaches endpoint.
+  - A sync (`ingest.js`) with one run row per part and season, and alerts.
+- **Storage.** New `supabase/ncaam_early.sql` (and its byte-identical migration mirror): 19 `ncaam_es_*` tables. Rosters are point in time (a team's roster is stored again only when it changes); portal, recruit and line rows are stored on change, append-only. Only `service_role` can read: CBBD's terms forbid publishing its data in bulk, and this repository is public, so no CBBD row is committed. `ncaam_es_readiness()` returns KPIs only, and System health shows it as *NCAAM early-season sync*.
+- **Workflows.** `ncaam-early-tests.yml` (pull requests; in `sports-models`). `ncaam-early-sync.yml`: daily, plus weekly parts on Mondays; **off** until `NCAAM_EARLY_SYNC = on`; needs `CBBD_API_KEY`; commits nothing. `deploy-ncaam-early.yml` (manual).
+- **Tests.** `basketball/ncaam_early/tests/data.test.js`: 77 passed, 0 failed. `basketball/ncaam_early/tests/sql.test.js` (real PostgreSQL): 39 passed, 0 failed. The SQL suite caught an upsert that left unchanged derived rows on the old run, so the stale-row cleanup would have deleted current rows. It was fixed before commit.
+- **Not verified here:** any call to CBBD (no key in this environment), so endpoint field population, the portal year offset and the ESPN id crosswalk are measured on the first real run.
+
 ## 2026-11-01 — Research Queue and Smart Money Tonight compare through one path
 
 - **One path** (`lib/edgedesk_research_compare.js`, `docs/research-compare/README.md`). The Research Queue and the Smart Money Tonight cards now compare a model with a price through the same module. For NHL it uses `EDNHLCompare`, as the matchup page does, so all three show the same gap. A comparison needs the same sport, game, side, market, period, line and settlement. NCAAM and NCAAW stay distinct. Every result carries its status and reason, and `calc: edgedesk_research_compare/1`.

@@ -1,0 +1,109 @@
+# NCAAM-EARLY — the T0 sync from CollegeBasketballData.com (CBBD) and the
+# hand-entered files into the ncaam_es_* tables (supabase/ncaam_early.sql).
+#
+#   daily 12:47 UTC   rosters, games, coaches, availability, moves
+#   Mondays           + teams, box lines, player seasons, lines, portal,
+#                       recruits (the weekly parts)
+#   by hand           any parts and seasons (a backfill), with a call cap
+#
+# OFF until the owner turns it on: the repository variable NCAAM_EARLY_SYNC
+# must be 'on' for the scheduled run (a run without it is SKIPPED, never
+# reported as a sync). It needs the secrets CBBD_API_KEY (CBBD; the quota is
+# SHARED with CollegeFootballData, so every run is capped and stops before a
+# call once the provider reports fewer than 300 calls remaining), SB_URL and
+# SB_SERVICE_ROLE. A missing key fails the run, with the reason, in
+# ncaam_es_alerts.
+#
+# Nothing is committed: CBBD's terms forbid publishing its data in bulk and
+# this repository is public. Raw responses stay in the Actions cache; the run
+# manifest (counts, hashes, quota; no data row) is uploaded as an artifact.
+name: NCAAM early-season sync
+
+on:
+  schedule:
+    - cron: '47 12 * * *'
+  workflow_dispatch:
+    inputs:
+      parts:
+        description: 'Parts: daily | weekly | all | a comma list (teams,conferences,venues,games,box_team,player_seasons,rosters,portal,recruits,lines,coaches,availability,moves)'
+        type: string
+        default: 'daily'
+      seasons:
+        description: 'Seasons (END year): current | 2027 | 2019-2026'
+        type: string
+        default: 'current'
+      mode:
+        description: 'Run mode recorded in ncaam_es_runs'
+        type: choice
+        options: [manual, backfill]
+        default: manual
+      max_calls:
+        description: 'CBBD call cap for this run (at most 250; the quota is shared with football)'
+        type: string
+        default: '40'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ncaam-early-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.NCAAM_EARLY_SYNC == 'on' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: The data layer suite must pass first
+        run: node basketball/ncaam_early/tests/data.test.js
+      - name: Restore the raw response cache (never committed)
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/ncaam_early/raw
+          key: ncaam-early-raw-${{ github.run_id }}
+          restore-keys: ncaam-early-raw-
+      - name: Which parts
+        id: plan
+        env:
+          IN_PARTS: ${{ inputs.parts }}
+          IN_SEASONS: ${{ inputs.seasons }}
+          IN_MODE: ${{ inputs.mode }}
+          IN_MAX: ${{ inputs.max_calls }}
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "$(date -u +%u)" = "1" ]; then echo "parts=weekly" >> "$GITHUB_OUTPUT"; else echo "parts=daily" >> "$GITHUB_OUTPUT"; fi
+            echo "seasons=current" >> "$GITHUB_OUTPUT"; echo "mode=scheduled" >> "$GITHUB_OUTPUT"; echo "max=40" >> "$GITHUB_OUTPUT"
+          else
+            echo "parts=$IN_PARTS" >> "$GITHUB_OUTPUT"; echo "seasons=$IN_SEASONS" >> "$GITHUB_OUTPUT"; echo "mode=$IN_MODE" >> "$GITHUB_OUTPUT"; echo "max=$IN_MAX" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Sync
+        env:
+          CBBD_API_KEY: ${{ secrets.CBBD_API_KEY }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          PARTS: ${{ steps.plan.outputs.parts }}
+          SEASONS: ${{ steps.plan.outputs.seasons }}
+          MODE: ${{ steps.plan.outputs.mode }}
+          MAXC: ${{ steps.plan.outputs.max }}
+        run: |
+          if [ -z "$SB_URL" ] || [ -z "$SB_SERVICE_ROLE" ]; then echo "::error::SB_URL / SB_SERVICE_ROLE are not set: nothing could be stored"; exit 1; fi
+          node basketball/ncaam_early/ingest.js --parts "$PARTS" --season "$SEASONS" --mode "$MODE" --max-calls "$MAXC" --manifest .cache/ncaam_early/manifest.json
+      - name: Save the raw response cache
+        if: ${{ always() }}
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/ncaam_early/raw
+          key: ncaam-early-raw-${{ github.run_id }}
+      - name: Upload the run manifest (metadata only)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ncaam-early-manifest-${{ github.run_id }}
+          path: .cache/ncaam_early/manifest.json
+          if-no-files-found: warn
+          retention-days: 90

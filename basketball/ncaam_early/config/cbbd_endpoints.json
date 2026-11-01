@@ -1,0 +1,139 @@
+{
+ "schema": "edgedesk_ncaam_early_cbbd_endpoints_v1",
+ "note": "The CollegeBasketballData.com endpoints NCAAM-EARLY calls, checked against the published OpenAPI document (GET https://api.collegebasketballdata.com/api-docs.json). basketball/ncaam_early/cbbd.js refuses a path or a query parameter not listed here; tests/data.test.js checks the list. Re-verify when the spec version changes. There is NO coaches endpoint in this version: coaching records are entered by hand (manual/coaches.json).",
+ "spec_url": "https://api.collegebasketballdata.com/api-docs.json",
+ "spec_title": "College Basketball Data API",
+ "spec_version": "1.30.1",
+ "spec_sha256": "de022dafc5cccd6520fd295c279f8a74c6abdfcde1a34ffb3d2110f515b9b014",
+ "verified_at": "2026-11-01",
+ "auth": "Authorization: Bearer <key> (securitySchemes.apiKey: http bearer)",
+ "not_in_spec": [
+  "coaches (any path)",
+  "a previous-school field on /teams/roster",
+  "a capture time on any roster",
+  "venue coordinates (/venues: city, state, country only)",
+  "line capture times (/lines: provider, spread, overUnder, moneylines, spreadOpen, overUnderOpen)"
+ ],
+ "endpoints": {
+  "/teams": {
+   "params": [
+    "conference",
+    "season"
+   ],
+   "required": [],
+   "row_cap": null,
+   "description": "Returns team and conference information."
+  },
+  "/conferences/history": {
+   "params": [
+    "conference"
+   ],
+   "required": [],
+   "row_cap": null,
+   "description": "Returns historical conference membership records."
+  },
+  "/venues": {
+   "params": [],
+   "required": [],
+   "row_cap": null,
+   "description": "Returns available venues and location information."
+  },
+  "/games": {
+   "params": [
+    "startDateRange",
+    "endDateRange",
+    "team",
+    "conference",
+    "season",
+    "seasonType",
+    "status",
+    "tournament"
+   ],
+   "required": [],
+   "row_cap": 3000,
+   "description": "Returns up to 3,000 games that match the filters, ordered by start date."
+  },
+  "/games/teams": {
+   "params": [
+    "startDateRange",
+    "endDateRange",
+    "team",
+    "conference",
+    "season",
+    "seasonType",
+    "tournament"
+   ],
+   "required": [],
+   "row_cap": 3000,
+   "description": "Returns team box scores and advanced metrics for up to 3,000 games that match the filters, ordered by start date."
+  },
+  "/stats/player/season": {
+   "params": [
+    "season",
+    "seasonType",
+    "team",
+    "conference",
+    "startDateRange",
+    "endDateRange"
+   ],
+   "required": [
+    "season"
+   ],
+   "row_cap": null,
+   "description": "Returns player statistics for a season."
+  },
+  "/teams/roster": {
+   "params": [
+    "season",
+    "team"
+   ],
+   "required": [
+    "season"
+   ],
+   "row_cap": null,
+   "description": "Returns team rosters for a season."
+  },
+  "/recruiting/portal": {
+   "params": [
+    "year",
+    "sourceTeam",
+    "destinationTeam",
+    "sourceConference",
+    "destinationConference",
+    "position"
+   ],
+   "required": [],
+   "row_cap": null,
+   "description": "Returns historical transfer portal activity."
+  },
+  "/recruiting/players": {
+   "params": [
+    "year",
+    "team",
+    "conference",
+    "position"
+   ],
+   "required": [],
+   "row_cap": null,
+   "description": "Returns historical composite player recruiting rankings and ratings."
+  },
+  "/lines": {
+   "params": [
+    "season",
+    "team",
+    "conference",
+    "startDateRange",
+    "endDateRange"
+   ],
+   "required": [],
+   "row_cap": 3000,
+   "description": "Returns betting lines for up to 3,000 games that match the filters, ordered by start date."
+  },
+  "/lines/providers": {
+   "params": [],
+   "required": [],
+   "row_cap": null,
+   "description": "Returns available betting line providers."
+  }
+ }
+}

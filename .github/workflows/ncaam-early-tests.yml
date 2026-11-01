@@ -1,0 +1,75 @@
+# NCAAM-EARLY (edgedesk_ncaam_early_v1) data layer — every suite, on every
+# change to it.
+#
+#   unit   the CBBD client (verified endpoints, key redaction, call cap,
+#          shared-quota reserve, cap-splitting windows), the normalisers, the
+#          derived player moves, the hand-entered files (they must validate),
+#          the sync end to end on a mocked CBBD, the scope checks
+#   sql    supabase/ncaam_early.sql on a real, throwaway PostgreSQL: no client
+#          read or write, snapshots on change, point-in-time rosters,
+#          append-only guards, readiness (NCAAM_EARLY_SQL_REQUIRED=1: a
+#          missing cluster FAILS, never skips)
+#   reg    the research registration: EXPERIMENTAL / T3 with no result,
+#          ordered windows, promotion criteria, the configuration pinned by
+#          sha256, the generated registry SQL current and applied to a
+#          stand-in registry
+#
+# No network beyond the runner image, no credentials, nothing written.
+name: NCAAM early-season suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'basketball/ncaam_early/**'
+      - 'supabase/ncaam_early.sql'
+      - 'supabase/migrations/20261101130000_ncaam_early.sql'
+      - 'supabase/ncaam_early_registry.sql'
+      - 'tools/personal/_pg.js'
+      - 'tools/games/sql/supabase_shim.sql'
+      - '.github/workflows/ncaam-early-*.yml'
+      - '.github/workflows/deploy-ncaam-early.yml'
+  pull_request:
+    paths:
+      - 'basketball/ncaam_early/**'
+      - 'supabase/ncaam_early.sql'
+      - 'supabase/migrations/20261101130000_ncaam_early.sql'
+      - 'supabase/ncaam_early_registry.sql'
+      - 'tools/personal/_pg.js'
+      - 'tools/games/sql/supabase_shim.sql'
+      - '.github/workflows/ncaam-early-*.yml'
+      - '.github/workflows/deploy-ncaam-early.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request replaces its older run (the result that
+# matters is the head's); a push, schedule or dispatch run keeps its own
+# group, so no run on main is cancelled (docs/ci/README.md).
+concurrency:
+  group: ncaam-early-tests-${{ github.event_name == 'pull_request' && (github.head_ref || github.ref) || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    name: NCAAM early-season suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: The data layer (client, normalisers, moves, hand-entered files, sync on a mocked CBBD, scope)
+        run: node basketball/ncaam_early/tests/data.test.js
+      - name: supabase/ncaam_early.sql on a real PostgreSQL (no client access, snapshots, point-in-time rosters, append-only, readiness)
+        env:
+          NCAAM_EARLY_SQL_REQUIRED: '1'
+        run: node basketball/ncaam_early/tests/sql.test.js
+      - name: The registration (windows, promotion criteria, pinned configuration; the registry SQL on a real PostgreSQL)
+        env:
+          NCAAM_EARLY_SQL_REQUIRED: '1'
+        run: node basketball/ncaam_early/tests/registration.test.js

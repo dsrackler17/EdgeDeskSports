@@ -1,0 +1,5 @@
+{
+ "schema": "edgedesk_ncaam_early_availability_v1",
+ "note": "Player availability, entered by hand from a published source (no reliable feed exists). T0 observations with provenance. APPEND-ONLY: a correction is a new entry whose `supersedes` names the earlier id; nothing is edited or removed. Fields: id (av_...), season (END year), team_id (CBBD), game_id (CBBD) or game_date, player_id (CBBD athlete id, if known), player_name, status OUT|DOUBTFUL|QUESTIONABLE|PROBABLE|AVAILABLE|SUSPENDED|SEASON_ENDING, source_url, published_at (when the source published it, UTC), entered_at (UTC), entered_by, confidence_note, supersedes?. A model reads only entries published AND entered before its forecast time (manual.js availabilityAsOf).",
+ "entries": []
+}
