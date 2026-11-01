@@ -2,9 +2,9 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-11-01T07:08:04.468Z",
+ "as_of": "2026-11-01T08:10:54.694Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "928927c8fc7deef5",
+ "inputs_key": "73e3ab605aa90edb",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "63054afdf16f"
+   "sha1": "efefc5401588"
   },
   {
    "file": "football/params.js",
@@ -16331,7 +16331,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-11-01T06:29:11.786Z",
+  "generated_at": "2026-11-01T08:10:54.694Z",
   "sports": {
    "nfl": {
     "versions": [
@@ -16389,50 +16389,50 @@
      "edgedesk_cfb_p4_v1.0.0",
      "edgedesk_cfb_p4_v1.0.1"
     ],
-    "graded": 521,
+    "graded": 522,
     "ats": {
-     "n": 521,
-     "w": 243,
+     "n": 522,
+     "w": 244,
      "l": 271,
      "p": 7,
-     "pct": 47.3,
+     "pct": 47.4,
      "sample": {
       "key": "STRONGER_EVIDENCE",
       "label": "Meaningful sample",
-      "n": 521,
-      "text": "n=521 · Meaningful sample",
+      "n": 522,
+      "text": "n=522 · Meaningful sample",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 361,
+     "n": 362,
      "avg": 0.38,
-     "beat": 164,
+     "beat": 165,
      "flat": 59,
      "lost": 138,
-     "beat_pct": 45.4,
+     "beat_pct": 45.6,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 361,
-      "text": "n=361 · Developing evidence",
+      "n": 362,
+      "text": "n=362 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 521,
-     "model_mae": 12.56,
-     "close_mae": 11.24,
-     "model_closer_pct": 39.7,
-     "total_n": 448,
-     "model_total_mae": 13,
-     "close_total_mae": 12.43
+     "n": 522,
+     "model_mae": 12.57,
+     "close_mae": 11.26,
+     "model_closer_pct": 39.8,
+     "total_n": 449,
+     "model_total_mae": 12.99,
+     "close_total_mae": 12.41
     },
     "brier": {
-     "n": 436,
-     "model": 0.178
+     "n": 437,
+     "model": 0.1785
     }
    }
   }
@@ -17500,7 +17500,7 @@
    "code": "MODEL_RECORD_BELOW_BREAK_EVEN",
    "severity": "RESEARCH_ALERT",
    "source": "record/football/summary.json",
-   "text": "WARNING: the CFB model record against the spread is 243-271-7 (47.3%, 95% interval 43.0–51.6%, n=514): the whole interval sits below the 52.4% break-even at −110.",
+   "text": "WARNING: the CFB model record against the spread is 244-271-7 (47.4%, 95% interval 43.1–51.7%, n=515): the whole interval sits below the 52.4% break-even at −110.",
    "note": "This is a research alert, not an automatic change. It grades the published fair line, not bettor decisions."
   }
  ]
