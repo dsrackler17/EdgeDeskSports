@@ -21081,7 +21081,8 @@ function sysHealthNcaamEarlyLoad(force){
   if(typeof SB_URL==='undefined'||typeof SB_KEY==='undefined')return Promise.resolve(null);
   SH.nceP=fetch(SB_URL+'/rest/v1/rpc/ncaam_es_readiness',{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},body:'{}'})
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status+(r.status===404?' (the NCAAM early-season layer is not deployed)':''));return r.json();})
-    .then(function(j){if(!j||typeof j.state!=='string')throw new Error('no state in the answer');SH.nce=j;SH.nceErr=null;},function(e){SH.nce=null;SH.nceErr=(e&&e.message)||'unreadable';})
+    .then(function(j){if(!j||typeof j.state!=='string')throw new Error('no state in the answer');return j;})
+    .then(function(j){SH.nce=j;SH.nceErr=null;},function(e){SH.nce=null;SH.nceErr=(e&&e.message)||'unreadable';})
     .then(function(){SH.nceAt=Date.now();SH.nceP=null;try{sysHealthPaint();}catch(_){}return SH.nce;});
   return SH.nceP;
 }
