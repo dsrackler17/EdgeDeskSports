@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-11-01T22:08:31.017Z",
- "board_generated_at": "2026-11-01T22:08:18.660Z",
+ "generated_at": "2026-11-01T23:02:45.967Z",
+ "board_generated_at": "2026-11-01T23:02:38.178Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -21,9 +21,9 @@
    "kickoff": "2026-11-08T00:00:00.000Z",
    "named": false,
    "edgedesk": "Jacksonville State −24.5",
-   "market": "Jacksonville State −15.5",
+   "market": "Jacksonville State −16.5",
    "books": 1,
-   "gap": 9,
+   "gap": 8,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "MARKET_FAULT",
@@ -65,21 +65,21 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 6.2 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 5.2 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.2 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.2 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8"
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401862818",
