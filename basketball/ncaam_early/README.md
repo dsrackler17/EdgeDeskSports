@@ -209,6 +209,9 @@ read. Nothing in this directory can spend.
 - `captured_at` is when the gateway received the board, not the book's own
   stamp;
 - prices are decimal, stored exactly as bought;
+- each read covers games commencing from 6 hours back to 48 hours ahead, so
+  a game's last board before tip is still copied by the first run after the
+  tip;
 - a price seen at or after the commence time is refused by the database;
 - the table is append-only.
 

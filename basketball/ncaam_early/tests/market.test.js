@@ -131,6 +131,7 @@ chk('norm: different schools stay different', MJ.norm('Miami (OH) RedHawks') !==
       { game_id: 504, home: 'e1', away: 'e2', neutral: true, regime: 'D1_D1', scheduled: true, start_ms: tip504 } ] };
     const board = { available: true, as_of: NOW, boards: [{ fingerprint: 'fp1', category: 'featured', snapshot_at: iso(nowMs - 20 * 60e3), odds_format: 'decimal', events: [
       event('ev502', tip502, [book('pinnacle', [-2.5, 1.95, 1.95], [140.5, 1.93, 1.97], [1.75, 2.15]), book('draftkings', [-2.5, 1.91, 1.91], [141.5, 1.91, 1.91], [1.74, 2.12]), book('fanduel', [-3.5, 2.02, 1.82], [140.5, 1.95, 1.89], [1.76, 2.10])]),
+      event('evTipped', nowMs - 5 * 60e3, [book('draftkings', [-6, 1.9, 1.9], [150, 1.9, 1.9], [1.3, 3.6], 'Gamma College Gulls', 'Delta U Ducks')], { home_team: 'Gamma College Gulls', away_team: 'Delta U Ducks' }),
       event('evX', tip504, [book('draftkings', [-1, 1.9, 1.9], [140, 1.9, 1.9], [1.8, 2], 'Somebody Else', 'Alpha State Hawks')], { home_team: 'Somebody Else', away_team: 'Alpha State Hawks' })] }] };
     const names = new Map([['e1', 'Alpha State Hawks'], ['e2', 'Beta Tech Owls']]);
     const calls = [];
@@ -140,10 +141,11 @@ chk('norm: different schools stay different', MJ.norm('Miami (OH) RedHawks') !==
     const res = (p) => m.results.find((r) => r.part === p);
     chk('e2e: project, quotes and market all ran ok', ['project', 'quotes', 'market'].every((p) => res(p) && res(p).status === 'ok'), m.results.map((r) => [r.part, r.status, r.error]));
     const reads = calls.filter((c) => c.name === 'ncaam_es_ncaab_board');
-    chk('e2e: the board is read once per run, for the next 48 hours, and nothing outside ncaam_es_* is called (no purchase)', reads.length === 1 && reads[0].args.p_from === NOW
-      && Date.parse(reads[0].args.p_to) - nowMs === 48 * 3600e3 && calls.every((c) => /^ncaam_es_/.test(c.name)));
+    chk('e2e: the board is read once per run, from 6 hours back (a game\'s last pre-tip board) to 48 hours ahead, and nothing outside ncaam_es_* is called (no purchase)', reads.length === 1
+      && nowMs - Date.parse(reads[0].args.p_from) === 6 * 3600e3 && Date.parse(reads[0].args.p_to) - nowMs === 48 * 3600e3 && calls.every((c) => /^ncaam_es_/.test(c.name)));
     const qrows = calls.filter((c) => c.args && c.args.p_table === 'ncaam_es_market_quotes').flatMap((c) => c.args.p_rows);
-    chk('e2e: quotes: every book\'s three markets of both events are stored as history', qrows.length === 12 && qrows.every((q) => q.captured_at === board.boards[0].snapshot_at), qrows.length);
+    chk('e2e: quotes: every book\'s three markets are stored as history, including the last pre-tip board of a game that has since tipped', qrows.length === 15
+      && qrows.filter((q) => q.event_id === 'evTipped').length === 3 && qrows.every((q) => q.captured_at === board.boards[0].snapshot_at && Date.parse(q.captured_at) < Date.parse(q.commence_time)), qrows.length);
     const cr = calls.filter((c) => c.args && c.args.p_table === 'ncaam_es_market_comparisons').flatMap((c) => c.args.p_rows);
     const g502 = cr.filter((r) => r.espn_game_id === '502'), g504 = cr.filter((r) => r.espn_game_id === '504');
     chk('e2e: market: one row per market for each projected game', cr.length === 6 && g502.length === 3 && g504.length === 3, cr.map((r) => r.comparison_id));

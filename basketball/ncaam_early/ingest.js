@@ -64,6 +64,7 @@ const ALL = ['conferences', 'venues'].concat(WEEKLY);
 const ORDER = ['conferences', 'venues', 'teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves', 'features', 'project', 'quotes', 'market'];
 const ONCE_PER_RUN = ['conferences', 'venues', 'quotes'];
 const BOARD_HOURS = 48;
+const BOARD_LOOKBACK_HOURS = 6;
 const BATCH = 500;
 
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -244,10 +245,15 @@ function espnNames(ctx) {
 }
 const SIDE = { spread: { a: 'home', b: 'away' }, moneyline: { a: 'home', b: 'away' }, total: { a: 'over', b: 'under' } };
 
-/* the gateway's NCAAB boards, read once per run (a read, never a purchase) */
+/* the gateway's NCAAB boards, read once per run (a read, never a purchase).
+   The window starts BOARD_LOOKBACK_HOURS back, so that a game's last board
+   before tip is still copied by the first hourly run after the tip (the
+   parser keeps only prices seen before commence; the board store keeps only
+   boards under 6 h old) */
 async function readBoard(db, ctx) {
   if (!db || ctx.board) return;
-  ctx.board = await db.rpc('ncaam_es_ncaab_board', { p_from: ctx.now, p_to: new Date(Date.parse(ctx.now) + BOARD_HOURS * 3600e3).toISOString() });
+  const t = Date.parse(ctx.now);
+  ctx.board = await db.rpc('ncaam_es_ncaab_board', { p_from: new Date(t - BOARD_LOOKBACK_HOURS * 3600e3).toISOString(), p_to: new Date(t + BOARD_HOURS * 3600e3).toISOString() });
 }
 
 /* the quotes of the boards the gateway holds for the next BOARD_HOURS hours */
