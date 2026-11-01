@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-11-01T03:00:59.255Z",
-  "open": 17,
-  "count": 17,
+  "generated_at": "2026-11-01T03:11:31.271Z",
+  "open": 18,
+  "count": 18,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -929,6 +929,35 @@
           "result": "Kent State Golden Flashes lost by 21 where EdgeDesk projected a 7.1-point edge.",
           "severity": "high",
           "at": "2026-10-31T06:21:05.182Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:rushing:advantage",
+      "sport": "CFB",
+      "category": "rushing",
+      "question": "Does EdgeDesk’s rushing handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-11-01T03:11:31.271Z",
+      "updated_at": "2026-11-01T03:11:31.271Z",
+      "evidence": [
+        {
+          "lesson_id": "401856733:contradicted:rushing",
+          "game_id": "401856733",
+          "season": 2026,
+          "week": 9,
+          "team": "Arkansas",
+          "expectation": "Arkansas holds the largest measured edge in this matchup: Arkansas 49.1 (#66 of 138) vs Missouri 41.7 (#108 of 138) — 42 places on the national board.",
+          "result": "Arkansas Razorbacks 1.64 yards per carry against Missouri Tigers 6.03; Arkansas Razorbacks 59 rushing yards against Missouri Tigers 211.",
+          "severity": "high",
+          "at": "2026-11-01T03:11:31.271Z"
         }
       ],
       "occurrences": 1,
