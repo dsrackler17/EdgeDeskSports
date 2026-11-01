@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-01 — Juice Reel: an authorize error is no longer reported as "you did not authorize"
+
+- **What happened.** Connect Juice Reel sent every reader back with "You did not authorize EdgeDesk on Juice Reel". Asked directly on 2026-11-01, Juice Reel's authorize endpoint answers `error=invalid_scope` ("One or more requested scopes are not allowed") for the Integration app (`jr_UcOwwS…`) whenever `bets.settled.read` is requested, before any sign-in or consent screen. `bets.open.read` alone reaches Juice Reel's sign-in. `jr_callback` read any `error` as a refusal, so the cause was hidden.
+- **Fix.** `jr_callback` (`portfolio_connect`, build `2026-11-01-jr7`) maps Juice Reel's error with `K.jrAuthorizeError`: `access_denied` and `status=cancelled` stay `JR_CONSENT_DENIED`; `invalid_scope` is `JR_AUTHORIZE_SCOPE` (names `bets.settled.read`, says it is on EdgeDesk's side); `unauthorized_client`/`invalid_client` is `JR_CLIENT_REFUSED`; anything else is `JR_AUTHORIZE_FAILED`. Juice Reel's code is logged (`juicereel.authorize_error`).
+- **Still needed.** Juice Reel must enable `bets.settled.read` on the EdgeDesk Sports Integration application. The requested scopes are unchanged.
+- **Test.** `tools/portfolio/juicereel.test.js`: the new check failed on the previous build (every error read as `JR_CONSENT_DENIED`) and passes now.
+
 ## 2026-11-01 — NCAAM-EARLY registered (v0.1.0, EXPERIMENTAL, T3) before any result
 
 - **What.** `basketball/ncaam_early/research/registration.json` and the registered starting configuration `basketball/ncaam_early/config/model_v0.json` (pinned in the registration by sha256), with `supabase/ncaam_early_registry.sql` generated from them by `research/build_registry_sql.js`. It is adapted from the NBA roster-adjusted generator: it reads the live registry columns, refuses rather than guesses, and writes no result row.
