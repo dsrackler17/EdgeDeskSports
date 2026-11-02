@@ -4,7 +4,7 @@
    NCAAM-EARLY — the T0 sync: CBBD (and the hand-entered files) in, the
    ncaam_es_* tables out.
 
-     node basketball/ncaam_early/ingest.js --parts <list|daily|weekly|all>
+     node basketball/ncaam_early/ingest.js --parts <list|hourly|daily|weekly|all>
           [--season <2019-2027|current>] [--mode scheduled|backfill|manual]
           [--max-calls N] [--dry-run] [--offline] [--manifest <file>]
 
@@ -20,8 +20,16 @@
      project               prospective projections of the games in the next
                            48 h (model.js, project.js): ESPN finals and
                            schedule from the NCAAM forecast dataset, no call
-   Schedules: `daily` = rosters games coaches availability moves features project;
-              `weekly` = daily + teams box_team player_seasons lines portal recruits.
+     quotes                NCAAB prices from the boards the odds gateway has
+                           already bought (ncaam_es_ncaab_board; no purchase,
+                           no CBBD call), kept as a history in
+                           ncaam_es_market_quotes (marketjoin.js)
+     market                the market comparison and Conviction of this run's
+                           projections against those prices, stored before
+                           tip in ncaam_es_market_comparisons (needs project)
+   Schedules: `daily` = rosters games coaches availability moves features project quotes market;
+              `weekly` = daily + teams box_team player_seasons lines portal recruits;
+              `hourly` = quotes.
 
    Every raw response is written gzipped to /.cache/ncaam_early/raw (never
    committed: CBBD's terms forbid publishing its data in bulk), normalised,
@@ -47,11 +55,16 @@ const FE = require('./features');
 const RT = require('./ratings');
 const MD = require('./model');
 const PJ = require('./project');
+const MJ = require('./marketjoin');
 
-const DAILY = ['rosters', 'games', 'coaches', 'availability', 'moves', 'features', 'project'];
-const WEEKLY = ['teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves', 'features', 'project'];
+const DAILY = ['rosters', 'games', 'coaches', 'availability', 'moves', 'features', 'project', 'quotes', 'market'];
+const WEEKLY = ['teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves', 'features', 'project', 'quotes', 'market'];
+const HOURLY = ['quotes'];
 const ALL = ['conferences', 'venues'].concat(WEEKLY);
-const ORDER = ['conferences', 'venues', 'teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves', 'features', 'project'];
+const ORDER = ['conferences', 'venues', 'teams', 'games', 'box_team', 'player_seasons', 'rosters', 'portal', 'recruits', 'lines', 'coaches', 'availability', 'moves', 'features', 'project', 'quotes', 'market'];
+const ONCE_PER_RUN = ['conferences', 'venues', 'quotes'];
+const BOARD_HOURS = 48;
+const BOARD_LOOKBACK_HOURS = 6;
 const BATCH = 500;
 
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -206,9 +219,12 @@ function projectPart(S, ctx, o) {
   const finals = eg.filter((g) => !g.scheduled && g.regime === 'D1_D1' && espnToCbbd.has(String(g.home)) && espnToCbbd.has(String(g.away)))
     .map((g) => ({ game_id: g.game_id, home: espnToCbbd.get(String(g.home)), away: espnToCbbd.get(String(g.away)), neutral: g.neutral, yH: g.yH, yA: g.yA, poss: g.poss, tempo: g.tempo, start_ms: g.start_ms, known_ms: g.start_ms + C.AVAILABLE_AFTER_MS }));
   const targets = eg.filter((g) => g.scheduled && g.start_ms > nowMs && g.start_ms <= nowMs + horizon)
-    .map((g) => ({ game_id: String(g.game_id), season: S, home_team_id: espnToCbbd.get(String(g.home)), away_team_id: espnToCbbd.get(String(g.away)), neutral: g.neutral, start_utc: new Date(g.start_ms).toISOString() }));
+    .map((g) => ({ game_id: String(g.game_id), season: S, home_team_id: espnToCbbd.get(String(g.home)), away_team_id: espnToCbbd.get(String(g.away)), neutral: g.neutral, start_utc: new Date(g.start_ms).toISOString(),
+      home_espn: String(g.home), away_espn: String(g.away) }));
   const league = { mu: st.mu, eta: st.eta, tau: st.tau };
-  const rows = PJ.projectGames(targets, { priors, finals, league, features }, cfg);
+  const espnOf = new Map(targets.map((t) => [t.game_id, t]));
+  const rows = PJ.projectGames(targets, { priors, finals, league, features }, cfg, { projection: true })
+    .map((r) => Object.assign(r, { home_espn: espnOf.get(String(r.game_id)).home_espn, away_espn: espnOf.get(String(r.game_id)).away_espn }));
   const version = JSON.parse(fs.readFileSync(path.join(C.PATHS.BASE, 'research', 'registration.json'), 'utf8')).version;
   const stored = rows.filter((r) => r.status === 'PROJECTED').map((r) => ({
     projection_id: (o.runId || 'dry') + ':' + r.game_id, espn_game_id: String(r.game_id), season: S, home_team_id: r.home_team_id, away_team_id: r.away_team_id, neutral: r.neutral, start_utc: r.start_utc,
@@ -217,13 +233,74 @@ function projectPart(S, ctx, o) {
     home_off: r.home_off, home_allow: r.home_allow, home_tempo: r.home_tempo, away_off: r.away_off, away_allow: r.away_allow, away_tempo: r.away_tempo, home_var: r.home_var, away_var: r.away_var,
     fair_spread_home: r.fair_spread_home, fair_total: r.fair_total, win_prob_home: r.win_prob_home, margin: r.margin, total: r.total, possessions: r.possessions, sd_margin: r.sd_margin, sd_total: r.sd_total,
     angles: r.angles, continuity: r.continuity, flags: r.flags }));
-  return { rows: stored, checks: { targets: targets.length, projected: stored.length, not_projected: rows.filter((r) => r.status !== 'PROJECTED').map((r) => ({ game_id: r.game_id, reason: r.reason })).slice(0, 20),
+  return { rows: stored, raw: rows, checks: { targets: targets.length, projected: stored.length, not_projected: rows.filter((r) => r.status !== 'PROJECTED').map((r) => ({ game_id: r.game_id, reason: r.reason })).slice(0, 20),
     finals_known: finals.length, teams_with_prior: priors.size, horizon_hours: o.horizonHours || 48, model_version: version, config_sha256: cfg._sha256 } };
+}
+
+/* ESPN team names (the NCAAM forecast's committed team list), for the match */
+function espnNames(ctx) {
+  if (ctx.espnNames) return ctx.espnNames;
+  const t = JSON.parse(fs.readFileSync(path.join(C.ROOT, 'basketball', 'ncaam_forecast', 'data', 'teams.json'), 'utf8')).teams || {};
+  return new Map(Object.entries(t).map(([id, x]) => [String(id), x.name]));
+}
+const SIDE = { spread: { a: 'home', b: 'away' }, moneyline: { a: 'home', b: 'away' }, total: { a: 'over', b: 'under' } };
+
+/* the gateway's NCAAB boards, read once per run (a read, never a purchase).
+   The window starts BOARD_LOOKBACK_HOURS back, so that a game's last board
+   before tip is still copied by the first hourly run after the tip (the
+   parser keeps only prices seen before commence; the board store keeps only
+   boards under 6 h old) */
+async function readBoard(db, ctx) {
+  if (!db || ctx.board) return;
+  const t = Date.parse(ctx.now);
+  ctx.board = await db.rpc('ncaam_es_ncaab_board', { p_from: new Date(t - BOARD_LOOKBACK_HOURS * 3600e3).toISOString(), p_to: new Date(t + BOARD_HOURS * 3600e3).toISOString() });
+}
+
+/* the quotes of the boards the gateway holds for the next BOARD_HOURS hours */
+function quotesPart(ctx) {
+  const parsed = MJ.parseBoard((ctx.board && ctx.board.boards) || []);
+  return { rows: parsed.quotes, rejected: parsed.rejected, checks: { board_read: !!ctx.board, board_available: ctx.board ? ctx.board.available !== false : null,
+    boards: ctx.board ? (ctx.board.boards || []).length : 0, events: new Set(parsed.quotes.map((q) => q.event_id)).size, books: [...new Set(parsed.quotes.map((q) => q.book))].sort() } };
+}
+
+/* the market comparison of this run's projections of season S: every
+   projected game gets one row per market (a game with no matched board is
+   PASS with its reason); a game at or past tip is not compared */
+function marketPart(S, ctx, o) {
+  o = o || {};
+  const P = ctx.projected && ctx.projected[S];
+  if (!P) throw Object.assign(new Error('the market part needs the project part of the same run (season ' + S + ')'), { refused: true });
+  const cfg = FE.loadConfig();
+  const nowMs = Date.parse(ctx.now);
+  const parsed = MJ.parseBoard((ctx.board && ctx.board.boards) || []);
+  const raw = P.raw.filter((r) => r.status === 'PROJECTED' && Date.parse(r.start_utc) > nowMs);
+  const events = [...new Map(parsed.quotes.map((q) => [q.event_id, { event_id: q.event_id, home_team: q.home_team, away_team: q.away_team, commence_time: q.commence_time }])).values()];
+  const { matches, unresolved_names } = MJ.matchEvents(raw.map((r) => ({ game_id: r.game_id, home_espn: r.home_espn, away_espn: r.away_espn, start_utc: r.start_utc })), events, espnNames(ctx), ctx.oddsAliases);
+  const quotes = MJ.quotesFor(parsed.quotes, matches);
+  const compared = PJ.compareAll(raw, { quotes }, ctx.now, cfg);
+  const version = JSON.parse(fs.readFileSync(path.join(C.PATHS.BASE, 'research', 'registration.json'), 'utf8')).version;
+  const rows = [];
+  for (const r of compared) {
+    const m = matches.get(String(r.game_id)) || { status: 'UNMATCHED' };
+    for (const c of r.markets) {
+      const b = c.best;
+      rows.push({ comparison_id: (o.runId || 'dry') + ':' + r.game_id + ':' + c.market, projection_id: P.runId + ':' + r.game_id, espn_game_id: String(r.game_id), season: S,
+        market: c.market, start_utc: r.start_utc, compared_at: ctx.now, odds_event_id: m.event_id || null, match_basis: m.basis || m.status,
+        side: b ? SIDE[c.market][b.side] : null, book: b ? b.book : null, line: b ? b.line : null, price_decimal: b ? b.decimal : null, p_model: b ? b.p_model : null, edge: b ? b.edge : null,
+        reference: c.reference || null, books_fresh: c.books_fresh || 0, variance_cap: r.variance_cap, angles: r.angles, conviction: c.conviction,
+        flags: [].concat(c.flags || [], m.status === 'MATCHED' ? [] : ['NO_MARKET_MATCH: ' + m.status]), model_version: version, config_sha256: cfg._sha256 });
+    }
+  }
+  const tally = (f) => rows.reduce((a, x) => { const k = f(x); a[k] = (a[k] || 0) + 1; return a; }, {});
+  const st = [...matches.values()].reduce((a, x) => { a[x.status] = (a[x.status] || 0) + 1; return a; }, {});
+  return { rows, checks: { games: raw.length, match: st, unresolved_odds_names: unresolved_names.slice(0, 30), quotes: parsed.quotes.length,
+    conviction: tally((x) => x.market + ':' + x.conviction), board_read: !!ctx.board } };
 }
 
 /* ── storage ───────────────────────────────────────────────────────────────── */
 const TABLE = { conferences: 'ncaam_es_conferences', venues: 'ncaam_es_venues', teams: 'ncaam_es_teams', games: 'ncaam_es_games', box_team: 'ncaam_es_box_team',
-  player_seasons: 'ncaam_es_player_seasons', portal: 'ncaam_es_portal', recruits: 'ncaam_es_recruits', lines: 'ncaam_es_lines', coaches: 'ncaam_es_coaches', availability: 'ncaam_es_availability' };
+  player_seasons: 'ncaam_es_player_seasons', portal: 'ncaam_es_portal', recruits: 'ncaam_es_recruits', lines: 'ncaam_es_lines', coaches: 'ncaam_es_coaches', availability: 'ncaam_es_availability',
+  quotes: 'ncaam_es_market_quotes', market: 'ncaam_es_market_comparisons' };
 
 async function store(db, run, table, rows) {
   let stored = 0;
@@ -243,7 +320,8 @@ function rosterBatches(rows) {
 }
 
 async function run(o) {
-  const ctx = { now: o.now || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), games: new Map(), offline: !!o.offline, ratingStates: o.ratingStates || null, dataset: o.dataset || null };
+  const ctx = { now: o.now || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), games: new Map(), offline: !!o.offline, ratingStates: o.ratingStates || null, dataset: o.dataset || null,
+    board: o.board || null, espnNames: o.espnNames || null, oddsAliases: o.oddsAliases || null, projected: {} };
   const api = o.api || CB.client({ key: o.key, fetch: o.fetch, maxCalls: o.maxCalls });
   const db = o.db || null;
   const sha0 = o.codeSha === undefined ? codeSha() : o.codeSha;
@@ -254,7 +332,7 @@ async function run(o) {
   const manual = MAN.loadAll(ctx.now);
   for (const S of o.seasons) {
     for (const part of parts) {
-      if (['conferences', 'venues'].includes(part) && S !== o.seasons[o.seasons.length - 1]) continue;   // once per run
+      if (ONCE_PER_RUN.includes(part) && S !== o.seasons[o.seasons.length - 1]) continue;   // once per run
       const res = { part, season: S, status: null };
       let runId = null;
       try {
@@ -276,6 +354,17 @@ async function run(o) {
           const f = projectPart(S, ctx, { runId: runId || 'dry', codeSha: sha0 });
           rows = f.rows; meta = { checks: f.checks };
           if (db && rows.length) stored = await store(db, runId, 'ncaam_es_projections', rows);
+          ctx.projected[S] = { raw: f.raw, runId: runId || 'dry' };
+        } else if (part === 'quotes') {
+          await readBoard(db, ctx);
+          const f = quotesPart(ctx);
+          rows = f.rows; rejected = f.rejected; meta = { checks: f.checks };
+          if (db && rows.length) stored = await store(db, runId, TABLE.quotes, rows);
+        } else if (part === 'market') {
+          await readBoard(db, ctx);
+          const f = marketPart(S, ctx, { runId: runId || 'dry' });
+          rows = f.rows; meta = { checks: f.checks };
+          if (db && rows.length) stored = await store(db, runId, TABLE.market, rows);
         } else if (part === 'moves') {
           const d = derivePart(S, ctx);
           rows = d.moves; meta = { checks: d.checks, departed: d.departed.length };
@@ -334,7 +423,7 @@ function parseArgs(a) {
   const val = (k) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
   const cur = C.currentSeason();
   const ps = val('--parts') || 'daily';
-  const parts = ps === 'daily' ? DAILY : ps === 'weekly' ? WEEKLY : ps === 'all' ? ALL : ps.split(',').map((s) => s.trim()).filter(Boolean);
+  const parts = ps === 'daily' ? DAILY : ps === 'weekly' ? WEEKLY : ps === 'hourly' ? HOURLY : ps === 'all' ? ALL : ps.split(',').map((s) => s.trim()).filter(Boolean);
   const bad = parts.filter((p) => !ORDER.includes(p));
   if (bad.length) throw new Error('unknown part(s): ' + bad.join(', ') + ' (known: ' + ORDER.join(' ') + ')');
   const sv = val('--season') || 'current';
@@ -346,7 +435,7 @@ function parseArgs(a) {
   return { parts, seasons, mode, maxCalls: mc == null ? undefined : Math.min(250, Math.max(0, parseInt(mc, 10))), dryRun: a.includes('--dry-run'), offline: a.includes('--offline'), manifestFile: val('--manifest') };
 }
 
-module.exports = { run, parseArgs, fetchPart, derivePart, featuresPart, projectPart, rosterBatches, crosswalk, DAILY, WEEKLY, ALL, ORDER };
+module.exports = { run, parseArgs, fetchPart, derivePart, featuresPart, projectPart, quotesPart, marketPart, rosterBatches, crosswalk, DAILY, WEEKLY, HOURLY, ALL, ORDER };
 
 if (require.main === module) {
   (async () => {

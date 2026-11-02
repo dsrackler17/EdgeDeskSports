@@ -5,7 +5,9 @@
    `conviction` and `angle_tags`; nothing is tuned here.
 
    A quote: { book, line (home spread / total, null for moneyline),
-              price_a, price_b (American: home & away, or over & under),
+              price_a, price_b (American: home & away, or over & under)
+                or dec_a, dec_b (decimal, as the odds gateway stores them;
+                used as given when present, so no price is rounded),
               captured_at (ISO), volume? (Kalshi contracts) }
 
      devig(a, b)                         the multiplicative two-way de-vig
@@ -35,6 +37,24 @@ function devig(a, b) {
   const s = pa + pb; if (!(s > 0)) return null;
   return { a: pa / s, b: pb / s, overround: s - 1 };
 }
+/* a quote's decimal price of side s ('a' | 'b'): its own decimal, else from American */
+function decOf(q, s) {
+  const d = Number(s === 'a' ? q.dec_a : q.dec_b);
+  if (Number.isFinite(d) && (s === 'a' ? q.dec_a : q.dec_b) != null) return d > 1 ? d : null;
+  return decimalFromAmerican(s === 'a' ? q.price_a : q.price_b);
+}
+function devigQuote(q) {
+  const da = decOf(q, 'a'), db = decOf(q, 'b');
+  if (da == null || db == null) return null;
+  const s = 1 / da + 1 / db;
+  return { a: 1 / da / s, b: 1 / db / s, overround: s - 1 };
+}
+function americanOf(q, s) {
+  const am = s === 'a' ? q.price_a : q.price_b;
+  if (am != null) return am;
+  const d = decOf(q, s); if (d == null) return null;
+  return d >= 2 ? (d - 1) * 100 : -100 / (d - 1);
+}
 const median = (xs) => { const s = xs.slice().sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
 
 /* the model's probability of each side at a quote's own line */
@@ -46,7 +66,7 @@ function modelProbs(market, proj, line) {
 
 function compare(market, proj, quotes, now, cfg) {
   const MK = cfg.market, staleMs = MK.stale_price_minutes * 60e3, t = Date.parse(now);
-  const all = (quotes || []).filter((q) => q && q.book && q.price_a != null && q.price_b != null && (market === 'moneyline' || Number.isFinite(q.line)));
+  const all = (quotes || []).filter((q) => q && q.book && decOf(q, 'a') != null && decOf(q, 'b') != null && (market === 'moneyline' || Number.isFinite(q.line)));
   const fresh = all.filter((q) => Number.isFinite(Date.parse(q.captured_at)) && t - Date.parse(q.captured_at) <= staleMs && Date.parse(q.captured_at) <= t);
   const flags = [];
   if (!fresh.length) return { market, sides: [], flags: [all.length ? 'STALE_PRICE' : 'NO_PRICE'] };
@@ -58,25 +78,25 @@ function compare(market, proj, quotes, now, cfg) {
   /* the reference: Pinnacle, else the median fair at the modal line */
   const pin = fresh.find((q) => /pinnacle/i.test(q.book));
   let reference;
-  if (pin) { const d = devig(pin.price_a, pin.price_b); reference = d && { book: pin.book, line: pin.line, captured_at: pin.captured_at, fair_a: d.a, fair_b: d.b, basis: 'pinnacle' }; }
+  if (pin) { const d = devigQuote(pin); reference = d && { book: pin.book, line: pin.line, captured_at: pin.captured_at, fair_a: d.a, fair_b: d.b, basis: 'pinnacle' }; }
   if (!reference) {
     const lines = fresh.map((q) => (q.line == null ? 'ml' : String(q.line)));
     const modal = lines.sort((x, y) => lines.filter((z) => z === y).length - lines.filter((z) => z === x).length)[0];
     const at = fresh.filter((q) => (q.line == null ? 'ml' : String(q.line)) === modal);
-    const ds = at.map((q) => devig(q.price_a, q.price_b)).filter(Boolean);
+    const ds = at.map(devigQuote).filter(Boolean);
     reference = ds.length ? { book: 'consensus of ' + at.length + ' book' + (at.length === 1 ? '' : 's'), line: at[0].line, captured_at: at.map((q) => q.captured_at).sort().pop(), fair_a: median(ds.map((d) => d.a)), fair_b: median(ds.map((d) => d.b)), basis: 'consensus' } : null;
   }
   const sides = ['a', 'b'].map((s) => {
     let best = null;
     for (const q of fresh) {
-      const dec = decimalFromAmerican(s === 'a' ? q.price_a : q.price_b); if (dec == null) continue;
+      const dec = decOf(q, s); if (dec == null) continue;
       const p = modelProbs(market, proj, q.line)[s];
       const edge = p * dec - 1;
-      if (!best || edge > best.edge) best = { side: s, book: q.book, line: q.line, price_american: s === 'a' ? q.price_a : q.price_b, decimal: dec, p_model: p, edge, captured_at: q.captured_at };
+      if (!best || edge > best.edge) best = { side: s, book: q.book, line: q.line, price_american: americanOf(q, s), decimal: dec, p_model: p, edge, captured_at: q.captured_at };
     }
     return best;
   }).filter(Boolean);
-  return { market, sides, reference, thin, flags };
+  return { market, sides, reference, thin, flags, books_fresh: books.size };
 }
 
 /** the registered angle definitions (config angle_tags) */
@@ -116,4 +136,4 @@ function conviction(edge, x, cfg) {
   return 'LOW';
 }
 
-module.exports = { devig, impliedFromAmerican, decimalFromAmerican, compare, modelProbs, angleTags, varianceCap, conviction };
+module.exports = { devig, devigQuote, decOf, impliedFromAmerican, decimalFromAmerican, compare, modelProbs, angleTags, varianceCap, conviction };

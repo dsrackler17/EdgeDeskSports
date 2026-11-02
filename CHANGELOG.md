@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-01 — NCAAM-EARLY market join: NCAAB prices from the gateway's boards, game matching, comparisons and Conviction before tip
+
+- **What.** New `basketball/ncaam_early/marketjoin.js`, two sync parts (`quotes` hourly and daily; `market` daily, after `project`) and two tables, `ncaam_es_market_quotes` and `ncaam_es_market_comparisons`.
+  - **No purchase.** Prices come only from the NCAAB boards the odds gateway has already bought for capture. The new service-role function `ncaam_es_ncaab_board` reads `public.odds_api_snapshots`. Nothing writes to the gateway, buys through it, or calls The Odds API. The gateway and capture are unchanged.
+  - **History.** The gateway keeps only its latest board. `ncaam_es_market_quotes` keeps a row per event, book and market whenever the line or price changes, in decimal as bought, stamped with when the gateway received it. The database refuses a price seen at or after commence. The table is append-only.
+  - **Matching.** Both team names (normalised) plus the tip within 3 hours, with exactly one candidate either way. A reversed home / away is turned to the game's orientation. Anything else is UNMATCHED or AMBIGUOUS, never guessed, and the unresolved odds names are reported.
+  - **Comparison.** Each projected game's spread, total and moneyline at its best fresh price, Edge, reference, fresh-book count, angle tags and Conviction (`market.js`, unchanged rules). Rows go to the append-only `ncaam_es_market_comparisons`, which refuses a row at or after tip. An unmatched game is stored as PASS with its reason. No stake is stored.
+  - **`market.js`.** It now takes decimal prices as given (`dec_a`, `dec_b`), so no captured price is rounded to American. The rules and thresholds are unchanged. A test checks that the same prices in either form give the same Edge, book, line and reference.
+- **SQL.** `supabase/ncaam_early.sql` and its mirror: 23 tables and 10 append-only guards, a generic before-tip trigger, and the board reader (service role only; it answers `available: false` when the gateway is not installed).
+- **Workflow.** `ncaam-early-sync.yml` adds an hourly run at :23 of part `quotes` (no CBBD call, no raw cache). `ncaam-early-tests.yml` runs the new suite.
+- **Tests.**
+  - New `tests/market.test.js`: 37 passed. It covers board parsing (decimal and American; live, mismatched and malformed prices rejected), matching (exact, swapped, outside the window, ambiguous, shared names, aliases), orientation, the decimal path, and the parts end to end on synthetic boards (stale board gives PASS; market without project is refused).
+  - `sql.test.js`: 63 passed (quotes stored on change, refused at or after commence, comparisons before tip, append-only, the board reader's filters and grants).
+  - `model.test.js` 49, `features.test.js` 50, `data.test.js` 77 and `registration.test.js` 27 passed.
+- **Not verified.** A run against a real NCAAB board: none exists until the owner turns NCAAB on in the gateway and capture.
 ## 2026-11-01 — Smart Money Tonight: the recorded best ask beside each card (methodology surface, H-RADAR-02)
 
 - **What.** `radar_tonight()` (`supabase/radar.sql` and its byte-identical migration mirror) adds `ask_price`, `ask_size`, `ask_at` and `fee_per_share` to each card. They come from the new read-only `radar_card_ask()`: the best ask, the size at it, its `quoted_at` and the taker fee at it, from the card's `radar_cards` row (the values `radar_publish_cards()` recorded at publication). They are null when no row is on file, never a midpoint. `radar_tonight_cards()`, `radar_rules()`, `radar_publish_cards()`, grading and `research/radar/**` are unchanged.
