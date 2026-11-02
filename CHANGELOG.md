@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-02 — AI desk: an unreadable NFL card is a retrieval failure, not "no such game"
+
+- **Bug.** When the NFL board could not be read, the desk told the reader that a named NFL pair such as "Philadelphia Eagles at Washington Commanders" was on no card ("no scheduled game with BOTH of those sides is on any card EdgeDesk publishes (68 games were checked on the FBS slate)"). In `resolveFootballMatchup` the college card's "this pair is not here" result was chosen before the NFL card's `NO_CARD`. A pair of bare nicknames ("Chiefs vs Bills") was worse: no readable card knew either name, so the desk handed it to the server as another sport's question.
+- **Fix** (`supabase/functions/edgedesk_ai/_intelligence.js`, inlined into `app.html` and `index.ts` by `tools/presentation/inline.js`). Before a pair is reported absent, any card that could not be read and whose league's alias table knows a name in the question answers instead, with its `NO_CARD` note ("could not be read … a retrieval failure, not a finding that the matchup is absent"). A pair that league could not carry ("Rays vs. Guardians") and every answer from cards that were read are unchanged.
+- **Tests.** `tools/intelligence/matchup.test.js` gets a section for it: against the old resolver 205 passed, 6 failed; with the fix 211 passed, 0 failed.
+
 ## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
 
 - **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.
