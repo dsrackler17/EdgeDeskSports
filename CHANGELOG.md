@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — The matchup view compares through the Research Queue's path
+
+- **What.** The matchup view's EdgeDesk model section now has a **Comparison** line. It comes from the same `EDResearchCompare.fromSlate` call the Research Queue makes (`lib/edgedesk_games_ui.js` `compareHTML`). It shows one market on both sides with both values current, or names the reason there is no comparison (model refresh needed, price refresh needed, comparable model unavailable, and so on), with the calc version. Before this, the matchup view showed the model's fair lines and the book's lines side by side with no comparability or freshness status, so for every sport but NHL it could disagree with the queue. For NHL it now prints the same gap as the queue and as its own `EDNHLCompare` sentence. The line follows the `EDResearchCompare` flag (`?rc=0` hides it) and is never drawn on the public host.
+- **Fix.** `EDGamesUI.snapshot()` now returns the slate's `sources`. Before, the Overview's per-artifact model build-time fallback (`snap.sources.fallback`) was always empty in the browser; only the tests passed it. No effect today: the slate now stamps `generated_at` on 513 of 515 model blocks, and the remaining 2 are UFC, which has no freshness policy.
+- **Tests.** `tools/slate/games_ui.e2e.js`: 118 → 119 checks. The new check is that the NHL matchup's Comparison line reads "Model vs no-vig price +5.2 pp (Moneyline, Blue Jackets 47.2% vs 42.0%)", matching the matchup's NHL sentence. The fixture's NHL model is stamped with a build time two hours before the pinned clock.
+
 ## 2026-11-02 — Research OS journey: an NFL journey game gets the NFL schedule it needs (red since the Sunday-evening slate)
 
 - **What failed.** Research OS tests / `browser` (`tools/research_os/journey.e2e.js`) went red at 23:36 UTC on 2026-11-01, on `main` and on every pull request that starts it: `FAIL | desktop/phone: asking about the game sends the desk its ids, not only its names` (124 passed, 2 failed). The journey takes the first upcoming NFL or FBS game in the committed slate. The slate pushed at 22:21 UTC made that Philadelphia Eagles at Washington Commanders; from Sunday evening to Monday night the first upcoming game is always NFL.
