@@ -7,8 +7,10 @@ Tonight cards (`lib/edgedesk_radar_ui.js`) both compare through it. For NHL it d
 `EDNHLCompare`, which the matchup page already uses, so all three surfaces show the same gap.
 
 It computes no probability, selects no wallet, and changes nothing in Radar's selection,
-publication or grading (H-RADAR-01 and H-RADAR-02 are untouched: `supabase/radar*.sql`,
-`research/radar/**` and `lib/edgedesk_radar.js` are unchanged).
+publication or grading. H-RADAR-01 and H-RADAR-02 are untouched: `supabase/radar_record.sql`,
+`supabase/radar_registry.sql`, `research/radar/**` and `lib/edgedesk_radar.js` are unchanged. The one
+change to `supabase/radar.sql` is the read-only ask beside each card (`radar_card_ask()`, below), and
+the test allows nothing else: with that block undone, the file is `main`'s byte for byte.
 
 ## The data path
 
@@ -113,11 +115,14 @@ publication or grading (H-RADAR-01 and H-RADAR-02 are untouched: `supabase/radar
 
 ## Known limitations
 
-* `radar_tonight()` returns Polymarket's displayed price (an outcome price or midpoint), not the
-  order book's ask, so cards compare against an indicative price and show no EV. The card
-  renderer already accepts `ask_price`, `ask_size`, `ask_at` and `fee_per_share`. Adding them to
-  the door is an additive SQL change to the experiment's surface, so it belongs in its own
-  reviewed pull request.
+* `radar_tonight()` now carries `ask_price`, `ask_size`, `ask_at` and `fee_per_share` on each card.
+  They are the best ask the Radar record took when that card was published (`radar_cards`), and null
+  when none is on file. `polymarket_sync` reads the order book every run but stores no quote except a
+  card's one publication, so that ask ages. While it is inside its 15-minute limit, the card compares
+  it: "Best ask, N shares", the gap in cents before fees, and an EV only when the fee is recorded.
+  Past the limit, the card compares the displayed price, labelled as one and with no EV, and lists
+  the publication ask in its details as not compared. A current ask on every card would need the
+  sync to store each run's quotes, which is a separate change.
 * Polymarket settlement per sport (`RC.SETTLE.venue.polymarket`) is read from Polymarket's
   standard sports rules: overtime included, and an NFL tie settles at 50/50. Check it against
   each market's rules text before relying on it.
