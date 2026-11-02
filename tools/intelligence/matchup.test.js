@@ -209,6 +209,39 @@ section('one card, two leagues');
 }
 
 /* =====================================================================
+   1b. A CARD THAT COULD NOT BE READ PROVES NO ABSENCE.
+   On 2026-11-01 the NFL board did not load in the Research OS journey, and
+   "Philadelphia Eagles at Washington Commanders" was answered "no scheduled
+   game with BOTH of those sides is on any card EdgeDesk publishes (68 games
+   were checked on the FBS slate)". The college card's "this pair is not here"
+   was preferred to the NFL card's NO_CARD, so a retrieval failure reached the
+   reader as a finding about football.
+   ===================================================================== */
+section('an unreadable card is a retrieval failure, never an absence');
+{
+  const nflDown = { sport: E.NFL_SPORT, games: [], card_error: 'the NFL board has not loaded', source: 'the NFL board' };
+  const down = (q) => E.resolveFootballMatchup({ question: q, leagues: [LEAGUES[0], nflDown], carried: null });
+  for (const q of ['Philadelphia Eagles at Washington Commanders', 'Eagles vs Commanders', 'Chiefs vs Bills']) {
+    const r = down(q);
+    chk('"' + q + '" with the NFL card unreadable is NO_CARD on the NFL card, not NOT_ON_CARD',
+      r.state === 'NO_CARD' && r.sport === E.NFL_SPORT, [r.state, r.sport, String(r.note || '').slice(0, 160)]);
+    lacks('and it never says the game is on no card', r.note, 'is on any card');
+  }
+  /* A pair the unreadable card could not carry is untouched: a baseball pair is
+     still handed to the server, and a college pair is still answered by the
+     college card. */
+  const mlb = down('Rays vs. Guardians');
+  chk('a pair no football card knows is still NOT_ON_CARD with no known team (handed to another sport)',
+    mlb.state === 'NOT_ON_CARD' && !mlb.sport && (mlb.known_teams || 0) === 0, [mlb.state, mlb.known_teams]);
+  const g0 = CFB_GAMES[0];
+  const cfbPair = down(g0.away_team + ' vs ' + g0.home_team);
+  chk('a college pair on the readable college card still resolves', cfbPair.state === 'RESOLVED' && cfbPair.sport === E.CFB_SPORT, [cfbPair.state, cfbPair.sport]);
+  /* With both cards read, the absence finding stands as before. */
+  const kcBuf = resolve('Chiefs vs Bills');
+  chk('with every card read, an absent NFL pair is still NOT_ON_CARD', kcBuf.state === 'NOT_ON_CARD', kcBuf.state);
+}
+
+/* =====================================================================
    2. FOLLOW-UPS KEEP THE MATCHUP.
    ===================================================================== */
 section('follow-ups keep the matchup');

@@ -16791,6 +16791,21 @@ const EDPRES: any = (globalThis as any).EDPRES;
        playing each other) is not a non-football pair because the college card
        answered first. */
     var pairs = runs.filter(function (x) { return x.r.state === 'NOT_ON_CARD'; });
+    /* A CARD THAT COULD NOT BE READ PROVES NO ABSENCE. A pair's note says no
+       game with both sides is "on any card EdgeDesk publishes", which is only
+       true when every card that could carry those sides was read. When a card
+       is down and the question names a team that card's league carries (its
+       static alias index, not the games it failed to load), its NO_CARD is the
+       answer: a retrieval failure, never "no such game". A pair that league
+       could not carry ("Rays vs Guardians") is unaffected. */
+    if (pairs.length) {
+      var down = runs.filter(function (x) {
+        if (x.r.state !== 'NO_CARD') return false;
+        try { return teamPhrases(String(o.question == null ? '' : o.question), footballIndexFor(x.league.sport || CFB_SPORT, [])).length > 0; }
+        catch (_) { return false; }
+      });
+      if (down.length) return down[0].r;
+    }
     if (pairs.length) {
       var kt = Math.max.apply(null, pairs.map(function (x) { return x.r.known_teams || 0; }));
       return kt !== (pairs[0].r.known_teams || 0) ? Object.assign({}, pairs[0].r, { known_teams: kt }) : pairs[0].r;
