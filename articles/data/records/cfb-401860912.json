@@ -21,8 +21,8 @@
   "game_time": "2026-11-08T03:30:00.000Z",
   "game_when_label": "2026-11-08 03:30 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -192,8 +192,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 21,
-          "dropbacks": 580,
+          "starts": 22,
+          "dropbacks": 619,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -209,32 +209,19 @@
             {
               "player_id": "5148803",
               "player_name": "Brad Jackson",
-              "dropbacks": 61,
-              "share": 0.984
+              "dropbacks": 80,
+              "share": 0.988
             },
             {
               "player_id": "5081197",
               "player_name": "Grady Brosterhous",
               "dropbacks": 1,
-              "share": 0.016
+              "share": 0.012
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 7,
-            "game_id": "401860923",
-            "opponent": "Colorado State",
-            "dropbacks": 19,
-            "starter": {
-              "player_id": "5148803",
-              "player_name": "Brad Jackson",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 8,
             "game_id": "401860906",
@@ -247,20 +234,33 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401860908",
+            "opponent": "Boise State",
+            "dropbacks": 38,
+            "starter": {
+              "player_id": "5148803",
+              "player_name": "Brad Jackson",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-10-24T23:30:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "published_at": "2026-11-01T02:00:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Oregon State",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
         "player": "Braden Atkinson",
         "player_id": "5212654",
-        "label": "unresolved: Braden Atkinson 85% of recent dropbacks and Maalik Murphy 9% of recent dropbacks.",
+        "label": "Braden Atkinson — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -270,8 +270,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 18,
-          "dropbacks": 672,
+          "starts": 19,
+          "dropbacks": 736,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -287,44 +287,19 @@
             {
               "player_id": "5212654",
               "player_name": "Braden Atkinson",
-              "dropbacks": 78,
-              "share": 0.848
-            },
-            {
-              "player_id": "4685497",
-              "player_name": "Maalik Murphy",
-              "dropbacks": 8,
-              "share": 0.087
+              "dropbacks": 100,
+              "share": 0.962
             },
             {
               "player_id": "5263246",
               "player_name": "Owen Eshelman",
               "dropbacks": 4,
-              "share": 0.043
-            },
-            {
-              "player_id": "5296163",
-              "player_name": "Brady Jones",
-              "dropbacks": 1,
-              "share": 0.011
+              "share": 0.038
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401860902",
-            "opponent": "San Diego State",
-            "dropbacks": 49,
-            "starter": {
-              "player_id": "5212654",
-              "player_name": "Braden Atkinson",
-              "share": 0.796
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401860903",
@@ -337,14 +312,27 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401860924",
+            "opponent": "Fresno State",
+            "dropbacks": 61,
+            "starter": {
+              "player_id": "5212654",
+              "player_name": "Braden Atkinson",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/oregonstate.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-11-01T03:00:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1466,12 +1454,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home quarterback is contested — the evidence names more than one starter",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1589,13 +1571,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
-        "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the quarterback job is contested for Oregon State",
-        "score": 79,
-        "grade": "ADEQUATE",
-        "grade_label": "ADEQUATE",
+        "pct": 89,
+        "tier": "STRONG",
+        "text": "89 · STRONG",
+        "sub": "main deduction: no source has established whether Oregon State or Texas State’s starting QB can play",
+        "score": 89,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1607,7 +1589,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.9,
+            "score": 12.8,
             "max": 20
           },
           {
@@ -1625,7 +1607,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14,
+            "score": 15,
             "max": 15
           },
           {
@@ -1635,15 +1617,20 @@
             "max": 10
           }
         ],
-        "main_deduction": "the quarterback job is contested for Oregon State",
+        "main_deduction": "no source has established whether Oregon State or Texas State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
         "capped_by": [
-          "QB_CONTESTED"
+          "QB_STATUS_UNCONFIRMED"
         ],
         "next_actions": [
           {
-            "action": "Confirm Oregon State’s starting QB (Braden Atkinson)",
-            "potential_gain": 10,
-            "text": "up to +10"
+            "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2 once re-read availability inside the filing window (Oregon State) and Re-read availability inside the filing window (Texas State) is done"
+          },
+          {
+            "action": "Fetch the venue forecast",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Oregon State) and Re-read availability inside the filing window (Texas State) is done"
           }
         ],
         "stability": {
@@ -1671,9 +1658,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "SIGNIFICANT_CHANGE",
-        "label": "SIGNIFICANT CHANGE",
-        "text": "EdgeDesk has moved 5.2 pts toward Texas State since the latest published number."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "LOW",
@@ -1688,19 +1675,19 @@
           "text": "Oregon State -8.7"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": 8.66,
-          "text": "Oregon State -8.7"
+          "home_margin": 3.5,
+          "text": "Oregon State -3.5"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 5.16,
+        "points": 0,
         "toward_team": "Texas State",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "5.2 pts toward Texas State since the latest published number"
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
@@ -1877,11 +1864,11 @@
       "Oregon State wins 59% of the time in EdgeDesk’s simulation, Texas State 41%.",
       "Eight games in ten land between -17.5 and +24.5 for Oregon State. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Texas State quarterback: Brad Jackson — started the last game; no announcement for this one."
+      "Texas State quarterback: Brad Jackson — started the last game; no announcement for this one.",
+      "Oregon State quarterback: Braden Atkinson — started the last game; no announcement for this one."
     ],
     "missing": [
       "No availability report reached Brad Jackson — unknown is carried as unknown, never as healthy.",
-      "Oregon State quarterback unresolved: unresolved: Braden Atkinson 85% of recent dropbacks and Maalik Murphy 9% of recent dropbacks.",
       "No availability report reached Braden Atkinson — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1890,13 +1877,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "zned8bkjfml5",
+    "packet_hash": "13u1bgqzk0hm0",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Texas State contain Oregon State’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas State, and its own breakdown accounts for about 0.0 of the 4.0 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas State, and its own breakdown accounts for about 0.0 of the 3.0 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 4,
+      "points": 3,
       "toward": "Texas State",
       "other": "Oregon State"
     },
@@ -1946,7 +1933,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1962,6 +1949,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T17:00:00.000Z",
   "game_when_label": "2026-11-07 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 20,
-          "dropbacks": 706,
+          "starts": 21,
+          "dropbacks": 748,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -203,32 +203,19 @@
             {
               "player_id": "5219834",
               "player_name": "Drew Mestemaker",
-              "dropbacks": 70,
-              "share": 0.972
+              "dropbacks": 77,
+              "share": 0.975
             },
             {
               "player_id": "5291690",
               "player_name": "Broderick Vehrs",
               "dropbacks": 2,
-              "share": 0.028
+              "share": 0.025
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 7,
-            "game_id": "401856831",
-            "opponent": "Houston",
-            "dropbacks": 34,
-            "starter": {
-              "player_id": "5219834",
-              "player_name": "Drew Mestemaker",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 8,
             "game_id": "401856836",
@@ -241,12 +228,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401856847",
+            "opponent": "Iowa State",
+            "dropbacks": 41,
+            "starter": {
+              "player_id": "5219834",
+              "player_name": "Drew Mestemaker",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-10-24T23:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "published_at": "2026-10-31T23:00:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Kansas State",
@@ -330,9 +330,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T18:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1678,14 +1678,14 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "MOVING",
-        "label": "MOVING",
-        "text": "EdgeDesk has moved 1.7 pts toward Kansas State since the latest published number."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
-        "tier": "MEDIUM",
-        "label": "Medium",
-        "text": "the stored numbers span 1.7 pts across 3 readings"
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.3 pts across 3 readings"
       },
       "published": [
         {
@@ -1695,25 +1695,25 @@
           "text": "Oklahoma State -5.5"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": -6.9,
-          "text": "Oklahoma State -6.9"
+          "home_margin": -5.2,
+          "text": "Oklahoma State -5.2"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 1.7,
+        "points": 0,
         "toward_team": "Kansas State",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "1.7 pts toward Kansas State since the latest published number"
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 0.3 points toward Kansas State since the first published number.",
         "attribution_text": "Projection changed 0.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": null,
+        "market": "Market moved 0.5 pts toward Kansas State (espn · Draft Kings)",
         "model_version": null
       },
       "parity": {
@@ -1897,27 +1897,27 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1pbm25v1dir9t",
+    "packet_hash": "8tte9l1pdv6hn",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Oklahoma State contain Kansas State’s explosive runs?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.7 points.",
     "gap": {
-      "points": 0.8,
-      "toward": "Kansas State",
-      "other": "Oklahoma State"
+      "points": 1.7,
+      "toward": "Oklahoma State",
+      "other": "Kansas State"
     },
     "supporting": [
-      "When Kansas State has the ball (pass protection against the pass rush): Kansas State’s offense has allowed a sack on 3.0% of its dropbacks, and Oklahoma State’s defense sacks the quarterback on 5.7% of opponent dropbacks (FBS average 5.7%).",
-      "When Oklahoma State has the ball (the red zone): Oklahoma State’s offense succeeds on 35.7% of its red-zone plays, and Kansas State’s defense allows success on 33.1% of opponent red-zone plays (FBS average 43.5%).",
-      "EdgeDesk’s position-group ratings put Kansas State’s secondary No. 29 nationally and Oklahoma State’s No. 123.",
-      "EdgeDesk’s position-group ratings put Kansas State’s pass defense No. 48 nationally and Oklahoma State’s No. 99."
-    ],
-    "contradicting": [
       "When Oklahoma State has the ball (pass protection against the pass rush): Oklahoma State’s offense has allowed a sack on 2.7% of its dropbacks, and Kansas State’s defense sacks the quarterback on 8.5% of opponent dropbacks (FBS average 5.7%).",
       "When Oklahoma State has the ball (big plays through the air): Oklahoma State’s offense turns 16.9% of its pass plays into explosive gains, and Kansas State’s defense gives up explosive gains on 11.1% of opponent pass plays (FBS average 10.2%).",
       "When Kansas State has the ball (big plays on the ground): Kansas State’s offense turns 8.7% of its runs into explosive gains, and Oklahoma State’s defense gives up explosive gains on 2.7% of opponent runs (FBS average 6.5%).",
       "When Oklahoma State has the ball (the passing game against the pass defense): Oklahoma State’s offense averages 9.9 yards per pass attempt, and Kansas State’s defense allows 7.0 yards per pass attempt (FBS average 7.4)."
+    ],
+    "contradicting": [
+      "When Kansas State has the ball (pass protection against the pass rush): Kansas State’s offense has allowed a sack on 3.0% of its dropbacks, and Oklahoma State’s defense sacks the quarterback on 5.7% of opponent dropbacks (FBS average 5.7%).",
+      "When Oklahoma State has the ball (the red zone): Oklahoma State’s offense succeeds on 35.7% of its red-zone plays, and Kansas State’s defense allows success on 33.1% of opponent red-zone plays (FBS average 43.5%).",
+      "EdgeDesk’s position-group ratings put Kansas State’s secondary No. 29 nationally and Oklahoma State’s No. 123.",
+      "EdgeDesk’s position-group ratings put Kansas State’s pass defense No. 48 nationally and Oklahoma State’s No. 99."
     ],
     "quarterbacks": [
       "Avery Johnson has completed 119 of 188 passes (63.3%) for 1,318 yards, 7.0 yards per attempt, 10 touchdowns and 3 interceptions in six games for Kansas State, and has been sacked on 3 of 191 dropbacks.",
@@ -1927,15 +1927,15 @@
     "availability": [],
     "script": {
       "model": [
-        "Kansas State’s offense has to keep winning on long runs: it turns 8.7% of its runs into explosive gains, and Oklahoma State’s defense gives up explosive gains on 2.7% of opponent runs.",
-        "Kansas State’s defense has to slow Oklahoma State on big pass plays — Oklahoma State’s offense turns 16.9% of its pass plays into explosive gains.",
-        "Kansas State’s defense has to slow Oklahoma State in the pass-rush matchup — Oklahoma State’s offense has allowed a sack on 2.7% of its dropbacks.",
-        "Kansas State’s defense has to come out ahead in the red zone: it allows success on 33.1% of opponent red-zone plays, against an offense that succeeds on 35.7% of its red-zone plays."
+        "Oklahoma State’s defense has to come out ahead on long runs: it gives up explosive gains on 2.7% of opponent runs, against an offense that turns 8.7% of its runs into explosive gains.",
+        "Oklahoma State’s offense has to hold its own in the red zone against a defense that allows success on 33.1% of opponent red-zone plays.",
+        "Oklahoma State’s defense has to slow Kansas State in the pass-rush matchup — Kansas State’s offense has allowed a sack on 3.0% of its dropbacks.",
+        "Oklahoma State’s offense has to keep winning on big pass plays: it turns 16.9% of its pass plays into explosive gains, and Kansas State’s defense gives up explosive gains on 11.1% of opponent pass plays."
       ],
       "market": [
-        "Oklahoma State’s offense has to keep winning on big pass plays: it turns 16.9% of its pass plays into explosive gains, and Kansas State’s defense gives up explosive gains on 11.1% of opponent pass plays.",
-        "Oklahoma State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.7% of its dropbacks, and Kansas State’s defense sacks the quarterback on 8.5% of opponent dropbacks.",
-        "Oklahoma State’s defense has to come out ahead on long runs: it gives up explosive gains on 2.7% of opponent runs, against an offense that turns 8.7% of its runs into explosive gains."
+        "Kansas State’s defense has to come out ahead in the red zone: it allows success on 33.1% of opponent red-zone plays, against an offense that succeeds on 35.7% of its red-zone plays.",
+        "Kansas State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.0% of its dropbacks, and Oklahoma State’s defense sacks the quarterback on 5.7% of opponent dropbacks.",
+        "Kansas State’s offense has to keep winning on long runs: it turns 8.7% of its runs into explosive gains, and Oklahoma State’s defense gives up explosive gains on 2.7% of opponent runs."
       ]
     },
     "unknown": [
@@ -1962,10 +1962,10 @@
     ],
     "sources": [
       {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1988,6 +1988,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }
