@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-02 — NCAAM-EARLY Phase 5 backtest harness: the registered training selection, point in time, the holdout gated
+
+- **What.** New `basketball/ncaam_early/backtest.js`, run by hand through the new workflow `ncaam-early-backtest.yml`. It needs the CBBD backfill in the raw cache, makes no CBBD call and uses no secret.
+  - **Windows.** 1 November to 15 December (US Eastern dates) of training END years 2020 and 2022-2025. 2021 is excluded, as registered. Reading 2026 or 2027 is refused.
+  - **Point in time.** Every window game is projected by the live record's own code (`project.js`), from the finals known 30 minutes before tip.
+  - **Score.** Leave-one-season-out mean margin CRPS. The base sd is fitted by maximum likelihood without the scored season.
+  - **Selection.** The registered coordinate descent over the four selectable values, in file order: two sweeps, a change kept only at an improvement of 0.01 or more. Every configuration scored is recorded.
+  - **Output.** A `model_v1` candidate (chosen values, fitted base sds, its selection record) and an aggregate-only report.
+  - **Holdout.** The retrospective holdout is refused until `config/model_v1.json` is frozen and its sha256 registered as version 0.2.0. It is refused again once scored.
+- **Refactor, no change in behaviour.** `ingest.js` shares the season's inputs (`seasonInputs`) between the `project` part and the backtest. `featuresPart` takes an optional config. The features and market suites pass unchanged (50 and 37).
+- **Tests.** New `tests/backtest.test.js`: 35 passed, on synthetic seasons with a known truth. It covers the windows (Eastern dates and DST), the registered season list, CRPS values, the sd fit recovering 11, the selectables and their order, point in time (a later result moves no earlier projection), the selection moving toward the informative prior and rejecting sub-0.01 changes, the candidate keeping every unselected rule, the aggregate-only report, and the holdout gate.
+- **Not run.** The selection on real data. No CBBD data exists yet: `CBBD_API_KEY`, then the backfill (seasons 2019-2025). The registration is unchanged: 0.1.0, EXPERIMENTAL, no result.
+
 ## 2026-11-01 — NCAAM-EARLY market join: NCAAB prices from the gateway's boards, game matching, comparisons and Conviction before tip
 
 - **What.** New `basketball/ncaam_early/marketjoin.js`, two sync parts (`quotes` hourly and daily; `market` daily, after `project`) and two tables, `ncaam_es_market_quotes` and `ncaam_es_market_comparisons`.

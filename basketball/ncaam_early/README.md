@@ -40,6 +40,7 @@ that.
 | **T2 features** (`features.js`, `ratings.js`, part `features`, table `ncaam_es_team_features`) | built and tested (synthetic players; the engine on the committed data); **not run on CBBD data** (no key yet) |
 | **T3 model** (`model.js`), **market comparison and Conviction** (`market.js`), **projections** (`project.js`, part `project`, table `ncaam_es_projections`) | built and tested on synthetic seasons |
 | **Market join** (`marketjoin.js`, parts `quotes` and `market`, tables `ncaam_es_market_quotes` and `ncaam_es_market_comparisons`) | built and tested on synthetic boards; **no NCAAB board exists yet** (the owner turns NCAAB on in the odds gateway and in capture's `CAPTURE_SPORTS`) |
+| **Backtest harness** (`backtest.js`, workflow *NCAAM early-season backtest*) | built and tested on synthetic seasons; **not run on real data**: it needs the CBBD backfill of 2019-2025 in the raw cache (`CBBD_API_KEY`, then the backfill) |
 | Card and image, grading, accountability | later pull requests |
 
 ## The registration (v0.1.0, before any result)
@@ -191,6 +192,41 @@ The conservative reading, LOW, is taken, and it is stated in the code.
 **Angle tags** use the registered thresholds: `continuity_gap`,
 `transfer_translation`, `coach_change`, `departed_production`,
 `pace_coach_history`, `size_mismatch`, `price_only`.
+
+## The backtest (`backtest.js`, Phase 5)
+
+The registered selection (`research/registration.json` `selection_rule`), on
+the **training windows only**:
+
+- **Windows.** 1 November to 15 December inclusive, US Eastern dates, of END
+  years 2020, 2022, 2023, 2024 and 2025. 2021 is excluded, as registered. The
+  harness refuses to read 2026 or 2027.
+- **Point in time.** Every window game is projected by the same code as the
+  live record (`project.js`), from the finals known 30 minutes before its
+  tip, with its preseason prior built from the season before.
+- **Score.** Margin CRPS of N(margin, sd), with sd = √(base² + rating
+  variance). The base sd is fitted by maximum likelihood on the *other*
+  training seasons, so no season is scored with a constant fitted on itself.
+  The score is the mean of the five held-out season means.
+- **Selection.** Coordinate descent over the four `selectable` values in
+  `config/model_v0.json`, in the order listed there: shrink minutes, D-I
+  translation weight, roster weight and coach shrink. It runs two sweeps. A
+  candidate replaces the current value only if it lowers the score by at
+  least 0.01. Every configuration scored is recorded in order, for the
+  registration's `forking_paths.candidates_tried`. Conviction thresholds are
+  not selected.
+- **Fit.** The base margin and total sd, by maximum likelihood on all five
+  windows with the chosen values.
+- **Output.** A `model_v1` **candidate** and a report of aggregate numbers
+  only (no data row), uploaded as a workflow artifact. **Freezing** is a
+  reviewed pull request: copy the candidate to `config/model_v1.json`,
+  record the configurations tried, and register its sha256 as version
+  0.2.0. Only then is the retrospective 2025-26 holdout scored, once. The
+  code refuses the holdout before that.
+
+To run it, after the backfill: Actions → *NCAAM early-season backtest
+(training selection)*. It checks that every training season is in the raw
+cache, makes no CBBD call and uses no secret.
 
 ## The market join (`marketjoin.js`, parts `quotes` and `market`)
 

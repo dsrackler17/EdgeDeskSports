@@ -1,0 +1,66 @@
+# NCAAM-EARLY — the Phase 5 selection on the TRAINING windows only
+# (basketball/ncaam_early/backtest.js; research/registration.json
+# selection_rule). By hand only.
+#
+#   1. the harness suite must pass first;
+#   2. the raw CBBD cache the backfill filled is restored (never committed:
+#      CBBD's terms forbid publishing its data in bulk and this repository is
+#      public). No CBBD call is made, no secret is used, nothing is stored;
+#   3. the registered leave-one-season-out coordinate descent runs on END
+#      years 2020, 2022-2025 (2021 excluded). No 2025-26 or 2026-27 game is
+#      read; the holdout is refused in code until config/model_v1.json is
+#      frozen and registered as version 0.2.0;
+#   4. the model_v1 CANDIDATE and the report (aggregate numbers only, no data
+#      row) are uploaded as an artifact. Freezing the candidate is a reviewed
+#      pull request, never this workflow.
+name: NCAAM early-season backtest (training selection)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ncaam-early-backtest
+  cancel-in-progress: false
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: The backtest harness suite must pass first
+        run: node basketball/ncaam_early/tests/backtest.test.js
+      - name: Restore the raw response cache (filled by the backfill; never committed)
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/ncaam_early/raw
+          key: ncaam-early-raw-${{ github.run_id }}
+          restore-keys: ncaam-early-raw-
+      - name: Every training season's data must be cached
+        run: |
+          missing=""
+          for y in 2019 2020 2021 2022 2023 2024 2025; do
+            for p in teams player_seasons; do [ -f ".cache/ncaam_early/raw/$y/$p.json.gz" ] || missing="$missing $y/$p"; done
+          done
+          for y in 2020 2022 2023 2024 2025; do
+            for p in rosters portal recruits; do [ -f ".cache/ncaam_early/raw/$y/$p.json.gz" ] || missing="$missing $y/$p"; done
+          done
+          if [ -n "$missing" ]; then echo "::error::the raw cache lacks:$missing — run the backfill (NCAAM early-season sync, mode backfill, seasons 2019-2025) first"; exit 1; fi
+      - name: The registered selection (training windows only)
+        run: node basketball/ncaam_early/backtest.js --select --out .cache/ncaam_early/backtest/model_v1.candidate.json --report .cache/ncaam_early/backtest/selection_report.json
+      - name: Upload the candidate and the report (aggregate numbers only)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ncaam-early-selection-${{ github.run_id }}
+          path: |
+            .cache/ncaam_early/backtest/model_v1.candidate.json
+            .cache/ncaam_early/backtest/selection_report.json
+          if-no-files-found: warn
+          retention-days: 90

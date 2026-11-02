@@ -162,8 +162,8 @@ function derivePart(S, ctx) {
    walked over the committed hoopR/ESPN dataset (ratings.js), crosswalked to
    CBBD ids by each team's sourceId; coach tempo from the engine's tempo of the
    coach's earlier head-coaching seasons. */
-function featuresPart(S, ctx) {
-  const cfg = FE.loadConfig();
+function featuresPart(S, ctx, o) {
+  const cfg = (o && o.cfg) || FE.loadConfig();
   const d = derivePart(S, ctx);
   const prevC = cacheRead(S - 1, 'player_seasons'), curT = cacheRead(S, 'teams'), prevT = cacheRead(S - 1, 'teams'), rosC = cacheRead(S, 'rosters');
   const prevPlayers = N.playerSeasons(prevC.body, null).rows;
@@ -201,10 +201,14 @@ function featuresPart(S, ctx) {
    dataset (updated daily, free: no CBBD call), crosswalked to CBBD ids. Only
    games tipping in the next `horizon` hours, and only D-I v D-I, are projected;
    each is computed from the finals known 30 minutes before its tip. */
-function projectPart(S, ctx, o) {
+/* the inputs of a season's projections, shared by the project part and the
+   backtest (backtest.js): priors from the features of S (cfg may override
+   the registered values) and the engine's season S-1 state; the season's
+   D-I v D-I finals and its schedule from the NCAAM forecast's ESPN dataset,
+   crosswalked to CBBD ids. o.scheduledFrom adds scheduled games from then. */
+function seasonInputs(S, ctx, cfg, o) {
   o = o || {};
-  const cfg = FE.loadConfig();
-  const fe = featuresPart(S, ctx);
+  const fe = featuresPart(S, ctx, { cfg });
   const st = ctx.states[S - 1];
   if (!st) throw Object.assign(new Error('no engine state for season ' + (S - 1)), { refused: true });
   const prevTeams = N.teams(cacheRead(S - 1, 'teams').body, S - 1).rows, curTeams = N.teams(cacheRead(S, 'teams').body, S).rows;
@@ -214,14 +218,21 @@ function projectPart(S, ctx, o) {
   for (const f of fe.rows) { const p = MD.preseasonPrior(f, prevRating.get(f.team_id) || null, st, cfg, engine); if (p) { priors.set(f.team_id, p); features.set(f.team_id, f); } }
   const espnToCbbd = new Map(curTeams.filter((t) => t.source_id).map((t) => [String(t.source_id), t.team_id]));
   const D = ctx.dataset || require(path.join(C.ROOT, 'basketball', 'ncaam_forecast', 'dataset.js'));
-  const nowMs = Date.parse(ctx.now), horizon = (o.horizonHours || 48) * 3600e3;
-  const eg = D.engineGames(D.load([S]), { scheduledFrom: nowMs });
+  const eg = D.engineGames(D.load([S]), o.scheduledFrom != null ? { scheduledFrom: o.scheduledFrom } : undefined);
   const finals = eg.filter((g) => !g.scheduled && g.regime === 'D1_D1' && espnToCbbd.has(String(g.home)) && espnToCbbd.has(String(g.away)))
-    .map((g) => ({ game_id: g.game_id, home: espnToCbbd.get(String(g.home)), away: espnToCbbd.get(String(g.away)), neutral: g.neutral, yH: g.yH, yA: g.yA, poss: g.poss, tempo: g.tempo, start_ms: g.start_ms, known_ms: g.start_ms + C.AVAILABLE_AFTER_MS }));
+    .map((g) => ({ game_id: g.game_id, home: espnToCbbd.get(String(g.home)), away: espnToCbbd.get(String(g.away)), neutral: g.neutral, yH: g.yH, yA: g.yA, poss: g.poss, tempo: g.tempo, start_ms: g.start_ms, known_ms: g.start_ms + C.AVAILABLE_AFTER_MS,
+      hs: g.hs, as: g.as, home_espn: String(g.home), away_espn: String(g.away) }));
+  return { fe, st, priors, features, finals, eg, espnToCbbd, league: { mu: st.mu, eta: st.eta, tau: st.tau } };
+}
+
+function projectPart(S, ctx, o) {
+  o = o || {};
+  const cfg = FE.loadConfig();
+  const nowMs = Date.parse(ctx.now), horizon = (o.horizonHours || 48) * 3600e3;
+  const { fe, priors, features, finals, eg, espnToCbbd, league } = seasonInputs(S, ctx, cfg, { scheduledFrom: nowMs });
   const targets = eg.filter((g) => g.scheduled && g.start_ms > nowMs && g.start_ms <= nowMs + horizon)
     .map((g) => ({ game_id: String(g.game_id), season: S, home_team_id: espnToCbbd.get(String(g.home)), away_team_id: espnToCbbd.get(String(g.away)), neutral: g.neutral, start_utc: new Date(g.start_ms).toISOString(),
       home_espn: String(g.home), away_espn: String(g.away) }));
-  const league = { mu: st.mu, eta: st.eta, tau: st.tau };
   const espnOf = new Map(targets.map((t) => [t.game_id, t]));
   const rows = PJ.projectGames(targets, { priors, finals, league, features }, cfg, { projection: true })
     .map((r) => Object.assign(r, { home_espn: espnOf.get(String(r.game_id)).home_espn, away_espn: espnOf.get(String(r.game_id)).away_espn }));
@@ -435,7 +446,7 @@ function parseArgs(a) {
   return { parts, seasons, mode, maxCalls: mc == null ? undefined : Math.min(250, Math.max(0, parseInt(mc, 10))), dryRun: a.includes('--dry-run'), offline: a.includes('--offline'), manifestFile: val('--manifest') };
 }
 
-module.exports = { run, parseArgs, fetchPart, derivePart, featuresPart, projectPart, quotesPart, marketPart, rosterBatches, crosswalk, DAILY, WEEKLY, HOURLY, ALL, ORDER };
+module.exports = { run, parseArgs, fetchPart, derivePart, featuresPart, seasonInputs, projectPart, quotesPart, marketPart, rosterBatches, crosswalk, DAILY, WEEKLY, HOURLY, ALL, ORDER };
 
 if (require.main === module) {
   (async () => {
