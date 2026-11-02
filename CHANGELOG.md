@@ -7,6 +7,11 @@
 - **The fix (test only).** When the journey game is NFL, the test serves the nflverse schedule as it stood at the test's pinned clock. Results of games kicking off after that clock are blanked, the same way `tools/football/market_structure_ui.e2e.js` serves it. The schedule is read from the gitignored `football/nfl/.cache/`, else fetched once. ET kickoffs use the New York offset in force that day (DST ended 2026-11-01). If the schedule cannot be had, the suite fails in CI (`ROS_E2E_REQUIRED`) and reports SKIPPED (not verified) locally. No assertion changed; an FBS journey game is unaffected.
 - **Tests.** On `main`: 124 passed, 2 failed. With the fix: 126 passed, 0 failed, 3 runs of 3.
 - **Not changed here.** When the NFL board cannot be read, the desk still tells the reader the game is on no card, instead of saying the NFL board could not be read (`resolveFootballMatchup` in `app.html` checks "this pair is on no card" before "a card could not be read"). That is a separate fix.
+## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
+
+- **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.
+- **Fix (test only; the assertion compared rounded values).** The signs must agree unless the printed edge is zero, and it may be zero only when the true edge (cover − 1/d) rounds to it. The EV arithmetic and break-even checks are unchanged, and nothing in the EV engine, its rounding or the board changes.
+- **Tests.** `football/cfb_terminal/tests.js`: 128 / 1 → 129 / 0.
 
 ## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
 
