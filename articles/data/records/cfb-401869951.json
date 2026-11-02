@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T20:30:00.000Z",
   "game_when_label": "2026-11-07 20:30 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -124,18 +124,18 @@
         "note": "Quoted from Georgia Southern’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 78,
-      "inputs_reached_pct": 69,
+      "inputs_reached_pct": 73,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 18,
+        "known": 19,
         "priced": 11,
         "priced_coverage_pct": 42,
         "by_state": {
           "USABLE": 11,
-          "RESEARCH_ONLY": 7,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
-          "CONFLICTING": 1,
+          "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
@@ -211,7 +211,7 @@
         },
         "experience": {
           "starts": 5,
-          "dropbacks": 149,
+          "dropbacks": 150,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -227,24 +227,24 @@
             {
               "player_id": "4685697",
               "player_name": "Zion Turner",
-              "dropbacks": 45,
-              "share": 0.849
+              "dropbacks": 46,
+              "share": 0.852
             },
             {
               "player_id": "5091836",
               "player_name": "Jaxon Potter",
-              "dropbacks": 5,
-              "share": 0.094
-            },
-            {
-              "player_id": "5158251",
-              "player_name": "Khalil Wilkins",
-              "dropbacks": 2,
-              "share": 0.038
+              "dropbacks": 6,
+              "share": 0.111
             },
             {
               "player_id": "5148858",
               "player_name": "Jared Hollins",
+              "dropbacks": 1,
+              "share": 0.019
+            },
+            {
+              "player_id": "5158251",
+              "player_name": "Khalil Wilkins",
               "dropbacks": 1,
               "share": 0.019
             }
@@ -269,11 +269,11 @@
             "week": 9,
             "game_id": "401871096",
             "opponent": "Old Dominion",
-            "dropbacks": 17,
+            "dropbacks": 18,
             "starter": {
               "player_id": "4685697",
               "player_name": "Zion Turner",
-              "share": 0.588
+              "share": 0.611
             },
             "settled": true,
             "why": "took the first dropback of the game"
@@ -282,15 +282,15 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T17:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Georgia Southern",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
         "player": "Max Johnson",
         "player_id": "4685740",
-        "label": "unresolved: Max Johnson 52% of recent dropbacks and Turner Helton 34% of recent dropbacks — sources disagree.",
+        "label": "Max Johnson — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -300,8 +300,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 7,
-          "dropbacks": 324,
+          "starts": 8,
+          "dropbacks": 371,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -317,44 +317,31 @@
             {
               "player_id": "4685740",
               "player_name": "Max Johnson",
-              "dropbacks": 46,
-              "share": 0.523
+              "dropbacks": 55,
+              "share": 0.591
             },
             {
               "player_id": "4912238",
               "player_name": "Turner Helton",
               "dropbacks": 30,
-              "share": 0.341
+              "share": 0.323
             },
             {
               "player_id": "5212641",
               "player_name": "Weston Bryan",
               "dropbacks": 4,
-              "share": 0.045
+              "share": 0.043
             },
             {
-              "player_id": "5153978",
-              "player_name": "Camden Coleman",
-              "dropbacks": 3,
-              "share": 0.034
+              "player_id": "5193346",
+              "player_name": "Quinn Henicle",
+              "dropbacks": 2,
+              "share": 0.022
             }
           ]
         },
-        "conflicts": 1,
+        "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401869949",
-            "opponent": "James Madison",
-            "dropbacks": 43,
-            "starter": {
-              "player_id": "4685740",
-              "player_name": "Max Johnson",
-              "share": 0.884
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401869950",
@@ -363,14 +350,27 @@
             "starter": null,
             "settled": false,
             "why": "the player who took the first dropback threw 18% of the dropbacks; the usage leader was Turner Helton"
+          },
+          {
+            "week": 9,
+            "game_id": "401869846",
+            "opponent": "App State",
+            "dropbacks": 48,
+            "starter": {
+              "player_id": "4685740",
+              "player_name": "Max Johnson",
+              "share": 0.979
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/georgiasouthern.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-10-31T22:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1524,12 +1524,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home quarterback is contested — the evidence names more than one starter",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1651,13 +1645,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 69,
-        "tier": "ADEQUATE",
-        "text": "69 · CAUTION",
-        "sub": "main deduction: unresolved roster conflict",
-        "score": 69,
-        "grade": "CAUTION",
-        "grade_label": "CAUTION",
+        "pct": 81,
+        "tier": "STRONG",
+        "text": "81 · STRONG",
+        "sub": "main deduction: Marshall’s availability sources refused",
+        "score": 81,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1669,7 +1663,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 6.8,
+            "score": 7.1,
             "max": 20
           },
           {
@@ -1687,7 +1681,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 9.2,
+            "score": 13.3,
             "max": 15
           },
           {
@@ -1697,20 +1691,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "unresolved roster conflict: starter sources and the athlete identity disagree for Georgia Southern",
-        "capped_by": [
-          "ROSTER_CONFLICT"
-        ],
+        "main_deduction": "Marshall’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Marshall’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Resolve Georgia Southern’s starter conflict",
-            "potential_gain": 10,
-            "text": "up to +10"
+            "action": "Restore an injury/availability source for Marshall",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Confirm Georgia Southern’s starting QB (Max Johnson)",
-            "potential_gain": 2,
-            "text": "up to +2 once resolve Georgia Southern’s starter conflict is done"
+            "action": "Restore an injury/availability source for Georgia Southern",
+            "potential_gain": 5,
+            "text": "up to +5"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1744,14 +1741,14 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "SIGNIFICANT_CHANGE",
-        "label": "SIGNIFICANT CHANGE",
-        "text": "EdgeDesk has moved 2.0 pts toward Georgia Southern since the latest published number."
+        "key": "LINE_MOVING",
+        "label": "LINE MOVING",
+        "text": "EdgeDesk’s number is steady, but the market has moved 1.0 pts toward Georgia Southern (espn · Draft Kings)."
       },
       "stability": {
-        "tier": "LOW",
-        "label": "Low",
-        "text": "the stored numbers span 2.3 pts across 3 readings"
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.3 pts across 3 readings"
       },
       "published": [
         {
@@ -1761,25 +1758,25 @@
           "text": "Georgia Southern -10.0"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": 7.66,
-          "text": "Georgia Southern -7.7"
+          "home_margin": 9.7,
+          "text": "Georgia Southern -9.7"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 2.04,
+        "points": 0,
         "toward_team": "Georgia Southern",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "2.0 pts toward Georgia Southern since the latest published number"
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 0.3 points toward Marshall since the first published number.",
         "attribution_text": "Projection changed 0.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": null,
+        "market": "Market moved 1.0 pts toward Georgia Southern (espn · Draft Kings)",
         "model_version": null
       },
       "parity": {
@@ -1950,11 +1947,11 @@
       "Georgia Southern wins 75% of the time in EdgeDesk’s simulation, Marshall 25%.",
       "Eight games in ten land between -11.3 and +30.7 for Georgia Southern. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Marshall quarterback: Zion Turner — started the last game; no announcement for this one."
+      "Marshall quarterback: Zion Turner — started the last game; no announcement for this one.",
+      "Georgia Southern quarterback: Max Johnson — started the last game; no announcement for this one."
     ],
     "missing": [
       "No availability report reached Zion Turner — unknown is carried as unknown, never as healthy.",
-      "Georgia Southern quarterback unresolved: unresolved: Max Johnson 52% of recent dropbacks and Turner Helton 34% of recent dropbacks — sources disagree.",
       "No availability report reached Max Johnson — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1963,24 +1960,24 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1971tpf1fwby0x",
+    "packet_hash": "1y86gn5j97b6r",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Georgia Southern contain Marshall’s explosive runs?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.2 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
     "gap": {
-      "points": 0.2,
-      "toward": "Georgia Southern",
-      "other": "Marshall"
+      "points": 0.3,
+      "toward": "Marshall",
+      "other": "Georgia Southern"
     },
     "supporting": [
-      "When Georgia Southern has the ball (pass protection against the pass rush): Georgia Southern’s offense has allowed a sack on 2.4% of its dropbacks, and Marshall’s defense sacks the quarterback on 3.3% of opponent dropbacks (FBS average 5.7%).",
-      "When Georgia Southern has the ball (big plays on the ground): Georgia Southern’s offense turns 6.7% of its runs into explosive gains, and Marshall’s defense gives up explosive gains on 9.2% of opponent runs (FBS average 6.5%).",
-      "When Marshall has the ball (pass protection against the pass rush): Marshall’s offense has allowed a sack on 6.2% of its dropbacks, and Georgia Southern’s defense sacks the quarterback on 8.2% of opponent dropbacks (FBS average 5.7%).",
-      "When Georgia Southern has the ball (the run game against the run defense): Georgia Southern’s offense averages 5.0 yards per carry, and Marshall’s defense allows 6.0 yards per carry (FBS average 5.0)."
+      "When Georgia Southern has the ball (the red zone): Georgia Southern’s offense succeeds on 45.3% of its red-zone plays, and Marshall’s defense allows success on 27.6% of opponent red-zone plays (FBS average 43.5%)."
     ],
     "contradicting": [
-      "When Georgia Southern has the ball (the red zone): Georgia Southern’s offense succeeds on 45.3% of its red-zone plays, and Marshall’s defense allows success on 27.6% of opponent red-zone plays (FBS average 43.5%)."
+      "When Georgia Southern has the ball (pass protection against the pass rush): Georgia Southern’s offense has allowed a sack on 2.4% of its dropbacks, and Marshall’s defense sacks the quarterback on 3.3% of opponent dropbacks (FBS average 5.7%).",
+      "When Georgia Southern has the ball (big plays on the ground): Georgia Southern’s offense turns 6.7% of its runs into explosive gains, and Marshall’s defense gives up explosive gains on 9.2% of opponent runs (FBS average 6.5%).",
+      "When Georgia Southern has the ball (the run game against the run defense): Georgia Southern’s offense averages 5.0 yards per carry, and Marshall’s defense allows 6.0 yards per carry (FBS average 5.0).",
+      "When Marshall has the ball (big plays through the air): Marshall’s offense turns 6.8% of its pass plays into explosive gains, and Georgia Southern’s defense gives up explosive gains on 10.3% of opponent pass plays (FBS average 10.2%)."
     ],
     "quarterbacks": [
       "Max Johnson has completed 188 of 278 passes (67.6%) for 1,918 yards, 6.9 yards per attempt, 11 touchdowns and 2 interceptions in eight games for Georgia Southern, and has been sacked on 7 of 285 dropbacks.",
@@ -1991,34 +1988,34 @@
     "availability": [],
     "script": {
       "model": [
-        "Georgia Southern’s defense has to come out ahead on long runs: it gives up explosive gains on 5.2% of opponent runs, against an offense that turns 9.4% of its runs into explosive gains.",
-        "Georgia Southern’s offense has to hold its own in the red zone against a defense that allows success on 27.6% of opponent red-zone plays.",
-        "Georgia Southern’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.4% of its dropbacks, and Marshall’s defense sacks the quarterback on 3.3% of opponent dropbacks.",
-        "Georgia Southern’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.2% of opponent dropbacks, against an offense that has allowed a sack on 6.2% of its dropbacks."
+        "Marshall’s offense has to keep winning on long runs: it turns 9.4% of its runs into explosive gains, and Georgia Southern’s defense gives up explosive gains on 5.2% of opponent runs.",
+        "Marshall’s defense has to slow Georgia Southern in the pass-rush matchup — Georgia Southern’s offense has allowed a sack on 2.4% of its dropbacks.",
+        "Marshall’s defense has to slow Georgia Southern on long runs — Georgia Southern’s offense turns 6.7% of its runs into explosive gains.",
+        "Marshall’s defense has to come out ahead in the red zone: it allows success on 27.6% of opponent red-zone plays, against an offense that succeeds on 45.3% of its red-zone plays."
       ],
       "market": [
-        "Marshall’s defense has to come out ahead in the red zone: it allows success on 27.6% of opponent red-zone plays, against an offense that succeeds on 45.3% of its red-zone plays.",
-        "Marshall’s offense has to keep winning on long runs: it turns 9.4% of its runs into explosive gains, and Georgia Southern’s defense gives up explosive gains on 5.2% of opponent runs.",
-        "Rio-Wilson keeps producing at his season rate (62.0% completions, 7.3 yards per attempt, 6 TD, 5 INT)."
+        "Georgia Southern’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.4% of its dropbacks, and Marshall’s defense sacks the quarterback on 3.3% of opponent dropbacks.",
+        "Georgia Southern’s offense has to keep winning on long runs: it turns 6.7% of its runs into explosive gains, and Marshall’s defense gives up explosive gains on 9.2% of opponent runs.",
+        "Georgia Southern’s defense has to come out ahead on long runs: it gives up explosive gains on 5.2% of opponent runs, against an offense that turns 9.4% of its runs into explosive gains."
       ]
     },
     "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Georgia Southern and Marshall.",
+      "EdgeDesk’s own sources disagree on sack rate allowed for Georgia Southern and Marshall.",
       "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
     ],
     "flags": [
       {
         "key": "DATA_CONFLICT",
         "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Georgia Southern), sack rate (Georgia Southern) and sack rate allowed (Marshall); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Georgia Southern) and sack rate allowed (Marshall); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
       }
     ],
     "sources": [
       {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2034,6 +2031,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UCF vs. Kansas: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UCF vs. Kansas 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for UCF at Kansas: Kansas −6.5, fair total 52.5. Kansas wins 67% of simulations. Data confidence 85%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for UCF at Kansas: Kansas −6.5, fair total 52.5. Kansas wins 67% of simulations. Data confidence 76%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Kansas carries the stronger underlying team rating — +3.6 against +2.8, a 0.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Kansas −6.5 before any sportsbook number is consulted, with Kansas winning 67% of…",
   "home_team": "Kansas",
   "away_team": "UCF",
@@ -21,12 +21,12 @@
   "game_time": "2026-11-07T20:45:00.000Z",
   "game_when_label": "2026-11-07 20:45 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 85,
+  "confidence": 76,
   "priced": true,
   "fair_spread_text": "Kansas −6.5",
   "fair_total": "52.5",
@@ -66,7 +66,7 @@
       "Kansas carries the stronger underlying team rating — +3.6 against +2.8, a 0.8-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Kansas −6.5 before any sportsbook number is consulted, with Kansas winning 67% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is special teams, where UCF leads Kansas by 90 places nationally.",
-      "Data confidence on this matchup is 85% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 76% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -123,19 +123,19 @@
         "volatility_discriminates": false,
         "note": "Quoted from Kansas’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 85,
-      "inputs_reached_pct": 73,
+      "confidence_pct": 76,
+      "inputs_reached_pct": 69,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
+        "known": 18,
         "priced": 11,
         "priced_coverage_pct": 42,
         "by_state": {
           "USABLE": 11,
-          "RESEARCH_ONLY": 8,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
-          "CONFLICTING": 0,
+          "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 4,
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 13,
-          "dropbacks": 439,
+          "starts": 14,
+          "dropbacks": 463,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -203,26 +203,19 @@
             {
               "player_id": "5085337",
               "player_name": "Keyone Jenkins",
-              "dropbacks": 83,
-              "share": 1
+              "dropbacks": 62,
+              "share": 0.795
+            },
+            {
+              "player_id": "4911929",
+              "player_name": "Alonza Barnett",
+              "dropbacks": 16,
+              "share": 0.205
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401856824",
-            "opponent": "Oklahoma State",
-            "dropbacks": 41,
-            "starter": {
-              "player_id": "5085337",
-              "player_name": "Keyone Jenkins",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 8,
             "game_id": "401856835",
@@ -235,20 +228,33 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401856844",
+            "opponent": "Baylor",
+            "dropbacks": 36,
+            "starter": {
+              "player_id": "5085337",
+              "player_name": "Keyone Jenkins",
+              "share": 0.556
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-10-24T19:30:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "published_at": "2026-10-30T23:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Kansas",
-        "status": "PREVIOUS_GAME",
+        "status": "COMPETITION",
         "confirmed": false,
-        "player": "Isaiah Marshall",
-        "player_id": "5079604",
-        "label": "Isaiah Marshall — started the last game; no announcement for this one.",
+        "player": "Cole Ballard",
+        "player_id": "5151060",
+        "label": "unresolved: Cole Ballard 58% of recent dropbacks and Isaiah Marshall 41% of recent dropbacks — sources disagree.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -258,8 +264,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 7,
-          "dropbacks": 209,
+          "starts": 1,
+          "dropbacks": 66,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -269,44 +275,31 @@
           "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
         },
         "competition": {
-          "contested": false,
+          "contested": true,
           "games": 2,
           "players": [
             {
-              "player_id": "5079604",
-              "player_name": "Isaiah Marshall",
-              "dropbacks": 53,
-              "share": 0.964
-            },
-            {
-              "player_id": "4870857",
-              "player_name": "Avery Johnson",
-              "dropbacks": 1,
-              "share": 0.018
-            },
-            {
               "player_id": "5151060",
               "player_name": "Cole Ballard",
+              "dropbacks": 37,
+              "share": 0.578
+            },
+            {
+              "player_id": "5079604",
+              "player_name": "Isaiah Marshall",
+              "dropbacks": 26,
+              "share": 0.406
+            },
+            {
+              "player_id": "5083569",
+              "player_name": "Jaden Craig",
               "dropbacks": 1,
-              "share": 0.018
+              "share": 0.016
             }
           ]
         },
-        "conflicts": 0,
+        "conflicts": 1,
         "history": [
-          {
-            "week": 7,
-            "game_id": "401856830",
-            "opponent": "Kansas State",
-            "dropbacks": 28,
-            "starter": {
-              "player_id": "5079604",
-              "player_name": "Isaiah Marshall",
-              "share": 0.964
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 8,
             "game_id": "401856834",
@@ -319,14 +312,27 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401856845",
+            "opponent": "TCU",
+            "dropbacks": 37,
+            "starter": {
+              "player_id": "5151060",
+              "player_name": "Cole Ballard",
+              "share": 0.973
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-10-24T17:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "published_at": "2026-10-31T19:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1474,6 +1480,12 @@
         {
           "sev": "LOW",
           "label": "missing",
+          "text": "home quarterback is contested — the evidence names more than one starter",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1586,18 +1598,18 @@
         "reason": "no market line is joined to this game"
       },
       "confidence": {
-        "score": 85,
+        "score": 76,
         "tier": "HIGH",
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
-        "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Kansas or UCF’s starting QB can play",
-        "score": 89,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "pct": 69,
+        "tier": "ADEQUATE",
+        "text": "69 · CAUTION",
+        "sub": "main deduction: unresolved roster conflict",
+        "score": 69,
+        "grade": "CAUTION",
+        "grade_label": "CAUTION",
         "gate_label": null,
         "components": [
           {
@@ -1609,7 +1621,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.8,
             "max": 20
           },
           {
@@ -1627,7 +1639,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 10.9,
             "max": 15
           },
           {
@@ -1637,20 +1649,20 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Kansas or UCF’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "main_deduction": "unresolved roster conflict: starter sources and the athlete identity disagree for Kansas",
         "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
+          "ROSTER_CONFLICT"
         ],
         "next_actions": [
           {
-            "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2 once re-read availability inside the filing window (Kansas) and Re-read availability inside the filing window (UCF) is done"
+            "action": "Resolve Kansas’s starter conflict",
+            "potential_gain": 10,
+            "text": "up to +10"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Kansas) and Re-read availability inside the filing window (UCF) is done"
+            "action": "Confirm Kansas’s starting QB (Cole Ballard)",
+            "potential_gain": 8,
+            "text": "up to +8 once resolve Kansas’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1701,25 +1713,25 @@
           "text": "Kansas -0.60"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
           "home_margin": 6.6,
           "text": "Kansas -6.6"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
         "points": 0,
         "toward_team": "Kansas",
-        "since_at": "2026-11-01T00:14:29.881Z",
+        "since_at": "2026-11-01T18:01:05.765Z",
         "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 6.0 points toward Kansas since the first published number.",
         "attribution_text": "Projection changed 6.0 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": null,
+        "market": "Market moved 0.5 pts toward Kansas (espn · Draft Kings)",
         "model_version": null
       },
       "parity": {
@@ -1890,12 +1902,12 @@
       "Kansas wins 67% of the time in EdgeDesk’s simulation, UCF 33%.",
       "Eight games in ten land between -14.4 and +27.6 for Kansas. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "UCF quarterback: Keyone Jenkins — started the last game; no announcement for this one.",
-      "Kansas quarterback: Isaiah Marshall — started the last game; no announcement for this one."
+      "UCF quarterback: Keyone Jenkins — started the last game; no announcement for this one."
     ],
     "missing": [
       "No availability report reached Keyone Jenkins — unknown is carried as unknown, never as healthy.",
-      "No availability report reached Isaiah Marshall — unknown is carried as unknown, never as healthy."
+      "Kansas quarterback unresolved: unresolved: Cole Ballard 58% of recent dropbacks and Isaiah Marshall 41% of recent dropbacks — sources disagree.",
+      "No availability report reached Cole Ballard — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
@@ -1903,7 +1915,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1f18o611t4tgor",
+    "packet_hash": "15su68y4q26io",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can UCF take away Kansas’ big plays?",
@@ -1915,9 +1927,9 @@
     },
     "supporting": [
       "When Kansas has the ball (big plays through the air): Kansas’ offense turns 14.8% of its pass plays into explosive gains, and UCF’s defense gives up explosive gains on 13.5% of opponent pass plays (FBS average 10.2%).",
+      "When Kansas has the ball (pass protection against the pass rush): Kansas’ offense has allowed a sack on 4.5% of its dropbacks, and UCF’s defense sacks the quarterback on 4.9% of opponent dropbacks (FBS average 5.7%).",
       "When Kansas has the ball (the line of scrimmage on running plays): Kansas’ offense is stopped at or behind the line on 12.8% of its runs, and UCF’s defense stops 14.2% of opponent runs at or behind the line (FBS average 17.5%).",
-      "EdgeDesk’s position-group ratings put Kansas’ offensive line No. 14 nationally and UCF’s No. 73.",
-      "When UCF has the ball (big plays on the ground): UCF’s offense turns 4.6% of its runs into explosive gains, and Kansas’ defense gives up explosive gains on 6.7% of opponent runs (FBS average 6.5%)."
+      "EdgeDesk’s position-group ratings put Kansas’ offensive line No. 14 nationally and UCF’s No. 73."
     ],
     "contradicting": [
       "When Kansas has the ball (big plays on the ground): Kansas’ offense turns 7.1% of its runs into explosive gains, and UCF’s defense gives up explosive gains on 3.9% of opponent runs (FBS average 6.5%).",
@@ -1966,7 +1978,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1989,6 +2001,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }
