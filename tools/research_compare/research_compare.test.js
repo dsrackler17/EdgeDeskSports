@@ -318,7 +318,8 @@ eq('a sport_key maps to one slate sport; basketball_ncaab is NCAAM, basketball_w
     const blk = /-- THE ASK, beside each card[\s\S]*?\ncreate or replace function public\.radar_card_ask\(p_card jsonb\)[\s\S]*?\nend \$f\$;\n\n/;
     const undone = headSql.replace(blk, '').replace('jsonb_agg(c || public.radar_card_ask(c)) from public.radar_tonight_cards() c', 'jsonb_agg(c) from public.radar_tonight_cards() c')
       .split(', public.radar_card_ask(jsonb) ').join(' ');
-    chk('radar.sql differs from main only by the read-only ask beside each card (radar_card_ask): undone, it is main byte for byte', !!mainSql && undone === mainSql,
+    /* before the ask merged, a branch carried it and main did not; after, main carries it too and the file is simply main's */
+    chk('radar.sql is main\'s, or differs from it only by the read-only ask beside each card (radar_card_ask): undone, it is main byte for byte', !!mainSql && (headSql === mainSql || undone === mainSql),
       mainSql ? { head_len: headSql.length, undone_len: undone.length, main_len: mainSql.length } : 'git show failed');
     chk('…and radar_card_ask only reads (no insert, update, delete or radar_publish in it)', (() => { const m = headSql.match(blk); return !!m && !/\b(insert|update|delete|truncate)\b|radar_publish/i.test(m[0].replace(/--.*$/gm, '')); })());
   } else console.log('NOTE | no origin/main merge base here: the frozen-file diff check is not verified in this run');

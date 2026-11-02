@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-02 — Two research suites red on main after #957 and the Smart Money ask
+
+- **`tools/research_os/journey.e2e.js` (Research OS tests · browser, and Market Foresight tests · database).** The journey's game is on the test reader's watchlist. The old queue order put saved games first, so the game was always among the first 25 rows. #957 made **Starting soon** the default (start time only: saving a game never moves it). Today the journey's game (Chicago at Seattle, 2026-11-03) sits behind more than 25 earlier Upcoming games, so its row was behind "Show more" and the test timed out. The journey now pages through "Show more", bounded at 40, before reading or opening the row, as a reader would, and again after switching tabs. It fails on `main` (28 / 2) and passes now (126 / 0).
+- **`tools/research_compare/research_compare.test.js`.** The Smart Money ask PR changed one check to "radar.sql differs from main only by the read-only ask". That held only while the ask was unmerged: once merged, `main` carries it and the check fails on every branch (118 / 1 on `main`). It now accepts `radar.sql` being `main`'s exactly, or differing only by the ask. Nothing else in the frozen-file checks changes. Result: 119 / 0.
+- Both are test-only. No product code, rule or committed artifact changes.
+
 ## 2026-11-01 — Juice Reel: an authorize error is no longer reported as "you did not authorize"
 
 - **What happened.** Connect Juice Reel sent every reader back with "You did not authorize EdgeDesk on Juice Reel". Asked directly on 2026-11-01, Juice Reel's authorize endpoint answers `error=invalid_scope` ("One or more requested scopes are not allowed") for the Integration app (`jr_UcOwwS…`) whenever `bets.settled.read` is requested, before any sign-in or consent screen. `bets.open.read` alone reaches Juice Reel's sign-in. `jr_callback` read any `error` as a refusal, so the cause was hidden.

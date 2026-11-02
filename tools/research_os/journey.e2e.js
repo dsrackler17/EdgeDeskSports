@@ -322,8 +322,12 @@ async function nflScheduleAtClock() {
       T.chk(W + ': the Simulator\'s published run is named with its size, model and time — and no probability', /100,000 simulated seasons · model edgedesk_nfl_v2 · published 3 h ago/.test(side) && !/\d+(\.\d+)?%/.test(side.slice(side.indexOf('Simulator'), side.indexOf('Your workspace'))), side.slice(side.indexOf('Simulator'), side.indexOf('Simulator') + 300));
       await page.waitForFunction(() => /Live\./.test((document.getElementById('ovSide') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => null);
       T.chk(W + ': Market Foresight\'s status is read from its door (live)', /Market Foresight[\s\S]*Live\./.test(await page.textContent('#ovSide')));
-      if (DAY === TODAY) T.chk(W + ': the journey game is in Today\'s queue, by its slate id', await page.$('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]') !== null);
-      else { await page.click('#ovTab-upcoming'); T.chk(W + ': the journey game is in Upcoming, by its slate id', await page.$('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]') !== null); }
+      /* the queue shows 25 rows a page in start-time order (Starting soon, #957: saving a game never moves it), so a
+         journey game behind more than 25 earlier games is reached through "Show more", as a reader reaches it */
+      const ROW = '#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]';
+      const pageTo = async () => { for (let i = 0; i < 40 && !(await page.$(ROW)) && (await page.$('#ovQ [data-ov-more]')); i++) await page.click('#ovQ [data-ov-more]'); };
+      if (DAY === TODAY) { await pageTo(); T.chk(W + ': the journey game is in Today\'s queue, by its slate id', await page.$(ROW) !== null); }
+      else { await page.click('#ovTab-upcoming'); await pageTo(); T.chk(W + ': the journey game is in Upcoming, by its slate id', await page.$(ROW) !== null); }
       const row = await page.textContent('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]');
       T.chk(W + ': its row says it is saved', /watchlist/.test(row), row.slice(0, 300));
       await page.click('#ovTab-changed');
@@ -331,6 +335,7 @@ async function nflScheduleAtClock() {
       T.chk(W + ': no horizontal scroll on the Overview', await noHScroll(page));
       await shot(page, W + '-1-overview');
       await page.click('#ovTab-' + (DAY === TODAY ? 'today' : 'upcoming'));
+      await pageTo();   /* a tab change starts the list at its first 25 again */
 
       /* ---------------------------------------------------------------- 2 the game's research */
       await page.click('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"] a[data-ov-open]');
