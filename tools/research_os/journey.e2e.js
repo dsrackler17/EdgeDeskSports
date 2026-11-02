@@ -72,6 +72,21 @@ if (!GAME) {
 }
 const KEY = GAME.research.game_key, LG = KEY.split('|')[0], GID = KEY.split('|')[1];
 const DESK_SPORT = LG === 'nfl' ? 'americanfootball_nfl' : 'americanfootball_ncaaf';
+/* THE NFL SCHEDULE THE APP READS (nflverse games.csv, app.html FB_URL_GAMES)
+   is an outside host, and this test answers every outside request empty. With
+   an NFL journey game the NFL board then had no games, the desk could not find
+   the matchup and sent nothing (2026-11-01, PHI at WAS). So the test serves
+   that schedule itself, built only from the committed slate: the journey game,
+   unplayed, its kickoff in Eastern time as nflverse writes it. For an FBS game
+   it is the header alone, as before in effect. */
+const NFL_GAMES_CSV = (function () {
+  const head = 'game_id,season,game_type,week,gameday,weekday,gametime,away_team,away_score,home_team,home_score';
+  const m = LG === 'nfl' ? /^(\d{4})_(\d{2})_([A-Z]+)_([A-Z]+)$/.exec(GID) : null;
+  if (!m) return head + '\n';
+  const p = {}; new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'long', hourCycle: 'h23' })
+    .formatToParts(new Date(GAME.start_utc)).forEach((x) => { p[x.type] = x.value; });
+  return head + '\n' + [GID, m[1], 'REG', +m[2], p.year + '-' + p.month + '-' + p.day, p.weekday, p.hour + ':' + p.minute, m[3], 'NA', m[4], 'NA'].join(',') + '\n';
+}());
 const HOME = GAME.home.name, AWAY = GAME.away.name;
 /* the game page names the game as its research snapshot does (app.html gvCtx), and so does the
    context it sets; the slate can name the same club longer: "Western Kentucky Hilltoppers" on the
@@ -220,6 +235,7 @@ const MF_GAME_LATE_MS = 2000;
       await ctx.route('**/*', async (route) => {
         const req = route.request(), url = req.url();
         if (url.startsWith(BASE)) return route.continue();
+        if (/nflverse\/nfldata\/master\/data\/games\.csv/.test(url)) return route.fulfill({ status: 200, contentType: 'text/csv', body: NFL_GAMES_CSV });
         if (url.indexOf(SB) === 0) {
           if (/\/functions\/v1\/edgedesk_ai/.test(url)) { ai.push(req.postData() || ''); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ answer: 'The desk answered from the research packet (test).', model: null }) }); }
           if (/\/rest\/v1\/subscriptions/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(who === 'free' ? [] : [{ status: 'active', price_id: 'price_x', current_period_end: '2027-06-01T00:00:00Z' }]) });

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-02 — Research OS journey: the test serves the NFL schedule its journey game needs
+
+- **What broke.** `tools/research_os/journey.e2e.js` picks its game from the committed `today/slate.json`. After the 2026-11-01 data pushes the earliest qualifying game became an NFL one (PHI at WAS). The app reads the NFL schedule from nflverse (`FB_URL_GAMES`), an outside host this test answers empty, so the NFL board had no games. The desk then answered "no scheduled game" and sent nothing, and `asking about the game sends the desk its ids` failed on desktop and phone (124 passed, 2 failed, on `main` with no code change).
+- **Fix (test fixture: it was incomplete for an NFL journey game).** The test serves `games.csv` itself, built only from the committed slate: the journey game, unplayed, kickoff in Eastern time. For an FBS game it serves the header alone, which reads the same as the empty answer before. The assertion is unchanged. Now 126 passed, 0 failed.
+
 ## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
 
 - **Bug.** The matchup view refused a neutral-site game whose home and away ESPN's scoreboard and `basketball/slate.json` list the other way round ("…list this game's sides the other way round, so no graphic is drawn"), e.g. Northern Illinois v Grambling on 2 November. Across the 237 Division I scoreboard events for 2–4 November, 2 were affected, both at neutral sites. Under the home-games-only intercept (`bb_cal_v2_home_intercept`) the model prices a neutral game the same either way round, so `EDSportGraphic.labGame` now reads it with the schedule's sides (`flipGame`: moneyline, spread lines at −L, margin, rest and sample inputs move to their own team). A home game listed the other way round is still refused. No model output changed.
