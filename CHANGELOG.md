@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — Juice Reel: an authorize error is no longer reported as "you did not authorize"
+
+- **What happened.** Connect Juice Reel sent every reader back with "You did not authorize EdgeDesk on Juice Reel". Asked directly on 2026-11-01, Juice Reel's authorize endpoint answers `error=invalid_scope` ("One or more requested scopes are not allowed") for the Integration app (`jr_UcOwwS…`) whenever `bets.settled.read` is requested, before any sign-in or consent screen. `bets.open.read` alone reaches Juice Reel's sign-in. `jr_callback` read any `error` as a refusal, so the cause was hidden.
+- **Fix.** `jr_callback` (`portfolio_connect`, build `2026-11-01-jr7`) maps Juice Reel's error with `K.jrAuthorizeError`: `access_denied` and `status=cancelled` stay `JR_CONSENT_DENIED`; `invalid_scope` is `JR_AUTHORIZE_SCOPE` (names `bets.settled.read`, says it is on EdgeDesk's side); `unauthorized_client`/`invalid_client` is `JR_CLIENT_REFUSED`; anything else is `JR_AUTHORIZE_FAILED`. Juice Reel's code is logged (`juicereel.authorize_error`).
+- **Still needed.** Juice Reel must enable `bets.settled.read` on the EdgeDesk Sports Integration application. The requested scopes are unchanged.
+- **Test.** `tools/portfolio/juicereel.test.js`: the new check failed on the previous build (every error read as `JR_CONSENT_DENIED`) and passes now.
 ## 2026-11-02 — Research OS journey: the test serves the NFL schedule its journey game needs
 
 - **What broke.** `tools/research_os/journey.e2e.js` picks its game from the committed `today/slate.json`. After the 2026-11-01 data pushes the earliest qualifying game became an NFL one (PHI at WAS). The app reads the NFL schedule from nflverse (`FB_URL_GAMES`), an outside host this test answers empty, so the NFL board had no games. The desk then answered "no scheduled game" and sent nothing, and `asking about the game sends the desk its ids` failed on desktop and phone (124 passed, 2 failed, on `main` with no code change).
@@ -9,6 +15,12 @@
 - **What.** `radar_tonight()` (`supabase/radar.sql` and its byte-identical migration mirror) adds `ask_price`, `ask_size`, `ask_at` and `fee_per_share` to each card. They come from the new read-only `radar_card_ask()`: the best ask, the size at it, its `quoted_at` and the taker fee at it, from the card's `radar_cards` row (the values `radar_publish_cards()` recorded at publication). They are null when no row is on file, never a midpoint. `radar_tonight_cards()`, `radar_rules()`, `radar_publish_cards()`, grading and `research/radar/**` are unchanged.
 - **Cards.** An ask inside its 15-minute limit is compared as an executable ask: depth, the gap before fees, and an EV only with a recorded fee. Past the limit, the displayed price is compared (indicative, no EV), and the publication ask is listed as not compared.
 - **Tests.** `tools/radar/radar_sql.test.js`: 259 passed, 0 failed. Against `main`'s `radar.sql`, the 6 new checks fail. The published records dumped from the suite (`RADAR_RECORD_DUMP`) are byte-identical before and after. `tools/research_compare/research_compare.test.js`: 119 passed, 0 failed. Its frozen-file check now allows only this block in `radar.sql`.
+
+## 2026-11-01 — Portfolio: a status message is no longer erased by a repaint (the flaky BetSync Chromium test)
+
+- **What was wrong.** `BetSync in Chromium` (`tools/portfolio/sharpsports_ui.e2e.js`, in Portfolio tests and `npm run verify`) failed now and then at "a refresh says SharpSports is reading the book": 2 of 5 runs on an unchanged `main` on 2026-10-31. The cause was in the page, not the test. `flash()` in `lib/edgedesk_portfolio_ui.js` puts its message inside the portfolio body, and every `paint()` rewrites that body. A load still in flight (here, the one started by the return from SharpSports) could finish after the message appeared, repaint the Accounts tab, and erase the message before its 3.5 s were up. A reader saw it flash and vanish; the test, reading once 400 ms after the click, sometimes saw nothing.
+- **The fix.** `paint()` puts back any status message still within its time. Each message still leaves after 3.5 s.
+- **The test.** It waits for the message instead of a fixed 400 ms. A new check reopens the Accounts tab while the message is up, which forces the repaint, and requires the message to still be there. Against the old page that check failed 3 of 3 runs; with the fix the suite passed 19 of 19 (22 passed each), 9 of them three at a time.
 
 ## 2026-11-02 — Research OS journey: an NFL journey game gets the NFL schedule it needs (red since the Sunday-evening slate)
 
