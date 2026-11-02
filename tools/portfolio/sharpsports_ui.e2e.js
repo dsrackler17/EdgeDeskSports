@@ -26,7 +26,8 @@
      sync; the address no longer carries the return marker;
      sees the account as SharpSports BetSync · sandbox, Connected,
      verified, and its bets in Open and History;
-     asks for a refresh and is told SharpSports is reading the book;
+     asks for a refresh and is told SharpSports is reading the book, and a
+     repaint of the tab does not erase that message;
    at 1280 px and at 390 px (Add platforms → FanDuel's card), with no
    sideways scroll and no page error.
 
@@ -214,8 +215,18 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       t.slice(Math.max(0, t.search(/your platforms/i)), Math.max(0, t.search(/your platforms/i)) + 700));
     chk('it offers Refresh from book, Sync now and Disconnect', await page.evaluate(() => ['sb-refresh', 'acct-sync', 'acct-disconnect'].every((a) => !!document.querySelector('#pfoHost [data-act="' + a + '"]'))));
     await page.click('#pfoHost [data-act="sb-refresh"]');
-    await page.waitForTimeout(400);
-    chk('a refresh says SharpSports is reading the book', /SharpSports is reading your book now/.test(await page.evaluate(() => document.body.innerText)));
+    /* the message comes after the refresh call and a reload of the account
+       data: wait for it rather than for a fixed time */
+    const REFRESHING = /SharpSports is reading your book now/;
+    const said = await page.waitForFunction((a) => new RegExp(a[0], a[1]).test(document.body.innerText), [REFRESHING.source, REFRESHING.flags], { timeout: 15000 }).then(() => true, () => false);
+    chk('a refresh says SharpSports is reading the book', said);
+    /* a repaint while the message is up must not erase it: a load still in
+       flight from the return from SharpSports repaints this tab, and erased
+       the message before the reader (or this test) could read it */
+    await page.click('#pfoHost .pfo-tab[data-v="accounts"]');
+    await page.waitForFunction(() => /SharpSports BetSync · sandbox/.test(document.getElementById('pfoHost').innerText), null, { timeout: 15000 });
+    await page.waitForTimeout(300);
+    chk('a repaint of the tab does not erase the refresh message while it is up', REFRESHING.test(await page.evaluate(() => document.body.innerText)));
     await tab(page, 'open');
     await waitText(page, /Ohio State/);
     t = await text(page);

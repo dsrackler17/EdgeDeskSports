@@ -12,6 +12,12 @@
 - **Cards.** An ask inside its 15-minute limit is compared as an executable ask: depth, the gap before fees, and an EV only with a recorded fee. Past the limit, the displayed price is compared (indicative, no EV), and the publication ask is listed as not compared.
 - **Tests.** `tools/radar/radar_sql.test.js`: 259 passed, 0 failed. Against `main`'s `radar.sql`, the 6 new checks fail. The published records dumped from the suite (`RADAR_RECORD_DUMP`) are byte-identical before and after. `tools/research_compare/research_compare.test.js`: 119 passed, 0 failed. Its frozen-file check now allows only this block in `radar.sql`.
 
+## 2026-11-01 — Portfolio: a status message is no longer erased by a repaint (the flaky BetSync Chromium test)
+
+- **What was wrong.** `BetSync in Chromium` (`tools/portfolio/sharpsports_ui.e2e.js`, in Portfolio tests and `npm run verify`) failed now and then at "a refresh says SharpSports is reading the book": 2 of 5 runs on an unchanged `main` on 2026-10-31. The cause was in the page, not the test. `flash()` in `lib/edgedesk_portfolio_ui.js` puts its message inside the portfolio body, and every `paint()` rewrites that body. A load still in flight (here, the one started by the return from SharpSports) could finish after the message appeared, repaint the Accounts tab, and erase the message before its 3.5 s were up. A reader saw it flash and vanish; the test, reading once 400 ms after the click, sometimes saw nothing.
+- **The fix.** `paint()` puts back any status message still within its time. Each message still leaves after 3.5 s.
+- **The test.** It waits for the message instead of a fixed 400 ms. A new check reopens the Accounts tab while the message is up, which forces the repaint, and requires the message to still be there. Against the old page that check failed 3 of 3 runs; with the fix the suite passed 19 of 19 (22 passed each), 9 of them three at a time.
+
 ## 2026-11-02 — Research OS journey: an NFL journey game gets the NFL schedule it needs (red since the Sunday-evening slate)
 
 - **What failed.** Research OS tests / `browser` (`tools/research_os/journey.e2e.js`) went red at 23:36 UTC on 2026-11-01, on `main` and on every pull request that starts it: `FAIL | desktop/phone: asking about the game sends the desk its ids, not only its names` (124 passed, 2 failed). The journey takes the first upcoming NFL or FBS game in the committed slate. The slate pushed at 22:21 UTC made that Philadelphia Eagles at Washington Commanders; from Sunday evening to Monday night the first upcoming game is always NFL.
