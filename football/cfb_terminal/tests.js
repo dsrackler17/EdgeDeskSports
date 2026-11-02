@@ -362,7 +362,7 @@ section('13. the real slate, from the committed production artifacts');
   const qe = board.rows.map((r) => ({ r, q: r.quote_ev }));
   ok('every board row carries a quote-EV block', qe.every((x) => x.q && typeof x.q.ev_available === 'boolean'));
   ok('unavailable EV is null with a reason, never 0', qe.every((x) => x.q.ev_available || (x.q.expected_value_pct === null && !!x.q.ev_unavailable_reason)));
-  ok('available EV = win·(d−1) − loss at its own exact price, and the edge has the same sign', qe.filter((x) => x.q.ev_available).every(({ q }) => {
+  const quoteEvConsistent = (q) => {
     const a = q.best_price, d = a > 0 ? 1 + a / 100 : 1 + 100 / -a, c = q.model_cover_probability, p = q.model_push_probability;
     const ev = c * (1 - p) * (d - 1) - (1 - c) * (1 - p);
     /* the edge and the EV are each rounded to 3 decimals (lib/edgedesk_quote_ev.js), so a quote within half a
@@ -372,7 +372,16 @@ section('13. the real slate, from the committed production artifacts');
     const edgeZero = q.probability_edge_pp === 0 && Math.abs(100 * (c - 1 / d)) < 0.0005;
     return Math.abs(ev * 100 - q.expected_value_pct) < 0.01 && Math.abs(q.break_even_probability - 1 / d) < 1e-5
       && (edgeZero || Math.sign(q.probability_edge_pp) === Math.sign(q.expected_value_pct));
-  }));
+  };
+  ok('available EV = win·(d−1) − loss at its own exact price, and the edge has the same sign', qe.filter((x) => x.q.ev_available).every(({ q }) => quoteEvConsistent(q)));
+  /* pinned, so the rule holds after the live slate rolls past the quote that exposed it: Syracuse +1.5 −110
+     (game 401858285, main at 2156dc3e6) printed edge 0 beside EV −0.001%. A printed zero edge is excused only when
+     the true edge rounds to zero; a real sign disagreement still fails. */
+  const syr = { best_price: -110, model_cover_probability: 0.523806, model_push_probability: 0, break_even_probability: 0.52381, probability_edge_pp: 0, expected_value_pct: -0.001 };
+  ok('a rounded-zero edge beside a ±0.001% EV is consistent; a zero edge far from break-even, or opposite signs, is not',
+    quoteEvConsistent(syr)
+    && !quoteEvConsistent(Object.assign({}, syr, { model_cover_probability: 0.53, expected_value_pct: 1.182 }))
+    && !quoteEvConsistent(Object.assign({}, syr, { probability_edge_pp: 0.001 })));
   ok('the quote the EV engine decided carries the board decision; no other quote inherits it', qe.filter((x) => x.q.ev_available && x.r.ev && x.r.ev.selected).every(({ r, q }) => {
     const m = /^(.*)\s([+-]?\d+(?:\.\d+)?|PK)\s([+-]\d+)$/.exec(r.ev.selected);
     const same = m && m[1] === q.best_team && (m[2] === 'PK' ? 0 : +m[2]) === q.best_spread && +m[3] === q.best_price && String(r.ev.book || '').toLowerCase() === String(q.best_book || '').toLowerCase();
