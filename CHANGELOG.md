@@ -5,6 +5,11 @@
 - **What was wrong.** `BetSync in Chromium` (`tools/portfolio/sharpsports_ui.e2e.js`, in Portfolio tests and `npm run verify`) failed now and then at "a refresh says SharpSports is reading the book": 2 of 5 runs on an unchanged `main` on 2026-10-31. The cause was in the page, not the test. `flash()` in `lib/edgedesk_portfolio_ui.js` puts its message inside the portfolio body, and every `paint()` rewrites that body. A load still in flight (here, the one started by the return from SharpSports) could finish after the message appeared, repaint the Accounts tab, and erase the message before its 3.5 s were up. A reader saw it flash and vanish; the test, reading once 400 ms after the click, sometimes saw nothing.
 - **The fix.** `paint()` puts back any status message still within its time. Each message still leaves after 3.5 s.
 - **The test.** It waits for the message instead of a fixed 400 ms. A new check reopens the Accounts tab while the message is up, which forces the repaint, and requires the message to still be there. Against the old page that check failed 3 of 3 runs; with the fix the suite passed 19 of 19 (22 passed each), 9 of them three at a time.
+## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
+
+- **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.
+- **Fix (test only; the assertion compared rounded values).** The signs must agree unless the printed edge is zero, and it may be zero only when the true edge (cover − 1/d) rounds to it. The EV arithmetic and break-even checks are unchanged, and nothing in the EV engine, its rounding or the board changes.
+- **Tests.** `football/cfb_terminal/tests.js`: 128 / 1 → 129 / 0.
 
 ## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
 
