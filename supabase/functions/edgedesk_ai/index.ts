@@ -16793,6 +16793,23 @@ const EDPRES: any = (globalThis as any).EDPRES;
     var pairs = runs.filter(function (x) { return x.r.state === 'NOT_ON_CARD'; });
     if (pairs.length) {
       var kt = Math.max.apply(null, pairs.map(function (x) { return x.r.known_teams || 0; }));
+      /* AN ABSENCE IS ONLY A FINDING ON CARDS THAT WERE READ. "Philadelphia
+         Eagles at Washington Commanders" with the NFL board unread: the college
+         card knows "Washington" (the Huskies) and not the pair, and its
+         NOT_ON_CARD said the game is on no card EdgeDesk publishes, a card
+         it never checked. When a card could not be read and no readable card
+         knows both sides, nothing is established: the question is handed
+         back (`unverified`), with the leagues that were not checked named. */
+      var unread = runs.filter(function (x) { return x.r.state === 'NO_CARD'; })
+        .map(function (x) { return x.r.sport; });
+      if (unread.length && kt < 2) {
+        return Object.assign({}, pairs[0].r, {
+          known_teams: kt, unverified: true, unchecked_sports: unread,
+          note: 'No card EdgeDesk could read has a game with both of those sides, and '
+            + unread.map(function (s) { return s === NFL_SPORT ? 'the NFL board' : 'the college card'; }).join(' and ')
+            + ' could not be read, so whether the game is on it was not checked.'
+        });
+      }
       return kt !== (pairs[0].r.known_teams || 0) ? Object.assign({}, pairs[0].r, { known_teams: kt }) : pairs[0].r;
     }
     /* 6 — somebody else was named, on EVERY card. One league not knowing a
@@ -49048,6 +49065,10 @@ export async function resolveNamedMatchup(
      each is a different failure and answering them the same way is how "the
      card could not be read" became "that matchup does not exist". */
   if (r.state === "NO_CARD") return { ...base, state: "RETRIEVAL_FAILED", note: r.note };
+  /* A pair no READABLE card carries, while another card could not be read
+     (the kernel marks it `unverified`), is the same retrieval failure: the
+     unread card may hold the game, so "on no card" would be a false finding. */
+  if (r.state === "NOT_ON_CARD" && r.unverified) return { ...base, state: "RETRIEVAL_FAILED", note: r.note };
 
   if (r.state === "AMBIGUOUS") {
     /* The SPORT is settled and the GAME is not — unless the same words matched

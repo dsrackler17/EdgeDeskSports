@@ -172,6 +172,30 @@ section('one card, two leagues');
   chk('and "Washington Commanders" is the club',
     resolve('Washington Commanders this week').sport === E.NFL_SPORT, resolve('Washington Commanders this week'));
 
+  /* AN ABSENCE IS ONLY A FINDING ON CARDS THAT WERE READ (Research OS journey,
+     2026-11-01: the game page's "Ask about this game" for Philadelphia Eagles
+     at Washington Commanders, with the NFL board unread, was answered "no
+     scheduled game with BOTH of those sides is on any card EdgeDesk publishes
+     (68 games were checked on the FBS slate)", because the college card knows
+     "Washington". Declared cards, so the check does not depend on the week. */
+  const waCfb = { sport: E.CFB_SPORT, source: 'a declared college card', games: [{ game_id: 'c-wash', home_team: 'Washington', away_team: 'Oregon',
+    home_id: '264', away_id: '2483', kickoff: '2026-11-01T20:00:00Z', week: 10 }] };
+  const eaglesAtWas = 'Research Philadelphia Eagles at Washington Commanders: the model, the captured price, what is missing and the audit.';
+  const unread = E.resolveFootballMatchup({ question: eaglesAtWas, carried: null,
+    leagues: [waCfb, { sport: E.NFL_SPORT, games: [], card_error: 'the NFL board has not loaded', source: 'the NFL board' }] });
+  chk('an NFL pair while the NFL board is unread is not "on no card": it is handed back as unverified, naming the unread board',
+    unread.state === 'NOT_ON_CARD' && unread.unverified === true && (unread.unchecked_sports || []).indexOf(E.NFL_SPORT) >= 0
+      && !/is on any card EdgeDesk publishes/.test(unread.note || '') && /NFL board could not be read/.test(unread.note || ''), unread);
+  const readNfl = E.resolveFootballMatchup({ question: eaglesAtWas, carried: null,
+    leagues: [waCfb, { sport: E.NFL_SPORT, source: 'the NFL board', games: [{ game_id: 'nfl:2026_08_PHI_WAS', home_team: 'Washington Commanders',
+      away_team: 'Philadelphia Eagles', home_id: 'was', away_id: 'phi', kickoff: '2026-11-02T01:20:00.000Z', week: 8 }] }] });
+  chk('and with the NFL board read, the same question resolves to the NFL game', readNfl.state === 'RESOLVED' && readNfl.sport === E.NFL_SPORT
+    && readNfl.game_id === 'nfl:2026_08_PHI_WAS', readNfl);
+  const readBoth = E.resolveFootballMatchup({ question: eaglesAtWas, carried: null,
+    leagues: [waCfb, { sport: E.NFL_SPORT, source: 'the NFL board', games: NFL_GAMES }] });
+  chk('a pair every card was read for and none carries is still a finding (NOT_ON_CARD, not unverified)',
+    readBoth.state === 'NOT_ON_CARD' && !readBoth.unverified && readBoth.known_teams === 2, readBoth);
+
   /* A CITY THAT IS ALSO A COLLEGE PROGRAMME GOES TO THE PROGRAMME. The club
      answers to its nickname and its full name, which is what a reader writes
      when they mean the club; a bare "Buffalo" on a card carrying the Bulls is
