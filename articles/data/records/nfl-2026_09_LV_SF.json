@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Las Vegas Raiders vs. San Francisco 49ers: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Las Vegas Raiders vs. San Francisco 49ers 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Las Vegas Raiders at San Francisco 49ers: San Francisco 49ers −10.5, fair total 47.5. San Francisco 49ers wins 84% of simulations. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Las Vegas Raiders at San Francisco 49ers: San Francisco 49ers −10.5, fair total 47.5. San Francisco 49ers wins 84% of simulations. Model status STALE MARKET. Research, not picks.",
   "excerpt": "San Francisco 49ers carries the stronger EdgeDesk offensive profile (#2 in EPA per play) and the better defensive rating with it, so the ratings point the same way on both sides of the ball. EdgeDesk’s independent projection makes it San Francisco 49ers…",
   "home_team": "San Francisco 49ers",
   "away_team": "Las Vegas Raiders",
@@ -21,11 +21,11 @@
   "game_time": "2026-11-08T21:05:00.000Z",
   "game_when_label": "2026-11-08 21:05 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "STALE MARKET",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "San Francisco 49ers −10.5",
@@ -128,8 +128,8 @@
       "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 108 absorbed 2026 games.",
       "sample_games": 108,
       "seeded": true,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "STALE MARKET",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1121,18 +1121,30 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "San Francisco 49ers −10.5",
       "model_raw": "San Francisco 49ers -10.6",
+      "market": "San Francisco 49ers −8.5",
+      "difference": "2.1 points",
+      "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "key_number": null,
       "total_model": "47.5",
       "total_model_raw": "47.5",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "50.5",
+      "total_rounding_note": null,
+      "total_difference": "3.0 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "STALE MARKET",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects San Francisco 49ers 29, Las Vegas Raiders 18.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "STALE MARKET",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1264,8 +1276,7 @@
     },
     "notes": [
       "EdgeDesk’s line is San Francisco 49ers −10.5 with a fair total of 47.5, before any book is consulted.",
-      "San Francisco 49ers wins 84% of the time in EdgeDesk’s distribution, Las Vegas Raiders 16%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "San Francisco 49ers wins 84% of the time in EdgeDesk’s distribution, Las Vegas Raiders 16%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1275,6 +1286,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

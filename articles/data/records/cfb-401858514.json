@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Oregon vs. Ohio State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Oregon vs. Ohio State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Oregon at Ohio State: Ohio State −12.5, fair total 50.0. Ohio State wins 80% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Oregon at Ohio State: Ohio State −12.5, fair total 50.0. Ohio State wins 80% of simulations. Data confidence 75%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Ohio State carries the stronger underlying team rating — +15.9 against +9.2, a 6.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Ohio State −12.5 before any sportsbook number is consulted, with Ohio State…",
   "home_team": "Ohio State",
   "away_team": "Oregon",
@@ -21,12 +21,12 @@
   "game_time": "2026-11-07T20:30:00.000Z",
   "game_when_label": "2026-11-07 20:30 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 84,
+  "confidence": 75,
   "priced": true,
   "fair_spread_text": "Ohio State −12.5",
   "fair_total": "50.0",
@@ -66,7 +66,7 @@
       "Ohio State carries the stronger underlying team rating — +15.9 against +9.2, a 6.8-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Ohio State −12.5 before any sportsbook number is consulted, with Ohio State winning 80% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is pass offense, where Ohio State leads Oregon by 83 places nationally.",
-      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 75% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -123,19 +123,19 @@
         "volatility_discriminates": false,
         "note": "Quoted from Ohio State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 84,
-      "inputs_reached_pct": 73,
+      "confidence_pct": 75,
+      "inputs_reached_pct": 69,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
+        "known": 18,
         "priced": 11,
         "priced_coverage_pct": 42,
         "by_state": {
           "USABLE": 11,
-          "RESEARCH_ONLY": 8,
+          "RESEARCH_ONLY": 7,
           "STALE": 0,
-          "CONFLICTING": 0,
+          "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 4,
@@ -240,15 +240,15 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T19:30:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Ohio State",
         "status": "COMPETITION",
         "confirmed": false,
-        "player": "Julian Sayin",
-        "player_id": "5079712",
-        "label": "unresolved: Julian Sayin 96% of recent dropbacks and Luke Fahey 4% of recent dropbacks.",
+        "player": "Luke Fahey",
+        "player_id": "5214646",
+        "label": "unresolved: Luke Fahey 60% of recent dropbacks and Julian Sayin 40% of recent dropbacks — sources disagree.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -258,9 +258,9 @@
           "source_url": null
         },
         "experience": {
-          "starts": 21,
-          "dropbacks": 597,
-          "seasons_observed": 2,
+          "starts": 1,
+          "dropbacks": 53,
+          "seasons_observed": 1,
           "seasons_read": [
             2025,
             2026
@@ -269,38 +269,25 @@
           "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
         },
         "competition": {
-          "contested": false,
+          "contested": true,
           "games": 2,
           "players": [
             {
-              "player_id": "5079712",
-              "player_name": "Julian Sayin",
-              "dropbacks": 50,
-              "share": 0.962
-            },
-            {
               "player_id": "5214646",
               "player_name": "Luke Fahey",
-              "dropbacks": 2,
-              "share": 0.038
+              "dropbacks": 42,
+              "share": 0.6
+            },
+            {
+              "player_id": "5079712",
+              "player_name": "Julian Sayin",
+              "dropbacks": 28,
+              "share": 0.4
             }
           ]
         },
-        "conflicts": 0,
+        "conflicts": 1,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401858483",
-            "opponent": "Maryland",
-            "dropbacks": 22,
-            "starter": {
-              "player_id": "5079712",
-              "player_name": "Julian Sayin",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401858488",
@@ -313,14 +300,27 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401858509",
+            "opponent": "USC",
+            "dropbacks": 40,
+            "starter": {
+              "player_id": "5214646",
+              "player_name": "Luke Fahey",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/ohiostate.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-10-31T23:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1544,18 +1544,18 @@
         "reason": "no market line is joined to this game"
       },
       "confidence": {
-        "score": 84,
+        "score": 75,
         "tier": "HIGH",
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
+        "pct": 69,
         "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the quarterback job is contested for Ohio State",
-        "score": 79,
-        "grade": "ADEQUATE",
-        "grade_label": "ADEQUATE",
+        "text": "69 · CAUTION",
+        "sub": "main deduction: unresolved roster conflict",
+        "score": 69,
+        "grade": "CAUTION",
+        "grade_label": "CAUTION",
         "gate_label": null,
         "components": [
           {
@@ -1567,7 +1567,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.7,
+            "score": 11.3,
             "max": 20
           },
           {
@@ -1585,7 +1585,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 12.3,
+            "score": 9.2,
             "max": 15
           },
           {
@@ -1595,25 +1595,20 @@
             "max": 10
           }
         ],
-        "main_deduction": "the quarterback job is contested for Ohio State",
+        "main_deduction": "unresolved roster conflict: starter sources and the athlete identity disagree for Ohio State",
         "capped_by": [
-          "QB_CONTESTED"
+          "ROSTER_CONFLICT"
         ],
         "next_actions": [
           {
-            "action": "Confirm Ohio State’s starting QB (Julian Sayin)",
-            "potential_gain": 8,
-            "text": "up to +8"
+            "action": "Resolve Ohio State’s starter conflict",
+            "potential_gain": 10,
+            "text": "up to +10"
           },
           {
-            "action": "Re-read availability inside the filing window (Oregon)",
-            "potential_gain": 2,
-            "text": "up to +2 once confirm Ohio State’s starting QB (Julian Sayin) is done"
-          },
-          {
-            "action": "Re-read availability inside the filing window (Ohio State)",
-            "potential_gain": 2,
-            "text": "up to +2 once confirm Ohio State’s starting QB (Julian Sayin) is done"
+            "action": "Confirm Ohio State’s starting QB (Luke Fahey)",
+            "potential_gain": 7,
+            "text": "up to +7 once resolve Ohio State’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1653,9 +1648,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "SIGNIFICANT_CHANGE",
-        "label": "SIGNIFICANT CHANGE",
-        "text": "EdgeDesk has moved 4.2 pts toward Oregon since the latest published number."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "LOW",
@@ -1670,19 +1665,19 @@
           "text": "Ohio State -18.4"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": 16.57,
-          "text": "Ohio State -16.6"
+          "home_margin": 12.4,
+          "text": "Ohio State -12.4"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 4.17,
-        "toward_team": "Oregon",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "4.2 pts toward Oregon since the latest published number"
+        "points": 0,
+        "toward_team": "Ohio State",
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
@@ -1863,8 +1858,8 @@
     ],
     "missing": [
       "No availability report reached Dylan Raiola — unknown is carried as unknown, never as healthy.",
-      "Ohio State quarterback unresolved: unresolved: Julian Sayin 96% of recent dropbacks and Luke Fahey 4% of recent dropbacks.",
-      "No availability report reached Julian Sayin — unknown is carried as unknown, never as healthy."
+      "Ohio State quarterback unresolved: unresolved: Luke Fahey 60% of recent dropbacks and Julian Sayin 40% of recent dropbacks — sources disagree.",
+      "No availability report reached Luke Fahey — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
@@ -1872,13 +1867,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1bdtbopojkvrf",
+    "packet_hash": "1fyerjf1s1atl",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Oregon keep Ohio State behind schedule?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Ohio State, and its own breakdown accounts for about 0.3 of the 2.9 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Ohio State, and its own breakdown accounts for about 0.2 of the 5.4 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 2.9,
+      "points": 5.4,
       "toward": "Ohio State",
       "other": "Oregon"
     },
@@ -1890,7 +1885,7 @@
     ],
     "contradicting": [
       "When Ohio State has the ball (pass protection against the pass rush): Ohio State’s offense has allowed a sack on 6.3% of its dropbacks, and Oregon’s defense sacks the quarterback on 7.1% of opponent dropbacks (FBS average 5.7%).",
-      "When Oregon has the ball (pass protection against the pass rush): Oregon’s offense has allowed a sack on 3.5% of its dropbacks, and Ohio State’s defense sacks the quarterback on 3.8% of opponent dropbacks (FBS average 5.7%).",
+      "When Oregon has the ball (pass protection against the pass rush): Oregon’s offense has allowed a sack on 3.5% of its dropbacks, and Ohio State’s defense sacks the quarterback on 3.5% of opponent dropbacks (FBS average 5.7%).",
       "In his last two games (Indiana and USC), Fahey averaged 6.3 yards per attempt, against 18.5 in his two games before that.",
       "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9 touchdowns and no interceptions in four games for Oregon, and has been sacked on 6 of 106 dropbacks."
     ],
@@ -1909,7 +1904,7 @@
         "Ohio State’s defense has to come out ahead on long runs: it gives up explosive gains on 2.7% of opponent runs, against an offense that turns 3.9% of its runs into explosive gains."
       ],
       "market": [
-        "Oregon’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.5% of its dropbacks, and Ohio State’s defense sacks the quarterback on 3.8% of opponent dropbacks.",
+        "Oregon’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.5% of its dropbacks, and Ohio State’s defense sacks the quarterback on 3.5% of opponent dropbacks.",
         "Oregon’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.1% of opponent dropbacks, against an offense that has allowed a sack on 6.3% of its dropbacks.",
         "Oregon’s defense has to come out ahead on early downs: it allows success on 36.3% of first- and second-down plays, against an offense that succeeds on 50.7% of its first- and second-down plays."
       ]
@@ -1930,7 +1925,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1946,6 +1941,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

@@ -6,6 +6,61 @@
 - **Cards.** An ask inside its 15-minute limit is compared as an executable ask: depth, the gap before fees, and an EV only with a recorded fee. Past the limit, the displayed price is compared (indicative, no EV), and the publication ask is listed as not compared.
 - **Tests.** `tools/radar/radar_sql.test.js`: 259 passed, 0 failed. Against `main`'s `radar.sql`, the 6 new checks fail. The published records dumped from the suite (`RADAR_RECORD_DUMP`) are byte-identical before and after. `tools/research_compare/research_compare.test.js`: 119 passed, 0 failed. Its frozen-file check now allows only this block in `radar.sql`.
 
+## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
+
+- **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.
+- **Fix (test only; the assertion compared rounded values).** The signs must agree unless the printed edge is zero, and it may be zero only when the true edge (cover − 1/d) rounds to it. The EV arithmetic and break-even checks are unchanged, and nothing in the EV engine, its rounding or the board changes.
+- **Tests.** `football/cfb_terminal/tests.js`: 128 / 1 → 129 / 0.
+
+## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
+
+- **Bug.** The matchup view refused a neutral-site game whose home and away ESPN's scoreboard and `basketball/slate.json` list the other way round ("…list this game's sides the other way round, so no graphic is drawn"), e.g. Northern Illinois v Grambling on 2 November. Across the 237 Division I scoreboard events for 2–4 November, 2 were affected, both at neutral sites. Under the home-games-only intercept (`bb_cal_v2_home_intercept`) the model prices a neutral game the same either way round, so `EDSportGraphic.labGame` now reads it with the schedule's sides (`flipGame`: moneyline, spread lines at −L, margin, rest and sample inputs move to their own team). A home game listed the other way round is still refused. No model output changed.
+- **Stats.** For men's games the graphic reads `basketball/ncaam_research/published/index.json`, already served for the research page, by ESPN id. What to watch for shows each team's 2025-26 record and adjusted net-rating rank, and each offense's rank against the other team's defense. The no-price strip shows the records and net ratings. Each school is drawn in its own colour. A team the index does not rate (a non-Division I opponent) reads "unrated". Without the index the graphic draws as before.
+- **Workflow.** `sport-graphic-tests.yml` also runs on a push of the research index to `main`.
+- **Tests.** `tools/sport_graphic/sport_graphic.test.js` gets new checks for the flip, the refusals that remain, ratings in what to watch and in the strip, one side unrated, no index, the cache key, and `forEvent` end to end with a stubbed fetch. Against the old builder 18 of them fail. With the change all 25,481 checks pass. `sport_graphic_ui.e2e.js`: 57 passed, 0 failed.
+## 2026-11-01 — NCAAM-EARLY T3 model: prior, registered decay, in-season fit, projections, market comparison and Conviction
+
+- **What.** New `basketball/ncaam_early/model.js`, `market.js` and `project.js`, a `project` part in the sync (daily, last), and a new table, `ncaam_es_projections`.
+  - **Constants.** Every constant is registered (`config/model_v0.json`) or the engine's frozen state. `ratings.js` now also exposes the engine's home term, residual variance and λ.
+  - **Preseason prior.**
+    - 0.5 × the carried rating + 0.5 × the roster build.
+    - A coaching change shrinks the carried part further (coach_shrink 0.15).
+    - Tempo blends in the coach's tempo history.
+    - Prior variance = the engine's opening variance × the registered variance multiplier.
+  - **In-season.** The registered decay table, scaled by the variance multiplier (w / (w + vm (1 − w))), so rebuilt teams update sooner. A joint opponent-adjusted ridge fit with per-team prior strength.
+  - **Projection.** Margin, total, win probability, sd, and cover/over probabilities with whole-number pushes. Every projection uses only the finals known 30 minutes before tip, and the tests check this.
+  - **Market comparison.** Edge vs the best fresh price at its own line, the reference (Pinnacle else consensus) with its capture time, thin and stale flags, the registered Conviction tiers and angle tags. No stake or unit is returned. For a price-only bet between 1.5% and 3% the registered tier text overlaps, so LOW, the conservative reading, is taken and stated.
+  - **Prospective record.** The `project` part stores the next 48 hours of D-I v D-I projections in the append-only `ncaam_es_projections`. The database refuses a row at or after tip, or with inputs that postdate it. In-season finals and the schedule come from the NCAAM forecast's committed ESPN dataset (no CBBD call).
+- **SQL.** `supabase/ncaam_early.sql` and its mirror: the 21st table, its before-tip trigger, append-only guards, and a `translation_shift` column on the features table.
+- **Tests.**
+  - New `tests/model.test.js`: 49 passed. It covers the prior, the weights, fit recovery, the high-variance update, projection math, point in time, the market, the tiers and the angles.
+  - `features.test.js`: 50 passed (the `project` part end to end). `sql.test.js`: 45 passed (prospective guard). `data.test.js`: 77 passed. `registration.test.js`: 27 passed.
+- **Not verified.** A run on real CBBD data (no key in this environment). The market join to captured NCAAB prices is the next pull request.
+
+## 2026-11-01 — NCAAM-EARLY T2 features: player values, transfer translation, returning and departed production, the preseason team row
+
+- **What.** New `basketball/ncaam_early/features.js` and `ratings.js`, a `features` part in the sync (daily and weekly, after `moves`), and a new derived table, `ncaam_es_team_features`.
+  - **Registered values only.** Every number comes from the registered `config/model_v0.json` (its sha256 is checked against the registration). Nothing is learned. A missing input is null with a flag, never zero.
+  - **Prior-season ratings.** The existing engine (`team_model.js`, NCAAM-FORECAST's frozen parameters) is walked over the committed hoopR/ESPN dataset, crosswalked to CBBD ids by `sourceId`. Conference strength is 100 + the mean net rating.
+  - **Player value.** The registered box formula, per 100 on-floor possessions vs the D-I average, shrunk by minutes / (minutes + 250).
+  - **Newcomers.**
+    - D-I transfers: conference-strength translation, with the usage adjustment.
+    - Non-D-I transfers: replacement level with the level's registered uncertainty. CBBD has no statistics below D-I, flagged `NO_SOURCE_STATS`.
+    - Freshmen: by stars.
+    - Unknowns: replacement level, uncertainty 3.0.
+  - **The team row.** Expected minutes normalised to 200 a game. Also holds returning minutes and value share, departed production, minutes shares by origin, coach facts and coach tempo history, size, and the registered variance multiplier.
+  - **Not owned.** Travel distance and time zones are null with the reason: there are no venue coordinates.
+- **Fix found by the new SQL check.** `ncaam_es_put` wrote null over a column's default when a row omitted that key (`jsonb_populate_recordset`). It now takes the column default. Against the old function the new features check failed ("null value in column as_of_key"); with the fix the SQL suite passes 41 of 41.
+- **SQL.** `supabase/ncaam_early.sql` and its byte-identical migration mirror (idempotent: running Deploy NCAAM early-season SQL again adds the new table and replaces the two functions; nothing is dropped):
+  - the new 20th table;
+  - `ncaam_es_replace_derived` now also replaces stale feature rows for a `features` run;
+  - the default fix.
+- **Tests.**
+  - New `basketball/ncaam_early/tests/features.test.js`: 47 passed, 0 failed. It covers synthetic players, the engine on the committed 2025–2026 data, and the part end to end.
+  - `sql.test.js`: 41 passed. `data.test.js`: 77 passed. `registration.test.js`: 27 passed.
+  - NCAAM early-season suites runs the new suite and now also triggers on the engine files it reads.
+- **Not verified.** Any run on real CBBD data (no key in this environment).
+
 ## 2026-11-01 — NCAAM-EARLY registered (v0.1.0, EXPERIMENTAL, T3) before any result
 
 - **What.** `basketball/ncaam_early/research/registration.json` and the registered starting configuration `basketball/ncaam_early/config/model_v0.json` (pinned in the registration by sha256), with `supabase/ncaam_early_registry.sql` generated from them by `research/build_registry_sql.js`. It is adapted from the NBA roster-adjusted generator: it reads the live registry columns, refuses rather than guesses, and writes no result row.

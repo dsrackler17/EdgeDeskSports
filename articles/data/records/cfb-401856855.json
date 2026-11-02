@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T03:15:00.000Z",
   "game_when_label": "2026-11-07 03:15 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 18,
-          "dropbacks": 589,
+          "starts": 19,
+          "dropbacks": 619,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -203,32 +203,19 @@
             {
               "player_id": "5083569",
               "player_name": "Jaden Craig",
-              "dropbacks": 85,
-              "share": 0.966
+              "dropbacks": 79,
+              "share": 0.963
             },
             {
               "player_id": "5079465",
               "player_name": "Michael Hawkins Jr.",
               "dropbacks": 3,
-              "share": 0.034
+              "share": 0.037
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 7,
-            "game_id": "401856832",
-            "opponent": "Baylor",
-            "dropbacks": 35,
-            "starter": {
-              "player_id": "5083569",
-              "player_name": "Jaden Craig",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 8,
             "game_id": "401856841",
@@ -241,12 +228,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401856845",
+            "opponent": "Kansas",
+            "dropbacks": 29,
+            "starter": {
+              "player_id": "5083569",
+              "player_name": "Jaden Craig",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-10-24T16:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "published_at": "2026-10-31T19:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Arizona",
@@ -336,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T16:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1670,9 +1670,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "LINE_MOVING",
+        "label": "LINE MOVING",
+        "text": "EdgeDesk’s number is steady, but the market has moved 1.0 pts toward TCU (espn · Draft Kings)."
       },
       "stability": {
         "tier": "LOW",
@@ -1687,25 +1687,25 @@
           "text": "Arizona -15.2"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
           "home_margin": 12.67,
           "text": "Arizona -12.7"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
         "points": 0,
         "toward_team": "TCU",
-        "since_at": "2026-11-01T00:14:29.881Z",
+        "since_at": "2026-11-01T18:01:05.765Z",
         "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 2.5 points toward TCU since the first published number.",
         "attribution_text": "Projection changed 2.5 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": null,
+        "market": "Market moved 1.0 pts toward TCU (espn · Draft Kings)",
         "model_version": null
       },
       "parity": {
@@ -1889,13 +1889,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "gju73e14aqubs",
+    "packet_hash": "c1brq51jvgren",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can TCU’s pass defense slow Arizona’s passing game?",
-    "assessment": "EdgeDesk’s number is 4.2 points closer to Arizona than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 4.2 points. The measured football evidence leans toward TCU, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "assessment": "EdgeDesk’s number is 3.2 points closer to Arizona than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 3.2 points. The measured football evidence leans toward TCU, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
     "gap": {
-      "points": 4.2,
+      "points": 3.2,
       "toward": "Arizona",
       "other": "TCU"
     },
@@ -1906,7 +1906,7 @@
       "In his last two games (West Virginia and Kansas), Craig averaged 6.8 yards per attempt, against 8.8 in his six games before that."
     ],
     "contradicting": [
-      "When Arizona has the ball (pass protection against the pass rush): Arizona’s offense has allowed a sack on 7.2% of its dropbacks, and TCU’s defense sacks the quarterback on 7.5% of opponent dropbacks (FBS average 5.7%).",
+      "When Arizona has the ball (pass protection against the pass rush): Arizona’s offense has allowed a sack on 7.2% of its dropbacks, and TCU’s defense sacks the quarterback on 6.2% of opponent dropbacks (FBS average 5.7%).",
       "When Arizona has the ball (big plays on the ground): Arizona’s offense turns 5.6% of its runs into explosive gains, and TCU’s defense gives up explosive gains on 3.6% of opponent runs (FBS average 6.5%).",
       "When Arizona has the ball (early downs): Arizona’s offense succeeds on 43.1% of its first- and second-down plays, and TCU’s defense allows success on 33.4% of first- and second-down plays (FBS average 42.5%).",
       "When Arizona has the ball (big plays through the air): Arizona’s offense turns 11.8% of its pass plays into explosive gains, and TCU’s defense gives up explosive gains on 6.6% of opponent pass plays (FBS average 10.2%)."
@@ -1920,13 +1920,13 @@
     "script": {
       "model": [
         "Arizona’s offense has to keep winning through the air: it averages 9.3 yards per pass attempt, and TCU’s defense allows 5.8 yards per pass attempt.",
-        "Arizona’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.5% of opponent dropbacks.",
         "Arizona’s offense has to hold its own on long runs against a defense that gives up explosive gains on 3.6% of opponent runs.",
+        "Arizona’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 6.2% of opponent dropbacks.",
         "Arizona’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.7% of opponent dropbacks, against an offense that has allowed a sack on 7.2% of its dropbacks."
       ],
       "market": [
-        "TCU’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.5% of opponent dropbacks, against an offense that has allowed a sack on 7.2% of its dropbacks.",
         "TCU’s defense has to come out ahead on long runs: it gives up explosive gains on 3.6% of opponent runs, against an offense that turns 5.6% of its runs into explosive gains.",
+        "TCU’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.2% of opponent dropbacks, against an offense that has allowed a sack on 7.2% of its dropbacks.",
         "TCU’s defense has to come out ahead through the air: it allows 5.8 yards per pass attempt, against an offense that averages 9.3 yards per pass attempt."
       ]
     },
@@ -1946,7 +1946,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1962,6 +1962,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

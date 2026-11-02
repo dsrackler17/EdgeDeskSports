@@ -11,7 +11,7 @@
   ],
   "title": "Cleveland Browns vs. New Orleans Saints: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Cleveland Browns vs. New Orleans Saints 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Cleveland Browns at New Orleans Saints: New Orleans Saints −3.0, fair total 42.5. New Orleans Saints wins 61% of simulations. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Cleveland Browns at New Orleans Saints: New Orleans Saints −3.0, fair total 42.5. New Orleans Saints wins 61% of simulations. Model status STALE MARKET. Research, not picks.",
   "excerpt": "New Orleans Saints carries the stronger EdgeDesk offensive profile (#24 in EPA per play), while Cleveland Browns owns the more favourable defensive matchup (#7 in EPA allowed per play). EdgeDesk’s independent projection makes it New Orleans Saints −3.0…",
   "home_team": "New Orleans Saints",
   "away_team": "Cleveland Browns",
@@ -23,11 +23,11 @@
   "game_time": "2026-11-08T18:00:00.000Z",
   "game_when_label": "2026-11-08 18:00 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "STALE MARKET",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.7-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "New Orleans Saints −3.0",
@@ -130,8 +130,8 @@
       "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 108 absorbed 2026 games.",
       "sample_games": 108,
       "seeded": true,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "STALE MARKET",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.7-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1157,18 +1157,34 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "New Orleans Saints −3.0",
       "model_raw": "New Orleans Saints -3.2",
+      "market": "New Orleans Saints −2.5",
+      "difference": "0.7 points",
+      "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "key_number": {
+        "text": "Market is below 3; model sits on 3.",
+        "detail": "New Orleans Saints: market −2.5, model fair −3.0.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
       "total_model": "42.5",
       "total_model_raw": "42.7",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "43.5",
+      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "total_difference": "0.8 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "STALE MARKET",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.7-point gap is context only and the game is excluded from research ranking.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects New Orleans Saints 23, Cleveland Browns 20.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "STALE MARKET",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.7-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1300,8 +1316,7 @@
     },
     "notes": [
       "EdgeDesk’s line is New Orleans Saints −3.0 with a fair total of 42.5, before any book is consulted.",
-      "New Orleans Saints wins 61% of the time in EdgeDesk’s distribution, Cleveland Browns 39%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "New Orleans Saints wins 61% of the time in EdgeDesk’s distribution, Cleveland Browns 39%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1311,6 +1326,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

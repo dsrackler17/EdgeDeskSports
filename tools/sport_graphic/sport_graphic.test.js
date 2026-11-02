@@ -125,6 +125,44 @@ chk('labGame finds the event’s game by ESPN id', S.labGame(slateAs('ncaam'), '
 chk('…refuses a game listed the other way round', (() => { const r = S.labGame(slateAs('ncaam'), 'ncaam', ev({ home: { id: String(B0.away_id) }, away: { id: String(B0.home_id) } })); return r.ok === false && /other way round/.test(r.message); })());
 chk('…and says when the game is not priced yet', (() => { const r = S.labGame(slateAs('ncaam'), 'ncaam', ev({ provider_id: '1' })); return r.ok === false && /not priced this game yet/.test(r.message); })());
 
+/* a neutral-site game the schedule lists the other way round (Northern Illinois v Grambling, 2 Nov 2026):
+   no side has home court in the number, so the slate's game is read with the schedule's sides */
+const IDX = JSON.parse(fs.readFileSync(path.join(ROOT, 'basketball', 'ncaam_research', 'published', 'index.json'), 'utf8'));
+const rowOf = (id) => IDX.teams.filter((t) => String(t.id) === String(id))[0];
+const NIU = rowOf(2459), GRAM = rowOf(2755);
+chk('the research index rates both schools of the regression game', !!NIU && !!GRAM);
+const N0 = Object.assign(clone(B0), { neutral: true, home: NIU.name, away: GRAM.name, home_id: '2459', away_id: '2755',
+  prices: { moneyline: { home: 0.4249, away: 0.5751, fair_home: 135, fair_away: -135 },
+    spread: { projected_margin: -2.4, fair_home_line: 2.5, lines: { 2: { home_cover: 0.4724, push: 0.0316, away_cover: 0.496, fair_home: 105, fair_away: -105 }, 2.5: { home_cover: 0.504, push: 0, away_cover: 0.496, fair_home: -102, fair_away: 102 } } },
+    total: { projected: 140.6, fair_line: 140.5, lines: {} } },
+  inputs: { back_to_back: { home: 1, away: 0 }, games_this_season: { home: 0, away: 3 } } });
+const slateN = (g, cal) => { const s = clone(BB); s.leagues.ncaam = Object.assign({}, s.leagues.ncaam, { games: [g] }, cal ? { calibration_version: cal } : {}); return s; };
+const evN = ev({ provider_id: String(N0.game_id), home: { id: '2755', name: 'Grambling Tigers', short: 'Grambling', abbr: 'GRAM', record: '0-0' }, away: { id: '2459', name: 'Northern Illinois Huskies', short: 'N Illinois', abbr: 'NIU', record: '0-0' } });
+const flip = S.labGame(slateN(N0), 'ncaam', evN);
+chk('a neutral-site game listed the other way round is read with the schedule’s sides', flip.ok === true && flip.flipped === true && flip.g.home_id === '2755' && flip.g.away_id === '2459' && flip.g.home === GRAM.name, flip.message || flip.g && [flip.g.home_id, flip.g.away_id]);
+chk('…each price moves to its own team', flip.ok && flip.g.prices.moneyline.home === 0.5751 && flip.g.prices.moneyline.fair_home === -135 && flip.g.prices.spread.projected_margin === 2.4 && flip.g.prices.spread.fair_home_line === -2.5 && flip.g.prices.total.fair_line === 140.5);
+chk('…a home line L becomes the other side’s −L, covers and pushes with it', flip.ok && JSON.stringify(flip.g.prices.spread.lines['-2']) === JSON.stringify({ home_cover: 0.496, push: 0.0316, away_cover: 0.4724, fair_home: -105, fair_away: 105 }) && flip.g.prices.spread.lines['-2.5'].fair_home === 102, flip.ok && Object.keys(flip.g.prices.spread.lines));
+chk('…and the rest and sample inputs too', flip.ok && flip.g.inputs.back_to_back.away === 1 && flip.g.inputs.games_this_season.home === 3);
+chk('…the slate’s own game is left as it was', N0.home_id === '2459' && N0.prices.moneyline.home === 0.4249);
+chk('…the graphic favours the same team by the same amount', flip.ok && (() => { const a = S.basketball(N0, BB.leagues.ncaam, { league: 'ncaam', now: NOW0 }).content, b = S.basketball(flip.g, BB.leagues.ncaam, { league: 'ncaam', now: NOW0 }).content; return a.win.away === b.win.home && a.spread_text === b.spread_text && a.scores.home === b.scores.away && a.total === b.total; })());
+chk('a home game listed the other way round is still refused (home court decides it)', S.labGame(slateN(Object.assign(clone(N0), { neutral: false })), 'ncaam', evN).ok === false);
+chk('…and so is a neutral game under a calibration that gives the first-listed side an intercept', S.labGame(slateN(N0, 'bb_cal_v1'), 'ncaam', evN).ok === false);
+
+/* last season's ratings on the graphic (the men's research index) */
+const statsOf = (h, a) => ({ season: IDX.season, of: IDX.teams.length, home: h, away: a });
+const withStats = flip.ok && common(S.basketball(flip.g, BB.leagues.ncaam, { league: 'ncaam', now: NOW0, teams: { home: evN.home, away: evN.away }, stats: statsOf(GRAM, NIU) }), 'ncaam with last season’s ratings');
+chk('ratings: who is playing stays first, then last season’s ratings and offense against defense', withStats && withStats.insights[0].title === 'WHO IS PLAYING' && withStats.insights[1].title === (IDX.season - 1) + '-' + String(IDX.season).slice(2) + ' RATINGS' && withStats.insights[2].title === 'OFFENSE VS DEFENSE', withStats && withStats.insights.map((i) => i.title));
+chk('…each team’s record and net-rating rank, from the index', withStats && withStats.insights[1].text.indexOf('NIU ' + NIU.w + '-' + NIU.l + ' (#' + NIU.rank + ')') === 0 && withStats.insights[1].text.indexOf('GRAM ' + GRAM.w + '-' + GRAM.l + ' (#' + GRAM.rank + ')') > 0 && withStats.insights[1].text.indexOf('of ' + IDX.teams.length) > 0, withStats && withStats.insights[1].text);
+chk('…each offense against the other defense, by rank', withStats && withStats.insights[2].text === 'NIU offense #' + NIU.rank_o + ' vs GRAM defense #' + GRAM.rank_d + '. GRAM offense #' + GRAM.rank_o + ' vs NIU defense #' + NIU.rank_d, withStats && withStats.insights[2].text);
+chk('…rest is kept ahead of the venue', withStats && withStats.insights[3].title === 'REST', withStats && withStats.insights.map((i) => i.title));
+chk('…without a price, the strip carries the records and net ratings', withStats && withStats.detail && withStats.detail.cells[1].v.join(' ') === 'NIU ' + NIU.w + '-' + NIU.l + ' GRAM ' + GRAM.w + '-' + GRAM.l && /\(#\d+\)/.test(withStats.detail.cells[2].v[0]), withStats && withStats.detail);
+chk('…each school drawn in its own colour', withStats && withStats.home.color === GRAM.color && withStats.away.color === NIU.color, withStats && [withStats.home.color, withStats.away.color]);
+chk('…with a price, the market keeps the strip and the ratings stay in what to watch', flip.ok && (() => { const c = S.basketball(flip.g, BB.leagues.ncaam, { league: 'ncaam', now: NOW0, stats: statsOf(GRAM, NIU), market: mkt(20) }).content; return !!c.market && c.insights.some((i) => /RATINGS$/.test(i.title)) && c.insights.some((i) => i.title === 'MODEL VS MARKET'); })());
+const oneSide = flip.ok && common(S.basketball(flip.g, BB.leagues.ncaam, { league: 'ncaam', now: NOW0, stats: statsOf(GRAM, null) }), 'ncaam, one side unrated');
+chk('a team the index does not rate reads unrated, and no offense-vs-defense line is made', oneSide && /unrated/.test(oneSide.insights[1].text) && !oneSide.insights.some((i) => i.title === 'OFFENSE VS DEFENSE'));
+chk('without the index the graphic is as before', flip.ok && (() => { const c = S.basketball(flip.g, BB.leagues.ncaam, { league: 'ncaam', now: NOW0 }).content; return !c.insights.some((i) => /RATINGS$/.test(i.title)) && c.insights.some((i) => i.title === 'SAMPLE SIZE' || i.title === 'EARLY SEASON'); })());
+chk('the cache key moves with the ratings shown', flip.ok && S.basketball(flip.g, BB.leagues.ncaam, { league: 'ncaam', now: NOW0 }).key !== S.basketball(flip.g, BB.leagues.ncaam, { league: 'ncaam', now: NOW0, stats: statsOf(GRAM, NIU) }).key);
+
 /* ============================================================== BASEBALL */
 const NOW_B = Date.parse('2026-10-26T16:00:00Z');
 const card = { __key: '2026-10-26|toronto|dodgers|1', home_team_name: 'Los Angeles Dodgers', away_team_name: 'Toronto Blue Jays', home_record: '93-69', away_record: '94-68', start_time: '2026-10-27T00:08:00Z', venue: 'Dodger Stadium',
@@ -235,6 +273,23 @@ chk('app.html loads the module after the renderer, with the renderer’s version
 chk('the MLB and college briefs and the UFC panel draw it', /window\.mlbxGfxMount=function/.test(APP) && /mlbxGfxMount\(\$id\('briefGfx'\),'mlb'/.test(APP) && /mlbxGfxMount\(document\.getElementById\('cbbGfx'\),'cbb'/.test(APP) && /id="ufcCardGfx"/.test(APP) && /SG\.mountCard\(el,\{eventId:null/.test(APP));
 chk('the college brief says what is projected and that none of it is a price', /none of that is turned into a price/.test(APP) && /no fair line, moneyline or run line/.test(APP));
 
-failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 400) : '')));
-console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'matchup graphic, every other sport — ' + pass + ' passed, ' + fail + ' failed');
-process.exit(fail === 0 ? 0 : 1);
+/* the matchup view's own path: forEvent reads the slate and the men's research index, and draws the
+   neutral-site game the schedule lists the other way round, with last season's ratings */
+async function viaForEvent() {
+  const served = { '/basketball/slate.json': slateN(N0), '/basketball/ncaam_research/published/index.json': IDX };
+  const was = global.fetch;
+  global.fetch = (url) => { const k = String(url).split('?')[0]; return Promise.resolve(served[k] ? { ok: true, status: 200, json: () => Promise.resolve(clone(served[k])) } : { ok: false, status: 404 }); };
+  try {
+    const r = await S.forEvent(Object.assign(clone(evN), { sport: 'ncaam' }), { now: NOW0 });
+    chk('forEvent draws the neutral game listed the other way round', r.ok === true, r.message);
+    chk('…with both teams’ ratings from the index', r.ok && r.content.insights.some((i) => i.title === 'OFFENSE VS DEFENSE') && r.content.home.abbr === 'GRAM', r.ok && r.content.insights.map((i) => i.title));
+    delete served['/basketball/ncaam_research/published/index.json'];
+    const r2 = await S.forEvent(Object.assign(clone(evN), { sport: 'ncaam', id: 'other' }), { now: NOW0 + 11 * 60000 });
+    chk('…and still draws, without ratings, when the index cannot be read', r2.ok === true);
+  } finally { global.fetch = was; }
+}
+viaForEvent().catch((e) => chk('forEvent ran', false, String(e && e.stack || e))).then(() => {
+  failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 400) : '')));
+  console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'matchup graphic, every other sport — ' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail === 0 ? 0 : 1);
+});
