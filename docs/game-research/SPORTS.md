@@ -93,6 +93,19 @@ line). The matchup view (`lib/edgedesk_games_ui.js`) mounts the graphic for
 the sports without a research page of their own (`EDSportGraphic.SPORTS_WITH_BLOCK`),
 reading `basketball/slate.json` or the UFC model file when the view opens.
 
+For men's games the view also reads `basketball/ncaam_research/published/index.json`
+(last season's record, adjusted net rating and offense and defense ranks, and
+each school's colour, by ESPN id). What to watch for then carries each team's
+record and net-rating rank and each offense against the other defense, and
+the no-price strip carries the records and net ratings. Without the index the
+graphic draws as before.
+
+A neutral-site game that the schedule and the slate list with home and away
+exchanged is read with the schedule's sides (`EDSportGraphic.flipGame`): under
+the home-games-only intercept the model prices a neutral game the same either
+way round. A home game listed the other way round is still not drawn, because
+there the sides decide home court.
+
 The ESPN women's and WNBA scoreboards were not read from the environment this
 was built in (its network policy refuses `site.api.espn.com`); `npm run
 slate:verify` on a runner shows what they answer.

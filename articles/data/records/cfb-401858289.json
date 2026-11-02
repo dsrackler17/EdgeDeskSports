@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T17:00:00.000Z",
   "game_when_label": "2026-11-07 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -172,11 +172,11 @@
     "starters": {
       "away": {
         "team": "Florida State",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
         "player": "Ashton Daniels",
         "player_id": "4838679",
-        "label": "unresolved: Ashton Daniels 92% of recent dropbacks and Kevin Sperry 4% of recent dropbacks.",
+        "label": "Ashton Daniels — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 9,
-          "dropbacks": 320,
+          "starts": 10,
+          "dropbacks": 355,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -203,44 +203,25 @@
             {
               "player_id": "4838679",
               "player_name": "Ashton Daniels",
-              "dropbacks": 70,
-              "share": 0.921
-            },
-            {
-              "player_id": "5141661",
-              "player_name": "Kevin Sperry",
-              "dropbacks": 3,
-              "share": 0.039
+              "dropbacks": 60,
+              "share": 0.938
             },
             {
               "player_id": "5121169",
               "player_name": "Darian Mensah",
               "dropbacks": 2,
-              "share": 0.026
+              "share": 0.031
             },
             {
-              "player_id": "5078278",
-              "player_name": "Lincoln Kienholz",
-              "dropbacks": 1,
-              "share": 0.013
+              "player_id": "5141661",
+              "player_name": "Kevin Sperry",
+              "dropbacks": 2,
+              "share": 0.031
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401858254",
-            "opponent": "Louisville",
-            "dropbacks": 42,
-            "starter": {
-              "player_id": "4838679",
-              "player_name": "Ashton Daniels",
-              "share": 0.952
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401858263",
@@ -253,12 +234,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401858280",
+            "opponent": "Clemson",
+            "dropbacks": 30,
+            "starter": {
+              "player_id": "4838679",
+              "player_name": "Ashton Daniels",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/floridastate.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-10-31T23:00:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Boston College",
@@ -277,7 +271,7 @@
         },
         "experience": {
           "starts": 9,
-          "dropbacks": 261,
+          "dropbacks": 262,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -293,26 +287,26 @@
             {
               "player_id": "5307005",
               "player_name": "Mason McKenzie",
-              "dropbacks": 38,
-              "share": 0.679
+              "dropbacks": 39,
+              "share": 0.684
             },
             {
               "player_id": "5142236",
               "player_name": "Grayson Wilson",
               "dropbacks": 6,
-              "share": 0.107
+              "share": 0.105
             },
             {
               "player_id": "5276589",
               "player_name": "Femi Babalola",
               "dropbacks": 6,
-              "share": 0.107
+              "share": 0.105
             },
             {
               "player_id": "5191162",
               "player_name": "Alberto Mendoza",
               "dropbacks": 4,
-              "share": 0.071
+              "share": 0.07
             }
           ]
         },
@@ -335,11 +329,11 @@
             "week": 9,
             "game_id": "401858279",
             "opponent": "Duke",
-            "dropbacks": 33,
+            "dropbacks": 34,
             "starter": {
               "player_id": "5307005",
               "player_name": "Mason McKenzie",
-              "share": 0.606
+              "share": 0.618
             },
             "settled": true,
             "why": "took the first dropback of the game"
@@ -348,9 +342,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T16:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1478,12 +1472,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "away quarterback is contested — the evidence names more than one starter",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1601,13 +1589,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
-        "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the quarterback job is contested for Florida State",
-        "score": 79,
-        "grade": "ADEQUATE",
-        "grade_label": "ADEQUATE",
+        "pct": 88,
+        "tier": "STRONG",
+        "text": "88 · STRONG",
+        "sub": "main deduction: Florida State’s availability report is not due yet",
+        "score": 88,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1619,7 +1607,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 10.3,
+            "score": 11.2,
             "max": 20
           },
           {
@@ -1637,7 +1625,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14,
+            "score": 15,
             "max": 15
           },
           {
@@ -1647,25 +1635,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the quarterback job is contested for Florida State",
-        "capped_by": [
-          "QB_CONTESTED"
-        ],
+        "main_deduction": "Florida State’s availability report is not due yet; the impact of Florida State’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Confirm Florida State’s starting QB (Ashton Daniels)",
-            "potential_gain": 8,
-            "text": "up to +8"
-          },
-          {
             "action": "Re-read availability inside the filing window (Florida State)",
-            "potential_gain": 2,
-            "text": "up to +2 once confirm Florida State’s starting QB (Ashton Daniels) is done"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Re-read availability inside the filing window (Boston College)",
-            "potential_gain": 2,
-            "text": "up to +2 once confirm Florida State’s starting QB (Ashton Daniels) is done"
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1699,14 +1685,14 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "SIGNIFICANT_CHANGE",
-        "label": "SIGNIFICANT CHANGE",
-        "text": "EdgeDesk has moved 3.2 pts toward Boston College since the latest published number."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "LOW",
         "label": "Low",
-        "text": "the stored numbers span 5.4 pts across 3 readings"
+        "text": "the stored numbers span 2.2 pts across 3 readings"
       },
       "published": [
         {
@@ -1716,19 +1702,19 @@
           "text": "Florida State -1.8"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": -7.19,
-          "text": "Florida State -7.2"
+          "home_margin": -4.01,
+          "text": "Florida State -4.0"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 3.18,
-        "toward_team": "Boston College",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "3.2 pts toward Boston College since the latest published number"
+        "points": 0,
+        "toward_team": "Florida State",
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
@@ -1905,10 +1891,10 @@
       "Boston College wins 39% of the time in EdgeDesk’s simulation, Florida State 61%.",
       "Eight games in ten land between -25.0 and +17.0 for Boston College. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "Florida State quarterback: Ashton Daniels — started the last game; no announcement for this one.",
       "Boston College quarterback: Mason McKenzie — started the last game; no announcement for this one."
     ],
     "missing": [
-      "Florida State quarterback unresolved: unresolved: Ashton Daniels 92% of recent dropbacks and Kevin Sperry 4% of recent dropbacks.",
       "No availability report reached Ashton Daniels — unknown is carried as unknown, never as healthy.",
       "No availability report reached Mason McKenzie — unknown is carried as unknown, never as healthy."
     ],
@@ -1918,10 +1904,10 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1l3wz8ebe8oak",
+    "packet_hash": "kkjb1i3mebr8",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
-    "question": "Can Florida State’s pass rush get to Mason McKenzie?",
+    "question": "Can Boston College’s pass rush get to Ashton Daniels?",
     "assessment": "Some measured evidence supports EdgeDesk’s lean toward Boston College, and its own breakdown accounts for about 1.3 of the 2.5 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
       "points": 2.5,
@@ -1935,7 +1921,7 @@
       "EdgeDesk’s position-group ratings put Boston College’s run defense No. 55 nationally and Florida State’s No. 92."
     ],
     "contradicting": [
-      "When Boston College has the ball (pass protection against the pass rush): Boston College’s offense has allowed a sack on 9.8% of its dropbacks, and Florida State’s defense sacks the quarterback on 8.8% of opponent dropbacks (FBS average 5.7%).",
+      "When Boston College has the ball (pass protection against the pass rush): Boston College’s offense has allowed a sack on 9.8% of its dropbacks, and Florida State’s defense sacks the quarterback on 7.2% of opponent dropbacks (FBS average 5.7%).",
       "When Florida State has the ball (big plays through the air): Florida State’s offense turns 16.6% of its pass plays into explosive gains, and Boston College’s defense gives up explosive gains on 9.4% of opponent pass plays (FBS average 10.2%).",
       "When Florida State has the ball (the line of scrimmage on running plays): Florida State’s offense is stopped at or behind the line on 10.5% of its runs, and Boston College’s defense stops 18.3% of opponent runs at or behind the line (FBS average 17.5%).",
       "In his last two games (Georgia Tech and Duke), McKenzie averaged 5.0 yards per attempt, against 7.7 in his six games before that."
@@ -1947,15 +1933,15 @@
     "availability": [],
     "script": {
       "model": [
-        "Boston College’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 9.8% of its dropbacks, and Florida State’s defense sacks the quarterback on 8.8% of opponent dropbacks.",
-        "Boston College’s defense has to slow Florida State on big pass plays — Florida State’s offense turns 16.6% of its pass plays into explosive gains.",
         "Boston College’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.0% of opponent dropbacks, against an offense that has allowed a sack on 9.0% of its dropbacks.",
+        "Boston College’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.2% of opponent dropbacks.",
+        "Boston College’s defense has to slow Florida State on big pass plays — Florida State’s offense turns 16.6% of its pass plays into explosive gains.",
         "Boston College’s offense has to keep winning on long runs: it turns 10.2% of its runs into explosive gains, and Florida State’s defense gives up explosive gains on 8.8% of opponent runs."
       ],
       "market": [
-        "Florida State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.8% of opponent dropbacks, against an offense that has allowed a sack on 9.8% of its dropbacks.",
+        "Florida State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.2% of opponent dropbacks, against an offense that has allowed a sack on 9.8% of its dropbacks.",
         "Florida State’s offense has to keep winning on big pass plays: it turns 16.6% of its pass plays into explosive gains, and Boston College’s defense gives up explosive gains on 9.4% of opponent pass plays.",
-        "Daniels keeps producing at his season rate (58.3% completions, 9.0 yards per attempt, 14 TD, 11 INT)."
+        "Florida State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 9.0% of its dropbacks, and Boston College’s defense sacks the quarterback on 9.0% of opponent dropbacks."
       ]
     },
     "unknown": [
@@ -1974,7 +1960,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1997,6 +1983,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

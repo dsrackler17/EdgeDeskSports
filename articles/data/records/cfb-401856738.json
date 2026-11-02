@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T17:45:00.000Z",
   "game_when_label": "2026-11-07 17:45 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -172,11 +172,11 @@
     "starters": {
       "away": {
         "team": "Arkansas",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
         "player": "KJ Jackson",
         "player_id": "5079516",
-        "label": "unresolved: KJ Jackson 91% of recent dropbacks and George MacIntyre 5% of recent dropbacks.",
+        "label": "KJ Jackson — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 8,
-          "dropbacks": 279,
+          "starts": 9,
+          "dropbacks": 314,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -203,38 +203,19 @@
             {
               "player_id": "5079516",
               "player_name": "KJ Jackson",
-              "dropbacks": 60,
-              "share": 0.909
-            },
-            {
-              "player_id": "5141571",
-              "player_name": "George MacIntyre",
-              "dropbacks": 3,
-              "share": 0.045
+              "dropbacks": 66,
+              "share": 0.957
             },
             {
               "player_id": "5158948",
               "player_name": "Jared Curtis",
               "dropbacks": 3,
-              "share": 0.045
+              "share": 0.043
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401856713",
-            "opponent": "Tennessee",
-            "dropbacks": 32,
-            "starter": {
-              "player_id": "5079516",
-              "player_name": "KJ Jackson",
-              "share": 0.906
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401856726",
@@ -247,12 +228,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401856733",
+            "opponent": "Missouri",
+            "dropbacks": 35,
+            "starter": {
+              "player_id": "5079516",
+              "player_name": "KJ Jackson",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/arkansas.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-10-31T23:45:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Auburn",
@@ -271,7 +265,7 @@
         },
         "experience": {
           "starts": 18,
-          "dropbacks": 623,
+          "dropbacks": 624,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -287,14 +281,14 @@
             {
               "player_id": "4880272",
               "player_name": "Byrum Brown",
-              "dropbacks": 70,
-              "share": 0.833
+              "dropbacks": 71,
+              "share": 0.835
             },
             {
               "player_id": "5210501",
               "player_name": "Tristan Ti'a",
               "dropbacks": 12,
-              "share": 0.143
+              "share": 0.141
             },
             {
               "player_id": "4911529",
@@ -329,11 +323,11 @@
             "week": 9,
             "game_id": "401856735",
             "opponent": "Ole Miss",
-            "dropbacks": 46,
+            "dropbacks": 47,
             "starter": {
               "player_id": "4880272",
               "player_name": "Byrum Brown",
-              "share": 0.87
+              "share": 0.872
             },
             "settled": true,
             "why": "took the first dropback of the game"
@@ -342,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T16:45:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1492,12 +1486,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "away quarterback is contested — the evidence names more than one starter",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1633,13 +1621,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
-        "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the quarterback job is contested for Arkansas",
-        "score": 79,
-        "grade": "ADEQUATE",
-        "grade_label": "ADEQUATE",
+        "pct": 89,
+        "tier": "STRONG",
+        "text": "89 · STRONG",
+        "sub": "main deduction: no source has established whether Auburn or Arkansas’s starting QB can play",
+        "score": 89,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1651,7 +1639,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.9,
+            "score": 12.8,
             "max": 20
           },
           {
@@ -1669,7 +1657,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14,
+            "score": 15,
             "max": 15
           },
           {
@@ -1679,15 +1667,20 @@
             "max": 10
           }
         ],
-        "main_deduction": "the quarterback job is contested for Arkansas",
+        "main_deduction": "no source has established whether Auburn or Arkansas’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
         "capped_by": [
-          "QB_CONTESTED"
+          "QB_STATUS_UNCONFIRMED"
         ],
         "next_actions": [
           {
-            "action": "Confirm Arkansas’s starting QB (KJ Jackson)",
-            "potential_gain": 10,
-            "text": "up to +10"
+            "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2 once re-read availability inside the filing window (Auburn) and Re-read availability inside the filing window (Arkansas) is done"
+          },
+          {
+            "action": "Fetch the venue forecast",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Auburn) and Re-read availability inside the filing window (Arkansas) is done"
           }
         ],
         "stability": {
@@ -1727,14 +1720,14 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "SIGNIFICANT_CHANGE",
-        "label": "SIGNIFICANT CHANGE",
-        "text": "EdgeDesk has moved 2.7 pts toward Auburn since the latest published number."
+        "key": "LINE_MOVING",
+        "label": "LINE MOVING",
+        "text": "EdgeDesk’s number is steady, but the market has moved 2.0 pts toward Arkansas (espn · Draft Kings)."
       },
       "stability": {
-        "tier": "LOW",
-        "label": "Low",
-        "text": "the stored numbers span 3.1 pts across 3 readings"
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.4 pts across 3 readings"
       },
       "published": [
         {
@@ -1744,25 +1737,25 @@
           "text": "Auburn -10.9"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": 7.82,
-          "text": "Auburn -7.8"
+          "home_margin": 10.48,
+          "text": "Auburn -10.5"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 2.66,
-        "toward_team": "Auburn",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "2.7 pts toward Auburn since the latest published number"
+        "points": 0,
+        "toward_team": "Arkansas",
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 0.4 points toward Arkansas since the first published number.",
         "attribution_text": "Projection changed 0.4 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": null,
+        "market": "Market moved 2.0 pts toward Arkansas (espn · Draft Kings)",
         "model_version": null
       },
       "parity": {
@@ -1933,10 +1926,10 @@
       "Auburn wins 76% of the time in EdgeDesk’s simulation, Arkansas 24%.",
       "Eight games in ten land between -10.5 and +31.5 for Auburn. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "Arkansas quarterback: KJ Jackson — started the last game; no announcement for this one.",
       "Auburn quarterback: Byrum Brown — started the last game; no announcement for this one."
     ],
     "missing": [
-      "Arkansas quarterback unresolved: unresolved: KJ Jackson 91% of recent dropbacks and George MacIntyre 5% of recent dropbacks.",
       "No availability report reached KJ Jackson — unknown is carried as unknown, never as healthy.",
       "No availability report reached Byrum Brown — unknown is carried as unknown, never as healthy."
     ],
@@ -1946,7 +1939,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "dey44g1pyai82",
+    "packet_hash": "jbkzas1p3qfme",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Arkansas’ pass rush get to Byrum Brown?",
@@ -1957,7 +1950,7 @@
       "other": "Auburn"
     },
     "supporting": [
-      "When Auburn has the ball (pass protection against the pass rush): Auburn’s offense has allowed a sack on 11.4% of its dropbacks, and Arkansas’ defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.7%).",
+      "When Auburn has the ball (pass protection against the pass rush): Auburn’s offense has allowed a sack on 11.4% of its dropbacks, and Arkansas’ defense sacks the quarterback on 5.6% of opponent dropbacks (FBS average 5.7%).",
       "When Arkansas has the ball (the line of scrimmage on running plays): Arkansas’ offense is stopped at or behind the line on 13.8% of its runs, and Auburn’s defense stops 17.4% of opponent runs at or behind the line (FBS average 17.5%).",
       "Byrum Brown has completed 159 of 247 passes (64.4%) for 1,582 yards, 6.4 yards per attempt, 10 touchdowns and 7 interceptions in eight games for Auburn, and has been sacked on 33 of 280 dropbacks.",
       "In his last two games (LSU and Ole Miss), Brown averaged 5.6 yards per attempt, against 6.7 in his six games before that."
@@ -1977,7 +1970,7 @@
     "availability": [],
     "script": {
       "model": [
-        "Arkansas’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.5% of opponent dropbacks, against an offense that has allowed a sack on 11.4% of its dropbacks.",
+        "Arkansas’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.6% of opponent dropbacks, against an offense that has allowed a sack on 11.4% of its dropbacks.",
         "Arkansas’ defense has to slow Auburn on long runs — Auburn’s offense turns 11.1% of its runs into explosive gains.",
         "Arkansas’ offense has to hold its own on long runs against a defense that gives up explosive gains on 5.1% of opponent runs.",
         "Arkansas’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 13.8% of its runs, and Auburn’s defense stops 17.4% of opponent runs at or behind the line."
@@ -1985,7 +1978,7 @@
       "market": [
         "Auburn’s offense has to keep winning on long runs: it turns 11.1% of its runs into explosive gains, and Arkansas’ defense gives up explosive gains on 7.1% of opponent runs.",
         "Auburn’s defense has to come out ahead on long runs: it gives up explosive gains on 5.1% of opponent runs, against an offense that turns 3.9% of its runs into explosive gains.",
-        "Auburn’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 11.4% of its dropbacks, and Arkansas’ defense sacks the quarterback on 6.5% of opponent dropbacks."
+        "Auburn’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 11.4% of its dropbacks, and Arkansas’ defense sacks the quarterback on 5.6% of opponent dropbacks."
       ]
     },
     "unknown": [
@@ -2014,7 +2007,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2030,6 +2023,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

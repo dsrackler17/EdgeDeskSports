@@ -21,8 +21,8 @@
   "game_time": "2026-11-08T02:30:00.000Z",
   "game_when_label": "2026-11-08 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -240,7 +240,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T16:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Texas Tech",
@@ -324,9 +324,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T16:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1690,9 +1690,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "LINE_MOVING",
+        "label": "LINE MOVING",
+        "text": "EdgeDesk’s number is steady, but the market has moved 1.0 pts toward West Virginia (espn · Draft Kings)."
       },
       "stability": {
         "tier": "LOW",
@@ -1707,25 +1707,25 @@
           "text": "Texas Tech -12.9"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
           "home_margin": 15.36,
           "text": "Texas Tech -15.4"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
         "points": 0,
         "toward_team": "Texas Tech",
-        "since_at": "2026-11-01T00:14:29.881Z",
+        "since_at": "2026-11-01T18:01:05.765Z",
         "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 2.4 points toward Texas Tech since the first published number.",
         "attribution_text": "Projection changed 2.4 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": null,
+        "market": "Market moved 1.0 pts toward West Virginia (espn · Draft Kings)",
         "model_version": null
       },
       "parity": {
@@ -1909,13 +1909,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1vhjfsubh19wc",
-    "status": "NO_MATERIAL_DISAGREEMENT",
+    "packet_hash": "1pswsbenfsqpk",
+    "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can Texas Tech take away West Virginia’s big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.1 points.",
+    "assessment": "EdgeDesk’s number is 2.1 points closer to West Virginia than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 2.1 points. The measured football evidence leans toward Texas Tech, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
     "gap": {
-      "points": 1.1,
+      "points": 2.1,
       "toward": "West Virginia",
       "other": "Texas Tech"
     },
@@ -1966,7 +1966,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1982,6 +1982,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

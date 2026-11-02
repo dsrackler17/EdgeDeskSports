@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T17:00:00.000Z",
   "game_when_label": "2026-11-07 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 20,
-          "dropbacks": 623,
+          "starts": 21,
+          "dropbacks": 648,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -204,25 +204,18 @@
               "player_id": "4870906",
               "player_name": "Arch Manning",
               "dropbacks": 49,
-              "share": 1
+              "share": 0.98
+            },
+            {
+              "player_id": "5141509",
+              "player_name": "Karle Lacey Jr.",
+              "dropbacks": 1,
+              "share": 0.02
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 7,
-            "game_id": "401856724",
-            "opponent": "Florida",
-            "dropbacks": 21,
-            "starter": {
-              "player_id": "4870906",
-              "player_name": "Arch Manning",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 8,
             "game_id": "401856732",
@@ -235,20 +228,33 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401856737",
+            "opponent": "Mississippi State",
+            "dropbacks": 22,
+            "starter": {
+              "player_id": "4870906",
+              "player_name": "Arch Manning",
+              "share": 0.955
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-10-24T23:30:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "published_at": "2026-10-31T23:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Missouri",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
         "player": "Austin Simmons",
         "player_id": "5141684",
-        "label": "unresolved: Austin Simmons 96% of recent dropbacks and Marcel Reed 4% of recent dropbacks.",
+        "label": "Austin Simmons — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -258,8 +264,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 9,
-          "dropbacks": 292,
+          "starts": 10,
+          "dropbacks": 323,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -275,32 +281,13 @@
             {
               "player_id": "5141684",
               "player_name": "Austin Simmons",
-              "dropbacks": 74,
-              "share": 0.961
-            },
-            {
-              "player_id": "4870971",
-              "player_name": "Marcel Reed",
-              "dropbacks": 3,
-              "share": 0.039
+              "dropbacks": 77,
+              "share": 1
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401856716",
-            "opponent": "Texas A&M",
-            "dropbacks": 31,
-            "starter": {
-              "player_id": "5141684",
-              "player_name": "Austin Simmons",
-              "share": 0.903
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401856721",
@@ -313,14 +300,27 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401856733",
+            "opponent": "Arkansas",
+            "dropbacks": 31,
+            "starter": {
+              "player_id": "5141684",
+              "player_name": "Austin Simmons",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/missouri.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-10-31T23:45:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1439,12 +1439,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home quarterback is contested — the evidence names more than one starter",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1558,13 +1552,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
-        "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the quarterback job is contested for Missouri",
-        "score": 79,
-        "grade": "ADEQUATE",
-        "grade_label": "ADEQUATE",
+        "pct": 88,
+        "tier": "STRONG",
+        "text": "88 · STRONG",
+        "sub": "main deduction: Texas’s availability report is not due yet",
+        "score": 88,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1576,7 +1570,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.9,
+            "score": 12.8,
             "max": 20
           },
           {
@@ -1594,7 +1588,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14,
+            "score": 15,
             "max": 15
           },
           {
@@ -1604,25 +1598,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the quarterback job is contested for Missouri",
-        "capped_by": [
-          "QB_CONTESTED"
-        ],
+        "main_deduction": "Texas’s availability report is not due yet; the impact of Texas’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Confirm Missouri’s starting QB (Austin Simmons)",
-            "potential_gain": 8,
-            "text": "up to +8"
-          },
-          {
             "action": "Re-read availability inside the filing window (Texas)",
-            "potential_gain": 2,
-            "text": "up to +2 once confirm Missouri’s starting QB (Austin Simmons) is done"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Re-read availability inside the filing window (Missouri)",
-            "potential_gain": 2,
-            "text": "up to +2 once confirm Missouri’s starting QB (Austin Simmons) is done"
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1652,7 +1644,7 @@
       "projection_status": {
         "key": "STABLE",
         "label": "STABLE",
-        "text": "EdgeDesk’s number is within 0.75 pts of the latest published number (0.3 toward Missouri)."
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "HIGH",
@@ -1667,19 +1659,19 @@
           "text": "Texas -0.02"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": -0.01,
-          "text": "Texas -0.01"
+          "home_margin": 0.32,
+          "text": "Missouri -0.32"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 0.33,
-        "toward_team": "Missouri",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "0.3 pts toward Missouri since the latest published number"
+        "points": 0,
+        "toward_team": "Texas",
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
@@ -1856,11 +1848,11 @@
       "Missouri wins 51% of the time in EdgeDesk’s simulation, Texas 49%.",
       "Eight games in ten land between -20.7 and +21.3 for Missouri. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Texas quarterback: Arch Manning — started the last game; no announcement for this one."
+      "Texas quarterback: Arch Manning — started the last game; no announcement for this one.",
+      "Missouri quarterback: Austin Simmons — started the last game; no announcement for this one."
     ],
     "missing": [
       "No availability report reached Arch Manning — unknown is carried as unknown, never as healthy.",
-      "Missouri quarterback unresolved: unresolved: Austin Simmons 96% of recent dropbacks and Marcel Reed 4% of recent dropbacks.",
       "No availability report reached Austin Simmons — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1869,18 +1861,18 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "xeldo8timxwa",
-    "status": "PARTIALLY_EXPLAINED",
+    "packet_hash": "85qdr01nijqym",
+    "status": "EXPLAINED",
     "input_suspect": false,
     "question": "Can Texas take away Missouri’s big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Missouri, and its own breakdown accounts for about 2.5 of the 3.8 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Most of the 2.8-point difference traces to home field (engine constant) (about 1.1 points), which the closing market has historically priced differently. That explains the gap; it does not make either number a bet.",
     "gap": {
-      "points": 3.8,
+      "points": 2.8,
       "toward": "Missouri",
       "other": "Texas"
     },
     "supporting": [
-      "When Missouri has the ball (pass protection against the pass rush): Missouri’s offense has allowed a sack on 2.0% of its dropbacks, and Texas’ defense sacks the quarterback on 6.9% of opponent dropbacks (FBS average 5.7%).",
+      "When Missouri has the ball (pass protection against the pass rush): Missouri’s offense has allowed a sack on 2.0% of its dropbacks, and Texas’ defense sacks the quarterback on 6.1% of opponent dropbacks (FBS average 5.7%).",
       "When Texas has the ball (pass protection against the pass rush): Texas’ offense has allowed a sack on 9.4% of its dropbacks, and Missouri’s defense sacks the quarterback on 8.0% of opponent dropbacks (FBS average 5.7%).",
       "When Texas has the ball (big plays through the air): Texas’ offense turns 8.1% of its pass plays into explosive gains, and Missouri’s defense gives up explosive gains on 7.9% of opponent pass plays (FBS average 10.2%).",
       "When Texas has the ball (the run game against the run defense): Texas’ offense averages 4.9 yards per carry, and Missouri’s defense allows 4.3 yards per carry (FBS average 5.0)."
@@ -1930,7 +1922,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1946,6 +1938,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }
