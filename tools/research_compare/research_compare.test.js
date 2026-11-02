@@ -253,6 +253,24 @@ eq('a sport_key maps to one slate sport; basketball_ncaab is NCAAM, basketball_w
   eq('the required example through the card path: entry 50¢, ask 54¢, fair 53¢', [A.movement.text, A.comparison.status, RC.sentence(A.comparison)], ['50¢ → 54¢ (up 4¢)', 'ABOVE_FAIR', 'Current ask is 1¢ above model fair value before fees.']);
   const At = textOf(U.cardV2HTML(card({ avg_entry: 0.50, ask_price: 0.54, ask_size: 300, ask_at: MINS(1), fee_per_share: 0.0075 }), { events: viewAt53, now: NOW, zone: ZONE }));
   chk('…drawn: the entry separately, the ask with its depth, the 1¢ gap before fees, an EV with its basis', /avg entry 50¢ \(historical\)/.test(At) && /Best ask, 300 shares at it/.test(At) && /Current ask is 1¢ above model fair value before fees\./.test(At) && /Estimated EV −3\.2% per \$1/.test(At), At);
+  /* the door's own ask fields (supabase/radar.sql radar_card_ask: the Radar record's ask at publication, null when none) */
+  const NOASK = { ask_price: null, ask_size: null, ask_at: null, fee_per_share: null };
+  const dAsk = (o) => card(Object.assign({ avg_entry: 0.50, ask_price: 0.54, ask_size: 300, ask_at: MINS(3), fee_per_share: 0.0075 }, o || {}));
+  {
+    const n = RC.fromRadarCard(card(NOASK), { events: EVENTS, now: NOW });
+    eq('door: the four ask fields null is exactly no ask: the displayed price, indicative, no EV, no past ask', [n.quote.kind, n.quote.price, n.comparison.status, n.comparison.diff.value, n.past_ask, JSON.stringify(n.comparison)], [R.quote.kind, R.quote.price, R.comparison.status, R.comparison.diff.value, null, JSON.stringify(R.comparison)]);
+    const y = RC.fromRadarCard(dAsk(), { events: viewAt53, now: NOW }), yt = textOf(U.cardV2HTML(dAsk(), { events: viewAt53, now: NOW, zone: ZONE }));
+    eq('door: an ask 3 min old with its fee: executable, 1¢ above fair before fees, EV at ask + fee', [y.quote.kind, y.quote.size, y.comparison.diff.value, Math.round(y.comparison.ev.value * 1000) / 1000], ['executable_ask', 300, 1, -0.032]);
+    chk('door: drawn as "Best ask, 300 shares", the cents gap before fees, and an EV with its basis', /Polymarket 54¢ Best ask, 300 shares at it · 3 min ago/.test(yt) && /Current ask is 1¢ above model fair value before fees\./.test(yt) && /Estimated EV −3\.2% per \$1, one share at the best ask plus the market’s fee/.test(yt), yt);
+    const nf = RC.fromRadarCard(dAsk({ fee_per_share: null }), { events: viewAt53, now: NOW }), nft = textOf(U.cardV2HTML(dAsk({ fee_per_share: null }), { events: viewAt53, now: NOW, zone: ZONE }));
+    chk('door: an ask with no fee recorded: the gap before fees is drawn, no EV, and it says why', nf.comparison.diff.value === 1 && nf.comparison.ev.value === null && /No EV is shown: the market’s fee is not recorded\./.test(nft) && !/Estimated EV/.test(nft), nft);
+    const old = RC.fromRadarCard(dAsk({ ask_at: MINS(40) }), { events: viewAt53, now: NOW }), oldt = textOf(U.cardV2HTML(dAsk({ ask_at: MINS(40) }), { events: viewAt53, now: NOW, zone: ZONE }));
+    chk('door: an ask past its 15-minute limit is never compared: the displayed price is, labelled as one, with no EV',
+      old.quote.kind === 'indicative' && old.quote.price === 0.535 && old.comparison.ev.value === null && old.past_ask && old.past_ask.price === 0.54 && old.past_ask.freshness.state === 'stale'
+      && /Displayed price, not an ask/.test(oldt) && /Best ask at publication\. 54¢, 300 shares, quoted .*; taker fee 0\.8¢ a share\. Past its 15-minute limit, so it is not compared and no EV is drawn from it\./.test(oldt) && !/Estimated EV/.test(oldt), oldt);
+    const lone = RC.fromRadarCard(dAsk({ ask_at: MINS(40), current_price: null, price_at: null }), { events: viewAt53, now: NOW });
+    eq('door: an old ask and no displayed price: Price refresh needed, nothing compared', [lone.quote.kind, lone.comparison.status, lone.comparison.diff], ['executable_ask', 'PRICE_STALE', null]);
+  }
   /* model stale → no active comparison on the card */
   const stale = JSON.parse(JSON.stringify(EVENTS)); stale.find((e) => e.id === 'nhl:espn:401802002').research.model.generated_at = MINS(7 * 60);
   const Rs = RC.fromRadarCard(c0, { events: stale, now: NOW });
@@ -282,13 +300,27 @@ eq('a sport_key maps to one slate sport; basketball_ncaab is NCAAM, basketball_w
   const rec = textOf(U.recordHTML({ status: 'ok', label: 'EXPERIMENTAL', hypothesis: 'H-RADAR-02', priced_at: 'best_ask', small_sample: true, min_sample: 200,
     totals: { graded: 2, wins: 2, losses: 0, pushes: 0, roi: 0.784, beat_close_rate: 1, with_close: 1, pending: 1, void: 0, no_close: 1 }, h_radar_01: { status: 'complete', passed: false }, recent: [] }));
   chk('2–0 and +78.4% from two cards read as two cards, not validated, with every denominator', /Small sample: 2 of 200 graded/.test(rec) && /over 2 graded cards, not validated/.test(rec) && /1 of 2 graded with a comparable close/.test(rec) && /1 pending, 0 void, 1 without a close/.test(rec), rec);
-  /* the frozen protocol files are byte-identical to main (nothing here changes the experiment) */
+  /* the frozen protocol files are byte-identical to main (nothing here changes the experiment). One deliberate,
+     reviewed exception (methodology-surface change: the ask beside each card): supabase/radar.sql may differ from main
+     only by the read-only radar_card_ask() block and its use in radar_tonight()'s cards and grants. Undo exactly that
+     and the file must be main's byte for byte, so radar_rules(), radar_tonight_cards() (what radar_publish_cards
+     reads) and every other function stay frozen. The record, the registry, research/radar/** and the core stay byte-identical. */
   const cp = require('child_process');
+  const fsx = require('fs');
   const base = cp.spawnSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
   if (base) {
-    const d = cp.spawnSync('git', ['diff', '--name-only', base, '--', 'supabase/radar.sql', 'supabase/radar_record.sql', 'supabase/radar_registry.sql', 'research/radar', 'lib/edgedesk_radar.js'], { cwd: ROOT, encoding: 'utf8' });
-    const u = cp.spawnSync('git', ['status', '--porcelain', '--', 'supabase/radar.sql', 'supabase/radar_record.sql', 'supabase/radar_registry.sql', 'research/radar', 'lib/edgedesk_radar.js'], { cwd: ROOT, encoding: 'utf8' });
-    eq('H-RADAR-01/02: selection, publication, grading and registrations unchanged from main', (d.stdout + u.stdout).trim(), '');
+    const FROZEN = ['supabase/radar_record.sql', 'supabase/radar_registry.sql', 'research/radar', 'lib/edgedesk_radar.js'];
+    const d = cp.spawnSync('git', ['diff', '--name-only', base, '--'].concat(FROZEN), { cwd: ROOT, encoding: 'utf8' });
+    const u = cp.spawnSync('git', ['status', '--porcelain', '--'].concat(FROZEN), { cwd: ROOT, encoding: 'utf8' });
+    eq('H-RADAR-01/02: publication, grading, registrations and the core unchanged from main', (d.stdout + u.stdout).trim(), '');
+    const mainSql = cp.spawnSync('git', ['show', base + ':supabase/radar.sql'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 }).stdout;
+    const headSql = fsx.readFileSync(path.join(ROOT, 'supabase', 'radar.sql'), 'utf8');
+    const blk = /-- THE ASK, beside each card[\s\S]*?\ncreate or replace function public\.radar_card_ask\(p_card jsonb\)[\s\S]*?\nend \$f\$;\n\n/;
+    const undone = headSql.replace(blk, '').replace('jsonb_agg(c || public.radar_card_ask(c)) from public.radar_tonight_cards() c', 'jsonb_agg(c) from public.radar_tonight_cards() c')
+      .split(', public.radar_card_ask(jsonb) ').join(' ');
+    chk('radar.sql differs from main only by the read-only ask beside each card (radar_card_ask): undone, it is main byte for byte', !!mainSql && undone === mainSql,
+      mainSql ? { head_len: headSql.length, undone_len: undone.length, main_len: mainSql.length } : 'git show failed');
+    chk('…and radar_card_ask only reads (no insert, update, delete or radar_publish in it)', (() => { const m = headSql.match(blk); return !!m && !/\b(insert|update|delete|truncate)\b|radar_publish/i.test(m[0].replace(/--.*$/gm, '')); })());
   } else console.log('NOTE | no origin/main merge base here: the frozen-file diff check is not verified in this run');
 
   fails.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 600) : '')));

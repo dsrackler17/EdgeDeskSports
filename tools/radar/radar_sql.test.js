@@ -507,6 +507,10 @@ try {
   const tn = fn('public.radar_tonight()', asSub);
   chk('a subscriber gets the cards: two games (E1, E2), most wallets first', tn.status === 'ok' && tn.cards.length === 2 && tn.cards[0].event_id === 'E1' && tn.cards[1].event_id === 'E2', tn.cards && tn.cards.map((c) => c.event_id));
   const c1 = tn.cards[0] || {}, c2 = tn.cards[1] || {};
+  /* THE ASK beside each card (radar_card_ask): before radar_record.sql there is no record, so no ask on file: null, never the displayed price */
+  const ASK = ['ask_price', 'ask_size', 'ask_at', 'fee_per_share'];
+  chk('ask: without the record every card carries ask_price, ask_size, ask_at and fee_per_share, all null', tn.cards.every((c) => ASK.every((k) => k in c && c[k] === null)), tn.cards.map((c) => ASK.map((k) => c[k])));
+  chk('ask: …and the displayed price is left where it was (no midpoint in the ask\'s place)', Number(c1.current_price) === 0.6 && c1.ask_price === null);
   chk('E1: the side the top wallets are on (Chiefs), 3 of them, $746', c1.selection === 'Kansas City Chiefs' && c1.n_wallets === 3 && Number(c1.dollars) === 746 && c1.market_type === 'moneyline', c1);
   chk('E1: their average entry is dollar-weighted: 746 / 1800 = 0.4144', Number(c1.avg_entry) === 0.4144, c1.avg_entry);
   chk('E1: the current price 0.60, moved +0.1856 since they entered', Number(c1.current_price) === 0.6 && Number(c1.moved) === 0.1856 && c1.has_moved === true);
@@ -580,6 +584,13 @@ try {
   out = db.applyFileAtomic(F('radar_record.sql'));
   chk('the record installs; its report says ok', (out.match(/\|ok/g) || []).length === 3 && !/CHECK THIS/.test(out), out);
   chk('applying it twice is harmless', !/CHECK THIS/.test(db.applyFileAtomic(F('radar_record.sql'))));
+  /* THE ASK in the door, read from the record: nothing published yet, so nothing on file */
+  const doorCards = () => fn('public.radar_tonight()', asSub).cards || [];
+  const cardsBare = () => JSON.parse(db.service("select coalesce(jsonb_agg(c), '[]'::jsonb) from public.radar_tonight_cards() c;"));
+  const strip = (c) => { const x = Object.assign({}, c); ASK.forEach((k) => delete x[k]); return x; };
+  const recHash = () => V("select md5(coalesce((select string_agg(to_jsonb(c)::text, '|' order by card_id) from public.radar_cards c), '') || '#' || coalesce((select string_agg(to_jsonb(r)::text, '|' order by card_id) from public.radar_card_results r), ''))");
+  chk('ask: the record installed but no card published: every ask field null, the displayed price untouched', doorCards().length === 2 && doorCards().every((c) => ASK.every((k) => c[k] === null)) && doorCards().every((c) => c.current_price != null), doorCards());
+  chk('no client may read the record\'s ask directly (radar_card_ask is the door\'s)', fails(() => asSub(`select public.radar_card_ask('{}'::jsonb);`)) && fails(() => db.anon(`select public.radar_card_ask('{}'::jsonb);`)));
   chk('no client may publish or grade', fails(() => asSub('select public.radar_publish_cards();')) && fails(() => asSub(`select public.radar_publish_cards('[]'::jsonb);`)) && fails(() => db.anon('select public.radar_grade_cards();')));
   /* H-RADAR-02: a card is published at the order book's best ask (polymarket_sync reads it and hands it in), and only on
      a market whose fee is known to be none: E1's market says fees enabled at a rate of 0 (as the probe saw); E2's fee
@@ -592,6 +603,13 @@ try {
   chk('v2: a quote older than 30 minutes is not a price anyone can take: nothing is published', db.service(Q([quote(C('1'), 0.67, 0.65, 5000, 45)])) === '0');
   const pub1 = Number(db.service(Q([quote(C('1'), 0.67, 0.65, 5000, 1), quote(C('2'), 0.51, 0.49, 800, 1)])));
   chk('v2: E1 is published at its best ask; E2 is not, its market\'s fee unknown (never guessed)', pub1 === 1 && V("select string_agg(event_id, ',') from public.radar_cards") === 'E1');
+  {
+    const dc = doorCards(), e1 = dc.find((x) => x.event_id === 'E1') || {}, e2 = dc.find((x) => x.event_id === 'E2') || {};
+    const row = one("select ask_price, ask_size, to_jsonb(quoted_at) as quoted_at, fee_per_share from public.radar_cards where event_id = 'E1'");
+    chk('ask: E1, published, carries the record\'s own best ask, the shares at it, its quote time and the fee at it (0.67, 5,000, 0.011055)',
+      Number(e1.ask_price) === 0.67 && Number(e1.ask_size) === 5000 && Number(e1.fee_per_share) === 0.011055 && e1.ask_at === row.quoted_at, { e1: ASK.map((k) => e1[k]), row });
+    chk('ask: E2, not published (its fee unknown), has no ask on file: null, and its displayed price 0.50 stays the displayed price', ASK.every((k) => e2[k] === null) && Number(e2.current_price) === 0.5, ASK.map((k) => e2[k]));
+  }
   db.service(`update public.poly_markets set fees_enabled = false where condition_id = ${lit(C('2'))};`);
   const pub = pub1 + Number(db.service(Q([quote(C('1'), 0.67, 0.65, 5000, 1), quote(C('2'), 0.51, 0.49, 800, 1)])));
   chk('every card on Smart Money Tonight is published once: E1 and E2 (E2 once its market says it charges no fee)', pub === 2 && V("select string_agg(event_id, ',' order by event_id) from public.radar_cards") === 'E1,E2');
@@ -603,6 +621,15 @@ try {
   chk('…and no fee on a market that charges none (E2: fees not enabled)', Number(V("select fee_per_share from public.radar_cards where event_id = 'E2'")) === 0);
   chk('v2: a card whose price is not its ask is refused', fails(() => db.service(`insert into public.radar_cards (event_id, condition_id, token_id, market_type, commence_time, n_wallets, follow_price, follow_price_at, rules_version, ask_price, quoted_at)
     values ('EX', ${lit(C('1'))}, 'x', 'moneyline', now() + interval '1 day', 1, 0.66, now(), 2, 0.67, now());`)));
+  {
+    /* the door is additive and read-only: its cards minus the four ask fields ARE radar_tonight_cards() (what radar_publish_cards reads), and reading it writes nothing */
+    const h0 = recHash(), bare = cardsBare(), dc = doorCards();
+    chk('ask: the door\'s cards are radar_tonight_cards() plus the four ask fields, every other key and value unchanged', dc.length === bare.length && JSON.stringify(dc.map(strip)) === JSON.stringify(bare) && bare.every((c) => ASK.every((k) => !(k in c))), { dc: dc.map(strip), bare });
+    for (let i = 0; i < 5; i++) doorCards();
+    chk('ask: reading the door changes no published card and no recorded value (radar_cards and radar_card_results byte-identical)', recHash() === h0 && V('select count(*) from public.radar_cards') === '2');
+    const e2 = dc.find((x) => x.event_id === 'E2') || {};
+    chk('ask: a card on a market that charges no fee carries fee_per_share 0, never null', Number(e2.ask_price) === 0.51 && e2.fee_per_share !== null && Number(e2.fee_per_share) === 0);
+  }
   chk('publishing again adds nothing (one entry per game and side)', db.service(Q([quote(C('1'), 0.60, 0.58, 5000, 1)])) === '0' && V('select count(*) from public.radar_cards') === '2');
   chk('nothing is graded before the start', JSON.parse(db.service('select public.radar_grade_cards();')).graded === 0);
   chk('the record is append-only: a card cannot be edited or removed', fails(() => db.service('update public.radar_cards set follow_price = 0.5;')) && fails(() => db.service('delete from public.radar_cards;'))
@@ -635,6 +662,16 @@ try {
     && rec.hypothesis === 'H-RADAR-02' && rec.priced_at === 'best_ask' && rec.earlier_cards === 0, rec);
   chk('it carries what H-RADAR-01 found, verbatim from the registry', rec.h_radar_01 && rec.h_radar_01.hypothesis_id === 'H-RADAR-01' && rec.h_radar_01.status === found.status);
   chk('the cards themselves, newest first', rec.recent.length === 2 && rec.recent[0].home_team === 'Las Vegas Raiders' && rec.recent[0].result === 'win');
+  /* RADAR_RECORD_DUMP=<file>: the published records, every column, timestamps as seconds before now(), for a before/after comparison */
+  if (process.env.RADAR_RECORD_DUMP) {
+    const rel = (t) => `case when ${t} is null then null else round(extract(epoch from now() - ${t}) / 60) end`;
+    const dump = J(`select c.card_id, c.event_id, c.sport_key, c.condition_id, c.token_id, c.market_type, c.selection, c.outcome, c.point, c.home_team, c.away_team,
+        ${rel('c.commence_time')} as commence_min_ago, ${rel('c.published_at')} as published_min_ago, ${rel('c.follow_price_at')} as follow_price_min_ago, ${rel('c.quoted_at')} as quoted_min_ago,
+        c.n_wallets, c.dollars, c.avg_entry, c.follow_price, c.fair, c.fair_current, c.agrees, c.wallets, c.rules_version, c.ask_price, c.ask_size, c.bid_price, c.mid_price,
+        c.fee_schedule, c.fee_per_share, r.result, r.settle, r.roi, r.close_status, r.close_price, ${rel('r.close_at')} as close_min_ago, r.beat_close, r.clv_pct
+      from public.radar_cards c left join public.radar_card_results r using (card_id) order by c.card_id`);
+    fs.writeFileSync(process.env.RADAR_RECORD_DUMP, JSON.stringify(dump, null, 1) + '\n');
+  }
 
   /* THE STAGE REPORT (tools/radar/sql/radar_pipeline_report.sql, run by Deploy Prediction Radar): read-only, every stage counted */
   const writes = () => V("select (select count(*) from public.poly_sync_runs) || '/' || (select count(*) from public.radar_cards) || '/' || (select count(*) from public.poly_wallets) || '/' || (select count(*) from public.poly_wallet_grades)");

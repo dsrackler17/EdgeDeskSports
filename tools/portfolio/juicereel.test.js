@@ -618,6 +618,18 @@ async function live() {
     r = await call({ action: 'jr_callback', state: new URL(s2.body.url).searchParams.get('state'), error: 'access_denied' }, 'tok-op');
     const r3 = await call({ action: 'jr_callback', state: new URL(s2.body.url).searchParams.get('state'), code: J.approve(s2.body.url, 4).code }, 'tok-op');
     chk('a refused consent: "you did not authorize", and its state cannot be used afterwards', r.status === 400 && r.body.reason === 'JR_CONSENT_DENIED' && r3.body.reason === 'JR_STATE_INVALID');
+    /* Juice Reel answers ?error=invalid_scope before any consent screen when the
+       application may not request a scope (seen live on 2026-11-01 for
+       bets.settled.read): that is not the reader refusing, and must not say so */
+    const ae = {};
+    for (const e of ['invalid_scope', 'unauthorized_client', 'server_error', 'cancelled']) {
+      const sx = await call({ action: 'jr_start' }, 'tok-op');
+      ae[e] = (await call({ action: 'jr_callback', state: new URL(sx.body.url).searchParams.get('state'), error: e }, 'tok-op')).body;
+    }
+    chk('an authorize error that is not a refusal is never "you did not authorize": invalid_scope names the scope, an unauthorized client is EdgeDesk\'s application, anything else a Juice Reel error; status=cancelled is still a refusal',
+      ae.invalid_scope.reason === 'JR_AUTHORIZE_SCOPE' && /bets\.settled\.read/.test(ae.invalid_scope.message) && !/did not authorize/.test(ae.invalid_scope.message)
+        && ae.unauthorized_client.reason === 'JR_CLIENT_REFUSED' && ae.server_error.reason === 'JR_AUTHORIZE_FAILED' && !/did not authorize/.test(ae.server_error.message)
+        && ae.cancelled.reason === 'JR_CONSENT_DENIED', ae);
     const s3 = await call({ action: 'jr_start' }, 'tok-op');
     const a3 = J.approve(s3.body.url, 4);
     db.sql(`update portfolio_private.connect_sessions set created_at = now() - interval '20 minutes', expires_at = now() - interval '5 minutes' where consumed_at is null and state_hash = ${L(nodeCrypto.createHash('sha256').update(a3.state).digest('hex'))};`);
