@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-11-02T01:07:59.000Z",
+ "generated_at": "2026-11-02T03:07:57.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -53,9 +53,9 @@
     "model_version": "edgedesk_cfb_loop_v2.0.0",
     "label": "Loop v2.0.0",
     "role": "challenger",
-    "snapshots": 908,
-    "latest_snapshot_at": "2026-11-02T01:07:59.000Z",
-    "upcoming_games": 66,
+    "snapshots": 911,
+    "latest_snapshot_at": "2026-11-02T03:07:57.000Z",
+    "upcoming_games": 69,
     "avg_confidence_upcoming": null
    },
    {
@@ -103,7 +103,7 @@
      "RED": 0
     },
     "team_mapping": {
-     "YELLOW": 2,
+     "YELLOW": 3,
      "RED": 0
     }
    },
@@ -930,19 +930,6 @@
      "matchup": "Buffalo @ Ball State"
     },
     {
-     "game_id": "401866462",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-11-11T05:00:00.000Z",
-     "matchup": "Sacramento State @ Central Michigan"
-    },
-    {
      "game_id": "401866463",
      "status": "YELLOW",
      "issues": [
@@ -954,11 +941,29 @@
      ],
      "kickoff": "2026-11-11T05:00:00.000Z",
      "matchup": "Massachusetts @ Toledo"
+    },
+    {
+     "game_id": "401866462",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "team_mapping",
+       "status": "YELLOW",
+       "detail": "the game is not on the published board, so its teams could not be cross-checked"
+      },
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-12T00:30:00.000Z",
+     "matchup": "Sacramento State @ Central Michigan"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-11-02T01:07:59.000Z",
-    "quotes_total": 31807,
+    "last_quote_at": "2026-11-02T03:07:57.000Z",
+    "quotes_total": 31823,
     "last_result_at": "2026-11-01T06:48:08.000Z"
    }
   },
@@ -992,9 +997,9 @@
    }
   ],
   "ledger": {
-   "predictions": 9330,
-   "live_predictions": 8820,
-   "quotes": 31807,
+   "predictions": 9333,
+   "live_predictions": 8823,
+   "quotes": 31823,
    "lines": 5091,
    "results": 573,
    "evaluations": 9023,
@@ -13785,6 +13790,40 @@
       "feature_version": "edgedesk_model_loop_cfb_current_v1",
       "calibration_version": "model_loop:2.0.0:af284333f16a",
       "ensemble_version": "model_loop:2.0.0:af284333f16a",
+      "params_hash": "87f5df07c7945455cefd83c1dfaeca1bfbf372bd3bfa2d42b500b98b7f66b6eb",
+      "engine_id": "edgedesk_model_loop_cfb",
+      "source": "football/cfb/model_loop/current.json"
+     },
+     "changed": [
+      "params_hash"
+     ]
+    },
+    "after": {
+     "facts": {
+      "feature_version": "edgedesk_model_loop_cfb_current_v1",
+      "calibration_version": "model_loop:2.0.0:af284333f16a",
+      "ensemble_version": "model_loop:2.0.0:af284333f16a",
+      "params_hash": "96ff80b0fbaeeb0d65dde348be15e19e93a7969dc1f3ef74f97e8fa02d91b3cc",
+      "engine_id": "edgedesk_model_loop_cfb",
+      "source": "football/cfb/model_loop/current.json"
+     },
+     "changed": [
+      "params_hash"
+     ]
+    },
+    "reason": "detected by the hourly lab run (params_hash)",
+    "actor": "automation",
+    "created_at": "2026-11-02T03:07:57.000Z",
+    "event_id": "cfbg_c0f688803b12110b9c8a0579"
+   },
+   {
+    "event_type": "THRESHOLD_CHANGED",
+    "subject": "edgedesk_cfb_loop_v2.0.0",
+    "before": {
+     "facts": {
+      "feature_version": "edgedesk_model_loop_cfb_current_v1",
+      "calibration_version": "model_loop:2.0.0:af284333f16a",
+      "ensemble_version": "model_loop:2.0.0:af284333f16a",
       "params_hash": "ea7bf8adb27393dbebf5de4cc0efa1bd6af264537ca5618298dd4b495a23b01f",
       "engine_id": "edgedesk_model_loop_cfb",
       "source": "football/cfb/model_loop/current.json"
@@ -14436,18 +14475,6 @@
     "actor": "Claude (session 01YQFp1LNNSQPP6KM3R1Ji1R) at the owner's request, 2026-10-21",
     "created_at": "2026-10-21T09:29:53.000Z",
     "event_id": "cfbg_6419a96a9447d301216abd1a"
-   },
-   {
-    "event_type": "ROLE_CHANGED",
-    "subject": "edgedesk_cfb_loop_v2.0.0",
-    "before": null,
-    "after": {
-     "role": "challenger"
-    },
-    "reason": "the model loop's served CFB model, version 2.0.0 (model_loop/adapters/cfb; config af284333): cleared its preregistered walk-forward gate against cfb_p4 (2025 holdout MAE 12.121 vs 12.479, log loss 0.4731 vs 0.4765; 2014-2025 12.785 vs 13.270) and leads V1 as published on 2026 (12.60 to 11.86 MAE, walk-forward, not live). Tracked live from today; the board changes only through promote, on cfb_lab_promotion_v1 over at least 150 common official games.",
-    "actor": "Claude (session 01YQFp1LNNSQPP6KM3R1Ji1R) at the owner's request, 2026-10-21",
-    "created_at": "2026-10-21T09:29:53.000Z",
-    "event_id": "cfbg_711b9439af2ad1691d48f70c"
    }
   ],
   "partitions": [

@@ -30,7 +30,12 @@
 
    The game is chosen from the committed slate and game-research snapshot, with
    the browser's clock pinned just after the slate was built, so the run is
-   repeatable on any day the repository's data covers.
+   repeatable on any day the repository's data covers. When it is an NFL game
+   (from Sunday evening to Monday night the first upcoming game always is), the
+   page is served the nflverse schedule as it stood at that clock: the AI desk
+   finds an NFL game on the NFL board, which is built from that schedule, and
+   without it the desk answered that the game was on no card (2026-11-01,
+   PHI @ WAS).
    Run: node tools/research_os/journey.e2e.js     (JOURNEY_SHOTS=<dir> keeps screenshots)
    =========================================================================== */
 'use strict';
@@ -143,9 +148,51 @@ const SERVED = /\/rest\/v1\/(rpc\/(sc_[a-z_]+|sim_[a-z_]+|portfolio_[a-z_]+)|(my
    the game page draws its Foresight card first and adds the record's link when this answers */
 const MF_GAME_LATE_MS = 2000;
 
+/* THE NFL SCHEDULE, for a journey game on the NFL board. The page builds that
+   board from nflverse's games.csv (app.html FB_URL_GAMES); everything else
+   outside this site gets an empty answer here. The copy served is the
+   schedule as it stood at the pinned clock: a game kicking off after it has
+   no score or result yet, so the journey game is still upcoming on the board
+   (tools/football/market_structure_ui.e2e.js serves its schedule the same
+   way). Read from the local feed cache, else fetched once. */
+const NFL_GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
+const NFL_CACHED = path.join(ROOT, 'football', 'nfl', '.cache', NFL_GAMES_URL.replace(/[^a-z0-9.]+/gi, '_').slice(-120));
+/* nflverse writes the kickoff as a New York date and time; the offset is the one in force that day */
+function etKickoff(day, time) {
+  const guess = Date.parse(day + 'T' + (time || '13:00') + ':00Z');
+  const off = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' })
+    .formatToParts(new Date(guess)).find((x) => x.type === 'timeZoneName').value;   /* "GMT-4" or "GMT-5" */
+  const h = +(off.replace('GMT', '') || 0);
+  return guess - h * 3600e3;
+}
+async function nflScheduleAtClock() {
+  let raw = null;
+  if (fs.existsSync(NFL_CACHED)) raw = fs.readFileSync(NFL_CACHED, 'utf8');
+  else { try { const r = await fetch(NFL_GAMES_URL); if (r.ok) raw = await r.text(); } catch (_) { raw = null; } }
+  if (!raw) return null;
+  const rows = raw.split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
+  const blank = ['away_score', 'home_score', 'result', 'total', 'overtime'].map(ix).filter((i) => i >= 0);
+  let found = false;
+  const out = rows.map((l, i) => {
+    if (!i || !l) return l;
+    const c = l.split(',');
+    if (c[ix('game_id')] === GID) found = true;
+    if (etKickoff(c[ix('gameday')], c[ix('gametime')]) <= CLOCK) return l;
+    blank.forEach((k) => { c[k] = ''; });
+    return c.join(',');
+  }).join('\n');
+  return found ? out : null;
+}
+
 (async function main() {
   let browser = null, srv = null;
   try {
+    const NFL_CSV = LG === 'nfl' ? await nflScheduleAtClock() : null;
+    if (LG === 'nfl' && !NFL_CSV) {
+      const why = 'the nflverse schedule holding ' + GID + ' is neither cached (' + path.relative(ROOT, NFL_CACHED) + ') nor reachable';
+      if (process.env.ROS_E2E_REQUIRED === '1') { T.chk('the NFL journey game\u2019s schedule is served (required in CI)', false, why); return; }
+      console.log('SKIPPED (not verified): ' + why); db.stop(); process.exit(0);
+    }
     setupDb();
     const stand = REST.make(db, { serviceKey: 'svc-key-ros', tokens: { [TOK.sub]: { id: SUB, email: 'sub@x' }, [TOK.free]: { id: FREE, email: 'free@x' }, [TOK.admin]: { id: ADMIN, email: 'op@x' } } });
     const M = await MF.measure(db, stand, ADMIN);
@@ -234,6 +281,7 @@ const MF_GAME_LATE_MS = 2000;
           }
           return route.fulfill({ status: 404, contentType: 'application/json', body: '{"code":"PGRST202","message":"not part of this test"}' });
         }
+        if (NFL_CSV && /nfldata\/master\/data\/games\.csv/.test(url)) return route.fulfill({ status: 200, contentType: 'text/csv', body: NFL_CSV });
         return route.fulfill({ status: 204, body: '' });
       });
       const page = await ctx.newPage();

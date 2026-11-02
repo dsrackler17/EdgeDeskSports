@@ -362,7 +362,16 @@ subscribers only (`has_active_sub()`). Each card has:
   under 90 minutes old;
 - the conviction flags;
 - the count of top-graded wallets on the other side;
-- each wallet with its rank and its public name or shortened address.
+- each wallet with its rank and its public name or shortened address;
+- `ask_price`, `ask_size`, `ask_at` and `fee_per_share`: the order book's best
+  ask, the shares at it, its quote time and the market's taker fee at it, as the
+  Radar record took them when this card's game and side were published
+  (`radar_cards`, through the read-only `radar_card_ask()`). `polymarket_sync`
+  stores no other quote. All four are null when nothing is on file (not yet
+  published, published under rules version 1, or `radar_record.sql` not
+  applied). They are never filled with the displayed price or a midpoint. They
+  are added beside `radar_tonight_cards()`'s keys, which, with what
+  `radar_publish_cards()` reads and records, are unchanged.
 
 The rules:
 - a holders snapshot older than 30 minutes is not shown;
