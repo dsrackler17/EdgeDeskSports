@@ -4,6 +4,11 @@
 
 - **What broke.** `tools/research_os/journey.e2e.js` picks its game from the committed `today/slate.json`. After the 2026-11-01 data pushes the earliest qualifying game became an NFL one (PHI at WAS). The app reads the NFL schedule from nflverse (`FB_URL_GAMES`), an outside host this test answers empty, so the NFL board had no games. The desk then answered "no scheduled game" and sent nothing, and `asking about the game sends the desk its ids` failed on desktop and phone (124 passed, 2 failed, on `main` with no code change).
 - **Fix (test fixture: it was incomplete for an NFL journey game).** The test serves `games.csv` itself, built only from the committed slate: the journey game, unplayed, kickoff in Eastern time. For an FBS game it serves the header alone, which reads the same as the empty answer before. The assertion is unchanged. Now 126 passed, 0 failed.
+## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
+
+- **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.
+- **Fix (test only; the assertion compared rounded values).** The signs must agree unless the printed edge is zero, and it may be zero only when the true edge (cover − 1/d) rounds to it. The EV arithmetic and break-even checks are unchanged, and nothing in the EV engine, its rounding or the board changes.
+- **Tests.** `football/cfb_terminal/tests.js`: 128 / 1 → 129 / 0.
 
 ## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
 

@@ -365,7 +365,13 @@ section('13. the real slate, from the committed production artifacts');
   ok('available EV = win·(d−1) − loss at its own exact price, and the edge has the same sign', qe.filter((x) => x.q.ev_available).every(({ q }) => {
     const a = q.best_price, d = a > 0 ? 1 + a / 100 : 1 + 100 / -a, c = q.model_cover_probability, p = q.model_push_probability;
     const ev = c * (1 - p) * (d - 1) - (1 - c) * (1 - p);
-    return Math.abs(ev * 100 - q.expected_value_pct) < 0.01 && Math.abs(q.break_even_probability - 1 / d) < 1e-5 && Math.sign(q.probability_edge_pp) === Math.sign(q.expected_value_pct);
+    /* the edge and the EV are each rounded to 3 decimals (lib/edgedesk_quote_ev.js), so a quote within half a
+       thousandth of a point of break-even prints an edge of 0 (or −0) beside an EV of ±0.001: a rounded zero has
+       no sign. The signs must agree unless the printed edge is zero, and it may be zero only when the true edge
+       (cover − 1/d) really rounds to it (game 401858285 at −110: cover 0.523806, break-even 0.5238095). */
+    const edgeZero = q.probability_edge_pp === 0 && Math.abs(100 * (c - 1 / d)) < 0.0005;
+    return Math.abs(ev * 100 - q.expected_value_pct) < 0.01 && Math.abs(q.break_even_probability - 1 / d) < 1e-5
+      && (edgeZero || Math.sign(q.probability_edge_pp) === Math.sign(q.expected_value_pct));
   }));
   ok('the quote the EV engine decided carries the board decision; no other quote inherits it', qe.filter((x) => x.q.ev_available && x.r.ev && x.r.ev.selected).every(({ r, q }) => {
     const m = /^(.*)\s([+-]?\d+(?:\.\d+)?|PK)\s([+-]\d+)$/.exec(r.ev.selected);
