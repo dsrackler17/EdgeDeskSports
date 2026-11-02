@@ -298,6 +298,9 @@ function config() {
     JR_STATE_INVALID: 'This Juice Reel sign-in could not be matched to one started here (it expired after 15 minutes, was already used, or was started from another EdgeDesk account). '
       + 'Nothing was connected; start again from Portfolio → Accounts.',
     JR_CONSENT_DENIED: 'You did not authorize EdgeDesk on Juice Reel, so nothing was connected.',
+    JR_AUTHORIZE_SCOPE: 'Juice Reel stopped before asking you: it does not allow EdgeDesk\'s application to request access to your settled bets (bets.settled.read). '
+      + 'This is on EdgeDesk\'s side, not yours; nothing was connected. It works once Juice Reel enables that scope on EdgeDesk\'s application.',
+    JR_AUTHORIZE_FAILED: 'Juice Reel stopped the sign-in with an error before you could approve it, so nothing was connected. This is on EdgeDesk\'s side; try again later.',
     JR_CODE_INVALID: 'Juice Reel did not accept the sign-in (its code expired or was already used). Nothing was connected; start again.',
     JR_CLIENT_REFUSED: 'Juice Reel refused EdgeDesk\'s application credentials — EdgeDesk\'s Juice Reel application may still be awaiting approval. '
       + 'This is on EdgeDesk\'s side; nothing was stored, and syncing resumes once it is fixed.',
@@ -1435,6 +1438,17 @@ function config() {
   function b64url(bytes) { return b64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   async function sha256Bytes(text) { return new Uint8Array(await cryptoApi().subtle.digest('SHA-256', enc.encode(String(text)))); }
   var JR_STATE_RE = /^[A-Za-z0-9_-]{43}$/;
+  /* What Juice Reel's authorize step sent back instead of a code (?error=…,
+     or status=cancelled), as the reason the reader is told. Only a refusal
+     is the reader's own doing; invalid_scope and the rest happen before any
+     consent screen, so they are never reported as "you did not authorize". */
+  function jrAuthorizeError(err) {
+    var e = String(err == null ? '' : err).toLowerCase();
+    if (e === 'access_denied' || e === 'cancelled' || e === 'canceled') return 'JR_CONSENT_DENIED';
+    if (e === 'invalid_scope') return 'JR_AUTHORIZE_SCOPE';
+    if (e === 'unauthorized_client' || e === 'invalid_client') return 'JR_CLIENT_REFUSED';
+    return 'JR_AUTHORIZE_FAILED';
+  }
   /* PKCE (RFC 7636, S256) and state: 32 random bytes each, base64url — the
      shapes Juice Reel's own example uses. Only the challenge leaves EdgeDesk's
      server in a URL; the verifier never does. */
@@ -2346,7 +2360,7 @@ function config() {
     SHARPSPORTS: SHARPSPORTS, AGGREGATORS: AGGREGATORS, aggregatorInfo: aggregatorInfo, ssBookPlatform: ssBookPlatform, ssAccountState: ssAccountState,
     sharpsportsNormalize: sharpsportsNormalize, sharpsportsLink: sharpsportsLink, sharpsportsDiscover: sharpsportsDiscover, sharpsportsRefresh: sharpsportsRefresh,
     sharpsportsWebhookRefs: sharpsportsWebhookRefs, webhookSignature: webhookSignature, ssCall: ssCall, hexOf: hexOf,
-    JUICEREEL: JUICEREEL, b64url: b64url, jrPkce: jrPkce, jrCredentialCheck: jrCredentialCheck, jrStateHash: jrStateHash, JR_STATE_RE: JR_STATE_RE, jrAuthorizeUrl: jrAuthorizeUrl,
+    JUICEREEL: JUICEREEL, b64url: b64url, jrPkce: jrPkce, jrCredentialCheck: jrCredentialCheck, jrStateHash: jrStateHash, JR_STATE_RE: JR_STATE_RE, jrAuthorizeError: jrAuthorizeError, jrAuthorizeUrl: jrAuthorizeUrl,
     jrSealSession: jrSealSession, jrOpenSession: jrOpenSession, jrTokenSet: jrTokenSet, jrToken: jrToken, jrRevokeAll: jrRevokeAll,
     jrAccessToken: jrAccessToken, jrPages: jrPages, jrLeg: jrLeg, jrSite: jrSite, juicereelNormalize: juicereelNormalize,
     juicereelConnect: juicereelConnect, juicereelSync: juicereelSync, juicereelDisconnect: juicereelDisconnect, juicereelLink: juicereelLink, juicereelDiscover: juicereelDiscover, juicereelRefresh: juicereelRefresh, jrAccountState: jrAccountState, juicereelSweep: juicereelSweep

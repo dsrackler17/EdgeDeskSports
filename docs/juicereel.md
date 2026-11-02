@@ -35,6 +35,8 @@
 
 ## 1. Register this redirect URI
 
+**2026-11-01, checked live: Juice Reel does not allow `bets.settled.read` on the Integration app.** Its authorize endpoint answers `error=invalid_scope` ("One or more requested scopes are not allowed") for any request that includes it, before sign-in; `bets.open.read` alone reaches the sign-in page. Until Juice Reel enables it, no reader can connect. What follows was the understanding on 2026-10-30.
+
 **State on 2026-10-30.** The bet sync uses the Juice Reel application **EdgeDesk Sports Integration** (client id `jr_UcOwwS-Ep-nxQu7WeaStFHXfelzzjVrK`, Sign in With Juice Reel **on**). Juice Reel has **approved `bets.settled.read`** on it, and **both redirect URIs are registered** on it:
 
 ```
@@ -180,6 +182,8 @@ each bet's Site ──▶ the reader's account for that book (AGGREGATOR; a quic
   |---|---|
   | `JR_STATE_INVALID` | expired, used, another reader's, or unknown |
   | `JR_CONSENT_DENIED` | the reader refused |
+  | `JR_AUTHORIZE_SCOPE` | Juice Reel answered `error=invalid_scope` before any consent screen: the application may not request a scope (2026-11-01: `bets.settled.read`) |
+  | `JR_AUTHORIZE_FAILED` | any other error Juice Reel's authorize step returned (its code is logged as `juicereel.authorize_error`) |
   | `JR_CODE_INVALID` | `invalid_grant`: the code expired or was used, or PKCE failed |
   | `JR_CLIENT_REFUSED` | `invalid_client`: the application is not approved yet, or the secret is wrong |
   | `JR_SCOPE_MISSING` | a bet scope was not granted |
