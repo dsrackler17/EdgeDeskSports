@@ -21,8 +21,8 @@
   "game_time": "2026-11-08T02:30:00.000Z",
   "game_when_label": "2026-11-08 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -172,11 +172,11 @@
     "starters": {
       "away": {
         "team": "Fresno State",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
         "player": "Jayden Mandal",
         "player_id": "5010409",
-        "label": "unresolved: Jayden Mandal 96% of recent dropbacks and Khristian Martin 3% of recent dropbacks.",
+        "label": "Jayden Mandal — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -186,8 +186,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 7,
-          "dropbacks": 207,
+          "starts": 8,
+          "dropbacks": 224,
           "seasons_observed": 1,
           "seasons_read": [
             2025,
@@ -203,38 +203,25 @@
             {
               "player_id": "5010409",
               "player_name": "Jayden Mandal",
-              "dropbacks": 64,
-              "share": 0.955
+              "dropbacks": 48,
+              "share": 0.923
             },
             {
-              "player_id": "5146667",
-              "player_name": "Khristian Martin",
-              "dropbacks": 2,
-              "share": 0.03
+              "player_id": "5212654",
+              "player_name": "Braden Atkinson",
+              "dropbacks": 3,
+              "share": 0.058
             },
             {
               "player_id": "4685311",
               "player_name": "Jayden Denegal",
               "dropbacks": 1,
-              "share": 0.015
+              "share": 0.019
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401860901",
-            "opponent": "Boise State",
-            "dropbacks": 35,
-            "starter": {
-              "player_id": "5010409",
-              "player_name": "Jayden Mandal",
-              "share": 0.943
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401860904",
@@ -247,12 +234,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401860924",
+            "opponent": "Oregon State",
+            "dropbacks": 20,
+            "starter": {
+              "player_id": "5010409",
+              "player_name": "Jayden Mandal",
+              "share": 0.85
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/fresnostate.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-11-01T03:00:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "Utah State",
@@ -336,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T19:30:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1459,12 +1459,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "away quarterback is contested — the evidence names more than one starter",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1602,7 +1596,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 9.9,
+            "score": 10.9,
             "max": 20
           },
           {
@@ -1620,7 +1614,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 9.9,
+            "score": 10.9,
             "max": 15
           },
           {
@@ -1642,8 +1636,8 @@
           },
           {
             "action": "Confirm Utah State’s starting QB (McCae Hillstead)",
-            "potential_gain": 7,
-            "text": "up to +7 once resolve Utah State’s starter conflict is done"
+            "potential_gain": 9,
+            "text": "up to +9 once resolve Utah State’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1671,14 +1665,14 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "SIGNIFICANT_CHANGE",
-        "label": "SIGNIFICANT CHANGE",
-        "text": "EdgeDesk has moved 3.4 pts toward Fresno State since the latest published number."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "LOW",
         "label": "Low",
-        "text": "the stored numbers span 3.4 pts across 3 readings"
+        "text": "the stored numbers span 2.3 pts across 3 readings"
       },
       "published": [
         {
@@ -1688,19 +1682,19 @@
           "text": "Fresno State -3.6"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": -2.52,
-          "text": "Fresno State -2.5"
+          "home_margin": -5.9,
+          "text": "Fresno State -5.9"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 3.38,
+        "points": 0,
         "toward_team": "Fresno State",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "3.4 pts toward Fresno State since the latest published number"
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
@@ -1876,10 +1870,10 @@
       "EdgeDesk’s line is Utah State +6.0 on a neutral read of the two teams, before any book is consulted. Projected total 46.0.",
       "Utah State wins 34% of the time in EdgeDesk’s simulation, Fresno State 66%.",
       "Eight games in ten land between -26.9 and +15.1 for Utah State. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "Fresno State quarterback: Jayden Mandal — started the last game; no announcement for this one."
     ],
     "missing": [
-      "Fresno State quarterback unresolved: unresolved: Jayden Mandal 96% of recent dropbacks and Khristian Martin 3% of recent dropbacks.",
       "No availability report reached Jayden Mandal — unknown is carried as unknown, never as healthy.",
       "Utah State quarterback unresolved: unresolved: Grady Brosterhous 60% of recent dropbacks and McCae Hillstead 37% of recent dropbacks — sources disagree.",
       "No availability report reached McCae Hillstead — unknown is carried as unknown, never as healthy."
@@ -1890,7 +1884,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "3mejxe1pmz7ls",
+    "packet_hash": "vw1xwmrwqqdg",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can Utah State contain Fresno State’s explosive runs?",
@@ -1901,7 +1895,7 @@
       "other": "Utah State"
     },
     "supporting": [
-      "When Utah State has the ball (pass protection against the pass rush): Utah State’s offense has allowed a sack on 8.2% of its dropbacks, and Fresno State’s defense sacks the quarterback on 7.8% of opponent dropbacks (FBS average 5.7%).",
+      "When Utah State has the ball (pass protection against the pass rush): Utah State’s offense has allowed a sack on 8.2% of its dropbacks, and Fresno State’s defense sacks the quarterback on 6.1% of opponent dropbacks (FBS average 5.7%).",
       "When Fresno State has the ball (pass protection against the pass rush): Fresno State’s offense has allowed a sack on 5.6% of its dropbacks, and Utah State’s defense sacks the quarterback on 3.9% of opponent dropbacks (FBS average 5.7%).",
       "When Utah State has the ball (the red zone): Utah State’s offense succeeds on 33.3% of its red-zone plays, and Fresno State’s defense allows success on 25.7% of opponent red-zone plays (FBS average 43.5%).",
       "EdgeDesk’s position-group ratings put Fresno State’s running backs No. 51 nationally and Utah State’s No. 104."
@@ -1923,7 +1917,7 @@
         "Fresno State’s offense has to keep winning on long runs: it turns 9.3% of its runs into explosive gains, and Utah State’s defense gives up explosive gains on 4.8% of opponent runs.",
         "Fresno State’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 3.9% of opponent pass plays.",
         "Fresno State’s offense has to hold its own at the line of scrimmage against a defense that stops 20.2% of opponent runs at or behind the line.",
-        "Fresno State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.8% of opponent dropbacks, against an offense that has allowed a sack on 8.2% of its dropbacks."
+        "Fresno State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.1% of opponent dropbacks, against an offense that has allowed a sack on 8.2% of its dropbacks."
       ],
       "market": [
         "Utah State’s defense has to come out ahead on big pass plays: it gives up explosive gains on 3.9% of opponent pass plays, against an offense that turns 9.6% of its pass plays into explosive gains.",
@@ -1952,7 +1946,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1975,6 +1969,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

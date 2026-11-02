@@ -21,8 +21,8 @@
   "game_time": "2026-11-07T17:00:00.000Z",
   "game_when_label": "2026-11-07 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -198,8 +198,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 8,
-          "dropbacks": 231,
+          "starts": 9,
+          "dropbacks": 269,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -215,32 +215,19 @@
             {
               "player_id": "4592532",
               "player_name": "Billy Edwards",
-              "dropbacks": 71,
-              "share": 0.986
+              "dropbacks": 81,
+              "share": 0.988
             },
             {
               "player_id": "4685694",
               "player_name": "Steven Angeli",
               "dropbacks": 1,
-              "share": 0.014
+              "share": 0.012
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 7,
-            "game_id": "401858266",
-            "opponent": "Duke",
-            "dropbacks": 25,
-            "starter": {
-              "player_id": "4592532",
-              "player_name": "Billy Edwards",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 8,
             "game_id": "401858275",
@@ -253,12 +240,25 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401858282",
+            "opponent": "Miami",
+            "dropbacks": 35,
+            "starter": {
+              "player_id": "4592532",
+              "player_name": "Billy Edwards",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
-        "published_at": "2026-10-24T23:30:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "published_at": "2026-10-31T23:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "UConn",
@@ -330,9 +330,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-31T19:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1689,9 +1689,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "MOVING",
-        "label": "MOVING",
-        "text": "EdgeDesk has moved 2.0 pts toward North Carolina since the latest published number."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "LOW",
@@ -1706,19 +1706,19 @@
           "text": "UConn -2.4"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": 0.63,
-          "text": "UConn -0.63"
+          "home_margin": -1.35,
+          "text": "North Carolina -1.4"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 1.98,
-        "toward_team": "North Carolina",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "2.0 pts toward North Carolina since the latest published number"
+        "points": 0,
+        "toward_team": "UConn",
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
@@ -1909,13 +1909,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "iz13y7nbrhy5",
+    "packet_hash": "15ox1odsxjdr3",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can North Carolina take away UConn’s big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward UConn, and its own breakdown accounts for about 0.7 of the 6.1 points, but not the full gap. Input warning: EdgeDesk’s published number sits 6.7 points from the middle of its own other models. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward UConn, and its own breakdown accounts for about 0.7 of the 5.6 points, but not the full gap. Input warning: EdgeDesk’s published number sits 6.7 points from the middle of its own other models. It is a research question, not a bet.",
     "gap": {
-      "points": 6.1,
+      "points": 5.6,
       "toward": "UConn",
       "other": "North Carolina"
     },
@@ -1975,7 +1975,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1998,6 +1998,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

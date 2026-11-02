@@ -11,7 +11,7 @@
   ],
   "title": "Green Bay Packers vs. New England Patriots: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Green Bay Packers vs. New England Patriots 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Green Bay Packers at New England Patriots: New England Patriots −5.5, fair total 44.5. New England Patriots wins 68% of simulations. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Green Bay Packers at New England Patriots: New England Patriots −5.5, fair total 44.5. New England Patriots wins 68% of simulations. Model status STALE MARKET. Research, not picks.",
   "excerpt": "New England Patriots carries the stronger EdgeDesk offensive profile (#7 in EPA per play), while Green Bay Packers owns the more favourable defensive matchup (#8 in EPA allowed per play). EdgeDesk’s independent projection makes it New England Patriots −5.5…",
   "home_team": "New England Patriots",
   "away_team": "Green Bay Packers",
@@ -23,11 +23,11 @@
   "game_time": "2026-11-08T21:25:00.000Z",
   "game_when_label": "2026-11-08 21:25 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "STALE MARKET",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.0-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "New England Patriots −5.5",
@@ -130,8 +130,8 @@
       "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 108 absorbed 2026 games.",
       "sample_games": 108,
       "seeded": true,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "STALE MARKET",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.0-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1164,18 +1164,34 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "New England Patriots −5.5",
       "model_raw": "New England Patriots -5.5",
+      "market": "New England Patriots −2.5",
+      "difference": "3.0 points",
+      "rounding_note": null,
+      "key_number": {
+        "text": "Market is below 3; model is above 3.",
+        "detail": "New England Patriots: market −2.5, model fair −5.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
       "total_model": "44.5",
       "total_model_raw": "44.3",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "47.5",
+      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "total_difference": "3.2 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "STALE MARKET",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.0-point gap is context only and the game is excluded from research ranking.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects New England Patriots 25, Green Bay Packers 19.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "STALE MARKET",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.0-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1307,8 +1323,7 @@
     },
     "notes": [
       "EdgeDesk’s line is New England Patriots −5.5 with a fair total of 44.5, before any book is consulted.",
-      "New England Patriots wins 68% of the time in EdgeDesk’s distribution, Green Bay Packers 32%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "New England Patriots wins 68% of the time in EdgeDesk’s distribution, Green Bay Packers 32%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1318,6 +1333,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

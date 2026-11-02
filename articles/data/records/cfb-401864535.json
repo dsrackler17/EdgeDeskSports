@@ -21,8 +21,8 @@
   "game_time": "2026-11-08T03:30:00.000Z",
   "game_when_label": "2026-11-08 03:30 UTC",
   "published_at": null,
-  "updated_at": "2026-11-01T19:33:32.851Z",
-  "generated_at": "2026-11-01T19:33:32.851Z",
+  "updated_at": "2026-11-02T00:36:55.151Z",
+  "generated_at": "2026-11-02T00:36:55.151Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -234,15 +234,15 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T01:00:00.000Z",
-        "retrieved_at": "2026-11-01T14:21:30.303Z"
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
       "home": {
         "team": "UNLV",
-        "status": "COMPETITION",
+        "status": "PREVIOUS_GAME",
         "confirmed": false,
         "player": "Jackson Arnold",
         "player_id": "4870607",
-        "label": "unresolved: Jackson Arnold 100% of recent dropbacks.",
+        "label": "Jackson Arnold — started the last game; no announcement for this one.",
         "priced": false,
         "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
         "availability": {
@@ -252,8 +252,8 @@
           "source_url": null
         },
         "experience": {
-          "starts": 13,
-          "dropbacks": 443,
+          "starts": 14,
+          "dropbacks": 474,
           "seasons_observed": 2,
           "seasons_read": [
             2025,
@@ -269,26 +269,13 @@
             {
               "player_id": "4870607",
               "player_name": "Jackson Arnold",
-              "dropbacks": 48,
+              "dropbacks": 60,
               "share": 1
             }
           ]
         },
         "conflicts": 0,
         "history": [
-          {
-            "week": 6,
-            "game_id": "401864518",
-            "opponent": "North Dakota State",
-            "dropbacks": 16,
-            "starter": {
-              "player_id": "4870607",
-              "player_name": "Jackson Arnold",
-              "share": 1
-            },
-            "settled": true,
-            "why": "took the first dropback of the game"
-          },
           {
             "week": 7,
             "game_id": "401864524",
@@ -301,14 +288,27 @@
             },
             "settled": true,
             "why": "took the first dropback of the game"
+          },
+          {
+            "week": 9,
+            "game_id": "401864530",
+            "opponent": "Northern Illinois",
+            "dropbacks": 28,
+            "starter": {
+              "player_id": "4870607",
+              "player_name": "Jackson Arnold",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
           }
         ],
-        "source": "EdgeDesk player layer (EPIR) projected QB1",
-        "source_url": "football/players/teams/unlv.json",
-        "published_at": "2026-10-31T20:46:39.491Z",
-        "retrieved_at": "2026-10-31T20:46:39.491Z"
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-11-01T02:30:00.000Z",
+        "retrieved_at": "2026-11-01T22:55:06.784Z"
       },
-      "generated_at": "2026-11-01T14:21:28.442Z",
+      "generated_at": "2026-11-01T22:55:05.546Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1442,12 +1442,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home quarterback is contested — the evidence names more than one starter",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1575,13 +1569,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
-        "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the quarterback job is contested for UNLV",
-        "score": 79,
-        "grade": "ADEQUATE",
-        "grade_label": "ADEQUATE",
+        "pct": 89,
+        "tier": "STRONG",
+        "text": "89 · STRONG",
+        "sub": "main deduction: no source has established whether UNLV or Wyoming’s starting QB can play",
+        "score": 89,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1593,7 +1587,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.9,
+            "score": 12.8,
             "max": 20
           },
           {
@@ -1611,7 +1605,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14,
+            "score": 15,
             "max": 15
           },
           {
@@ -1621,15 +1615,25 @@
             "max": 10
           }
         ],
-        "main_deduction": "the quarterback job is contested for UNLV",
+        "main_deduction": "no source has established whether UNLV or Wyoming’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
         "capped_by": [
-          "QB_CONTESTED"
+          "QB_STATUS_UNCONFIRMED"
         ],
         "next_actions": [
           {
+            "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2 once re-read availability inside the filing window (UNLV) and Re-read availability inside the filing window (Wyoming) is done"
+          },
+          {
+            "action": "Confirm Wyoming’s starting QB (Tyler Hughes)",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (UNLV) and Re-read availability inside the filing window (Wyoming) is done"
+          },
+          {
             "action": "Confirm UNLV’s starting QB (Jackson Arnold)",
-            "potential_gain": 10,
-            "text": "up to +10"
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (UNLV) and Re-read availability inside the filing window (Wyoming) is done"
           }
         ],
         "stability": {
@@ -1663,14 +1667,14 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "SIGNIFICANT_CHANGE",
-        "label": "SIGNIFICANT CHANGE",
-        "text": "EdgeDesk has moved 3.4 pts toward Wyoming since the latest published number."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "LOW",
         "label": "Low",
-        "text": "the stored numbers span 3.4 pts across 3 readings"
+        "text": "the stored numbers span 3.3 pts across 3 readings"
       },
       "published": [
         {
@@ -1680,19 +1684,19 @@
           "text": "UNLV -8.0"
         },
         {
-          "at": "2026-11-01T00:14:29.881Z",
+          "at": "2026-11-01T18:01:05.765Z",
           "source": "latest published",
-          "home_margin": 8.18,
-          "text": "UNLV -8.2"
+          "home_margin": 4.75,
+          "text": "UNLV -4.8"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 3.43,
+        "points": 0,
         "toward_team": "Wyoming",
-        "since_at": "2026-11-01T00:14:29.881Z",
-        "text": "3.4 pts toward Wyoming since the latest published number"
+        "since_at": "2026-11-01T18:01:05.765Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
@@ -1869,11 +1873,11 @@
       "UNLV wins 63% of the time in EdgeDesk’s simulation, Wyoming 37%.",
       "Eight games in ten land between -16.3 and +25.7 for UNLV. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
-      "Wyoming quarterback: Tyler Hughes — started the last game; no announcement for this one."
+      "Wyoming quarterback: Tyler Hughes — started the last game; no announcement for this one.",
+      "UNLV quarterback: Jackson Arnold — started the last game; no announcement for this one."
     ],
     "missing": [
       "No availability report reached Tyler Hughes — unknown is carried as unknown, never as healthy.",
-      "UNLV quarterback unresolved: unresolved: Jackson Arnold 100% of recent dropbacks.",
       "No availability report reached Jackson Arnold — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1882,13 +1886,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "60iru0mo4wi2",
+    "packet_hash": "1subpywdnpbmi",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can UNLV contain Wyoming’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Wyoming, and its own breakdown accounts for about 0.0 of the 2.7 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Wyoming, and its own breakdown accounts for about 0.0 of the 2.2 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 2.7,
+      "points": 2.2,
       "toward": "Wyoming",
       "other": "UNLV"
     },
@@ -1900,7 +1904,7 @@
     ],
     "contradicting": [
       "When UNLV has the ball (the line of scrimmage on running plays): UNLV’s offense is stopped at or behind the line on 14.2% of its runs, and Wyoming’s defense stops 11.7% of opponent runs at or behind the line (FBS average 17.5%).",
-      "When Wyoming has the ball (pass protection against the pass rush): Wyoming’s offense has allowed a sack on 8.5% of its dropbacks, and UNLV’s defense sacks the quarterback on 5.8% of opponent dropbacks (FBS average 5.7%).",
+      "When Wyoming has the ball (pass protection against the pass rush): Wyoming’s offense has allowed a sack on 8.5% of its dropbacks, and UNLV’s defense sacks the quarterback on 5.0% of opponent dropbacks (FBS average 5.7%).",
       "When UNLV has the ball (third down): UNLV’s offense converts 50.6% of its third downs, and Wyoming’s defense allows opponents to convert 39.0% of their third downs (FBS average 39.6%).",
       "EdgeDesk’s position-group ratings put UNLV’s receivers No. 45 nationally and Wyoming’s No. 119."
     ],
@@ -1912,13 +1916,13 @@
     "script": {
       "model": [
         "Wyoming’s offense has to keep winning on long runs: it turns 9.6% of its runs into explosive gains, and UNLV’s defense gives up explosive gains on 8.7% of opponent runs.",
-        "Wyoming’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 5.8% of opponent dropbacks.",
         "Wyoming’s defense has to slow UNLV at the line of scrimmage — UNLV’s offense is stopped at or behind the line on 14.2% of its runs.",
+        "Wyoming’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 5.0% of opponent dropbacks.",
         "Wyoming’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.3% of opponent dropbacks, against an offense that has allowed a sack on 7.2% of its dropbacks."
       ],
       "market": [
-        "UNLV’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.8% of opponent dropbacks, against an offense that has allowed a sack on 8.5% of its dropbacks.",
         "UNLV’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 14.2% of its runs, and Wyoming’s defense stops 11.7% of opponent runs at or behind the line.",
+        "UNLV’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.0% of opponent dropbacks, against an offense that has allowed a sack on 8.5% of its dropbacks.",
         "UNLV’s defense has to come out ahead on long runs: it gives up explosive gains on 8.7% of opponent runs, against an offense that turns 9.6% of its runs into explosive gains."
       ]
     },
@@ -1938,7 +1942,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-11-01T14:21:54.351Z",
+        "observed_at": "2026-11-01T22:55:26.361Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1961,6 +1965,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-11-01T19:33:32.851Z"
+    "at": "2026-11-02T00:36:55.151Z"
   }
 }

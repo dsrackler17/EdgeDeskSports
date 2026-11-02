@@ -15,6 +15,24 @@
   - `sql.test.js`: 63 passed (quotes stored on change, refused at or after commence, comparisons before tip, append-only, the board reader's filters and grants).
   - `model.test.js` 49, `features.test.js` 50, `data.test.js` 77 and `registration.test.js` 27 passed.
 - **Not verified.** A run against a real NCAAB board: none exists until the owner turns NCAAB on in the gateway and capture.
+## 2026-11-01 — Smart Money Tonight: the recorded best ask beside each card (methodology surface, H-RADAR-02)
+
+- **What.** `radar_tonight()` (`supabase/radar.sql` and its byte-identical migration mirror) adds `ask_price`, `ask_size`, `ask_at` and `fee_per_share` to each card. They come from the new read-only `radar_card_ask()`: the best ask, the size at it, its `quoted_at` and the taker fee at it, from the card's `radar_cards` row (the values `radar_publish_cards()` recorded at publication). They are null when no row is on file, never a midpoint. `radar_tonight_cards()`, `radar_rules()`, `radar_publish_cards()`, grading and `research/radar/**` are unchanged.
+- **Cards.** An ask inside its 15-minute limit is compared as an executable ask: depth, the gap before fees, and an EV only with a recorded fee. Past the limit, the displayed price is compared (indicative, no EV), and the publication ask is listed as not compared.
+- **Tests.** `tools/radar/radar_sql.test.js`: 259 passed, 0 failed. Against `main`'s `radar.sql`, the 6 new checks fail. The published records dumped from the suite (`RADAR_RECORD_DUMP`) are byte-identical before and after. `tools/research_compare/research_compare.test.js`: 119 passed, 0 failed. Its frozen-file check now allows only this block in `radar.sql`.
+
+## 2026-11-02 — Research OS journey: an NFL journey game gets the NFL schedule it needs (red since the Sunday-evening slate)
+
+- **What failed.** Research OS tests / `browser` (`tools/research_os/journey.e2e.js`) went red at 23:36 UTC on 2026-11-01, on `main` and on every pull request that starts it: `FAIL | desktop/phone: asking about the game sends the desk its ids, not only its names` (124 passed, 2 failed). The journey takes the first upcoming NFL or FBS game in the committed slate. The slate pushed at 22:21 UTC made that Philadelphia Eagles at Washington Commanders; from Sunday evening to Monday night the first upcoming game is always NFL.
+- **Why.** The AI desk finds an NFL game on the NFL board, which the page builds from nflverse's `games.csv`. The test answers every request outside the site with an empty 204, so the board never loaded. The desk then replied locally that no game with both sides "is on any card EdgeDesk publishes (68 games were checked on the FBS slate)", and never asked the desk with the game's ids.
+- **The fix (test only).** When the journey game is NFL, the test serves the nflverse schedule as it stood at the test's pinned clock. Results of games kicking off after that clock are blanked, the same way `tools/football/market_structure_ui.e2e.js` serves it. The schedule is read from the gitignored `football/nfl/.cache/`, else fetched once. ET kickoffs use the New York offset in force that day (DST ended 2026-11-01). If the schedule cannot be had, the suite fails in CI (`ROS_E2E_REQUIRED`) and reports SKIPPED (not verified) locally. No assertion changed; an FBS journey game is unaffected.
+- **Tests.** On `main`: 124 passed, 2 failed. With the fix: 126 passed, 0 failed, 3 runs of 3.
+- **Not changed here.** When the NFL board cannot be read, the desk still tells the reader the game is on no card, instead of saying the NFL board could not be read (`resolveFootballMatchup` in `app.html` checks "this pair is on no card" before "a card could not be read"). That is a separate fix.
+## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
+
+- **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.
+- **Fix (test only; the assertion compared rounded values).** The signs must agree unless the printed edge is zero, and it may be zero only when the true edge (cover − 1/d) rounds to it. The EV arithmetic and break-even checks are unchanged, and nothing in the EV engine, its rounding or the board changes.
+- **Tests.** `football/cfb_terminal/tests.js`: 128 / 1 → 129 / 0.
 
 ## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
 
