@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-02 — CFB terminal rules: the rounded-zero edge case is pinned, not left to the live slate
+
+- **Context.** `football/cfb_terminal/tests.js` was red on `main` (999d67316, 2156dc3e6): Syracuse +1.5 −110 at DraftKings (game 401858285) had model cover 0.523806 against break-even 0.5238095, a true edge of −0.00035 pp, printed as edge 0 beside EV −0.001% (true −0.00067%). The EV arithmetic, the break-even and the committed artifact were all correct; only the test's sign comparison of two rounded values failed. #964 fixed that check.
+- **Gap closed (test only).** #964's exemption was exercised only while that game is on the live slate. The check is now one named rule, applied to the live board as before and to the pinned Syracuse quote, with two negative controls: a printed zero edge far from break-even, and a real sign disagreement, must both still fail. The pinned check fails on the pre-#964 rule and on a rule that excuses every printed zero. No EV engine, rounding, artifact or board change.
+- **Tests.** `football/cfb_terminal/tests.js`: 129 / 0 → 130 / 0.
+
 ## 2026-11-01 — Juice Reel: an authorize error is no longer reported as "you did not authorize"
 
 - **What happened.** Connect Juice Reel sent every reader back with "You did not authorize EdgeDesk on Juice Reel". Asked directly on 2026-11-01, Juice Reel's authorize endpoint answers `error=invalid_scope` ("One or more requested scopes are not allowed") for the Integration app (`jr_UcOwwS…`) whenever `bets.settled.read` is requested, before any sign-in or consent screen. `bets.open.read` alone reaches Juice Reel's sign-in. `jr_callback` read any `error` as a refusal, so the cause was hidden.
