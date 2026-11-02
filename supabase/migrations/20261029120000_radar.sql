@@ -1050,6 +1050,26 @@ begin
     'candidates', cand, 'evaluated', done);
 end $f$;
 
+-- THE ASK, beside each card in the subscribers' door (read-only, additive; presentation only). The order book's best
+-- ask, the shares at it, its own quote time and the market's taker fee at that ask, exactly as the Radar record holds
+-- them for this card's game and side: the radar_cards row radar_publish_cards() wrote when the card was published
+-- (supabase/radar_record.sql). polymarket_sync stores no other quote, so that row is the only ask on file with its own
+-- timestamp. Nothing is invented: no record row, or one without an ask (rules version 1), gives nulls, never the
+-- displayed price or a midpoint; before radar_record.sql is applied there is no record, so nulls. It writes nothing,
+-- and radar_tonight_cards(), which radar_publish_cards() reads, is not touched. Internal: the door calls it.
+create or replace function public.radar_card_ask(p_card jsonb)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
+declare a numeric; s numeric; q timestamptz; fee numeric;
+begin
+  if to_regclass('public.radar_cards') is not null then
+    select c.ask_price, c.ask_size, c.quoted_at, c.fee_per_share into a, s, q, fee
+      from public.radar_cards c
+     where c.event_id = p_card ->> 'event_id' and c.token_id = p_card ->> 'token_id' and c.ask_price is not null and c.quoted_at is not null
+     order by c.card_id limit 1;
+  end if;
+  return jsonb_build_object('ask_price', a, 'ask_size', s, 'ask_at', q, 'fee_per_share', fee);
+end $f$;
+
 -- the door: subscribers only, once on and registered
 create or replace function public.radar_tonight()
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $f$
@@ -1063,7 +1083,7 @@ begin
     -- how many wallets are featured this run (at most top_wallets; fewer when fewer qualify), and how discovery went
     'featured', (select count(*) from public.poly_wallet_grades where run_id = public.radar_current_run() and top_directional),
     'discovery', (select discovery from public.poly_grade_runs where run_id = public.radar_current_run()),
-    'cards', coalesce((select jsonb_agg(c) from public.radar_tonight_cards() c), '[]'::jsonb),
+    'cards', coalesce((select jsonb_agg(c || public.radar_card_ask(c)) from public.radar_tonight_cards() c), '[]'::jsonb),
     'observed', coalesce((select jsonb_agg(o) from (select o from public.radar_observed_cards() o limit 40) x), '[]'::jsonb),
     'sync', public.radar_sync_state());
 end $f$;
@@ -1087,13 +1107,13 @@ do $g$ begin
   -- internal: no client may call these
   execute 'revoke all on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
        || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.poly_api_progress(jsonb), public.radar_current_run(), public.radar_config_audit(), '
-       || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state() from public, anon, authenticated';
+       || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state(), public.radar_card_ask(jsonb) from public, anon, authenticated';
   execute 'revoke all on function public.radar_status(), public.radar_leaderboard(integer), public.radar_trader(text), public.radar_tonight(), public.radar_teaser() from public';
   execute 'revoke all on function public.radar_enabled(), public.radar_registered() from public, anon, authenticated';
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.radar_setting(text), public.radar_is_subscriber(), public.radar_put_grades(jsonb, jsonb), public.radar_tonight_cards(), '
          || 'public.poly_api_acquire(jsonb), public.poly_api_settle(jsonb), public.poly_api_progress(jsonb), public.radar_current_run(), public.radar_enabled(), public.radar_registered(), '
-         || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state() to service_role';
+         || 'public.radar_style_stats(text, timestamptz), public.radar_observed_cards(), public.radar_grading_version(), public.radar_hypothesis(), public.radar_sync_state(), public.radar_card_ask(jsonb) to service_role';
     execute 'grant select, insert, update on public.poly_wallets, public.poly_markets, public.poly_api_days to service_role';
   end if;
 end $g$;
