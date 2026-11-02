@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — CFB terminal rules: a rounded-zero edge has no sign
+
+- **What failed.** `football/cfb_terminal/tests.js` (run by CFB research terminal and CFB validation tests) is red on `main`. The check "available EV … and the edge has the same sign" failed on game 401858285 at −110: model cover 0.523806 against a break-even of 0.5238095. The true edge is −0.00035 pp, which `lib/edgedesk_quote_ev.js` rounds to 3 decimals as 0 (or −0), while the EV rounds to −0.001%. The test then compared the sign of a rounded zero with −1.
+- **Fix (test only; the assertion compared rounded values).** The signs must agree unless the printed edge is zero, and it may be zero only when the true edge (cover − 1/d) rounds to it. The EV arithmetic and break-even checks are unchanged, and nothing in the EV engine, its rounding or the board changes.
+- **Tests.** `football/cfb_terminal/tests.js`: 128 / 1 → 129 / 0.
+
 ## 2026-11-01 — NCAAM matchup graphic: neutral-site games drawn, last season's ratings on the card
 
 - **Bug.** The matchup view refused a neutral-site game whose home and away ESPN's scoreboard and `basketball/slate.json` list the other way round ("…list this game's sides the other way round, so no graphic is drawn"), e.g. Northern Illinois v Grambling on 2 November. Across the 237 Division I scoreboard events for 2–4 November, 2 were affected, both at neutral sites. Under the home-games-only intercept (`bb_cal_v2_home_intercept`) the model prices a neutral game the same either way round, so `EDSportGraphic.labGame` now reads it with the schedule's sides (`flipGame`: moneyline, spread lines at −L, margin, rest and sample inputs move to their own team). A home game listed the other way round is still refused. No model output changed.
