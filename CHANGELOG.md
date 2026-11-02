@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-02 — Research OS journey: the journey game is found in Upcoming past its first 25 rows
+
+- **What broke.** After the 01:51 UTC slate the journey game became Chicago Bears at Seattle Seahawks (Monday night), with the test clock on Sunday evening. Upcoming lists 25 games at a time, soonest first, and 301 games came before it, so `the journey game is in Upcoming, by its slate id` failed and the journey stopped (28 passed, 2 failed on `main`, no code change).
+- **Fix (test: it assumed the game was among the first 25 rows).** The test reaches the row the way a reader does, with "Show N more", both times it opens Upcoming. The assertions are unchanged. Now 126 passed, 0 failed.
+
 ## 2026-11-01 — Juice Reel: an authorize error is no longer reported as "you did not authorize"
 
 - **What happened.** Connect Juice Reel sent every reader back with "You did not authorize EdgeDesk on Juice Reel". Asked directly on 2026-11-01, Juice Reel's authorize endpoint answers `error=invalid_scope` ("One or more requested scopes are not allowed") for the Integration app (`jr_UcOwwS…`) whenever `bets.settled.read` is requested, before any sign-in or consent screen. `bets.open.read` alone reaches Juice Reel's sign-in. `jr_callback` read any `error` as a refusal, so the cause was hidden.

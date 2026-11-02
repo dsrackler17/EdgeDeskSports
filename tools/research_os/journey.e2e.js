@@ -245,6 +245,12 @@ async function nflScheduleAtClock() {
     try { browser = await pw.chromium.launch({ headless: true }); }
     catch (e) { if (fs.existsSync('/opt/pw-browsers/chromium')) browser = await pw.chromium.launch({ headless: true, executablePath: '/opt/pw-browsers/chromium' }); else throw e; }
 
+    /* Upcoming lists 25 games at a time, soonest first (lib/edgedesk_overview.js), and switching
+       tabs starts it at 25 again. A Monday-night game on a Sunday evening sits behind 301 others
+       (2026-11-02, CHI at SEA): the reader reaches it with "Show N more", and so does this test. */
+    async function showRow(page) {
+      for (let i = 0; i < 40 && !(await page.$('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]')) && (await page.$('#ovQ [data-ov-more]')); i++) await page.click('#ovQ [data-ov-more]');
+    }
     async function open(viewport, who, hash, o) {
       o = o || {};
       const ctx = await browser.newContext({ viewport, timezoneId: ZONE, locale: 'en-US', deviceScaleFactor: 1 });
@@ -323,14 +329,17 @@ async function nflScheduleAtClock() {
       await page.waitForFunction(() => /Live\./.test((document.getElementById('ovSide') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => null);
       T.chk(W + ': Market Foresight\'s status is read from its door (live)', /Market Foresight[\s\S]*Live\./.test(await page.textContent('#ovSide')));
       if (DAY === TODAY) T.chk(W + ': the journey game is in Today\'s queue, by its slate id', await page.$('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]') !== null);
-      else { await page.click('#ovTab-upcoming'); T.chk(W + ': the journey game is in Upcoming, by its slate id', await page.$('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]') !== null); }
+      else {
+        await page.click('#ovTab-upcoming'); await showRow(page);
+        T.chk(W + ': the journey game is in Upcoming, by its slate id', await page.$('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]') !== null);
+      }
       const row = await page.textContent('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"]');
       T.chk(W + ': its row says it is saved', /watchlist/.test(row), row.slice(0, 300));
       await page.click('#ovTab-changed');
       T.chk(W + ': Changed lists it under the watchlist, with the server\'s reason', /The fair line moved/.test(await page.textContent('#ovQ')));
       T.chk(W + ': no horizontal scroll on the Overview', await noHScroll(page));
       await shot(page, W + '-1-overview');
-      await page.click('#ovTab-' + (DAY === TODAY ? 'today' : 'upcoming'));
+      await page.click('#ovTab-' + (DAY === TODAY ? 'today' : 'upcoming')); if (DAY !== TODAY) await showRow(page);
 
       /* ---------------------------------------------------------------- 2 the game's research */
       await page.click('#ovQ .ovq-r[data-ov-row="' + GAME.id + '"] a[data-ov-open]');
